@@ -6,8 +6,20 @@ defmodule Glific.Settings.Language do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Glific.Settings.Language
+
   @required_fields [:label, :locale]
   @optional_fields [:description, :is_active]
+
+  @type t() :: %__MODULE__{
+          id: non_neg_integer | nil,
+          label: String.t() | nil,
+          locale: String.t() | nil,
+          description: String.t() | nil,
+          is_active: boolean(),
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
+        }
 
   schema "languages" do
     field :label, :string
@@ -22,7 +34,10 @@ defmodule Glific.Settings.Language do
     timestamps()
   end
 
-  @doc false
+  @doc """
+  Standard changeset pattern we use for all datat types
+  """
+  @spec changeset(Language.t(), map()) :: Ecto.Changeset.t()
   def changeset(language, attrs) do
     language
     |> cast(attrs, @required_fields ++ @optional_fields)

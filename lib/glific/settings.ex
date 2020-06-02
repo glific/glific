@@ -16,7 +16,7 @@ defmodule Glific.Settings do
       [%Language{}, ...]
 
   """
-  @spec list_languages(map()) :: [%Language{}, ...]
+  @spec list_languages(map()) :: [Language.t(), ...]
   def list_languages(_args \\ %{}) do
     Repo.all(Language)
   end
@@ -35,7 +35,7 @@ defmodule Glific.Settings do
       ** (Ecto.NoResultsError)
 
   """
-  @spec get_language!(integer) :: %Language{}
+  @spec get_language!(integer) :: Language.t()
   def get_language!(id), do: Repo.get!(Language, id)
 
   @doc """
@@ -50,7 +50,7 @@ defmodule Glific.Settings do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_language(map()) :: {:ok, %Language{}} | {:error, Ecto.Changeset.t()}
+  @spec create_language(map()) :: {:ok, Language.t()} | {:error, Ecto.Changeset.t()}
   def create_language(attrs \\ %{}) do
     %Language{}
     |> Language.changeset(attrs)
@@ -69,7 +69,7 @@ defmodule Glific.Settings do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_language(%Language{}, map()) :: {:ok, %Language{}} | {:error, Ecto.Changeset.t()}
+  @spec update_language(Language.t(), map()) :: {:ok, Language.t()} | {:error, Ecto.Changeset.t()}
   def update_language(%Language{} = language, attrs) do
     language
     |> Language.changeset(attrs)
@@ -88,7 +88,7 @@ defmodule Glific.Settings do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_language(%Language{}) :: {:ok, %Language{}} | {:error, Ecto.Changeset.t()}
+  @spec delete_language(Language.t()) :: {:ok, Language.t()} | {:error, Ecto.Changeset.t()}
   def delete_language(%Language{} = language) do
     Repo.delete(language)
   end
@@ -102,7 +102,7 @@ defmodule Glific.Settings do
       %Ecto.Changeset{data: %Language{}}
 
   """
-  @spec change_language(%Language{}, map()) :: Ecto.Changeset.t()
+  @spec change_language(Language.t(), map()) :: Ecto.Changeset.t()
   def change_language(%Language{} = language, attrs \\ %{}) do
     Language.changeset(language, attrs)
   end
