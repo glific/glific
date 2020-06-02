@@ -1,12 +1,15 @@
 defmodule Glific.Partners do
   @moduledoc """
-  The Partners context.
+  The Partners will be the gateway for the application to access all the organization
+  and bsp information.
   """
 
   import Ecto.Query, warn: false
   alias Glific.Repo
 
   alias Glific.Partners.BSP
+
+  alias Glific.Partners.Organization
 
   @doc """
   Returns the list of bsps.
@@ -89,16 +92,101 @@ defmodule Glific.Partners do
     Repo.delete(bsp)
   end
 
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking bsp changes.
+  def change_bsp(%BSP{} = bsp, attrs \\ %{}) do
+    BSP.changeset(bsp, attrs)
+  end
+
+  @doc ~S"""
+  Returns the list of organizations.
 
   ## Examples
 
-      iex> change_bsp(bsp)
-      %Ecto.Changeset{data: %BSP{}}
+      iex> Glific.Partners.list_organizations()
+      [%Glific.Partners.Organization{}, ...]
 
   """
-  def change_bsp(%BSP{} = bsp, attrs \\ %{}) do
-    BSP.changeset(bsp, attrs)
+  def list_organizations do
+    Repo.all(Organization)
+  end
+
+  @doc ~S"""
+  Gets a single organization.
+
+  Raises `Ecto.NoResultsError` if the organization does not exist.
+
+  ## Examples
+
+      iex> Glific.Partners.get_organization!(1)
+      %Glific.Partners.Organization{}
+
+      iex> Glific.Partners.get_organization!(-1)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_organization!(id), do: Repo.get!(Organization, id)
+
+  @doc ~S"""
+  Creates a organization.
+
+  ## Examples
+
+      iex> Glific.Partners.create_organization(%{name: value})
+      {:ok, %Glific.Partners.Organization{}}
+
+      iex> Glific.Partners.create_organization(%{bad_field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_organization(attrs \\ %{}) do
+    %Organization{}
+    |> Organization.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc ~S"""
+  Updates an organization.
+
+  ## Examples
+
+      iex> Glific.Partners.update_organization(Organization, %{name: new_name})
+      {:ok, %Glific.Partners.Organization{}}
+
+      iex> Glific.Partners.update_organization(Organization, %{abc: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_organization(%Organization{} = bsp, attrs) do
+    bsp
+    |> Organization.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc ~S"""
+  Deletes an Organization.
+
+  ## Examples
+
+      iex> Glific.Partners.delete_organization(organization)
+      {:ok, %Glific.Partners.Organization{}}
+
+      iex> delete_organization(organization)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_organization(%Organization{} = organization) do
+    Repo.delete(organization)
+  end
+
+  @doc ~S"""
+  Returns an `%Ecto.Changeset{}` for tracking organization changes.
+
+  ## Examples
+
+      iex> Glific.Partners.change_organization(organization)
+      %Ecto.Changeset{data: %Glific.Partners.Organization{}}
+
+  """
+  def change_organization(%Organization{} = organization, attrs \\ %{}) do
+    Organization.changeset(organization, attrs)
   end
 end

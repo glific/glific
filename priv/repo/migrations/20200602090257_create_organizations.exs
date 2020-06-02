@@ -3,8 +3,8 @@ defmodule Glific.Repo.Migrations.CreateOrganizations do
 
   def change do
     create table(:organizations) do
-      add :name, :string
-      add :contact_name, :string
+      add :name, :string, null: false
+      add :contact_name, :string, null: false
       add :email, :string
       add :bsp, :string
       add :bsp_id, references(:bsps), on_delete: :nothing, null: false

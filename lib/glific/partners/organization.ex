@@ -1,4 +1,4 @@
-defmodule Glific.Partners.Organizations do
+defmodule Glific.Partners.Organization do
   use Ecto.Schema
   import Ecto.Changeset
 
