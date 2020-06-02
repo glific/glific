@@ -1,5 +1,7 @@
 defmodule Glific.Repo do
   @moduledoc """
+  A repository that maps to an underlying data store, controlled by the Postgres adapter.
+  
   We add a few functions to make our life easier with a few helper functions that ecto does
   not provide.
   """
