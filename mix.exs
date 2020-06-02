@@ -72,7 +72,7 @@ defmodule Glific.MixProject do
       {:tesla, "~> 1.3.0"},
       {:oban, "~> 1.2"},
       {:faker, "~> 0.13", only: :dev},
-      {:excoveralls, "~> 0.13", only: :test}
+      {:excoveralls, "~> 0.13", only: :test},
       {:cors_plug, "~> 2.0"}
     ]
   end
