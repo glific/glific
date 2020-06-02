@@ -10,13 +10,13 @@ defmodule Glific.RepoTest do
     @valid_attrs %{
       label: "English (United States)",
       locale: "en_US",
-      is_active: true,
+      is_active: true
     }
 
     @valid_hindi_attrs %{
       label: "Hindi (India)",
       locale: "hi_IN",
-      is_active: true,
+      is_active: true
     }
 
     def language_fixture(attrs \\ @valid_attrs) do

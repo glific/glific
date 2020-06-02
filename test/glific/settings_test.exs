@@ -10,23 +10,22 @@ defmodule Glific.SettingsTest do
     @valid_attrs %{
       label: "English (United States)",
       locale: "en_US",
-      is_active: true,
+      is_active: true
     }
 
     @valid_hindi_attrs %{
       label: "Hindi (India)",
       locale: "hi_IN",
-      is_active: true,
+      is_active: true
     }
 
     @update_attrs %{
       description: "we now have a description",
       locale: "hi_IN",
-      is_active: false,
+      is_active: false
     }
     @invalid_attrs %{is_active: nil, label: 123, locale: nil}
     @invalid_more_attrs %{label: "Label with no Locale"}
-
 
     def language_fixture(attrs \\ %{}) do
       {:ok, language} =
@@ -99,6 +98,5 @@ defmodule Glific.SettingsTest do
       assert {:ok, %Language{} = _} = Settings.create_language(@valid_hindi_attrs)
       assert {:error, %Ecto.Changeset{}} = Settings.update_language(language, %{locale: "hi_IN"})
     end
-
   end
 end

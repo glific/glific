@@ -21,6 +21,7 @@
     # {:my_arbitrary_script, command: ["my_script", "argument with spaces"], cd: "scripts"}
 
     {:mix_doctor, command: "mix doctor"},
-    {:mix_coveralls, command: "mix coveralls", env: %{"MIX_ENV" => "test"}}
+    {:mix_coveralls, command: "mix coveralls", env: %{"MIX_ENV" => "test"}},
+    {:mix_format, command: "mix format", order: -1}
   ]
 ]

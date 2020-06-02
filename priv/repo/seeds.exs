@@ -15,14 +15,12 @@ alias Glific.{
   Settings.Language
 }
 
-Repo.insert!(
-  %Language{
-    label: "English (United States)",
-    locale: "en_US"
-  })
+Repo.insert!(%Language{
+  label: "English (United States)",
+  locale: "en_US"
+})
 
-Repo.insert!(
-  %Language{
-    label: "Hindi (India)",
-    locale: "hi_IN"
-  })
+Repo.insert!(%Language{
+  label: "Hindi (India)",
+  locale: "hi_IN"
+})

@@ -1,7 +1,7 @@
 defmodule Glific.Repo do
   @moduledoc """
   A repository that maps to an underlying data store, controlled by the Postgres adapter.
-  
+
   We add a few functions to make our life easier with a few helper functions that ecto does
   not provide.
   """
@@ -24,12 +24,12 @@ defmodule Glific.Repo do
   @doc """
   Glific version of get_by, which returns a tuple with an :ok | :error as the first element
   """
-  @spec fetch_by(Ecto.Queryable.t(), Keyword.t() | map(), Keyword.t()) :: {atom(), Ecto.Schema.t() | String.t()}
+  @spec fetch_by(Ecto.Queryable.t(), Keyword.t() | map(), Keyword.t()) ::
+          {atom(), Ecto.Schema.t() | String.t()}
   def fetch_by(queryable, clauses, opts \\ []) do
     case get_by(queryable, clauses, opts) do
       nil -> {:error, "Resource not found"}
       resource -> {:ok, resource}
     end
   end
-
 end

@@ -235,5 +235,4 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
 
     create unique_index(:messages_tags, [:message_id, :tag_id])
   end
-
 end
