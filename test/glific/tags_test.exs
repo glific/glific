@@ -8,24 +8,31 @@ defmodule Glific.TagsTest do
 
     # language id needs to be added dynamically for all the below actions
     @valid_attrs %{
+      label: "some label",
       description: "some description",
       is_active: true,
       is_reserved: true,
-      label: "some label",
+    }
+    @valid_more_attrs %{
+      label: "some more label",
+      description: "some more description",
+      is_active: true,
+      is_reserved: true,
     }
     @update_attrs %{
+      label: "some updated label",
       description: "some updated description",
       is_active: false,
       is_reserved: false,
-      label: "some updated label",
     }
     @invalid_attrs %{
+      label: nil,
       description: nil,
       is_active: nil,
       is_reserved: nil,
-      label: nil,
       language_id: nil
     }
+
     @valid_language_attrs %{
       label: "English (United States)",
       locale: "en_US",
@@ -110,6 +117,15 @@ defmodule Glific.TagsTest do
     test "change_tag/1 returns a tag changeset" do
       tag = tag_fixture()
       assert %Ecto.Changeset{} = Tags.change_tag(tag)
+    end
+
+    test "list_tags/1 with multiple items" do
+      tag1 = tag_fixture()
+      tag2 = tag_fixture(@valid_more_attrs)
+      tags = Tags.list_tags()
+      assert List.length(tags) == 2
+      assert first(tags) == tag1 or first(tags) == tag2
+      assert last(tags) == tag1 or last(tags) == tag2
     end
   end
 end
