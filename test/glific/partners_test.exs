@@ -14,7 +14,6 @@ defmodule Glific.PartnersTest do
     }
     @invalid_attrs %{api_end_point: nil, name: nil, url: nil}
 
-
     def bsp_fixture(attrs \\ %{}) do
       {:ok, bsp} =
         attrs
@@ -70,15 +69,20 @@ defmodule Glific.PartnersTest do
       assert %Ecto.Changeset{} = Partners.change_bsp(bsp)
     end
 
-
     alias Glific.Partners.Organization
 
-    @valid_organization_attrs %{name: "Organization Name", contact_name: "Organization Contact person", email: "Contact person email", bsp_key: "BSP key", wa_number: "991737373"}
+    @valid_organization_attrs %{
+      name: "Organization Name",
+      contact_name: "Organization Contact person",
+      email: "Contact person email",
+      bsp_key: "BSP key",
+      wa_number: "991737373"
+    }
     @update_organization_attrs %{
       name: "Updated Name",
-      contact_name: "Updated Contact"}
+      contact_name: "Updated Contact"
+    }
     @invalid_organization_attrs %{bsp_id: nil, name: nil, contact_name: nil}
-
 
     def organization_fixture(attrs \\ %{}) do
       {:ok, organization} =
@@ -102,18 +106,20 @@ defmodule Glific.PartnersTest do
 
     test "create_organization/1 with valid data creates an organization" do
       assert {:ok, %Organization{} = organization} =
-      @valid_organization_attrs
-      |> Map.merge(%{bsp_id: bsp_fixture().id})
-      |> Partners.create_organization()
+               @valid_organization_attrs
+               |> Map.merge(%{bsp_id: bsp_fixture().id})
+               |> Partners.create_organization()
 
       assert organization.name == @valid_organization_attrs.name
       assert organization.email == @valid_organization_attrs.email
       assert organization.wa_number == @valid_organization_attrs.wa_number
     end
 
-     test "update_organization/2 with valid data updates the organization" do
+    test "update_organization/2 with valid data updates the organization" do
       organization = organization_fixture()
-      assert {:ok, %Organization{} = organization} = Partners.update_organization(organization, @update_organization_attrs)
+
+      assert {:ok, %Organization{} = organization} =
+               Partners.update_organization(organization, @update_organization_attrs)
 
       assert organization.name == @update_organization_attrs.name
       assert organization.contact_name == @update_organization_attrs.contact_name
@@ -121,7 +127,10 @@ defmodule Glific.PartnersTest do
 
     test "update_organization/2 with invalid data returns error changeset" do
       organization = organization_fixture()
-      assert {:error, %Ecto.Changeset{}} = Partners.update_organization(organization, @invalid_organization_attrs)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Partners.update_organization(organization, @invalid_organization_attrs)
+
       assert organization == Partners.get_organization!(organization.id)
     end
 
@@ -135,6 +144,5 @@ defmodule Glific.PartnersTest do
       organization = organization_fixture()
       assert %Ecto.Changeset{} = Partners.change_organization(organization)
     end
-
   end
 end

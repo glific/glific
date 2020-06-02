@@ -1,6 +1,6 @@
 defmodule Glific.Partners do
   @moduledoc """
-  The Partners will be the gateway for the application to access all the organization
+  This Module will be the gateway for the application to access all the organization
   and bsp information.
   """
 
