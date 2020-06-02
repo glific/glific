@@ -13,7 +13,8 @@ defmodule Glific.MixProject do
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      test_coverage: [tool: ExCoveralls]
     ]
   end
 
@@ -69,7 +70,8 @@ defmodule Glific.MixProject do
       {:hackney, "~> 1.16"},
       {:tesla, "~> 1.3.0"},
       {:oban, "~> 1.2"},
-      {:faker, "~> 0.13", only: :dev}
+      {:faker, "~> 0.13", only: :dev},
+      {:excoveralls, "~> 0.13", only: :test}
     ]
   end
 
