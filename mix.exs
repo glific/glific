@@ -65,11 +65,12 @@ defmodule Glific.MixProject do
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
       {:absinthe_relay, "~> 1.5"},
-      {:dataloader, "~> 1.0.0"},
+      {:dataloader, "~> 1.0.7"},
       {:hackney, "~> 1.16"},
       {:tesla, "~> 1.3.0"},
       {:oban, "~> 1.2"},
-      {:faker, "~> 0.13", only: :dev}
+      {:faker, "~> 0.13", only: :dev},
+      {:cors_plug, "~> 2.0"},
     ]
   end
 
