@@ -23,7 +23,7 @@ defmodule Glific.Tags.Tag do
           parent_id: non_neg_integer | nil,
           tags: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
         }
 
   schema "tags" do
