@@ -6,11 +6,11 @@
   ## list of tools (see `mix check` docs for defaults)
   tools: [
     ## curated tools may be disabled (e.g. the check for compilation warnings)
-    {:sobelow, false},
+    # {:sobelow, false},
     # {:compiler, false}
 
     ## ...or adjusted (e.g. use one-line formatter for more compact credo output)
-    # {:credo, "mix credo --format oneline"},
+    {:credo, "mix credo --format oneline"},
 
     ## ...or reordered (e.g. to see output from ex_unit before others)
     # {:ex_unit, order: -1},
