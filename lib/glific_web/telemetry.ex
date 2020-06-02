@@ -1,4 +1,7 @@
 defmodule GlificWeb.Telemetry do
+  @moduledoc """
+  Adding this comment here to avoid spurious errors from credo
+  """
   use Supervisor
   import Telemetry.Metrics
 
