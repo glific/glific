@@ -39,7 +39,7 @@ defmodule Glific.Partners do
   """
   def get_bsp!(id), do: Repo.get!(BSP, id)
 
-  @spec create_bsp(Ecto.Schema.t()) :: [Ecto.Schema.t()]
+  @spec create_bsp(Ecto.Schema.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @doc """
   Creates a bsp.
 
@@ -58,7 +58,7 @@ defmodule Glific.Partners do
     |> Repo.insert()
   end
 
-  @spec update_bsp(Ecto.Schema.t(), Ecto.Schema.t()) :: Ecto.Schema.t()
+  @spec update_bsp(Ecto.Schema.t(), Ecto.Schema.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @doc """
   Updates a bsp.
 
@@ -77,7 +77,7 @@ defmodule Glific.Partners do
     |> Repo.update()
   end
 
-  @spec delete_bsp(Ecto.Schema.t()) :: Ecto.Schema.t()
+  @spec delete_bsp(Ecto.Schema.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @doc """
   Deletes a bsp.
 
