@@ -73,7 +73,9 @@ defmodule Glific.MixProject do
       {:oban, "~> 1.2"},
       {:faker, "~> 0.13", only: :dev},
       {:excoveralls, "~> 0.13", only: :test},
-      {:cors_plug, "~> 2.0"}
+      {:cors_plug, "~> 2.0"},
+      {:ex_check, ">= 0.0.0", only: :dev, runtime: false},
+      {:sobelow, "~> 0.8", only: :dev}
     ]
   end
 
