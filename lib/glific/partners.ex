@@ -8,6 +8,7 @@ defmodule Glific.Partners do
 
   alias Glific.Partners.BSP
 
+  @spec list_bsps() :: String.t()
   @doc """
   Returns the list of bsps.
 
@@ -21,6 +22,7 @@ defmodule Glific.Partners do
     Repo.all(BSP)
   end
 
+  @spec get_bsp!(any) :: any
   @doc """
   Gets a single bsp.
 
@@ -37,6 +39,7 @@ defmodule Glific.Partners do
   """
   def get_bsp!(id), do: Repo.get!(BSP, id)
 
+  @spec create_bsp(any) :: any
   @doc """
   Creates a bsp.
 
@@ -55,6 +58,7 @@ defmodule Glific.Partners do
     |> Repo.insert()
   end
 
+  @spec update_bsp(%BSP{}, any) :: any
   @doc """
   Updates a bsp.
 
@@ -73,6 +77,7 @@ defmodule Glific.Partners do
     |> Repo.update()
   end
 
+  @spec delete_bsp(%BSP{}) :: any
   @doc """
   Deletes a bsp.
 
@@ -89,6 +94,7 @@ defmodule Glific.Partners do
     Repo.delete(bsp)
   end
 
+  @spec change_bsp(%BSP{}, any) :: any
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking bsp changes.
 
