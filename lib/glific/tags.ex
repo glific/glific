@@ -7,8 +7,7 @@ defmodule Glific.Tags do
   alias Glific.Repo
 
   alias Glific.{
-    Tags.Tag,
-    Settings.Language
+    Tags.Tag
   }
 
   @doc """
@@ -134,10 +133,11 @@ defmodule Glific.Tags do
     Tag.changeset(tag, attrs)
   end
 
-  @doc """
+  @doc ~S"""
+  Commenting out for now till we integrate search via GraphQL across all data types
+
   Simple stub for now in our experiments to implement Search
-  across a variety of data types in the system
-  """
+  across a variety of data types in the system.
 
   @search [Tag, Language]
   # can we make the return type: maybe_improper_list(Tag.t(), Language.t())
@@ -154,4 +154,7 @@ defmodule Glific.Tags do
         where: ilike(q.label, ^pattern) or ilike(q.description, ^pattern)
     )
   end
+  """
+  def _no_warnings(), do: nil
+
 end

@@ -10,7 +10,7 @@ defmodule Glific.Tags.Tag do
   # , Contacts.Contact, Messages.Message}
 
   @required_fields [:label, :language_id]
-  # @optional_fields [:description, :is_active, :is_reserved, :parent_id]
+  @optional_fields [:description, :is_active, :is_reserved, :parent_id]
 
   @type t() :: %__MODULE__{
           id: non_neg_integer | nil,
@@ -49,7 +49,7 @@ defmodule Glific.Tags.Tag do
   @spec changeset(Tag.t(), map()) :: Ecto.Changeset.t()
   def changeset(tag, attrs) do
     tag
-    |> cast(attrs, @required_fields ++ @required_fields)
+    |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
