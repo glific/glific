@@ -1,4 +1,8 @@
 defmodule Glific.Partners.BSP do
+  @moduledoc """
+  BSP are the third party Business Service providers who will give a access of WhatsApp API
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

@@ -1,4 +1,8 @@
 defmodule Glific.Partners.Organization do
+  @moduledoc """
+  Organizations are the group of users who will access the system
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 
