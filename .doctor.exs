@@ -3,9 +3,9 @@
   ignore_paths: [
     ~r(lib/glific_web/views/.*),
     "lib/glific/application.ex",
-    "lib/glific/ecto_enums.ex",
     "lib/glific_web.ex",
-    "lib/glific_web/telemetry.ex"
+    "lib/glific_web/telemetry.ex",
+    "lib/glific/ecto_enums.ex"
   ],
   min_module_doc_coverage: 40,
   min_module_spec_coverage: 0,
