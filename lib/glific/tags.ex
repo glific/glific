@@ -155,6 +155,6 @@ defmodule Glific.Tags do
     )
   end
   """
-  def _no_warnings(), do: nil
-
+  @spec no_warnings() :: nil
+  def no_warnings(), do: nil
 end
