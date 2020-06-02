@@ -24,7 +24,6 @@ defmodule Glific.Constants.Enums do
 
       # the possible sort direction for lists/rows, typically used in DB operations
       @sort_order_const [:asc, :desc]
-
     end
   end
 end

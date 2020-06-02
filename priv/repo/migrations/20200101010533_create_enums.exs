@@ -27,5 +27,4 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     MessageTypesEnum.drop_type()
     SortOrderEnum.drop_type()
   end
-
 end
