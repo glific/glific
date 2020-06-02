@@ -1,6 +1,7 @@
 defmodule Glific.Partners.BSP do
   use Ecto.Schema
   import Ecto.Changeset
+
   @moduledoc """
   The BSP schema.
   """

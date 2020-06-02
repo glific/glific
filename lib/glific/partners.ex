@@ -8,7 +8,7 @@ defmodule Glific.Partners do
 
   alias Glific.Partners.BSP
 
-  @spec list_bsps() :: String.t()
+  @spec list_bsps() :: [Ecto.Schema.t()]
   @doc """
   Returns the list of bsps.
 
@@ -22,7 +22,7 @@ defmodule Glific.Partners do
     Repo.all(BSP)
   end
 
-  @spec get_bsp!(any) :: any
+  @spec get_bsp!(id :: term()) :: Ecto.Schema.t()
   @doc """
   Gets a single bsp.
 
@@ -39,7 +39,7 @@ defmodule Glific.Partners do
   """
   def get_bsp!(id), do: Repo.get!(BSP, id)
 
-  @spec create_bsp(any) :: any
+  @spec create_bsp(Ecto.Schema.t()) :: [Ecto.Schema.t()]
   @doc """
   Creates a bsp.
 
@@ -58,7 +58,7 @@ defmodule Glific.Partners do
     |> Repo.insert()
   end
 
-  @spec update_bsp(%BSP{}, any) :: any
+  @spec update_bsp(Ecto.Schema.t(), Ecto.Schema.t()) :: Ecto.Schema.t()
   @doc """
   Updates a bsp.
 
@@ -77,7 +77,7 @@ defmodule Glific.Partners do
     |> Repo.update()
   end
 
-  @spec delete_bsp(%BSP{}) :: any
+  @spec delete_bsp(Ecto.Schema.t()) :: Ecto.Schema.t()
   @doc """
   Deletes a bsp.
 
@@ -94,7 +94,7 @@ defmodule Glific.Partners do
     Repo.delete(bsp)
   end
 
-  @spec change_bsp(%BSP{}, any) :: any
+  @spec change_bsp(Ecto.Schema.t(), Ecto.Schema.t()) :: Ecto.Schema.t()
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking bsp changes.
 
