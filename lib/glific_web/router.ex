@@ -1,4 +1,8 @@
 defmodule GlificWeb.Router do
+  @moduledoc """
+  a defult gateway for all the external requests
+  """
+
   use GlificWeb, :router
 
   pipeline :browser do

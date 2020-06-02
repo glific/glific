@@ -20,6 +20,7 @@
     # {:my_arbitrary_tool, command: "npm test", cd: "assets"},
     # {:my_arbitrary_script, command: ["my_script", "argument with spaces"], cd: "scripts"}
 
-    {:mix_doctor, command: "mix doctor"}
+    {:mix_doctor, command: "mix doctor"},
+    {:mix_coveralls, command: "mix coveralls", env: %{"MIX_ENV" => "test"}}
   ]
 ]
