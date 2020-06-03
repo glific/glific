@@ -16,6 +16,12 @@ defmodule Glific.Partners.BSP do
   # define all the optional fields for bsp
   @optional_fields []
 
+  @type t() :: %__MODULE__{
+          id: non_neg_integer | nil,
+          name: String.t() | nil,
+          url: String.t() | nil
+        }
+
   schema "bsps" do
     field(:api_end_point, :string)
     field(:name, :string)

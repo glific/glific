@@ -126,8 +126,6 @@ defmodule Glific.Partners do
         query |> filter_with(filter)
     end)
     |> Repo.all()
-
-    Repo.all(Organization)
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -141,6 +139,12 @@ defmodule Glific.Partners do
 
       {:email, email}, query ->
         from q in query, where: ilike(q.wa_id, ^"%#{email}%")
+
+      {:bsp_key, bsp_key}, query ->
+        from q in query, where: ilike(q.wa_id, ^"%#{bsp_key}%")
+
+      {:wa_number, wa_number}, query ->
+        from q in query, where: ilike(q.wa_id, ^"%#{wa_number}%")
     end)
   end
 

@@ -13,5 +13,8 @@ defmodule Glific.Repo.Migrations.CreateOrganizations do
 
       timestamps()
     end
+
+    create unique_index(:organizations, :wa_number)
+    create unique_index(:organizations, :email)
   end
 end

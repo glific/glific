@@ -20,8 +20,9 @@ defmodule Glific.Partners.Organization do
           name: String.t() | nil,
           contact_name: String.t() | nil,
           email: String.t() | nil,
-          bsp_id: ContactStatusEnum | nil,
-          bsp_key: ContactStatusEnum | nil,
+          bsp_id: non_neg_integer | nil,
+          bsp: BSP.t() | Ecto.Association.NotLoaded.t() | nil,
+          bsp_key: String.t() | nil,
           wa_number: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -46,5 +47,7 @@ defmodule Glific.Partners.Organization do
     organization
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint(:email)
+    |> unique_constraint(:wa_number)
   end
 end
