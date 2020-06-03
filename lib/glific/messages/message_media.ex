@@ -10,14 +10,14 @@ defmodule Glific.Messages.MessageMedia do
   # define all the required fields for message media
   @required_fields [
     :url,
-    :source_url,
-    :caption
+    :source_url
   ]
 
   # define all the optional fields for message media
   @optional_fields [
     :thumbnail,
-    :wa_media_id
+    :wa_media_id,
+    :caption
   ]
 
   @type t() :: %__MODULE__{
