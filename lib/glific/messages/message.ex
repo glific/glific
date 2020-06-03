@@ -3,7 +3,6 @@ defmodule Glific.Messages.Message do
   import Ecto.Changeset
 
   schema "messages" do
-
     timestamps()
   end
 
