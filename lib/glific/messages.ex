@@ -17,7 +17,7 @@ defmodule Glific.Messages do
       [%Message{}, ...]
 
   """
-  @spec list_contacts(map()) :: [Message.t()]
+  @spec list_messages(map()) :: [Message.t()]
   def list_messages(_args \\ %{}) do
     Repo.all(Message)
   end
@@ -89,7 +89,7 @@ defmodule Glific.Messages do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_contact(Message.t()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+  @spec delete_message(Message.t()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   def delete_message(%Message{} = message) do
     Repo.delete(message)
   end
@@ -106,5 +106,109 @@ defmodule Glific.Messages do
   @spec change_message(Message.t(), map()) :: Ecto.Changeset.t()
   def change_message(%Message{} = message, attrs \\ %{}) do
     Message.changeset(message, attrs)
+  end
+
+  alias Glific.Messages.MessageMedia
+
+  @doc """
+  Returns the list of message_media.
+
+  ## Examples
+
+      iex> list_message_media()
+      [%MessageMedia{}, ...]
+
+  """
+  @spec list_message_media(map()) :: [MessageMedia.t()]
+  def list_message_media(_args \\ %{}) do
+    Repo.all(MessageMedia)
+  end
+
+  @doc """
+  Gets a single message_media.
+
+  Raises `Ecto.NoResultsError` if the Message media does not exist.
+
+  ## Examples
+
+      iex> get_message_media!(123)
+      %MessageMedia{}
+
+      iex> get_message_media!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  @spec get_message_media!(integer) :: MessageMedia.t()
+  def get_message_media!(id), do: Repo.get!(MessageMedia, id)
+
+  @doc """
+  Creates a message_media.
+
+  ## Examples
+
+      iex> create_message_media(%{field: value})
+      {:ok, %MessageMedia{}}
+
+      iex> create_message_media(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec create_message_media(map()) :: {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
+  def create_message_media(attrs \\ %{}) do
+    %MessageMedia{}
+    |> MessageMedia.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a message_media.
+
+  ## Examples
+
+      iex> update_message_media(message_media, %{field: new_value})
+      {:ok, %MessageMedia{}}
+
+      iex> update_message_media(message_media, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec update_message_media(MessageMedia.t(), map()) ::
+          {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
+  def update_message_media(%MessageMedia{} = message_media, attrs) do
+    message_media
+    |> MessageMedia.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a message_media.
+
+  ## Examples
+
+      iex> delete_message_media(message_media)
+      {:ok, %MessageMedia{}}
+
+      iex> delete_message_media(message_media)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec delete_message_media(MessageMedia.t()) ::
+          {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
+  def delete_message_media(%MessageMedia{} = message_media) do
+    Repo.delete(message_media)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking message_media changes.
+
+  ## Examples
+
+      iex> change_message_media(message_media)
+      %Ecto.Changeset{data: %MessageMedia{}}
+
+  """
+  @spec change_message_media(MessageMedia.t(), map()) :: Ecto.Changeset.t()
+  def change_message_media(%MessageMedia{} = message_media, attrs \\ %{}) do
+    MessageMedia.changeset(message_media, attrs)
   end
 end
