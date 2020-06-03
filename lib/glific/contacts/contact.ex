@@ -50,6 +50,7 @@ defmodule Glific.Contacts.Contact do
     contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:phone, :wa_id])
+    |> unique_constraint(:phone)
+    |> unique_constraint(:wa_id)
   end
 end

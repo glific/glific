@@ -136,8 +136,15 @@ defmodule Glific.Contacts do
     Contact.changeset(contact, attrs)
   end
 
-  @spec get_or_create(map()) :: Contact.t()
-  def get_or_create(attrs) do
+  @doc """
+  Gets or Creates a Contact based on the unique indexes in the table. If there is a match
+  it returns the existing contact, else it creates a new one
+
+  IMPROVE_ME: We need to figure out how to reconcile phone and wa_id and modify the below
+  IMPROVE_ME: Can we make the below more generic
+  """
+  @spec upsert(map()) :: Contact.t()
+  def upsert(attrs) do
     Repo.insert!(
       change_contact(%Contact{}, attrs),
       on_conflict: [set: [phone: attrs.phone]],
