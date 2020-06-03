@@ -1,7 +1,7 @@
 defmodule Glific.Partners do
   @moduledoc """
-  This Module will be the gateway for the application to access all the organization
-  and bsp information.
+  The Partners context. This is the gateway for the application to access/update all the organization
+  and BSP information.
   """
 
   import Ecto.Query, warn: false
