@@ -10,7 +10,7 @@ defmodule Glific.Messages.MessageMedia do
   # define all the required fields for message media
   @required_fields [
     :url,
-    :source_url,
+    :source_url
   ]
 
   # define all the optional fields for message media
