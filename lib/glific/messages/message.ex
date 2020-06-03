@@ -2,6 +2,7 @@ defmodule Glific.Messages.Message do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
+  alias __MODULE__
 
   alias Glific.{MessageStatusEnum, MessageTypesEnum, MessageFlowEnum}
   alias Glific.{Contacts.Contact, Messages.MessageMedia}
@@ -52,6 +53,7 @@ defmodule Glific.Messages.Message do
   @doc """
   Standard changeset pattern we use for all data types
   """
+  @spec changeset(Message.t(), map()) :: Ecto.Changeset.t()
   def changeset(message, attrs) do
     message
     |> cast(attrs, @required_fields ++ @optional_fields)
