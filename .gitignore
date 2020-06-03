@@ -40,3 +40,6 @@ npm-debug.log
 # Ignore the dialyzer cache files
 /priv/plts/*.plt
 /priv/plts/*.plt.hash
+
+# dont commit apple temp file
+.DS_Store
