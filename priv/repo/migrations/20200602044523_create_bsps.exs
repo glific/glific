@@ -4,11 +4,11 @@ defmodule Glific.Repo.Migrations.CreateBsps do
   def change do
     create table(:bsps) do
       # The name of BSP
-      add :name, :string
-      # The name of url
-      add :url, :string
+      add :name, :string, null: false
+      # The url of BSP
+      add :url, :string, null: false
       # The api end point for BSP
-      add :api_end_point, :string
+      add :api_end_point, :string, null: false
 
       timestamps()
     end

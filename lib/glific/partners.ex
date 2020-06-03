@@ -5,10 +5,8 @@ defmodule Glific.Partners do
 
   import Ecto.Query, warn: false
   alias Glific.Repo
-
   alias Glific.Partners.BSP
 
-  @spec list_bsps() :: [Ecto.Schema.t()]
   @doc """
   Returns the list of bsps.
 
@@ -18,11 +16,11 @@ defmodule Glific.Partners do
       [%BSP{}, ...]
 
   """
-  def list_bsps do
+  @spec list_bsps(map()) :: [%BSP{}, ...]
+  def list_bsps(_args \\ %{}) do
     Repo.all(BSP)
   end
 
-  @spec get_bsp!(id :: term()) :: Ecto.Schema.t()
   @doc """
   Gets a single bsp.
 
@@ -37,9 +35,9 @@ defmodule Glific.Partners do
       ** (Ecto.NoResultsError)
 
   """
+  @spec get_bsp!(id :: integer) :: %BSP{}
   def get_bsp!(id), do: Repo.get!(BSP, id)
 
-  @spec create_bsp(Ecto.Schema.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @doc """
   Creates a bsp.
 
@@ -52,13 +50,13 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec create_bsp(map()) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
   def create_bsp(attrs \\ %{}) do
     %BSP{}
     |> BSP.changeset(attrs)
     |> Repo.insert()
   end
 
-  @spec update_bsp(Ecto.Schema.t(), Ecto.Schema.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @doc """
   Updates a bsp.
 
@@ -71,13 +69,13 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec update_bsp(%BSP{}, map()) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
   def update_bsp(%BSP{} = bsp, attrs) do
     bsp
     |> BSP.changeset(attrs)
     |> Repo.update()
   end
 
-  @spec delete_bsp(Ecto.Schema.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @doc """
   Deletes a bsp.
 
@@ -90,11 +88,11 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec delete_bsp(%BSP{}) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
   def delete_bsp(%BSP{} = bsp) do
     Repo.delete(bsp)
   end
 
-  @spec change_bsp(Ecto.Schema.t(), Ecto.Schema.t()) :: Ecto.Schema.t()
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking bsp changes.
 
@@ -104,6 +102,7 @@ defmodule Glific.Partners do
       %Ecto.Changeset{data: %BSP{}}
 
   """
+  @spec change_bsp(%BSP{}, map()) :: Ecto.Changeset.t()
   def change_bsp(%BSP{} = bsp, attrs \\ %{}) do
     BSP.changeset(bsp, attrs)
   end

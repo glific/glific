@@ -1,10 +1,10 @@
 defmodule Glific.Partners.BSP do
-  use Ecto.Schema
-  import Ecto.Changeset
-
   @moduledoc """
   The BSP schema.
   """
+
+  use Ecto.Schema
+  import Ecto.Changeset
 
   # define all the required fields for bsp
   @required_fields [
