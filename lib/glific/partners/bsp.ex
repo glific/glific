@@ -32,6 +32,6 @@ defmodule Glific.Partners.BSP do
     bsp
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint(:name)
+    |> unique_constraint([:name, :url, :api_end_point])
   end
 end

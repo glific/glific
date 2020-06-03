@@ -13,6 +13,6 @@ defmodule Glific.Repo.Migrations.CreateBsps do
       timestamps()
     end
 
-    create unique_index(:bsps, [:name])
+    create unique_index(:bsps, [:name, :url, :api_end_point])
   end
 end
