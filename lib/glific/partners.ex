@@ -105,8 +105,33 @@ defmodule Glific.Partners do
       [%Glific.Partners.Organization{}, ...]
 
   """
-  def list_organizations do
+  @spec list_organizations(map()) :: [Organization.t()]
+  def list_organizations(args \\ %{}) do
+    args
+    |> Enum.reduce(Organization, fn
+      {:order, order}, query ->
+        query |> order_by({^order, :name})
+
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
+    |> Repo.all()
+
     Repo.all(Organization)
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:name, name}, query ->
+        from q in query, where: ilike(q.name, ^"%#{name}%")
+
+      {:contact_name, contact_name}, query ->
+        from q in query, where: ilike(q.phone, ^"%#{contact_name}%")
+
+      {:email, email}, query ->
+        from q in query, where: ilike(q.wa_id, ^"%#{email}%")
+    end)
   end
 
   @doc ~S"""
@@ -123,6 +148,7 @@ defmodule Glific.Partners do
       ** (Ecto.NoResultsError)
 
   """
+  @spec get_organization!(integer) :: Organization.t()
   def get_organization!(id), do: Repo.get!(Organization, id)
 
   @doc ~S"""
@@ -137,6 +163,7 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec create_organization(map()) :: {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def create_organization(attrs \\ %{}) do
     %Organization{}
     |> Organization.changeset(attrs)
@@ -155,6 +182,7 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec update_organization(Organization.t(), map()) :: {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def update_organization(%Organization{} = bsp, attrs) do
     bsp
     |> Organization.changeset(attrs)
@@ -173,6 +201,7 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec delete_organization(Organization.t()) :: {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def delete_organization(%Organization{} = organization) do
     Repo.delete(organization)
   end
@@ -186,6 +215,7 @@ defmodule Glific.Partners do
       %Ecto.Changeset{data: %Glific.Partners.Organization{}}
 
   """
+  @spec change_organization(Organization.t(), map()) :: Ecto.Changeset.t()
   def change_organization(%Organization{} = organization, attrs \\ %{}) do
     Organization.changeset(organization, attrs)
   end
