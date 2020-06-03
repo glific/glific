@@ -1,7 +1,7 @@
 defmodule Glific.Partners do
   @moduledoc """
-  This Module will be the gateway for the application to access all the organization
-  and bsp information.
+  The Partners context. This is the gateway for the application to access/update all the organization
+  and BSP information.
   """
 
   import Ecto.Query, warn: false
@@ -96,6 +96,15 @@ defmodule Glific.Partners do
     Repo.delete(bsp)
   end
 
+  @doc ~S"""
+  Returns an `%Ecto.Changeset{}` for tracking bsp changes.
+
+  ## Examples
+
+      iex> change_bsp(bsp)
+      %Ecto.Changeset{data: %BSP{}}
+
+  """
   @spec change_bsp(%BSP{}, map()) :: Ecto.Changeset.t()
   def change_bsp(%BSP{} = bsp, attrs \\ %{}) do
     BSP.changeset(bsp, attrs)
@@ -121,8 +130,6 @@ defmodule Glific.Partners do
         query |> filter_with(filter)
     end)
     |> Repo.all()
-
-    Repo.all(Organization)
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -136,6 +143,12 @@ defmodule Glific.Partners do
 
       {:email, email}, query ->
         from q in query, where: ilike(q.wa_id, ^"%#{email}%")
+
+      {:bsp_key, bsp_key}, query ->
+        from q in query, where: ilike(q.wa_id, ^"%#{bsp_key}%")
+
+      {:wa_number, wa_number}, query ->
+        from q in query, where: ilike(q.wa_id, ^"%#{wa_number}%")
     end)
   end
 

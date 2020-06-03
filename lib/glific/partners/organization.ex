@@ -2,9 +2,10 @@ defmodule Glific.Partners.Organization do
   @moduledoc """
   Organizations are the group of users who will access the system
   """
-
   use Ecto.Schema
   import Ecto.Changeset
+
+  alias __MODULE__
 
   alias Glific.Partners.BSP
 
@@ -19,8 +20,9 @@ defmodule Glific.Partners.Organization do
           name: String.t() | nil,
           contact_name: String.t() | nil,
           email: String.t() | nil,
-          bsp_id: ContactStatusEnum | nil,
-          bsp_key: ContactStatusEnum | nil,
+          bsp_id: non_neg_integer | nil,
+          bsp: BSP.t() | Ecto.Association.NotLoaded.t() | nil,
+          bsp_key: String.t() | nil,
           wa_number: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -37,10 +39,15 @@ defmodule Glific.Partners.Organization do
     timestamps()
   end
 
-  @doc false
+  @doc """
+  Standard changeset pattern we use for all datat types
+  """
+  @spec changeset(Organization.t(), map()) :: Ecto.Changeset.t()
   def changeset(organization, attrs) do
     organization
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint(:email)
+    |> unique_constraint(:wa_number)
   end
 end

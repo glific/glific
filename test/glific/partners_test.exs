@@ -3,7 +3,7 @@ defmodule Glific.PartnersTest do
 
   alias Glific.Partners
 
-  describe "bsps" do
+  describe "partners" do
     alias Glific.Partners.BSP
 
     @valid_attrs %{
@@ -108,23 +108,32 @@ defmodule Glific.PartnersTest do
 
     alias Glific.Partners.Organization
 
-    @valid_organization_attrs %{
+    @valid_org_attrs %{
       name: "Organization Name",
       contact_name: "Organization Contact person",
       email: "Contact person email",
       bsp_key: "BSP key",
       wa_number: "991737373"
     }
-    @update_organization_attrs %{
+
+    @valid_org_attrs_1 %{
+      name: "Organization Name 1",
+      contact_name: "Organization Contact person 1",
+      email: "Contact person email 1",
+      bsp_key: "BSP key 1",
+      wa_number: "9917373731"
+    }
+
+    @update_org_attrs %{
       name: "Updated Name",
       contact_name: "Updated Contact"
     }
-    @invalid_organization_attrs %{bsp_id: nil, name: nil, contact_name: nil}
+    @invalid_org_attrs %{bsp_id: nil, name: nil, contact_name: nil}
 
     def organization_fixture(attrs \\ %{}) do
       {:ok, organization} =
         attrs
-        |> Enum.into(@valid_organization_attrs)
+        |> Enum.into(@valid_org_attrs)
         |> Map.merge(%{bsp_id: bsp_fixture().id})
         |> Partners.create_organization()
 
@@ -143,30 +152,30 @@ defmodule Glific.PartnersTest do
 
     test "create_organization/1 with valid data creates an organization" do
       assert {:ok, %Organization{} = organization} =
-               @valid_organization_attrs
+               @valid_org_attrs
                |> Map.merge(%{bsp_id: bsp_fixture().id})
                |> Partners.create_organization()
 
-      assert organization.name == @valid_organization_attrs.name
-      assert organization.email == @valid_organization_attrs.email
-      assert organization.wa_number == @valid_organization_attrs.wa_number
+      assert organization.name == @valid_org_attrs.name
+      assert organization.email == @valid_org_attrs.email
+      assert organization.wa_number == @valid_org_attrs.wa_number
     end
 
     test "update_organization/2 with valid data updates the organization" do
       organization = organization_fixture()
 
       assert {:ok, %Organization{} = organization} =
-               Partners.update_organization(organization, @update_organization_attrs)
+               Partners.update_organization(organization, @update_org_attrs)
 
-      assert organization.name == @update_organization_attrs.name
-      assert organization.contact_name == @update_organization_attrs.contact_name
+      assert organization.name == @update_org_attrs.name
+      assert organization.contact_name == @update_org_attrs.contact_name
     end
 
     test "update_organization/2 with invalid data returns error changeset" do
       organization = organization_fixture()
 
       assert {:error, %Ecto.Changeset{}} =
-               Partners.update_organization(organization, @invalid_organization_attrs)
+               Partners.update_organization(organization, @invalid_org_attrs)
 
       assert organization == Partners.get_organization!(organization.id)
     end
@@ -180,6 +189,28 @@ defmodule Glific.PartnersTest do
     test "change_organization/1 returns a organization changeset" do
       organization = organization_fixture()
       assert %Ecto.Changeset{} = Partners.change_organization(organization)
+    end
+
+    test "list_organization/1 with multiple organization filteres" do
+      org1 = organization_fixture(@valid_org_attrs_1)
+
+      org_list = Partners.list_organizations(%{filter: %{name: org1.name}})
+      assert org_list == [org1]
+
+      org_list = Partners.list_organizations(%{order: :asc, filter: %{name: "ABC"}})
+      assert org_list == []
+    end
+
+    test "ensure that creating organization with out bsp give an error" do
+      assert {:error, %Ecto.Changeset{}} = Partners.create_organization(@valid_org_attrs)
+    end
+
+    test "ensure that creating organization  with same whats app number give an error" do
+      organization_fixture(@valid_org_attrs)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Map.merge(@valid_org_attrs, %{bsp_id: bsp_fixture().id})
+               |> Partners.create_organization()
     end
   end
 end
