@@ -3,6 +3,7 @@ defmodule Glific.PartnersTest do
 
   alias Glific.Partners
 
+
   describe "partners" do
     alias Glific.Partners.BSP
 
@@ -131,10 +132,11 @@ defmodule Glific.PartnersTest do
     @invalid_org_attrs %{bsp_id: nil, name: nil, contact_name: nil}
 
     def organization_fixture(attrs \\ %{}) do
+      bsp = bsp_fixture(%{name: Faker.Name.name()})
       {:ok, organization} =
         attrs
         |> Enum.into(@valid_org_attrs)
-        |> Map.merge(%{bsp_id: bsp_fixture().id})
+        |> Map.merge(%{bsp_id: bsp.id})
         |> Partners.create_organization()
 
       organization
@@ -192,13 +194,18 @@ defmodule Glific.PartnersTest do
     end
 
     test "list_organization/1 with multiple organization filteres" do
+      _org0 = organization_fixture(@valid_org_attrs)
       org1 = organization_fixture(@valid_org_attrs_1)
+
 
       org_list = Partners.list_organizations(%{filter: %{name: org1.name}})
       assert org_list == [org1]
 
       org_list = Partners.list_organizations(%{order: :asc, filter: %{name: "ABC"}})
       assert org_list == []
+
+      org_list = Partners.list_organizations()
+      assert length(org_list) == 2
     end
 
     test "ensure that creating organization with out bsp give an error" do
