@@ -2,11 +2,10 @@ defmodule Glific.Partners.Organization do
   @moduledoc """
   Organizations are the group of users who will access the system
   """
-
-  alias __MODULE__
-
   use Ecto.Schema
   import Ecto.Changeset
+
+  alias __MODULE__
 
   alias Glific.Partners.BSP
 
