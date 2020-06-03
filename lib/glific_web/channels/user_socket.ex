@@ -1,5 +1,6 @@
 defmodule GlificWeb.UserSocket do
   use Phoenix.Socket
+  @moduledoc false
 
   ## Channels
   # channel "room:*", GlificWeb.RoomChannel
