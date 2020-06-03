@@ -7,10 +7,25 @@ defmodule Glific.MessagesTest do
     alias Glific.Messages.Message
     alias Glific.Contacts
 
-    @sender_attrs %{ name: "some sender",optin_time: ~U[2010-04-17 14:00:00Z],optout_time: ~U[2010-04-17 14:00:00Z],phone: "some sender phone",status: :valid,wa_id: "some sender wa_id",wa_status: :invalid}
+    @sender_attrs %{
+      name: "some sender",
+      optin_time: ~U[2010-04-17 14:00:00Z],
+      optout_time: ~U[2010-04-17 14:00:00Z],
+      phone: "some sender phone",
+      status: :valid,
+      wa_id: "some sender wa_id",
+      wa_status: :invalid
+    }
 
-    @recipient_attrs %{ name: "some recipient",optin_time: ~U[2010-04-17 14:00:00Z],optout_time: ~U[2010-04-17 14:00:00Z],phone: "some recipient phone",status: :valid,wa_id: "some recepient wa_id",wa_status: :invalid}
-
+    @recipient_attrs %{
+      name: "some recipient",
+      optin_time: ~U[2010-04-17 14:00:00Z],
+      optout_time: ~U[2010-04-17 14:00:00Z],
+      phone: "some recipient phone",
+      status: :valid,
+      wa_id: "some recepient wa_id",
+      wa_status: :invalid
+    }
 
     @valid_attrs %{
       body: "some body",
@@ -62,9 +77,9 @@ defmodule Glific.MessagesTest do
 
     test "create_message/1 with valid data creates a message" do
       assert {:ok, %Message{} = message} =
-        @valid_attrs
-        |> Map.merge(forign_key_constraint())
-        |> Messages.create_message()
+               @valid_attrs
+               |> Map.merge(forign_key_constraint())
+               |> Messages.create_message()
     end
 
     test "create_message/1 with invalid data returns error changeset" do
