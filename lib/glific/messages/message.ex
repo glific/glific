@@ -39,12 +39,12 @@ defmodule Glific.Messages.Message do
     field :type, MessageTypesEnum
     field :wa_message_id, :string
     field :wa_status, MessageStatusEnum
-    field :media_id, :integer
+    # field :media_id, :integer
 
     belongs_to :sender, Contact
     belongs_to :recipient, Contact
     # belongs_to :media_id, :string
-    # belongs_to :media, MessageMedia
+    belongs_to :media, MessageMedia
 
     # many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
 
