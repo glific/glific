@@ -12,5 +12,7 @@ defmodule Glific.Repo.Migrations.CreateBsps do
 
       timestamps()
     end
+
+    create unique_index(:bsps, [:name])
   end
 end

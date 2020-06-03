@@ -1,6 +1,6 @@
 defmodule Glific.Partners.BSP do
   @moduledoc """
-  The BSP schema.
+  The wrapper for BSP.
   """
 
   use Ecto.Schema
@@ -17,17 +17,21 @@ defmodule Glific.Partners.BSP do
   @optional_fields []
 
   schema "bsps" do
-    field(:api_end_point, :string)
-    field(:name, :string)
-    field(:url, :string)
+    field :name, :string
+    field :url, :string
+    field :api_end_point, :string
 
     timestamps()
   end
 
-  @doc false
+  @doc """
+  Standard changeset pattern we use for all datat types
+  """
+  @spec changeset(%Glific.Partners.BSP{}, map()) :: Ecto.Changeset.t()
   def changeset(bsp, attrs) do
     bsp
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint(:name)
   end
 end

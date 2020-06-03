@@ -6,13 +6,36 @@ defmodule Glific.PartnersTest do
   describe "bsps" do
     alias Glific.Partners.BSP
 
-    @valid_attrs %{api_end_point: "some api_end_point", name: "some name", url: "some url"}
-    @update_attrs %{
-      api_end_point: "some updated api_end_point",
-      name: "some updated name",
-      url: "some updated url"
+    @valid_attrs %{
+      name: "some name",
+      url: "some url",
+      api_end_point: "some api_end_point"
     }
-    @invalid_attrs %{api_end_point: nil, name: nil, url: nil}
+    @valid_attrs_1 %{
+      name: "some name 1",
+      url: "some url 1",
+      api_end_point: "some api_end_point 1"
+    }
+    @valid_attrs_2 %{
+      name: "some name 2",
+      url: "some url 2",
+      api_end_point: "some api_end_point 2"
+    }
+    @valid_attrs_3 %{
+      name: "some name 3",
+      url: "some url 3",
+      api_end_point: "some api_end_point 3"
+    }
+    @update_attrs %{
+      name: "some updated name",
+      url: "some updated url",
+      api_end_point: "some updated api_end_point"
+    }
+    @invalid_attrs %{
+      name: nil,
+      url: nil,
+      api_end_point: nil
+    }
 
     def bsp_fixture(attrs \\ %{}) do
       {:ok, bsp} =
@@ -67,6 +90,20 @@ defmodule Glific.PartnersTest do
     test "change_bsp/1 returns a bsp changeset" do
       bsp = bsp_fixture()
       assert %Ecto.Changeset{} = Partners.change_bsp(bsp)
+    end
+
+    test "list_bsps/1 with multiple bsps" do
+      _c0 = bsp_fixture(@valid_attrs)
+      _c1 = bsp_fixture(@valid_attrs_1)
+      _c2 = bsp_fixture(@valid_attrs_2)
+      _c3 = bsp_fixture(@valid_attrs_3)
+
+      assert length(Partners.list_bsps()) == 4
+    end
+
+    test "ensure that creating bsps with same name give an error" do
+      bsp_fixture(@valid_attrs)
+      assert {:error, %Ecto.Changeset{}} = Partners.create_bsp(@valid_attrs)
     end
   end
 end
