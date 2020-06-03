@@ -1,4 +1,5 @@
 defmodule Glific.Messages.Message do
+  @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -12,13 +13,12 @@ defmodule Glific.Messages.Message do
           wa_status: String.t() | nil,
           sender_id: non_neg_integer | nil,
           recipient_id: non_neg_integer | nil,
-          body: String.t()| nil,
+          body: String.t() | nil,
           wa_message_id: String.t() | nil,
           media_id: non_neg_integer | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
-
 
   @required_fields [
     :type,
@@ -32,7 +32,6 @@ defmodule Glific.Messages.Message do
     :wa_message_id,
     :media_id
   ]
-
 
   schema "messages" do
     field :body, :string

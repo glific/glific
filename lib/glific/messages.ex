@@ -17,7 +17,7 @@ defmodule Glific.Messages do
       [%Message{}, ...]
 
   """
-  @spec list_contacts(map()) :: [Message.t()]
+  @spec list_messages(map()) :: [Message.t()]
   def list_messages(_args \\ %{}) do
     Repo.all(Message)
   end
@@ -89,7 +89,7 @@ defmodule Glific.Messages do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_contact(Message.t()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+  @spec delete_message(Message.t()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   def delete_message(%Message{} = message) do
     Repo.delete(message)
   end
