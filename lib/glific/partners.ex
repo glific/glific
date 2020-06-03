@@ -182,7 +182,8 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_organization(Organization.t(), map()) :: {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_organization(Organization.t(), map()) ::
+          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def update_organization(%Organization{} = bsp, attrs) do
     bsp
     |> Organization.changeset(attrs)
@@ -201,7 +202,8 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_organization(Organization.t()) :: {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
+  @spec delete_organization(Organization.t()) ::
+          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def delete_organization(%Organization{} = organization) do
     Repo.delete(organization)
   end
