@@ -5,6 +5,7 @@ defmodule Glific.Messages.MessageMedia do
 
   use Ecto.Schema
   import Ecto.Changeset
+  alias __MODULE__
 
   # define all the required fields for message media
   @required_fields [
@@ -43,6 +44,7 @@ defmodule Glific.Messages.MessageMedia do
   @doc """
   Standard changeset pattern we use for all data types
   """
+  @spec changeset(MessageMedia.t(), map()) :: Ecto.Changeset.t()
   def changeset(message_media, attrs) do
     message_media
     |> cast(attrs, @required_fields ++ @optional_fields)

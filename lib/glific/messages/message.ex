@@ -1,20 +1,22 @@
 defmodule Glific.Messages.Message do
+  @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
+  alias __MODULE__
 
   alias Glific.{MessageStatusEnum, MessageTypesEnum, MessageFlowEnum}
-  alias Glific.{Contacts.Contact}
+  alias Glific.{Contacts.Contact, Messages.MessageMedia}
 
   @type t() :: %__MODULE__{
           id: non_neg_integer | nil,
           type: String.t() | nil,
           flow: String.t() | nil,
           wa_status: String.t() | nil,
-          sender_id: non_neg_integer | nil,
-          recipient_id: non_neg_integer | nil,
+          sender: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          recipient: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
           body: String.t() | nil,
           wa_message_id: String.t() | nil,
-          media_id: non_neg_integer | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -38,11 +40,9 @@ defmodule Glific.Messages.Message do
     field :type, MessageTypesEnum
     field :wa_message_id, :string
     field :wa_status, MessageStatusEnum
-    # field :media_id, :integer
 
     belongs_to :sender, Contact
     belongs_to :recipient, Contact
-    # belongs_to :media_id, :string
     belongs_to :media, MessageMedia
 
     # many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
@@ -50,7 +50,10 @@ defmodule Glific.Messages.Message do
     timestamps()
   end
 
-  @doc false
+  @doc """
+  Standard changeset pattern we use for all data types
+  """
+  @spec changeset(Message.t(), map()) :: Ecto.Changeset.t()
   def changeset(message, attrs) do
     message
     |> cast(attrs, @required_fields ++ @optional_fields)
