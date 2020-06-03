@@ -13,7 +13,8 @@ defmodule Glific.MixProject do
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      test_coverage: [tool: ExCoveralls]
     ]
   end
 
@@ -58,6 +59,7 @@ defmodule Glific.MixProject do
       {:credo, "~> 1.4", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.22", only: [:dev], runtime: false},
       {:inch_ex, "~> 2.0", only: [:dev, :test], runtime: false},
+      {:doctor, "~> 0.13.0"},
       {:httpoison, "~> 1.6"},
       {:poison, "~> 4.0"},
       {:ex_rated, "~> 1.2"},
@@ -65,11 +67,15 @@ defmodule Glific.MixProject do
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
       {:absinthe_relay, "~> 1.5"},
-      {:dataloader, "~> 1.0.0"},
+      {:dataloader, "~> 1.0.7"},
       {:hackney, "~> 1.16"},
       {:tesla, "~> 1.3.0"},
       {:oban, "~> 1.2"},
-      {:faker, "~> 0.13", only: :dev}
+      {:faker, "~> 0.13", only: :dev},
+      {:excoveralls, "~> 0.13", only: :test},
+      {:cors_plug, "~> 2.0"},
+      {:ex_check, ">= 0.0.0", only: :dev, runtime: false},
+      {:sobelow, "~> 0.8", only: :dev}
     ]
   end
 

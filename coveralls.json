@@ -1,0 +1,12 @@
+{
+    "skip_files": [
+        "lib/glific/application.ex",
+        "lib/glific_web/endpoint.ex",
+        "lib/glific_web/views",
+        "lib/glific_web/live",
+        "lib/glific_web/gettext.ex",
+        "lib/glific_web/telemetry.ex",
+        "lib/glific.ex",
+        "test/support"
+    ]
+}
