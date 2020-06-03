@@ -166,7 +166,7 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
       add :thumbnail, :text
 
       # media caption
-      add :caption, :text, null: false
+      add :caption, :text
 
       # whats app message id
       add :wa_media_id, :string
