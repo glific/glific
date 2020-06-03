@@ -71,7 +71,7 @@ defmodule Glific.MixProject do
       {:hackney, "~> 1.16"},
       {:tesla, "~> 1.3.0"},
       {:oban, "~> 1.2"},
-      {:faker, "~> 0.13", only: :dev},
+      {:faker, "~> 0.13", only: [:dev, :test]},
       {:excoveralls, "~> 0.13", only: :test},
       {:cors_plug, "~> 2.0"},
       {:ex_check, ">= 0.0.0", only: :dev, runtime: false},

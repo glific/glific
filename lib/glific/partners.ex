@@ -6,7 +6,6 @@ defmodule Glific.Partners do
 
   import Ecto.Query, warn: false
   alias Glific.Repo
-
   alias Glific.Partners.BSP
 
   alias Glific.Partners.Organization
@@ -20,7 +19,8 @@ defmodule Glific.Partners do
       [%BSP{}, ...]
 
   """
-  def list_bsps do
+  @spec list_bsps(map()) :: [%BSP{}, ...]
+  def list_bsps(_args \\ %{}) do
     Repo.all(BSP)
   end
 
@@ -38,6 +38,7 @@ defmodule Glific.Partners do
       ** (Ecto.NoResultsError)
 
   """
+  @spec get_bsp!(id :: integer) :: %BSP{}
   def get_bsp!(id), do: Repo.get!(BSP, id)
 
   @doc """
@@ -52,6 +53,7 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec create_bsp(map()) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
   def create_bsp(attrs \\ %{}) do
     %BSP{}
     |> BSP.changeset(attrs)
@@ -70,6 +72,7 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec update_bsp(%BSP{}, map()) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
   def update_bsp(%BSP{} = bsp, attrs) do
     bsp
     |> BSP.changeset(attrs)
@@ -88,6 +91,7 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec delete_bsp(%BSP{}) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
   def delete_bsp(%BSP{} = bsp) do
     Repo.delete(bsp)
   end
@@ -97,11 +101,11 @@ defmodule Glific.Partners do
 
   ## Examples
 
-      iex> Glific.Partners.change_bsp(bsp)
-      %Ecto.Changeset{data: %Glific.Partners.BSP{}}
+      iex> change_bsp(bsp)
+      %Ecto.Changeset{data: %BSP{}}
 
   """
-
+  @spec change_bsp(%BSP{}, map()) :: Ecto.Changeset.t()
   def change_bsp(%BSP{} = bsp, attrs \\ %{}) do
     BSP.changeset(bsp, attrs)
   end
@@ -135,16 +139,16 @@ defmodule Glific.Partners do
         from q in query, where: ilike(q.name, ^"%#{name}%")
 
       {:contact_name, contact_name}, query ->
-        from q in query, where: ilike(q.phone, ^"%#{contact_name}%")
+        from q in query, where: ilike(q.contact_name, ^"%#{contact_name}%")
 
       {:email, email}, query ->
-        from q in query, where: ilike(q.wa_id, ^"%#{email}%")
+        from q in query, where: ilike(q.email, ^"%#{email}%")
 
       {:bsp_key, bsp_key}, query ->
-        from q in query, where: ilike(q.wa_id, ^"%#{bsp_key}%")
+        from q in query, where: ilike(q.bsp_key, ^"%#{bsp_key}%")
 
       {:wa_number, wa_number}, query ->
-        from q in query, where: ilike(q.wa_id, ^"%#{wa_number}%")
+        from q in query, where: ilike(q.wa_number, ^"%#{wa_number}%")
     end)
   end
 
