@@ -43,12 +43,6 @@ defmodule Glific.MessagesTest do
 
     @invalid_attrs %{body: nil, flow: nil, type: nil, wa_message_id: nil}
 
-    # def setup do
-    #   {:ok, sender} = Contacts.create_contact(%{ name: "some sender",optin_time: ~U[2010-04-17 14:00:00Z],optout_time: ~U[2010-04-17 14:00:00Z],phone: "some sender phone",status: :valid,wa_id: "some sender wa_id",wa_status: :invalid})
-    #   {:ok, recipient} = Contacts.create_contact(%{ name: "some recipient",optin_time: ~U[2010-04-17 14:00:00Z],optout_time: ~U[2010-04-17 14:00:00Z],phone: "some recipient phone",status: :valid,wa_id: "some recepient wa_id",wa_status: :invalid})
-    #   Map.merge(@valid_attrs, %{sender_id: sender.id, recipient_id: recipient.id, })
-    # end
-
     defp forign_key_constraint() do
       {:ok, sender} = Contacts.create_contact(@sender_attrs)
       {:ok, recipient} = Contacts.create_contact(@recipient_attrs)
