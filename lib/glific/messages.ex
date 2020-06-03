@@ -17,7 +17,8 @@ defmodule Glific.Messages do
       [%Message{}, ...]
 
   """
-  def list_messages do
+  @spec list_contacts(map()) :: [Message.t()]
+  def list_messages(_args \\ %{}) do
     Repo.all(Message)
   end
 
@@ -35,6 +36,7 @@ defmodule Glific.Messages do
       ** (Ecto.NoResultsError)
 
   """
+  @spec get_message!(integer) :: Message.t()
   def get_message!(id), do: Repo.get!(Message, id)
 
   @doc """
@@ -49,6 +51,7 @@ defmodule Glific.Messages do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec create_message(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   def create_message(attrs \\ %{}) do
     %Message{}
     |> Message.changeset(attrs)
@@ -67,6 +70,7 @@ defmodule Glific.Messages do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec update_message(Message.t(), map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   def update_message(%Message{} = message, attrs) do
     message
     |> Message.changeset(attrs)
@@ -85,6 +89,7 @@ defmodule Glific.Messages do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec delete_contact(Message.t()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   def delete_message(%Message{} = message) do
     Repo.delete(message)
   end
@@ -98,6 +103,7 @@ defmodule Glific.Messages do
       %Ecto.Changeset{data: %Message{}}
 
   """
+  @spec change_message(Message.t(), map()) :: Ecto.Changeset.t()
   def change_message(%Message{} = message, attrs \\ %{}) do
     Message.changeset(message, attrs)
   end
