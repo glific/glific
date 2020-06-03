@@ -3,7 +3,6 @@ defmodule Glific.PartnersTest do
 
   alias Glific.Partners
 
-
   describe "partners" do
     alias Glific.Partners.BSP
 
@@ -133,6 +132,7 @@ defmodule Glific.PartnersTest do
 
     def organization_fixture(attrs \\ %{}) do
       bsp = bsp_fixture(%{name: Faker.Name.name()})
+
       {:ok, organization} =
         attrs
         |> Enum.into(@valid_org_attrs)
@@ -161,6 +161,10 @@ defmodule Glific.PartnersTest do
       assert organization.name == @valid_org_attrs.name
       assert organization.email == @valid_org_attrs.email
       assert organization.wa_number == @valid_org_attrs.wa_number
+    end
+
+    test "create_organization/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Partners.create_organization(@invalid_org_attrs)
     end
 
     test "update_organization/2 with valid data updates the organization" do
@@ -193,12 +197,30 @@ defmodule Glific.PartnersTest do
       assert %Ecto.Changeset{} = Partners.change_organization(organization)
     end
 
+    test "list_contacts/1 with multiple contacts" do
+      _org0 = organization_fixture(@valid_org_attrs)
+      _org1 = organization_fixture(@valid_org_attrs_1)
+
+      assert length(Partners.list_organizations()) == 2
+    end
+
     test "list_organization/1 with multiple organization filteres" do
       _org0 = organization_fixture(@valid_org_attrs)
       org1 = organization_fixture(@valid_org_attrs_1)
 
-
       org_list = Partners.list_organizations(%{filter: %{name: org1.name}})
+      assert org_list == [org1]
+
+      org_list = Partners.list_organizations(%{filter: %{contact_name: org1.contact_name}})
+      assert org_list == [org1]
+
+      org_list = Partners.list_organizations(%{filter: %{email: org1.email}})
+      assert org_list == [org1]
+
+      org_list = Partners.list_organizations(%{filter: %{bsp_key: org1.bsp_key}})
+      assert org_list == [org1]
+
+      org_list = Partners.list_organizations(%{filter: %{wa_number: org1.wa_number}})
       assert org_list == [org1]
 
       org_list = Partners.list_organizations(%{order: :asc, filter: %{name: "ABC"}})

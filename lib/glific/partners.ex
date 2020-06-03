@@ -139,16 +139,16 @@ defmodule Glific.Partners do
         from q in query, where: ilike(q.name, ^"%#{name}%")
 
       {:contact_name, contact_name}, query ->
-        from q in query, where: ilike(q.phone, ^"%#{contact_name}%")
+        from q in query, where: ilike(q.contact_name, ^"%#{contact_name}%")
 
       {:email, email}, query ->
-        from q in query, where: ilike(q.wa_id, ^"%#{email}%")
+        from q in query, where: ilike(q.email, ^"%#{email}%")
 
       {:bsp_key, bsp_key}, query ->
-        from q in query, where: ilike(q.wa_id, ^"%#{bsp_key}%")
+        from q in query, where: ilike(q.bsp_key, ^"%#{bsp_key}%")
 
       {:wa_number, wa_number}, query ->
-        from q in query, where: ilike(q.wa_id, ^"%#{wa_number}%")
+        from q in query, where: ilike(q.wa_number, ^"%#{wa_number}%")
     end)
   end
 
