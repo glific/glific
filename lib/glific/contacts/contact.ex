@@ -14,20 +14,17 @@ defmodule Glific.Contacts.Contact do
   @optional_fields [:wa_status, :wa_id, :status, :optin_time, :optout_time]
 
   @type t() :: %__MODULE__{
-    id: non_neg_integer | nil,
-    name: String.t() | nil,
-    phone: String.t() | nil,
-    wa_id: String.t() | nil,
-
-    status: ContactStatusEnum | nil,
-    wa_status: ContactStatusEnum | nil,
-
-    optin_time: :utc_datetime | nil,
-    optout_time: :utc_datetime | nil,
-
-    inserted_at: :utc_datetime | nil,
-    updated_at: :utc_datetime | nil,
-  }
+          id: non_neg_integer | nil,
+          name: String.t() | nil,
+          phone: String.t() | nil,
+          wa_id: String.t() | nil,
+          status: ContactStatusEnum | nil,
+          wa_status: ContactStatusEnum | nil,
+          optin_time: :utc_datetime | nil,
+          optout_time: :utc_datetime | nil,
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
+        }
 
   schema "contacts" do
     field :name, :string
@@ -55,5 +52,4 @@ defmodule Glific.Contacts.Contact do
     |> validate_required(@required_fields)
     |> unique_constraint([:phone, :wa_id])
   end
-
 end

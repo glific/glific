@@ -144,5 +144,4 @@ defmodule Glific.Contacts do
       conflict_target: :phone
     )
   end
-
 end

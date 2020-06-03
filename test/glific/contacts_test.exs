@@ -96,7 +96,5 @@ defmodule Glific.ContactsTest do
       contact = contact_fixture()
       assert %Ecto.Changeset{} = Contacts.change_contact(contact)
     end
-
   end
-
 end
