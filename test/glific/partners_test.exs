@@ -206,10 +206,10 @@ defmodule Glific.PartnersTest do
     end
 
     test "ensure that creating organization  with same whats app number give an error" do
-      organization_fixture(@valid_org_attrs)
+      organization = organization_fixture(@valid_org_attrs)
 
       assert {:error, %Ecto.Changeset{}} =
-               Map.merge(@valid_org_attrs, %{bsp_id: bsp_fixture().id})
+               Map.merge(@valid_org_attrs, %{bsp_id: organization.bsp_id})
                |> Partners.create_organization()
     end
   end
