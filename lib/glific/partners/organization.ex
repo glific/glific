@@ -3,6 +3,8 @@ defmodule Glific.Partners.Organization do
   Organizations are the group of users who will access the system
   """
 
+  alias __MODULE__
+
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -37,7 +39,10 @@ defmodule Glific.Partners.Organization do
     timestamps()
   end
 
-  @doc false
+  @doc """
+  Standard changeset pattern we use for all datat types
+  """
+  @spec changeset(Organization.t(), map()) :: Ecto.Changeset.t()
   def changeset(organization, attrs) do
     organization
     |> cast(attrs, @required_fields ++ @optional_fields)

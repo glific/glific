@@ -92,6 +92,16 @@ defmodule Glific.Partners do
     Repo.delete(bsp)
   end
 
+  @doc ~S"""
+  Returns an `%Ecto.Changeset{}` for tracking bsp changes.
+
+  ## Examples
+
+      iex> Glific.Partners.change_bsp(bsp)
+      %Ecto.Changeset{data: %Glific.Partners.BSP{}}
+
+  """
+
   def change_bsp(%BSP{} = bsp, attrs \\ %{}) do
     BSP.changeset(bsp, attrs)
   end
