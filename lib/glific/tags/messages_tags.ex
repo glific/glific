@@ -21,6 +21,9 @@ defmodule Glific.Tags.MessageTag do
     belongs_to :tag, Tag
   end
 
+  @doc """
+  Standard changeset pattern we use for all datat types
+  """
   @spec changeset(MessageTag.t(), map()) :: Ecto.Changeset.t()
   def changeset(message, attrs) do
     message
