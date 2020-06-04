@@ -1,6 +1,6 @@
 defmodule GlificWeb.Schema.EnumTypes do
   @moduledoc """
-  Lets represent our enums in the style Absinthe expects them. We can now use these
+  Representing our enums in the style Absinthe expects them. We can now use these
   atoms in the object definitions within the GraphQL Schema
   """
 
