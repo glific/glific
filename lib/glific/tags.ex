@@ -187,7 +187,6 @@ defmodule Glific.Tags do
   @spec get_message_tag!(integer) :: MessageTag.t()
   def get_message_tag!(id) do
     Repo.get!(MessageTag, id)
-    |> Repo.preload([:recipient, :sender, :media])
   end
 
   @doc """
@@ -252,12 +251,12 @@ defmodule Glific.Tags do
 
   ## Examples
 
-      iex> change_message(message_tag)
+      iex> change_message_tag(message_tag)
       %Ecto.Changeset{data: %MessageTag{}}
 
   """
-  @spec change_message(MessageTag.t(), map()) :: Ecto.Changeset.t()
-  def change_message(%MessageTag{} = message_tag, attrs \\ %{}) do
+  @spec change_message_tag(MessageTag.t(), map()) :: Ecto.Changeset.t()
+  def change_message_tag(%MessageTag{} = message_tag, attrs \\ %{}) do
     MessageTag.changeset(message_tag, attrs)
   end
 end
