@@ -3,13 +3,10 @@ defmodule Glific.Tags do
   The Tags Context, which encapsulates and manages tags and the related join tables.
   """
 
-  import Ecto.Query, warn: false
   alias Glific.Repo
+  alias Glific.Tags.{MessageTag, Tag}
 
-  alias Glific.Tags.{
-    Tag,
-    MessageTag
-  }
+  import Ecto.Query, warn: false
 
   @doc """
   Returns the list of tags.
@@ -159,10 +156,6 @@ defmodule Glific.Tags do
   @spec no_warnings :: nil
   def no_warnings, do: nil
 
-
-
-
-
   @doc """
   Returns the list of messages tags.
 
@@ -174,7 +167,7 @@ defmodule Glific.Tags do
   """
   @spec list_messages_tags(map()) :: [MessageTag.t()]
   def list_messages_tags(_args \\ %{}) do
-      Repo.all(MessageTag)
+    Repo.all(MessageTag)
   end
 
   @doc """
@@ -229,7 +222,8 @@ defmodule Glific.Tags do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_message_tag(MessageTag.t(), map()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_message_tag(MessageTag.t(), map()) ::
+          {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def update_message_tag(%MessageTag{} = message_tag, attrs) do
     message_tag
     |> MessageTag.changeset(attrs)
@@ -266,6 +260,4 @@ defmodule Glific.Tags do
   def change_message(%MessageTag{} = message_tag, attrs \\ %{}) do
     MessageTag.changeset(message_tag, attrs)
   end
-
-
 end

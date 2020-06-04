@@ -3,19 +3,17 @@ defmodule Glific.Tags.MessageTag do
   A pipe for managing the message tags
   """
 
+  alias __MODULE__
+  alias Glific.{Messages.Message, Tags.Tag}
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.{Tags.Tag, Messages.Message}
-
-  alias __MODULE__
-
-  @required_fields [ :message_id, :tag_id]
+  @required_fields [:message_id, :tag_id]
 
   @type t() :: %__MODULE__{
           id: non_neg_integer | nil,
           message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
-          tag: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
+          tag: Tag.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "messages_tags" do
