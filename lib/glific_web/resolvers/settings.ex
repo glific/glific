@@ -6,12 +6,18 @@ defmodule GlificWeb.Resolvers.Settings do
 
   alias Glific.{Repo, Settings, Settings.Language}
 
+  @doc """
+  Get the list of languages filtered by args
+  """
   @spec languages(Absinthe.Resolution.t(), %{atom => any}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def languages(_, args, _) do
     {:ok, Settings.list_languages(args)}
   end
 
+  @doc """
+  Get the list of objects in the database that match the term
+  """
   @spec search(Absinthe.Resolution.t(), %{matching: String.t()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def search(_, %{matching: _term}, _) do
@@ -19,6 +25,9 @@ defmodule GlificWeb.Resolvers.Settings do
     {:ok, %{}}
   end
 
+  @doc """
+  Create a new language. Since language is a basic system data type, this operation is an upsert
+  """
   @spec create_language(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_language(_, %{input: params}, _) do
@@ -27,6 +36,9 @@ defmodule GlificWeb.Resolvers.Settings do
     end
   end
 
+  @doc """
+  Update language data fields
+  """
   @spec update_language(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_language(_, %{id: id, input: params}, _) do
