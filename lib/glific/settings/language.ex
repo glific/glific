@@ -44,5 +44,6 @@ defmodule Glific.Settings.Language do
     |> validate_required(@required_fields)
     |> unique_constraint(:label)
     |> unique_constraint(:locale)
+    |> foreign_key_constraint(:tags)
   end
 end

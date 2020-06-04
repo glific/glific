@@ -14,8 +14,15 @@ defmodule GlificWeb.Schema.Middleware.ChangesetErrors do
   """
   @spec call(Absinthe.Resolution.t(), term()) :: Absinthe.Resolution.t()
   def call(res, _) do
-    with %{errors: [%Ecto.Changeset{} = changeset]} <- res do
-      %{res | value: %{errors: transform_errors(changeset)}, errors: []}
+    l = Map.get(res, :errors)
+
+    if length(l) == 2 do
+      [h | t] = l
+      %{res | value: %{errors: [%{key: h, message: t}]}, errors: []}
+    else
+      with %{errors: [%Ecto.Changeset{} = changeset]} <- res do
+        %{res | value: %{errors: transform_errors(changeset)}, errors: []}
+      end
     end
   end
 

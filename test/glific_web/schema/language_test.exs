@@ -1,54 +1,110 @@
 defmodule GlificWeb.Schema.Query.LanguageTest do
   use GlificWeb.ConnCase, async: true
+  use Wormwood.GQLCase
 
   setup do
-    Glific.Seeds.seed()
+    Glific.Seeds.seed_language()
     :ok
   end
 
-  @query_1 """
-  {
-    languages {
-      label
-    }
-  }
-  """
+  load_gql(:languages, GlificWeb.Schema, "assets/gql/languages/languages.gql")
+  load_gql(:language, GlificWeb.Schema, "assets/gql/languages/language_by_id.gql")
+  load_gql(:create, GlificWeb.Schema, "assets/gql/languages/create.gql")
+  load_gql(:update, GlificWeb.Schema, "assets/gql/languages/update.gql")
+  load_gql(:delete, GlificWeb.Schema, "assets/gql/languages/delete.gql")
 
-  @query_2 """
-  {
-    language(id: $id) {
-      label
-    }
-  }
-  """
-  @vars_2 """
-  {
-    "id": "2"
-  }
-  """
-
-  defp make_api_call(query, vars \\ "") do
-    conn = build_conn()
-    conn = get conn, "/api", query: query, variables: vars
-
-    json_response(conn, 200)
-  end
-
-  @tag :pending
   test "languages field returns list of languages" do
-    assert make_api_call(@query_1) == %{
-             "data" => %{
+    result = query_gql_by(:languages)
+    assert {:ok, query_data} = result
+
+    assert query_data == %{
+             :data => %{
                "languages" => [
                  %{"label" => "English (United States)"},
                  %{"label" => "Hindi (India)"}
                ]
              }
            }
+  end
 
-    assert make_api_call(@query_2, @vars_2) == %{
-             "data" => %{
-               "language" => %{"label" => "Hindi (India)"}
-             }
-           }
+  test "language id returns one language or nil" do
+    label = "English (United States)"
+    {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
+
+    result = query_gql_by(:language, variables: %{"id" => lang.id})
+    assert {:ok, query_data} = result
+
+    language = get_in(query_data, [:data, "language", "language", "label"])
+    assert language == label
+
+    result = query_gql_by(:language, variables: %{"id" => 123_456})
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "language", "errors", Access.at(0), "message"])
+    assert message == "Resource not found"
+  end
+
+  test "create a language and test possible scenarios and errors" do
+    result =
+      query_gql_by(:create, variables: %{"input" => %{"label" => "Klingon", "locale" => "kl_KL"}})
+
+    assert {:ok, query_data} = result
+
+    language = get_in(query_data, [:data, "createLanguage", "language", "label"])
+    assert language == "Klingon"
+
+    _ =
+      query_gql_by(:create, variables: %{"input" => %{"label" => "Klingon", "locale" => "kl_KL"}})
+
+    result =
+      query_gql_by(:create, variables: %{"input" => %{"label" => "Klingon", "locale" => "kl_KL"}})
+
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "createLanguage", "errors", Access.at(0), "message"])
+    assert message == "has already been taken"
+  end
+
+  test "update a language and test possible scenarios and errors" do
+    label = "English (United States)"
+    {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
+
+    result =
+      query_gql_by(:update,
+        variables: %{"id" => lang.id, "input" => %{"label" => "Klingon", "locale" => "kl_KL"}}
+      )
+
+    assert {:ok, query_data} = result
+
+    language = get_in(query_data, [:data, "updateLanguage", "language", "label"])
+    assert language == "Klingon"
+
+    result =
+      query_gql_by(:update,
+        variables: %{
+          "id" => lang.id,
+          "input" => %{"label" => "Hindi (India)", "locale" => "hl_IN"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "updateLanguage", "errors", Access.at(0), "message"])
+    assert message == "has already been taken"
+  end
+
+  test "delete a language" do
+    label = "English (United States)"
+    {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
+
+    result = query_gql_by(:delete, variables: %{"id" => lang.id})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "deleteLanguage", "errors"]) == nil
+
+    result = query_gql_by(:delete, variables: %{"id" => 123_456_789})
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "deleteLanguage", "errors", Access.at(0), "message"])
+    assert message == "Resource not found"
   end
 end
