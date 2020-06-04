@@ -1,11 +1,9 @@
 defmodule Glific.TagsTest do
   use Glific.DataCase
 
-  alias Glific.{Tags, Settings}
+  alias Glific.{Settings, Tags, Tags.Tag}
 
   describe "tags" do
-    alias Glific.Tags.Tag
-
     # language id needs to be added dynamically for all the below actions
     @valid_attrs %{
       label: "some label",

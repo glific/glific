@@ -4,8 +4,8 @@ defmodule Glific.Messages.Message do
   import Ecto.Changeset
   alias __MODULE__
 
-  alias Glific.{MessageStatusEnum, MessageTypesEnum, MessageFlowEnum}
   alias Glific.{Contacts.Contact, Messages.MessageMedia}
+  alias Glific.{MessageFlowEnum, MessageStatusEnum, MessageTypesEnum}
 
   @type t() :: %__MODULE__{
           id: non_neg_integer | nil,

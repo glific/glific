@@ -9,9 +9,10 @@
     # {:sobelow, false},
     # {:compiler, false}
     {:npm_test, false},
+    {:formatter, false},
 
     ## ...or adjusted (e.g. use one-line formatter for more compact credo output)
-    {:credo, "mix credo --format oneline"},
+    {:credo, "mix credo --format oneline --strict"},
 
     ## ...or reordered (e.g. to see output from ex_unit before others)
     ## {:ex_unit, order: -1},
@@ -22,9 +23,8 @@
     # {:my_arbitrary_script, command: ["my_script", "argument with spaces"], cd: "scripts"}
 
     {:mix_format, "mix format"},
-    {:formatter, "mix format --check-formatted",
-     [{:detect, [{:file, ".formatter.exs"}]}, {:run_after, [:mix_format]}]},
     {:mix_doctor, "mix doctor"},
+    {:dialyzer, "mix dialyzer --quiet", detect: [{:package, :dialyxir}]},
     {:mix_coveralls, "mix coveralls", [{:run_after, [:ex_unit]}, {:env, %{"MIX_ENV" => "test"}}]}
   ]
 ]

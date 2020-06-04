@@ -10,17 +10,6 @@
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
 
-alias Glific.{
-  Repo,
-  Settings.Language
-}
+alias Glific.Seeds
 
-Repo.insert!(%Language{
-  label: "English (United States)",
-  locale: "en_US"
-})
-
-Repo.insert!(%Language{
-  label: "Hindi (India)",
-  locale: "hi_IN"
-})
+Seeds.seed()

@@ -5,10 +5,10 @@ defmodule Glific.Partners do
   """
 
   import Ecto.Query, warn: false
-  alias Glific.Repo
-  alias Glific.Partners.BSP
 
+  alias Glific.Partners.BSP
   alias Glific.Partners.Organization
+  alias Glific.Repo
 
   @doc """
   Returns the list of bsps.
