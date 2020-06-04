@@ -6,7 +6,7 @@ defmodule GlificWeb.Schema.TagTypes do
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
-  alias Glific.{Settings.Language, Tags.Tag}
+  alias Glific.{Repo, Settings.Language, Tags.Tag}
   alias GlificWeb.Resolvers
 
   interface :search_result do
@@ -39,7 +39,7 @@ defmodule GlificWeb.Schema.TagTypes do
     field :is_reserved, :boolean
 
     field :language, :language do
-      resolve(dataloader(Tag))
+      resolve(dataloader(Repo))
     end
   end
 

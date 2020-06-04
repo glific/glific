@@ -28,10 +28,10 @@ defmodule GlificWeb.Router do
   scope "/" do
     pipe_through :api
 
-    forward "/api", Absinthe.Plug, schema: Absinthe.Schema
+    forward "/api", Absinthe.Plug, schema: GlificWeb.Schema
 
     forward "/graphiql", Absinthe.Plug.GraphiQL,
-      schema: Glific.Schema,
+      schema: GlificWeb.Schema,
       interface: :simple
   end
 
