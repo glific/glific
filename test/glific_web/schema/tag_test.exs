@@ -30,7 +30,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
 
   test "tag id returns one tag or nil" do
     label = "This is for testing"
-    {:ok, tag}= Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
+    {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
 
     result = query_gql_by(:by_id, variables: %{"id" => tag.id})
     assert {:ok, query_data} = result
@@ -47,20 +47,29 @@ defmodule GlificWeb.Schema.Query.TagTest do
 
   test "create a tag and test possible scenarios and errors" do
     label = "This is for testing"
-    {:ok, tag}= Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
+    {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
     language_id = tag.language_id
 
     result =
-      query_gql_by(:create, variables: %{"input" => %{"label" => "Test Tag", "languageId" => language_id}})
+      query_gql_by(:create,
+        variables: %{"input" => %{"label" => "Test Tag", "languageId" => language_id}}
+      )
 
     assert {:ok, query_data} = result
     label = get_in(query_data, [:data, "createTag", "tag", "label"])
     assert label == "Test Tag"
 
-
     # try creating the same tag twice
-    _ = query_gql_by(:create, variables: %{"input" => %{"label" => "Klingon", "languageId" => language_id}})
-    result = query_gql_by(:create, variables: %{"input" => %{"label" => "Klingon", "languageId" => language_id}})
+    _ =
+      query_gql_by(:create,
+        variables: %{"input" => %{"label" => "Klingon", "languageId" => language_id}}
+      )
+
+    result =
+      query_gql_by(:create,
+        variables: %{"input" => %{"label" => "Klingon", "languageId" => language_id}}
+      )
+
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createTag", "errors", Access.at(0), "message"])
@@ -69,10 +78,13 @@ defmodule GlificWeb.Schema.Query.TagTest do
 
   test "update a tag and test possible scenarios and errors" do
     label = "This is for testing"
-    {:ok, tag}= Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
+    {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
 
     result =
-      query_gql_by(:update, variables: %{"id" => tag.id, "input" => %{"label" => "New Test Tag Label"}})
+      query_gql_by(:update,
+        variables: %{"id" => tag.id, "input" => %{"label" => "New Test Tag Label"}}
+      )
+
     assert {:ok, query_data} = result
 
     label = get_in(query_data, [:data, "updateTag", "tag", "label"])
@@ -94,7 +106,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
 
   test "delete a tag" do
     label = "This is for testing"
-    {:ok, tag}= Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
+    {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
 
     result = query_gql_by(:delete, variables: %{"id" => tag.id})
     assert {:ok, query_data} = result

@@ -51,8 +51,8 @@ defmodule Glific.Settings.Language do
   """
   @spec delete_changeset(Language.t()) :: Ecto.Changeset.t()
   def delete_changeset(language) do
-  language
-  |> cast(%{}, @required_fields ++ @optional_fields)
-  |> foreign_key_constraint(:tags_language_id_fk)
-end
+    language
+    |> cast(%{}, @required_fields ++ @optional_fields)
+    |> foreign_key_constraint(:tags_language_id_fk)
+  end
 end
