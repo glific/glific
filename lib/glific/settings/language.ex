@@ -29,7 +29,7 @@ defmodule Glific.Settings.Language do
     field :is_active, :boolean, default: false
 
     # Comment for now, enable when we add tags to glific
-    # has_many :tags, Glific.Attributes.Tag
+    has_many :tags, Glific.Tags.Tag
 
     timestamps()
   end
@@ -45,5 +45,15 @@ defmodule Glific.Settings.Language do
     |> unique_constraint(:label)
     |> unique_constraint(:locale)
     |> foreign_key_constraint(:tags)
+  end
+
+  @doc """
+  Delete changeset pattern we use for all data types
+  """
+  @spec delete_changeset(Language.t()) :: Ecto.Changeset.t()
+  def delete_changeset(language) do
+    language
+    |> cast(%{}, @required_fields ++ @optional_fields)
+    |> foreign_key_constraint(:tags_language_id_fk)
   end
 end

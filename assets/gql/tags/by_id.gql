@@ -1,0 +1,11 @@
+query tag($id: ID!) {
+  tag(id: $id) {
+    tag {
+      label
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
