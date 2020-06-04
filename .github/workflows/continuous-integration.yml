@@ -23,7 +23,7 @@ jobs:
 
     strategy:
       matrix:  # build matrix for the job
-        elixir: [1.10.2]
+        elixir: [1.10.3]
         otp: [22.2.8] 
 
     steps:
