@@ -32,6 +32,13 @@ defmodule GlificWeb.Schema.LanguageTypes do
   end
 
   object :language_queries do
+    @desc "get the details of one language"
+    field :language, :language_result do
+      arg(:id, non_null(:id))
+      resolve(&Resolvers.Settings.language/3)
+    end
+
+    @desc "Get a list of all languages filtered by various criteria"
     field :languages, list_of(:language) do
       resolve(&Resolvers.Settings.languages/3)
     end
@@ -41,6 +48,17 @@ defmodule GlificWeb.Schema.LanguageTypes do
     field :create_language, :language_result do
       arg(:input, non_null(:language_input))
       resolve(&Resolvers.Settings.create_language/3)
+    end
+
+    field :update_language, :language_result do
+      arg(:id, non_null(:id))
+      arg(:input, :language_input)
+      resolve(&Resolvers.Settings.update_language/3)
+    end
+
+    field :delete_language, :language_result do
+      arg(:id, non_null(:id))
+      resolve(&Resolvers.Settings.delete_language/3)
     end
   end
 end

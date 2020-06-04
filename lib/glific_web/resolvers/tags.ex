@@ -21,9 +21,7 @@ defmodule GlificWeb.Resolvers.Tags do
   """
   @spec tags(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-          def tags(_, args, _) do
-            IO.inspect(args)
-            IO.inspect(Tags.list_tags(args))
+  def tags(_, args, _) do
     {:ok, Tags.list_tags(args)}
   end
 

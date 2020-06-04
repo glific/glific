@@ -7,6 +7,16 @@ defmodule GlificWeb.Resolvers.Settings do
   alias Glific.{Repo, Settings, Settings.Language}
 
   @doc """
+  Get a specific language by id
+  """
+  @spec language(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def language(_, %{id: id}, _) do
+    with {:ok, language} <- Repo.fetch(Language, id),
+         do: {:ok, %{language: language}}
+  end
+
+  @doc """
   Get the list of languages filtered by args
   """
   @spec languages(Absinthe.Resolution.t(), %{atom => any}, %{context: map()}) ::
@@ -45,6 +55,16 @@ defmodule GlificWeb.Resolvers.Settings do
     with {:ok, language} <- Repo.fetch(Language, id),
          {:ok, language} <- Settings.update_language(language, params) do
       {:ok, %{language: language}}
+    end
+  end
+
+  @doc false
+  @spec delete_language(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def delete_language(_, %{id: id}, _) do
+    with {:ok, language} <- Repo.fetch(Language, id),
+         {:ok, language} <- Settings.delete_language(language) do
+      {:ok, language}
     end
   end
 end
