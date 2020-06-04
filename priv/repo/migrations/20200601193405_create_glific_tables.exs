@@ -157,10 +157,10 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
   def message_media do
     create table(:message_media) do
       # url to be sent to BSP
-      add :url, :text
+      add :url, :text, null: false
 
       # source url
-      add :source_url, :text
+      add :source_url, :text, null: false
 
       # thumbnail url
       add :thumbnail, :text
