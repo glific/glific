@@ -1,0 +1,11 @@
+mutation deleteLanguage($id: ID!) {
+  deleteLanguage(id: $id) {
+    language {
+      id
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

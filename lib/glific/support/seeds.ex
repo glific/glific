@@ -12,11 +12,11 @@ defmodule Glific.Seeds do
   }
 
   @doc """
-  Function to populate some basic data that we need for the system to operate. We will
-  split this function up into multiple different ones for test, dev and production
+  Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
+  In the next phase we will also add unseeder functions as we learn more of the test capabilities
   """
-  @spec seed :: nil
-  def seed do
+  @spec seed_language() :: {Language.t(), Language.t()}
+  def seed_language do
     en_us =
       Repo.insert!(%Language{
         label: "English (United States)",
@@ -28,6 +28,17 @@ defmodule Glific.Seeds do
         label: "Hindi (India)",
         locale: "hi_IN"
       })
+
+    {en_us, hi_in}
+  end
+
+  @doc """
+  Function to populate some basic data that we need for the system to operate. We will
+  split this function up into multiple different ones for test, dev and production
+  """
+  @spec seed :: nil
+  def seed do
+    {en_us, hi_in} = seed_language()
 
     message_tags_en = Repo.insert!(%Tag{label: "Messages", language: en_us})
     message_tags_hi = Repo.insert!(%Tag{label: "Messages", language: hi_in})

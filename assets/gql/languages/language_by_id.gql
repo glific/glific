@@ -1,0 +1,11 @@
+query language($id: ID!) {
+  language(id: $id) {
+    language {
+      label
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

@@ -75,7 +75,8 @@ defmodule Glific.MixProject do
       {:excoveralls, "~> 0.13", only: :test},
       {:cors_plug, "~> 2.0"},
       {:ex_check, ">= 0.0.0", only: :dev, runtime: false},
-      {:sobelow, "~> 0.8", only: :dev}
+      {:sobelow, "~> 0.8", only: :dev},
+      {:wormwood, "~> 0.1.0"}
     ]
   end
 
