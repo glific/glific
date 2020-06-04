@@ -32,14 +32,9 @@ defmodule Glific.Seeds do
     {en_us, hi_in}
   end
 
-  @doc """
-  Function to populate some basic data that we need for the system to operate. We will
-  split this function up into multiple different ones for test, dev and production
-  """
-  @spec seed :: nil
-  def seed do
-    {en_us, hi_in} = seed_language()
-
+  @doc false
+  @spec seed_tag({Language.t(), Language.t()}) :: nil
+  def seed_tag({en_us, hi_in}) do
     message_tags_en = Repo.insert!(%Tag{label: "Messages", language: en_us})
     message_tags_hi = Repo.insert!(%Tag{label: "Messages", language: hi_in})
 
@@ -49,6 +44,19 @@ defmodule Glific.Seeds do
     Repo.insert!(%Tag{label: "Welcome", language: hi_in, parent_id: message_tags_hi.id})
     Repo.insert!(%Tag{label: "Greeting", language: hi_in, parent_id: message_tags_hi.id})
     Repo.insert!(%Tag{label: "Thank You", language: hi_in, parent_id: message_tags_hi.id})
+
+    Repo.insert!(%Tag{label: "This is for testing", language: en_us})
+  end
+
+  @doc """
+  Function to populate some basic data that we need for the system to operate. We will
+  split this function up into multiple different ones for test, dev and production
+  """
+  @spec seed :: nil
+  def seed do
+    {en_us, hi_in} = seed_language()
+
+    seed_tag({en_us, hi_in})
 
     Repo.insert!(%Contact{phone: "917834811114", name: "Default Contact"})
 

@@ -90,7 +90,10 @@ defmodule Glific.Settings do
   """
   @spec delete_language(Language.t()) :: {:ok, Language.t()} | {:error, Ecto.Changeset.t()}
   def delete_language(%Language{} = language) do
-    Repo.delete(language)
+    language
+    |> Ecto.Changeset.change
+    |> Ecto.Changeset.no_assoc_constraint(:tags)
+    |> Repo.delete
   end
 
   @doc """

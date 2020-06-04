@@ -3,6 +3,10 @@ mutation createTag($input:TagInput!) {
     tag {
       id
       label
+      language {
+        id
+        label
+      }
     }
     errors {
       key
