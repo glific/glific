@@ -7,14 +7,14 @@ defmodule GlificWeb.Schema.Query.LanguageTest do
     :ok
   end
 
-  load_gql(:languages, GlificWeb.Schema, "assets/gql/languages/languages.gql")
-  load_gql(:language, GlificWeb.Schema, "assets/gql/languages/language_by_id.gql")
+  load_gql(:list, GlificWeb.Schema, "assets/gql/languages/list.gql")
+  load_gql(:by_id, GlificWeb.Schema, "assets/gql/languages/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/languages/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/languages/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/languages/delete.gql")
 
   test "languages field returns list of languages" do
-    result = query_gql_by(:languages)
+    result = query_gql_by(:list)
     assert {:ok, query_data} = result
 
     assert query_data == %{
@@ -31,13 +31,13 @@ defmodule GlificWeb.Schema.Query.LanguageTest do
     label = "English (United States)"
     {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
 
-    result = query_gql_by(:language, variables: %{"id" => lang.id})
+    result = query_gql_by(:by_id, variables: %{"id" => lang.id})
     assert {:ok, query_data} = result
 
     language = get_in(query_data, [:data, "language", "language", "label"])
     assert language == label
 
-    result = query_gql_by(:language, variables: %{"id" => 123_456})
+    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "language", "errors", Access.at(0), "message"])

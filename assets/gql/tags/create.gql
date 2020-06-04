@@ -1,0 +1,12 @@
+mutation createTag($input:TagInput!) {
+  createTag(input: $input) {
+    tag {
+      id
+      label
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
