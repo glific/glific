@@ -1,12 +1,13 @@
 defmodule Glific.MessagesTest do
   use Glific.DataCase
 
-  alias Glific.Messages
+  alias Glific.{
+    Contacts,
+    Messages,
+    Messages.Message
+  }
 
   describe "messages" do
-    alias Glific.Messages.Message
-    alias Glific.Contacts
-
     @sender_attrs %{
       name: "some sender",
       optin_time: ~U[2010-04-17 14:00:00Z],
@@ -43,14 +44,14 @@ defmodule Glific.MessagesTest do
 
     @invalid_attrs %{body: nil, flow: nil, type: nil, wa_message_id: nil}
 
-    defp forign_key_constraint() do
+    defp foreign_key_constraint do
       {:ok, sender} = Contacts.create_contact(@sender_attrs)
       {:ok, recipient} = Contacts.create_contact(@recipient_attrs)
       %{sender_id: sender.id, recipient_id: recipient.id}
     end
 
     def message_fixture(attrs \\ %{}) do
-      valid_attrs = Map.merge(@valid_attrs, forign_key_constraint())
+      valid_attrs = Map.merge(@valid_attrs, foreign_key_constraint())
 
       {:ok, message} =
         valid_attrs
@@ -103,7 +104,7 @@ defmodule Glific.MessagesTest do
     test "create_message/1 with valid data creates a message" do
       assert {:ok, %Message{} = message} =
                @valid_attrs
-               |> Map.merge(forign_key_constraint())
+               |> Map.merge(foreign_key_constraint())
                |> Messages.create_message()
     end
 
