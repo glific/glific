@@ -48,16 +48,9 @@ defmodule Glific.Seeds do
     Repo.insert!(%Tag{label: "This is for testing", language: en_us})
   end
 
-  @doc """
-  Function to populate some basic data that we need for the system to operate. We will
-  split this function up into multiple different ones for test, dev and production
-  """
-  @spec seed :: nil
-  def seed do
-    {en_us, hi_in} = seed_language()
-
-    seed_tag({en_us, hi_in})
-
+  @doc false
+  @spec seed_contacts :: nil
+  def seed_contacts do
     Repo.insert!(%Contact{phone: "917834811114", name: "Default Contact"})
 
     Repo.insert!(%Contact{
@@ -79,13 +72,21 @@ defmodule Glific.Seeds do
       name: "Hailey Wardlaw",
       phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     })
+  end
 
+  @doc false
+  @spec seed_bsp :: nil
+  def seed_bsp do
     Repo.insert!(%BSP{
       name: "gupshup",
       url: "test_url",
       api_end_point: "test"
     })
+  end
 
+  @doc false
+  @spec seed_organizations :: nil
+  def seed_organizations do
     Repo.insert!(%Organization{
       name: "Slam Out Loud",
       contact_name: "Jigyasa and Gaurav",
@@ -94,5 +95,22 @@ defmodule Glific.Seeds do
       bsp_key: "random",
       wa_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     })
+  end
+
+  @doc """
+  Function to populate some basic data that we need for the system to operate. We will
+  split this function up into multiple different ones for test, dev and production
+  """
+  @spec seed :: nil
+  def seed do
+    {en_us, hi_in} = seed_language()
+
+    seed_tag({en_us, hi_in})
+
+    seed_contacts()
+
+    seed_bsp()
+
+    seed_organizations()
   end
 end

@@ -7,13 +7,6 @@ defmodule GlificWeb.Schema do
   use Absinthe.Schema
 
   alias Glific.Repo
-  # alias Glific.Tags.Tag
-  # alias Glific.Messages.Message
-  # alias Glific.Contacts.Contact
-  # alias Glific.Partners.Organization
-  # alias Glific.Partners.BSP
-  # alias Glific.MessagesTags.MessageTag
-
   alias GlificWeb.Schema.Middleware
 
   import_types(Absinthe.Type.Custom)
@@ -22,7 +15,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.GenericTypes)
   import_types(__MODULE__.LanguageTypes)
   import_types(__MODULE__.TagTypes)
-  # import_types(__MODULE__.ContactTypes)
+  import_types(__MODULE__.ContactTypes)
   # import_types(__MODULE__.MessageTypes)
   # import_types(__MODULE__.MessageMediaTypes)
   # import_types(__MODULE__.MessageTagTypes)
@@ -36,7 +29,7 @@ defmodule GlificWeb.Schema do
 
     # import_fields(:bsp_queries)
 
-    # import_fields(:contact_queries)
+    import_fields(:contact_queries)
 
     # import_fields(:message_media_queries)
 
@@ -54,7 +47,7 @@ defmodule GlificWeb.Schema do
 
     # import_fields(:bsp_mutations)
 
-    # import_fields(:contact_mutations)
+    import_fields(:contact_mutations)
 
     # import_fields(:message_media_mutations)
 
