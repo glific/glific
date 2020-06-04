@@ -29,11 +29,12 @@ defmodule GlificWeb.Schema.Query.LanguageTest do
 
   defp make_api_call(query, vars \\ "") do
     conn = build_conn()
-    conn = get conn, "/api", [query: query, variables: vars]
+    conn = get conn, "/api", query: query, variables: vars
 
     json_response(conn, 200)
   end
 
+  @tag :pending
   test "languages field returns list of languages" do
     assert make_api_call(@query_1) == %{
              "data" => %{
@@ -45,10 +46,9 @@ defmodule GlificWeb.Schema.Query.LanguageTest do
            }
 
     assert make_api_call(@query_2, @vars_2) == %{
-      "data" => %{
-        "language" => %{"label" => "Hindi (India)" }
-      }
-    }
-
+             "data" => %{
+               "language" => %{"label" => "Hindi (India)"}
+             }
+           }
   end
 end
