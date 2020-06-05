@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createMessage($input:MessageInput!) {
+  createMessage(input: $input) {
+    ...MessageFields
+
+    ...ErrorFields
+  }
+}
