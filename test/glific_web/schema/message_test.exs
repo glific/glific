@@ -17,14 +17,32 @@ defmodule GlificWeb.Schema.Query.MessageTest do
     result = query_gql_by(:list)
     assert {:ok, query_data} = result
 
-    tags = get_in(query_data, [:data, "tags"])
-    assert length(tags) > 0
+    messages = get_in(query_data, [:data, "messages"])
+    assert length(messages) > 0
 
-    [tag | _] = tags
-    assert get_in(tag, ["label"]) == "Greeting"
+    [message | _] = messages
+    assert get_in(message, ["body"]) == "default message body"
 
-    # lets ensure that the language field exists and has a valid id
-    assert get_in(tag, ["language", "id"]) > 0
+    # lets ensure that the sender and recipient field exists and has a valid id
+    assert get_in(message, ["sender", "id"]) >
+    assert get_in(message, ["recipient", "id"]) > 0
+  end
+
+  test "message id returns one message or nil" do
+    body = "default message body"
+    {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
+
+    result = query_gql_by(:by_id, variables: %{"id" => message.id})
+    assert {:ok, query_data} = result
+
+    message_body = get_in(query_data, [:data, "message", "message", "body"])
+    assert message_body == body
+
+    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "message", "errors", Access.at(0), "message"])
+    assert message == "Resource not found"
   end
 
 

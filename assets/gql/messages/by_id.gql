@@ -1,8 +1,8 @@
 #import "./fields.frag.gql"
 
-query tag($id: ID!) {
-  tag(id: $id) {
-    ...TagFields
+query message($id: ID!) {
+  message(id: $id) {
+    ...MessageFields
 
     ...ErrorFields
   }

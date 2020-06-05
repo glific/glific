@@ -1,10 +1,15 @@
-query tags {
-  tags {
+query messages {
+  messages {
     id
-    label
-    language {
+    body
+    sender {
       id
-      label
+      name
+    }
+
+    recipient {
+      id
+      name
     }
   }
 }

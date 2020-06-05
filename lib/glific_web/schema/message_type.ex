@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.MessageTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias Glific.Messages.Message
+  alias Glific.Repo
   alias GlificWeb.Resolvers
 
   object :message_result do
@@ -23,11 +24,11 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :wa_status, :message_status_enum
 
     field :sender, :contact do
-      resolve(dataloader(Message))
+      resolve(dataloader(Repo))
     end
 
     field :recipient, :contact do
-      resolve(dataloader(Message))
+      resolve(dataloader(Repo))
     end
 
     # field :media, :message_media do

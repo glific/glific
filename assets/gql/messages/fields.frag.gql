@@ -1,17 +1,21 @@
-fragment TagFields on TagResult {
-  tag {
+fragment MessageFields on MessageResult {
+  message {
     id
-    label
+    body
 
-    language {
+    sender {
       id
-      label
-      locale
+      name
+    }
+
+    recipient {
+      id
+      name
     }
   }
 }
 
-fragment ErrorFields on TagResult {
+fragment ErrorFields on MessageResult {
   errors {
     key
     message

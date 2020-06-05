@@ -105,7 +105,7 @@ defmodule Glific.Seeds do
     recipient = Repo.insert!(%Contact{phone: "917834811231", name: "Recipient"})
 
     Repo.insert!(%Message{
-      body: Faker.Lorem.sentence(),
+      body: "default message body",
       flow: :inbound,
       type: :text,
       wa_message_id: Faker.String.base64(10),
