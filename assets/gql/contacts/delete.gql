@@ -1,11 +1,9 @@
+#import "./fields.frag.gql"
+
 mutation deleteContact($id: ID!) {
   deleteContact(id: $id) {
-    contact {
-      id
-    }
-    errors {
-      key
-      message
-    }
+    ...ContactFields
+
+    ...ErrorFields
   }
 }

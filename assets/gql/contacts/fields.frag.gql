@@ -1,0 +1,14 @@
+fragment ContactFields on ContactResult {
+  contact {
+    id
+    name
+    phone
+  }
+}
+
+fragment ErrorFields on ContactResult {
+  errors {
+    key
+    message
+  }
+}

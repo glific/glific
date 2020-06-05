@@ -1,11 +1,9 @@
+#import "./fields.frag.gql"
+
 query language($id: ID!) {
   language(id: $id) {
-    language {
-      label
-    }
-    errors {
-      key
-      message
-    }
+    ...LanguageFields
+
+    ...ErrorFields
   }
 }

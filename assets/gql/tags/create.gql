@@ -1,16 +1,9 @@
+#import "./fields.frag.gql"
+
 mutation createTag($input:TagInput!) {
   createTag(input: $input) {
-    tag {
-      id
-      label
-      language {
-        id
-        label
-      }
-    }
-    errors {
-      key
-      message
-    }
+    ...TagFields
+
+    ...ErrorFields
   }
 }

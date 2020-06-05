@@ -1,11 +1,9 @@
+#import "./fields.frag.gql"
+
 mutation deleteTag($id: ID!) {
   deleteTag(id: $id) {
-    tag {
-      id
-    }
-    errors {
-      key
-      message
-    }
+    ...TagFields
+
+    ...ErrorFields
   }
 }

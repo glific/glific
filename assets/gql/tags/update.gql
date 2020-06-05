@@ -1,12 +1,9 @@
+#import "./fields.frag.gql"
+
 mutation updateTag($id: ID!, $input: TagInput!) {
   updateTag(id: $id, input: $input) {
-    tag {
-      id
-      label
-    }
-    errors {
-      key
-      message
-    }
+    ...TagFields
+
+    ...ErrorFields
   }
 }

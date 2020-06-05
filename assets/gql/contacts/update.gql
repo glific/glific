@@ -1,13 +1,9 @@
+#import "./fields.frag.gql"
+
 mutation updateContact($id: ID!, $input: ContactInput!) {
   updateContact(id: $id, input: $input) {
-    contact {
-      id
-      name
-      phone
-    }
-    errors {
-      key
-      message
-    }
+    ...ContactFields
+
+    ...ErrorFields
   }
 }
