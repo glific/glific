@@ -1,5 +1,7 @@
 defmodule GlificWeb.Schema.Query.MessageTest do
+  alias Glific.Messages.Message
   use GlificWeb.ConnCase, async: true
+
   use Wormwood.GQLCase
 
   setup do
@@ -30,7 +32,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
 
   test "message id returns one message or nil" do
     body = "default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
+    {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
 
     result = query_gql_by(:by_id, variables: %{"id" => message.id})
     assert {:ok, query_data} = result
@@ -47,7 +49,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
 
   test "create a message and test possible scenarios and errors" do
     body = "default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
+    {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
 
     result =
       query_gql_by(:create,
@@ -87,7 +89,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
 
   test "update a message and test possible scenarios and errors" do
     body = "default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
+    {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
 
     result =
       query_gql_by(:update,
@@ -112,7 +114,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
 
   test "delete a message" do
     body = "default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
+    {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
 
     result = query_gql_by(:delete, variables: %{"id" => message.id})
     assert {:ok, query_data} = result
