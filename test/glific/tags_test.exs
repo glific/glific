@@ -50,7 +50,7 @@ defmodule Glific.TagsTest do
       {:ok, language} =
         attrs
         |> Enum.into(@valid_language_attrs)
-        |> Settings.upsert()
+        |> Settings.language_upsert()
 
       language
     end

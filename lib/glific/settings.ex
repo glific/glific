@@ -111,11 +111,11 @@ defmodule Glific.Settings do
   end
 
   @doc """
-  Gets or Creates a Contact based on the unique indexes in the table. If there is a match
+  Upserts a language based on the unique indexes in the table. If there is a match
   it returns the existing contact, else it creates a new one
   """
-  @spec upsert(map()) :: {:ok, Language.t()}
-  def upsert(attrs) do
+  @spec language_upsert(map()) :: {:ok, Language.t()}
+  def language_upsert(attrs) do
     language =
       Repo.insert!(
         change_language(%Language{}, attrs),
