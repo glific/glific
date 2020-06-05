@@ -4,7 +4,7 @@ defmodule Glific.Tags do
   """
 
   alias Glific.Repo
-  alias Glific.Tags.{MessageTag, Tag}
+  alias Glific.Tags.{ContactTag, MessageTag, Tag}
 
   import Ecto.Query, warn: false
 
@@ -258,5 +258,109 @@ defmodule Glific.Tags do
   @spec change_message_tag(MessageTag.t(), map()) :: Ecto.Changeset.t()
   def change_message_tag(%MessageTag{} = message_tag, attrs \\ %{}) do
     MessageTag.changeset(message_tag, attrs)
+  end
+
+  @doc """
+  Returns the list of contacts tags.
+
+  ## Examples
+
+      iex> list_contacts_tags()
+      [%ContactTag{}, ...]
+
+  """
+  @spec list_contacts_tags(map()) :: [ContactTag.t()]
+  def list_contacts_tags(_args \\ %{}) do
+    Repo.all(ContactTag)
+  end
+
+  @doc """
+  Gets a single contact.
+
+  Raises `Ecto.NoResultsError` if the Contact does not exist.
+
+  ## Examples
+
+      iex> get_contact_tag!(123)
+      %Contact{}
+
+      iex> get_contact_tag!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  @spec get_contact_tag!(integer) :: ContactTag.t()
+  def get_contact_tag!(id) do
+    Repo.get!(ContactTag, id)
+  end
+
+  @doc """
+  Creates a contact.
+
+  ## Examples
+
+      iex> create_contact_tag(%{field: value})
+      {:ok, %Contact{}}
+
+      iex> create_contact_tag(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec create_contact_tag(map()) :: {:ok, ContactTag.t()} | {:error, Ecto.Changeset.t()}
+  def create_contact_tag(attrs \\ %{}) do
+    # Merge default values if not present in attributes
+    %ContactTag{}
+    |> ContactTag.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a contact tag.
+
+  ## Examples
+
+      iex> update_contact_tag(contact_tag, %{field: new_value})
+      {:ok, %ContactTag{}}
+
+      iex> update_contact_tag(contact_tag, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec update_contact_tag(ContactTag.t(), map()) ::
+          {:ok, ContactTag.t()} | {:error, Ecto.Changeset.t()}
+  def update_contact_tag(%ContactTag{} = contact_tag, attrs) do
+    contact_tag
+    |> ContactTag.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a contact tag.
+
+  ## Examples
+
+      iex> delete_contact_tag(contact_tag)
+      {:ok, %ContactTag{}}
+
+      iex> delete_contact_tag(contact_tag)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec delete_contact_tag(ContactTag.t()) :: {:ok, ContactTag.t()} | {:error, Ecto.Changeset.t()}
+  def delete_contact_tag(%ContactTag{} = contact_tag) do
+    Repo.delete(contact_tag)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking contact changes.
+
+  ## Examples
+
+      iex> change_contact_tag(contact_tag)
+      %Ecto.Changeset{data: %ContactTag{}}
+
+  """
+  @spec change_contact_tag(ContactTag.t(), map()) :: Ecto.Changeset.t()
+  def change_contact_tag(%ContactTag{} = contact_tag, attrs \\ %{}) do
+    ContactTag.changeset(contact_tag, attrs)
   end
 end
