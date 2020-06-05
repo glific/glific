@@ -1,4 +1,4 @@
-defmodule Glific.Search.Messages do
+defmodule Glific.Search.Full do
   @moduledoc """
   Glific interface to Postgres's full text search
   """
