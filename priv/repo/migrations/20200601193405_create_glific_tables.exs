@@ -127,15 +127,12 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
       add :name, :string, null: false
 
       # Contact Phone (this is the primary point of identification)
+      # We will treat this as a whats app ID as well
       add :phone, :string, null: false
 
       # whatsapp status
       # the current options are: processing, valid, invalid, failed
       add :wa_status, :contact_status_enum, null: false, default: "valid"
-
-      # whatsapp id
-      # this is relevant only if wa_status is valid
-      add :wa_id, :string
 
       # Is this contact active (for some definition of active)
       add :is_active, :boolean, default: true
@@ -150,7 +147,6 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
     end
 
     create unique_index(:contacts, :phone)
-    create unique_index(:contacts, :wa_id)
   end
 
   @doc """

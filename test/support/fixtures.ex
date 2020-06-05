@@ -24,7 +24,6 @@ defmodule Glific.Fixtures do
       optout_time: DateTime.backward(1),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      wa_id: Phone.EnUs.phone(),
       wa_status: :invalid
     }
 
