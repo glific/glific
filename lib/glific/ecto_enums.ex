@@ -7,37 +7,37 @@ import EctoEnum
 require Glific.Enums
 
 defenum(
-  Glific.APIStatusEnum,
+  Glific.Enums.APIStatus,
   :api_status_enum,
   Glific.Enums.api_status_const()
 )
 
 defenum(
-  Glific.ContactStatusEnum,
+  Glific.Enums.ContactStatus,
   :contact_status_enum,
   Glific.Enums.contact_status_const()
 )
 
 defenum(
-  Glific.MessageFlowEnum,
+  Glific.Enums.MessageFlow,
   :message_flow_enum,
   Glific.Enums.message_flow_const()
 )
 
 defenum(
-  Glific.MessageStatusEnum,
+  Glific.Enums.MessageStatus,
   :message_status_enum,
   Glific.Enums.message_status_const()
 )
 
 defenum(
-  Glific.MessageTypesEnum,
+  Glific.Enums.MessageTypes,
   :message_types_enum,
   Glific.Enums.message_types_const()
 )
 
 defenum(
-  Glific.SortOrderEnum,
+  Glific.Enums.SortOrder,
   :sort_order_enum,
   Glific.Enums.sort_order_const()
 )

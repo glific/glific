@@ -1,7 +1,5 @@
 defmodule GlificWeb.PageLive do
-  @moduledoc """
-  Adding this comment here to avoid spurious errors from credo
-  """
+  @moduledoc false
   use GlificWeb, :live_view
 
   @impl true
