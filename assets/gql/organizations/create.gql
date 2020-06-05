@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createOrganization($input:OrganizationInput!) {
+  createOrganization(input: $input) {
+    ...OrganizationFields
+
+    ...ErrorFields
+  }
+}

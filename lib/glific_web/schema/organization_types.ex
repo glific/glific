@@ -34,8 +34,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :name, :string
 
     field :display_name, :string
-
-    @desc "Match the email"
     field :email, :string
 
     field :contact_name, :string
