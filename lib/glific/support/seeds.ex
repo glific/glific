@@ -4,6 +4,7 @@ defmodule Glific.Seeds do
   """
   alias Glific.{
     Contacts.Contact,
+    Messages.Message,
     Partners.BSP,
     Partners.Organization,
     Repo,
@@ -97,6 +98,55 @@ defmodule Glific.Seeds do
     })
   end
 
+  @doc false
+  def seed_messages do
+    sender = Repo.insert!(%Contact{phone: "917834811114", name: "Sender"})
+
+    recipient = Repo.insert!(%Contact{phone: "917834811231", name: "Recipient"})
+
+    Repo.insert!(%Message{
+      body: Faker.Lorem.sentence(),
+      flow: :inbound,
+      type: :text,
+      wa_message_id: Faker.String.base64(10),
+      wa_status: :enqueued,
+      sender_id: sender.id,
+      recipient_id: recipient.id
+    })
+
+    Repo.insert!(%Message{
+      body: Faker.Lorem.sentence(),
+      flow: :inbound,
+      type: :text,
+      wa_message_id: Faker.String.base64(10),
+      wa_status: :enqueued,
+      sender_id: sender.id,
+      recipient_id: recipient.id
+    })
+
+    Repo.insert!(%Message{
+      body: Faker.Lorem.sentence(),
+      flow: :inbound,
+      type: :text,
+      wa_message_id: Faker.String.base64(10),
+      wa_status: :enqueued,
+      sender_id: sender.id,
+      recipient_id: recipient.id
+    })
+
+    Repo.insert!(%Message{
+      body: Faker.Lorem.sentence(),
+      flow: :inbound,
+      type: :text,
+      wa_message_id: Faker.String.base64(10),
+      wa_status: :enqueued,
+      sender_id: sender.id,
+      recipient_id: recipient.id
+    })
+
+
+  end
+
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
   split this function up into multiple different ones for test, dev and production
@@ -112,5 +162,7 @@ defmodule Glific.Seeds do
     seed_bsp()
 
     seed_organizations()
+
+    seed_messages()
   end
 end
