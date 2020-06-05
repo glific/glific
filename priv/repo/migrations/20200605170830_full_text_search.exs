@@ -2,9 +2,21 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
   use Ecto.Migration
 
   def up do
+    create_extensions()
+
+    create_view()
+
+    create_indexes()
+
+    create_triggers()
+  end
+
+  defp create_extensions do
     execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
     execute("CREATE EXTENSION IF NOT EXISTS unaccent")
+  end
 
+  defp create_view do
     execute(
       """
       CREATE MATERIALIZED VIEW message_search AS
@@ -25,7 +37,9 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
       GROUP BY contacts.id
       """
     )
+  end
 
+  defp create_indexes do
     # to support full-text searches
     create index("message_search", ["document"], using: :gin)
 
@@ -36,14 +50,84 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
     create unique_index("message_search", [:id])
   end
 
+  defp create_triggers do
+    execute(
+      """
+      CREATE OR REPLACE FUNCTION refresh_message_search()
+      RETURNS TRIGGER LANGUAGE plpgsql
+      AS $$
+      BEGIN
+      REFRESH MATERIALIZED VIEW CONCURRENTLY message_search;
+      RETURN NULL;
+      END $$;
+      """
+    )
+
+    execute(
+      """
+      CREATE TRIGGER refresh_message_search
+      AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE
+      ON contacts
+      FOR EACH STATEMENT
+      EXECUTE PROCEDURE refresh_message_search();
+      """
+    )
+
+    execute(
+      """
+      CREATE TRIGGER refresh_message_search
+      AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE
+      ON messages
+      FOR EACH STATEMENT
+      EXECUTE PROCEDURE refresh_message_search();
+      """
+    )
+
+    execute(
+      """
+      CREATE TRIGGER refresh_message_search
+      AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE
+      ON message_media
+      FOR EACH STATEMENT
+      EXECUTE PROCEDURE refresh_message_search();
+      """
+    )
+
+    execute(
+      """
+      CREATE TRIGGER refresh_message_search
+      AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE
+      ON tags
+      FOR EACH STATEMENT
+      EXECUTE PROCEDURE refresh_message_search();
+      """
+    )
+
+    execute(
+      """
+      CREATE TRIGGER refresh_message_search
+      AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE
+      ON message_tags
+      FOR EACH STATEMENT
+      EXECUTE PROCEDURE refresh_message_search();
+      """
+    )
+  end
+
   def down do
     execute("DROP EXTENSION IF EXISTS pg_trgm")
     execute("DROP EXTENSION IF EXISTS unaccent")
 
-    execute("DROP INDEX message_search_document")
-    execute("DROP INDEX message_search_name_index")
-    execute("DROP INDEX message_search_id")
+    execute("DROP INDEX IF EXISTS message_search_document")
+    execute("DROP INDEX IF EXISTS message_search_name_index")
+    execute("DROP INDEX IF EXISTS message_search_id")
 
-    execute("DROP MATERIALIZED VIEW message_search")
+    execute("DROP TRIGGER IF EXISTS refresh_message_search ON contacts")
+    execute("DROP TRIGGER IF EXISTS refresh_message_search ON messages")
+    execute("DROP TRIGGER IF EXISTS refresh_message_search ON message_media")
+    execute("DROP TRIGGER IF EXISTS refresh_message_search ON tags")
+    execute("DROP TRIGGER IF EXISTS refresh_message_search ON messages_tags")
+
+    execute("DROP MATERIALIZED VIEW IF EXISTS message_search")
   end
 end
