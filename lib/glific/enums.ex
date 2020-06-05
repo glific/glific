@@ -33,22 +33,22 @@ defmodule Glific.Enums do
 
   We also test the ecto enums in this file, since they exist outside a module
 
-  iex> Glific.APIStatusEnum.__enum_map__()
+  iex> Glific.Enums.APIStatus.__enum_map__()
   Glific.Enums.api_status_const()
 
-  iex> Glific.ContactStatusEnum.__enum_map__()
+  iex> Glific.Enums.ContactStatus.__enum_map__()
   Glific.Enums.contact_status_const()
 
-  iex> Glific.MessageFlowEnum.__enum_map__()
+  iex> Glific.Enums.MessageFlow.__enum_map__()
   Glific.Enums.message_flow_const()
 
-  iex> Glific.MessageStatusEnum.__enum_map__()
+  iex> Glific.Enums.MessageStatus.__enum_map__()
   Glific.Enums.message_status_const()
 
-  iex> Glific.MessageTypesEnum.__enum_map__()
+  iex> Glific.Enums.MessageTypes.__enum_map__()
   Glific.Enums.message_types_const()
 
-  iex> Glific.SortOrderEnum.__enum_map__()
+  iex> Glific.Enums.SortOrder.__enum_map__()
   Glific.Enums.sort_order_const()
 
   """
