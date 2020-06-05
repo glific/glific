@@ -24,8 +24,8 @@ defmodule GlificWeb.Schema.Query.MessageTest do
     assert get_in(message, ["body"]) == "default message body"
 
     # lets ensure that the sender and recipient field exists and has a valid id
-    assert get_in(message, ["sender", "id"]) >
-             assert(get_in(message, ["recipient", "id"]) > 0)
+    assert get_in(message, ["sender", "id"]) > 0
+    assert get_in(message, ["recipient", "id"]) > 0
   end
 
   test "message id returns one message or nil" do
@@ -85,7 +85,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
              get_in(query_data, [:data, "createMessage", "errors", Access.at(0), "message"])
   end
 
-  test "update a tag and test possible scenarios and errors" do
+  test "update a message and test possible scenarios and errors" do
     body = "default message body"
     {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
 

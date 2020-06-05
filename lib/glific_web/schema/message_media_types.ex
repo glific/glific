@@ -20,21 +20,6 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
     field :wa_media_id, :string
   end
 
-  @desc "Filtering options for message media"
-  input_object :message_media_filter do
-    @desc "Match the url"
-    field :url, :string
-
-    @desc "Match the source url"
-    field :source_url, :string
-
-    @desc "Match the thumbnail"
-    field :thumbnail, :string
-
-    @desc "Match the caption"
-    field :caption, :string
-  end
-
   input_object :message_media_input do
     field :url, :string
     field :source_url, :string
@@ -44,7 +29,7 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
   end
 
   object :message_media_queries do
-    @desc "get the details of one message_media"
+    @desc "get the details of one message media"
     field :message_media, :message_media_result do
       arg(:id, non_null(:id))
       resolve(&Resolvers.Messages.message_media/3)
@@ -52,8 +37,6 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
 
     @desc "Get a list of all message_media filtered by various criteria"
     field :message_medias, list_of(:message_media) do
-      arg(:filter, :message_media_filter)
-      arg(:order, type: :sort_order, default_value: :asc)
       resolve(&Resolvers.Messages.message_medias/3)
     end
   end

@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Messages do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Messages, Messages.Message, Repo}
+  alias Glific.{Messages, Messages.Message, Messages.MessageMedia, Repo}
 
   @doc """
   Get a specific message by id

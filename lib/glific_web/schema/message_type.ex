@@ -30,9 +30,9 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(dataloader(Repo))
     end
 
-    # field :media, :message_media do
-    #   resolve(dataloader(Message))
-    # end
+    field :media, :message_media do
+      resolve(dataloader(Message))
+    end
 
     field :tags, list_of(:tag) do
       resolve(dataloader(Repo))
