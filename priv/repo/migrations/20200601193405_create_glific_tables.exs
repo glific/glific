@@ -20,6 +20,8 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
     messages()
 
     messages_tags()
+
+    contacts_tags()
   end
 
   @doc """
