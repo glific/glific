@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.AddTwowayTables do
+defmodule Glific.Repo.Migrations.GlificTables do
   @moduledoc """
   To simplify things, lets create the bulk of the tables in one migration file for v0.1.
   This gives new developers a good view of the schema in one place.
@@ -22,6 +22,10 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
     messages_tags()
 
     contacts_tags()
+
+    bsps()
+
+    organizations()
   end
 
   @doc """
@@ -45,8 +49,7 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
       timestamps()
     end
 
-    create unique_index(:languages, :label)
-    create unique_index(:languages, :locale)
+    create unique_index(:languages, [:label, :locale])
   end
 
   @doc """
@@ -129,15 +132,12 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
       add :name, :string, null: false
 
       # Contact Phone (this is the primary point of identification)
+      # We will treat this as a whats app ID as well
       add :phone, :string, null: false
 
       # whatsapp status
       # the current options are: processing, valid, invalid, failed
       add :wa_status, :contact_status_enum, null: false, default: "valid"
-
-      # whatsapp id
-      # this is relevant only if wa_status is valid
-      add :wa_id, :string
 
       # Is this contact active (for some definition of active)
       add :is_active, :boolean, default: true
@@ -152,7 +152,6 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
     end
 
     create unique_index(:contacts, :phone)
-    create unique_index(:contacts, :wa_id)
   end
 
   @doc """
@@ -238,5 +237,43 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
     end
 
     create unique_index(:messages_tags, [:message_id, :tag_id])
+  end
+
+  @doc """
+  Information of all the Business Service Providers (APIs) responsible for the communications.
+  """
+  def bsps do
+    create table(:bsps) do
+      # The name of BSP
+      add :name, :string, null: false
+      # The url of BSP
+      add :url, :string, null: false
+      # The api end point for BSP
+      add :api_end_point, :string, null: false
+
+      timestamps()
+    end
+
+    create unique_index(:bsps, [:name, :url, :api_end_point])
+  end
+
+  @doc """
+  All the organizations which are using this platform.
+  """
+  def organizations do
+    create table(:organizations) do
+      add :name, :string, null: false
+      add :contact_name, :string, null: false
+      add :email, :string, null: false
+      add :bsp, :string
+      add :bsp_id, references(:bsps, on_delete: :nothing), null: false
+      add :bsp_key, :string, null: false
+      add :wa_number, :string, null: false
+
+      timestamps()
+    end
+
+    create unique_index(:organizations, :wa_number)
+    create unique_index(:organizations, :email)
   end
 end

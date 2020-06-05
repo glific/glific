@@ -6,6 +6,7 @@
         "lib/glific_web/live",
         "lib/glific_web/gettext.ex",
         "lib/glific_web/telemetry.ex",
+        "lib/glific/support/seeds.ex",
         "lib/glific.ex",
         "test/support"
     ]

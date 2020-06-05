@@ -23,7 +23,7 @@ defmodule Glific.RepoTest do
       {:ok, language} =
         attrs
         |> Enum.into(attrs)
-        |> Settings.create_language()
+        |> Settings.language_upsert()
 
       language
     end

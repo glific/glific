@@ -13,12 +13,6 @@ defmodule Glific.SettingsTest do
       is_active: true
     }
 
-    @valid_hindi_attrs %{
-      label: "Hindi (India)",
-      locale: "hi_IN",
-      is_active: true
-    }
-
     @update_attrs %{
       description: "we now have a description",
       locale: "hi_IN",
@@ -31,7 +25,7 @@ defmodule Glific.SettingsTest do
       {:ok, language} =
         attrs
         |> Enum.into(@valid_attrs)
-        |> Settings.create_language()
+        |> Settings.language_upsert()
 
       language
     end
@@ -87,16 +81,9 @@ defmodule Glific.SettingsTest do
       assert %Ecto.Changeset{} = Settings.change_language(language)
     end
 
-    test "table constraint on languages with the same label" do
+    test "table constraint on languages with the same label and locale" do
       _language = language_fixture()
       assert {:error, %Ecto.Changeset{}} = Settings.create_language(@valid_attrs)
-    end
-
-    test "table constraint on languages with the same locale" do
-      language = language_fixture()
-
-      assert {:ok, %Language{} = _} = Settings.create_language(@valid_hindi_attrs)
-      assert {:error, %Ecto.Changeset{}} = Settings.update_language(language, %{locale: "hi_IN"})
     end
   end
 end

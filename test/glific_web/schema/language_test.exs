@@ -17,14 +17,11 @@ defmodule GlificWeb.Schema.Query.LanguageTest do
     result = query_gql_by(:list)
     assert {:ok, query_data} = result
 
-    assert query_data == %{
-             :data => %{
-               "languages" => [
-                 %{"label" => "English (United States)"},
-                 %{"label" => "Hindi (India)"}
-               ]
-             }
-           }
+    label_0 = get_in(query_data, [:data, "languages", Access.at(0), "label"])
+    label_1 = get_in(query_data, [:data, "languages", Access.at(1), "label"])
+
+    assert (label_0 == "English (United States)" and label_1 == "Hindi (India)") or
+             (label_1 == "English (United States)" and label_0 == "Hindi (India)")
   end
 
   test "language id returns one language or nil" do
@@ -83,7 +80,7 @@ defmodule GlificWeb.Schema.Query.LanguageTest do
       query_gql_by(:update,
         variables: %{
           "id" => lang.id,
-          "input" => %{"label" => "Hindi (India)", "locale" => "hl_IN"}
+          "input" => %{"label" => "Hindi (India)", "locale" => "hi_IN"}
         }
       )
 

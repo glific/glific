@@ -12,7 +12,6 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone",
       status: :valid,
-      wa_id: "some wa_id",
       wa_status: :invalid
     }
     @valid_attrs_1 %{
@@ -21,7 +20,6 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 1",
       status: :invalid,
-      wa_id: "some wa_id 1",
       wa_status: :invalid
     }
     @valid_attrs_2 %{
@@ -30,7 +28,6 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 2",
       status: :valid,
-      wa_id: "some wa_id 2",
       wa_status: :valid
     }
     @valid_attrs_3 %{
@@ -39,7 +36,6 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 3",
       status: :invalid,
-      wa_id: "some wa_id 3",
       wa_status: :valid
     }
     @update_attrs %{
@@ -48,7 +44,6 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2011-05-18 15:01:01Z],
       phone: "some updated phone",
       status: :invalid,
-      wa_id: "some updated wa_id",
       wa_status: :invalid
     }
     @invalid_attrs %{
@@ -57,7 +52,6 @@ defmodule Glific.ContactsTest do
       optout_time: nil,
       phone: nil,
       status: nil,
-      wa_id: nil,
       wa_status: nil
     }
 
@@ -87,7 +81,6 @@ defmodule Glific.ContactsTest do
       assert contact.optout_time == ~U[2010-04-17 14:00:00Z]
       assert contact.phone == "some phone"
       assert contact.status == :valid
-      assert contact.wa_id == "some wa_id"
       assert contact.wa_status == :invalid
     end
 
@@ -103,7 +96,6 @@ defmodule Glific.ContactsTest do
       assert contact.optout_time == ~U[2011-05-18 15:01:01Z]
       assert contact.phone == "some updated phone"
       assert contact.status == :invalid
-      assert contact.wa_id == "some updated wa_id"
       assert contact.wa_status == :invalid
     end
 
@@ -149,7 +141,7 @@ defmodule Glific.ContactsTest do
     test "list_contacts/1 with multiple contacts filtered" do
       c0 = contact_fixture(@valid_attrs)
       c1 = contact_fixture(@valid_attrs_1)
-      c2 = contact_fixture(@valid_attrs_2)
+      _c2 = contact_fixture(@valid_attrs_2)
       c3 = contact_fixture(@valid_attrs_3)
 
       cs = Contacts.list_contacts(%{order: :asc, filter: %{phone: "some phone 3"}})
@@ -160,9 +152,6 @@ defmodule Glific.ContactsTest do
 
       cs = Contacts.list_contacts(%{order: :asc, filter: %{name: "some name 1"}})
       assert cs == [c1]
-
-      cs = Contacts.list_contacts(%{order: :asc, filter: %{wa_id: "some wa_id 2"}})
-      assert cs == [c2]
 
       cs = Contacts.list_contacts(%{order: :asc, filter: %{status: :valid, wa_status: :invalid}})
       assert cs == [c0]
