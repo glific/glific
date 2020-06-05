@@ -1,0 +1,14 @@
+fragment LanguageFields on LanguageResult {
+  language {
+    id
+    label
+    locale
+  }
+}
+
+fragment ErrorFields on LanguageResult {
+  errors {
+    key
+    message
+  }
+}

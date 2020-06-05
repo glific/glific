@@ -18,6 +18,8 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
     message_media()
 
     messages()
+
+    messages_tags()
   end
 
   @doc """

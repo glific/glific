@@ -12,11 +12,11 @@ defmodule Glific.Seeds do
   }
 
   @doc """
-  Function to populate some basic data that we need for the system to operate. We will
-  split this function up into multiple different ones for test, dev and production
+  Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
+  In the next phase we will also add unseeder functions as we learn more of the test capabilities
   """
-  @spec seed :: nil
-  def seed do
+  @spec seed_language() :: {Language.t(), Language.t()}
+  def seed_language do
     en_us =
       Repo.insert!(%Language{
         label: "English (United States)",
@@ -29,6 +29,12 @@ defmodule Glific.Seeds do
         locale: "hi_IN"
       })
 
+    {en_us, hi_in}
+  end
+
+  @doc false
+  @spec seed_tag({Language.t(), Language.t()}) :: nil
+  def seed_tag({en_us, hi_in}) do
     message_tags_en = Repo.insert!(%Tag{label: "Messages", language: en_us})
     message_tags_hi = Repo.insert!(%Tag{label: "Messages", language: hi_in})
 
@@ -39,6 +45,12 @@ defmodule Glific.Seeds do
     Repo.insert!(%Tag{label: "Greeting", language: hi_in, parent_id: message_tags_hi.id})
     Repo.insert!(%Tag{label: "Thank You", language: hi_in, parent_id: message_tags_hi.id})
 
+    Repo.insert!(%Tag{label: "This is for testing", language: en_us})
+  end
+
+  @doc false
+  @spec seed_contacts :: nil
+  def seed_contacts do
     Repo.insert!(%Contact{phone: "917834811114", name: "Default Contact"})
 
     Repo.insert!(%Contact{
@@ -60,13 +72,21 @@ defmodule Glific.Seeds do
       name: "Hailey Wardlaw",
       phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     })
+  end
 
+  @doc false
+  @spec seed_bsp :: nil
+  def seed_bsp do
     Repo.insert!(%BSP{
       name: "gupshup",
       url: "test_url",
       api_end_point: "test"
     })
+  end
 
+  @doc false
+  @spec seed_organizations :: nil
+  def seed_organizations do
     Repo.insert!(%Organization{
       name: "Slam Out Loud",
       contact_name: "Jigyasa and Gaurav",
@@ -75,5 +95,22 @@ defmodule Glific.Seeds do
       bsp_key: "random",
       wa_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     })
+  end
+
+  @doc """
+  Function to populate some basic data that we need for the system to operate. We will
+  split this function up into multiple different ones for test, dev and production
+  """
+  @spec seed :: nil
+  def seed do
+    {en_us, hi_in} = seed_language()
+
+    seed_tag({en_us, hi_in})
+
+    seed_contacts()
+
+    seed_bsp()
+
+    seed_organizations()
   end
 end

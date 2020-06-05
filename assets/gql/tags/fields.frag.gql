@@ -1,0 +1,19 @@
+fragment TagFields on TagResult {
+  tag {
+    id
+    label
+
+    language {
+      id
+      label
+      locale
+    }
+  }
+}
+
+fragment ErrorFields on TagResult {
+  errors {
+    key
+    message
+  }
+}

@@ -1,0 +1,10 @@
+query tags {
+  tags {
+    id
+    label
+    language {
+      id
+      label
+    }
+  }
+}

@@ -3,7 +3,7 @@ defmodule Glific.PartnersTest do
 
   alias Glific.Partners
 
-  describe "partners" do
+  describe "bsp" do
     alias Glific.Partners.BSP
 
     @valid_attrs %{
@@ -105,7 +105,9 @@ defmodule Glific.PartnersTest do
       bsp_fixture(@valid_attrs)
       assert {:error, %Ecto.Changeset{}} = Partners.create_bsp(@valid_attrs)
     end
+  end
 
+  describe "organizations" do
     alias Glific.Partners.Organization
 
     @valid_org_attrs %{
