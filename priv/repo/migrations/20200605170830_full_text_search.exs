@@ -107,7 +107,7 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
       """
       CREATE TRIGGER refresh_message_search
       AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE
-      ON message_tags
+      ON messages_tags
       FOR EACH STATEMENT
       EXECUTE PROCEDURE refresh_message_search();
       """
@@ -115,19 +115,19 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
   end
 
   def down do
-    execute("DROP EXTENSION IF EXISTS pg_trgm")
-    execute("DROP EXTENSION IF EXISTS unaccent")
-
-    execute("DROP INDEX IF EXISTS message_search_document")
-    execute("DROP INDEX IF EXISTS message_search_name_index")
-    execute("DROP INDEX IF EXISTS message_search_id")
-
     execute("DROP TRIGGER IF EXISTS refresh_message_search ON contacts")
     execute("DROP TRIGGER IF EXISTS refresh_message_search ON messages")
     execute("DROP TRIGGER IF EXISTS refresh_message_search ON message_media")
     execute("DROP TRIGGER IF EXISTS refresh_message_search ON tags")
     execute("DROP TRIGGER IF EXISTS refresh_message_search ON messages_tags")
 
+    execute("DROP INDEX IF EXISTS message_search_document_index")
+    execute("DROP INDEX IF EXISTS message_search_name_index")
+    execute("DROP INDEX IF EXISTS message_search_id_index")
+
     execute("DROP MATERIALIZED VIEW IF EXISTS message_search")
+
+    execute("DROP EXTENSION IF EXISTS pg_trgm")
+    execute("DROP EXTENSION IF EXISTS unaccent")
   end
 end
