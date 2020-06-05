@@ -1,13 +1,9 @@
+#import "./fields.frag.gql"
+
 mutation createContact($input:ContactInput!) {
   createContact(input: $input) {
-    contact {
-      id
-      name
-      phone
-    }
-    errors {
-      key
-      message
-    }
+    ...ContactFields
+
+    ...ErrorFields
   }
 }
