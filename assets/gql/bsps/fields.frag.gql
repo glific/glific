@@ -1,0 +1,15 @@
+fragment BspFields on BspResult {
+  bsp {
+    id
+    name
+    url
+    api_end_point   
+  }
+}
+
+fragment ErrorFields on BspResult {
+  errors {
+    key
+    message
+  }
+}

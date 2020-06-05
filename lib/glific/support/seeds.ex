@@ -75,11 +75,23 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_bsp :: nil
-  def seed_bsp do
+  @spec seed_bsps :: nil
+  def seed_bsps do
+    Repo.insert!(%BSP{
+      name: "Default BSP",
+      url: "test_url",
+      api_end_point: "test"
+    })
+
     Repo.insert!(%BSP{
       name: "gupshup",
-      url: "test_url",
+      url: "test_url_1",
+      api_end_point: "test"
+    })
+
+    Repo.insert!(%BSP{
+      name: "twilio",
+      url: "test_url_2",
       api_end_point: "test"
     })
   end
@@ -109,7 +121,7 @@ defmodule Glific.Seeds do
 
     seed_contacts()
 
-    seed_bsp()
+    seed_bsps()
 
     seed_organizations()
   end

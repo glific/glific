@@ -96,7 +96,7 @@ defmodule GlificWeb.Resolvers.Partners do
   @spec update_bsp(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_bsp(_, %{id: id, input: params}, _) do
-    with {:ok, bsp} <- Repo.fetch(Organization, id),
+    with {:ok, bsp} <- Repo.fetch(BSP, id),
          {:ok, bsp} <- Partners.update_bsp(bsp, params) do
       {:ok, %{bsp: bsp}}
     end
@@ -108,7 +108,7 @@ defmodule GlificWeb.Resolvers.Partners do
   @spec delete_bsp(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_bsp(_, %{id: id}, _) do
-    with {:ok, bsp} <- Repo.fetch(Organization, id),
+    with {:ok, bsp} <- Repo.fetch(BSP, id),
          {:ok, bsp} <- Partners.delete_bsp(bsp) do
       {:ok, bsp}
     end
