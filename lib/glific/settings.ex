@@ -90,7 +90,10 @@ defmodule Glific.Settings do
   """
   @spec delete_language(Language.t()) :: {:ok, Language.t()} | {:error, Ecto.Changeset.t()}
   def delete_language(%Language{} = language) do
-    Repo.delete(language)
+    language
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.no_assoc_constraint(:tags)
+    |> Repo.delete()
   end
 
   @doc """
@@ -105,5 +108,21 @@ defmodule Glific.Settings do
   @spec change_language(Language.t(), map()) :: Ecto.Changeset.t()
   def change_language(%Language{} = language, attrs \\ %{}) do
     Language.changeset(language, attrs)
+  end
+
+  @doc """
+  Upserts a language based on the unique indexes in the table. If there is a match
+  it returns the existing contact, else it creates a new one
+  """
+  @spec language_upsert(map()) :: {:ok, Language.t()}
+  def language_upsert(attrs) do
+    language =
+      Repo.insert!(
+        change_language(%Language{}, attrs),
+        on_conflict: [set: [label: attrs.label]],
+        conflict_target: [:label, :locale]
+      )
+
+    {:ok, language}
   end
 end

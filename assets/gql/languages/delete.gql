@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteLanguage($id: ID!) {
+  deleteLanguage(id: $id) {
+    ...LanguageFields
+
+    ...ErrorFields
+  }
+}

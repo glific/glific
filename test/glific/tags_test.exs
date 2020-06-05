@@ -1,11 +1,11 @@
 defmodule Glific.TagsTest do
   use Glific.DataCase
 
-  alias Glific.{Tags, Settings}
+  alias Glific.{Settings, Tags, Tags.MessageTag, Tags.Tag}
+
+  alias Glific.Fixtures
 
   describe "tags" do
-    alias Glific.Tags.Tag
-
     # language id needs to be added dynamically for all the below actions
     @valid_attrs %{
       label: "some label",
@@ -50,7 +50,7 @@ defmodule Glific.TagsTest do
       {:ok, language} =
         attrs
         |> Enum.into(@valid_language_attrs)
-        |> Settings.create_language()
+        |> Settings.language_upsert()
 
       language
     end
@@ -161,6 +161,56 @@ defmodule Glific.TagsTest do
       language = language_fixture()
       attrs = Map.merge(@valid_attrs, %{language_id: language.id * 10})
       assert {:error, %Ecto.Changeset{}} = Tags.create_tag(attrs)
+    end
+  end
+
+  describe "messages_tags" do
+    test "list_messages_tags/0 returns all message_tags" do
+      message_tag = Fixtures.message_tag_fixture()
+      assert Tags.list_messages_tags() == [message_tag]
+    end
+
+    test "get_messages_tag!/1 returns the messages_tag with given id" do
+      message_tag = Fixtures.message_tag_fixture()
+      assert Tags.get_message_tag!(message_tag.id) == message_tag
+    end
+
+    test "create_messages_tag/1 with valid data creates a tag" do
+      message = Fixtures.message_fixture()
+      tag = Fixtures.tag_fixture()
+      message_tag = Fixtures.message_tag_fixture(%{message_id: message.id, tag_id: tag.id})
+      assert message_tag.message_id == message.id
+      assert message_tag.tag_id == tag.id
+    end
+
+    test "update_messages_tag/2 with valid data updates the tag" do
+      message = Fixtures.message_fixture()
+      message_tag = Fixtures.message_tag_fixture()
+
+      assert {:ok, %MessageTag{} = message_tag} =
+               Tags.update_message_tag(message_tag, %{message_id: message.id})
+
+      assert message_tag.message_id == message.id
+    end
+
+    test "delete_messages_tag/1 deletes the tag" do
+      message_tag = Fixtures.message_tag_fixture()
+      assert {:ok, %MessageTag{}} = Tags.delete_message_tag(message_tag)
+      assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message_tag.id) end
+    end
+
+    test "change_messages_tag/1 returns a tag changeset" do
+      message_tag = Fixtures.message_tag_fixture()
+      assert %Ecto.Changeset{} = Tags.change_message_tag(message_tag)
+    end
+
+    test "ensure that creating message_tag with same message and tag give an error" do
+      message = Fixtures.message_fixture()
+      tag = Fixtures.tag_fixture()
+      Fixtures.message_tag_fixture(%{message_id: message.id, tag_id: tag.id})
+
+      assert {:error, %Ecto.Changeset{}} =
+               Tags.create_message_tag(%{message_id: message.id, tag_id: tag.id})
     end
   end
 end

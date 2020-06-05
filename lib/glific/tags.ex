@@ -3,12 +3,10 @@ defmodule Glific.Tags do
   The Tags Context, which encapsulates and manages tags and the related join tables.
   """
 
-  import Ecto.Query, warn: false
   alias Glific.Repo
+  alias Glific.Tags.{MessageTag, Tag}
 
-  alias Glific.{
-    Tags.Tag
-  }
+  import Ecto.Query, warn: false
 
   @doc """
   Returns the list of tags.
@@ -155,6 +153,110 @@ defmodule Glific.Tags do
     )
   end
   """
-  @spec no_warnings() :: nil
-  def no_warnings(), do: nil
+  @spec no_warnings :: nil
+  def no_warnings, do: nil
+
+  @doc """
+  Returns the list of messages tags.
+
+  ## Examples
+
+      iex> list_messages_tags()
+      [%MessageTag{}, ...]
+
+  """
+  @spec list_messages_tags(map()) :: [MessageTag.t()]
+  def list_messages_tags(_args \\ %{}) do
+    Repo.all(MessageTag)
+  end
+
+  @doc """
+  Gets a single message.
+
+  Raises `Ecto.NoResultsError` if the Message does not exist.
+
+  ## Examples
+
+      iex> get_message_tag!(123)
+      %Message{}
+
+      iex> get_message_tag!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  @spec get_message_tag!(integer) :: MessageTag.t()
+  def get_message_tag!(id) do
+    Repo.get!(MessageTag, id)
+  end
+
+  @doc """
+  Creates a message.
+
+  ## Examples
+
+      iex> create_message_tag(%{field: value})
+      {:ok, %Message{}}
+
+      iex> create_message_tag(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec create_message_tag(map()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
+  def create_message_tag(attrs \\ %{}) do
+    # Merge default values if not present in attributes
+    %MessageTag{}
+    |> MessageTag.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a message tag.
+
+  ## Examples
+
+      iex> update_message_tag(message_tag, %{field: new_value})
+      {:ok, %MessageTag{}}
+
+      iex> update_message_tag(message_tag, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec update_message_tag(MessageTag.t(), map()) ::
+          {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
+  def update_message_tag(%MessageTag{} = message_tag, attrs) do
+    message_tag
+    |> MessageTag.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a message tag.
+
+  ## Examples
+
+      iex> delete_message_tag(message_tag)
+      {:ok, %MessageTag{}}
+
+      iex> delete_message_tag(message_tag)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec delete_message_tag(MessageTag.t()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
+  def delete_message_tag(%MessageTag{} = message_tag) do
+    Repo.delete(message_tag)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking message changes.
+
+  ## Examples
+
+      iex> change_message_tag(message_tag)
+      %Ecto.Changeset{data: %MessageTag{}}
+
+  """
+  @spec change_message_tag(MessageTag.t(), map()) :: Ecto.Changeset.t()
+  def change_message_tag(%MessageTag{} = message_tag, attrs \\ %{}) do
+    MessageTag.changeset(message_tag, attrs)
+  end
 end

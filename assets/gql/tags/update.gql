@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateTag($id: ID!, $input: TagInput!) {
+  updateTag(id: $id, input: $input) {
+    ...TagFields
+
+    ...ErrorFields
+  }
+}

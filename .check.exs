@@ -8,20 +8,23 @@
     ## curated tools may be disabled (e.g. the check for compilation warnings)
     # {:sobelow, false},
     # {:compiler, false}
+    {:npm_test, false},
+    {:formatter, false},
 
     ## ...or adjusted (e.g. use one-line formatter for more compact credo output)
-    {:credo, "mix credo --format oneline"},
+    {:credo, "mix credo --format oneline --strict"},
 
     ## ...or reordered (e.g. to see output from ex_unit before others)
-    # {:ex_unit, order: -1},
+    ## {:ex_unit, order: -1},
 
     ## custom new tools may be added (mix tasks or arbitrary commands)
     # {:my_mix_task, command: "mix release", env: %{"MIX_ENV" => "prod"}},
     # {:my_arbitrary_tool, command: "npm test", cd: "assets"},
     # {:my_arbitrary_script, command: ["my_script", "argument with spaces"], cd: "scripts"}
 
-    {:mix_doctor, command: "mix doctor"},
-    {:mix_coveralls, command: "mix coveralls", env: %{"MIX_ENV" => "test"}},
-    {:mix_format, command: "mix format", order: -1}
+    {:mix_format, "mix format"},
+    {:mix_doctor, "mix doctor"},
+    {:dialyzer, "mix dialyzer --quiet", detect: [{:package, :dialyxir}]},
+    {:mix_coveralls, "mix coveralls", [{:run_after, [:ex_unit]}, {:env, %{"MIX_ENV" => "test"}}]}
   ]
 ]

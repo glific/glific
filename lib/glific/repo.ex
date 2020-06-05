@@ -5,6 +5,7 @@ defmodule Glific.Repo do
   We add a few functions to make our life easier with a few helper functions that ecto does
   not provide.
   """
+  alias Glific.Repo
 
   use Ecto.Repo,
     otp_app: :glific,
@@ -32,4 +33,11 @@ defmodule Glific.Repo do
       resource -> {:ok, resource}
     end
   end
+
+  @doc """
+  Need to figure out what this function does. Still learning Dataloader and its magic
+  """
+  @spec data() :: Dataloader.Ecto.t()
+  def data,
+    do: Dataloader.Ecto.new(Repo, query: &query/2)
 end

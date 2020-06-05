@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createContact($input:ContactInput!) {
+  createContact(input: $input) {
+    ...ContactFields
+
+    ...ErrorFields
+  }
+}

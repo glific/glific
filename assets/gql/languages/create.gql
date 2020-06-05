@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createLanguage($input:LanguageInput!) {
+  createLanguage(input: $input) {
+    ...LanguageFields
+
+    ...ErrorFields
+  }
+}
