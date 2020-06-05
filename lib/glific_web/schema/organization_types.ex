@@ -30,7 +30,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   @desc "Filtering options for organizations"
   input_object :organization_filter do
-    @desc "Match the name"
     field :name, :string
 
     field :display_name, :string

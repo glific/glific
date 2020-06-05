@@ -40,9 +40,6 @@ defmodule Glific.Partners do
 
       {:url, url}, query ->
         from q in query, where: ilike(q.url, ^"%#{url}%")
-
-      {:api_end_point, api_end_point}, query ->
-        from q in query, where: ilike(q.api_end_point, ^"%#{api_end_point}%")
     end)
   end
 
