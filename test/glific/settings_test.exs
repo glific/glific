@@ -25,7 +25,7 @@ defmodule Glific.SettingsTest do
       {:ok, language} =
         attrs
         |> Enum.into(@valid_attrs)
-        |> Settings.upsert()
+        |> Settings.language_upsert()
 
       language
     end

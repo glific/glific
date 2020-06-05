@@ -95,8 +95,8 @@ defmodule Glific.MixProject do
       reset: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      "test.drop": ["ecto.drop", "ecto.create --quiet", "ecto.migrate", "test"],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.drop", "ecto.create --quiet", "ecto.migrate", "test"],
+      "test.nodrop": ["ecto.create --quiet", "ecto.migrate", "test"]
     ]
   end
 end
