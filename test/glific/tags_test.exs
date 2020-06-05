@@ -1,7 +1,7 @@
 defmodule Glific.TagsTest do
   use Glific.DataCase
 
-  alias Glific.{Settings, Tags, Tags.MessageTag, Tags.Tag, Tags.ContactTag}
+  alias Glific.{Settings, Tags, Tags.ContactTag, Tags.MessageTag, Tags.Tag}
 
   alias Glific.Fixtures
 

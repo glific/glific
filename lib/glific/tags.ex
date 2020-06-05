@@ -4,7 +4,7 @@ defmodule Glific.Tags do
   """
 
   alias Glific.Repo
-  alias Glific.Tags.{MessageTag, Tag, ContactTag}
+  alias Glific.Tags.{ContactTag, MessageTag, Tag}
 
   import Ecto.Query, warn: false
 
