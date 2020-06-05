@@ -160,6 +160,9 @@ defmodule Glific.Partners do
       {:name, name}, query ->
         from q in query, where: ilike(q.name, ^"%#{name}%")
 
+      {:display_name, display_name}, query ->
+        from q in query, where: ilike(q.display_name, ^"%#{display_name}%")
+
       {:contact_name, contact_name}, query ->
         from q in query, where: ilike(q.contact_name, ^"%#{contact_name}%")
 

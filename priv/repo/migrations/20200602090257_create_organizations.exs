@@ -4,6 +4,7 @@ defmodule Glific.Repo.Migrations.CreateOrganizations do
   def change do
     create table(:organizations) do
       add :name, :string, null: false
+      add :display_name, :string, null: false
       add :contact_name, :string, null: false
       add :email, :string, null: false
       add :bsp, :string
@@ -14,6 +15,7 @@ defmodule Glific.Repo.Migrations.CreateOrganizations do
       timestamps()
     end
 
+    create unique_index(:organizations, :name)
     create unique_index(:organizations, :wa_number)
     create unique_index(:organizations, :email)
   end

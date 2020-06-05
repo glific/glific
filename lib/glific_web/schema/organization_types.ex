@@ -17,6 +17,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   object :organization do
     field :id, :id
     field :name, :string
+    field :display_name, :string
     field :bsp_key, :string
     field :contact_name, :string
     field :email, :string
@@ -32,6 +33,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     @desc "Match the name"
     field :name, :string
 
+    field :display_name, :string
+
     @desc "Match the email"
     field :email, :string
 
@@ -42,6 +45,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   input_object :organization_input do
     field :name, :string
+    field :display_name, :string
     field :contact_name, :string
     field :email, :string
     field :bsp_key, :string
