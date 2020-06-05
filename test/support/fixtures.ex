@@ -24,7 +24,6 @@ defmodule Glific.Fixtures do
       optout_time: DateTime.backward(1),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      wa_id: Phone.EnUs.phone(),
       wa_status: :invalid
     }
 
@@ -37,9 +36,6 @@ defmodule Glific.Fixtures do
   end
 
   def message_fixture(attrs \\ %{}) do
-    sender = contact_fixture()
-    ricipient = contact_fixture()
-
     valid_attrs = %{
       body: Faker.Lorem.sentence(),
       flow: :inbound,
@@ -68,7 +64,7 @@ defmodule Glific.Fixtures do
     {:ok, language} =
       attrs
       |> Enum.into(valid_attrs)
-      |> Settings.create_language()
+      |> Settings.upsert()
 
     language
   end
