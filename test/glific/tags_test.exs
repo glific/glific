@@ -1,7 +1,7 @@
 defmodule Glific.TagsTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: true
 
-  alias Glific.{Settings, Tags, Tags.MessageTag, Tags.Tag}
+  alias Glific.{Settings, Tags, Tags.ContactTag, Tags.MessageTag, Tags.Tag}
 
   alias Glific.Fixtures
 
@@ -50,7 +50,7 @@ defmodule Glific.TagsTest do
       {:ok, language} =
         attrs
         |> Enum.into(@valid_language_attrs)
-        |> Settings.create_language()
+        |> Settings.language_upsert()
 
       language
     end
@@ -211,6 +211,56 @@ defmodule Glific.TagsTest do
 
       assert {:error, %Ecto.Changeset{}} =
                Tags.create_message_tag(%{message_id: message.id, tag_id: tag.id})
+    end
+  end
+
+  describe "contacts_tags" do
+    test "list_contacts_tags/0 returns all contact_tags" do
+      contact_tag = Fixtures.contact_tag_fixture()
+      assert Tags.list_contacts_tags() == [contact_tag]
+    end
+
+    test "get_contacts_tag!/1 returns the contacts_tag with given id" do
+      contact_tag = Fixtures.contact_tag_fixture()
+      assert Tags.get_contact_tag!(contact_tag.id) == contact_tag
+    end
+
+    test "create_contacts_tag/1 with valid data creates a tag" do
+      contact = Fixtures.contact_fixture()
+      tag = Fixtures.tag_fixture()
+      contact_tag = Fixtures.contact_tag_fixture(%{contact_id: contact.id, tag_id: tag.id})
+      assert contact_tag.contact_id == contact.id
+      assert contact_tag.tag_id == tag.id
+    end
+
+    test "update_contacts_tag/2 with valid data updates the tag" do
+      contact = Fixtures.contact_fixture()
+      contact_tag = Fixtures.contact_tag_fixture()
+
+      assert {:ok, %ContactTag{} = contact_tag} =
+               Tags.update_contact_tag(contact_tag, %{contact_id: contact.id})
+
+      assert contact_tag.contact_id == contact.id
+    end
+
+    test "delete_contacts_tag/1 deletes the tag" do
+      contact_tag = Fixtures.contact_tag_fixture()
+      assert {:ok, %ContactTag{}} = Tags.delete_contact_tag(contact_tag)
+      assert_raise Ecto.NoResultsError, fn -> Tags.get_contact_tag!(contact_tag.id) end
+    end
+
+    test "change_contacts_tag/1 returns a tag changeset" do
+      contact_tag = Fixtures.contact_tag_fixture()
+      assert %Ecto.Changeset{} = Tags.change_contact_tag(contact_tag)
+    end
+
+    test "ensure that creating contact_tag with same contact and tag give an error" do
+      contact = Fixtures.contact_fixture()
+      tag = Fixtures.tag_fixture()
+      Fixtures.contact_tag_fixture(%{contact_id: contact.id, tag_id: tag.id})
+
+      assert {:error, %Ecto.Changeset{}} =
+               Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id})
     end
   end
 end

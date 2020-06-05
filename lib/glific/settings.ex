@@ -109,4 +109,20 @@ defmodule Glific.Settings do
   def change_language(%Language{} = language, attrs \\ %{}) do
     Language.changeset(language, attrs)
   end
+
+  @doc """
+  Upserts a language based on the unique indexes in the table. If there is a match
+  it returns the existing contact, else it creates a new one
+  """
+  @spec language_upsert(map()) :: {:ok, Language.t()}
+  def language_upsert(attrs) do
+    language =
+      Repo.insert!(
+        change_language(%Language{}, attrs),
+        on_conflict: [set: [label: attrs.label]],
+        conflict_target: [:label, :locale]
+      )
+
+    {:ok, language}
+  end
 end

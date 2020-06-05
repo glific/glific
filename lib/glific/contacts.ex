@@ -39,9 +39,6 @@ defmodule Glific.Contacts do
       {:phone, phone}, query ->
         from q in query, where: ilike(q.phone, ^"%#{phone}%")
 
-      {:wa_id, wa_id}, query ->
-        from q in query, where: ilike(q.wa_id, ^"%#{wa_id}%")
-
       {:status, status}, query ->
         from q in query, where: q.status == ^status
 
@@ -139,9 +136,6 @@ defmodule Glific.Contacts do
   @doc """
   Gets or Creates a Contact based on the unique indexes in the table. If there is a match
   it returns the existing contact, else it creates a new one
-
-  IMPROVE_ME: We need to figure out how to reconcile phone and wa_id and modify the below
-  IMPROVE_ME: Can we make the below more generic
   """
   @spec upsert(map()) :: Contact.t()
   def upsert(attrs) do

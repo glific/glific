@@ -1,0 +1,14 @@
+fragment MessageMediaFields on MessageMediaResult {
+  messageMedia {
+    id
+    sourceUrl
+    caption
+  }
+}
+
+fragment ErrorFields on MessageMediaResult {
+  errors {
+    key
+    message
+  }
+}

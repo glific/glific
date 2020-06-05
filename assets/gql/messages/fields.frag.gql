@@ -1,0 +1,23 @@
+fragment MessageFields on MessageResult {
+  message {
+    id
+    body
+
+    sender {
+      id
+      name
+    }
+
+    recipient {
+      id
+      name
+    }
+  }
+}
+
+fragment ErrorFields on MessageResult {
+  errors {
+    key
+    message
+  }
+}

@@ -16,8 +16,8 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.LanguageTypes)
   import_types(__MODULE__.TagTypes)
   import_types(__MODULE__.ContactTypes)
-  # import_types(__MODULE__.MessageTypes)
-  # import_types(__MODULE__.MessageMediaTypes)
+  import_types(__MODULE__.MessageTypes)
+  import_types(__MODULE__.MessageMediaTypes)
   # import_types(__MODULE__.MessageTagTypes)
   import_types(__MODULE__.OrganizationTypes)
   import_types(__MODULE__.BSPTypes)
@@ -31,9 +31,9 @@ defmodule GlificWeb.Schema do
 
     import_fields(:contact_queries)
 
-    # import_fields(:message_media_queries)
+    import_fields(:message_media_queries)
 
-    # import_fields(:message_queries)
+    import_fields(:message_queries)
 
     # import_fields(:message_tag_queries)
 
@@ -49,9 +49,9 @@ defmodule GlificWeb.Schema do
 
     import_fields(:contact_mutations)
 
-    # import_fields(:message_media_mutations)
+    import_fields(:message_media_mutations)
 
-    # import_fields(:message_mutations)
+    import_fields(:message_mutations)
 
     # import_fields(:message_tag_mutations)
 

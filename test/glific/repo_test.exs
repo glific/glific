@@ -1,5 +1,5 @@
 defmodule Glific.RepoTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: true
 
   alias Glific.{
     Settings,
@@ -23,7 +23,7 @@ defmodule Glific.RepoTest do
       {:ok, language} =
         attrs
         |> Enum.into(attrs)
-        |> Settings.create_language()
+        |> Settings.language_upsert()
 
       language
     end

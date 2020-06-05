@@ -1,5 +1,5 @@
 defmodule Glific.MessagesTest do
-  use Glific.DataCase
+  use Glific.DataCase, async: true
 
   alias Glific.{
     Contacts,
@@ -14,7 +14,6 @@ defmodule Glific.MessagesTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "12345671",
       status: :valid,
-      wa_id: "some sender wa_id",
       wa_status: :invalid
     }
 
@@ -24,7 +23,6 @@ defmodule Glific.MessagesTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "101013131",
       status: :valid,
-      wa_id: "some recepient wa_id",
       wa_status: :invalid
     }
 

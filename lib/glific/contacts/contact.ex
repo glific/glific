@@ -7,19 +7,18 @@ defmodule Glific.Contacts.Contact do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.ContactStatusEnum
+  alias Glific.Enums.ContactStatus
   # alias Glific.Tags.Tag
 
   @required_fields [:name, :phone]
-  @optional_fields [:wa_status, :wa_id, :status, :optin_time, :optout_time]
+  @optional_fields [:wa_status, :status, :optin_time, :optout_time]
 
   @type t() :: %__MODULE__{
           id: non_neg_integer | nil,
           name: String.t() | nil,
           phone: String.t() | nil,
-          wa_id: String.t() | nil,
-          status: ContactStatusEnum | nil,
-          wa_status: ContactStatusEnum | nil,
+          status: ContactStatus | nil,
+          wa_status: ContactStatus | nil,
           optin_time: :utc_datetime | nil,
           optout_time: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
@@ -29,10 +28,9 @@ defmodule Glific.Contacts.Contact do
   schema "contacts" do
     field :name, :string
     field :phone, :string
-    field :wa_id, :string, default: nil
 
-    field :status, ContactStatusEnum
-    field :wa_status, ContactStatusEnum
+    field :status, ContactStatus
+    field :wa_status, ContactStatus
 
     field :optin_time, :utc_datetime
     field :optout_time, :utc_datetime
@@ -51,6 +49,5 @@ defmodule Glific.Contacts.Contact do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint(:phone)
-    |> unique_constraint(:wa_id)
   end
 end
