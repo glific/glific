@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.AddTwowayTables do
+defmodule Glific.Repo.Migrations.GlificTables do
   @moduledoc """
   To simplify things, lets create the bulk of the tables in one migration file for v0.1.
   This gives new developers a good view of the schema in one place.
