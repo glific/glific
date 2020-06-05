@@ -143,8 +143,6 @@ defmodule Glific.Seeds do
       sender_id: sender.id,
       recipient_id: recipient.id
     })
-
-
   end
 
   @doc """

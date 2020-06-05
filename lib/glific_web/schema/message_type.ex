@@ -36,7 +36,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     # end
 
     field :tags, list_of(:tag) do
-      resolve(dataloader(Message))
+      resolve(dataloader(Repo))
     end
   end
 

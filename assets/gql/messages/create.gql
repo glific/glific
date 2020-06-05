@@ -1,8 +1,8 @@
 #import "./fields.frag.gql"
 
-mutation createTag($input:TagInput!) {
-  createTag(input: $input) {
-    ...TagFields
+mutation createMessage($input:MessageInput!) {
+  createMessage(input: $input) {
+    ...MessageFields
 
     ...ErrorFields
   }

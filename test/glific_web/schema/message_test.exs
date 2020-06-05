@@ -25,7 +25,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
 
     # lets ensure that the sender and recipient field exists and has a valid id
     assert get_in(message, ["sender", "id"]) >
-    assert get_in(message, ["recipient", "id"]) > 0
+             assert(get_in(message, ["recipient", "id"]) > 0)
   end
 
   test "message id returns one message or nil" do
@@ -45,5 +45,84 @@ defmodule GlificWeb.Schema.Query.MessageTest do
     assert message == "Resource not found"
   end
 
+  test "create a message and test possible scenarios and errors" do
+    body = "default message body"
+    {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
 
+    result =
+      query_gql_by(:create,
+        variables: %{
+          "input" => %{
+            "body" => "Message body",
+            "flow" => "OUTBOUND",
+            "recipientId" => message.recipient_id,
+            "senderId" => message.sender_id,
+            "type" => "TEXT",
+            "waStatus" => "DELIVERED"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert "Message body" = get_in(query_data, [:data, "createMessage", "message", "body"])
+
+    # create message without required atributes
+    result =
+      query_gql_by(:create,
+        variables: %{
+          "input" => %{
+            "body" => "Message body",
+            "flow" => "OUTBOUND",
+            "type" => "TEXT",
+            "waStatus" => "DELIVERED"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert "can't be blank" =
+             get_in(query_data, [:data, "createMessage", "errors", Access.at(0), "message"])
+  end
+
+  test "update a tag and test possible scenarios and errors" do
+    body = "default message body"
+    {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
+
+    result =
+      query_gql_by(:update,
+        variables: %{"id" => message.id, "input" => %{"body" => "Updated body"}}
+      )
+
+    assert {:ok, query_data} = result
+    assert "Updated body" = get_in(query_data, [:data, "updateMessage", "message", "body"])
+
+    result =
+      query_gql_by(:update,
+        variables: %{
+          "id" => message.id,
+          "input" => %{"sender_id" => ""}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "updateMessage", "errors", Access.at(0), "message"])
+    assert message == "can't be blank"
+  end
+
+  test "delete a message" do
+    body = "default message body"
+    {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
+
+    result = query_gql_by(:delete, variables: %{"id" => message.id})
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "deleteMessage", "errors"]) == nil
+
+    result = query_gql_by(:delete, variables: %{"id" => message.id})
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "deleteMessage", "errors", Access.at(0), "message"])
+    assert message == "Resource not found"
+  end
 end

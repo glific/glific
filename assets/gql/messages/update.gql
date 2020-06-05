@@ -1,8 +1,8 @@
 #import "./fields.frag.gql"
 
-mutation updateTag($id: ID!, $input: TagInput!) {
-  updateTag(id: $id, input: $input) {
-    ...TagFields
+mutation updateMessage($id: ID!, $input: MessageInput!) {
+  updateMessage(id: $id, input: $input) {
+    ...MessageFields
 
     ...ErrorFields
   }
