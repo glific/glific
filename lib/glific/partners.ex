@@ -20,8 +20,30 @@ defmodule Glific.Partners do
 
   """
   @spec list_bsps(map()) :: [%BSP{}, ...]
-  def list_bsps(_args \\ %{}) do
-    Repo.all(BSP)
+  def list_bsps(args \\ %{}) do
+    args
+    |> Enum.reduce(BSP, fn
+      {:order, order}, query ->
+        query |> order_by({^order, :name})
+
+      {:filter, filter}, query ->
+        query |> filter_bsp_with(filter)
+    end)
+    |> Repo.all()
+  end
+
+  @spec filter_bsp_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_bsp_with(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:name, name}, query ->
+        from q in query, where: ilike(q.name, ^"%#{name}%")
+
+      {:url, url}, query ->
+        from q in query, where: ilike(q.url, ^"%#{url}%")
+
+      {:api_end_point, api_end_point}, query ->
+        from q in query, where: ilike(q.api_end_point, ^"%#{api_end_point}%")
+    end)
   end
 
   @doc """
