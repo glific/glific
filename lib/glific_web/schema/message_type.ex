@@ -5,7 +5,6 @@ defmodule GlificWeb.Schema.MessageTypes do
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
-  alias Glific.Messages.Message
   alias Glific.Repo
   alias GlificWeb.Resolvers
 

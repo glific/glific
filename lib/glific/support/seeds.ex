@@ -99,6 +99,7 @@ defmodule Glific.Seeds do
   end
 
   @doc false
+  @spec seed_messages :: nil
   def seed_messages do
     sender = Repo.insert!(%Contact{phone: "917834811114", name: "Sender"})
 
