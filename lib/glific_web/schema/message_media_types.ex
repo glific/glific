@@ -20,20 +20,20 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
     field :wa_media_id, :string
   end
 
-  # @desc "Filtering options for message media"
-  # input_object :message_media_filter do
-  #   @desc "Match the url"
-  #   field :url, :string
+  @desc "Filtering options for message media"
+  input_object :message_media_filter do
+    @desc "Match the url"
+    field :url, :string
 
-  #   @desc "Match the source url"
-  #   field :source_url, :string
+    @desc "Match the source url"
+    field :source_url, :string
 
-  #   @desc "Match the thumbnail"
-  #   field :thumbnail, :string
+    @desc "Match the thumbnail"
+    field :thumbnail, :string
 
-  #   @desc "Match the caption"
-  #   field :caption, :string
-  # end
+    @desc "Match the caption"
+    field :caption, :string
+  end
 
   input_object :message_media_input do
     field :url, :string
@@ -50,12 +50,12 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
       resolve(&Resolvers.Messages.message_media/3)
     end
 
-    # @desc "Get a list of all message_media filtered by various criteria"
-    # field :message_medias, list_of(:message_media) do
-    #   arg(:filter, :message_media_filter)
-    #   arg(:order, type: :sort_order, default_value: :asc)
-    #   resolve(&Resolvers.MessageMedia.message_medias/3)
-    # end
+    @desc "Get a list of all message_media filtered by various criteria"
+    field :message_medias, list_of(:message_media) do
+      arg(:filter, :message_media_filter)
+      arg(:order, type: :sort_order, default_value: :asc)
+      resolve(&Resolvers.Messages.message_medias/3)
+    end
   end
 
   object :message_media_mutations do
