@@ -83,7 +83,7 @@ defmodule GlificWeb.Schema.Query.LanguageTest do
       query_gql_by(:update,
         variables: %{
           "id" => lang.id,
-          "input" => %{"label" => "Hindi (India)", "locale" => "hl_IN"}
+          "input" => %{"label" => "Hindi (India)", "locale" => "hi_IN"}
         }
       )
 

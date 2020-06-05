@@ -43,8 +43,7 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
       timestamps()
     end
 
-    create unique_index(:languages, :label)
-    create unique_index(:languages, :locale)
+    create unique_index(:languages, [:label, :locale])
   end
 
   @doc """

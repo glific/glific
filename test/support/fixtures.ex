@@ -64,7 +64,7 @@ defmodule Glific.Fixtures do
     {:ok, language} =
       attrs
       |> Enum.into(valid_attrs)
-      |> Settings.create_language()
+      |> Settings.upsert()
 
     language
   end
