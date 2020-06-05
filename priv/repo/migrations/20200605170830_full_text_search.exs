@@ -22,16 +22,15 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
       CREATE MATERIALIZED VIEW message_search AS
       SELECT
       contacts.id  AS id,
-      contacts.name || ' ' || contacts.phone AS name,
+      contacts.name || ' ' || contacts.phone AS contact_label,
+      coalesce(string_agg(tags.label, ' '), ' ') AS tag_label,
       (
       setweight(to_tsvector(unaccent(contacts.name || ' ' || contacts.phone)), 'A') ||
       setweight(to_tsvector(unaccent(coalesce(string_agg(tags.label, ' '), ' '))), 'B') ||
-      setweight(to_tsvector(unaccent(coalesce(string_agg(messages.body, ' '), ' '))), 'C') ||
-      setweight(to_tsvector(unaccent(coalesce(string_agg(message_media.caption, ' '), ' '))), 'D')
+      setweight(to_tsvector(unaccent(coalesce(string_agg(messages.body, ' '), ' '))), 'C')
       ) AS document
       FROM  contacts
       LEFT  JOIN messages ON (messages.sender_id = contacts.id OR messages.recipient_id = contacts.id)
-      LEFT  JOIN message_media ON messages.media_id = message_media.id
       LEFT  JOIN messages_tags ON  messages.id = messages_tags.message_id
       LEFT  JOIN tags ON tags.id = messages_tags.tag_id
       GROUP BY contacts.id
@@ -44,7 +43,8 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
     create index("message_search", ["document"], using: :gin)
 
     # to support substring title matches with ILIKE
-    execute("CREATE INDEX message_search_name_index ON message_search USING gin (name gin_trgm_ops)")
+    execute("CREATE INDEX message_search_contact_index ON message_search USING gin (contact_label gin_trgm_ops)")
+    execute("CREATE INDEX message_search_tag_index ON message_search USING gin (tag_label gin_trgm_ops)")
 
     # to support updating CONCURRENTLY
     create unique_index("message_search", [:id])
@@ -87,16 +87,6 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
       """
       CREATE TRIGGER refresh_message_search
       AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE
-      ON message_media
-      FOR EACH STATEMENT
-      EXECUTE PROCEDURE refresh_message_search();
-      """
-    )
-
-    execute(
-      """
-      CREATE TRIGGER refresh_message_search
-      AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE
       ON tags
       FOR EACH STATEMENT
       EXECUTE PROCEDURE refresh_message_search();
@@ -117,12 +107,12 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
   def down do
     execute("DROP TRIGGER IF EXISTS refresh_message_search ON contacts")
     execute("DROP TRIGGER IF EXISTS refresh_message_search ON messages")
-    execute("DROP TRIGGER IF EXISTS refresh_message_search ON message_media")
     execute("DROP TRIGGER IF EXISTS refresh_message_search ON tags")
     execute("DROP TRIGGER IF EXISTS refresh_message_search ON messages_tags")
 
     execute("DROP INDEX IF EXISTS message_search_document_index")
-    execute("DROP INDEX IF EXISTS message_search_name_index")
+    execute("DROP INDEX IF EXISTS message_search_contact_index")
+    execute("DROP INDEX IF EXISTS message_search_tag_index")
     execute("DROP INDEX IF EXISTS message_search_id_index")
 
     execute("DROP MATERIALIZED VIEW IF EXISTS message_search")

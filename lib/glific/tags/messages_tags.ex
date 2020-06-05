@@ -1,6 +1,6 @@
 defmodule Glific.Tags.MessageTag do
   @moduledoc """
-  A pipe for managing the message tags
+  A file for managing the join table message tags
   """
 
   alias __MODULE__

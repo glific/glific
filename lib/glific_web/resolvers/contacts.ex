@@ -16,9 +16,9 @@ defmodule GlificWeb.Resolvers.Contacts do
 
   @doc false
   @spec contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
+          {:ok, [any]}
   def contacts(_, args, _) do
-    {:ok, Contacts.list_contacts(args)}
+            {:ok, Contacts.list_contacts(args)}
   end
 
   @doc false
@@ -42,11 +42,17 @@ defmodule GlificWeb.Resolvers.Contacts do
 
   @doc false
   @spec delete_contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
+  {:ok, any} | {:error, any}
   def delete_contact(_, %{id: id}, _) do
     with {:ok, contact} <- Repo.fetch(Contact, id),
          {:ok, contact} <- Contacts.delete_contact(contact) do
       {:ok, contact}
     end
+  end
+
+  @spec search(Absinthe.Resolution.t(), %{term: String.t()}, %{context: map()}) ::
+  {:ok, [any]}
+  def search(_, %{term: term}, _) do
+    {:ok, Contacts.search(term)}
   end
 end

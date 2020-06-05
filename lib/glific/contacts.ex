@@ -145,4 +145,17 @@ defmodule Glific.Contacts do
       conflict_target: :phone
     )
   end
+
+  @doc """
+  Full text search interface via Postgres
+  """
+  @spec search(String.t()) :: [Contact.t()]
+  def search(term) do
+    IO.inspect(term)
+
+    Contact
+    |> Glific.Search.Full.run(term)
+    |> Repo.all()
+  end
+
 end
