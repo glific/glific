@@ -16,7 +16,7 @@ defmodule Glific.MixProject do
       deps: deps(),
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
-        "test.drop": :test
+        "test.nodrop": :test
       ]
     ]
   end

@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateMessageMedia($id: ID!, $input: MessageMediaInput!) {
+  updateMessageMedia(id: $id, input: $input) {
+    ...MessageMediaFields
+
+    ...ErrorFields
+  }
+}

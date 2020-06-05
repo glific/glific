@@ -112,7 +112,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "deleteTag", "errors"]) == nil
 
-    result = query_gql_by(:delete, variables: %{"id" => 123_456_789})
+    result = query_gql_by(:delete, variables: %{"id" => tag.id})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "deleteTag", "errors", Access.at(0), "message"])

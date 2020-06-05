@@ -4,7 +4,7 @@ defmodule Glific.Messages.Message do
   import Ecto.Changeset
   alias __MODULE__
 
-  alias Glific.{Contacts.Contact, Messages.MessageMedia}
+  alias Glific.{Contacts.Contact, Messages.MessageMedia, Tags.Tag}
   alias Glific.Enums.{MessageFlow, MessageStatus, MessageTypes}
 
   @type t() :: %__MODULE__{
@@ -45,7 +45,7 @@ defmodule Glific.Messages.Message do
     belongs_to :recipient, Contact
     belongs_to :media, MessageMedia
 
-    # many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
+    many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
 
     timestamps()
   end

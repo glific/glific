@@ -4,6 +4,8 @@ defmodule Glific.Seeds do
   """
   alias Glific.{
     Contacts.Contact,
+    Messages.Message,
+    Messages.MessageMedia,
     Partners.BSP,
     Partners.Organization,
     Repo,
@@ -97,6 +99,90 @@ defmodule Glific.Seeds do
     })
   end
 
+  @doc false
+  @spec seed_messages :: nil
+  def seed_messages do
+    sender = Repo.insert!(%Contact{phone: "917834811114", name: "Sender"})
+
+    recipient = Repo.insert!(%Contact{phone: "917834811231", name: "Recipient"})
+
+    Repo.insert!(%Message{
+      body: "default message body",
+      flow: :inbound,
+      type: :text,
+      wa_message_id: Faker.String.base64(10),
+      wa_status: :enqueued,
+      sender_id: sender.id,
+      recipient_id: recipient.id
+    })
+
+    Repo.insert!(%Message{
+      body: Faker.Lorem.sentence(),
+      flow: :inbound,
+      type: :text,
+      wa_message_id: Faker.String.base64(10),
+      wa_status: :enqueued,
+      sender_id: sender.id,
+      recipient_id: recipient.id
+    })
+
+    Repo.insert!(%Message{
+      body: Faker.Lorem.sentence(),
+      flow: :inbound,
+      type: :text,
+      wa_message_id: Faker.String.base64(10),
+      wa_status: :enqueued,
+      sender_id: sender.id,
+      recipient_id: recipient.id
+    })
+
+    Repo.insert!(%Message{
+      body: Faker.Lorem.sentence(),
+      flow: :inbound,
+      type: :text,
+      wa_message_id: Faker.String.base64(10),
+      wa_status: :enqueued,
+      sender_id: sender.id,
+      recipient_id: recipient.id
+    })
+  end
+
+  @doc false
+  @spec seed_messages_media :: nil
+  def seed_messages_media do
+    Repo.insert!(%MessageMedia{
+      url: Faker.Avatar.image_url(),
+      source_url: Faker.Avatar.image_url(),
+      thumbnail: Faker.Avatar.image_url(),
+      caption: "default caption",
+      wa_media_id: Faker.String.base64(10)
+    })
+
+    Repo.insert!(%MessageMedia{
+      url: Faker.Avatar.image_url(),
+      source_url: Faker.Avatar.image_url(),
+      thumbnail: Faker.Avatar.image_url(),
+      caption: Faker.String.base64(10),
+      wa_media_id: Faker.String.base64(10)
+    })
+
+    Repo.insert!(%MessageMedia{
+      url: Faker.Avatar.image_url(),
+      source_url: Faker.Avatar.image_url(),
+      thumbnail: Faker.Avatar.image_url(),
+      caption: Faker.String.base64(10),
+      wa_media_id: Faker.String.base64(10)
+    })
+
+    Repo.insert!(%MessageMedia{
+      url: Faker.Avatar.image_url(),
+      source_url: Faker.Avatar.image_url(),
+      thumbnail: Faker.Avatar.image_url(),
+      caption: Faker.String.base64(10),
+      wa_media_id: Faker.String.base64(10)
+    })
+  end
+
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
   split this function up into multiple different ones for test, dev and production
@@ -112,5 +198,9 @@ defmodule Glific.Seeds do
     seed_bsp()
 
     seed_organizations()
+
+    seed_messages()
+
+    seed_messages_media()
   end
 end
