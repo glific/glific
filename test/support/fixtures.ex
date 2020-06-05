@@ -36,9 +36,6 @@ defmodule Glific.Fixtures do
   end
 
   def message_fixture(attrs \\ %{}) do
-    sender = contact_fixture()
-    ricipient = contact_fixture()
-
     valid_attrs = %{
       body: Faker.Lorem.sentence(),
       flow: :inbound,

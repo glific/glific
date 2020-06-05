@@ -141,7 +141,7 @@ defmodule Glific.ContactsTest do
     test "list_contacts/1 with multiple contacts filtered" do
       c0 = contact_fixture(@valid_attrs)
       c1 = contact_fixture(@valid_attrs_1)
-      c2 = contact_fixture(@valid_attrs_2)
+      _c2 = contact_fixture(@valid_attrs_2)
       c3 = contact_fixture(@valid_attrs_3)
 
       cs = Contacts.list_contacts(%{order: :asc, filter: %{phone: "some phone 3"}})
