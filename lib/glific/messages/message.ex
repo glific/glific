@@ -5,7 +5,7 @@ defmodule Glific.Messages.Message do
   alias __MODULE__
 
   alias Glific.{Contacts.Contact, Messages.MessageMedia}
-  alias Glific.{MessageFlowEnum, MessageStatusEnum, MessageTypesEnum}
+  alias Glific.Enums.{MessageFlow, MessageStatus, MessageTypes}
 
   @type t() :: %__MODULE__{
           id: non_neg_integer | nil,
@@ -36,10 +36,10 @@ defmodule Glific.Messages.Message do
 
   schema "messages" do
     field :body, :string
-    field :flow, MessageFlowEnum
-    field :type, MessageTypesEnum
+    field :flow, MessageFlow
+    field :type, MessageTypes
     field :wa_message_id, :string
-    field :wa_status, MessageStatusEnum
+    field :wa_status, MessageStatus
 
     belongs_to :sender, Contact
     belongs_to :recipient, Contact
