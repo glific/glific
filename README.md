@@ -6,8 +6,10 @@ Install the following packages using your favorite package manager. Links are pr
 
   * [Install Elixir](https://elixir-lang.org/install.html#distributions)
   * [Install Postgres](https://www.postgresql.org/download/)
-  ** For Postgres, for the development server, we default to using postgres/postgres as the username/password. This is configurable
-
+  ** For Postgres, for the development server, we default to using postgres/postgres as the username/password.
+  This is configurable
+  ** The db user needs to have superuser status on the database since we create a materialized view.
+  This might change in a future release to a table
 
 ## Download code from GitHub
 
@@ -32,3 +34,7 @@ Ready to run in production? Please [check our deployment guides](https://hexdocs
   * Docs: https://hexdocs.pm/phoenix
   * Forum: https://elixirforum.com/c/phoenix-forum
   * Source: https://github.com/phoenixframework/phoenix
+
+## Chat with us
+
+  * [Chat on Discord](https://discord.gg/me6NCMu) - Coming soon
