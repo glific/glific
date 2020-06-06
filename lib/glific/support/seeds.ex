@@ -103,7 +103,7 @@ defmodule Glific.Seeds do
   @doc false
   @spec seed_messages :: nil
   def seed_messages do
-    {:ok, sender}    = Repo.fetch_by(Contact, %{name: "Default Sender"})
+    {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default Sender"})
     {:ok, recipient} = Repo.fetch_by(Contact, %{name: "Default Recipient"})
 
     Repo.insert!(%Message{

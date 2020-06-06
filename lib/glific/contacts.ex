@@ -2,11 +2,9 @@ defmodule Glific.Contacts do
   @moduledoc """
   The Contacts context.
   """
-
   import Ecto.Query, warn: false
-  alias Glific.Repo
 
-  alias Glific.Contacts.Contact
+  alias Glific.{Contacts.Contact, Repo, Search.Full}
 
   @doc """
   Returns the list of contacts.
@@ -151,11 +149,10 @@ defmodule Glific.Contacts do
   """
   @spec search(String.t()) :: [Contact.t()]
   def search(term) do
-    IO.inspect(term)
+    query = from(c in Contact)
 
-    Contact
-    |> Glific.Search.Full.run(term)
+    query
+    |> Full.run(term)
     |> Repo.all()
   end
-
 end
