@@ -6,9 +6,9 @@ Install the following packages using your favorite package manager. Links are pr
 
   * [Install Elixir](https://elixir-lang.org/install.html#distributions)
   * [Install Postgres](https://www.postgresql.org/download/)
-  ..1. For Postgres, for the development server, we default to using postgres/postgres as the username/password.
+    1. For Postgres, for the development server, we default to using postgres/postgres as the username/password.
   This is configurable
-  ..2. The db user needs to have superuser status on the database since we create a materialized view.
+    2. The db user needs to have superuser status on the database since we create a materialized view.
   This might change in a future release to a table
 
 ## Download code from GitHub
