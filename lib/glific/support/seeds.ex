@@ -53,7 +53,8 @@ defmodule Glific.Seeds do
   @doc false
   @spec seed_contacts :: nil
   def seed_contacts do
-    Repo.insert!(%Contact{phone: "917834811114", name: "Default Contact"})
+    Repo.insert!(%Contact{phone: "917834811114", name: "Default Sender"})
+    Repo.insert!(%Contact{phone: "917834811231", name: "Default Recipient"})
 
     Repo.insert!(%Contact{
       name: "Adelle Cavin",
@@ -102,9 +103,8 @@ defmodule Glific.Seeds do
   @doc false
   @spec seed_messages :: nil
   def seed_messages do
-    sender = Repo.insert!(%Contact{phone: "917834811114", name: "Sender"})
-
-    recipient = Repo.insert!(%Contact{phone: "917834811231", name: "Recipient"})
+    {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default Sender"})
+    {:ok, recipient} = Repo.fetch_by(Contact, %{name: "Default Recipient"})
 
     Repo.insert!(%Message{
       body: "default message body",
