@@ -10,7 +10,6 @@
     # {:compiler, false}
     {:npm_test, false},
     {:formatter, false},
-    {:sobelow, false},
 
     ## ...or adjusted (e.g. use one-line formatter for more compact credo output)
     {:credo, "mix credo --format oneline --strict"},
@@ -26,6 +25,8 @@
     {:mix_format, "mix format"},
     {:mix_doctor, "mix doctor"},
     {:dialyzer, "mix dialyzer --quiet", detect: [{:package, :dialyxir}]},
+    {:sobelow, "mix sobelow --skip --exit",
+     umbrella: [recursive: true], detect: [{:package, :sobelow}]},
     {:mix_coveralls, "mix coveralls", [{:run_after, [:ex_unit]}, {:env, %{"MIX_ENV" => "test"}}]}
   ]
 ]
