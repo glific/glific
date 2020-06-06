@@ -223,9 +223,6 @@ defmodule Glific.PartnersTest do
       org_list = Partners.list_organizations(%{filter: %{email: org1.email}})
       assert org_list == [org1]
 
-      org_list = Partners.list_organizations(%{filter: %{bsp_key: org1.bsp_key}})
-      assert org_list == [org1]
-
       org_list = Partners.list_organizations(%{filter: %{wa_number: org1.wa_number}})
       assert org_list == [org1]
 

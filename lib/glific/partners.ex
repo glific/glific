@@ -166,8 +166,10 @@ defmodule Glific.Partners do
       {:email, email}, query ->
         from q in query, where: ilike(q.email, ^"%#{email}%")
 
-      {:bsp_key, bsp_key}, query ->
-        from q in query, where: ilike(q.bsp_key, ^"%#{bsp_key}%")
+      {:bsp, bsp}, query ->
+        from q in query,
+          join: c in assoc(q, :bsp),
+          where: ilike(c.name, ^"%#{bsp}%")
 
       {:wa_number, wa_number}, query ->
         from q in query, where: ilike(q.wa_number, ^"%#{wa_number}%")

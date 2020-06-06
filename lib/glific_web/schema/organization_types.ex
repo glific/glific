@@ -30,14 +30,23 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   @desc "Filtering options for organizations"
   input_object :organization_filter do
+    @desc "Match the name"
     field :name, :string
 
+    @desc "Match the display name"
     field :display_name, :string
+
+    @desc "Match the email"
     field :email, :string
 
+    @desc "Match the contact name"
     field :contact_name, :string
-    field :bsp_key, :string
+
+    @desc "Match the whatsapp number of organization"
     field :wa_number, :string
+
+    @desc "Match the bsp"
+    field :bsp, :string
   end
 
   input_object :organization_input do

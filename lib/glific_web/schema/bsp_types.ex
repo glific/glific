@@ -20,9 +20,11 @@ defmodule GlificWeb.Schema.BSPTypes do
 
   @desc "Filtering options for bsps"
   input_object :bsp_filter do
+    @desc "Match the name"
     field :name, :string
+
+    @desc "Match the url of bsp"
     field :url, :string
-    field :api_end_point, :string
   end
 
   input_object :bsp_input do
