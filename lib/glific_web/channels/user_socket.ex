@@ -1,6 +1,9 @@
 defmodule GlificWeb.UserSocket do
-  use Phoenix.Socket
   @moduledoc false
+  use Phoenix.Socket
+
+  use Absinthe.Phoenix.Socket,
+    schema: GlificWeb.Schema
 
   ## Channels
   # channel "room:*", GlificWeb.RoomChannel

@@ -14,7 +14,9 @@ defmodule Glific.Application do
       # Start the PubSub system
       {Phoenix.PubSub, name: Glific.PubSub},
       # Start the Endpoint (http/https)
-      GlificWeb.Endpoint
+      GlificWeb.Endpoint,
+      # Add Absinthe's subscription
+      {Absinthe.Subscription, GlificWeb.Endpoint}
       # Start a worker by calling: Glific.Worker.start_link(arg)
       # {Glific.Worker, arg}
     ]
