@@ -10,6 +10,7 @@
     # {:compiler, false}
     {:npm_test, false},
     {:formatter, false},
+    {:sobelow, false},
 
     ## ...or adjusted (e.g. use one-line formatter for more compact credo output)
     {:credo, "mix credo --format oneline --strict"},
