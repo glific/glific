@@ -77,5 +77,5 @@ config :phoenix, :plug_init_mode, :runtime
 
 # config goth
 config :goth,
-  json: "config/.dialogflow.credentials.json" |> File.read!,
+  json: "config/.dialogflow.credentials.json" |> File.read!(),
   actor_email: "elixirclient@small-talk-talnvm.iam.gserviceaccount.com"

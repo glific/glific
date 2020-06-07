@@ -8,7 +8,7 @@ defmodule Glific.Flowex.Sessions do
   @doc """
   Function to communicate with dialogflow to detect the intent of the request
   """
-  @spec detect_intent(String.t, String.t, String.t, String.t) :: tuple
+  @spec detect_intent(String.t(), String.t(), String.t(), String.t()) :: tuple
   def detect_intent(project, text, session_id, language \\ "en") do
     body = %{
       queryInput: %{
