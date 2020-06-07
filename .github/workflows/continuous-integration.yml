@@ -1,6 +1,8 @@
 name: continuous-integration
 
-on: pull_request
+on:
+  pull_request:
+    branches: [ master ]
 
 jobs:
   test:
@@ -50,6 +52,18 @@ jobs:
           mix local.hex --force
           mix deps.get
 
-      - name: Run Test
-        run: mix test
+      - name: Retrieve PLT Cache
+        uses: actions/cache@v1
+        id: elixir-plt-cache #id to use in retrieve action
+        with:
+          path: priv/plts
+          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+  
+      - name: Create PLTs
+        if: steps.elixir-plt-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p priv/plts
+          mix dialyzer --plt
 
+      - name: Run check
+        run: mix check
