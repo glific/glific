@@ -8,13 +8,13 @@ Install the following packages using your favorite package manager. Links are pr
   * [Install Postgres](https://www.postgresql.org/download/)
     1. For Postgres, for the development server, we default to using postgres/postgres as the username/password.
   This is configurable
-    2. The db user needs to have superuser status on the database since we create a materialized view.
+    2. The db user needs to have **superuser status** on the database since we create a materialized view.
   This might change in a future release to a table
 
 ## Download code from GitHub
 
   * [Download the latest code from GitHub](https://github.com/glific/glific)
-    ** Copy the file: dev/dev.secret.exs.txt to dev/secret.exs and edit it with your credentials
+    * Copy the file: `dev/dev.secret.exs.txt` to `dev/secret.exs` and edit it with your credentials
 
 ## Lets start the server
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
