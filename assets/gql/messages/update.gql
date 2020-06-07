@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateMessage($id: ID!, $input: MessageInput!) {
+  updateMessage(id: $id, input: $input) {
+    ...MessageFields
+
+    ...ErrorFields
+  }
+}

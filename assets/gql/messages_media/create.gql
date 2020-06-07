@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createMessageMedia($input:MessageMediaInput!) {
+  createMessageMedia(input: $input) {
+    ...MessageMediaFields
+
+    ...ErrorFields
+  }
+}

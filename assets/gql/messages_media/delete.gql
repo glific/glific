@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteMessageMedia($id: ID!) {
+  deleteMessageMedia(id: $id) {
+    ...MessageMediaFields
+
+    ...ErrorFields
+  }
+}

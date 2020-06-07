@@ -36,14 +36,17 @@ defmodule Glific.Fixtures do
   end
 
   def message_fixture(attrs \\ %{}) do
+    sender = contact_fixture()
+    recipient = contact_fixture()
+
     valid_attrs = %{
       body: Faker.Lorem.sentence(),
       flow: :inbound,
       type: :text,
       wa_message_id: Faker.String.base64(10),
       wa_status: :enqueued,
-      sender_id: contact_fixture().id,
-      recipient_id: contact_fixture().id
+      sender_id: sender.id,
+      recipient_id: recipient.id
     }
 
     {:ok, message} =
@@ -101,5 +104,19 @@ defmodule Glific.Fixtures do
       |> Tags.create_message_tag()
 
     message_tag
+  end
+
+  def contact_tag_fixture(attrs \\ %{}) do
+    valid_attrs = %{
+      contact_id: contact_fixture().id,
+      tag_id: tag_fixture().id
+    }
+
+    {:ok, contact_tag} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Tags.create_contact_tag()
+
+    contact_tag
   end
 end

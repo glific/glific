@@ -21,6 +21,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
     messages_tags()
 
+    contacts_tags()
+
     bsps()
 
     organizations()

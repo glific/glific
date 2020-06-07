@@ -7,7 +7,7 @@ defmodule Glific.Contacts.Contact do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.ContactStatusEnum
+  alias Glific.Enums.ContactStatus
   # alias Glific.Tags.Tag
 
   @required_fields [:name, :phone]
@@ -17,8 +17,8 @@ defmodule Glific.Contacts.Contact do
           id: non_neg_integer | nil,
           name: String.t() | nil,
           phone: String.t() | nil,
-          status: ContactStatusEnum | nil,
-          wa_status: ContactStatusEnum | nil,
+          status: ContactStatus | nil,
+          wa_status: ContactStatus | nil,
           optin_time: :utc_datetime | nil,
           optout_time: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
@@ -29,8 +29,8 @@ defmodule Glific.Contacts.Contact do
     field :name, :string
     field :phone, :string
 
-    field :status, ContactStatusEnum
-    field :wa_status, ContactStatusEnum
+    field :status, ContactStatus
+    field :wa_status, ContactStatus
 
     field :optin_time, :utc_datetime
     field :optout_time, :utc_datetime
