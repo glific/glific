@@ -1,5 +1,7 @@
 # Glific - Two Way Open Source Communication Platform
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
 ## Packages Needed
 
 Install the following packages using your favorite package manager. Links are provided for some
