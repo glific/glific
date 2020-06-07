@@ -43,3 +43,5 @@ npm-debug.log
 
 # dont commit apple temp file
 .DS_Store
+*.env
+*.credentials.json

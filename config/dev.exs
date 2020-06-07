@@ -74,3 +74,8 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# config goth
+config :goth,
+  json: "config/.dialogflow.credentials.json" |> File.read!,
+  actor_email: "elixirclient@small-talk-talnvm.iam.gserviceaccount.com"
