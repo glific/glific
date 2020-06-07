@@ -8,13 +8,15 @@ defmodule Glific.Flowex.Intents do
   @doc """
   List all the intents of the agent per pageToken.
   """
-  @spec list(String.t, String.t, String.t, String.t | nil, list) :: tuple
+  @spec list(String.t(), String.t(), String.t(), String.t() | nil, list) :: tuple
   def list(project, language \\ "en", view \\ "INTENT_VIEW_UNSPECIFIED", token \\ nil, acc \\ []) do
     case list_by_page(project, language, view, 100, token) do
-      {:ok, %{"intents" => intents, "nextPageToken" => nextPageToken}} ->
-        list(project, language, view, nextPageToken, acc ++ intents)
-      {:ok,  %{"intents" => intents}} ->
+      {:ok, %{"intents" => intents, "nextPageToken" => next_page_token}} ->
+        list(project, language, view, next_page_token, acc ++ intents)
+
+      {:ok, %{"intents" => intents}} ->
         {:ok, acc ++ intents}
+
       {:error, error} ->
         {:error, error}
     end
@@ -23,11 +25,17 @@ defmodule Glific.Flowex.Intents do
   @doc """
   List an agent's intents by pageToken and defining page size.
   """
-  @spec list_by_page(String.t, String.t, String.t, integer, String.t | nil) :: tuple
-  def list_by_page(project, language \\ "en", view \\ "INTENT_VIEW_UNSPECIFIED", pageSize \\ 100, token \\ nil) do
+  @spec list_by_page(String.t(), String.t(), String.t(), integer, String.t() | nil) :: tuple
+  def list_by_page(
+        project,
+        language \\ "en",
+        view \\ "INTENT_VIEW_UNSPECIFIED",
+        page_size \\ 100,
+        token \\ nil
+      ) do
     url =
       "intents?languageCode=#{language}&intentView=#{view}&" <>
-      "pageSize=#{pageSize}&pageToken=#{token}"
+        "pageSize=#{page_size}&pageToken=#{token}"
 
     Flowex.request(project, :get, url, "")
   end
@@ -35,7 +43,7 @@ defmodule Glific.Flowex.Intents do
   @doc """
   Get an intent for a specific id
   """
-  @spec get(String.t, String.t, String.t, String.t) :: tuple
+  @spec get(String.t(), String.t(), String.t(), String.t()) :: tuple
   def get(project, id, language \\ "en", view \\ "INTENT_VIEW_UNSPECIFIED") do
     url = "intents/#{id}?languageCode=#{language}&intentView=#{view}"
 
@@ -45,7 +53,7 @@ defmodule Glific.Flowex.Intents do
   @doc """
   Create an intent
   """
-  @spec create(String.t, map, String.t) :: tuple
+  @spec create(String.t(), map, String.t()) :: tuple
   def create(project, body, language \\ "es") do
     url = "intents?languageCode=#{language}"
 
@@ -55,7 +63,7 @@ defmodule Glific.Flowex.Intents do
   @doc """
   Add a training phrase to an intent.
   """
-  @spec add_training_phrase(String.t, String.t, String.t, String.t) :: tuple
+  @spec add_training_phrase(String.t(), String.t(), String.t(), String.t()) :: tuple
   def add_training_phrase(project, id, text, language \\ "en") do
     url = "intents/#{id}?languageCode=#{language}&intentView=INTENT_VIEW_FULL"
 
@@ -71,7 +79,7 @@ defmodule Glific.Flowex.Intents do
   @doc """
   Update an intent view full.
   """
-  @spec update(String.t, String.t, map, String.t) :: tuple
+  @spec update(String.t(), String.t(), map, String.t()) :: tuple
   def update(project, id, intent, language \\ "es") do
     url = "intents/#{id}?languageCode=#{language}&intentView=INTENT_VIEW_FULL"
 
@@ -81,21 +89,25 @@ defmodule Glific.Flowex.Intents do
   # ---------------------------------------------------------------------------
   # Define a training phrase.
   # ---------------------------------------------------------------------------
-  @spec set_training_phrase(nil | list, String.t) :: list
+  @spec set_training_phrase(nil | list, String.t()) :: list
   defp set_training_phrase(nil, text) do
-    [%{
-      "name" => UUID.uuid4(),
-      "parts" => [%{"text" => text}],
-      "type" => "EXAMPLE"
-    }]
+    [
+      %{
+        "name" => UUID.uuid4(),
+        "parts" => [%{"text" => text}],
+        "type" => "EXAMPLE"
+      }
+    ]
   end
+
   defp set_training_phrase(training_phrases, text) do
     [
       %{
         "name" => UUID.uuid4(),
         "parts" => [%{"text" => text}],
         "type" => "EXAMPLE"
-      } || training_phrases
+      }
+      | training_phrases
     ]
   end
 end

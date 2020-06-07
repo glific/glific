@@ -82,7 +82,7 @@ defmodule Glific.MixProject do
       {:sobelow, "~> 0.8", only: :dev},
       {:wormwood, "~> 0.1.0"},
       {:goth, "~> 1.2.0"},
-      {:elixir_uuid, "~> 1.2" },
+      {:elixir_uuid, "~> 1.2"}
     ]
   end
 
