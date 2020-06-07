@@ -36,16 +36,60 @@ defmodule Glific.Seeds do
 
   @doc false
   @spec seed_tag({Language.t(), Language.t()}) :: nil
-  def seed_tag({en_us, hi_in}) do
-    message_tags_en = Repo.insert!(%Tag{label: "Messages", language: en_us})
-    message_tags_hi = Repo.insert!(%Tag{label: "Messages", language: hi_in})
+  def seed_tag({en_us, _hi_in}) do
+    message_tags_mt = Repo.insert!(%Tag{label: "Messages", language: en_us})
+    message_tags_ct = Repo.insert!(%Tag{label: "Contacts", language: en_us})
 
-    Repo.insert!(%Tag{label: "Welcome", language: en_us, parent_id: message_tags_en.id})
-    Repo.insert!(%Tag{label: "Greeting", language: en_us, parent_id: message_tags_en.id})
-    Repo.insert!(%Tag{label: "Thank You", language: en_us, parent_id: message_tags_en.id})
-    Repo.insert!(%Tag{label: "Welcome", language: hi_in, parent_id: message_tags_hi.id})
-    Repo.insert!(%Tag{label: "Greeting", language: hi_in, parent_id: message_tags_hi.id})
-    Repo.insert!(%Tag{label: "Thank You", language: hi_in, parent_id: message_tags_hi.id})
+    # Intent of message
+    Repo.insert!(%Tag{label: "Compliments", language: en_us, parent_id: message_tags_mt.id},
+      is_reserved: 1
+    )
+
+    Repo.insert!(%Tag{label: "Good Bye", language: en_us, parent_id: message_tags_mt.id},
+      is_reserved: 1
+    )
+
+    Repo.insert!(%Tag{label: "Greeting", language: en_us, parent_id: message_tags_mt.id},
+      is_reserved: 1
+    )
+
+    Repo.insert!(%Tag{label: "Thank You", language: en_us, parent_id: message_tags_mt.id},
+      is_reserved: 1
+    )
+
+    Repo.insert!(%Tag{label: "Welcome", language: en_us, parent_id: message_tags_mt.id},
+      is_reserved: 1
+    )
+
+    # Status of Message
+    Repo.insert!(%Tag{label: "Critical", language: en_us, parent_id: message_tags_mt.id},
+      is_reserved: 1
+    )
+
+    Repo.insert!(%Tag{label: "Important", language: en_us, parent_id: message_tags_mt.id},
+      is_reserved: 1
+    )
+
+    Repo.insert!(%Tag{label: "Read", language: en_us, parent_id: message_tags_mt.id},
+      is_reserved: 1
+    )
+
+    Repo.insert!(%Tag{label: "Spam", language: en_us, parent_id: message_tags_mt.id},
+      is_reserved: 1
+    )
+
+    # Type of Contact
+    Repo.insert!(%Tag{label: "Parrent", language: en_us, parent_id: message_tags_ct.id},
+      is_reserved: 1
+    )
+
+    Repo.insert!(%Tag{label: "Participant", language: en_us, parent_id: message_tags_ct.id},
+      is_reserved: 1
+    )
+
+    Repo.insert!(%Tag{label: "User", language: en_us, parent_id: message_tags_ct.id},
+      is_reserved: 1
+    )
 
     Repo.insert!(%Tag{label: "This is for testing", language: en_us})
   end
