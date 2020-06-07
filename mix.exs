@@ -5,7 +5,7 @@ defmodule Glific.MixProject do
     [
       app: :glific,
       version: "0.1.0",
-      elixir: "~> 1.7",
+      elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
@@ -75,11 +75,14 @@ defmodule Glific.MixProject do
       {:tesla, "~> 1.3.0"},
       {:oban, "~> 1.2"},
       {:faker, "~> 0.13", only: [:dev, :test]},
+      {:mock, "~> 0.3", only: [:dev, :test]},
       {:excoveralls, "~> 0.13", only: :test},
       {:cors_plug, "~> 2.0"},
       {:ex_check, ">= 0.0.0", only: :dev, runtime: false},
       {:sobelow, "~> 0.8", only: :dev},
-      {:wormwood, "~> 0.1.0"}
+      {:wormwood, "~> 0.1.0"},
+      {:goth, "~> 1.2.0"},
+      {:elixir_uuid, "~> 1.2" },
     ]
   end
 

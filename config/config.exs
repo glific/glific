@@ -8,7 +8,10 @@
 use Mix.Config
 
 config :glific,
-  ecto_repos: [Glific.Repo]
+  ecto_repos: [Glific.Repo],
+  dialogflow_url: "https://dialogflow.clients6.google.com",
+  dialogflow_project_id: "small-talk-talnvm",
+  dialogflow_project_email: "elixirclient@small-talk-talnvm.iam.gserviceaccount.com"
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,
