@@ -23,15 +23,17 @@ defmodule Glific.Flowex.AgentTest do
       {
         Token,
         [:passthrough],
-        [for_scope: fn(_url) -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
       },
       {
         HTTPoison,
         [:passthrough],
-        [request: fn(_method, _url, _params, _headers) ->
-          body = Poison.encode!(@agent)
-          {:ok, %HTTPoison.Response{status_code: 200, body: body}}
-        end]
+        [
+          request: fn _method, _url, _params, _headers ->
+            body = Poison.encode!(@agent)
+            {:ok, %HTTPoison.Response{status_code: 200, body: body}}
+          end
+        ]
       }
     ]) do
       assert Agent.get("lbot-170198") == {:ok, @agent}

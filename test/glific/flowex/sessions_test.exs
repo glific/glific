@@ -30,19 +30,21 @@ defmodule Glific.Flowex.SessionsTest do
       {
         Token,
         [:passthrough],
-        [for_scope: fn(_url) -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
       },
       {
         HTTPoison,
         [:passthrough],
-        [request: fn(_method, _url, _params, _headers) ->
-          body = Poison.encode!(@query)
-          {:ok, %HTTPoison.Response{status_code: 200, body: body}}
-        end]
+        [
+          request: fn _method, _url, _params, _headers ->
+            body = Poison.encode!(@query)
+            {:ok, %HTTPoison.Response{status_code: 200, body: body}}
+          end
+        ]
       }
     ]) do
-      assert Sessions.detect_intent("lbot-170198", "Hola", "1e8118272e2f69ea6ec98acbb71ab959") == {:ok, @query}
+      assert Sessions.detect_intent("lbot-170198", "Hola", "1e8118272e2f69ea6ec98acbb71ab959") ==
+               {:ok, @query}
     end
   end
-
 end

@@ -7,21 +7,21 @@ defmodule Glific.Flowex.IntentsTest do
   alias Goth.Token
 
   @intents %{
-   "intents" => [
-     %{
-       "displayName" => "Acción (Despedida)",
-       "messages" => [%{"text" => %{"text" => ["Bye", "Nos vemos"]}}],
-       "name" => "projects/lbot-170189/agent/intents/4cff39af-ba13-4a62-ba6f-8a79f4f5b324",
-       "priority" => 500000
-     }
-   ]
+    "intents" => [
+      %{
+        "displayName" => "Acción (Despedida)",
+        "messages" => [%{"text" => %{"text" => ["Bye", "Nos vemos"]}}],
+        "name" => "projects/lbot-170189/agent/intents/4cff39af-ba13-4a62-ba6f-8a79f4f5b324",
+        "priority" => 500_000
+      }
+    ]
   }
 
   @intent %{
     "displayName" => "Acción (Despedida)",
     "messages" => [%{"text" => %{"text" => ["Bye", "Nos vemos"]}}],
     "name" => "projects/lbot-170189/agent/intents/4cff39af-ba13-4a62-ba6f-8a79f4f5b324",
-    "priority" => 500000
+    "priority" => 500_000
   }
 
   @intent_view_full %{
@@ -30,7 +30,9 @@ defmodule Glific.Flowex.IntentsTest do
       %{
         "text" => %{
           "text" => [
-            "Aquí no más", "Esperando a que preguntes algo", "Trabajando ¿y tú?"
+            "Aquí no más",
+            "Esperando a que preguntes algo",
+            "Trabajando ¿y tú?"
           ]
         }
       }
@@ -56,11 +58,11 @@ defmodule Glific.Flowex.IntentsTest do
   }
 
   @invalid_intent %{
-   "error" => %{
-     "code" => 400,
-     "message" => "Intent with the display_name 'test' already exists.",
-     "status" => "FAILED_PRECONDITION"
-   }
+    "error" => %{
+      "code" => 400,
+      "message" => "Intent with the display_name 'test' already exists.",
+      "status" => "FAILED_PRECONDITION"
+    }
   }
 
   test "list list all intents" do
@@ -68,15 +70,17 @@ defmodule Glific.Flowex.IntentsTest do
       {
         Token,
         [:passthrough],
-        [for_scope: fn(_url) -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
       },
       {
         HTTPoison,
         [:passthrough],
-        [request: fn(_method, _url, _params, _headers) ->
-          body = Poison.encode!(@intents)
-          {:ok, %HTTPoison.Response{status_code: 200, body: body}}
-        end]
+        [
+          request: fn _method, _url, _params, _headers ->
+            body = Poison.encode!(@intents)
+            {:ok, %HTTPoison.Response{status_code: 200, body: body}}
+          end
+        ]
       }
     ]) do
       assert Intents.list("lbot-170198") == {:ok, @intents["intents"]}
@@ -88,15 +92,17 @@ defmodule Glific.Flowex.IntentsTest do
       {
         Token,
         [:passthrough],
-        [for_scope: fn(_url) -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
       },
       {
         HTTPoison,
         [:passthrough],
-        [request: fn(_method, _url, _params, _headers) ->
-          body = Poison.encode!(@intent)
-          {:ok, %HTTPoison.Response{status_code: 200, body: body}}
-        end]
+        [
+          request: fn _method, _url, _params, _headers ->
+            body = Poison.encode!(@intent)
+            {:ok, %HTTPoison.Response{status_code: 200, body: body}}
+          end
+        ]
       }
     ]) do
       assert Intents.get("lbot-170198", "5eec5344-8a09-40ba-8f46-1d2ed3f7b0df") == {:ok, @intent}
@@ -108,20 +114,25 @@ defmodule Glific.Flowex.IntentsTest do
       {
         Token,
         [:passthrough],
-        [for_scope: fn(_url) -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
       },
       {
         HTTPoison,
         [:passthrough],
-        [request: fn(_method, _url, _params, _headers) ->
-          body =
-            @create_attrs
-            |> Map.put(:name, "projects/lbot-170198/agent/intents/05f93e97-194d-469b-8721-70b5b6df9c82")
-            |> Map.put(:priority, 500000)
-            |> Poison.encode!()
+        [
+          request: fn _method, _url, _params, _headers ->
+            body =
+              @create_attrs
+              |> Map.put(
+                :name,
+                "projects/lbot-170198/agent/intents/05f93e97-194d-469b-8721-70b5b6df9c82"
+              )
+              |> Map.put(:priority, 500_000)
+              |> Poison.encode!()
 
-          {:ok, %HTTPoison.Response{status_code: 200, body: body}}
-        end]
+            {:ok, %HTTPoison.Response{status_code: 200, body: body}}
+          end
+        ]
       }
     ]) do
       assert {:ok, intent} = Intents.create("lbot-170198", %{displayName: "test"})
@@ -135,15 +146,17 @@ defmodule Glific.Flowex.IntentsTest do
       {
         Token,
         [:passthrough],
-        [for_scope: fn(_url) -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
       },
       {
         HTTPoison,
         [:passthrough],
-        [request: fn(_method, _url, _params, _headers) ->
-          body = Poison.encode!(@invalid_intent)
-          {:ok, %HTTPoison.Response{status_code: 400, body: body}}
-        end]
+        [
+          request: fn _method, _url, _params, _headers ->
+            body = Poison.encode!(@invalid_intent)
+            {:ok, %HTTPoison.Response{status_code: 400, body: body}}
+          end
+        ]
       }
     ]) do
       assert {:error, errors} = Intents.create("lbot-170198", %{displayName: "test"})
@@ -157,21 +170,24 @@ defmodule Glific.Flowex.IntentsTest do
       {
         Token,
         [:passthrough],
-        [for_scope: fn(_url) -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
       },
       {
         HTTPoison,
         [:passthrough],
-        [request: fn(_method, _url, _params, _headers) ->
-          body = Poison.encode!(@intent_view_full)
-          {:ok, %HTTPoison.Response{status_code: 200, body: body}}
-        end]
+        [
+          request: fn _method, _url, _params, _headers ->
+            body = Poison.encode!(@intent_view_full)
+            {:ok, %HTTPoison.Response{status_code: 200, body: body}}
+          end
+        ]
       }
     ]) do
-      assert Intents.update("lbot-170198", "5eec5344-8a09-40ba-8f46-1d2ed3f7b0df",
-                                  @intent_view_full) == {:ok, @intent_view_full}
+      assert Intents.update(
+               "lbot-170198",
+               "5eec5344-8a09-40ba-8f46-1d2ed3f7b0df",
+               @intent_view_full
+             ) == {:ok, @intent_view_full}
     end
   end
-
-
 end
