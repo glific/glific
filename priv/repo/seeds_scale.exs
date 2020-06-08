@@ -62,7 +62,7 @@ defmodule Glific.Repo.SeedScale do
       body: message,
       wa_status: "delivered",
       sender_id: 1,
-      recipient_id: Enum.random(contact_ids),
+      receiver_id: Enum.random(contact_ids),
       inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.add(sub_time) |> NaiveDateTime.truncate(:second),
       updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.add(sub_time) |> NaiveDateTime.truncate(:second)
     }
@@ -78,7 +78,7 @@ defmodule Glific.Repo.SeedScale do
       body: message,
       wa_status: "delivered",
       sender_id: Enum.random(contact_ids),
-      recipient_id: 1,
+      receiver_id: 1,
       inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.add(sub_time) |> NaiveDateTime.truncate(:second),
       updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.add(sub_time) |> NaiveDateTime.truncate(:second)
     }
@@ -142,7 +142,7 @@ beneficiary_message_entries = Glific.Repo.SeedScale.create_message_entries(conta
 Repo.insert_all(Message, beneficiary_message_entries)
 
 # seed message_tags on received messages only: 25% no tags, 25% 1 tag, 50% 2 - 4 tags, only do
-message_ids = Repo.all(from m in "messages", select: m.id, where: m.recipient_id == 1)
+message_ids = Repo.all(from m in "messages", select: m.id, where: m.receiver_id == 1)
 tag_ids = Repo.all(from t in "tags", select: t.id)
 message_tags = Enum.reduce(message_ids, [],
   fn x, acc -> Glific.Repo.SeedScale.create_message_tag(x, tag_ids, acc) end)

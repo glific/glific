@@ -39,7 +39,7 @@ defmodule Glific.Fixtures do
   @spec message_fixture(map()) :: Messages.Message.t()
   def message_fixture(attrs \\ %{}) do
     sender = contact_fixture()
-    recipient = contact_fixture()
+    receiver = contact_fixture()
 
     valid_attrs = %{
       body: Faker.Lorem.sentence(),
@@ -48,7 +48,7 @@ defmodule Glific.Fixtures do
       wa_message_id: Faker.String.base64(10),
       wa_status: :enqueued,
       sender_id: sender.id,
-      recipient_id: recipient.id
+      receiver_id: receiver.id
     }
 
     {:ok, message} =
