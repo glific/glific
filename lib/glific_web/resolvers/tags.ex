@@ -73,4 +73,23 @@ defmodule GlificWeb.Resolvers.Tags do
       {:ok, tag}
     end
   end
+
+  @doc false
+  @spec create_message_tag(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_message_tag(_, %{input: params}, _) do
+    with {:ok, tag} <- Tags.create_message_tag(params) do
+      {:ok, %{tag: tag}}
+    end
+  end
+
+  @doc false
+  @spec delete_message_tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def delete_message_tag(_, %{id: id}, _) do
+    with {:ok, tag} <- Repo.fetch(Tag, id),
+         {:ok, tag} <- Tags.delete_message_tag(tag) do
+      {:ok, tag}
+    end
+  end
 end
