@@ -14,6 +14,7 @@ defmodule Glific.Contacts.Contact do
   @optional_fields [:wa_status, :status, :optin_time, :optout_time]
 
   @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
           phone: String.t() | nil,

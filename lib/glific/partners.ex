@@ -112,7 +112,10 @@ defmodule Glific.Partners do
   """
   @spec delete_bsp(%BSP{}) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
   def delete_bsp(%BSP{} = bsp) do
-    Repo.delete(bsp)
+    bsp
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.no_assoc_constraint(:organizations)
+    |> Repo.delete()
   end
 
   @doc ~S"""

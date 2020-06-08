@@ -11,6 +11,7 @@ defmodule Glific.Tags.ContactTag do
   @required_fields [:contact_id, :tag_id]
 
   @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           tag: Tag.t() | Ecto.Association.NotLoaded.t() | nil
