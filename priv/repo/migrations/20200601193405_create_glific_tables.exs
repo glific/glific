@@ -254,7 +254,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       timestamps()
     end
 
-    create unique_index(:bsps, [:name, :url, :api_end_point])
+    create unique_index(:bsps, :name)
   end
 
   @doc """
@@ -263,6 +263,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
   def organizations do
     create table(:organizations) do
       add :name, :string, null: false
+      add :display_name, :string, null: false
       add :contact_name, :string, null: false
       add :email, :string, null: false
       add :bsp, :string
@@ -273,6 +274,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       timestamps()
     end
 
+    create unique_index(:organizations, :name)
     create unique_index(:organizations, :wa_number)
     create unique_index(:organizations, :email)
   end

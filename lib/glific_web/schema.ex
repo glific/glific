@@ -19,15 +19,15 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.MessageTypes)
   import_types(__MODULE__.MessageMediaTypes)
   # import_types(__MODULE__.MessageTagTypes)
-  # import_types(__MODULE__.OrganizationTypes)
-  # import_types(__MODULE__.BSPTypes)
+  import_types(__MODULE__.OrganizationTypes)
+  import_types(__MODULE__.BSPTypes)
 
   query do
     import_fields(:language_queries)
 
     import_fields(:tag_queries)
 
-    # import_fields(:bsp_queries)
+    import_fields(:bsp_queries)
 
     import_fields(:contact_queries)
 
@@ -37,7 +37,7 @@ defmodule GlificWeb.Schema do
 
     # import_fields(:message_tag_queries)
 
-    # import_fields(:organization_queries)
+    import_fields(:organization_queries)
   end
 
   mutation do
@@ -45,7 +45,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:tag_mutations)
 
-    # import_fields(:bsp_mutations)
+    import_fields(:bsp_mutations)
 
     import_fields(:contact_mutations)
 
@@ -55,7 +55,7 @@ defmodule GlificWeb.Schema do
 
     # import_fields(:message_tag_mutations)
 
-    # import_fields(:organization_mutations)
+    import_fields(:organization_mutations)
   end
 
   subscription do

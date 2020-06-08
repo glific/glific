@@ -10,7 +10,7 @@ defmodule Glific.Partners.Organization do
   alias Glific.Partners.BSP
 
   # define all the required fields for organization
-  @required_fields [:name, :contact_name, :email, :bsp_id, :bsp_key, :wa_number]
+  @required_fields [:name, :display_name, :contact_name, :email, :bsp_id, :bsp_key, :wa_number]
 
   # define all the optional fields for organization
   @optional_fields []
@@ -18,6 +18,7 @@ defmodule Glific.Partners.Organization do
   @type t() :: %__MODULE__{
           id: non_neg_integer | nil,
           name: String.t() | nil,
+          display_name: String.t() | nil,
           contact_name: String.t() | nil,
           email: String.t() | nil,
           bsp_id: non_neg_integer | nil,
@@ -30,6 +31,7 @@ defmodule Glific.Partners.Organization do
 
   schema "organizations" do
     field :name, :string
+    field :display_name, :string
     field :contact_name, :string
     field :email, :string
     field :wa_number, :string
@@ -47,6 +49,7 @@ defmodule Glific.Partners.Organization do
     organization
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint(:name)
     |> unique_constraint(:email)
     |> unique_constraint(:wa_number)
   end
