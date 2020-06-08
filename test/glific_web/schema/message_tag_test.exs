@@ -1,5 +1,5 @@
 defmodule GlificWeb.Schema.Query.MessageTagTest do
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
   setup do
@@ -10,8 +10,8 @@ defmodule GlificWeb.Schema.Query.MessageTagTest do
     :ok
   end
 
-  load_gql(:create, GlificWeb.Schema, "assets/gql/tags/create.gql")
-  load_gql(:delete, GlificWeb.Schema, "assets/gql/tags/delete.gql")
+  load_gql(:create, GlificWeb.Schema, "assets/gql/message_tags/create.gql")
+  load_gql(:delete, GlificWeb.Schema, "assets/gql/message_tags/delete.gql")
 
   test "create a message tag and test possible scenarios and errors" do
     label = "This is for testing"
@@ -21,12 +21,13 @@ defmodule GlificWeb.Schema.Query.MessageTagTest do
 
     result =
       query_gql_by(:create,
-        variables: %{"input" => %{"messageId" => message.id, "tagId" => tag.id}}
+        variables: %{"input" => %{"message_id" => message.id, "tag_id" => tag.id}}
       )
-
     assert {:ok, query_data} = result
-    message_id = get_in(query_data, [:data, "createMessageTag", "message_id", "tag_id"])
-    assert message_id == message.id
+
+    message_tag = get_in(query_data, [:data, "createMessageTag", "message_tag"])
+    assert message_tag["message"]["id"] |> String.to_integer == message.id
+    assert message_tag["tag"]["id"] |> String.to_integer == tag.id
   end
 
 end

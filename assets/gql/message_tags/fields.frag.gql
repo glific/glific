@@ -1,5 +1,5 @@
 fragment MessageTagFields on MessageTagResult {
-  organization {
+  message_tag {
     id
    
     message {
