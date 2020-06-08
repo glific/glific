@@ -26,6 +26,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
     providers()
 
     organizations()
+
+    full_text_search()
   end
 
   @doc """

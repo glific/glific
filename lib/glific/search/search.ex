@@ -1,4 +1,4 @@
-defmodule Glific.Search.Sear do
+defmodule Glific.Search.FullTextSearch do
   @moduledoc """
   The minimal wrapper for the base Search indexer structure
   """
@@ -26,7 +26,7 @@ defmodule Glific.Search.Sear do
           updated_at: :utc_datetime | nil
         }
 
-  schema "fulltextsearch" do
+  schema "full_text_search" do
     field :contact_name, :string
     field :contact_phone, :string
     field :tags_label, :string
