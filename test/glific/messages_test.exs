@@ -14,7 +14,7 @@ defmodule Glific.MessagesTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "12345671",
       status: :valid,
-      wa_status: :invalid
+      provider_status: :invalid
     }
 
     @receiver_attrs %{
@@ -23,24 +23,24 @@ defmodule Glific.MessagesTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "101013131",
       status: :valid,
-      wa_status: :invalid
+      provider_status: :invalid
     }
 
     @valid_attrs %{
       body: "some body",
       flow: :inbound,
       type: :text,
-      wa_message_id: "some wa_message_id",
-      wa_status: :enqueued
+      provider_message_id: "some provider_message_id",
+      provider_status: :enqueued
     }
     @update_attrs %{
       body: "some updated body",
       flow: :inbound,
       type: :text,
-      wa_message_id: "some updated wa_message_id"
+      provider_message_id: "some updated provider_message_id"
     }
 
-    @invalid_attrs %{body: nil, flow: nil, type: nil, wa_message_id: nil}
+    @invalid_attrs %{body: nil, flow: nil, type: nil, provider_message_id: nil}
 
     defp foreign_key_constraint do
       {:ok, sender} = Contacts.create_contact(@sender_attrs)
@@ -69,7 +69,10 @@ defmodule Glific.MessagesTest do
       assert [message] == Messages.list_messages(%{order: :asc, filter: %{body: message.body}})
 
       assert [message] ==
-               Messages.list_messages(%{order: :asc, filter: %{wa_status: message.wa_status}})
+               Messages.list_messages(%{
+                 order: :asc,
+                 filter: %{provider_status: message.provider_status}
+               })
     end
 
     test "list_messages/1 with foreign key filters" do
@@ -141,16 +144,22 @@ defmodule Glific.MessagesTest do
       source_url: "some source_url",
       thumbnail: "some thumbnail",
       url: "some url",
-      wa_media_id: "some wa_media_id"
+      provider_media_id: "some provider_media_id"
     }
     @update_attrs %{
       caption: "some updated caption",
       source_url: "some updated source_url",
       thumbnail: "some updated thumbnail",
       url: "some updated url",
-      wa_media_id: "some updated wa_media_id"
+      provider_media_id: "some updated provider_media_id"
     }
-    @invalid_attrs %{caption: nil, source_url: nil, thumbnail: nil, url: nil, wa_media_id: nil}
+    @invalid_attrs %{
+      caption: nil,
+      source_url: nil,
+      thumbnail: nil,
+      url: nil,
+      provider_media_id: nil
+    }
 
     def message_media_fixture(attrs \\ %{}) do
       {:ok, message_media} =
@@ -177,7 +186,7 @@ defmodule Glific.MessagesTest do
       assert message_media.source_url == "some source_url"
       assert message_media.thumbnail == "some thumbnail"
       assert message_media.url == "some url"
-      assert message_media.wa_media_id == "some wa_media_id"
+      assert message_media.provider_media_id == "some provider_media_id"
     end
 
     test "create_message_media/1 with invalid data returns error changeset" do
@@ -194,7 +203,7 @@ defmodule Glific.MessagesTest do
       assert message_media.source_url == "some updated source_url"
       assert message_media.thumbnail == "some updated thumbnail"
       assert message_media.url == "some updated url"
-      assert message_media.wa_media_id == "some updated wa_media_id"
+      assert message_media.provider_media_id == "some updated provider_media_id"
     end
 
     test "update_message_media/2 with invalid data returns error changeset" do

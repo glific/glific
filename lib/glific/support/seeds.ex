@@ -6,8 +6,8 @@ defmodule Glific.Seeds do
     Contacts.Contact,
     Messages.Message,
     Messages.MessageMedia,
-    Partners.Provider,
     Partners.Organization,
+    Partners.Provider,
     Repo,
     Settings.Language,
     Tags.Tag

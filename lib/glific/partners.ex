@@ -6,8 +6,8 @@ defmodule Glific.Partners do
 
   import Ecto.Query, warn: false
 
-  alias Glific.Partners.Provider
   alias Glific.Partners.Organization
+  alias Glific.Partners.Provider
   alias Glific.Repo
 
   @doc """

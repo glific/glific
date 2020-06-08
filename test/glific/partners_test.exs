@@ -122,7 +122,7 @@ defmodule Glific.PartnersTest do
       contact_name: "Organization Contact person",
       email: "Contact person email",
       provider_key: "Provider key",
-      wa_number: "991737373"
+      provider_number: "991737373"
     }
 
     @valid_org_attrs_1 %{
@@ -131,7 +131,7 @@ defmodule Glific.PartnersTest do
       contact_name: "Organization Contact person 1",
       email: "Contact person email 1",
       provider_key: "Provider key 1",
-      wa_number: "9917373731"
+      provider_number: "9917373731"
     }
 
     @update_org_attrs %{
@@ -172,7 +172,7 @@ defmodule Glific.PartnersTest do
       assert organization.name == @valid_org_attrs.name
       assert organization.display_name == @valid_org_attrs.display_name
       assert organization.email == @valid_org_attrs.email
-      assert organization.wa_number == @valid_org_attrs.wa_number
+      assert organization.provider_number == @valid_org_attrs.provider_number
     end
 
     test "create_organization/1 with invalid data returns error changeset" do
@@ -229,7 +229,7 @@ defmodule Glific.PartnersTest do
       org_list = Partners.list_organizations(%{filter: %{email: org1.email}})
       assert org_list == [org1]
 
-      org_list = Partners.list_organizations(%{filter: %{wa_number: org1.wa_number}})
+      org_list = Partners.list_organizations(%{filter: %{provider_number: org1.provider_number}})
       assert org_list == [org1]
 
       org_list = Partners.list_organizations(%{order: :asc, filter: %{name: "ABC"}})

@@ -20,7 +20,10 @@ defmodule GlificWeb.Schema.Query.ProviderTest do
     providers = get_in(query_data, [:data, "providers"])
     assert length(providers) > 0
 
-    res = providers |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "Default Provider" end)
+    res =
+      providers
+      |> get_in([Access.all(), "name"])
+      |> Enum.find(fn x -> x == "Default Provider" end)
 
     assert res == "Default Provider"
   end
@@ -107,7 +110,11 @@ defmodule GlificWeb.Schema.Query.ProviderTest do
       query_gql_by(:update,
         variables: %{
           "id" => provider.id,
-          "input" => %{"name" => "another provider", "url" => url, "api_end_point" => api_end_point}
+          "input" => %{
+            "name" => "another provider",
+            "url" => url,
+            "api_end_point" => api_end_point
+          }
         }
       )
 

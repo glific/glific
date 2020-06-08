@@ -10,7 +10,15 @@ defmodule Glific.Partners.Organization do
   alias Glific.Partners.Provider
 
   # define all the required fields for organization
-  @required_fields [:name, :display_name, :contact_name, :email, :provider_id, :provider_key, :provider_number]
+  @required_fields [
+    :name,
+    :display_name,
+    :contact_name,
+    :email,
+    :provider_id,
+    :provider_key,
+    :provider_number
+  ]
 
   # define all the optional fields for organization
   @optional_fields []

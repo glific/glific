@@ -24,7 +24,7 @@ defmodule Glific.Fixtures do
       optout_time: DateTime.backward(1),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      wa_status: :invalid
+      provider_status: :invalid
     }
 
     {:ok, contact} =
@@ -45,8 +45,8 @@ defmodule Glific.Fixtures do
       body: Faker.Lorem.sentence(),
       flow: :inbound,
       type: :text,
-      wa_message_id: Faker.String.base64(10),
-      wa_status: :enqueued,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
       sender_id: sender.id,
       receiver_id: receiver.id
     }

@@ -52,7 +52,7 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
     contact_name = "Test"
     email = "test2@glific.org"
     provider_key = "random"
-    wa_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+    provider_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
     provider_name = "Default Provider"
     {:ok, provider} = Glific.Repo.fetch_by(Glific.Partners.Provider, %{name: provider_name})
@@ -67,7 +67,7 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
             "contact_name" => contact_name,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
-            "wa_number" => wa_number
+            "provider_number" => provider_number
           }
         }
       )
@@ -87,7 +87,7 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
           "contact_name" => contact_name,
           "provider_key" => provider_key,
           "provider_id" => provider.id,
-          "wa_number" => wa_number
+          "provider_number" => provider_number
         }
       }
     )
@@ -102,7 +102,7 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
             "contact_name" => contact_name,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
-            "wa_number" => wa_number
+            "provider_number" => provider_number
           }
         }
       )
@@ -122,7 +122,7 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
     contact_name = "Test"
     email = "test2@glific.org"
     provider_key = "random"
-    wa_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+    provider_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
     provider_name = "Default Provider"
     {:ok, provider} = Glific.Repo.fetch_by(Glific.Partners.Provider, %{name: provider_name})
@@ -138,7 +138,7 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
             "contact_name" => contact_name,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
-            "wa_number" => wa_number
+            "provider_number" => provider_number
           }
         }
       )
@@ -158,12 +158,12 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
           "contact_name" => contact_name,
           "provider_key" => provider_key,
           "provider_id" => provider.id,
-          "wa_number" => "new wa_number"
+          "provider_number" => "new provider_number"
         }
       }
     )
 
-    # ensure we cannot update an existing organization with the same name, email or wa_number
+    # ensure we cannot update an existing organization with the same name, email or provider_number
     result =
       query_gql_by(:update,
         variables: %{
@@ -175,7 +175,7 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
             "contact_name" => contact_name,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
-            "wa_number" => "new wa_number"
+            "provider_number" => "new provider_number"
           }
         }
       )

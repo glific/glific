@@ -137,7 +137,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
       # whatsapp status
       # the current options are: processing, valid, invalid, failed
-      add :wa_status, :contact_status_enum, null: false, default: "valid"
+      add :provider_status, :contact_status_enum, null: false, default: "valid"
 
       # Is this contact active (for some definition of active)
       add :is_active, :boolean, default: true
@@ -172,7 +172,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :caption, :text
 
       # whats app message id
-      add :wa_media_id, :string
+      add :provider_media_id, :string
 
       timestamps()
     end
@@ -193,10 +193,10 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :flow, :message_flow_enum
 
       # whats app message id
-      add :wa_message_id, :string, null: true
+      add :provider_message_id, :string, null: true
 
       # options: sent, delivered, read
-      add :wa_status, :message_status_enum
+      add :provider_status, :message_status_enum
 
       # sender id
       add :sender_id, references(:contacts, on_delete: :delete_all), null: false
@@ -269,13 +269,13 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :provider, :string
       add :provider_id, references(:providers, on_delete: :nothing), null: false
       add :provider_key, :string, null: false
-      add :wa_number, :string, null: false
+      add :provider_number, :string, null: false
 
       timestamps()
     end
 
     create unique_index(:organizations, :name)
-    create unique_index(:organizations, :wa_number)
+    create unique_index(:organizations, :provider_number)
     create unique_index(:organizations, :email)
   end
 end

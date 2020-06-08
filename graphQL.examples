@@ -130,6 +130,6 @@ mutation createOrganization($input: OrganizationInput!) {
     "email": "test@gmail.com",
     "provider": "gupshup",
     "provider_key": "random",
-    "wa_number": "10101010101"
+    "provider_number": "10101010101"
   }
 }

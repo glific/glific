@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Partners do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Partners, Partners.Provider, Partners.Organization, Repo}
+  alias Glific.{Partners, Partners.Organization, Partners.Provider, Repo}
 
   @doc """
   Get a specific organization by id

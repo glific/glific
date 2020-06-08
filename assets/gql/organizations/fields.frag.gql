@@ -6,7 +6,7 @@ fragment OrganizationFields on OrganizationResult {
     contact_name
     email
     provider_key
-    wa_number 
+    provider_number 
    
     provider {
       id
