@@ -23,8 +23,8 @@
     # {:my_arbitrary_script, command: ["my_script", "argument with spaces"], cd: "scripts"}
 
     {:mix_format, "mix format"},
-    {:mix_doctor, "mix doctor"},
-    {:dialyzer, "mix dialyzer --no-check --ignore-exit-status", detect: [{:package, :dialyxir}]},
+    # {:mix_doctor, "mix doctor"},
+    {:dialyzer, "mix dialyzer --no-check --halt-exit-status", detect: [{:package, :dialyxir}]},
     {:sobelow, "mix sobelow --skip --exit",
      umbrella: [recursive: true], detect: [{:package, :sobelow}]},
     {:mix_coveralls, "mix coveralls", [{:run_after, [:ex_unit]}, {:env, %{"MIX_ENV" => "test"}}]}
