@@ -53,6 +53,7 @@ defmodule GlificWeb.Schema.Query.ProviderTest do
       )
 
     assert {:ok, query_data} = result
+
     provider = get_in(query_data, [:data, "createProvider", "provider"])
     assert Map.get(provider, "name") == name
     assert Map.get(provider, "url") == url

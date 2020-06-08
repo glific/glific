@@ -1,7 +1,7 @@
 #import "./fields.frag.gql"
 
-query bsp($id: ID!) {
-  bsp(id: $id) {
+query provider($id: ID!) {
+  provider(id: $id) {
     ...ProviderFields
 
     ...ErrorFields

@@ -143,7 +143,10 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
         }
       )
 
+
+
     assert {:ok, query_data} = result
+    IO.inspect(query_data, provider)
 
     new_name = get_in(query_data, [:data, "updateOrganization", "organization", "name"])
     assert new_name == name
