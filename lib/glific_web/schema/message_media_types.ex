@@ -36,8 +36,8 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
     end
 
     @desc "Get a list of all message_media filtered by various criteria"
-    field :message_medias, list_of(:message_media) do
-      resolve(&Resolvers.Messages.message_medias/3)
+    field :messages_media, list_of(:message_media) do
+      resolve(&Resolvers.Messages.messages_media/3)
     end
   end
 
