@@ -7,10 +7,10 @@ defmodule Glific.Partners.Organization do
 
   alias __MODULE__
 
-  alias Glific.Partners.BSP
+  alias Glific.Partners.Provider
 
   # define all the required fields for organization
-  @required_fields [:name, :display_name, :contact_name, :email, :bsp_id, :bsp_key, :wa_number]
+  @required_fields [:name, :display_name, :contact_name, :email, :provider_id, :provider_key, :wa_number]
 
   # define all the optional fields for organization
   @optional_fields []
@@ -22,9 +22,9 @@ defmodule Glific.Partners.Organization do
           display_name: String.t() | nil,
           contact_name: String.t() | nil,
           email: String.t() | nil,
-          bsp_id: non_neg_integer | nil,
-          bsp: BSP.t() | Ecto.Association.NotLoaded.t() | nil,
-          bsp_key: String.t() | nil,
+          provider_id: non_neg_integer | nil,
+          provider: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
+          provider_key: String.t() | nil,
           wa_number: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -36,8 +36,8 @@ defmodule Glific.Partners.Organization do
     field :contact_name, :string
     field :email, :string
     field :wa_number, :string
-    field :bsp_key, :string
-    belongs_to :bsp, BSP
+    field :provider_key, :string
+    belongs_to :provider, Provider
 
     timestamps()
   end

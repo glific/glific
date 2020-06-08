@@ -13,10 +13,10 @@ defmodule Glific.Enums.Constants do
       # the status determines if we can send a message to the contact
       @contact_status_const [:failed, :invalid, :processing, :valid]
 
-      # the direction of the messages: inbound: bsp to glific, outbound: glific to bsp
+      # the direction of the messages: inbound: provider to glific, outbound: glific to provider
       @message_flow_const [:inbound, :outbound]
 
-      # the status of the message as indicated by the bsp
+      # the status of the message as indicated by the provider
       @message_status_const [:sent, :delivered, :enqueued, :error, :read, :received]
 
       # the different possible types of message

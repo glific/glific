@@ -6,7 +6,7 @@ defmodule Glific.Seeds do
     Contacts.Contact,
     Messages.Message,
     Messages.MessageMedia,
-    Partners.BSP,
+    Partners.Provider,
     Partners.Organization,
     Repo,
     Settings.Language,
@@ -122,40 +122,40 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_bsps :: {BSP.t()}
-  def seed_bsps do
-    default_bsp =
-      Repo.insert!(%BSP{
-        name: "Default BSP",
+  @spec seed_providers :: {Provider.t()}
+  def seed_providers do
+    default_provider =
+      Repo.insert!(%Provider{
+        name: "Default Provider",
         url: "test_url",
         api_end_point: "test"
       })
 
-    Repo.insert!(%BSP{
+    Repo.insert!(%Provider{
       name: "gupshup",
       url: "test_url_1",
       api_end_point: "test"
     })
 
-    Repo.insert!(%BSP{
+    Repo.insert!(%Provider{
       name: "twilio",
       url: "test_url_2",
       api_end_point: "test"
     })
 
-    {default_bsp}
+    {default_provider}
   end
 
   @doc false
-  @spec seed_organizations({BSP.t()}) :: nil
-  def seed_organizations({default_bsp}) do
+  @spec seed_organizations({Provider.t()}) :: nil
+  def seed_organizations({default_provider}) do
     Repo.insert!(%Organization{
       name: "Default Organization",
       display_name: "Default Organization",
       contact_name: "Test",
       email: "test@glific.org",
-      bsp_id: default_bsp.id,
-      bsp_key: "random",
+      provider_id: default_provider.id,
+      provider_key: "random",
       wa_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     })
 
@@ -164,8 +164,8 @@ defmodule Glific.Seeds do
       display_name: "Slam Out Loud",
       contact_name: "Jigyasa and Gaurav",
       email: "jigyasa@glific.org",
-      bsp_id: default_bsp.id,
-      bsp_key: "random",
+      provider_id: default_provider.id,
+      provider_key: "random",
       wa_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     })
   end
@@ -265,9 +265,9 @@ defmodule Glific.Seeds do
 
     seed_contacts()
 
-    {default_bsp} = seed_bsps()
+    {default_provider} = seed_providers()
 
-    seed_organizations({default_bsp})
+    seed_organizations({default_provider})
 
     seed_messages()
 

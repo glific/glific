@@ -1,39 +1,39 @@
 defmodule Glific.Partners do
   @moduledoc """
   The Partners context. This is the gateway for the application to access/update all the organization
-  and BSP information.
+  and Provider information.
   """
 
   import Ecto.Query, warn: false
 
-  alias Glific.Partners.BSP
+  alias Glific.Partners.Provider
   alias Glific.Partners.Organization
   alias Glific.Repo
 
   @doc """
-  Returns the list of bsps.
+  Returns the list of providers.
 
   ## Examples
 
-      iex> list_bsps()
-      [%BSP{}, ...]
+      iex> list_providers()
+      [%Provider{}, ...]
 
   """
-  @spec list_bsps(map()) :: [%BSP{}, ...]
-  def list_bsps(args \\ %{}) do
+  @spec list_providers(map()) :: [%Provider{}, ...]
+  def list_providers(args \\ %{}) do
     args
-    |> Enum.reduce(BSP, fn
+    |> Enum.reduce(Provider, fn
       {:order, order}, query ->
         query |> order_by({^order, :name})
 
       {:filter, filter}, query ->
-        query |> filter_bsp_with(filter)
+        query |> filter_provider_with(filter)
     end)
     |> Repo.all()
   end
 
-  @spec filter_bsp_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_bsp_with(query, filter) do
+  @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_provider_with(query, filter) do
     Enum.reduce(filter, query, fn
       {:name, name}, query ->
         from q in query, where: ilike(q.name, ^"%#{name}%")
@@ -44,92 +44,92 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  Gets a single bsp.
+  Gets a single provider.
 
-  Raises `Ecto.NoResultsError` if the Bsp does not exist.
+  Raises `Ecto.NoResultsError` if the Provider does not exist.
 
   ## Examples
 
-      iex> get_bsp!(123)
-      %BSP{}
+      iex> get_provider!(123)
+      %Provider{}
 
-      iex> get_bsp!(456)
+      iex> get_provider!(456)
       ** (Ecto.NoResultsError)
 
   """
-  @spec get_bsp!(id :: integer) :: %BSP{}
-  def get_bsp!(id), do: Repo.get!(BSP, id)
+  @spec get_provider!(id :: integer) :: %Provider{}
+  def get_provider!(id), do: Repo.get!(Provider, id)
 
   @doc """
-  Creates a bsp.
+  Creates a provider.
 
   ## Examples
 
-      iex> create_bsp(%{field: value})
-      {:ok, %BSP{}}
+      iex> create_provider(%{field: value})
+      {:ok, %Provider{}}
 
-      iex> create_bsp(%{field: bad_value})
+      iex> create_provider(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_bsp(map()) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
-  def create_bsp(attrs \\ %{}) do
-    %BSP{}
-    |> BSP.changeset(attrs)
+  @spec create_provider(map()) :: {:ok, %Provider{}} | {:error, Ecto.Changeset.t()}
+  def create_provider(attrs \\ %{}) do
+    %Provider{}
+    |> Provider.changeset(attrs)
     |> Repo.insert()
   end
 
   @doc """
-  Updates a bsp.
+  Updates a provider.
 
   ## Examples
 
-      iex> update_bsp(bsp, %{field: new_value})
-      {:ok, %BSP{}}
+      iex> update_provider(provider, %{field: new_value})
+      {:ok, %Provider{}}
 
-      iex> update_bsp(bsp, %{field: bad_value})
+      iex> update_provider(provider, %{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_bsp(%BSP{}, map()) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
-  def update_bsp(%BSP{} = bsp, attrs) do
-    bsp
-    |> BSP.changeset(attrs)
+  @spec update_provider(%Provider{}, map()) :: {:ok, %Provider{}} | {:error, Ecto.Changeset.t()}
+  def update_provider(%Provider{} = provider, attrs) do
+    provider
+    |> Provider.changeset(attrs)
     |> Repo.update()
   end
 
   @doc """
-  Deletes a bsp.
+  Deletes a provider.
 
   ## Examples
 
-      iex> delete_bsp(bsp)
-      {:ok, %BSP{}}
+      iex> delete_provider(provider)
+      {:ok, %Provider{}}
 
-      iex> delete_bsp(bsp)
+      iex> delete_provider(provider)
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_bsp(%BSP{}) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
-  def delete_bsp(%BSP{} = bsp) do
-    bsp
+  @spec delete_provider(%Provider{}) :: {:ok, %Provider{}} | {:error, Ecto.Changeset.t()}
+  def delete_provider(%Provider{} = provider) do
+    provider
     |> Ecto.Changeset.change()
     |> Ecto.Changeset.no_assoc_constraint(:organizations)
     |> Repo.delete()
   end
 
   @doc ~S"""
-  Returns an `%Ecto.Changeset{}` for tracking bsp changes.
+  Returns an `%Ecto.Changeset{}` for tracking provider changes.
 
   ## Examples
 
-      iex> change_bsp(bsp)
-      %Ecto.Changeset{data: %BSP{}}
+      iex> change_provider(provider)
+      %Ecto.Changeset{data: %Provider{}}
 
   """
-  @spec change_bsp(%BSP{}, map()) :: Ecto.Changeset.t()
-  def change_bsp(%BSP{} = bsp, attrs \\ %{}) do
-    BSP.changeset(bsp, attrs)
+  @spec change_provider(%Provider{}, map()) :: Ecto.Changeset.t()
+  def change_provider(%Provider{} = provider, attrs \\ %{}) do
+    Provider.changeset(provider, attrs)
   end
 
   @doc ~S"""
@@ -169,10 +169,10 @@ defmodule Glific.Partners do
       {:email, email}, query ->
         from q in query, where: ilike(q.email, ^"%#{email}%")
 
-      {:bsp, bsp}, query ->
+      {:provider, provider}, query ->
         from q in query,
-          join: c in assoc(q, :bsp),
-          where: ilike(c.name, ^"%#{bsp}%")
+          join: c in assoc(q, :provider),
+          where: ilike(c.name, ^"%#{provider}%")
 
       {:wa_number, wa_number}, query ->
         from q in query, where: ilike(q.wa_number, ^"%#{wa_number}%")
@@ -229,8 +229,8 @@ defmodule Glific.Partners do
   """
   @spec update_organization(Organization.t(), map()) ::
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
-  def update_organization(%Organization{} = bsp, attrs) do
-    bsp
+  def update_organization(%Organization{} = provider, attrs) do
+    provider
     |> Organization.changeset(attrs)
     |> Repo.update()
   end
