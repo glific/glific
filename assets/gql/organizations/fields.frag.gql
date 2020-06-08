@@ -5,10 +5,10 @@ fragment OrganizationFields on OrganizationResult {
     display_name
     contact_name
     email
-    bsp_key
+    provider_key
     wa_number 
    
-    bsp {
+    provider {
       id
       name
       url

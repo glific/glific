@@ -128,8 +128,8 @@ mutation createOrganization($input: OrganizationInput!) {
     "name": "Org",
     "contact_name": "Jason",
     "email": "test@gmail.com",
-    "bsp": "gupshup",
-    "bsp_key": "random",
+    "provider": "gupshup",
+    "provider_key": "random",
     "wa_number": "10101010101"
   }
 }
