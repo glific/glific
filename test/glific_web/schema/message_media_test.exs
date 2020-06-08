@@ -18,7 +18,7 @@ defmodule GlificWeb.Schema.Query.MessageMediaTest do
     result = query_gql_by(:list)
     assert {:ok, query_data} = result
 
-    messages_media = get_in(query_data, [:data, "messageMedias"])
+    messages_media = get_in(query_data, [:data, "messagesMedia"])
     assert length(messages_media) > 0
 
     [message_media | _] = messages_media
