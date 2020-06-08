@@ -23,7 +23,7 @@
     # {:my_arbitrary_script, command: ["my_script", "argument with spaces"], cd: "scripts"}
 
     {:mix_format, "mix format"},
-    {:mix_doctor, "mix doctor"},
+    {:mix_doctor, command: "mix doctor", env: %{"MIX_ENV" => "test"}},
     {:dialyzer, "mix dialyzer --no-check --quiet", detect: [{:package, :dialyxir}]},
     {:sobelow, "mix sobelow --skip --exit",
      umbrella: [recursive: true], detect: [{:package, :sobelow}]},
