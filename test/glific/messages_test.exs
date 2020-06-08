@@ -161,9 +161,9 @@ defmodule Glific.MessagesTest do
       message_media
     end
 
-    test "list_message_media/0 returns all message_media" do
+    test "list_messages_media/0 returns all message_media" do
       message_media = message_media_fixture()
-      assert Messages.list_message_media() == [message_media]
+      assert Messages.list_messages_media() == [message_media]
     end
 
     test "get_message_media!/1 returns the message_media with given id" do
