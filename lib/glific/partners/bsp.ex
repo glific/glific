@@ -44,14 +44,4 @@ defmodule Glific.Partners.BSP do
     |> unique_constraint([:name])
     |> foreign_key_constraint(:organizations)
   end
-
-  @doc """
-  Delete changeset pattern we use for all data types
-  """
-  @spec delete_changeset(Organization.t()) :: Ecto.Changeset.t()
-  def delete_changeset(organization) do
-    organization
-    |> cast(%{}, @required_fields ++ @optional_fields)
-    |> foreign_key_constraint(:tags_organization_id_fk)
-  end
 end
