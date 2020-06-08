@@ -17,8 +17,8 @@ defmodule Glific.MessagesTest do
       wa_status: :invalid
     }
 
-    @recipient_attrs %{
-      name: "some recipient",
+    @receiver_attrs %{
+      name: "some receiver",
       optin_time: ~U[2010-04-17 14:00:00Z],
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "101013131",
@@ -44,8 +44,8 @@ defmodule Glific.MessagesTest do
 
     defp foreign_key_constraint do
       {:ok, sender} = Contacts.create_contact(@sender_attrs)
-      {:ok, recipient} = Contacts.create_contact(@recipient_attrs)
-      %{sender_id: sender.id, recipient_id: recipient.id}
+      {:ok, receiver} = Contacts.create_contact(@receiver_attrs)
+      %{sender_id: sender.id, receiver_id: receiver.id}
     end
 
     def message_fixture(attrs \\ %{}) do
@@ -74,24 +74,24 @@ defmodule Glific.MessagesTest do
 
     test "list_messages/1 with foreign key filters" do
       {:ok, sender} = Contacts.create_contact(@sender_attrs)
-      {:ok, recipient} = Contacts.create_contact(@recipient_attrs)
+      {:ok, receiver} = Contacts.create_contact(@receiver_attrs)
 
       {:ok, message} =
         @valid_attrs
-        |> Map.merge(%{sender_id: sender.id, recipient_id: recipient.id})
+        |> Map.merge(%{sender_id: sender.id, receiver_id: receiver.id})
         |> Messages.create_message()
 
       assert [message] == Messages.list_messages(%{filter: %{sender: sender.name}})
 
-      assert [message] == Messages.list_messages(%{filter: %{recipient: recipient.name}})
+      assert [message] == Messages.list_messages(%{filter: %{receiver: receiver.name}})
 
       assert [message] == Messages.list_messages(%{filter: %{either: sender.phone}})
 
-      assert [message] == Messages.list_messages(%{filter: %{either: recipient.phone}})
+      assert [message] == Messages.list_messages(%{filter: %{either: receiver.phone}})
 
       assert [] == Messages.list_messages(%{filter: %{either: "ABC"}})
       assert [] == Messages.list_messages(%{filter: %{sender: "ABC"}})
-      assert [] == Messages.list_messages(%{filter: %{recipient: "ABC"}})
+      assert [] == Messages.list_messages(%{filter: %{receiver: "ABC"}})
     end
 
     test "get_message!/1 returns the message with given id" do

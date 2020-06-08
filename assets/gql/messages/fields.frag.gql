@@ -8,7 +8,7 @@ fragment MessageFields on MessageResult {
       name
     }
 
-    recipient {
+    receiver {
       id
       name
     }

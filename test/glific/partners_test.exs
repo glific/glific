@@ -87,6 +87,12 @@ defmodule Glific.PartnersTest do
       assert_raise Ecto.NoResultsError, fn -> Partners.get_bsp!(bsp.id) end
     end
 
+    test "ensure that delete_bsp/1 with foreign key constraints give error" do
+      organization = organization_fixture()
+      bsp = Partners.get_bsp!(organization.bsp_id)
+      assert {:error, _} = Partners.delete_bsp(bsp)
+    end
+
     test "change_bsp/1 returns a bsp changeset" do
       bsp = bsp_fixture()
       assert %Ecto.Changeset{} = Partners.change_bsp(bsp)

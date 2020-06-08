@@ -56,7 +56,7 @@ defmodule GlificWeb.Resolvers.Messages do
 
   # def send_message(_, %{id: id}, _) do
   #   with {:ok, message} <- Repo.fetch(Message, id) do
-  #     Repo.preload(message, [:recipient, :sender, :media])
+  #     Repo.preload(message, [:receiver, :sender, :media])
   #     |> Communications.send_message()
   #     {:ok, %{message: message}}
   #   end

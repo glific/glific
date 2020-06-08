@@ -41,15 +41,15 @@ defmodule Glific.Messages do
           join: c in assoc(q, :sender),
           where: ilike(c.name, ^"%#{sender}%")
 
-      {:recipient, recipient}, query ->
+      {:receiver, receiver}, query ->
         from q in query,
-          join: c in assoc(q, :recipient),
-          where: ilike(c.name, ^"%#{recipient}%")
+          join: c in assoc(q, :receiver),
+          where: ilike(c.name, ^"%#{receiver}%")
 
       {:either, phone}, query ->
         from q in query,
           join: s in assoc(q, :sender),
-          join: r in assoc(q, :recipient),
+          join: r in assoc(q, :receiver),
           where: ilike(s.phone, ^"%#{phone}%") or ilike(r.phone, ^"%#{phone}%")
 
       {:wa_status, wa_status}, query ->

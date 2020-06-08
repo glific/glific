@@ -201,8 +201,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # sender id
       add :sender_id, references(:contacts, on_delete: :delete_all), null: false
 
-      # recipient id
-      add :recipient_id, references(:contacts, on_delete: :delete_all), null: false
+      # receiver id
+      add :receiver_id, references(:contacts, on_delete: :delete_all), null: false
 
       # message media ids
       add :media_id, references(:messages_media, on_delete: :delete_all), null: true
@@ -211,7 +211,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
     end
 
     create index(:messages, [:sender_id])
-    create index(:messages, [:recipient_id])
+    create index(:messages, [:receiver_id])
     create index(:messages, [:media_id])
   end
 

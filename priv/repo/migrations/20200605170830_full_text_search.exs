@@ -29,7 +29,7 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
     setweight(to_tsvector(unaccent(coalesce(string_agg(messages.body, ' '), ' '))), 'C')
     ) AS document
     FROM  contacts
-    LEFT  JOIN messages ON (messages.sender_id = contacts.id OR messages.recipient_id = contacts.id)
+    LEFT  JOIN messages ON (messages.sender_id = contacts.id OR messages.receiver_id = contacts.id)
     LEFT  JOIN messages_tags ON  messages.id = messages_tags.message_id
     LEFT  JOIN tags ON tags.id = messages_tags.tag_id
     GROUP BY contacts.id
