@@ -1,0 +1,15 @@
+query messages {
+  messages {
+    id
+    body
+    sender {
+      id
+      name
+    }
+
+    recipient {
+      id
+      name
+    }
+  }
+}

@@ -36,6 +36,7 @@ npm-debug.log
 # Keep all our secrets in these files
 # We should explore valult for production level secrets
 **/*.secret.exs
+.*credentials.json
 
 # Ignore the dialyzer cache files
 /priv/plts/*.plt

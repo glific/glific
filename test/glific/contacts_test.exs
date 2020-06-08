@@ -1,6 +1,5 @@
 defmodule Glific.ContactsTest do
-  use Glific.DataCase
-
+  use Glific.DataCase, async: true
   alias Glific.Contacts
 
   describe "contacts" do

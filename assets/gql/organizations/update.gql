@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateOrganization($id: ID!, $input: OrganizationInput!) {
+  updateOrganization(id: $id, input: $input) {
+    ...OrganizationFields
+
+    ...ErrorFields
+  }
+}

@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.AddTwowayTables do
+defmodule Glific.Repo.Migrations.GlificTables do
   @moduledoc """
   To simplify things, lets create the bulk of the tables in one migration file for v0.1.
   This gives new developers a good view of the schema in one place.
@@ -20,6 +20,8 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
     messages()
 
     messages_tags()
+
+    contacts_tags()
 
     bsps()
 
@@ -252,7 +254,7 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
       timestamps()
     end
 
-    create unique_index(:bsps, [:name, :url, :api_end_point])
+    create unique_index(:bsps, :name)
   end
 
   @doc """
@@ -261,6 +263,7 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
   def organizations do
     create table(:organizations) do
       add :name, :string, null: false
+      add :display_name, :string, null: false
       add :contact_name, :string, null: false
       add :email, :string, null: false
       add :bsp, :string
@@ -271,6 +274,7 @@ defmodule Glific.Repo.Migrations.AddTwowayTables do
       timestamps()
     end
 
+    create unique_index(:organizations, :name)
     create unique_index(:organizations, :wa_number)
     create unique_index(:organizations, :email)
   end

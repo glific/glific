@@ -1,30 +1,30 @@
 defmodule Glific.Repo.Migrations.CreateEnums do
   use Ecto.Migration
 
-  alias Glific.{
-    APIStatusEnum,
-    ContactStatusEnum,
-    MessageFlowEnum,
-    MessageTypesEnum,
-    MessageStatusEnum,
-    SortOrderEnum
+  alias Glific.Enums.{
+    APIStatus,
+    ContactStatus,
+    MessageFlow,
+    MessageTypes,
+    MessageStatus,
+    SortOrder
   }
 
   def up do
-    APIStatusEnum.create_type()
-    ContactStatusEnum.create_type()
-    MessageFlowEnum.create_type()
-    MessageTypesEnum.create_type()
-    MessageStatusEnum.create_type()
-    SortOrderEnum.create_type()
+    APIStatus.create_type()
+    ContactStatus.create_type()
+    MessageFlow.create_type()
+    MessageTypes.create_type()
+    MessageStatus.create_type()
+    SortOrder.create_type()
   end
 
   def down do
-    APIStatusEnum.drop_type()
-    ContactStatusEnum.drop_type()
-    MessageFlowEnum.drop_type()
-    MessageStatusEnum.drop_type()
-    MessageTypesEnum.drop_type()
-    SortOrderEnum.drop_type()
+    APIStatus.drop_type()
+    ContactStatus.drop_type()
+    MessageFlow.drop_type()
+    MessageStatus.drop_type()
+    MessageTypes.drop_type()
+    SortOrder.drop_type()
   end
 end

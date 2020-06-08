@@ -57,6 +57,12 @@ defmodule GlificWeb.Schema.ContactTypes do
       arg(:order, type: :sort_order, default_value: :asc)
       resolve(&Resolvers.Contacts.contacts/3)
     end
+
+    field :search, list_of(:contact) do
+      arg(:term, non_null(:string))
+      arg(:order, type: :sort_order, default_value: :asc)
+      resolve(&Resolvers.Contacts.search/3)
+    end
   end
 
   object :contact_mutations do

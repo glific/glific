@@ -12,6 +12,7 @@ defmodule GlificWeb.Schema.Query.ContactTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/contacts/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/contacts/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contacts/delete.gql")
+  load_gql(:search, GlificWeb.Schema, "assets/gql/contacts/search.gql")
 
   test "contacts field returns list of contacts" do
     result = query_gql_by(:list)
@@ -21,13 +22,13 @@ defmodule GlificWeb.Schema.Query.ContactTest do
     assert length(contacts) > 0
 
     res =
-      contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "Default Contact" end)
+      contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "Default Sender" end)
 
-    assert res == "Default Contact"
+    assert res == "Default Sender"
   end
 
   test "contact id returns one contact or nil" do
-    name = "Default Contact"
+    name = "Default Sender"
     {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
 
     result = query_gql_by(:by_id, variables: %{"id" => contact.id})
@@ -75,7 +76,7 @@ defmodule GlificWeb.Schema.Query.ContactTest do
   end
 
   test "update a contact and test possible scenarios and errors" do
-    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Contact"})
+    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Sender"})
 
     name = "Contact Test Name New"
     phone = "1-415-555-1212 New"
@@ -112,7 +113,7 @@ defmodule GlificWeb.Schema.Query.ContactTest do
   end
 
   test "delete a contact" do
-    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Contact"})
+    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Sender"})
 
     result = query_gql_by(:delete, variables: %{"id" => contact.id})
     assert {:ok, query_data} = result
@@ -123,5 +124,37 @@ defmodule GlificWeb.Schema.Query.ContactTest do
 
     message = get_in(query_data, [:data, "deleteContact", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "search for contacts" do
+    {:ok, sender} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Sender"})
+    {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Recipient"})
+
+    sender_id = to_string(sender.id)
+    receiver_id = to_string(receiver.id)
+
+    result = query_gql_by(:search, variables: %{"term" => "Default Sender"})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "search", Access.at(0), "id"]) == sender_id
+
+    result = query_gql_by(:search, variables: %{"term" => "Default Recipient"})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "search", Access.at(0), "id"]) == receiver_id
+
+    result = query_gql_by(:search, variables: %{"term" => "Default"})
+    assert {:ok, query_data} = result
+    id_1 = get_in(query_data, [:data, "search", Access.at(0), "id"])
+    id_2 = get_in(query_data, [:data, "search", Access.at(1), "id"])
+
+    assert (id_1 == sender_id and id_2 == receiver_id) or
+             (id_2 == sender_id and id_1 == receiver_id)
+
+    result =
+      query_gql_by(:search,
+        variables: %{"term" => "This term is highly unlikely to occur superfragerlicious"}
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "search"]) == []
   end
 end
