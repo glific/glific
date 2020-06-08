@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createBsp($input:BspInput!) {
+  createBsp(input: $input) {
+    ...BspFields
+
+    ...ErrorFields
+  }
+}

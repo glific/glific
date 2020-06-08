@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteBsp($id: ID!) {
+  deleteBsp(id: $id) {
+    ...BspFields
+
+    ...ErrorFields
+  }
+}

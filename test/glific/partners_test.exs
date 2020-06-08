@@ -112,6 +112,7 @@ defmodule Glific.PartnersTest do
 
     @valid_org_attrs %{
       name: "Organization Name",
+      display_name: "Organization Display Name",
       contact_name: "Organization Contact person",
       email: "Contact person email",
       bsp_key: "BSP key",
@@ -120,6 +121,7 @@ defmodule Glific.PartnersTest do
 
     @valid_org_attrs_1 %{
       name: "Organization Name 1",
+      display_name: "Organization Display Name 1",
       contact_name: "Organization Contact person 1",
       email: "Contact person email 1",
       bsp_key: "BSP key 1",
@@ -128,6 +130,7 @@ defmodule Glific.PartnersTest do
 
     @update_org_attrs %{
       name: "Updated Name",
+      display_name: "Updated Display Name 1",
       contact_name: "Updated Contact"
     }
     @invalid_org_attrs %{bsp_id: nil, name: nil, contact_name: nil}
@@ -161,6 +164,7 @@ defmodule Glific.PartnersTest do
                |> Partners.create_organization()
 
       assert organization.name == @valid_org_attrs.name
+      assert organization.display_name == @valid_org_attrs.display_name
       assert organization.email == @valid_org_attrs.email
       assert organization.wa_number == @valid_org_attrs.wa_number
     end
@@ -217,9 +221,6 @@ defmodule Glific.PartnersTest do
       assert org_list == [org1]
 
       org_list = Partners.list_organizations(%{filter: %{email: org1.email}})
-      assert org_list == [org1]
-
-      org_list = Partners.list_organizations(%{filter: %{bsp_key: org1.bsp_key}})
       assert org_list == [org1]
 
       org_list = Partners.list_organizations(%{filter: %{wa_number: org1.wa_number}})

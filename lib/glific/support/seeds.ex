@@ -122,23 +122,49 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_bsp :: nil
-  def seed_bsp do
+  @spec seed_bsps :: {BSP.t()}
+  def seed_bsps do
+    default_bsp =
+      Repo.insert!(%BSP{
+        name: "Default BSP",
+        url: "test_url",
+        api_end_point: "test"
+      })
+
     Repo.insert!(%BSP{
       name: "gupshup",
-      url: "test_url",
+      url: "test_url_1",
       api_end_point: "test"
     })
+
+    Repo.insert!(%BSP{
+      name: "twilio",
+      url: "test_url_2",
+      api_end_point: "test"
+    })
+
+    {default_bsp}
   end
 
   @doc false
-  @spec seed_organizations :: nil
-  def seed_organizations do
+  @spec seed_organizations({BSP.t()}) :: nil
+  def seed_organizations({default_bsp}) do
+    Repo.insert!(%Organization{
+      name: "Default Organization",
+      display_name: "Default Organization",
+      contact_name: "Test",
+      email: "test@glific.org",
+      bsp_id: default_bsp.id,
+      bsp_key: "random",
+      wa_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+    })
+
     Repo.insert!(%Organization{
       name: "Slam Out Loud",
+      display_name: "Slam Out Loud",
       contact_name: "Jigyasa and Gaurav",
       email: "jigyasa@glific.org",
-      bsp_id: 1,
+      bsp_id: default_bsp.id,
       bsp_key: "random",
       wa_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     })
@@ -239,9 +265,9 @@ defmodule Glific.Seeds do
 
     seed_contacts()
 
-    seed_bsp()
+    {default_bsp} = seed_bsps()
 
-    seed_organizations()
+    seed_organizations({default_bsp})
 
     seed_messages()
 
