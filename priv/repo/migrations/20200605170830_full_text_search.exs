@@ -53,6 +53,36 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
     create unique_index("message_search", [:id])
   end
 
+
+  @doc """
+  Create a table for full text search. This eliminates the need to do anything
+  dynamically and we can return really quickly
+  """
+  def full_text_search do
+    create table(:full_text_search) do
+      add :contact_name :string
+      add :contact_phone :string
+      add :tags_label :text
+      add :document :text
+
+      add :contact_id reference(:contacts, on:delete: :delete_all)
+
+      timestamps()
+    end
+
+    create_index(:full_text_search, :document, using: :gin)
+
+    execute(
+      "CREATE INDEX full_text_search_name_index ON full_text_search USING gin (contact_name gin_trgm_ops)"
+    )
+    execute(
+      "CREATE INDEX full_text_search_phone_index ON full_text_search USING gin (contact_phone)"
+    )
+    execute(
+      "CREATE INDEX full_text_search_tag_index ON message_search USING gin (tag_label gin_trgm_ops)"
+    )
+  end
+
   defp create_triggers do
     execute("""
     CREATE OR REPLACE FUNCTION refresh_message_search()
