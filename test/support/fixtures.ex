@@ -16,7 +16,7 @@ defmodule Glific.Fixtures do
   }
 
   @doc false
-  @spec contact_fixture(Map.t()) :: Contacts.Contact.t()
+  @spec contact_fixture(map()) :: Contacts.Contact.t()
   def contact_fixture(attrs \\ %{}) do
     valid_attrs = %{
       name: Name.name(),
@@ -36,7 +36,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec message_fixture(Map.t()) :: Messages.Message.t()
+  @spec message_fixture(map()) :: Messages.Message.t()
   def message_fixture(attrs \\ %{}) do
     sender = contact_fixture()
     recipient = contact_fixture()
@@ -60,7 +60,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec language_fixture(Map.t()) :: Settings.Language.t()
+  @spec language_fixture(map()) :: Settings.Language.t()
   def language_fixture(attrs \\ %{}) do
     valid_attrs = %{
       label: Faker.Lorem.word(),
@@ -77,7 +77,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec tag_fixture(Map.t()) :: Tags.Tag.t()
+  @spec tag_fixture(map()) :: Tags.Tag.t()
   def tag_fixture(attrs \\ %{}) do
     valid_attrs = %{
       label: "some label",
@@ -99,7 +99,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec message_tag_fixture(Map.t()) :: Tags.MessageTag.t()
+  @spec message_tag_fixture(map()) :: Tags.MessageTag.t()
   def message_tag_fixture(attrs \\ %{}) do
     valid_attrs = %{
       message_id: message_fixture().id,
@@ -115,7 +115,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec contact_tag_fixture(Map.t()) :: Tags.ContactTag.t()
+  @spec contact_tag_fixture(map()) :: Tags.ContactTag.t()
   def contact_tag_fixture(attrs \\ %{}) do
     valid_attrs = %{
       contact_id: contact_fixture().id,
