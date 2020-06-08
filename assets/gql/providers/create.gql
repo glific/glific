@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createProvider($input:ProviderInput!) {
+  createProvider(input: $input) {
+    ...ProviderFields
+
+    ...ErrorFields
+  }
+}

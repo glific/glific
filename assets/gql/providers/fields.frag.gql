@@ -1,4 +1,4 @@
-fragment BspFields on BspResult {
+fragment ProviderFields on ProviderResult {
   bsp {
     id
     name
@@ -7,7 +7,7 @@ fragment BspFields on BspResult {
   }
 }
 
-fragment ErrorFields on BspResult {
+fragment ErrorFields on ProviderResult {
   errors {
     key
     message
