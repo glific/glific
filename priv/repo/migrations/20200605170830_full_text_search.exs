@@ -21,7 +21,8 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
     CREATE MATERIALIZED VIEW message_search AS
     SELECT
     contacts.id  AS id,
-    contacts.name || ' ' || contacts.phone AS contact_label,
+    contacts.name AS contact_name,
+    contacts_phone AS contacts.phone,
     coalesce(string_agg(tags.label, ' '), ' ') AS tag_label,
     (
     setweight(to_tsvector(unaccent(contacts.name || ' ' || contacts.phone)), 'A') ||
