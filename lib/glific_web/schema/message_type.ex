@@ -18,9 +18,9 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :body, :string
     field :type, :message_types_enum
     field :flow, :message_flow_enum
-    field :wa_message_id, :string
+    field :provider_message_id, :string
 
-    field :wa_status, :message_status_enum
+    field :provider_status, :message_status_enum
 
     field :sender, :contact do
       resolve(dataloader(Repo))
@@ -54,16 +54,16 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :either, :string
 
     @desc "Match the status"
-    field :wa_status, :message_status_enum
+    field :provider_status, :message_status_enum
   end
 
   input_object :message_input do
     field :body, :string
     field :type, :message_types_enum
     field :flow, :message_flow_enum
-    field :wa_message_id, :string
+    field :provider_message_id, :string
 
-    field :wa_status, :message_status_enum
+    field :provider_status, :message_status_enum
 
     field :sender_id, :id
     field :receiver_id, :id

@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteProvider($id: ID!) {
+  deleteProvider(id: $id) {
+    ...ProviderFields
+
+    ...ErrorFields
+  }
+}

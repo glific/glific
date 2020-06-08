@@ -40,8 +40,8 @@ defmodule Glific.Contacts do
       {:status, status}, query ->
         from q in query, where: q.status == ^status
 
-      {:wa_status, wa_status}, query ->
-        from q in query, where: q.wa_status == ^wa_status
+      {:provider_status, provider_status}, query ->
+        from q in query, where: q.provider_status == ^provider_status
     end)
   end
 

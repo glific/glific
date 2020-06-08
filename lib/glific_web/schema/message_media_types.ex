@@ -17,7 +17,7 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
     field :source_url, :string
     field :thumbnail, :string
     field :caption, :string
-    field :wa_media_id, :string
+    field :provider_media_id, :string
   end
 
   input_object :message_media_input do
@@ -25,7 +25,7 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
     field :source_url, :string
     field :thumbnail, :string
     field :caption, :string
-    field :wa_media_id, :string
+    field :provider_media_id, :string
   end
 
   object :message_media_queries do
