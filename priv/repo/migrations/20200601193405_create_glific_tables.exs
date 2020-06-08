@@ -15,7 +15,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
     contacts()
 
-    message_media()
+    messages_media()
 
     messages()
 
@@ -157,8 +157,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
   @doc """
   Information for all media messages sent and/or received by the system
   """
-  def message_media do
-    create table(:message_media) do
+  def messages_media do
+    create table(:messages_media) do
       # url to be sent to BSP
       add :url, :text, null: false
 
@@ -201,17 +201,17 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # sender id
       add :sender_id, references(:contacts, on_delete: :delete_all), null: false
 
-      # recipient id
-      add :recipient_id, references(:contacts, on_delete: :delete_all), null: false
+      # receiver id
+      add :receiver_id, references(:contacts, on_delete: :delete_all), null: false
 
       # message media ids
-      add :media_id, references(:message_media, on_delete: :delete_all), null: true
+      add :media_id, references(:messages_media, on_delete: :delete_all), null: true
 
       timestamps()
     end
 
     create index(:messages, [:sender_id])
-    create index(:messages, [:recipient_id])
+    create index(:messages, [:receiver_id])
     create index(:messages, [:media_id])
   end
 
@@ -254,7 +254,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       timestamps()
     end
 
-    create unique_index(:bsps, [:name, :url, :api_end_point])
+    create unique_index(:bsps, :name)
   end
 
   @doc """
@@ -263,6 +263,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
   def organizations do
     create table(:organizations) do
       add :name, :string, null: false
+      add :display_name, :string, null: false
       add :contact_name, :string, null: false
       add :email, :string, null: false
       add :bsp, :string
@@ -273,6 +274,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       timestamps()
     end
 
+    create unique_index(:organizations, :name)
     create unique_index(:organizations, :wa_number)
     create unique_index(:organizations, :email)
   end

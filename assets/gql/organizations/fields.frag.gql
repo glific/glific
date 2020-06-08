@@ -1,0 +1,25 @@
+fragment OrganizationFields on OrganizationResult {
+  organization {
+    id
+    name
+    display_name
+    contact_name
+    email
+    bsp_key
+    wa_number 
+   
+    bsp {
+      id
+      name
+      url
+      api_end_point   
+    }
+  }
+}
+
+fragment ErrorFields on OrganizationResult {
+  errors {
+    key
+    message
+  }
+}

@@ -26,9 +26,9 @@ defmodule GlificWeb.Schema.Query.MessageTest do
     [message | _] = messages
     assert get_in(message, ["body"]) == "default message body"
 
-    # lets ensure that the sender and recipient field exists and has a valid id
+    # lets ensure that the sender and receiver field exists and has a valid id
     assert get_in(message, ["sender", "id"]) > 0
-    assert get_in(message, ["recipient", "id"]) > 0
+    assert get_in(message, ["receiver", "id"]) > 0
   end
 
   test "message id returns one message or nil" do
@@ -58,7 +58,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
           "input" => %{
             "body" => "Message body",
             "flow" => "OUTBOUND",
-            "recipientId" => message.recipient_id,
+            "receiverId" => message.receiver_id,
             "senderId" => message.sender_id,
             "type" => "TEXT",
             "waStatus" => "DELIVERED"

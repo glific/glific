@@ -8,7 +8,8 @@ defmodule Glific.MixProject do
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
-        plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
+        ignore_warnings: ".dialyzer_ignore.exs"
       ],
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
@@ -58,9 +59,9 @@ defmodule Glific.MixProject do
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
       {:pow, "~> 1.0.20"},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      {:credo, "~> 1.4", only: [:dev], runtime: false},
-      {:ex_doc, "~> 0.22", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.22", only: [:dev, :test], runtime: false},
       {:inch_ex, "~> 2.0", only: [:dev, :test], runtime: false},
       {:doctor, "~> 0.13.0"},
       {:httpoison, "~> 1.6"},
@@ -78,11 +79,11 @@ defmodule Glific.MixProject do
       {:mock, "~> 0.3", only: [:dev, :test]},
       {:excoveralls, "~> 0.13", only: :test},
       {:cors_plug, "~> 2.0"},
-      {:ex_check, ">= 0.0.0", only: :dev, runtime: false},
-      {:sobelow, "~> 0.8", only: :dev},
+      {:ex_check, ">= 0.0.0", only: [:dev, :test], runtime: false},
+      {:sobelow, "~> 0.8", only: [:dev, :test]},
       {:wormwood, "~> 0.1.0"},
       {:goth, "~> 1.2.0"},
-      {:elixir_uuid, "~> 1.2"}
+      {:elixir_uuid, "~> 1.2"},
     ]
   end
 
@@ -99,7 +100,7 @@ defmodule Glific.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       # test: ["ecto.drop", "ecto.create --quiet", "ecto.migrate", "test"],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.drop", "ecto.create --quiet", "ecto.migrate", "test"]
     ]
   end
 end

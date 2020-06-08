@@ -21,6 +21,7 @@ defmodule Glific.Messages.MessageMedia do
   ]
 
   @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           url: String.t() | nil,
           source_url: String.t() | nil,
@@ -31,7 +32,7 @@ defmodule Glific.Messages.MessageMedia do
           updated_at: :utc_datetime | nil
         }
 
-  schema "message_media" do
+  schema "messages_media" do
     field :url, :string
     field :source_url, :string
     field :thumbnail, :string

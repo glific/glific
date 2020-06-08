@@ -20,8 +20,27 @@ defmodule Glific.Partners do
 
   """
   @spec list_bsps(map()) :: [%BSP{}, ...]
-  def list_bsps(_args \\ %{}) do
-    Repo.all(BSP)
+  def list_bsps(args \\ %{}) do
+    args
+    |> Enum.reduce(BSP, fn
+      {:order, order}, query ->
+        query |> order_by({^order, :name})
+
+      {:filter, filter}, query ->
+        query |> filter_bsp_with(filter)
+    end)
+    |> Repo.all()
+  end
+
+  @spec filter_bsp_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_bsp_with(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:name, name}, query ->
+        from q in query, where: ilike(q.name, ^"%#{name}%")
+
+      {:url, url}, query ->
+        from q in query, where: ilike(q.url, ^"%#{url}%")
+    end)
   end
 
   @doc """
@@ -93,7 +112,10 @@ defmodule Glific.Partners do
   """
   @spec delete_bsp(%BSP{}) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
   def delete_bsp(%BSP{} = bsp) do
-    Repo.delete(bsp)
+    bsp
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.no_assoc_constraint(:organizations)
+    |> Repo.delete()
   end
 
   @doc ~S"""
@@ -138,14 +160,19 @@ defmodule Glific.Partners do
       {:name, name}, query ->
         from q in query, where: ilike(q.name, ^"%#{name}%")
 
+      {:display_name, display_name}, query ->
+        from q in query, where: ilike(q.display_name, ^"%#{display_name}%")
+
       {:contact_name, contact_name}, query ->
         from q in query, where: ilike(q.contact_name, ^"%#{contact_name}%")
 
       {:email, email}, query ->
         from q in query, where: ilike(q.email, ^"%#{email}%")
 
-      {:bsp_key, bsp_key}, query ->
-        from q in query, where: ilike(q.bsp_key, ^"%#{bsp_key}%")
+      {:bsp, bsp}, query ->
+        from q in query,
+          join: c in assoc(q, :bsp),
+          where: ilike(c.name, ^"%#{bsp}%")
 
       {:wa_number, wa_number}, query ->
         from q in query, where: ilike(q.wa_number, ^"%#{wa_number}%")

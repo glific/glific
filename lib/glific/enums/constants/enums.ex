@@ -1,4 +1,4 @@
-defmodule Glific.Constants.Enums do
+defmodule Glific.Enums.Constants do
   @moduledoc """
   The Enums constant are where all enum values across our entire
   application should be defined. This is the source of truth for
