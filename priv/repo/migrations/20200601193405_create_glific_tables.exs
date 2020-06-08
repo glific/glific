@@ -23,7 +23,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
     contacts_tags()
 
-    bsps()
+    providers()
 
     organizations()
   end
@@ -142,7 +142,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # Is this contact active (for some definition of active)
       add :is_active, :boolean, default: true
 
-      # this is our status, based on what the BSP tell us
+      # this is our status, based on what the Provider tell us
       # the current options are: valid or invalid
       add :status, :contact_status_enum, null: false, default: "valid"
       add :optin_time, :timestamptz
@@ -159,7 +159,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
   """
   def message_media do
     create table(:message_media) do
-      # url to be sent to BSP
+      # url to be sent to Provider
       add :url, :text, null: false
 
       # source url
@@ -242,19 +242,19 @@ defmodule Glific.Repo.Migrations.GlificTables do
   @doc """
   Information of all the Business Service Providers (APIs) responsible for the communications.
   """
-  def bsps do
-    create table(:bsps) do
-      # The name of BSP
+  def providers do
+    create table(:providers) do
+      # The name of Provider
       add :name, :string, null: false
-      # The url of BSP
+      # The url of Provider
       add :url, :string, null: false
-      # The api end point for BSP
+      # The api end point for Provider
       add :api_end_point, :string, null: false
 
       timestamps()
     end
 
-    create unique_index(:bsps, :name)
+    create unique_index(:providers, :name)
   end
 
   @doc """
@@ -266,9 +266,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :display_name, :string, null: false
       add :contact_name, :string, null: false
       add :email, :string, null: false
-      add :bsp, :string
-      add :bsp_id, references(:bsps, on_delete: :nothing), null: false
-      add :bsp_key, :string, null: false
+      add :provider, :string
+      add :provider_id, references(:providers, on_delete: :nothing), null: false
+      add :provider_key, :string, null: false
       add :wa_number, :string, null: false
 
       timestamps()
