@@ -78,10 +78,10 @@ defmodule GlificWeb.Resolvers.Messages do
   end
 
   @doc false
-  @spec message_medias(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec messages_media(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def message_medias(_, args, _) do
-    {:ok, Messages.list_message_media(args)}
+  def messages_media(_, args, _) do
+    {:ok, Messages.list_messages_media(args)}
   end
 
   @doc false

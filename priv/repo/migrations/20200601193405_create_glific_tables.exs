@@ -15,7 +15,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
     contacts()
 
-    message_media()
+    messages_media()
 
     messages()
 
@@ -157,8 +157,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
   @doc """
   Information for all media messages sent and/or received by the system
   """
-  def message_media do
-    create table(:message_media) do
+  def messages_media do
+    create table(:messages_media) do
       # url to be sent to BSP
       add :url, :text, null: false
 
@@ -205,7 +205,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :recipient_id, references(:contacts, on_delete: :delete_all), null: false
 
       # message media ids
-      add :media_id, references(:message_media, on_delete: :delete_all), null: true
+      add :media_id, references(:messages_media, on_delete: :delete_all), null: true
 
       timestamps()
     end
