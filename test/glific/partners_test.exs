@@ -89,7 +89,7 @@ defmodule Glific.PartnersTest do
 
     test "ensure that delete_bsp/1 with foreign key constraints give error" do
       organization = organization_fixture()
-      bsp = Partners.get_bsp!(organization.bsp_id);
+      bsp = Partners.get_bsp!(organization.bsp_id)
       assert {:error, _} = Partners.delete_bsp(bsp)
     end
 
