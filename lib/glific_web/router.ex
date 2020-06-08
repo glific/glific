@@ -32,7 +32,8 @@ defmodule GlificWeb.Router do
 
     forward "/graphiql", Absinthe.Plug.GraphiQL,
       schema: GlificWeb.Schema,
-      interface: :simple
+      interface: :simple,
+      socket: GlificWeb.UserSocket
   end
 
   # Enables LiveDashboard only for development

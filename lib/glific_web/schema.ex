@@ -58,11 +58,9 @@ defmodule GlificWeb.Schema do
     import_fields(:organization_mutations)
   end
 
-  _ = """
   subscription do
     import_fields(:message_subscriptions)
   end
-  """
 
   @doc """
   Used to apply middleware on all or a group of fields based on pattern matching.

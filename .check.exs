@@ -25,6 +25,8 @@
     {:mix_format, "mix format"},
     {:mix_doctor, "mix doctor"},
     {:dialyzer, "mix dialyzer --quiet", detect: [{:package, :dialyxir}]},
+    {:sobelow, "mix sobelow --skip --exit",
+     umbrella: [recursive: true], detect: [{:package, :sobelow}]},
     {:mix_coveralls, "mix coveralls", [{:run_after, [:ex_unit]}, {:env, %{"MIX_ENV" => "test"}}]}
   ]
 ]
