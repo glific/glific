@@ -17,6 +17,6 @@ fragment ContactTagFields on ContactTagResult {
 fragment ErrorFields on ContactTagResult {
   errors {
     key
-    contact
+    message
   }
 }

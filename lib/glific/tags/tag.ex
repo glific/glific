@@ -6,8 +6,7 @@ defmodule Glific.Tags.Tag do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.{Settings.Language, Tags.Tag}
-  # , Contacts.Contact, Messages.Message}
+  alias Glific.{Settings.Language, Tags.Tag, Contacts.Contact, Messages.Message}
 
   @required_fields [:label, :language_id]
   @optional_fields [:description, :is_active, :is_reserved, :parent_id]
@@ -37,14 +36,14 @@ defmodule Glific.Tags.Tag do
 
     belongs_to :tags, Tag, foreign_key: :parent_id
 
-    # many_to_many :contacts, Contact, join_through: "contacts_tags", on_replace: :delete
-    # many_to_many :messages, Message, join_through: "messages_tags", on_replace: :delete
+    many_to_many :contacts, Contact, join_through: "contacts_tags", on_replace: :delete
+    many_to_many :messages, Message, join_through: "messages_tags", on_replace: :delete
 
     timestamps()
   end
 
   @doc """
-  Standard changeset pattern we use for all datat types
+  Standard changeset pattern we use for all data types
   """
   @spec changeset(Tag.t(), map()) :: Ecto.Changeset.t()
   def changeset(tag, attrs) do

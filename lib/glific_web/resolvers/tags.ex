@@ -74,16 +74,6 @@ defmodule GlificWeb.Resolvers.Tags do
     end
   end
 
-  @doc """
-  Get a specific message tag by id
-  """
-  @spec message_tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def message_tag(_, %{id: id}, _) do
-    with {:ok, message_tag} <- Repo.fetch(MessageTag, id),
-         do: {:ok, %{message_tag: message_tag}}
-  end
-
   @doc false
   @spec create_message_tag(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
@@ -101,16 +91,6 @@ defmodule GlificWeb.Resolvers.Tags do
          {:ok, message_tag} <- Tags.delete_message_tag(message_tag) do
       {:ok, message_tag}
     end
-  end
-
-  @doc """
-  Get a specific contact tag by id
-  """
-  @spec contact_tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def contact_tag(_, %{id: id}, _) do
-    with {:ok, contact_tag} <- Repo.fetch(ContactTag, id),
-         do: {:ok, %{contact_tag: contact_tag}}
   end
 
   @doc false
