@@ -98,7 +98,7 @@ defmodule Glific.Seeds do
   @spec seed_contacts :: nil
   def seed_contacts do
     Repo.insert!(%Contact{phone: "917834811114", name: "Default Sender"})
-    Repo.insert!(%Contact{phone: "917834811231", name: "Default Recipient"})
+    Repo.insert!(%Contact{phone: "917834811231", name: "Default receiver"})
 
     Repo.insert!(%Contact{
       name: "Adelle Cavin",
@@ -174,7 +174,7 @@ defmodule Glific.Seeds do
   @spec seed_messages :: nil
   def seed_messages do
     {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default Sender"})
-    {:ok, recipient} = Repo.fetch_by(Contact, %{name: "Default Recipient"})
+    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
     Repo.insert!(%Message{
       body: "default message body",
@@ -183,7 +183,7 @@ defmodule Glific.Seeds do
       wa_message_id: Faker.String.base64(10),
       wa_status: :enqueued,
       sender_id: sender.id,
-      recipient_id: recipient.id
+      receiver_id: receiver.id
     })
 
     Repo.insert!(%Message{
@@ -193,7 +193,7 @@ defmodule Glific.Seeds do
       wa_message_id: Faker.String.base64(10),
       wa_status: :enqueued,
       sender_id: sender.id,
-      recipient_id: recipient.id
+      receiver_id: receiver.id
     })
 
     Repo.insert!(%Message{
@@ -203,7 +203,7 @@ defmodule Glific.Seeds do
       wa_message_id: Faker.String.base64(10),
       wa_status: :enqueued,
       sender_id: sender.id,
-      recipient_id: recipient.id
+      receiver_id: receiver.id
     })
 
     Repo.insert!(%Message{
@@ -213,7 +213,7 @@ defmodule Glific.Seeds do
       wa_message_id: Faker.String.base64(10),
       wa_status: :enqueued,
       sender_id: sender.id,
-      recipient_id: recipient.id
+      receiver_id: receiver.id
     })
   end
 
