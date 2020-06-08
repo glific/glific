@@ -3,8 +3,8 @@ defmodule Glific.PartnersTest do
 
   alias Glific.Partners
 
-  describe "bsp" do
-    alias Glific.Partners.BSP
+  describe "provider" do
+    alias Glific.Partners.Provider
 
     @valid_attrs %{
       name: "some name",
@@ -37,79 +37,79 @@ defmodule Glific.PartnersTest do
       api_end_point: nil
     }
 
-    def bsp_fixture(attrs \\ %{}) do
-      {:ok, bsp} =
+    def provider_fixture(attrs \\ %{}) do
+      {:ok, provider} =
         attrs
         |> Enum.into(@valid_attrs)
-        |> Partners.create_bsp()
+        |> Partners.create_provider()
 
-      bsp
+      provider
     end
 
-    test "list_bsps/0 returns all bsps" do
-      bsp = bsp_fixture()
-      assert Partners.list_bsps() == [bsp]
+    test "list_providers/0 returns all providers" do
+      provider = provider_fixture()
+      assert Partners.list_providers() == [provider]
     end
 
-    test "get_bsp!/1 returns the bsp with given id" do
-      bsp = bsp_fixture()
-      assert Partners.get_bsp!(bsp.id) == bsp
+    test "get_provider!/1 returns the provider with given id" do
+      provider = provider_fixture()
+      assert Partners.get_provider!(provider.id) == provider
     end
 
-    test "create_bsp/1 with valid data creates a bsp" do
-      assert {:ok, %BSP{} = bsp} = Partners.create_bsp(@valid_attrs)
-      assert bsp.api_end_point == "some api_end_point"
-      assert bsp.name == "some name"
-      assert bsp.url == "some url"
+    test "create_provider/1 with valid data creates a provider" do
+      assert {:ok, %Provider{} = provider} = Partners.create_provider(@valid_attrs)
+      assert provider.api_end_point == "some api_end_point"
+      assert provider.name == "some name"
+      assert provider.url == "some url"
     end
 
-    test "create_bsp/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Partners.create_bsp(@invalid_attrs)
+    test "create_provider/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Partners.create_provider(@invalid_attrs)
     end
 
-    test "update_bsp/2 with valid data updates the bsp" do
-      bsp = bsp_fixture()
-      assert {:ok, %BSP{} = bsp} = Partners.update_bsp(bsp, @update_attrs)
-      assert bsp.api_end_point == "some updated api_end_point"
-      assert bsp.name == "some updated name"
-      assert bsp.url == "some updated url"
+    test "update_provider/2 with valid data updates the provider" do
+      provider = provider_fixture()
+      assert {:ok, %Provider{} = provider} = Partners.update_provider(provider, @update_attrs)
+      assert provider.api_end_point == "some updated api_end_point"
+      assert provider.name == "some updated name"
+      assert provider.url == "some updated url"
     end
 
-    test "update_bsp/2 with invalid data returns error changeset" do
-      bsp = bsp_fixture()
-      assert {:error, %Ecto.Changeset{}} = Partners.update_bsp(bsp, @invalid_attrs)
-      assert bsp == Partners.get_bsp!(bsp.id)
+    test "update_provider/2 with invalid data returns error changeset" do
+      provider = provider_fixture()
+      assert {:error, %Ecto.Changeset{}} = Partners.update_provider(provider, @invalid_attrs)
+      assert provider == Partners.get_provider!(provider.id)
     end
 
-    test "delete_bsp/1 deletes the bsp" do
-      bsp = bsp_fixture()
-      assert {:ok, %BSP{}} = Partners.delete_bsp(bsp)
-      assert_raise Ecto.NoResultsError, fn -> Partners.get_bsp!(bsp.id) end
+    test "delete_provider/1 deletes the provider" do
+      provider = provider_fixture()
+      assert {:ok, %Provider{}} = Partners.delete_provider(provider)
+      assert_raise Ecto.NoResultsError, fn -> Partners.get_provider!(provider.id) end
     end
 
-    test "ensure that delete_bsp/1 with foreign key constraints give error" do
+    test "ensure that delete_provider/1 with foreign key constraints give error" do
       organization = organization_fixture()
-      bsp = Partners.get_bsp!(organization.bsp_id)
-      assert {:error, _} = Partners.delete_bsp(bsp)
+      provider = Partners.get_provider!(organization.provider_id)
+      assert {:error, _} = Partners.delete_provider(provider)
     end
 
-    test "change_bsp/1 returns a bsp changeset" do
-      bsp = bsp_fixture()
-      assert %Ecto.Changeset{} = Partners.change_bsp(bsp)
+    test "change_provider/1 returns a provider changeset" do
+      provider = provider_fixture()
+      assert %Ecto.Changeset{} = Partners.change_provider(provider)
     end
 
-    test "list_bsps/1 with multiple bsps" do
-      _c0 = bsp_fixture(@valid_attrs)
-      _c1 = bsp_fixture(@valid_attrs_1)
-      _c2 = bsp_fixture(@valid_attrs_2)
-      _c3 = bsp_fixture(@valid_attrs_3)
+    test "list_providers/1 with multiple providers" do
+      _c0 = provider_fixture(@valid_attrs)
+      _c1 = provider_fixture(@valid_attrs_1)
+      _c2 = provider_fixture(@valid_attrs_2)
+      _c3 = provider_fixture(@valid_attrs_3)
 
-      assert length(Partners.list_bsps()) == 4
+      assert length(Partners.list_providers()) == 4
     end
 
-    test "ensure that creating bsps with same name give an error" do
-      bsp_fixture(@valid_attrs)
-      assert {:error, %Ecto.Changeset{}} = Partners.create_bsp(@valid_attrs)
+    test "ensure that creating providers with same name give an error" do
+      provider_fixture(@valid_attrs)
+      assert {:error, %Ecto.Changeset{}} = Partners.create_provider(@valid_attrs)
     end
   end
 
@@ -121,7 +121,7 @@ defmodule Glific.PartnersTest do
       display_name: "Organization Display Name",
       contact_name: "Organization Contact person",
       email: "Contact person email",
-      bsp_key: "BSP key",
+      provider_key: "Provider key",
       wa_number: "991737373"
     }
 
@@ -130,7 +130,7 @@ defmodule Glific.PartnersTest do
       display_name: "Organization Display Name 1",
       contact_name: "Organization Contact person 1",
       email: "Contact person email 1",
-      bsp_key: "BSP key 1",
+      provider_key: "Provider key 1",
       wa_number: "9917373731"
     }
 
@@ -139,15 +139,15 @@ defmodule Glific.PartnersTest do
       display_name: "Updated Display Name 1",
       contact_name: "Updated Contact"
     }
-    @invalid_org_attrs %{bsp_id: nil, name: nil, contact_name: nil}
+    @invalid_org_attrs %{provider_id: nil, name: nil, contact_name: nil}
 
     def organization_fixture(attrs \\ %{}) do
-      bsp = bsp_fixture(%{name: Faker.Name.name()})
+      provider = provider_fixture(%{name: Faker.Name.name()})
 
       {:ok, organization} =
         attrs
         |> Enum.into(@valid_org_attrs)
-        |> Map.merge(%{bsp_id: bsp.id})
+        |> Map.merge(%{provider_id: provider.id})
         |> Partners.create_organization()
 
       organization
@@ -166,7 +166,7 @@ defmodule Glific.PartnersTest do
     test "create_organization/1 with valid data creates an organization" do
       assert {:ok, %Organization{} = organization} =
                @valid_org_attrs
-               |> Map.merge(%{bsp_id: bsp_fixture().id})
+               |> Map.merge(%{provider_id: provider_fixture().id})
                |> Partners.create_organization()
 
       assert organization.name == @valid_org_attrs.name
@@ -239,7 +239,7 @@ defmodule Glific.PartnersTest do
       assert length(org_list) == 2
     end
 
-    test "ensure that creating organization with out bsp give an error" do
+    test "ensure that creating organization with out provider give an error" do
       assert {:error, %Ecto.Changeset{}} = Partners.create_organization(@valid_org_attrs)
     end
 
@@ -247,7 +247,7 @@ defmodule Glific.PartnersTest do
       organization = organization_fixture(@valid_org_attrs)
 
       assert {:error, %Ecto.Changeset{}} =
-               Map.merge(@valid_org_attrs, %{bsp_id: organization.bsp_id})
+               Map.merge(@valid_org_attrs, %{provider_id: organization.provider_id})
                |> Partners.create_organization()
     end
   end

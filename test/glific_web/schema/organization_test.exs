@@ -3,8 +3,8 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
   use Wormwood.GQLCase
 
   setup do
-    bsp = Glific.Seeds.seed_bsps()
-    Glific.Seeds.seed_organizations(bsp)
+    provider = Glific.Seeds.seed_providers()
+    Glific.Seeds.seed_organizations(provider)
     :ok
   end
 
@@ -51,11 +51,11 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
     display_name = "Organization Test Name"
     contact_name = "Test"
     email = "test2@glific.org"
-    bsp_key = "random"
+    provider_key = "random"
     wa_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
-    bsp_name = "Default BSP"
-    {:ok, bsp} = Glific.Repo.fetch_by(Glific.Partners.BSP, %{name: bsp_name})
+    provider_name = "Default Provider"
+    {:ok, provider} = Glific.Repo.fetch_by(Glific.Partners.Provider, %{name: provider_name})
 
     result =
       query_gql_by(:create,
@@ -65,8 +65,8 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
             "display_name" => display_name,
             "email" => email,
             "contact_name" => contact_name,
-            "bsp_key" => bsp_key,
-            "bsp_id" => bsp.id,
+            "provider_key" => provider_key,
+            "provider_id" => provider.id,
             "wa_number" => wa_number
           }
         }
@@ -85,8 +85,8 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
           "display_name" => display_name,
           "email" => email,
           "contact_name" => contact_name,
-          "bsp_key" => bsp_key,
-          "bsp_id" => bsp.id,
+          "provider_key" => provider_key,
+          "provider_id" => provider.id,
           "wa_number" => wa_number
         }
       }
@@ -100,8 +100,8 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
             "display_name" => display_name,
             "email" => email,
             "contact_name" => contact_name,
-            "bsp_key" => bsp_key,
-            "bsp_id" => bsp.id,
+            "provider_key" => provider_key,
+            "provider_id" => provider.id,
             "wa_number" => wa_number
           }
         }
@@ -121,11 +121,11 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
     display_name = "Organization Test Name"
     contact_name = "Test"
     email = "test2@glific.org"
-    bsp_key = "random"
+    provider_key = "random"
     wa_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
-    bsp_name = "Default BSP"
-    {:ok, bsp} = Glific.Repo.fetch_by(Glific.Partners.BSP, %{name: bsp_name})
+    provider_name = "Default Provider"
+    {:ok, provider} = Glific.Repo.fetch_by(Glific.Partners.Provider, %{name: provider_name})
 
     result =
       query_gql_by(:update,
@@ -136,8 +136,8 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
             "display_name" => display_name,
             "email" => email,
             "contact_name" => contact_name,
-            "bsp_key" => bsp_key,
-            "bsp_id" => bsp.id,
+            "provider_key" => provider_key,
+            "provider_id" => provider.id,
             "wa_number" => wa_number
           }
         }
@@ -156,8 +156,8 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
           "display_name" => display_name,
           "email" => "new email",
           "contact_name" => contact_name,
-          "bsp_key" => bsp_key,
-          "bsp_id" => bsp.id,
+          "provider_key" => provider_key,
+          "provider_id" => provider.id,
           "wa_number" => "new wa_number"
         }
       }
@@ -173,8 +173,8 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
             "display_name" => display_name,
             "email" => "new email",
             "contact_name" => contact_name,
-            "bsp_key" => bsp_key,
-            "bsp_id" => bsp.id,
+            "provider_key" => provider_key,
+            "provider_id" => provider.id,
             "wa_number" => "new wa_number"
           }
         }
