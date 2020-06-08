@@ -156,7 +156,7 @@ defmodule Glific.Seeds do
       email: "test@glific.org",
       provider_id: default_provider.id,
       provider_key: "random",
-      wa_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+      provider_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     })
 
     Repo.insert!(%Organization{
@@ -166,7 +166,7 @@ defmodule Glific.Seeds do
       email: "jigyasa@glific.org",
       provider_id: default_provider.id,
       provider_key: "random",
-      wa_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+      provider_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     })
   end
 
@@ -180,8 +180,8 @@ defmodule Glific.Seeds do
       body: "default message body",
       flow: :inbound,
       type: :text,
-      wa_message_id: Faker.String.base64(10),
-      wa_status: :enqueued,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
       sender_id: sender.id,
       receiver_id: receiver.id
     })
@@ -190,8 +190,8 @@ defmodule Glific.Seeds do
       body: Faker.Lorem.sentence(),
       flow: :inbound,
       type: :text,
-      wa_message_id: Faker.String.base64(10),
-      wa_status: :enqueued,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
       sender_id: sender.id,
       receiver_id: receiver.id
     })
@@ -200,8 +200,8 @@ defmodule Glific.Seeds do
       body: Faker.Lorem.sentence(),
       flow: :inbound,
       type: :text,
-      wa_message_id: Faker.String.base64(10),
-      wa_status: :enqueued,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
       sender_id: sender.id,
       receiver_id: receiver.id
     })
@@ -210,8 +210,8 @@ defmodule Glific.Seeds do
       body: Faker.Lorem.sentence(),
       flow: :inbound,
       type: :text,
-      wa_message_id: Faker.String.base64(10),
-      wa_status: :enqueued,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
       sender_id: sender.id,
       receiver_id: receiver.id
     })
@@ -225,7 +225,7 @@ defmodule Glific.Seeds do
       source_url: Faker.Avatar.image_url(),
       thumbnail: Faker.Avatar.image_url(),
       caption: "default caption",
-      wa_media_id: Faker.String.base64(10)
+      provider_media_id: Faker.String.base64(10)
     })
 
     Repo.insert!(%MessageMedia{
@@ -233,7 +233,7 @@ defmodule Glific.Seeds do
       source_url: Faker.Avatar.image_url(),
       thumbnail: Faker.Avatar.image_url(),
       caption: Faker.String.base64(10),
-      wa_media_id: Faker.String.base64(10)
+      provider_media_id: Faker.String.base64(10)
     })
 
     Repo.insert!(%MessageMedia{
@@ -241,7 +241,7 @@ defmodule Glific.Seeds do
       source_url: Faker.Avatar.image_url(),
       thumbnail: Faker.Avatar.image_url(),
       caption: Faker.String.base64(10),
-      wa_media_id: Faker.String.base64(10)
+      provider_media_id: Faker.String.base64(10)
     })
 
     Repo.insert!(%MessageMedia{
@@ -249,7 +249,7 @@ defmodule Glific.Seeds do
       source_url: Faker.Avatar.image_url(),
       thumbnail: Faker.Avatar.image_url(),
       caption: Faker.String.base64(10),
-      wa_media_id: Faker.String.base64(10)
+      provider_media_id: Faker.String.base64(10)
     })
   end
 

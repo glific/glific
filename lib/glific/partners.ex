@@ -174,8 +174,8 @@ defmodule Glific.Partners do
           join: c in assoc(q, :provider),
           where: ilike(c.name, ^"%#{provider}%")
 
-      {:wa_number, wa_number}, query ->
-        from q in query, where: ilike(q.wa_number, ^"%#{wa_number}%")
+      {:provider_number, provider_number}, query ->
+        from q in query, where: ilike(q.provider_number, ^"%#{provider_number}%")
     end)
   end
 
