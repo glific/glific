@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Tags do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Repo, Tags, Tags.Tag}
+  alias Glific.{Repo, Tags, Tags.Tag, Tags.MessageTag}
 
   @doc """
   Get a specific tag by id
@@ -72,6 +72,16 @@ defmodule GlificWeb.Resolvers.Tags do
          {:ok, tag} <- Tags.delete_tag(tag) do
       {:ok, tag}
     end
+  end
+
+  @doc """
+  Get a specific message tag by id
+  """
+  @spec message_tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def message_tag(_, %{id: id}, _) do
+    with {:ok, message_tag} <- Repo.fetch(MessageTag, id),
+         do: {:ok, %{message_tag: message_tag}}
   end
 
   @doc false

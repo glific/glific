@@ -35,7 +35,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:message_queries)
 
-    # import_fields(:message_tag_queries)
+    import_fields(:message_tag_queries)
 
     import_fields(:organization_queries)
   end

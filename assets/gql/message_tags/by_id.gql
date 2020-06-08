@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query messageTag($id: ID!) {
+  messageTag(id: $id) {
+    ...MessageTagFields
+
+    ...ErrorFields
+  }
+}
