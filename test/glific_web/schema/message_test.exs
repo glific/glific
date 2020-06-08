@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
             "receiverId" => message.receiver_id,
             "senderId" => message.sender_id,
             "type" => "TEXT",
-            "waStatus" => "DELIVERED"
+            "providerStatus" => "DELIVERED"
           }
         }
       )
@@ -77,7 +77,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "type" => "TEXT",
-            "waStatus" => "DELIVERED"
+            "providerStatus" => "DELIVERED"
           }
         }
       )

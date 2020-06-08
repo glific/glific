@@ -11,7 +11,7 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone",
       status: :valid,
-      wa_status: :invalid
+      provider_status: :invalid
     }
     @valid_attrs_1 %{
       name: "some name 1",
@@ -19,7 +19,7 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 1",
       status: :invalid,
-      wa_status: :invalid
+      provider_status: :invalid
     }
     @valid_attrs_2 %{
       name: "some name 2",
@@ -27,7 +27,7 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 2",
       status: :valid,
-      wa_status: :valid
+      provider_status: :valid
     }
     @valid_attrs_3 %{
       name: "some name 3",
@@ -35,7 +35,7 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 3",
       status: :invalid,
-      wa_status: :valid
+      provider_status: :valid
     }
     @update_attrs %{
       name: "some updated name",
@@ -43,7 +43,7 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2011-05-18 15:01:01Z],
       phone: "some updated phone",
       status: :invalid,
-      wa_status: :invalid
+      provider_status: :invalid
     }
     @invalid_attrs %{
       name: nil,
@@ -51,7 +51,7 @@ defmodule Glific.ContactsTest do
       optout_time: nil,
       phone: nil,
       status: nil,
-      wa_status: nil
+      provider_status: nil
     }
 
     def contact_fixture(attrs \\ %{}) do
@@ -80,7 +80,7 @@ defmodule Glific.ContactsTest do
       assert contact.optout_time == ~U[2010-04-17 14:00:00Z]
       assert contact.phone == "some phone"
       assert contact.status == :valid
-      assert contact.wa_status == :invalid
+      assert contact.provider_status == :invalid
     end
 
     test "create_contact/1 with invalid data returns error changeset" do
@@ -95,7 +95,7 @@ defmodule Glific.ContactsTest do
       assert contact.optout_time == ~U[2011-05-18 15:01:01Z]
       assert contact.phone == "some updated phone"
       assert contact.status == :invalid
-      assert contact.wa_status == :invalid
+      assert contact.provider_status == :invalid
     end
 
     test "update_contact/2 with invalid data returns error changeset" do
@@ -152,7 +152,12 @@ defmodule Glific.ContactsTest do
       cs = Contacts.list_contacts(%{order: :asc, filter: %{name: "some name 1"}})
       assert cs == [c1]
 
-      cs = Contacts.list_contacts(%{order: :asc, filter: %{status: :valid, wa_status: :invalid}})
+      cs =
+        Contacts.list_contacts(%{
+          order: :asc,
+          filter: %{status: :valid, provider_status: :invalid}
+        })
+
       assert cs == [c0]
     end
 

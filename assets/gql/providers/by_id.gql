@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query provider($id: ID!) {
+  provider(id: $id) {
+    ...ProviderFields
+
+    ...ErrorFields
+  }
+}
