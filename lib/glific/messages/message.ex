@@ -8,6 +8,7 @@ defmodule Glific.Messages.Message do
   alias Glific.Enums.{MessageFlow, MessageStatus, MessageTypes}
 
   @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           type: String.t() | nil,
           flow: String.t() | nil,

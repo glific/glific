@@ -17,6 +17,7 @@ defmodule Glific.Partners.BSP do
   @optional_fields []
 
   @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
           url: String.t() | nil

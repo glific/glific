@@ -21,6 +21,7 @@ defmodule Glific.Messages.MessageMedia do
   ]
 
   @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           url: String.t() | nil,
           source_url: String.t() | nil,
