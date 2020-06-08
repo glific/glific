@@ -44,11 +44,12 @@ defmodule GlificWeb.Schema.Query.MessageTagTest do
       query_gql_by(:create,
         variables: %{"input" => %{"message_id" => message.id, "tag_id" => tag.id}}
       )
+
     assert {:ok, query_data} = result
 
     message_tag = get_in(query_data, [:data, "createMessageTag", "message_tag"])
-    assert message_tag["message"]["id"] |> String.to_integer == message.id
-    assert message_tag["tag"]["id"] |> String.to_integer == tag.id
+    assert message_tag["message"]["id"] |> String.to_integer() == message.id
+    assert message_tag["tag"]["id"] |> String.to_integer() == tag.id
   end
 
   test "delete a message tag" do

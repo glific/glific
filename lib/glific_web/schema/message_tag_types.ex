@@ -48,5 +48,4 @@ defmodule GlificWeb.Schema.MessageTagTypes do
       resolve(&Resolvers.Tags.delete_message_tag/3)
     end
   end
-
 end

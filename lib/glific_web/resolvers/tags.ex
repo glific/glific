@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Tags do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Repo, Tags, Tags.Tag, Tags.MessageTag}
+  alias Glific.{Repo, Tags, Tags.Tag, Tags.MessageTag, Tags.ContactTag}
 
   @doc """
   Get a specific tag by id
@@ -100,6 +100,35 @@ defmodule GlificWeb.Resolvers.Tags do
     with {:ok, message_tag} <- Repo.fetch(MessageTag, id),
          {:ok, message_tag} <- Tags.delete_message_tag(message_tag) do
       {:ok, message_tag}
+    end
+  end
+
+  @doc """
+  Get a specific contact tag by id
+  """
+  @spec contact_tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def contact_tag(_, %{id: id}, _) do
+    with {:ok, contact_tag} <- Repo.fetch(ContactTag, id),
+         do: {:ok, %{contact_tag: contact_tag}}
+  end
+
+  @doc false
+  @spec create_contact_tag(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_contact_tag(_, %{input: params}, _) do
+    with {:ok, contact_tag} <- Tags.create_contact_tag(params) do
+      {:ok, %{contact_tag: contact_tag}}
+    end
+  end
+
+  @doc false
+  @spec delete_contact_tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def delete_contact_tag(_, %{id: id}, _) do
+    with {:ok, contact_tag} <- Repo.fetch(ContactTag, id),
+         {:ok, contact_tag} <- Tags.delete_contact_tag(contact_tag) do
+      {:ok, contact_tag}
     end
   end
 end
