@@ -4,7 +4,9 @@ defmodule GlificWeb.Schema.ContactTypes do
   """
 
   use Absinthe.Schema.Notation
+  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
+  alias Glific.Repo
   alias GlificWeb.Resolvers
 
   object :contact_result do
@@ -22,6 +24,10 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     field :optin_time, :datetime
     field :optout_time, :datetime
+
+    field :tags, list_of(:tag) do
+      resolve(dataloader(Repo))
+    end
   end
 
   @desc "Filtering options for contacts"

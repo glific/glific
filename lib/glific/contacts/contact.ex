@@ -8,7 +8,7 @@ defmodule Glific.Contacts.Contact do
   import Ecto.Changeset
 
   alias Glific.Enums.ContactStatus
-  # alias Glific.Tags.Tag
+  alias Glific.Tags.Tag
 
   @required_fields [:name, :phone]
   @optional_fields [:wa_status, :status, :optin_time, :optout_time]
@@ -35,13 +35,13 @@ defmodule Glific.Contacts.Contact do
     field :optin_time, :utc_datetime
     field :optout_time, :utc_datetime
 
-    # many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
+    many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
 
     timestamps()
   end
 
   @doc """
-  Standard changeset pattern we use for all datat types
+  Standard changeset pattern we use for all data types
   """
   @spec changeset(Contact.t(), map()) :: Ecto.Changeset.t()
   def changeset(contact, attrs) do
