@@ -1,4 +1,4 @@
-defmodule GlificWeb.GupshupMessageEventController do
+defmodule GlificWeb.Provider.Controllers.GupshupMessageEventController do
   use GlificWeb, :controller
 
   def handler(conn, params, msg) do

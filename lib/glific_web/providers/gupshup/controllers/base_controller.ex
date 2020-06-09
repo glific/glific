@@ -1,4 +1,4 @@
-defmodule GlificWeb.GupshupController do
+defmodule GlificWeb.Provider.Controllers.GupshupController do
   use GlificWeb, :controller
 
   def handler(conn, params, msg) do

@@ -7,8 +7,8 @@ defmodule Glific.Communications.BSP.Gupshup.Worker do
   alias Glific.Communications.BSP.Gupshup.ApiClient
   alias Glific.{Messages, Messages.Message}
 
-  @rate_name Application.fetch_env!(:two_way, :bsp_id)
-  @rate_limit Application.fetch_env!(:two_way, :bsp_limit)
+  @rate_name Application.fetch_env!(:glific, :provider_id)
+  @rate_limit Application.fetch_env!(:glific, :provider_limit)
 
   @impl Oban.Worker
   def perform(%{"message" => message, "payload" => payload}, _job) do

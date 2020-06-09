@@ -35,4 +35,9 @@ defmodule GlificWeb.Router do
       interface: :simple,
       socket: GlificWeb.UserSocket
   end
+
+
+  scope "/", GlificWeb do
+    forward("/gupshup", GlificWeb.BSP.Gupshup.Plugs.Shunt)
+  end
 end

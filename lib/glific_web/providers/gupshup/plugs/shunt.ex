@@ -1,6 +1,6 @@
-defmodule GlificWeb.BSP.Gupshup.Plugs.GupshupShunt do
+defmodule GlificWeb.BSP.Gupshup.Plugs.Shunt do
   alias Plug.Conn
-  alias GlificWeb.BSP.Gupshup.GupshupRouter
+  alias GlificWeb.Provider.Gupshup.Router, as: GupshupRouter
 
   def init(opts), do: opts
 

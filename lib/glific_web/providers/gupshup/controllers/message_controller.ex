@@ -1,4 +1,4 @@
-defmodule GlificWeb.GupshupMessageController do
+defmodule GlificWeb.Provider.Controllers.GupshupMessageController do
   use GlificWeb, :controller
 
   alias TwoWay.Communications.BSP.Gupshup.Message, as: GupshupMessage
@@ -14,8 +14,8 @@ defmodule GlificWeb.GupshupMessageController do
     do: handler(conn, params, "message handler")
 
   def text(conn, params) do
-    GupshupMessage.receive_text(params)
-    |> Communications.receive_text()
+    # GupshupMessage.receive_text(params)
+    # |> Communications.receive_text()
 
     handler(conn, params, "text handler")
   end

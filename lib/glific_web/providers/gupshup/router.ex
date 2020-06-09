@@ -1,5 +1,7 @@
-defmodule GlificWeb.GupshupRouter do
+defmodule GlificWeb.Provider.Gupshup.Router do
   use GlificWeb, :router
+
+  alias GlificWeb.Provider.Gupshup.Controllers
 
   @doc """
   Need to match the following type specs from the gupshup documentation
@@ -28,20 +30,20 @@ defmodule GlificWeb.GupshupRouter do
   """
   scope "/gupshup", TwoWayWeb do
     scope "/user-event" do
-      post("/", GupshupUserEventController, :user_event)
-      post("/sandbox-start", GupshupUserEventController, :sandbox_start)
-      post("/opted-in", GupshupUserEventController, :opted_in)
-      post("/opted-out", GupshupUserEventController, :opted_out)
-      post("/unknown", GupshupController, :unknown)
+      post("/", Controllers.GupshupUserEventController, :user_event)
+      post("/sandbox-start",Controllers.GupshupUserEventController, :sandbox_start)
+      post("/opted-in", Controllers.GupshupUserEventController, :opted_in)
+      post("/opted-out", Controllers.GupshupUserEventController, :opted_out)
+      post("/unknown", Controllers.GupshupController, :unknown)
     end
 
     scope "/message-event" do
-      post("/", GupshupMessageEventController, :message_event)
-      post("/enqueued", GupshupMessageEventController, :enqueued)
-      post("/failed", GupshupMessageEventController, :failed)
-      post("/sent", GupshupMessageEventController, :sent)
-      post("/delivered", GupshupMessageEventController, :delivered)
-      post("/unknown", GupshupController, :unknown)
+      post("/", Controllers.GupshupMessageEventController, :message_event)
+      post("/enqueued", Controllers.GupshupMessageEventController, :enqueued)
+      post("/failed", Controllers.GupshupMessageEventController, :failed)
+      post("/sent", Controllers.GupshupMessageEventController, :sent)
+      post("/delivered", Controllers.GupshupMessageEventController, :delivered)
+      post("/unknown", Controllers.GupshupController, :unknown)
     end
 
     scope "/message" do
