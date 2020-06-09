@@ -39,7 +39,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
   end
 
   test "tags field returns list of tags in various filters" do
-    result = query_gql_by(:list, variables: %{"filter" => %{"label" => "Messages" }})
+    result = query_gql_by(:list, variables: %{"filter" => %{"label" => "Messages"}})
     assert {:ok, query_data} = result
 
     tags = get_in(query_data, [:data, "tags"])
@@ -71,9 +71,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
     assert {:ok, query_data} = result
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) > 0
-
   end
-
 
   test "tag id returns one tag or nil" do
     label = "This is for testing"
