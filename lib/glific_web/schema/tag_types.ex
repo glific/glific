@@ -55,6 +55,12 @@ defmodule GlificWeb.Schema.TagTypes do
     @desc "Match the description"
     field :description, :string
 
+    @desc "Match the parent"
+    field :parent, :string
+
+    @desc "Match the parent"
+    field :parent_id, :integer
+
     @desc "Match a language"
     field :language, :string
 
@@ -66,9 +72,6 @@ defmodule GlificWeb.Schema.TagTypes do
 
     @desc "Match the reserved flag"
     field :is_reserved, :boolean
-
-    @desc "Match a parent id"
-    field :parent_id, :integer
   end
 
   input_object :tag_input do
