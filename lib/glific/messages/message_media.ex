@@ -16,27 +16,28 @@ defmodule Glific.Messages.MessageMedia do
   # define all the optional fields for message media
   @optional_fields [
     :thumbnail,
-    :wa_media_id,
+    :provider_media_id,
     :caption
   ]
 
   @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           url: String.t() | nil,
           source_url: String.t() | nil,
           caption: String.t() | nil,
           thumbnail: String.t() | nil,
-          wa_media_id: String.t() | nil,
+          provider_media_id: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
-  schema "message_media" do
+  schema "messages_media" do
     field :url, :string
     field :source_url, :string
     field :thumbnail, :string
     field :caption, :string
-    field :wa_media_id, :string
+    field :provider_media_id, :string
 
     timestamps()
   end

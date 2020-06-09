@@ -6,7 +6,7 @@ defmodule Glific.Enums do
   """
 
   # get all the enum constants into this module scope
-  use Glific.Constants.Enums
+  use Glific.Enums.Constants
 
   @doc ~S"""
   Lets ensure that the constants evaluate to some expected values

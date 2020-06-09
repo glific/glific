@@ -12,6 +12,7 @@ defmodule Glific.Settings.Language do
   @optional_fields [:description, :is_active]
 
   @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           label: String.t() | nil,
           locale: String.t() | nil,

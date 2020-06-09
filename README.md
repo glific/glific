@@ -18,7 +18,7 @@ Install the following packages using your favorite package manager. Links are pr
   * [Download the latest code from GitHub](https://github.com/glific/glific)
     
 ## Setup
-  * Copy the file: `dev/dev.secret.exs.txt` to `dev/secret.exs` and edit it with your credentials
+  * Copy the file: `config/dev.secret.exs.txt` to `config/dev.secret.exs` and edit it with your credentials
   * Run `mix setup`
   * Run `mix phx.server`
 

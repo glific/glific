@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-mutation updateBsp($id: ID!, $input: BspInput!) {
-  updateBsp(id: $id, input: $input) {
-    ...BspFields
-
-    ...ErrorFields
-  }
-}

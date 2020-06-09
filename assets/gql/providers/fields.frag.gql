@@ -1,0 +1,15 @@
+fragment ProviderFields on ProviderResult {
+  provider {
+    id
+    name
+    url
+    api_end_point   
+  }
+}
+
+fragment ErrorFields on ProviderResult {
+  errors {
+    key
+    message
+  }
+}

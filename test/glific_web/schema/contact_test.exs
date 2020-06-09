@@ -128,7 +128,7 @@ defmodule GlificWeb.Schema.Query.ContactTest do
 
   test "search for contacts" do
     {:ok, sender} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Sender"})
-    {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Recipient"})
+    {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
 
     sender_id = to_string(sender.id)
     receiver_id = to_string(receiver.id)
@@ -137,7 +137,7 @@ defmodule GlificWeb.Schema.Query.ContactTest do
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "search", Access.at(0), "id"]) == sender_id
 
-    result = query_gql_by(:search, variables: %{"term" => "Default Recipient"})
+    result = query_gql_by(:search, variables: %{"term" => "Default receiver"})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "search", Access.at(0), "id"]) == receiver_id
 

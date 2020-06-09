@@ -11,14 +11,15 @@ defmodule Glific.Contacts.Contact do
   # alias Glific.Tags.Tag
 
   @required_fields [:name, :phone]
-  @optional_fields [:wa_status, :status, :optin_time, :optout_time]
+  @optional_fields [:provider_status, :status, :optin_time, :optout_time]
 
   @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
           phone: String.t() | nil,
           status: ContactStatus | nil,
-          wa_status: ContactStatus | nil,
+          provider_status: ContactStatus | nil,
           optin_time: :utc_datetime | nil,
           optout_time: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
@@ -30,7 +31,7 @@ defmodule Glific.Contacts.Contact do
     field :phone, :string
 
     field :status, ContactStatus
-    field :wa_status, ContactStatus
+    field :provider_status, ContactStatus
 
     field :optin_time, :utc_datetime
     field :optout_time, :utc_datetime

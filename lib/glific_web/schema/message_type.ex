@@ -18,15 +18,15 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :body, :string
     field :type, :message_types_enum
     field :flow, :message_flow_enum
-    field :wa_message_id, :string
+    field :provider_message_id, :string
 
-    field :wa_status, :message_status_enum
+    field :provider_status, :message_status_enum
 
     field :sender, :contact do
       resolve(dataloader(Repo))
     end
 
-    field :recipient, :contact do
+    field :receiver, :contact do
       resolve(dataloader(Repo))
     end
 
@@ -47,26 +47,26 @@ defmodule GlificWeb.Schema.MessageTypes do
     @desc "Match the sender"
     field :sender, :string
 
-    @desc "Match the recipient"
-    field :recipient, :string
+    @desc "Match the receiver"
+    field :receiver, :string
 
     @desc "Match the phone with either the sender or receiver"
     field :either, :string
 
     @desc "Match the status"
-    field :wa_status, :message_status_enum
+    field :provider_status, :message_status_enum
   end
 
   input_object :message_input do
     field :body, :string
     field :type, :message_types_enum
     field :flow, :message_flow_enum
-    field :wa_message_id, :string
+    field :provider_message_id, :string
 
-    field :wa_status, :message_status_enum
+    field :provider_status, :message_status_enum
 
     field :sender_id, :id
-    field :recipient_id, :id
+    field :receiver_id, :id
     field :media_id, :id
   end
 

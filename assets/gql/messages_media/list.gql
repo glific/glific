@@ -1,5 +1,5 @@
-query messageMedias {
-  messageMedias {
+query messagesMedia {
+  messagesMedia {
     id
     sourceUrl
     caption

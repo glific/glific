@@ -41,19 +41,19 @@ defmodule Glific.Messages do
           join: c in assoc(q, :sender),
           where: ilike(c.name, ^"%#{sender}%")
 
-      {:recipient, recipient}, query ->
+      {:receiver, receiver}, query ->
         from q in query,
-          join: c in assoc(q, :recipient),
-          where: ilike(c.name, ^"%#{recipient}%")
+          join: c in assoc(q, :receiver),
+          where: ilike(c.name, ^"%#{receiver}%")
 
       {:either, phone}, query ->
         from q in query,
           join: s in assoc(q, :sender),
-          join: r in assoc(q, :recipient),
+          join: r in assoc(q, :receiver),
           where: ilike(s.phone, ^"%#{phone}%") or ilike(r.phone, ^"%#{phone}%")
 
-      {:wa_status, wa_status}, query ->
-        from q in query, where: q.wa_status == ^wa_status
+      {:provider_status, provider_status}, query ->
+        from q in query, where: q.provider_status == ^provider_status
     end)
   end
 
@@ -146,21 +146,21 @@ defmodule Glific.Messages do
   alias Glific.Messages.MessageMedia
 
   @doc """
-  Returns the list of message_media.
+  Returns the list of message media.
 
   ## Examples
 
-      iex> list_message_media()
+      iex> list_messages_media()
       [%MessageMedia{}, ...]
 
   """
-  @spec list_message_media(map()) :: [MessageMedia.t()]
-  def list_message_media(_args \\ %{}) do
+  @spec list_messages_media(map()) :: [MessageMedia.t()]
+  def list_messages_media(_args \\ %{}) do
     Repo.all(MessageMedia)
   end
 
   @doc """
-  Gets a single message_media.
+  Gets a single message media.
 
   Raises `Ecto.NoResultsError` if the Message media does not exist.
 
@@ -177,7 +177,7 @@ defmodule Glific.Messages do
   def get_message_media!(id), do: Repo.get!(MessageMedia, id)
 
   @doc """
-  Creates a message_media.
+  Creates a message media.
 
   ## Examples
 
@@ -196,7 +196,7 @@ defmodule Glific.Messages do
   end
 
   @doc """
-  Updates a message_media.
+  Updates a message media.
 
   ## Examples
 
@@ -216,7 +216,7 @@ defmodule Glific.Messages do
   end
 
   @doc """
-  Deletes a message_media.
+  Deletes a message media.
 
   ## Examples
 
@@ -234,7 +234,7 @@ defmodule Glific.Messages do
   end
 
   @doc """
-  Returns an `%Ecto.Changeset{}` for tracking message_media changes.
+  Returns an `%Ecto.Changeset{}` for tracking message media changes.
 
   ## Examples
 
