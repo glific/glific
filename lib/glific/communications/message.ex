@@ -19,26 +19,26 @@ defmodule Glific.Communications.Message do
   end
 
   defp send_text(message) do
-    bsp_module()
+    provider_module()
     |> apply(:send_text, [message])
   end
 
   defp send_media(message) do
     case message.type do
       :image ->
-        bsp_module()
+        provider_module()
         |> apply(:send_image, [message])
 
       :audio ->
-        bsp_module()
+        provider_module()
         |> apply(:send_audio, [message])
 
       :video ->
-        bsp_module()
+        provider_module()
         |> apply(:send_video, [message])
 
       :document ->
-        bsp_module()
+        provider_module()
         |> apply(:send_document, [message])
     end
   end
@@ -79,9 +79,9 @@ defmodule Glific.Communications.Message do
   end
   defp publish_message(err), do: err
 
-  def bsp_module() do
-    bsp = Glific.Communications.effective_bsp()
-    String.to_existing_atom(to_string(bsp) <> ".Message")
+  def provider_module() do
+    provider = Glific.Communications.effective_provider()
+    String.to_existing_atom(to_string(provider) <> ".Message")
   end
 
   def organisation_contact() do

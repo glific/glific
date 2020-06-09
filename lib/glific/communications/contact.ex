@@ -5,12 +5,12 @@ defmodule Glific.Communication.Contact do
   end
 
   def status(args) do
-    bsp_module()
+    provider_module()
     |> apply(:status, [args])
   end
 
-  def bsp_module() do
-    bsp = Glific.Communications.effective_bsp()
-    String.to_existing_atom(to_string(bsp) <> ".Contact")
+  def provider_module() do
+    provider = Glific.Communications.effective_provider()
+    String.to_existing_atom(to_string(provider) <> ".Contact")
   end
 end
