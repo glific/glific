@@ -146,36 +146,6 @@ defmodule Glific.SeedsScale do
     Repo.insert_all(Contact, contact_entries)
   end
 
-  defp seed_deterministic_contacts do
-    # Reading from file to maintain deterministic contacts
-    {:ok, file_data} = File.read("lib/glific/support/seeds_scale.json")
-    decoded_file_data = file_data |> Poison.decode!()
-
-    inserted_time = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-    opt_time = DateTime.truncate(DateTime.utc_now(), :second)
-
-    # required for String's to_exiting_atom
-    _ = :name
-    _ = :phone
-    _ = :status
-    _ = :provider_status
-
-    contact_entries =
-      decoded_file_data
-      |> Enum.map(fn entry ->
-        for {key, value} <- entry, into: %{} do
-          {String.to_existing_atom(key), value}
-        end
-        |> Map.put(:inserted_at, inserted_time)
-        |> Map.put(:updated_at, inserted_time)
-        |> Map.put(:optin_time, opt_time)
-        |> Map.put(:optout_time, opt_time)
-      end)
-
-    # seed contacts
-    Repo.insert_all(Contact, contact_entries)
-  end
-
   defp seed_messages(messages_count) do
     # get all beneficiaries ids
     contact_ids =
@@ -216,10 +186,10 @@ defmodule Glific.SeedsScale do
   @doc false
   @spec seed_scale :: nil
   def seed_scale do
-    seed_deterministic_contacts()
+    # create seed for deterministic random data
+    :rand.seed(:exrop, {101, 102, 103})
 
-    # create new random contacts
-    seed_contacts(10)
+    seed_contacts(500)
 
     seed_messages(10_000)
 
