@@ -22,7 +22,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
     assert length(tags) > 0
 
     [tag | _] = tags
-    assert get_in(tag, ["label"]) == "Compliments"
+    assert get_in(tag, ["label"]) == "Child"
 
     # lets ensure that the language field exists and has a valid id
     assert get_in(tag, ["language", "id"]) > 0

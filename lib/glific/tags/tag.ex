@@ -22,7 +22,7 @@ defmodule Glific.Tags.Tag do
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           parent_id: non_neg_integer | nil,
-          tags: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
+          parent: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -36,7 +36,8 @@ defmodule Glific.Tags.Tag do
 
     belongs_to :language, Language
 
-    belongs_to :tags, Tag, foreign_key: :parent_id
+    belongs_to :parent, Tag, foreign_key: :parent_id
+    has_many :child, Tag, foreign_key: :parent_id
 
     many_to_many :contacts, Contact, join_through: "contacts_tags", on_replace: :delete
     many_to_many :messages, Message, join_through: "messages_tags", on_replace: :delete
