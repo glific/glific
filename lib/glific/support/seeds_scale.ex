@@ -1,6 +1,6 @@
 defmodule Glific.SeedsScale do
   @moduledoc """
-  Script for populating the database scale. We can call this from tests and/or /priv/repo
+  Script for populating the database at scale
   """
   alias Glific.{
     Contacts.Contact,
@@ -138,10 +138,15 @@ defmodule Glific.SeedsScale do
     end
   end
 
-  defp seed_contacts do
+  defp seed_contacts(contacts_count) do
     # create random contacts entries
-    _contact_entries = create_contact_entries(500)
+    contact_entries = create_contact_entries(contacts_count)
 
+    # seed contacts
+    Repo.insert_all(Contact, contact_entries)
+  end
+
+  defp seed_deterministic_contacts do
     # Reading from file to maintain deterministic contacts
     {:ok, file_data} = File.read("lib/glific/support/seeds_scale.json")
     decoded_file_data = file_data |> Poison.decode!()
@@ -149,11 +154,17 @@ defmodule Glific.SeedsScale do
     inserted_time = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
     opt_time = DateTime.truncate(DateTime.utc_now(), :second)
 
+    # required for String's to_exiting_atom
+    _ = :name
+    _ = :phone
+    _ = :status
+    _ = :provider_status
+
     contact_entries =
       decoded_file_data
       |> Enum.map(fn entry ->
         for {key, value} <- entry, into: %{} do
-          {String.to_atom(key), value}
+          {String.to_existing_atom(key), value}
         end
         |> Map.put(:inserted_at, inserted_time)
         |> Map.put(:updated_at, inserted_time)
@@ -165,7 +176,7 @@ defmodule Glific.SeedsScale do
     Repo.insert_all(Contact, contact_entries)
   end
 
-  defp seed_messages do
+  defp seed_messages(messages_count) do
     # get all beneficiaries ids
     contact_ids =
       Glific.Contacts.list_contacts()
@@ -174,17 +185,18 @@ defmodule Glific.SeedsScale do
 
     # postgresql protocol can not handle more than 65535 parameters for bulk insert
     # create list of messages
-    messages_list = create_messages(5000)
+    ngo_user_messages_list = create_messages(div(messages_count, 2))
+    beneficiary_user_messages_list = create_messages(div(messages_count, 2))
 
     # create message entries for ngo users
-    ngo_user_message_entries = create_message_entries(contact_ids, messages_list, "ngo")
+    ngo_user_message_entries = create_message_entries(contact_ids, ngo_user_messages_list, "ngo")
 
     # seed messages
     Repo.insert_all(Message, ngo_user_message_entries)
 
     # create message entries for beneficiaries
     beneficiary_message_entries =
-      create_message_entries(contact_ids, messages_list, "beneficiary")
+      create_message_entries(contact_ids, beneficiary_user_messages_list, "beneficiary")
 
     # seed messages
     Repo.insert_all(Message, beneficiary_message_entries)
@@ -204,9 +216,12 @@ defmodule Glific.SeedsScale do
   @doc false
   @spec seed_scale :: nil
   def seed_scale do
-    seed_contacts()
+    seed_deterministic_contacts()
 
-    seed_messages()
+    # create new random contacts
+    seed_contacts(10)
+
+    seed_messages(10_000)
 
     seed_message_tags()
 
