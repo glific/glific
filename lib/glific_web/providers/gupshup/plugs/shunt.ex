@@ -1,5 +1,4 @@
 defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
-
   alias Plug.Conn
   alias GlificWeb.Providers.Gupshup.Router
 

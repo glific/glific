@@ -6,7 +6,6 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   alias Glific.Communications.Message, as: Communications
   alias Glific.Providers.Gupshup.ApiClient
-  alias Glific.{Messages, Messages.Message}
 
   @rate_name Application.fetch_env!(:glific, :provider_id)
   @rate_limit Application.fetch_env!(:glific, :provider_limit)
@@ -30,7 +29,7 @@ defmodule Glific.Providers.Gupshup.Worker do
   end
 
   defp success_response(response, message) do
-      Communications.handle_success_response(response, message)
+    Communications.handle_success_response(response, message)
   end
 
   defp error_response(response, message) do

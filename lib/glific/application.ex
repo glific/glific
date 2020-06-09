@@ -50,5 +50,4 @@ defmodule Glific.Application do
       opts
     end
   end
-
 end

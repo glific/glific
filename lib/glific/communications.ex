@@ -1,5 +1,4 @@
 defmodule Glific.Communications do
-
   @spec effective_provider :: any
   def effective_provider() do
     with nil <- provider_per_organisation(),

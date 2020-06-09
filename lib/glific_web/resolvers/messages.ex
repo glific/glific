@@ -31,7 +31,7 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def create_message(_, %{input: params}, _) do
     with {:ok, message} <- Messages.create_message(params) do
-          send_message(nil, %{id: message.id}, nil)
+      send_message(nil, %{id: message.id}, nil)
       {:ok, %{message: message}}
     end
   end
@@ -56,11 +56,11 @@ defmodule GlificWeb.Resolvers.Messages do
     end
   end
 
-
   def send_message(_, %{id: id}, _) do
     with {:ok, message} <- Repo.fetch(Message, id) do
       Repo.preload(message, [:receiver, :sender, :media])
       |> Communications.send_message()
+
       {:ok, %{message: message}}
     end
   end

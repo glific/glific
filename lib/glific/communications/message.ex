@@ -45,13 +45,14 @@ defmodule Glific.Communications.Message do
 
   def handle_success_response(response, message) do
     body = response.body |> Jason.decode!()
+
     message
     |> Poison.encode!()
     |> Poison.decode!(as: %Message{})
     |> Messages.update_message(%{
-        provider_message_id: body["messageId"],
-        provider_status: :enqueued
-      })
+      provider_message_id: body["messageId"],
+      provider_status: :enqueued
+    })
 
     {:ok, message}
   end
@@ -87,14 +88,16 @@ defmodule Glific.Communications.Message do
     |> publish_message()
   end
 
-
   defp publish_message({:ok, message}) do
     Absinthe.Subscription.publish(
       TwoWayWeb.Endpoint,
       message,
-      received_message: "*")
+      received_message: "*"
+    )
+
     {:ok, message}
   end
+
   defp publish_message(err), do: err
 
   def provider_module() do
