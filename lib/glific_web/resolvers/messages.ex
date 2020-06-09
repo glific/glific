@@ -4,8 +4,8 @@ defmodule GlificWeb.Resolvers.Messages do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Communications, Messages, Messages.Message, Messages.MessageMedia, Repo}
-
+  alias Glific.Communications.Message, as: Communications
+  alias Glific.{Messages, Messages.Message, Messages.MessageMedia, Repo}
 
   @doc """
   Get a specific message by id
@@ -60,7 +60,7 @@ defmodule GlificWeb.Resolvers.Messages do
   def send_message(_, %{id: id}, _) do
     with {:ok, message} <- Repo.fetch(Message, id) do
       Repo.preload(message, [:receiver, :sender, :media])
-      |> Communications.Message.send_message()
+      |> Communications.send_message()
       {:ok, %{message: message}}
     end
   end

@@ -4,6 +4,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     max_attempts: 3,
     priority: 0
 
+  alias Glific.Communications.Message, as: Communications
   alias Glific.Providers.Gupshup.ApiClient
   alias Glific.{Messages, Messages.Message}
 
@@ -29,16 +30,11 @@ defmodule Glific.Providers.Gupshup.Worker do
   end
 
   defp success_response(response, message) do
-    body = response.body |> Jason.decode!()
-    message
-    |> Poison.encode!()
-    |> Poison.decode!(as: %Message{})
-    |> Messages.update_message(%{provider_message_id: body["messageId"], provider_status: :enqueued})
-    {:ok, message}
+      Communications.handle_success_response(response, message)
   end
 
-  defp error_response(response, _message) do
-    {:error, response.body}
+  defp error_response(response, message) do
+    Communications.handle_error_response(response, message)
   end
 
   @impl Oban.Worker

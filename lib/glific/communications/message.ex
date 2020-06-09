@@ -43,6 +43,23 @@ defmodule Glific.Communications.Message do
     end
   end
 
+  def handle_success_response(response, message) do
+    body = response.body |> Jason.decode!()
+    message
+    |> Poison.encode!()
+    |> Poison.decode!(as: %Message{})
+    |> Messages.update_message(%{
+        provider_message_id: body["messageId"],
+        provider_status: :enqueued
+      })
+
+    {:ok, message}
+  end
+
+  def handle_error_response(response, _message) do
+    {:error, response.body}
+  end
+
   def receive_text(message_params) do
     contact = Contacts.upsert(message_params.sender)
 
@@ -69,6 +86,7 @@ defmodule Glific.Communications.Message do
     |> Messages.create_message()
     |> publish_message()
   end
+
 
   defp publish_message({:ok, message}) do
     Absinthe.Subscription.publish(
