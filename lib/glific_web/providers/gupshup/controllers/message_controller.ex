@@ -1,8 +1,8 @@
-defmodule GlificWeb.Provider.Controllers.GupshupMessageController do
+defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   use GlificWeb, :controller
 
-  alias TwoWay.Communications.BSP.Gupshup.Message, as: GupshupMessage
-  alias TwoWay.Communications.Message, as: Communications
+  # alias TwoWay.Communications.BSP.Gupshup.Message, as: GupshupMessage
+  # alias TwoWay.Communications.Message, as: Communications
 
   def handler(conn, params, msg) do
     IO.puts(msg)
@@ -21,33 +21,33 @@ defmodule GlificWeb.Provider.Controllers.GupshupMessageController do
   end
 
   def image(conn, params) do
-    GupshupMessage.receive_media(params)
-    |> Map.merge(%{type: :image})
-    |> Communications.receive_media()
+    # GupshupMessage.receive_media(params)
+    # |> Map.merge(%{type: :image})
+    # |> Communications.receive_media()
 
     handler(conn, params, "image handler")
   end
 
   def file(conn, params) do
-    GupshupMessage.receive_media(params)
-    |> Map.merge(%{type: :document})
-    |> Communications.receive_media()
+    # GupshupMessage.receive_media(params)
+    # |> Map.merge(%{type: :document})
+    # |> Communications.receive_media()
 
     handler(conn, params, "file handler")
   end
 
   def audio(conn, params) do
-    GupshupMessage.receive_media(params)
-    |> Map.merge(%{type: :audio})
-    |> Communications.receive_media()
+    # GupshupMessage.receive_media(params)
+    # |> Map.merge(%{type: :audio})
+    # |> Communications.receive_media()
 
     handler(conn, params, "file handler")
   end
 
   def video(conn, params) do
-    GupshupMessage.receive_media(params)
-    |> Map.merge(%{type: :video})
-    |> Communications.receive_media()
+    # GupshupMessage.receive_media(params)
+    # |> Map.merge(%{type: :video})
+    # |> Communications.receive_media()
 
     handler(conn, params, "file handler")
   end

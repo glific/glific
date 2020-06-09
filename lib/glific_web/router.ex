@@ -38,6 +38,6 @@ defmodule GlificWeb.Router do
 
 
   scope "/", GlificWeb do
-    forward("/gupshup", GlificWeb.BSP.Gupshup.Plugs.Shunt)
+    forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
   end
 end

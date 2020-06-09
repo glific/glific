@@ -44,7 +44,7 @@ defmodule Glific.Communications.Message do
   end
 
   def receive_text(message_params) do
-    contact = Contacts.get_or_create(message_params.sender)
+    contact = Contacts.upsert(message_params.sender)
 
     message_params
     |> Map.merge(%{
@@ -57,7 +57,7 @@ defmodule Glific.Communications.Message do
   end
 
   def receive_media(message_params) do
-    contact = Contacts.get_or_create(message_params.sender)
+    contact = Contacts.upsert(message_params.sender)
     {:ok, message_media} = Messages.create_message_media(message_params)
 
     message_params

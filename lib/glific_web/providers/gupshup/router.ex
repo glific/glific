@@ -1,7 +1,7 @@
-defmodule GlificWeb.Provider.Gupshup.Router do
+defmodule GlificWeb.Providers.Gupshup.Router do
   use GlificWeb, :router
 
-  alias GlificWeb.Provider.Gupshup.Controllers
+  alias GlificWeb.Providers.Gupshup.Controllers
 
   @doc """
   Need to match the following type specs from the gupshup documentation
@@ -28,36 +28,36 @@ defmodule GlificWeb.Provider.Gupshup.Router do
     contact
     location
   """
-  scope "/gupshup", TwoWayWeb do
+  scope "/gupshup" do
     scope "/user-event" do
-      post("/", Controllers.GupshupUserEventController, :user_event)
-      post("/sandbox-start",Controllers.GupshupUserEventController, :sandbox_start)
-      post("/opted-in", Controllers.GupshupUserEventController, :opted_in)
-      post("/opted-out", Controllers.GupshupUserEventController, :opted_out)
-      post("/unknown", Controllers.GupshupController, :unknown)
+      post("/", Controllers.UserEventController, :user_event)
+      post("/sandbox-start",Controllers.UserEventController, :sandbox_start)
+      post("/opted-in", Controllers.UserEventController, :opted_in)
+      post("/opted-out", Controllers.UserEventController, :opted_out)
+      post("/unknown", Controllers.DefaultController, :unknown)
     end
 
     scope "/message-event" do
-      post("/", Controllers.GupshupMessageEventController, :message_event)
-      post("/enqueued", Controllers.GupshupMessageEventController, :enqueued)
-      post("/failed", Controllers.GupshupMessageEventController, :failed)
-      post("/sent", Controllers.GupshupMessageEventController, :sent)
-      post("/delivered", Controllers.GupshupMessageEventController, :delivered)
-      post("/unknown", Controllers.GupshupController, :unknown)
+      post("/", Controllers.MessageEventController, :message_event)
+      post("/enqueued", Controllers.MessageEventController, :enqueued)
+      post("/failed", Controllers.MessageEventController, :failed)
+      post("/sent", Controllers.MessageEventController, :sent)
+      post("/delivered", Controllers.MessageEventController, :delivered)
+      post("/unknown", Controllers.DefaultController, :unknown)
     end
 
     scope "/message" do
-      post("/", Controllers.GupshupMessageController, :message)
-      post("/text", Controllers.GupshupMessageController, :text)
-      post("/image", Controllers.GupshupMessageController, :image)
-      post("/file", Controllers.GupshupMessageController, :file)
-      post("/audio", Controllers.GupshupMessageController, :audio)
-      post("/video", Controllers.GupshupMessageController, :video)
-      post("/contact", Controllers.GupshupMessageController, :contact)
-      post("/location", Controllers.GupshupMessageController, :location)
-      post("/unknown", Controllers.GupshupController, :unknown)
+      post("/", Controllers.MessageController, :message)
+      post("/text", Controllers.MessageController, :text)
+      post("/image", Controllers.MessageController, :image)
+      post("/file", Controllers.MessageController, :file)
+      post("/audio", Controllers.MessageController, :audio)
+      post("/video", Controllers.MessageController, :video)
+      post("/contact", Controllers.MessageController, :contact)
+      post("/location", Controllers.MessageController, :location)
+      post("/unknown", Controllers.DefaultController, :unknown)
     end
 
-    post("/unknown/unknown", Controllers.GupshupController, :unknown)
+    post("/unknown/unknown", Controllers.DefaultController, :unknown)
   end
 end

@@ -60,4 +60,11 @@ defmodule Glific.Messages.Message do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
   end
+
+  @doc """
+  Convert message structure to map
+  """
+  def to_minimal_map(message) do
+    Map.take(message, [:id | @required_fields])
+  end
 end
