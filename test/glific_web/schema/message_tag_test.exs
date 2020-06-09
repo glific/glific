@@ -31,9 +31,11 @@ defmodule GlificWeb.Schema.Query.MessageTagTest do
     assert message_tag["tag"]["id"] |> String.to_integer() == tag.id
 
     # try creating the same message tag twice
-    result = query_gql_by(:create,
-      variables: %{"input" => %{"message_id" => message.id, "tag_id" => tag.id}}
-    )
+    result =
+      query_gql_by(:create,
+        variables: %{"input" => %{"message_id" => message.id, "tag_id" => tag.id}}
+      )
+
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createMessageTag", "errors", Access.at(0), "message"])

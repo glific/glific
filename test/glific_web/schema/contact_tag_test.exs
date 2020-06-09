@@ -31,9 +31,11 @@ defmodule GlificWeb.Schema.Query.ContactTagTest do
     assert contact_tag["tag"]["id"] |> String.to_integer() == tag.id
 
     # try creating the same contact tag entry twice
-    result = query_gql_by(:create,
-      variables: %{"input" => %{"contact_id" => contact.id, "tag_id" => tag.id}}
-    )
+    result =
+      query_gql_by(:create,
+        variables: %{"input" => %{"contact_id" => contact.id, "tag_id" => tag.id}}
+      )
+
     assert {:ok, query_data} = result
 
     contact = get_in(query_data, [:data, "createContactTag", "errors", Access.at(0), "message"])

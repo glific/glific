@@ -6,7 +6,8 @@ defmodule Glific.Tags.Tag do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.{Settings.Language, Tags.Tag, Contacts.Contact, Messages.Message}
+  alias Glific.{Settings.Language, Tags.Tag}
+  alias Glific.{Contacts.Contact, Messages.Message}
 
   @required_fields [:label, :language_id]
   @optional_fields [:description, :is_active, :is_reserved, :parent_id]

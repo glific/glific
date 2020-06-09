@@ -4,7 +4,8 @@ defmodule GlificWeb.Resolvers.Tags do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Repo, Tags, Tags.Tag, Tags.MessageTag, Tags.ContactTag}
+  alias Glific.{Repo, Tags, Tags.Tag}
+  alias Glific.{Tags.ContactTag, Tags.MessageTag}
 
   @doc """
   Get a specific tag by id
