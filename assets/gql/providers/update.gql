@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateProvider($id: ID!, $input: ProviderInput!) {
+  updateProvider(id: $id, input: $input) {
+    ...ProviderFields
+
+    ...ErrorFields
+  }
+}

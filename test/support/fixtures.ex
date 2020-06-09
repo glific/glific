@@ -1,8 +1,6 @@
 defmodule Glific.Fixtures do
   @moduledoc """
   A module for defining fixtures that can be used in tests.
-  This module can be used with a list of fixtures to apply as parameter:
-      use Glific.Fixtures, [:user]
   """
   alias Faker.{
     DateTime,
@@ -17,6 +15,8 @@ defmodule Glific.Fixtures do
     Tags
   }
 
+  @doc false
+  @spec contact_fixture(map()) :: Contacts.Contact.t()
   def contact_fixture(attrs \\ %{}) do
     valid_attrs = %{
       name: Name.name(),
@@ -24,7 +24,7 @@ defmodule Glific.Fixtures do
       optout_time: DateTime.backward(1),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      wa_status: :invalid
+      provider_status: :invalid
     }
 
     {:ok, contact} =
@@ -35,18 +35,20 @@ defmodule Glific.Fixtures do
     contact
   end
 
+  @doc false
+  @spec message_fixture(map()) :: Messages.Message.t()
   def message_fixture(attrs \\ %{}) do
     sender = contact_fixture()
-    recipient = contact_fixture()
+    receiver = contact_fixture()
 
     valid_attrs = %{
       body: Faker.Lorem.sentence(),
       flow: :inbound,
       type: :text,
-      wa_message_id: Faker.String.base64(10),
-      wa_status: :enqueued,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
       sender_id: sender.id,
-      recipient_id: recipient.id
+      receiver_id: receiver.id
     }
 
     {:ok, message} =
@@ -57,6 +59,8 @@ defmodule Glific.Fixtures do
     message
   end
 
+  @doc false
+  @spec language_fixture(map()) :: Settings.Language.t()
   def language_fixture(attrs \\ %{}) do
     valid_attrs = %{
       label: Faker.Lorem.word(),
@@ -72,6 +76,8 @@ defmodule Glific.Fixtures do
     language
   end
 
+  @doc false
+  @spec tag_fixture(map()) :: Tags.Tag.t()
   def tag_fixture(attrs \\ %{}) do
     valid_attrs = %{
       label: "some label",
@@ -92,6 +98,8 @@ defmodule Glific.Fixtures do
     tag
   end
 
+  @doc false
+  @spec message_tag_fixture(map()) :: Tags.MessageTag.t()
   def message_tag_fixture(attrs \\ %{}) do
     valid_attrs = %{
       message_id: message_fixture().id,
@@ -106,6 +114,8 @@ defmodule Glific.Fixtures do
     message_tag
   end
 
+  @doc false
+  @spec contact_tag_fixture(map()) :: Tags.ContactTag.t()
   def contact_tag_fixture(attrs \\ %{}) do
     valid_attrs = %{
       contact_id: contact_fixture().id,

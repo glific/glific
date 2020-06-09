@@ -1,5 +1,0 @@
-query bsps {
-  bsps {
-    name
-  }
-}

@@ -11,6 +11,7 @@ defmodule Glific.Tags.MessageTag do
   @required_fields [:message_id, :tag_id]
 
   @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           tag: Tag.t() | Ecto.Association.NotLoaded.t() | nil

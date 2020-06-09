@@ -21,14 +21,14 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.MessageTagTypes)
   import_types(__MODULE__.ContactTagTypes)
   import_types(__MODULE__.OrganizationTypes)
-  import_types(__MODULE__.BSPTypes)
+  import_types(__MODULE__.ProviderTypes)
 
   query do
     import_fields(:language_queries)
 
     import_fields(:tag_queries)
 
-    import_fields(:bsp_queries)
+    import_fields(:provider_queries)
 
     import_fields(:contact_queries)
 
@@ -44,7 +44,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:tag_mutations)
 
-    import_fields(:bsp_mutations)
+    import_fields(:provider_mutations)
 
     import_fields(:contact_mutations)
 

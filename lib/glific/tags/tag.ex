@@ -13,6 +13,7 @@ defmodule Glific.Tags.Tag do
   @optional_fields [:description, :is_active, :is_reserved, :parent_id]
 
   @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           label: String.t() | nil,
           description: String.t() | nil,

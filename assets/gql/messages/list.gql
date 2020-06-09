@@ -7,7 +7,7 @@ query messages {
       name
     }
 
-    recipient {
+    receiver {
       id
       name
     }
