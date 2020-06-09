@@ -1,10 +1,10 @@
-defmodule Glific.Communications.BSP.Gupshup.Worker do
+defmodule Glific.Providers.Gupshup.Worker do
   use Oban.Worker,
     queue: :gupshup,
     max_attempts: 3,
     priority: 0
 
-  alias Glific.Communications.BSP.Gupshup.ApiClient
+  alias Glific.Providers.Gupshup.ApiClient
   alias Glific.{Messages, Messages.Message}
 
   @rate_name Application.fetch_env!(:glific, :provider_id)

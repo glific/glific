@@ -8,7 +8,10 @@
 use Mix.Config
 
 config :glific,
-  ecto_repos: [Glific.Repo]
+  ecto_repos: [Glific.Repo],
+  provider: Glific.Providers.Gupshup,
+  provider_id: "gupshup-provider-23",
+  provider_limit: 10
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,

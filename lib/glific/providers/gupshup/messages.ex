@@ -1,17 +1,17 @@
-defmodule Glific.Communications.BSP.Gupshup.Message do
+defmodule Glific.Providers.Gupshup.Message do
   @channel "whatsapp"
-  @behaviour Glific.Communications.MessageBehaviour
+  @behaviour Glific.Providers.MessageBehaviour
 
-  alias Glific.Communications.BSP.Gupshup.Worker
+  alias Glific.Providers.Gupshup.Worker
   alias Glific.Messages.Message
 
-  @impl Glific.Communications.MessageBehaviour
+  @impl Glific.Providers.MessageBehaviour
   def send_text(message) do
     %{type: :text, text: message.body}
     |> send_message(message)
   end
 
-  @impl Glific.Communications.MessageBehaviour
+  @impl Glific.Providers.MessageBehaviour
   def send_image(message) do
     message_media = message.media
 
@@ -24,7 +24,7 @@ defmodule Glific.Communications.BSP.Gupshup.Message do
     |> send_message(message)
   end
 
-  @impl Glific.Communications.MessageBehaviour
+  @impl Glific.Providers.MessageBehaviour
   def send_audio(message) do
     message_media = message.media
 
@@ -35,7 +35,7 @@ defmodule Glific.Communications.BSP.Gupshup.Message do
     |> send_message(message)
   end
 
-  @impl Glific.Communications.MessageBehaviour
+  @impl Glific.Providers.MessageBehaviour
   def send_video(message) do
     message_media = message.media
 
@@ -47,7 +47,7 @@ defmodule Glific.Communications.BSP.Gupshup.Message do
     |> send_message(message)
   end
 
-  @impl Glific.Communications.MessageBehaviour
+  @impl Glific.Providers.MessageBehaviour
   def send_document(message) do
     message_media = message.media
 
@@ -59,7 +59,7 @@ defmodule Glific.Communications.BSP.Gupshup.Message do
     |> send_message(message)
   end
 
-  @impl Glific.Communications.MessageBehaviour
+  @impl Glific.Providers.MessageBehaviour
   def receive_text(params) do
     payload = params["payload"]
     message_payload = payload["payload"]
@@ -74,7 +74,7 @@ defmodule Glific.Communications.BSP.Gupshup.Message do
     }
   end
 
-  @impl Glific.Communications.MessageBehaviour
+  @impl Glific.Providers.MessageBehaviour
   def receive_media(params) do
     payload = params["payload"]
     message_payload = payload["payload"]

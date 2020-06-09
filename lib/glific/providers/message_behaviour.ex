@@ -1,4 +1,4 @@
-defmodule Glific.Communications.MessageBehaviour do
+defmodule Glific.Providers.MessageBehaviour do
   @doc """
   Invoked when a request runs.
 

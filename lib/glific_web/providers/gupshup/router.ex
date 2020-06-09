@@ -47,17 +47,17 @@ defmodule GlificWeb.Provider.Gupshup.Router do
     end
 
     scope "/message" do
-      post("/", GupshupMessageController, :message)
-      post("/text", GupshupMessageController, :text)
-      post("/image", GupshupMessageController, :image)
-      post("/file", GupshupMessageController, :file)
-      post("/audio", GupshupMessageController, :audio)
-      post("/video", GupshupMessageController, :video)
-      post("/contact", GupshupMessageController, :contact)
-      post("/location", GupshupMessageController, :location)
-      post("/unknown", GupshupController, :unknown)
+      post("/", Controllers.GupshupMessageController, :message)
+      post("/text", Controllers.GupshupMessageController, :text)
+      post("/image", Controllers.GupshupMessageController, :image)
+      post("/file", Controllers.GupshupMessageController, :file)
+      post("/audio", Controllers.GupshupMessageController, :audio)
+      post("/video", Controllers.GupshupMessageController, :video)
+      post("/contact", Controllers.GupshupMessageController, :contact)
+      post("/location", Controllers.GupshupMessageController, :location)
+      post("/unknown", Controllers.GupshupController, :unknown)
     end
 
-    post("/unknown/unknown", GupshupController, :unknown)
+    post("/unknown/unknown", Controllers.GupshupController, :unknown)
   end
 end
