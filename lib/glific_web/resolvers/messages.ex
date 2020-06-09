@@ -4,7 +4,8 @@ defmodule GlificWeb.Resolvers.Messages do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Messages, Messages.Message, Messages.MessageMedia, Repo}
+  alias Glific.{Communications, Messages, Messages.Message, Messages.MessageMedia, Repo}
+
 
   @doc """
   Get a specific message by id
@@ -30,6 +31,7 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def create_message(_, %{input: params}, _) do
     with {:ok, message} <- Messages.create_message(params) do
+          send_message(nil, %{id: message.id}, nil)
       {:ok, %{message: message}}
     end
   end
@@ -55,13 +57,13 @@ defmodule GlificWeb.Resolvers.Messages do
   end
 
 
-  # def send_message(_, %{id: id}, _) do
-  #   with {:ok, message} <- Repo.fetch(Message, id) do
-  #     Repo.preload(message, [:recipient, :sender, :media])
-  #     |> Communications.send_message()
-  #     {:ok, %{message: message}}
-  #   end
-  # end
+  def send_message(_, %{id: id}, _) do
+    with {:ok, message} <- Repo.fetch(Message, id) do
+      Repo.preload(message, [:receiver, :sender, :media])
+      |> Communications.Message.send_message()
+      {:ok, %{message: message}}
+    end
+  end
 
   # Message Media Resolver which sits between the GraphQL schema and Glific
   # Message Context API.

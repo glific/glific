@@ -1,4 +1,6 @@
 defmodule Glific.Communications do
+
+
   @spec effective_provider :: any
   def effective_provider() do
     with nil <- provider_per_organisation(),
@@ -17,7 +19,7 @@ defmodule Glific.Communications do
   end
 
   defp provider_from_config() do
-    case Application.fetch_env!(:two_way, :provider) do
+    case Application.fetch_env!(:glific, :provider) do
       nil -> nil
       provider -> provider
     end

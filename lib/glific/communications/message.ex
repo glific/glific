@@ -43,42 +43,6 @@ defmodule Glific.Communications.Message do
     end
   end
 
-  def receive_text(message_params) do
-    contact = Contacts.upsert(message_params.sender)
-
-    message_params
-    |> Map.merge(%{
-      type: :text,
-      sender_id: contact.id,
-      recipient_id: get_recipient_id_for_inbound()
-    })
-    |> Messages.create_message()
-    |> publish_message()
-  end
-
-  def receive_media(message_params) do
-    contact = Contacts.upsert(message_params.sender)
-    {:ok, message_media} = Messages.create_message_media(message_params)
-
-    message_params
-    |> Map.merge(%{
-      sender_id: contact.id,
-      media_id: message_media.id,
-      recipient_id: get_recipient_id_for_inbound()
-    })
-    |> Messages.create_message()
-    |> publish_message()
-  end
-
-  defp publish_message({:ok, message}) do
-    Absinthe.Subscription.publish(
-      GlificWeb.Endpoint,
-      message,
-      received_message: "*")
-    {:ok, message}
-  end
-  defp publish_message(err), do: err
-
   def provider_module() do
     provider = Glific.Communications.effective_provider()
     String.to_existing_atom(to_string(provider) <> ".Message")
@@ -88,7 +52,7 @@ defmodule Glific.Communications.Message do
     Glific.Communications.organisation_contact()
   end
 
-  def get_recipient_id_for_inbound() do
+  def get_receiver_id_for_inbound() do
     # TODO: Make this dynamic
     1
   end
