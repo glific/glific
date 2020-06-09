@@ -23,7 +23,7 @@ defmodule Glific.Tags.ContactTag do
   end
 
   @doc """
-  Standard changeset pattern we use for all datat types
+  Standard changeset pattern we use for all data types
   """
   @spec changeset(ContactTag.t(), map()) :: Ecto.Changeset.t()
   def changeset(contact, attrs) do

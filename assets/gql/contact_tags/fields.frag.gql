@@ -1,0 +1,22 @@
+fragment ContactTagFields on ContactTagResult {
+  contact_tag {
+    id
+   
+    contact {
+      id
+      name
+    }
+
+    tag {
+      id
+      label
+    }
+  }
+}
+
+fragment ErrorFields on ContactTagResult {
+  errors {
+    key
+    message
+  }
+}
