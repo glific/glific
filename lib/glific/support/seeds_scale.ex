@@ -138,9 +138,7 @@ defmodule Glific.SeedsScale do
     end
   end
 
-  @doc false
-  @spec seed_scale :: nil
-  def seed_scale do
+  defp seed_contacts do
     # create random contacts entries
     _contact_entries = create_contact_entries(500)
 
@@ -151,23 +149,23 @@ defmodule Glific.SeedsScale do
     inserted_time = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
     opt_time = DateTime.truncate(DateTime.utc_now(), :second)
 
-    contact_entries = decoded_file_data
+    contact_entries =
+      decoded_file_data
       |> Enum.map(fn entry ->
-
         for {key, value} <- entry, into: %{} do
           {String.to_atom(key), value}
         end
-
         |> Map.put(:inserted_at, inserted_time)
         |> Map.put(:updated_at, inserted_time)
         |> Map.put(:optin_time, opt_time)
         |> Map.put(:optout_time, opt_time)
-
       end)
 
     # seed contacts
     Repo.insert_all(Contact, contact_entries)
+  end
 
+  defp seed_messages do
     # get all beneficiaries ids
     contact_ids =
       Glific.Contacts.list_contacts()
@@ -190,7 +188,9 @@ defmodule Glific.SeedsScale do
 
     # seed messages
     Repo.insert_all(Message, beneficiary_message_entries)
+  end
 
+  defp seed_message_tags do
     # seed message_tags on received messages only: 25% no tags, 25% 1 tag, 50% 2 - 4 tags, only do
     message_ids = Repo.all(from m in "messages", select: m.id, where: m.receiver_id == 1)
     tag_ids = Repo.all(from t in "tags", select: t.id)
@@ -199,6 +199,16 @@ defmodule Glific.SeedsScale do
       Enum.reduce(message_ids, [], fn x, acc -> create_message_tag(x, tag_ids, acc) end)
 
     Repo.insert_all(MessageTag, message_tags)
+  end
+
+  @doc false
+  @spec seed_scale :: nil
+  def seed_scale do
+    seed_contacts()
+
+    seed_messages()
+
+    seed_message_tags()
 
     nil
   end
