@@ -141,8 +141,29 @@ defmodule Glific.SeedsScale do
   @doc false
   @spec seed_scale :: nil
   def seed_scale do
-    # create contacts entries
-    contact_entries = create_contact_entries(500)
+    # create random contacts entries
+    _contact_entries = create_contact_entries(500)
+
+    # Reading from file to maintain deterministic contacts
+    {:ok, file_data} = File.read("lib/glific/support/seeds_scale.json")
+    decoded_file_data = file_data |> Poison.decode!()
+
+    inserted_time = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    opt_time = DateTime.truncate(DateTime.utc_now(), :second)
+
+    contact_entries = decoded_file_data
+      |> Enum.map(fn entry ->
+
+        for {key, value} <- entry, into: %{} do
+          {String.to_atom(key), value}
+        end
+
+        |> Map.put(:inserted_at, inserted_time)
+        |> Map.put(:updated_at, inserted_time)
+        |> Map.put(:optin_time, opt_time)
+        |> Map.put(:optout_time, opt_time)
+
+      end)
 
     # seed contacts
     Repo.insert_all(Contact, contact_entries)
