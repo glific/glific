@@ -29,7 +29,6 @@ defmodule Glific.Settings.Language do
 
     field :is_active, :boolean, default: false
 
-    # Comment for now, enable when we add tags to glific
     has_many :tags, Glific.Tags.Tag
 
     timestamps()

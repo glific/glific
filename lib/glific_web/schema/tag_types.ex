@@ -38,6 +38,10 @@ defmodule GlificWeb.Schema.TagTypes do
     field :is_active, :boolean
     field :is_reserved, :boolean
 
+    field :parent, :tag do
+      resolve(dataloader(Repo))
+    end
+
     field :language, :language do
       resolve(dataloader(Repo))
     end
@@ -51,8 +55,17 @@ defmodule GlificWeb.Schema.TagTypes do
     @desc "Match the description"
     field :description, :string
 
+    @desc "Match the parent"
+    field :parent, :string
+
+    @desc "Match the parent"
+    field :parent_id, :integer
+
     @desc "Match a language"
     field :language, :string
+
+    @desc "Match a language id"
+    field :language_id, :integer
 
     @desc "Match the active flag"
     field :is_active, :boolean

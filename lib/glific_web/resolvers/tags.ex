@@ -26,26 +26,6 @@ defmodule GlificWeb.Resolvers.Tags do
     {:ok, Tags.list_tags(args)}
   end
 
-  @doc """
-  Get the list of objects in the database that match the term
-  """
-  @spec search(Absinthe.Resolution.t(), %{matching: String.t()}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def search(_, %{matching: _term}, _) do
-    # {:ok, Tags.search(term)}
-    {:ok, %{}}
-  end
-
-  @doc """
-  Get all the tags associated with a specific language
-  """
-  @spec tags_for_language(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def tags_for_language(language, _, _) do
-    query = Ecto.assoc(language, :tags)
-    {:ok, Repo.all(query)}
-  end
-
   @doc false
   @spec create_tag(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}

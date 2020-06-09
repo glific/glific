@@ -36,10 +36,23 @@ defmodule Glific.Tags do
       {:label, label}, query ->
         from q in query, where: ilike(q.label, ^"%#{label}%")
 
+      {:parent, label}, query ->
+        from q in query,
+          join: t in assoc(q, :parent),
+          where: ilike(t.label, ^"%#{label}%")
+
+      {:parent_id, parent_id}, query ->
+        from q in query,
+          where: q.parent_id == ^parent_id
+
       {:language, language}, query ->
         from q in query,
           join: l in assoc(q, :language),
           where: ilike(l.label, ^"%#{language}%")
+
+      {:language_id, language_id}, query ->
+        from q in query,
+          where: q.language_id == ^language_id
     end)
   end
 
