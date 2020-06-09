@@ -4,6 +4,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.DefaultController do
   def handler(conn, params, msg) do
     IO.puts(msg)
     IO.inspect(params)
+    IO.inspect(params["unknown"])
     json(conn, nil)
   end
 

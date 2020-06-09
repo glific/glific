@@ -30,7 +30,9 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   defp success_response(response, message) do
     body = response.body |> Jason.decode!()
-    Poison.decode!(message, as: %Message{})
+    message
+    |> Poison.encode!()
+    |> Poison.decode!(as: %Message{})
     |> Messages.update_message(%{provider_message_id: body["messageId"], provider_status: :enqueued})
     {:ok, message}
   end

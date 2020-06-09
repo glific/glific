@@ -28,36 +28,36 @@ defmodule GlificWeb.Providers.Gupshup.Router do
     contact
     location
   """
-  scope "/gupshup" do
-    scope "/user-event" do
-      post("/", Controllers.UserEventController, :user_event)
-      post("/sandbox-start",Controllers.UserEventController, :sandbox_start)
-      post("/opted-in", Controllers.UserEventController, :opted_in)
-      post("/opted-out", Controllers.UserEventController, :opted_out)
-      post("/unknown", Controllers.DefaultController, :unknown)
+  scope "/gupshup", Controllers do
+    scope "/user-event"  do
+      post("/",  UserEventController, :user_event)
+      post("/sandbox-start", UserEventController, :sandbox_start)
+      post("/opted-in",  UserEventController, :opted_in)
+      post("/opted-out",  UserEventController, :opted_out)
+      post("/*unknown",  DefaultController, :unknown)
     end
 
     scope "/message-event" do
-      post("/", Controllers.MessageEventController, :message_event)
-      post("/enqueued", Controllers.MessageEventController, :enqueued)
-      post("/failed", Controllers.MessageEventController, :failed)
-      post("/sent", Controllers.MessageEventController, :sent)
-      post("/delivered", Controllers.MessageEventController, :delivered)
-      post("/unknown", Controllers.DefaultController, :unknown)
+      post("/",  MessageEventController, :message_event)
+      post("/enqueued",  MessageEventController, :enqueued)
+      post("/failed",  MessageEventController, :failed)
+      post("/sent",  MessageEventController, :sent)
+      post("/delivered",  MessageEventController, :delivered)
+      post("/*unknown",  DefaultController, :unknown)
     end
 
     scope "/message" do
-      post("/", Controllers.MessageController, :message)
-      post("/text", Controllers.MessageController, :text)
-      post("/image", Controllers.MessageController, :image)
-      post("/file", Controllers.MessageController, :file)
-      post("/audio", Controllers.MessageController, :audio)
-      post("/video", Controllers.MessageController, :video)
-      post("/contact", Controllers.MessageController, :contact)
-      post("/location", Controllers.MessageController, :location)
-      post("/unknown", Controllers.DefaultController, :unknown)
+      post("/",  MessageController, :message)
+      post("/text",  MessageController, :text)
+      post("/image",  MessageController, :image)
+      post("/file",  MessageController, :file)
+      post("/audio",  MessageController, :audio)
+      post("/video",  MessageController, :video)
+      post("/contact",  MessageController, :contact)
+      post("/location",  MessageController, :location)
+      post("/*unknown",  DefaultController, :unknown)
     end
 
-    post("/unknown/unknown", Controllers.DefaultController, :unknown)
+    post("/*unknown",  DefaultController, :unknown)
   end
 end
