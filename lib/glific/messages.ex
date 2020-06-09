@@ -4,9 +4,10 @@ defmodule Glific.Messages do
   """
 
   import Ecto.Query, warn: false
-  alias Glific.Repo
-
-  alias Glific.Messages.Message
+  alias Glific.{
+    Messages.Message,
+    Repo
+  }
 
   @doc """
   Returns the list of messages.
