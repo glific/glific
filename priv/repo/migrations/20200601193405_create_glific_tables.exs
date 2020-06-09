@@ -26,8 +26,6 @@ defmodule Glific.Repo.Migrations.GlificTables do
     providers()
 
     organizations()
-
-    full_text_search()
   end
 
   @doc """
@@ -87,6 +85,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
   @doc """
   Store a set of predefined messages that the organization communicates to its users
   on a regular basis.
+
 
   Handle multiple versions of the message for different languages. We will also need to think
   about incorporating short codes for session messages for easier retrieval by end user
