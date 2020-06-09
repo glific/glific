@@ -51,6 +51,20 @@ defmodule Glific.PartnersTest do
       assert Partners.list_providers() == [provider]
     end
 
+    test "list_providers/1 with multiple provider filteres" do
+      _provider1 = provider_fixture(@valid_attrs)
+      provider1 = provider_fixture(@valid_attrs_1)
+
+      provider_list = Partners.list_providers(%{filter: %{name: provider1.name}})
+      assert provider_list == [provider1]
+
+      provider_list = Partners.list_providers(%{filter: %{url: provider1.url}})
+      assert provider_list == [provider1]
+
+      provider_list = Partners.list_providers()
+      assert length(provider_list) == 2
+    end
+
     test "get_provider!/1 returns the provider with given id" do
       provider = provider_fixture()
       assert Partners.get_provider!(provider.id) == provider
@@ -237,6 +251,19 @@ defmodule Glific.PartnersTest do
 
       org_list = Partners.list_organizations()
       assert length(org_list) == 2
+    end
+
+    test "list_organizations/1 with foreign key filters" do
+      provider = provider_fixture(@valid_attrs)
+
+      {:ok, organization} =
+        @valid_org_attrs
+        |> Map.merge(%{provider_id: provider.id})
+        |> Partners.create_organization()
+
+      assert [organization] == Partners.list_organizations(%{filter: %{provider: provider.name}})
+
+      assert [] == Partners.list_organizations(%{filter: %{provider: "RandomString"}})
     end
 
     test "ensure that creating organization with out provider give an error" do
