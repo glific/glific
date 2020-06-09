@@ -20,7 +20,7 @@ defmodule Glific.Search.FullTextSearch do
           document: String.t() | nil,
 
           contact_id: non_neg_integer | nil,
-          Contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
 
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil

@@ -9,6 +9,8 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
     create_indexes()
 
     create_triggers()
+
+    full_text_search()
   end
 
   defp create_extensions do
@@ -22,7 +24,7 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
     SELECT
     contacts.id  AS id,
     contacts.name AS contact_name,
-    contacts_phone AS contacts.phone,
+    contacts.phone AS contacts_phone,
     coalesce(string_agg(tags.label, ' '), ' ') AS tag_label,
     (
     setweight(to_tsvector(unaccent(contacts.name || ' ' || contacts.phone)), 'A') ||
@@ -41,15 +43,6 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
     # to support full-text searches
     create index("message_search", ["document"], using: :gin)
 
-    # to support substring title matches with ILIKE
-    execute(
-      "CREATE INDEX message_search_contact_index ON message_search USING gin (contact_label gin_trgm_ops)"
-    )
-
-    execute(
-      "CREATE INDEX message_search_tag_index ON message_search USING gin (tag_label gin_trgm_ops)"
-    )
-
     # to support updating CONCURRENTLY
     create unique_index("message_search", [:id])
   end
@@ -61,27 +54,23 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
   """
   def full_text_search do
     create table(:full_text_search) do
-      add :contact_name :string
-      add :contact_phone :string
-      add :tags_label :text
-      add :document :text
+      add :contact_name, :string
+      add :contact_phone, :string
+      add :tags_label, :text
+      add :document, :text
 
-      add :contact_id reference(:contacts, on:delete: :delete_all)
+      add :contact_id, references(:contacts, on_delete: :delete_all)
 
       timestamps()
     end
 
-    create_index(:full_text_search, :document, using: :gin)
+    execute("""
+    CREATE INDEX full_text_search_index ON full_text_search using gin(to_tsvector('english', document))
+    """)
 
-    execute(
-      "CREATE INDEX full_text_search_name_index ON full_text_search USING gin (contact_name gin_trgm_ops)"
-    )
-    execute(
-      "CREATE INDEX full_text_search_phone_index ON full_text_search USING gin (contact_phone)"
-    )
-    execute(
-      "CREATE INDEX full_text_search_tag_index ON message_search USING gin (tag_label gin_trgm_ops)"
-    )
+    create index(:full_text_search, :contact_name)
+    create index(:full_text_search, :contact_phone)
+    create index(:full_text_search, :tags_label)
   end
 
   defp create_triggers do
