@@ -1,0 +1,11 @@
+query sessionTemplates($filter: SessionTemplateFilter, $order: SortOrder) {
+  sessionTemplates(filter: $filter, order: $order) {
+    id
+    label
+    body
+    language {
+      id
+      label
+    }
+  }
+}

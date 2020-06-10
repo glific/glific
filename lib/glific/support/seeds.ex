@@ -260,6 +260,12 @@ defmodule Glific.Seeds do
       body: "Default Session Template",
       language_id: en_us.id
     })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Another Default Template Label",
+      body: "Another Default Session Template",
+      language_id: en_us.id
+    })
   end
 
   @doc """
