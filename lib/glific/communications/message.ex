@@ -60,7 +60,7 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback when message send succsully
   """
-  @spec handle_success_response(Tesla.Env.t(), Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec handle_success_response(Tesla.Env.t(), Message.t()) :: {:ok, Message.t()}
   def handle_success_response(response, message) do
     body = response.body |> Jason.decode!()
 
@@ -78,7 +78,7 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback in case of any error while sending the message
   """
-  @spec handle_error_response(Tesla.Env.t(), any) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec handle_error_response(Tesla.Env.t(), any) :: {:error, String.t()}
   def handle_error_response(response, _message) do
     {:error, response.body}
   end

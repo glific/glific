@@ -1,4 +1,8 @@
 defmodule Glific.Providers.Gupshup.Worker do
+  @moduledoc """
+  A worker to handle send message processes
+  """
+
   use Oban.Worker,
     queue: :gupshup,
     max_attempts: 3,
@@ -10,7 +14,11 @@ defmodule Glific.Providers.Gupshup.Worker do
   @rate_name Application.fetch_env!(:glific, :provider_id)
   @rate_limit Application.fetch_env!(:glific, :provider_limit)
 
+  @doc """
+  Standard perform method to use Oban worker
+  """
   @impl Oban.Worker
+  @spec perform(map(), Oban.Job.t()) :: :ok | {:error, atom} | {:ok, Glific.Messages.Message.t()}
   def perform(%{"message" => message, "payload" => payload}, _job) do
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
     with {:ok, _} <- ExRated.check_rate(@rate_name, 60_000, @rate_limit) do
@@ -21,6 +29,8 @@ defmodule Glific.Providers.Gupshup.Worker do
     end
   end
 
+  @doc false
+  @spec handle_response({:ok, Tesla.Env.t()}, Glific.Messages.Message.t()) :: {:ok, Glific.Messages.Message.t()} | {:error, String.t()}
   defp handle_response({:ok, response}, message) do
     case response do
       %Tesla.Env{status: 200} -> success_response(response, message)
@@ -28,18 +38,25 @@ defmodule Glific.Providers.Gupshup.Worker do
     end
   end
 
+  @doc false
+  @spec success_response(%Tesla.Env{ :status => 200}, Glific.Messages.Message.t()) :: {:ok, Glific.Messages.Message.t()}
   defp success_response(response, message) do
     Communications.handle_success_response(response, message)
   end
 
+  @doc false
+  @spec error_response(Tesla.Env.t(), Glific.Messages.Message.t()) :: {:error, String.t()}
   defp error_response(response, message) do
     Communications.handle_error_response(response, message)
   end
 
+  @doc """
+    We backoff exponentially but always delay by at least 60 seconds
+    this needs more work and tweaking
+  """
   @impl Oban.Worker
+  @spec backoff(integer()) :: pos_integer()
   def backoff(attempt) do
-    # We backoff exponentially but always delay by at least 60 seconds
-    # this needs more work and tweaking
     trunc(:math.pow(attempt, 4) + 60 + :rand.uniform(30) * attempt)
   end
 end
