@@ -48,7 +48,8 @@ defmodule Glific.Fixtures do
       provider_message_id: Faker.String.base64(10),
       provider_status: :enqueued,
       sender_id: sender.id,
-      receiver_id: receiver.id
+      receiver_id: receiver.id,
+      contact_id: receiver.id
     }
 
     {:ok, message} =

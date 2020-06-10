@@ -17,15 +17,60 @@ defmodule GlificWeb.Schema.Query.TagTest do
   test "tags field returns list of tags" do
     result = query_gql_by(:list)
     assert {:ok, query_data} = result
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) > 0
+
+    [tag | _] = tags
+    assert get_in(tag, ["label"]) == "Child"
+
+    # lets ensure that the language field exists and has a valid id
+    assert get_in(tag, ["language", "id"]) > 0
+  end
+
+  test "tags field returns list of tags in desc order" do
+    result = query_gql_by(:list, variables: %{"order" => "DESC"})
+    assert {:ok, query_data} = result
 
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) > 0
 
     [tag | _] = tags
-    assert get_in(tag, ["label"]) == "Compliments"
+    assert get_in(tag, ["label"]) == "Welcome"
+  end
 
-    # lets ensure that the language field exists and has a valid id
-    assert get_in(tag, ["language", "id"]) > 0
+  test "tags field returns list of tags in various filters" do
+    result = query_gql_by(:list, variables: %{"filter" => %{"label" => "Messages"}})
+    assert {:ok, query_data} = result
+
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) > 0
+
+    [tag | _] = tags
+    assert get_in(tag, ["label"]) == "Messages"
+
+    # get language_id for next test
+    parent_id = String.to_integer(get_in(tag, ["id"]))
+    language_id = String.to_integer(get_in(tag, ["language", "id"]))
+
+    result = query_gql_by(:list, variables: %{"filter" => %{"parent" => "messages"}})
+    assert {:ok, query_data} = result
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) > 0
+
+    result = query_gql_by(:list, variables: %{"filter" => %{"parentId" => parent_id}})
+    assert {:ok, query_data} = result
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) > 0
+
+    result = query_gql_by(:list, variables: %{"filter" => %{"languageId" => language_id}})
+    assert {:ok, query_data} = result
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) > 0
+
+    result = query_gql_by(:list, variables: %{"filter" => %{"language" => "English"}})
+    assert {:ok, query_data} = result
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) > 0
   end
 
   test "tag id returns one tag or nil" do

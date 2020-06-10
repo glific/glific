@@ -13,10 +13,6 @@ defmodule GlificWeb.Schema.LanguageTypes do
     field :label, :string
     field :locale, :string
     field :is_active, :boolean
-
-    field :tags, list_of(:tag) do
-      resolve(&Resolvers.Tags.tags_for_language/3)
-    end
   end
 
   input_object :language_input do

@@ -205,6 +205,12 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # receiver id
       add :receiver_id, references(:contacts, on_delete: :delete_all), null: false
 
+      # contact id - this is either sender_id or receiver_id, but lets us know quickly
+      # in queries who the beneficiary is. We otherwise need to check the :flow field to
+      # use either the sender or receiver
+      # this is a preliminary optimization to make the code cleaner
+      add :contact_id, references(:contacts, on_delete: :delete_all), null: false
+
       # message media ids
       add :media_id, references(:messages_media, on_delete: :delete_all), null: true
 
@@ -213,6 +219,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
     create index(:messages, [:sender_id])
     create index(:messages, [:receiver_id])
+    create index(:messages, [:contact_id])
     create index(:messages, [:media_id])
   end
 

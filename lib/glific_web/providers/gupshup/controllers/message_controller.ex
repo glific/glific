@@ -5,8 +5,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
 
   use GlificWeb, :controller
 
-  alias Glific.Providers.Gupshup.Message, as: GupshupMessage
   alias Glific.Communications.Message, as: Communications
+  alias Glific.Providers.Gupshup.Message, as: GupshupMessage
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()

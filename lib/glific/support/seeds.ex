@@ -40,56 +40,38 @@ defmodule Glific.Seeds do
     message_tags_mt = Repo.insert!(%Tag{label: "Messages", language: en_us})
     message_tags_ct = Repo.insert!(%Tag{label: "Contacts", language: en_us})
 
-    # Intent of message
-    Repo.insert!(%Tag{label: "Compliments", language: en_us, parent_id: message_tags_mt.id},
-      is_reserved: 1
-    )
+    tags = [
+      # Intent of message
+      %{label: "Compliments", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Good Bye", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Greeting", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Thank You", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Welcome", language_id: en_us.id, parent_id: message_tags_mt.id},
 
-    Repo.insert!(%Tag{label: "Good Bye", language: en_us, parent_id: message_tags_mt.id},
-      is_reserved: 1
-    )
+      # Status of Message
+      %{label: "Critical", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Important", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Read", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
 
-    Repo.insert!(%Tag{label: "Greeting", language: en_us, parent_id: message_tags_mt.id},
-      is_reserved: 1
-    )
+      # Type of Contact
+      %{label: "Child", language_id: en_us.id, parent_id: message_tags_ct.id},
+      %{label: "Parent", language_id: en_us.id, parent_id: message_tags_ct.id},
+      %{label: "Participant", language_id: en_us.id, parent_id: message_tags_ct.id},
+      %{label: "User", language_id: en_us.id, parent_id: message_tags_ct.id}
+    ]
 
-    Repo.insert!(%Tag{label: "Thank You", language: en_us, parent_id: message_tags_mt.id},
-      is_reserved: 1
-    )
+    inserted_time = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
 
-    Repo.insert!(%Tag{label: "Welcome", language: en_us, parent_id: message_tags_mt.id},
-      is_reserved: 1
-    )
+    tag_entries =
+      for tag_entry <- tags do
+        Map.put(tag_entry, :is_reserved, true)
+        |> Map.put(:inserted_at, inserted_time)
+        |> Map.put(:updated_at, inserted_time)
+      end
 
-    # Status of Message
-    Repo.insert!(%Tag{label: "Critical", language: en_us, parent_id: message_tags_mt.id},
-      is_reserved: 1
-    )
-
-    Repo.insert!(%Tag{label: "Important", language: en_us, parent_id: message_tags_mt.id},
-      is_reserved: 1
-    )
-
-    Repo.insert!(%Tag{label: "Read", language: en_us, parent_id: message_tags_mt.id},
-      is_reserved: 1
-    )
-
-    Repo.insert!(%Tag{label: "Spam", language: en_us, parent_id: message_tags_mt.id},
-      is_reserved: 1
-    )
-
-    # Type of Contact
-    Repo.insert!(%Tag{label: "Parrent", language: en_us, parent_id: message_tags_ct.id},
-      is_reserved: 1
-    )
-
-    Repo.insert!(%Tag{label: "Participant", language: en_us, parent_id: message_tags_ct.id},
-      is_reserved: 1
-    )
-
-    Repo.insert!(%Tag{label: "User", language: en_us, parent_id: message_tags_ct.id},
-      is_reserved: 1
-    )
+    # seed tags
+    Repo.insert_all(Tag, tag_entries)
 
     Repo.insert!(%Tag{label: "This is for testing", language: en_us})
   end
@@ -97,29 +79,40 @@ defmodule Glific.Seeds do
   @doc false
   @spec seed_contacts :: {Contact.t()}
   def seed_contacts do
-    Repo.insert!(%Contact{phone: "917834811114", name: "Default Sender"})
-    default_contact = Repo.insert!(%Contact{phone: "917834811231", name: "Default receiver"})
+    contacts = [
+      %{phone: "917834811114", name: "Default Sender"},
+      %{phone: "917834811231", name: "Default receiver"},
+      %{
+        name: "Adelle Cavin",
+        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+      },
+      %{
+        name: "Margarita Quinteros",
+        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+      },
+      %{
+        name: "Chrissy Cron",
+        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+      },
+      %{
+        name: "Hailey Wardlaw",
+        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+      }
+    ]
 
-    Repo.insert!(%Contact{
-      name: "Adelle Cavin",
-      phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
-    })
+    inserted_time = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
 
-    Repo.insert!(%Contact{
-      name: "Margarita Quinteros",
-      phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
-    })
+    contact_entries =
+      for contact_entry <- contacts do
+        contact_entry
+        |> Map.put(:inserted_at, inserted_time)
+        |> Map.put(:updated_at, inserted_time)
+      end
 
-    Repo.insert!(%Contact{
-      name: "Chrissy Cron",
-      phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
-    })
+    # seed contacts
+    Repo.insert_all(Contact, contact_entries)
 
-    Repo.insert!(%Contact{
-      name: "Hailey Wardlaw",
-      phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
-    })
-
+    {:ok, default_contact} = Repo.fetch_by(Contact, %{phone: "917834811114"})
     {default_contact}
   end
 
@@ -186,7 +179,8 @@ defmodule Glific.Seeds do
       provider_message_id: Faker.String.base64(10),
       provider_status: :enqueued,
       sender_id: sender.id,
-      receiver_id: receiver.id
+      receiver_id: receiver.id,
+      contact_id: receiver.id
     })
 
     Repo.insert!(%Message{
@@ -196,7 +190,8 @@ defmodule Glific.Seeds do
       provider_message_id: Faker.String.base64(10),
       provider_status: :enqueued,
       sender_id: sender.id,
-      receiver_id: receiver.id
+      receiver_id: receiver.id,
+      contact_id: receiver.id
     })
 
     Repo.insert!(%Message{
@@ -206,7 +201,8 @@ defmodule Glific.Seeds do
       provider_message_id: Faker.String.base64(10),
       provider_status: :enqueued,
       sender_id: sender.id,
-      receiver_id: receiver.id
+      receiver_id: receiver.id,
+      contact_id: receiver.id
     })
 
     Repo.insert!(%Message{
@@ -216,7 +212,8 @@ defmodule Glific.Seeds do
       provider_message_id: Faker.String.base64(10),
       provider_status: :enqueued,
       sender_id: sender.id,
-      receiver_id: receiver.id
+      receiver_id: receiver.id,
+      contact_id: receiver.id
     })
   end
 
