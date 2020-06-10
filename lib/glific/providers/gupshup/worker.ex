@@ -18,18 +18,16 @@ defmodule Glific.Providers.Gupshup.Worker do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(map(), Oban.Job.t()) :: :ok | {:error, atom} | {:ok, Glific.Messages.Message.t()}
+  @spec perform(map(), Oban.Job.t()) :: {:ok, :queue_started}
   def perform(%{"message" => message, "payload" => payload}, _job) do
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
     # Refactring because of credo warning
     case ExRated.check_rate(@rate_name, 60_000, @rate_limit) do
-      {:ok, _} ->
-        ApiClient.post("/msg", payload)
-        |> handle_response(message)
-
-      _ ->
-        {:error, :rate_limit_exceeded}
+      {:ok, _} -> ApiClient.post("/msg", payload) |> handle_response(message)
+      _ -> {:error, :rate_limit_exceeded}
     end
+
+    {:ok, :queue_started}
   end
 
   @doc false
