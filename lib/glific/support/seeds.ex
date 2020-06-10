@@ -268,6 +268,20 @@ defmodule Glific.Seeds do
       language_id: en_us.id,
       parent_id: session_template_parent.id
     })
+
+    Repo.insert!(%SessionTemplate{
+      label: "New User",
+      body: "Welcome to Glific",
+      shortcode: "welcome",
+      language_id: en_us.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Goodbye",
+      body: "Goodbye",
+      shortcode: "bye",
+      language_id: en_us.id
+    })
   end
 
   @doc """
