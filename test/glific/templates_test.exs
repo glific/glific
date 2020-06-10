@@ -2,9 +2,9 @@ defmodule Glific.TemplatesTest do
   use Glific.DataCase, async: true
 
   alias Glific.{
+    Settings,
     Templates,
-    Templates.SessionTemplate,
-    Settings
+    Templates.SessionTemplate
   }
 
   describe "session_template" do
@@ -23,7 +23,7 @@ defmodule Glific.TemplatesTest do
     }
     @update_attrs %{
       label: "some updated label",
-      body: "some updated body",
+      body: "some updated body"
     }
 
     @invalid_attrs %{label: nil, body: nil, language_id: nil}
@@ -64,13 +64,19 @@ defmodule Glific.TemplatesTest do
       _session_template = session_template_fixture(@valid_attrs)
       session_template1 = session_template_fixture(@valid_attrs_1)
 
-      session_template_list = Templates.list_session_templates(%{filter: %{label: session_template1.label}})
+      session_template_list =
+        Templates.list_session_templates(%{filter: %{label: session_template1.label}})
+
       assert session_template_list == [session_template1]
 
-      session_template_list = Templates.list_session_templates(%{filter: %{body: session_template1.body}})
+      session_template_list =
+        Templates.list_session_templates(%{filter: %{body: session_template1.body}})
+
       assert session_template_list == [session_template1]
 
-      session_template_list = Templates.list_session_templates(%{filter: %{shortcode: session_template1.shortcode}})
+      session_template_list =
+        Templates.list_session_templates(%{filter: %{shortcode: session_template1.shortcode}})
+
       assert session_template_list == [session_template1]
 
       session_template_list = Templates.list_session_templates()
@@ -85,7 +91,9 @@ defmodule Glific.TemplatesTest do
     test "create_session_template/1 with valid data creates a message" do
       language = language_fixture()
       attrs = Map.merge(@valid_attrs, %{language_id: language.id})
-      assert {:ok, %SessionTemplate{} = session_template} = Templates.create_session_template(attrs)
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
 
       assert session_template.label == "some label"
       assert session_template.body == "some body"
@@ -99,21 +107,30 @@ defmodule Glific.TemplatesTest do
 
     test "update_session_template/2 with valid data updates the session_template" do
       session_template = session_template_fixture()
-      assert {:ok, %SessionTemplate{} = session_template} = Templates.update_session_template(session_template, @update_attrs)
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.update_session_template(session_template, @update_attrs)
+
       assert session_template.label == @update_attrs.label
       assert session_template.body == @update_attrs.body
     end
 
     test "update_session_template/2 with invalid data returns error changeset" do
       session_template = session_template_fixture()
-      assert {:error, %Ecto.Changeset{}} = Templates.update_session_template(session_template, @invalid_attrs)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Templates.update_session_template(session_template, @invalid_attrs)
+
       assert session_template == Templates.get_session_template!(session_template.id)
     end
 
     test "delete_session_template/1 deletes the session_template" do
       session_template = session_template_fixture()
       assert {:ok, %SessionTemplate{}} = Templates.delete_session_template(session_template)
-      assert_raise Ecto.NoResultsError, fn -> Templates.get_session_template!(session_template.id) end
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Templates.get_session_template!(session_template.id)
+      end
     end
 
     test "change_session_template/1 returns a session_template changeset" do
@@ -125,5 +142,4 @@ defmodule Glific.TemplatesTest do
       assert {:error, %Ecto.Changeset{}} = Templates.create_session_template(@valid_attrs)
     end
   end
-
 end

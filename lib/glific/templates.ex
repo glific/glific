@@ -4,7 +4,10 @@ defmodule Glific.Templates do
   """
   import Ecto.Query, warn: false
 
-  alias Glific.{Templates.SessionTemplate, Repo}
+  alias Glific.{
+    Repo,
+    Templates.SessionTemplate
+  }
 
   @doc """
   Returns the list of session_templates.
@@ -71,7 +74,8 @@ defmodule Glific.Templates do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_session_template(map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_session_template(map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_session_template(attrs \\ %{}) do
     %SessionTemplate{}
     |> SessionTemplate.changeset(attrs)
@@ -90,7 +94,8 @@ defmodule Glific.Templates do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_session_template(SessionTemplate.t(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_session_template(SessionTemplate.t(), map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def update_session_template(%SessionTemplate{} = session_template, attrs) do
     session_template
     |> SessionTemplate.changeset(attrs)
@@ -109,7 +114,8 @@ defmodule Glific.Templates do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_session_template(SessionTemplate.t()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  @spec delete_session_template(SessionTemplate.t()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def delete_session_template(%SessionTemplate{} = session_template) do
     Repo.delete(session_template)
   end

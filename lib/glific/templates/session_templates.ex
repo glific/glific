@@ -10,28 +10,28 @@ defmodule Glific.Templates.SessionTemplate do
   }
 
   @type t() :: %__MODULE__{
-    __meta__: Ecto.Schema.Metadata.t(),
-    id: non_neg_integer | nil,
-    label: String.t() | nil,
-    body: String.t() | nil,
-    shortcode: String.t() | nil,
-    is_source: boolean(),
-    is_active: boolean(),
-    is_reserved: boolean(),
-    language_id: non_neg_integer | nil,
-    language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
-    message_media_id: non_neg_integer | nil,
-    message_media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
-    parent_id: non_neg_integer | nil,
-    parent: SessionTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
-    inserted_at: :utc_datetime | nil,
-    updated_at: :utc_datetime | nil
-  }
+          __meta__: Ecto.Schema.Metadata.t(),
+          id: non_neg_integer | nil,
+          label: String.t() | nil,
+          body: String.t() | nil,
+          shortcode: String.t() | nil,
+          is_source: boolean(),
+          is_active: boolean(),
+          is_reserved: boolean(),
+          language_id: non_neg_integer | nil,
+          language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          message_media_id: non_neg_integer | nil,
+          message_media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
+          parent_id: non_neg_integer | nil,
+          parent: SessionTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
+        }
 
   @required_fields [
     :label,
     :body,
-    :language_id,
+    :language_id
   ]
   @optional_fields [
     :shortcode,
