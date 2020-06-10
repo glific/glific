@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createTag($input:SessionTemplateInput!) {
+  createSessionTemplate(input: $input) {
+    ...SessionTemplateFields
+
+    ...ErrorFields
+  }
+}

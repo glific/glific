@@ -1,0 +1,20 @@
+fragment SessionTemplateFields on SessionTemplateResult {
+  sessionTemplate {
+    id
+    label
+    body
+
+    language {
+      id
+      label
+      locale
+    }
+  }
+}
+
+fragment ErrorFields on SessionTemplateResult {
+  errors {
+    key
+    message
+  }
+}

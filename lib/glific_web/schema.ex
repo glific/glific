@@ -22,6 +22,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.MessageTagTypes)
   import_types(__MODULE__.OrganizationTypes)
   import_types(__MODULE__.ProviderTypes)
+  import_types(__MODULE__.SessionTemplateTypes)
   import_types(__MODULE__.TagTypes)
 
   query do
@@ -38,6 +39,8 @@ defmodule GlificWeb.Schema do
     import_fields(:organization_queries)
 
     import_fields(:provider_queries)
+
+    import_fields(:session_template_queries)
 
     import_fields(:tag_queries)
   end
@@ -59,7 +62,11 @@ defmodule GlificWeb.Schema do
 
     import_fields(:provider_mutations)
 
+    import_fields(:session_template_mutations)
+
     import_fields(:tag_mutations)
+
+    import_fields(:session_template_mutations)
   end
 
   subscription do

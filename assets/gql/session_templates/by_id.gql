@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query sessionTemplate($id: ID!) {
+  sessionTemplate(id: $id) {
+    ...SessionTemplateFields
+
+    ...ErrorFields
+  }
+}
