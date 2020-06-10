@@ -67,7 +67,6 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :sender_id, :id
     field :receiver_id, :id
-    field :contact_id, :id
     field :media_id, :id
   end
 
