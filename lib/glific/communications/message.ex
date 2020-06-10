@@ -125,7 +125,7 @@ defmodule Glific.Communications.Message do
   @spec publish_message({:ok, Message.t()}) :: {:ok, Message.t()}
   defp publish_message({:ok, message}) do
     Absinthe.Subscription.publish(
-      TwoWayWeb.Endpoint,
+      GlificWeb.Endpoint,
       message,
       received_message: "*"
     )

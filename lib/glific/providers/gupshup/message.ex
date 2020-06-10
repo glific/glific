@@ -103,6 +103,7 @@ defmodule Glific.Providers.Gupshup.Message do
       provider_message_id: payload["id"],
       caption: message_payload["caption"],
       url: message_payload["url"],
+      source_url: message_payload["url"],
       sender: %{
         phone: payload["sender"]["phone"],
         name: payload["sender"]["name"]

@@ -22,8 +22,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   @doc false
   @spec text(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def text(conn, params) do
-    GupshupMessage.receive_text(params)
-    |> Communications.receive_text()
+    params =  GupshupMessage.receive_text(params)
+    saved = Communications.receive_text(params)
+
+    IO.inspect(params)
+    IO.inspect(saved)
 
     handler(conn, params, "text handler")
   end

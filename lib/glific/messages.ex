@@ -91,6 +91,10 @@ defmodule Glific.Messages do
   """
   @spec create_message(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   def create_message(attrs \\ %{}) do
+    attrs =
+      %{flow: :inbound, provider_status: :delivered}
+      |> Map.merge(attrs)
+
     %Message{}
     |> Message.changeset(attrs)
     |> Repo.insert()
