@@ -33,6 +33,8 @@ defmodule Glific.Conversations do
     # m messages
     {:ok, result} = Repo.query(@sql, [nc, sc])
 
-    Messages.get_conversations(List.flatten(result.rows))
+    r = Messages.get_conversations(List.flatten(result.rows))
+    IO.inspect(r)
+    r
   end
 end

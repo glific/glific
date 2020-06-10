@@ -265,8 +265,18 @@ defmodule Glific.Messages do
       |> Repo.all()
       |> Repo.preload([:contact, :tags])
 
+    IO.inspect(results)
+    _ = """
     # now format the results,
-    Enum.into(Enum.reduce(results, %{}, fn x, acc -> add(x, acc) end), [])
+    r = Enum.reduce(
+      Enum.reduce(results, %{}, fn x, acc -> add(x, acc) end),
+      [],
+      fn {k, v}, acc -> [%{contact_id: k, messages: v} | acc] end
+    )
+    IO.inspect(r)
+    r
+    """
+    results
   end
 
   defp add(element, map) do
