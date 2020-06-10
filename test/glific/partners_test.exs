@@ -1,8 +1,7 @@
 defmodule Glific.PartnersTest do
+  alias Faker.{Name, Phone}
   use Glific.DataCase, async: true
-
   alias Glific.Partners
-
 
   describe "provider" do
     alias Glific.Partners.Provider
@@ -158,24 +157,27 @@ defmodule Glific.PartnersTest do
     @invalid_org_attrs %{provider_id: nil, name: nil, contact_name: nil}
 
     @spec contact_fixture() :: Contacts.Contact.t()
-    def contact_fixture() do
-      {:ok, contact} = Glific.Contacts.create_contact(%{
-        name: Faker.Name.name(),
-        phone: Faker.Phone.EnUs.phone()
-      })
+    def contact_fixture do
+      {:ok, contact} =
+        Glific.Contacts.create_contact(%{
+          name: Name.name(),
+          phone: Phone.EnUs.phone()
+        })
+
       contact
     end
 
     def organization_fixture(attrs \\ %{}) do
       provider = provider_fixture(%{name: Faker.Name.name()})
       contact = contact_fixture()
+
       {:ok, organization} =
         attrs
         |> Enum.into(@valid_org_attrs)
         |> Map.merge(%{provider_id: provider.id, contact_id: contact.id})
         |> Partners.create_organization()
 
-        organization
+      organization
     end
 
     test "list_organizations/0 returns all organizations" do

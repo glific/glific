@@ -98,7 +98,7 @@ defmodule Glific.Seeds do
   @spec seed_contacts :: {Contact.t()}
   def seed_contacts do
     Repo.insert!(%Contact{phone: "917834811114", name: "Default Sender"})
-    default_contact  =  Repo.insert!(%Contact{phone: "917834811231", name: "Default receiver"})
+    default_contact = Repo.insert!(%Contact{phone: "917834811231", name: "Default receiver"})
 
     Repo.insert!(%Contact{
       name: "Adelle Cavin",
@@ -266,7 +266,7 @@ defmodule Glific.Seeds do
 
     seed_tag({en_us, hi_in})
 
-   {default_contact}  = seed_contacts()
+    {default_contact} = seed_contacts()
 
     {default_provider} = seed_providers()
 

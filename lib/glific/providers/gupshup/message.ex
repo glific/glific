@@ -6,8 +6,8 @@ defmodule Glific.Providers.Gupshup.Message do
   @channel "whatsapp"
   @behaviour Glific.Providers.MessageBehaviour
 
-  alias Glific.Providers.Gupshup.Worker
   alias Glific.Messages.Message
+  alias Glific.Providers.Gupshup.Worker
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
@@ -77,7 +77,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec receive_text(payload :: map()) ::  map()
+  @spec receive_text(payload :: map()) :: map()
   def receive_text(params) do
     payload = params["payload"]
     message_payload = payload["payload"]
@@ -94,7 +94,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec receive_media(map()) ::  map()
+  @spec receive_media(map()) :: map()
   def receive_media(params) do
     payload = params["payload"]
     message_payload = payload["payload"]
@@ -111,13 +111,13 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @spec format_sender(map()) ::  map()
+  @spec format_sender(map()) :: map()
   defp format_sender(sender) do
     %{"source" => sender.phone, "src.name" => sender.name}
   end
 
   @doc false
-  @spec send_message(map(), Message.t()) ::  {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec send_message(map(), Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp send_message(payload, message) do
     request_body =
       %{"channel" => @channel}

@@ -3,9 +3,9 @@ defmodule Glific.Communications.Message do
   The Message Communication Context, which encapsulates and manages tags and the related join tables.
   """
 
+  alias Glific.Contacts
   alias Glific.Messages
   alias Glific.Messages.Message
-  alias Glific.Contacts
 
   @doc false
   defmacro __using__(_opts \\ []) do
@@ -16,7 +16,8 @@ defmodule Glific.Communications.Message do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(%Message{:type => :text}) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec send_message(%Message{:type => :text}) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_message(%Message{type: :text} = message) do
     message
     |> send_text()
@@ -52,7 +53,8 @@ defmodule Glific.Communications.Message do
         provider_module()
         |> apply(:send_video, [message])
 
-      _ -> provider_module()
+      _ ->
+        provider_module()
         |> apply(:send_document, [message])
     end
   end
@@ -137,14 +139,14 @@ defmodule Glific.Communications.Message do
 
   @doc false
   @spec provider_module() :: atom()
-  def provider_module() do
+  def provider_module do
     provider = Glific.Communications.effective_provider()
     String.to_existing_atom(to_string(provider) <> ".Message")
   end
 
   @doc false
   @spec get_recipient_id_for_inbound() :: integer()
-  def get_recipient_id_for_inbound() do
+  def get_recipient_id_for_inbound do
     1
   end
 end

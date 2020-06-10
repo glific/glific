@@ -2,6 +2,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @moduledoc """
   Http API client to intract with Gupshup
   """
+  alias Plug.Conn.Query
   use Tesla
   plug Tesla.Middleware.BaseUrl, Application.fetch_env!(:glific, :provider_url)
   plug Tesla.Middleware.Logger, log_level: :debug
@@ -11,5 +12,5 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   ]
 
   plug Tesla.Middleware.FormUrlencoded,
-    encode: &Plug.Conn.Query.encode/1
+    encode: &Query.encode/1
 end
