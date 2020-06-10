@@ -5,20 +5,24 @@ defmodule Glific.Conversations.Conversation do
   """
   alias __MODULE__
 
+  use Ecto.Schema
+  import Ecto.Changeset
+
   alias Glific.{Contacts.Contact, Messages.Message}
 
+  @required_fields [:contact, :messages]
+
   @type t() :: %__MODULE__{
-          contact: Contact.t(),
-          messages: [Message.t()]
-        }
+    contact: Contact.t(),
+    messages: [Message.t()]
+  }
 
   # structure to hold a contact and the conversations with the contact
   # the messages should be in descending order, i.e. most recent ones first
-  @enforce_keys [:contact]
-  defstruct(
-    contact: nil,
-    messages: nil
-  )
+  embedded_schema do
+    embeds_one(:contact, Contact)
+    embeds_many(:messages, Message)
+  end
 
   @doc """
   Create a new conversation. A contact is required for the conversation. Messages can
@@ -27,6 +31,15 @@ defmodule Glific.Conversations.Conversation do
   @spec new(Contact.t(), [Message.t()]) :: Conversation.t()
   def new(contact, messages \\ []) do
     %Conversation{contact: contact, messages: messages}
+    # |> Conversation.changeset(contact, messages)
+    # |> apply_changes
+  end
+
+  @doc false
+  def changeset(conversation, contact, messages \\ []) do
+    conversation
+    |> cast(%{contact: contact, messages: messages}, [])
+    |> validate_required(@required_fields)
   end
 
   @doc """

@@ -30,8 +30,6 @@ defmodule Glific.Conversations do
   @spec list_conversations(map()) :: any
   def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = _args) do
     {:ok, result} = Repo.query(@sql, [nc, sc])
-
-    r = Messages.list_conversations(List.flatten(result.rows))
-    r
+    Messages.list_conversations(List.flatten(result.rows))
   end
 end
