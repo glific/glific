@@ -1,4 +1,8 @@
 defmodule GlificWeb.Providers.Gupshup.Router do
+  @moduledoc """
+  A Gupshup router which will redirect all the gupsup incoming request to there controller actions.
+  """
+
   use GlificWeb, :router
 
   alias GlificWeb.Providers.Gupshup.Controllers
