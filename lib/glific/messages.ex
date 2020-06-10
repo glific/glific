@@ -94,10 +94,20 @@ defmodule Glific.Messages do
     attrs =
       %{flow: :inbound, provider_status: :delivered}
       |> Map.merge(attrs)
+      |> put_contact_id()
 
     %Message{}
     |> Message.changeset(attrs)
     |> Repo.insert()
+  end
+
+  # Still need to improve this fucnation
+  defp put_contact_id(attrs) do
+    case attrs.flow do
+      :inbound -> Map.put(attrs, :contact_id, attrs[:sender_id])
+      :outbound -> Map.put(attrs, :contact_id, attrs[:receiver_id])
+      _ -> attrs
+    end
   end
 
   @doc """
