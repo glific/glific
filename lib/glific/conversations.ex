@@ -11,9 +11,7 @@ defmodule Glific.Conversations do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Contacts.Contact,
-    Messages.Message,
-    Tags.Tag,
+    Messages,
     Repo
   }
 
@@ -22,21 +20,21 @@ defmodule Glific.Conversations do
   """
   @spec list_conversations(integer, integer) :: any
   def list_conversations(number_conversations, size_conversations) do
-
     # Get the last unique m contact ids not including the NGO user and for each of them fetch the last
     # m messages
     sql = """
     WITH cte AS
     (SELECT *, ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY updated_at DESC) AS rn FROM messages)
-    SELECT id FROM cte WHERE rn <= n AND contact_id IN (
+    SELECT id FROM cte WHERE rn <= $2 AND contact_id IN (
       SELECT contact_id FROM cte WHERE rn = 1
       ORDER BY updated_at DESC
       LIMIT $1
     )
     ORDER BY sender_id, updated_at DESC
-    LIMIT m * $1 * $2
+    LIMIT $1 * $2
     """
-    result = Repo.query(sql, [number_conversations, size_conversations])
-    IO.inspect(result)
+    {:ok, result} = Repo.query(sql, [number_conversations, size_conversations])
+
+    Messages.get_conversations(List.flatten(result.rows))
   end
 end

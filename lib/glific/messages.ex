@@ -250,4 +250,29 @@ defmodule Glific.Messages do
   def change_message_media(%MessageMedia{} = message_media, attrs \\ %{}) do
     MessageMedia.changeset(message_media, attrs)
   end
+
+  @doc """
+  Given a list of message ids builds a conversation list with most recent conversations
+  at the beginning of the list
+  """
+  @spec get_conversations([integer]) :: [any]
+  def get_conversations(ids) do
+    results =
+      Message
+      |> where([m], m.id in ^ids)
+      |> order_by([m], asc: m.updated_at)
+      |> Repo.all
+      |> Repo.preload([:contact, :tags])
+
+    # now format the results,
+    Enum.into(Enum.reduce(results, %{}, fn x, acc -> add(x, acc) end), [])
+  end
+
+  defp add(element, map) do
+    Map.update(map,
+      element.contact_id,
+      [element],
+      &[element | &1])
+  end
+
 end
