@@ -65,8 +65,6 @@ defmodule GlificWeb.Schema do
     import_fields(:session_template_mutations)
 
     import_fields(:tag_mutations)
-
-    import_fields(:session_template_mutations)
   end
 
   subscription do
