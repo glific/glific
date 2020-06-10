@@ -30,6 +30,10 @@ config :glific, GlificWeb.Endpoint,
     ]
   ]
 
+config :absinthe, Absinthe.Logger,
+  pipeline: true,
+  level: :debug
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

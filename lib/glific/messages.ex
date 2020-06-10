@@ -3,9 +3,12 @@ defmodule Glific.Messages do
   The Messages context.
   """
   import Ecto.Query, warn: false
-  alias Glific.Repo
 
-  alias Glific.Messages.Message
+  alias Glific.{
+    Conversations.Conversation,
+    Messages.Message,
+    Repo
+  }
 
   @doc """
   Returns the list of messages.
@@ -248,5 +251,35 @@ defmodule Glific.Messages do
   @spec change_message_media(MessageMedia.t(), map()) :: Ecto.Changeset.t()
   def change_message_media(%MessageMedia{} = message_media, attrs \\ %{}) do
     MessageMedia.changeset(message_media, attrs)
+  end
+
+  @doc """
+  Given a list of message ids builds a conversation list with most recent conversations
+  at the beginning of the list
+  """
+  @spec list_conversations([integer]) :: [any]
+  def list_conversations(ids) do
+    results =
+      Message
+      |> where([m], m.id in ^ids)
+      |> order_by([m], asc: m.updated_at)
+      |> Repo.all()
+      |> Repo.preload([:contact, :tags])
+
+    # now format the results,
+    Enum.reduce(
+      Enum.reduce(results, %{}, fn x, acc -> add(x, acc) end),
+      [],
+      fn {contact, messages}, acc -> [Conversation.new(contact, messages) | acc] end
+    )
+  end
+
+  defp add(element, map) do
+    Map.update(
+      map,
+      element.contact,
+      [element],
+      &[element | &1]
+    )
   end
 end
