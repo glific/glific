@@ -92,8 +92,7 @@ defmodule Glific.Communications.Message do
   @spec receive_text(map()) :: {:ok, Message.t()}
   def receive_text(message_params) do
     contact = Contacts.upsert(message_params.sender)
-    IO.inspect("hhi")
-    IO.inspect(message_params)
+
     message_params
     |> Map.merge(%{
       type: :text,
