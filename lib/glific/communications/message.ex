@@ -92,12 +92,13 @@ defmodule Glific.Communications.Message do
   @spec receive_text(map()) :: {:ok, Message.t()}
   def receive_text(message_params) do
     contact = Contacts.upsert(message_params.sender)
-
+    IO.inspect("hhi")
+    IO.inspect(message_params)
     message_params
     |> Map.merge(%{
       type: :text,
       sender_id: contact.id,
-      receiver_id: get_recipient_id_for_inbound()
+      receiver_id: organization_contact_id()
     })
     |> Messages.create_message()
     |> publish_message()
@@ -115,7 +116,7 @@ defmodule Glific.Communications.Message do
     |> Map.merge(%{
       sender_id: contact.id,
       media_id: message_media.id,
-      receiver_id: get_recipient_id_for_inbound()
+      receiver_id: organization_contact_id()
     })
     |> Messages.create_message()
     |> publish_message()
@@ -145,8 +146,8 @@ defmodule Glific.Communications.Message do
   end
 
   @doc false
-  @spec get_recipient_id_for_inbound() :: integer()
-  def get_recipient_id_for_inbound do
+  @spec organization_contact_id() :: integer()
+  def organization_contact_id do
     1
   end
 end

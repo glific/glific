@@ -83,7 +83,7 @@ defmodule Glific.Providers.Gupshup.Message do
     message_payload = payload["payload"]
 
     %{
-      wa_message_id: payload["id"],
+      provider_message_id: payload["id"],
       body: message_payload["text"],
       sender: %{
         phone: payload["sender"]["phone"],
