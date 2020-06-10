@@ -31,7 +31,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       resolve(dataloader(Repo))
     end
 
-    field :parent, :tag do
+    field :parent, :session_template do
       resolve(dataloader(Repo))
     end
   end
@@ -43,6 +43,27 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     @desc "Match the body of template"
     field :body, :string
+
+    @desc "Match the shortcode of template"
+    field :shortcode, :string
+
+    @desc "Match the parent"
+    field :parent, :string
+
+    @desc "Match the parent"
+    field :parent_id, :integer
+
+    @desc "Match a language"
+    field :language, :string
+
+    @desc "Match a language id"
+    field :language_id, :integer
+
+    @desc "Match the active flag"
+    field :is_active, :boolean
+
+    @desc "Match the reserved flag"
+    field :is_reserved, :boolean
   end
 
   input_object :session_template_input do

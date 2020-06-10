@@ -71,5 +71,6 @@ defmodule Glific.Templates.SessionTemplate do
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
+    |> unique_constraint([:label, :language_id])
   end
 end

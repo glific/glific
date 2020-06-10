@@ -255,16 +255,18 @@ defmodule Glific.Seeds do
   @doc false
   @spec seed_session_templates({Language.t(), Language.t()}) :: nil
   def seed_session_templates({en_us, _hi_in}) do
-    Repo.insert!(%SessionTemplate{
-      label: "Default Template Label",
-      body: "Default Session Template",
-      language_id: en_us.id
-    })
+    session_template_parent =
+      Repo.insert!(%SessionTemplate{
+        label: "Default Template Label",
+        body: "Default Template",
+        language_id: en_us.id
+      })
 
     Repo.insert!(%SessionTemplate{
-      label: "Another Default Template Label",
-      body: "Another Default Session Template",
-      language_id: en_us.id
+      label: "Another Template Label",
+      body: "Another Template",
+      language_id: en_us.id,
+      parent_id: session_template_parent.id
     })
   end
 
