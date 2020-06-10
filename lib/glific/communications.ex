@@ -1,5 +1,13 @@
 defmodule Glific.Communications do
-  @spec effective_provider :: any
+  @moduledoc """
+  Glific interface for all provider communication
+  """
+
+  @doc """
+    Get the current provider based on the organization | Config | Default
+  """
+
+  @spec effective_provider :: atom()
   def effective_provider() do
     with nil <- provider_per_organisation(),
          nil <- provider_from_config(),
@@ -18,6 +26,6 @@ defmodule Glific.Communications do
   end
 
   defp provider_default() do
-    TwoWay.Communications.BSP.Twilio
+    Glific.Providers.Gupshup
   end
 end
