@@ -7,6 +7,7 @@ defmodule Glific.Partners.Organization do
 
   alias __MODULE__
 
+  alias Glific.Contacts.Contact
   alias Glific.Partners.Provider
 
   # define all the required fields for organization
@@ -29,6 +30,8 @@ defmodule Glific.Partners.Organization do
           name: String.t() | nil,
           display_name: String.t() | nil,
           contact_name: String.t() | nil,
+          contact_id: non_neg_integer | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           email: String.t() | nil,
           provider_id: non_neg_integer | nil,
           provider: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -46,6 +49,7 @@ defmodule Glific.Partners.Organization do
     field :provider_number, :string
     field :provider_key, :string
     belongs_to :provider, Provider
+    belongs_to :contact, Contact
 
     timestamps()
   end
@@ -58,8 +62,10 @@ defmodule Glific.Partners.Organization do
     organization
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> foreign_key_constraint(:contact_id)
     |> unique_constraint(:name)
     |> unique_constraint(:email)
     |> unique_constraint(:provider_number)
+    |> unique_constraint([:contact_id])
   end
 end

@@ -266,6 +266,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :name, :string, null: false
       add :display_name, :string, null: false
       add :contact_name, :string, null: false
+      add :contact_id, references(:contacts, on_delete: :nothing)
       add :email, :string, null: false
       add :provider, :string
       add :provider_id, references(:providers, on_delete: :nothing), null: false
@@ -278,5 +279,6 @@ defmodule Glific.Repo.Migrations.GlificTables do
     create unique_index(:organizations, :name)
     create unique_index(:organizations, :provider_number)
     create unique_index(:organizations, :email)
+    create unique_index(:organizations, :contact_id)
   end
 end
