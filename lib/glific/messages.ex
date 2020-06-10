@@ -3,6 +3,7 @@ defmodule Glific.Messages do
   The Messages context.
   """
   import Ecto.Query, warn: false
+
   alias Glific.{
     Messages.Message,
     Repo
@@ -261,7 +262,7 @@ defmodule Glific.Messages do
       Message
       |> where([m], m.id in ^ids)
       |> order_by([m], asc: m.updated_at)
-      |> Repo.all
+      |> Repo.all()
       |> Repo.preload([:contact, :tags])
 
     # now format the results,
@@ -269,10 +270,11 @@ defmodule Glific.Messages do
   end
 
   defp add(element, map) do
-    Map.update(map,
+    Map.update(
+      map,
       element.contact_id,
       [element],
-      &[element | &1])
+      &[element | &1]
+    )
   end
-
 end
