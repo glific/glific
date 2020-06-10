@@ -10,10 +10,8 @@ defmodule GlificWeb.Resolvers.Conversations do
   Get the list of conversations filtered by args
   """
   @spec conversations(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-  {:ok, any} | {:error, any}
+          {:ok, any} | {:error, any}
   def conversations(_, args, _) do
-    r = {:ok, %{conversations: [%{messages: Conversations.list_conversations(args)}]}}
-    IO.inspect(r)
-    r
+    {:ok, Conversations.get_conversations(args)}
   end
 end

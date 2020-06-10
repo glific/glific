@@ -9,6 +9,7 @@ defmodule GlificWeb.Schema.ConversationTypes do
   alias GlificWeb.Resolvers
 
   object :conversation do
+    field :contact, :contact
     field :messages, list_of(:message)
   end
 

@@ -16,6 +16,7 @@ defmodule GlificWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    # plug :debug_response
   end
 
   scope "/", GlificWeb do
@@ -35,4 +36,11 @@ defmodule GlificWeb.Router do
       interface: :simple,
       socket: GlificWeb.UserSocket
   end
+
+  # defp debug_response(conn, _) do
+  #  Plug.Conn.register_before_send(conn, fn conn ->
+  #    conn.resp_body |> IO.puts()
+  #    conn
+  #  end)
+  # end
 end

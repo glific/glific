@@ -21,9 +21,8 @@ defmodule GlificWeb.Resolvers.Tags do
   Get the list of tags filtered by args
   """
   @spec tags(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-  {:ok, any} | {:error, any}
+          {:ok, any} | {:error, any}
   def tags(_, args, _) do
-    IO.inspect(Tags.list_tags(args))
     {:ok, Tags.list_tags(args)}
   end
 

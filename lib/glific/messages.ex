@@ -5,6 +5,7 @@ defmodule Glific.Messages do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Conversations.Conversation,
     Messages.Message,
     Repo
   }
@@ -265,24 +266,18 @@ defmodule Glific.Messages do
       |> Repo.all()
       |> Repo.preload([:contact, :tags])
 
-    IO.inspect(results)
-    _ = """
     # now format the results,
-    r = Enum.reduce(
+    Enum.reduce(
       Enum.reduce(results, %{}, fn x, acc -> add(x, acc) end),
       [],
-      fn {k, v}, acc -> [%{contact_id: k, messages: v} | acc] end
+      fn {contact, messages}, acc -> [Conversation.new(contact, messages) | acc] end
     )
-    IO.inspect(r)
-    r
-    """
-    results
   end
 
   defp add(element, map) do
     Map.update(
       map,
-      element.contact_id,
+      element.contact,
       [element],
       &[element | &1]
     )
