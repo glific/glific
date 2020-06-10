@@ -1,17 +1,26 @@
 defmodule Glific.Providers.Gupshup.Message do
+  @moduledoc """
+  Messgae API layer between application and Gupshup
+  """
+
   @channel "whatsapp"
   @behaviour Glific.Providers.MessageBehaviour
 
   alias Glific.Providers.Gupshup.Worker
   alias Glific.Messages.Message
 
+  @doc false
   @impl Glific.Providers.MessageBehaviour
+  @spec send_text(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_text(message) do
     %{type: :text, text: message.body}
     |> send_message(message)
   end
 
+  @doc false
+
   @impl Glific.Providers.MessageBehaviour
+  @spec send_image(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_image(message) do
     message_media = message.media
 
@@ -24,7 +33,10 @@ defmodule Glific.Providers.Gupshup.Message do
     |> send_message(message)
   end
 
+  @doc false
+
   @impl Glific.Providers.MessageBehaviour
+  @spec send_audio(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_audio(message) do
     message_media = message.media
 
@@ -35,7 +47,9 @@ defmodule Glific.Providers.Gupshup.Message do
     |> send_message(message)
   end
 
+  @doc false
   @impl Glific.Providers.MessageBehaviour
+  @spec send_video(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_video(message) do
     message_media = message.media
 
@@ -47,7 +61,9 @@ defmodule Glific.Providers.Gupshup.Message do
     |> send_message(message)
   end
 
+  @doc false
   @impl Glific.Providers.MessageBehaviour
+  @spec send_document(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_document(message) do
     message_media = message.media
 
@@ -59,7 +75,9 @@ defmodule Glific.Providers.Gupshup.Message do
     |> send_message(message)
   end
 
+  @doc false
   @impl Glific.Providers.MessageBehaviour
+  @spec receive_text(payload :: map()) ::  map()
   def receive_text(params) do
     payload = params["payload"]
     message_payload = payload["payload"]
@@ -74,7 +92,9 @@ defmodule Glific.Providers.Gupshup.Message do
     }
   end
 
+  @doc false
   @impl Glific.Providers.MessageBehaviour
+  @spec receive_media(map()) ::  map()
   def receive_media(params) do
     payload = params["payload"]
     message_payload = payload["payload"]
@@ -90,10 +110,14 @@ defmodule Glific.Providers.Gupshup.Message do
     }
   end
 
+  @doc false
+  @spec format_sender(map()) ::  map()
   defp format_sender(sender) do
     %{"source" => sender.phone, "src.name" => sender.name}
   end
 
+  @doc false
+  @spec send_message(map(), Message.t()) ::  {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp send_message(payload, message) do
     request_body =
       %{"channel" => @channel}

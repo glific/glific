@@ -1,4 +1,7 @@
 defmodule Glific.Providers.Gupshup.ApiClient do
+  @moduledoc """
+  Http API client to intract with Gupshup
+  """
   use Tesla
   plug Tesla.Middleware.BaseUrl, Application.fetch_env!(:glific, :provider_url)
   plug Tesla.Middleware.Logger, log_level: :debug

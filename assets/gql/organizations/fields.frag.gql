@@ -4,6 +4,9 @@ fragment OrganizationFields on OrganizationResult {
     name
     display_name
     contact_name
+    contact {
+      name
+    }
     email
     provider_key
     provider_number 

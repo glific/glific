@@ -42,7 +42,7 @@ defmodule Glific.Application do
     opts = Application.get_env(:glific, Oban)
 
     # Prevent running queues or scheduling jobs from an iex console.
-    if Code.ensure_loaded?(IEx) and IEx.started?() do
+    if Code.ensure_loaded?(IEx) do
       opts
       |> Keyword.put(:crontab, false)
       |> Keyword.put(:queues, false)

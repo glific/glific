@@ -64,6 +64,7 @@ defmodule Glific.Messages.Message do
   @doc """
   Convert message structure to map
   """
+  @spec to_minimal_map(Message.t()) :: map()
   def to_minimal_map(message) do
     Map.take(message, [:id | @required_fields])
   end

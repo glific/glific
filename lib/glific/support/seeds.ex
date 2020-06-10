@@ -95,10 +95,10 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_contacts :: nil
+  @spec seed_contacts :: {Contact.t()}
   def seed_contacts do
     Repo.insert!(%Contact{phone: "917834811114", name: "Default Sender"})
-    Repo.insert!(%Contact{phone: "917834811231", name: "Default receiver"})
+    default_contact  =  Repo.insert!(%Contact{phone: "917834811231", name: "Default receiver"})
 
     Repo.insert!(%Contact{
       name: "Adelle Cavin",
@@ -119,6 +119,8 @@ defmodule Glific.Seeds do
       name: "Hailey Wardlaw",
       phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     })
+
+    {default_contact}
   end
 
   @doc false
@@ -147,12 +149,13 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_organizations({Provider.t()}) :: nil
-  def seed_organizations({default_provider}) do
+  @spec seed_organizations({Provider.t()}, {Contact.t()}) :: nil
+  def seed_organizations({default_provider}, {default_contact}) do
     Repo.insert!(%Organization{
       name: "Default Organization",
       display_name: "Default Organization",
       contact_name: "Test",
+      contact_id: default_contact.id,
       email: "test@glific.org",
       provider_id: default_provider.id,
       provider_key: "random",
@@ -263,11 +266,11 @@ defmodule Glific.Seeds do
 
     seed_tag({en_us, hi_in})
 
-    seed_contacts()
+   {default_contact}  = seed_contacts()
 
     {default_provider} = seed_providers()
 
-    seed_organizations({default_provider})
+    seed_organizations({default_provider}, {default_contact})
 
     seed_messages()
 

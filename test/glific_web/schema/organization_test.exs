@@ -4,7 +4,8 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
 
   setup do
     provider = Glific.Seeds.seed_providers()
-    Glific.Seeds.seed_organizations(provider)
+    contact = Glific.Seeds.seed_contacts()
+    Glific.Seeds.seed_organizations(provider, contact)
     :ok
   end
 
@@ -192,6 +193,7 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
 
     result = query_gql_by(:delete, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
+
     assert get_in(query_data, [:data, "deleteOrganization", "errors"]) == nil
 
     result = query_gql_by(:delete, variables: %{"id" => 123_456_789})

@@ -1,28 +1,43 @@
 defmodule Glific.Communications.Message do
+  @moduledoc """
+  The Message Communication Context, which encapsulates and manages tags and the related join tables.
+  """
+
   alias Glific.Messages
   alias Glific.Messages.Message
   alias Glific.Contacts
 
+  @doc false
   defmacro __using__(_opts \\ []) do
     quote do
     end
   end
 
+  @doc """
+  Send message to receiver using define provider.
+  """
+  @spec send_message(%Message{:type => :text}) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_message(%Message{type: :text} = message) do
     message
     |> send_text()
   end
 
+  @doc false
+  @spec send_message(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_message(message) do
     message
     |> send_media()
   end
 
+  @doc false
+  @spec send_text(%Message{:type => :text}) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp send_text(message) do
     provider_module()
     |> apply(:send_text, [message])
   end
 
+  @doc false
+  @spec send_media(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp send_media(message) do
     case message.type do
       :image ->
@@ -37,12 +52,15 @@ defmodule Glific.Communications.Message do
         provider_module()
         |> apply(:send_video, [message])
 
-      :document ->
-        provider_module()
+      _ -> provider_module()
         |> apply(:send_document, [message])
     end
   end
 
+  @doc """
+  Callback when message send succsully
+  """
+  @spec handle_success_response(Tesla.Env.t(), Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def handle_success_response(response, message) do
     body = response.body |> Jason.decode!()
 
@@ -57,10 +75,19 @@ defmodule Glific.Communications.Message do
     {:ok, message}
   end
 
+  @doc """
+  Callback in case of any error while sending the message
+  """
+  @spec handle_error_response(Tesla.Env.t(), any) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def handle_error_response(response, _message) do
     {:error, response.body}
   end
 
+  @doc """
+  Callback when we receive a text message
+  """
+
+  @spec receive_text(map()) :: {:ok, Message.t()}
   def receive_text(message_params) do
     contact = Contacts.upsert(message_params.sender)
 
@@ -74,6 +101,10 @@ defmodule Glific.Communications.Message do
     |> publish_message()
   end
 
+  @doc """
+  Callback when we receive a media (image|video|audio) message
+  """
+  @spec receive_media(map()) :: {:ok, Message.t()}
   def receive_media(message_params) do
     contact = Contacts.upsert(message_params.sender)
     {:ok, message_media} = Messages.create_message_media(message_params)
@@ -88,6 +119,8 @@ defmodule Glific.Communications.Message do
     |> publish_message()
   end
 
+  @doc false
+  @spec publish_message({:ok, Message.t()}) :: {:ok, Message.t()}
   defp publish_message({:ok, message}) do
     Absinthe.Subscription.publish(
       TwoWayWeb.Endpoint,
@@ -98,13 +131,19 @@ defmodule Glific.Communications.Message do
     {:ok, message}
   end
 
+  @doc false
+  @spec publish_message(String.t()) :: String.t()
   defp publish_message(err), do: err
 
+  @doc false
+  @spec provider_module() :: atom()
   def provider_module() do
     provider = Glific.Communications.effective_provider()
     String.to_existing_atom(to_string(provider) <> ".Message")
   end
 
+  @doc false
+  @spec get_recipient_id_for_inbound() :: integer()
   def get_recipient_id_for_inbound() do
     1
   end
