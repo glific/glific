@@ -273,6 +273,7 @@ defmodule Glific.Seeds do
       label: "New User",
       body: "Welcome to Glific",
       shortcode: "welcome",
+      is_reserved: true,
       language_id: en_us.id
     })
 
@@ -280,6 +281,7 @@ defmodule Glific.Seeds do
       label: "Goodbye",
       body: "Goodbye",
       shortcode: "bye",
+      is_reserved: true,
       language_id: en_us.id
     })
   end
