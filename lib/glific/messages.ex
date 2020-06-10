@@ -2,7 +2,6 @@ defmodule Glific.Messages do
   @moduledoc """
   The Messages context.
   """
-
   import Ecto.Query, warn: false
   alias Glific.{
     Messages.Message,
@@ -47,11 +46,15 @@ defmodule Glific.Messages do
           join: c in assoc(q, :receiver),
           where: ilike(c.name, ^"%#{receiver}%")
 
+      {:contact, contact}, query ->
+        from q in query,
+          join: c in assoc(q, :contact),
+          where: ilike(c.name, ^"%#{contact}%")
+
       {:either, phone}, query ->
         from q in query,
-          join: s in assoc(q, :sender),
-          join: r in assoc(q, :receiver),
-          where: ilike(s.phone, ^"%#{phone}%") or ilike(r.phone, ^"%#{phone}%")
+          join: c in assoc(q, :contact),
+          where: ilike(c.phone, ^"%#{phone}%")
 
       {:provider_status, provider_status}, query ->
         from q in query, where: q.provider_status == ^provider_status
