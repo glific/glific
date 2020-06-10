@@ -49,7 +49,8 @@ defmodule Glific.SeedsScale do
     # random seconds in last month
     sub_time = Enum.random((-31 * 24 * 60 * 60)..0)
 
-    receiver_id = Enum.random(contact_ids);
+    receiver_id = Enum.random(contact_ids)
+
     %{
       type: "text",
       flow: "inbound",
