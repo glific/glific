@@ -33,7 +33,7 @@ defmodule GlificWeb.Schema.ConversationTypes do
     field :conversations, list_of(:conversation) do
       arg(:number_of_conversations, non_null(:integer))
       arg(:size_of_conversations, non_null(:integer))
-      arg(:filter, :tag_filter)
+      arg(:filter, :conversation_filter)
       arg(:order, type: :sort_order, default_value: :asc)
       resolve(&Resolvers.Conversations.conversations/3)
     end

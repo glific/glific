@@ -12,6 +12,6 @@ defmodule GlificWeb.Resolvers.Conversations do
   @spec conversations(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def conversations(_, args, _) do
-    {:ok, Conversations.get_conversations(args)}
+    {:ok, Conversations.list_conversations(args)}
   end
 end

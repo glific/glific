@@ -27,14 +27,11 @@ defmodule Glific.Conversations do
   @doc """
   Returns the last M conversations, each conversation not more than N messages
   """
-  @spec get_conversations(map()) :: any
-  def get_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = _args) do
-    # Get the last unique m contact ids not including the NGO user and for each of them fetch the last
-    # m messages
+  @spec list_conversations(map()) :: any
+  def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = _args) do
     {:ok, result} = Repo.query(@sql, [nc, sc])
 
-    r = Messages.get_conversations(List.flatten(result.rows))
-    # IO.inspect(r)
+    r = Messages.list_conversations(List.flatten(result.rows))
     r
   end
 end

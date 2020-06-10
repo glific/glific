@@ -257,8 +257,8 @@ defmodule Glific.Messages do
   Given a list of message ids builds a conversation list with most recent conversations
   at the beginning of the list
   """
-  @spec get_conversations([integer]) :: [any]
-  def get_conversations(ids) do
+  @spec list_conversations([integer]) :: [any]
+  def list_conversations(ids) do
     results =
       Message
       |> where([m], m.id in ^ids)
