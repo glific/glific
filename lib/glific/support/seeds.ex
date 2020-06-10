@@ -10,7 +10,8 @@ defmodule Glific.Seeds do
     Partners.Provider,
     Repo,
     Settings.Language,
-    Tags.Tag
+    Tags.Tag,
+    Templates.SessionTemplate
   }
 
   @doc """
@@ -251,6 +252,16 @@ defmodule Glific.Seeds do
     })
   end
 
+  @doc false
+  @spec seed_session_templates({Language.t(), Language.t()}) :: nil
+  def seed_session_templates({en_us, _hi_in}) do
+    Repo.insert!(%SessionTemplate{
+      label: "Default Template Label",
+      body: "Default Session Template",
+      language_id: en_us.id
+    })
+  end
+
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
   split this function up into multiple different ones for test, dev and production
@@ -266,6 +277,8 @@ defmodule Glific.Seeds do
     {default_provider} = seed_providers()
 
     seed_organizations({default_provider})
+
+    seed_session_templates({en_us, hi_in})
 
     seed_messages()
 

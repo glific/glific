@@ -137,6 +137,7 @@ defmodule Glific.TemplatesTest do
       session_template = session_template_fixture()
       language = language_fixture(@valid_language_attrs_1)
       attrs = Map.merge(@update_attrs, %{language_id: language.id})
+
       assert {:ok, %SessionTemplate{} = session_template} =
                Templates.update_session_template(session_template, attrs)
 
