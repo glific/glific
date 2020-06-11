@@ -3,9 +3,12 @@ defmodule Glific.Messages do
   The Messages context.
   """
   import Ecto.Query, warn: false
-  alias Glific.Repo
 
-  alias Glific.Messages.Message
+  alias Glific.{
+    Conversations.Conversation,
+    Messages.Message,
+    Repo
+  }
 
   @doc """
   Returns the list of messages.
@@ -262,5 +265,65 @@ defmodule Glific.Messages do
   @spec change_message_media(MessageMedia.t(), map()) :: Ecto.Changeset.t()
   def change_message_media(%MessageMedia{} = message_media, attrs \\ %{}) do
     MessageMedia.changeset(message_media, attrs)
+  end
+
+  @doc """
+  Given a list of message ids builds a conversation list with most recent conversations
+  at the beginning of the list
+  """
+  @spec list_conversations(map()) :: [Conversation.t()]
+  def list_conversations(args) do
+    results =
+      args
+      |> Enum.reduce(Message, fn
+        {:ids, ids}, query ->
+          query |> where([m], m.id in ^ids)
+
+        {:filter, filter}, query ->
+          query |> conversations_with(filter)
+
+        _, query ->
+          query
+      end)
+      |> order_by([m], asc: m.updated_at)
+      |> Repo.all()
+      |> Repo.preload([:contact, :tags])
+
+    # now format the results,
+    Enum.reduce(
+      Enum.reduce(results, %{}, fn x, acc -> add(x, acc) end),
+      [],
+      fn {contact, messages}, acc -> [Conversation.new(contact, messages) | acc] end
+    )
+  end
+
+  @spec conversations_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp conversations_with(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:id, id}, query ->
+        query |> where([m], m.contact_id == ^id)
+
+      {:ids, ids}, query ->
+        query |> where([m], m.contact_id in ^ids)
+
+      {:include_tags, tag_ids}, query ->
+        query
+        |> join(:left, [m], mt in MessageTag, on: m.id == mt.tag_id)
+        |> where([m, mt], mt.tag_id in ^tag_ids)
+
+      {:exclude_tags, tag_ids}, query ->
+        query
+        |> join(:left, [m], mt in MessageTag, on: m.id == mt.tag_id)
+        |> where([m, mt], mt.tag_id not in ^tag_ids)
+    end)
+  end
+
+  defp add(element, map) do
+    Map.update(
+      map,
+      element.contact,
+      [element],
+      &[element | &1]
+    )
   end
 end

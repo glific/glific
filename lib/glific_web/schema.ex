@@ -11,52 +11,60 @@ defmodule GlificWeb.Schema do
 
   import_types(Absinthe.Type.Custom)
 
+  import_types(__MODULE__.ContactTypes)
+  import_types(__MODULE__.ContactTagTypes)
+  import_types(__MODULE__.ConversationTypes)
   import_types(__MODULE__.EnumTypes)
   import_types(__MODULE__.GenericTypes)
   import_types(__MODULE__.LanguageTypes)
-  import_types(__MODULE__.TagTypes)
-  import_types(__MODULE__.ContactTypes)
   import_types(__MODULE__.MessageTypes)
   import_types(__MODULE__.MessageMediaTypes)
   import_types(__MODULE__.MessageTagTypes)
-  import_types(__MODULE__.ContactTagTypes)
   import_types(__MODULE__.OrganizationTypes)
   import_types(__MODULE__.ProviderTypes)
+  import_types(__MODULE__.SessionTemplateTypes)
+  import_types(__MODULE__.TagTypes)
 
   query do
-    import_fields(:language_queries)
-
-    import_fields(:tag_queries)
-
-    import_fields(:provider_queries)
-
     import_fields(:contact_queries)
 
-    import_fields(:message_media_queries)
+    import_fields(:conversation_queries)
+
+    import_fields(:language_queries)
 
     import_fields(:message_queries)
 
+    import_fields(:message_media_queries)
+
     import_fields(:organization_queries)
+
+    import_fields(:provider_queries)
+
+    import_fields(:session_template_queries)
+
+    import_fields(:tag_queries)
   end
 
   mutation do
-    import_fields(:language_mutations)
-
-    import_fields(:tag_mutations)
-
-    import_fields(:provider_mutations)
-
     import_fields(:contact_mutations)
-
-    import_fields(:message_media_mutations)
-
-    import_fields(:message_mutations)
-
-    import_fields(:message_tag_mutations)
 
     import_fields(:contact_tag_mutations)
 
+    import_fields(:language_mutations)
+
+    import_fields(:message_mutations)
+
+    import_fields(:message_media_mutations)
+
+    import_fields(:message_tag_mutations)
+
     import_fields(:organization_mutations)
+
+    import_fields(:provider_mutations)
+
+    import_fields(:session_template_mutations)
+
+    import_fields(:tag_mutations)
   end
 
   subscription do

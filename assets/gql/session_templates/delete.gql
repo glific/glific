@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteSessionTemplate($id: ID!) {
+  deleteSessionTemplate(id: $id) {
+    ...SessionTemplateFields
+
+    ...ErrorFields
+  }
+}

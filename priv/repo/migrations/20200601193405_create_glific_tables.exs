@@ -11,11 +11,11 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
     tags()
 
-    session_messages()
-
     contacts()
 
     messages_media()
+
+    session_templates()
 
     messages()
 
@@ -87,10 +87,10 @@ defmodule Glific.Repo.Migrations.GlificTables do
   on a regular basis.
 
   Handle multiple versions of the message for different languages. We will also need to think
-  about incorporating short codes for session messages for easier retrieval by end user
+  about incorporating short codes for session templates for easier retrieval by end user
   """
-  def session_messages do
-    create table(:session_messages) do
+  def session_templates do
+    create table(:session_templates) do
       # The message label
       add :label, :string, null: false
 
@@ -106,19 +106,22 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # Is this the original root message
       add :is_source, :boolean, default: false
 
-      # Is this translation machine-generated
-      add :is_translated, :boolean, default: false
+      # The message shortcode
+      add :shortcode, :string, null: true
 
       # Messages are in a specific language
       add :language_id, references(:languages, on_delete: :restrict), null: false
 
       # All child messages point to the root message, so we can propagate changes downstream
-      add :parent_id, references(:session_messages, on_delete: :nilify_all), null: true
+      add :parent_id, references(:session_templates, on_delete: :nilify_all), null: true
+
+      # message media ids
+      add :message_media_id, references(:messages_media, on_delete: :delete_all), null: true
 
       timestamps()
     end
 
-    create unique_index(:session_messages, [:label, :language_id])
+    create unique_index(:session_templates, [:label, :language_id])
   end
 
   @doc """
