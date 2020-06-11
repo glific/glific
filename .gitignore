@@ -44,3 +44,6 @@ npm-debug.log
 
 # dont commit apple temp file
 .DS_Store
+
+.vscode/
+.vscode
