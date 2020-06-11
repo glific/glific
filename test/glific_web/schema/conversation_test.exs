@@ -16,7 +16,9 @@ defmodule GlificWeb.Schema.Query.ConversationTest do
 
     contact_id = get_in(result, [:data, "conversations", Access.at(0), "contact", "id"])
 
-    {:ok, result} = query_gql_by(:list, variables: %{"nc" => 1, "sc" => 1, "filter" => %{"id" => contact_id}})
+    {:ok, result} =
+      query_gql_by(:list, variables: %{"nc" => 1, "sc" => 1, "filter" => %{"id" => contact_id}})
+
     assert get_in(result, [:data, "conversations"]) |> length == 1
   end
 end
