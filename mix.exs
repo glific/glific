@@ -64,7 +64,7 @@ defmodule Glific.MixProject do
       {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.22", only: [:dev, :test], runtime: false},
       {:inch_ex, "~> 2.0", only: [:dev, :test], runtime: false},
-      {:doctor, "~> 0.13.0"},
+      {:doctor, "~> 0.13"},
       {:httpoison, "~> 1.6"},
       {:poison, "~> 4.0"},
       {:ex_rated, "~> 1.2"},
