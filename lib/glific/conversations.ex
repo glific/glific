@@ -28,8 +28,9 @@ defmodule Glific.Conversations do
   Returns the last M conversations, each conversation not more than N messages
   """
   @spec list_conversations(map()) :: any
-  def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = _args) do
+  def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args) do
     {:ok, result} = Repo.query(@sql, [nc, sc])
-    Messages.list_conversations(List.flatten(result.rows))
+
+    Messages.list_conversations(Map.put(args, :ids, List.flatten(result.rows)))
   end
 end
