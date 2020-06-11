@@ -28,7 +28,7 @@ defmodule Glific.SeedsScale do
       optout_time: DateTime.truncate(DateTime.utc_now(), :second),
       status: "valid",
       inserted_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.truncate(:second),
-      updated_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.truncate(:second),
+      updated_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.truncate(:second)
     }
   end
 
@@ -60,7 +60,7 @@ defmodule Glific.SeedsScale do
       receiver_id: receiver_id,
       contact_id: receiver_id,
       inserted_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second),
-      updated_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second),
+      updated_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second)
     }
   end
 
@@ -77,7 +77,7 @@ defmodule Glific.SeedsScale do
       receiver_id: 1,
       contact_id: 1,
       inserted_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second),
-      updated_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second),
+      updated_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second)
     }
   end
 

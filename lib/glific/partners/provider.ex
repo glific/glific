@@ -30,7 +30,7 @@ defmodule Glific.Partners.Provider do
 
     has_many :organizations, Glific.Partners.Organization
 
-    timestamps([type: :utc_datetime])
+    timestamps(type: :utc_datetime)
   end
 
   @doc """
