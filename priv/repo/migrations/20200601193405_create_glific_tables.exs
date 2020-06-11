@@ -46,7 +46,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # Is this language being currently used in the sysem
       add :is_active, :boolean, default: true
 
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:languages, [:label, :locale])
@@ -76,7 +76,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # All child tags point to the parent tag, this allows us a to organize tags as needed
       add :parent_id, references(:tags, on_delete: :nilify_all), null: true
 
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:tags, [:label, :language_id])
@@ -118,7 +118,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # message media ids
       add :message_media_id, references(:messages_media, on_delete: :delete_all), null: true
 
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:session_templates, [:label, :language_id])
@@ -151,7 +151,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :optin_time, :timestamptz
       add :optout_time, :timestamptz
 
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:contacts, :phone)
@@ -178,7 +178,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # whats app message id
       add :provider_media_id, :string
 
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
   end
 
@@ -217,7 +217,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # message media ids
       add :media_id, references(:messages_media, on_delete: :delete_all), null: true
 
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
 
     create index(:messages, [:sender_id])
@@ -262,7 +262,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # The api end point for Provider
       add :api_end_point, :string, null: false
 
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:providers, :name)
@@ -283,7 +283,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :provider_key, :string, null: false
       add :provider_number, :string, null: false
 
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:organizations, :name)
