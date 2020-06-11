@@ -257,18 +257,19 @@ defmodule Glific.Messages do
   Given a list of message ids builds a conversation list with most recent conversations
   at the beginning of the list
   """
-  @spec list_conversations([integer]) :: [any]
+  @spec list_conversations(map()) :: [Conversation.t()]
   def list_conversations(args) do
     results =
       args
       |> Enum.reduce(Message, fn
-      {:ids, ids}, query ->
-        query |>  where([m], m.id in ^ids)
+        {:ids, ids}, query ->
+          query |> where([m], m.id in ^ids)
 
-      {:filter, filter}, query ->
-        query |> conversations_with(filter)
+        {:filter, filter}, query ->
+          query |> conversations_with(filter)
 
-      _, query -> query
+        _, query ->
+          query
       end)
       |> order_by([m], asc: m.updated_at)
       |> Repo.all()
@@ -294,13 +295,12 @@ defmodule Glific.Messages do
       {:include_tags, tag_ids}, query ->
         query
         |> join(:left, [m], mt in MessageTag, on: m.id == mt.tag_id)
-      |> where([m, mt], mt.tag_id in ^tag_ids)
+        |> where([m, mt], mt.tag_id in ^tag_ids)
 
-    {:exclude_tags, tag_ids}, query ->
+      {:exclude_tags, tag_ids}, query ->
         query
         |> join(:left, [m], mt in MessageTag, on: m.id == mt.tag_id)
-      |> where([m, mt], mt.tag_id not in ^tag_ids)
-
+        |> where([m, mt], mt.tag_id not in ^tag_ids)
     end)
   end
 
