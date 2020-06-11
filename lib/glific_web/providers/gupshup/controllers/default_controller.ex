@@ -1,0 +1,16 @@
+defmodule GlificWeb.Providers.Gupshup.Controllers.DefaultController do
+  @moduledoc false
+
+  use GlificWeb, :controller
+
+  @doc false
+  @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
+  def handler(conn, params, _msg) do
+    json(conn, params)
+  end
+
+  @doc false
+  @spec unknown(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def unknown(conn, params),
+    do: handler(conn, params, "unknown handler")
+end
