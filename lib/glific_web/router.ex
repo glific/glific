@@ -23,6 +23,7 @@ defmodule GlificWeb.Router do
 
   pipeline :api_protected do
     plug Pow.Plug.RequireAuthenticated, error_handler: GlificWeb.APIAuthErrorHandler
+    plug GlificWeb.Context
   end
 
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
@@ -45,13 +46,25 @@ defmodule GlificWeb.Router do
     live "/", PageLive, :index
   end
 
-  # Custom stack for Ansinthe
+  # Custom stack for Absinthe
   scope "/" do
-    pipe_through [:api, :api_protected]
+    pipe_through [:api]
 
     forward "/api", Absinthe.Plug, schema: GlificWeb.Schema
 
     forward "/graphiql", Absinthe.Plug.GraphiQL,
+      schema: GlificWeb.Schema,
+      interface: :simple,
+      socket: GlificWeb.UserSocket
+  end
+
+  # Custom stack for Absinthe
+  scope "/" do
+    pipe_through [:api, :api_protected]
+
+    forward "/secure/api", Glific.Absinthe.Plug, schema: GlificWeb.Schema
+
+    forward "/secure/graphiql", Glific.Absinthe.Plug.GraphiQL,
       schema: GlificWeb.Schema,
       interface: :simple,
       socket: GlificWeb.UserSocket
