@@ -4,13 +4,12 @@ defmodule GlificWeb.Context do
   """
   @behaviour Plug
 
-  import Plug.Conn
-  import Ecto.Query, only: [where: 2]
-
-  alias Glific.{Repo, User}
-
+  @doc false
+  @spec init(Plug.opts()) :: Plug.opts()
   def init(opts), do: opts
 
+  @doc false
+  @spec call(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
   def call(conn, _) do
     context = build_context(conn)
     Absinthe.Plug.put_options(conn, context: context)
@@ -19,13 +18,14 @@ defmodule GlificWeb.Context do
   @doc """
   Return the current user context based on the authorization header
   """
+  @spec build_context(map()) :: map()
   def build_context(conn) do
-    IO.inspect(conn)
-    with {:ok, current_user} <- conn.get("current_user") do
+    current_user = conn.assigns[:current_user]
+
+    if current_user != nil do
       %{current_user: current_user}
     else
-      _ -> %{}
+      %{}
     end
   end
-
 end
