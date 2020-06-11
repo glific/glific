@@ -59,7 +59,6 @@ defmodule GlificWeb.Schema.Query.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "receiverId" => message.receiver_id,
-            "contactId" => message.receiver_id,
             "senderId" => message.sender_id,
             "type" => "TEXT",
             "providerStatus" => "DELIVERED"

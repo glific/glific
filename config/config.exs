@@ -8,7 +8,10 @@
 use Mix.Config
 
 config :glific,
-  ecto_repos: [Glific.Repo]
+  ecto_repos: [Glific.Repo],
+  provider: Glific.Providers.Gupshup,
+  provider_id: "gupshup-provider-23",
+  provider_limit: 10
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,
@@ -30,6 +33,11 @@ config :phoenix, :json_library, Jason
 config :glific,
        Glific.Repo,
        migration_timestamps: [type: :utc_datetime]
+
+config :glific, Oban,
+  repo: Glific.Repo,
+  prune: {:maxlen, 10_000},
+  queues: [default: 10, gupshup: 10, webhook: 10]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

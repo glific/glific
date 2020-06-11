@@ -49,13 +49,16 @@ defmodule Glific.SeedsScale do
     # random seconds in last month
     sub_time = Enum.random((-31 * 24 * 60 * 60)..0)
 
+    receiver_id = Enum.random(contact_ids)
+
     %{
       type: "text",
       flow: "inbound",
       body: message,
       provider_status: "delivered",
       sender_id: 1,
-      receiver_id: Enum.random(contact_ids),
+      receiver_id: receiver_id,
+      contact_id: receiver_id,
       inserted_at:
         NaiveDateTime.utc_now() |> NaiveDateTime.add(sub_time) |> NaiveDateTime.truncate(:second),
       updated_at:
@@ -74,6 +77,7 @@ defmodule Glific.SeedsScale do
       provider_status: "delivered",
       sender_id: Enum.random(contact_ids),
       receiver_id: 1,
+      contact_id: 1,
       inserted_at:
         NaiveDateTime.utc_now() |> NaiveDateTime.add(sub_time) |> NaiveDateTime.truncate(:second),
       updated_at:

@@ -1,0 +1,12 @@
+query conversations($nc: Int!, $sc: Int!) {
+  conversations(numberOfConversations: $nc, sizeOfConversations: $sc) {
+    contact {
+      id
+      name
+    }
+    messages {
+      id
+      body
+    }
+  }
+}

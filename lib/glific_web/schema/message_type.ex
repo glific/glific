@@ -67,7 +67,6 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :sender_id, :id
     field :receiver_id, :id
-    field :contact_id, :id
     field :media_id, :id
   end
 
@@ -92,10 +91,10 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.create_message/3)
     end
 
-    # field :send_message, :message_result do
-    #   arg(:input, non_null(:message_input))
-    #   resolve(&Resolvers.Messages.send_message/3)
-    # end
+    field :send_message, :message_result do
+      arg(:id, non_null(:id))
+      resolve(&Resolvers.Messages.send_message/3)
+    end
 
     field :update_message, :message_result do
       arg(:id, non_null(:id))

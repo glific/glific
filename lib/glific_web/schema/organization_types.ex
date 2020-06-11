@@ -26,6 +26,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :provider, :provider do
       resolve(dataloader(Repo))
     end
+
+    field :contact, :contact do
+      resolve(dataloader(Repo))
+    end
   end
 
   @desc "Filtering options for organizations"
@@ -58,6 +62,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :provider_number, :string
 
     field :provider_id, :id
+    field :contact_id, :id
   end
 
   object :organization_queries do

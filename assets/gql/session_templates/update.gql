@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateSessionTemplate($id: ID!, $input: SessionTemplateInput!) {
+  updateSessionTemplate(id: $id, input: $input) {
+    ...SessionTemplateFields
+
+    ...ErrorFields
+  }
+}

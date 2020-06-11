@@ -15,6 +15,10 @@ defmodule Glific.Application do
       {Phoenix.PubSub, name: Glific.PubSub},
       # Start the Endpoint (http/https)
       GlificWeb.Endpoint,
+
+      # Add Oban to process jobs
+      {Oban, oban_config()},
+
       # Add Absinthe's subscription
       {Absinthe.Subscription, GlificWeb.Endpoint}
       # Start a worker by calling: Glific.Worker.start_link(arg)
@@ -32,5 +36,18 @@ defmodule Glific.Application do
   def config_change(changed, _new, removed) do
     GlificWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  defp oban_config do
+    opts = Application.get_env(:glific, Oban)
+
+    # Prevent running queues or scheduling jobs from an iex console, i.e. when starting app with `iex -S mix`
+    if Code.ensure_loaded?(IEx) and IEx.started?() do
+      opts
+      |> Keyword.put(:crontab, false)
+      |> Keyword.put(:queues, false)
+    else
+      opts
+    end
   end
 end

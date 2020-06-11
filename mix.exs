@@ -42,15 +42,15 @@ defmodule Glific.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.5.1"},
+      {:phoenix, "~> 1.5"},
       {:phoenix_ecto, "~> 4.1"},
       {:ecto_sql, "~> 3.4"},
       {:postgrex, ">= 0.0.0"},
-      {:phoenix_live_view, "~> 0.13.0"},
+      {:phoenix_live_view, "~> 0.13"},
       {:floki, ">= 0.0.0", only: :test},
       {:phoenix_html, "~> 2.11"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_dashboard, "~> 0.2.0"},
+      {:phoenix_live_dashboard, "~> 0.2"},
       {:phoenix_pubsub, "~> 2.0"},
       {:telemetry_metrics, "~> 0.4"},
       {:telemetry_poller, "~> 0.4"},
@@ -59,12 +59,12 @@ defmodule Glific.MixProject do
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
-      {:pow, "~> 1.0.20"},
+      {:pow, "~> 1.0"},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.22", only: [:dev, :test], runtime: false},
       {:inch_ex, "~> 2.0", only: [:dev, :test], runtime: false},
-      {:doctor, "~> 0.13.0"},
+      {:doctor, "~> 0.13"},
       {:httpoison, "~> 1.6"},
       {:poison, "~> 4.0"},
       {:ex_rated, "~> 1.2"},
@@ -72,16 +72,16 @@ defmodule Glific.MixProject do
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
       {:absinthe_relay, "~> 1.5"},
-      {:dataloader, "~> 1.0.7"},
+      {:dataloader, "~> 1.0"},
       {:hackney, "~> 1.16"},
-      {:tesla, "~> 1.3.0"},
+      {:tesla, "~> 1.3"},
       {:oban, "~> 1.2"},
       {:faker, "~> 0.13", only: [:dev, :test]},
       {:excoveralls, "~> 0.13", only: :test},
       {:cors_plug, "~> 2.0"},
       {:ex_check, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.8", only: [:dev, :test]},
-      {:wormwood, "~> 0.1.0"}
+      {:wormwood, "~> 0.1"}
     ]
   end
 
@@ -97,8 +97,8 @@ defmodule Glific.MixProject do
       reset: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.drop", "ecto.create --quiet", "ecto.migrate", "test"]
-      # test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      # test: ["ecto.drop", "ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate", "test"]
     ]
   end
 end

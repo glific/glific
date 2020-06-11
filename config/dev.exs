@@ -30,6 +30,10 @@ config :glific, GlificWeb.Endpoint,
     ]
   ]
 
+config :absinthe, Absinthe.Logger,
+  pipeline: true,
+  level: :debug
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed
@@ -74,3 +78,5 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+import_config "dev.secret.exs"

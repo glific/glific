@@ -10,7 +10,8 @@ defmodule Glific.Seeds do
     Partners.Provider,
     Repo,
     Settings.Language,
-    Tags.Tag
+    Tags.Tag,
+    Templates.SessionTemplate
   }
 
   @doc """
@@ -77,7 +78,7 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_contacts :: nil
+  @spec seed_contacts :: {Contact.t()}
   def seed_contacts do
     contacts = [
       %{phone: "917834811114", name: "Default Sender"},
@@ -112,7 +113,8 @@ defmodule Glific.Seeds do
     # seed contacts
     Repo.insert_all(Contact, contact_entries)
 
-    nil
+    {:ok, default_contact} = Repo.fetch_by(Contact, %{phone: "917834811114"})
+    {default_contact}
   end
 
   @doc false
@@ -141,12 +143,13 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_organizations({Provider.t()}) :: nil
-  def seed_organizations({default_provider}) do
+  @spec seed_organizations({Provider.t()}, {Contact.t()}) :: nil
+  def seed_organizations({default_provider}, {default_contact}) do
     Repo.insert!(%Organization{
       name: "Default Organization",
       display_name: "Default Organization",
       contact_name: "Test",
+      contact_id: default_contact.id,
       email: "test@glific.org",
       provider_id: default_provider.id,
       provider_key: "random",
@@ -251,6 +254,40 @@ defmodule Glific.Seeds do
     })
   end
 
+  @doc false
+  @spec seed_session_templates({Language.t(), Language.t()}) :: nil
+  def seed_session_templates({en_us, _hi_in}) do
+    session_template_parent =
+      Repo.insert!(%SessionTemplate{
+        label: "Default Template Label",
+        body: "Default Template",
+        language_id: en_us.id
+      })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Another Template Label",
+      body: "Another Template",
+      language_id: en_us.id,
+      parent_id: session_template_parent.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "New User",
+      body: "Welcome to Glific",
+      shortcode: "welcome",
+      is_reserved: true,
+      language_id: en_us.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Goodbye",
+      body: "Goodbye",
+      shortcode: "bye",
+      is_reserved: true,
+      language_id: en_us.id
+    })
+  end
+
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
   split this function up into multiple different ones for test, dev and production
@@ -261,11 +298,13 @@ defmodule Glific.Seeds do
 
     seed_tag({en_us, hi_in})
 
-    seed_contacts()
+    {default_contact} = seed_contacts()
 
     {default_provider} = seed_providers()
 
-    seed_organizations({default_provider})
+    seed_organizations({default_provider}, {default_contact})
+
+    seed_session_templates({en_us, hi_in})
 
     seed_messages()
 
