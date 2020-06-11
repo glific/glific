@@ -52,7 +52,7 @@ defmodule Glific.Messages.Message do
 
     many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
 
-    timestamps()
+    timestamps([type: :utc_datetime])
   end
 
   @doc """
