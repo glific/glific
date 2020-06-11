@@ -21,11 +21,11 @@ defmodule GlificWeb.Schema.ConversationTypes do
     @desc "Match multiple contact ids"
     field :ids, list_of(:id)
 
-    @desc "Include conversations with these labels"
-    field :include_labels, list_of(:id)
+    @desc "Include conversations with these tags"
+    field :include_tags, list_of(:id)
 
-    @desc "Include conversations with these labels"
-    field :exclude_labels, list_of(:id)
+    @desc "Exclude conversations with these tags"
+    field :exclude_tags, list_of(:id)
   end
 
   object :conversation_queries do
@@ -34,7 +34,6 @@ defmodule GlificWeb.Schema.ConversationTypes do
       arg(:number_of_conversations, non_null(:integer))
       arg(:size_of_conversations, non_null(:integer))
       arg(:filter, :conversation_filter)
-      arg(:order, type: :sort_order, default_value: :asc)
       resolve(&Resolvers.Conversations.conversations/3)
     end
   end
