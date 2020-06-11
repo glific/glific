@@ -62,7 +62,7 @@ defmodule Glific.Seeds do
       %{label: "User", language_id: en_us.id, parent_id: message_tags_ct.id}
     ]
 
-    inserted_time = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    inserted_time = DateTime.utc_now() |> DateTime.truncate(:second)
 
     tag_entries =
       for tag_entry <- tags do
@@ -101,7 +101,7 @@ defmodule Glific.Seeds do
       }
     ]
 
-    inserted_time = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    inserted_time = DateTime.utc_now() |> DateTime.truncate(:second)
 
     contact_entries =
       for contact_entry <- contacts do

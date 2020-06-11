@@ -39,7 +39,7 @@ defmodule Glific.Messages.MessageMedia do
     field :caption, :string
     field :provider_media_id, :string
 
-    timestamps()
+    timestamps([type: :utc_datetime])
   end
 
   @doc """

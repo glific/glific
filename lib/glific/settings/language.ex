@@ -31,7 +31,7 @@ defmodule Glific.Settings.Language do
 
     has_many :tags, Glific.Tags.Tag
 
-    timestamps()
+    timestamps([type: :utc_datetime])
   end
 
   @doc """

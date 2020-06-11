@@ -38,7 +38,7 @@ defmodule Glific.Contacts.Contact do
 
     many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
 
-    timestamps()
+    timestamps([type: :utc_datetime])
   end
 
   @doc """

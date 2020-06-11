@@ -27,8 +27,8 @@ defmodule Glific.SeedsScale do
       optin_time: DateTime.truncate(DateTime.utc_now(), :second),
       optout_time: DateTime.truncate(DateTime.utc_now(), :second),
       status: "valid",
-      inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-      updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      inserted_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.truncate(:second),
+      updated_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.truncate(:second),
     }
   end
 
@@ -47,7 +47,7 @@ defmodule Glific.SeedsScale do
 
   defp create_message_entry(contact_ids, message, "ngo") do
     # random seconds in last month
-    sub_time = Enum.random((-31 * 24 * 60 * 60)..0)
+    sub_time = Enum.random((-31 * 24 * 60)..0)
 
     receiver_id = Enum.random(contact_ids)
 
@@ -59,16 +59,14 @@ defmodule Glific.SeedsScale do
       sender_id: 1,
       receiver_id: receiver_id,
       contact_id: receiver_id,
-      inserted_at:
-        NaiveDateTime.utc_now() |> NaiveDateTime.add(sub_time) |> NaiveDateTime.truncate(:second),
-      updated_at:
-        NaiveDateTime.utc_now() |> NaiveDateTime.add(sub_time) |> NaiveDateTime.truncate(:second)
+      inserted_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second),
+      updated_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second),
     }
   end
 
   defp create_message_entry(contact_ids, message, "beneficiary") do
     # random seconds in last month
-    sub_time = Enum.random((-31 * 24 * 60 * 60)..0)
+    sub_time = Enum.random((-31 * 24 * 60)..0)
 
     %{
       type: "text",
@@ -78,10 +76,8 @@ defmodule Glific.SeedsScale do
       sender_id: Enum.random(contact_ids),
       receiver_id: 1,
       contact_id: 1,
-      inserted_at:
-        NaiveDateTime.utc_now() |> NaiveDateTime.add(sub_time) |> NaiveDateTime.truncate(:second),
-      updated_at:
-        NaiveDateTime.utc_now() |> NaiveDateTime.add(sub_time) |> NaiveDateTime.truncate(:second)
+      inserted_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second),
+      updated_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second),
     }
   end
 
