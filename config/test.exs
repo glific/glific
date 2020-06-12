@@ -22,3 +22,5 @@ config :glific, GlificWeb.Endpoint,
 config :logger, level: :warn
 
 config :glific, Oban, crontab: false, queues: false, prune: :disabled
+
+config :pow, Pow.Ecto.Schema.Password, iterations: 1
