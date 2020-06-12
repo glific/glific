@@ -72,6 +72,16 @@ defmodule Glific.TagsTest do
       assert Tags.list_tags() == [tag]
     end
 
+    test "count_tags/0 returns count of all tags" do
+      _ = tag_fixture()
+      assert Tags.count_tags() == 1
+
+      _ = tag_fixture(@valid_more_attrs)
+      assert Tags.count_tags() == 2
+
+      assert Tags.count_tags(%{filter: %{label: "more label"}}) == 1
+    end
+
     test "get_tag!/1 returns the tag with given id" do
       tag = tag_fixture()
       assert Tags.get_tag!(tag.id) == tag
