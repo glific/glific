@@ -27,6 +27,35 @@ defmodule GlificWeb.Schema.Query.ContactTest do
     assert res == "Default Sender"
   end
 
+  test "contacts field returns list of contacts in desc order" do
+    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
+    assert {:ok, query_data} = result
+
+    contacts = get_in(query_data, [:data, "contacts"])
+    assert length(contacts) > 0
+
+    [contact | _] = contacts
+
+    assert get_in(contact, ["name"]) == "Adelle Cavin"
+  end
+
+  test "contacts field obeys limit and offset" do
+    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "contacts"])) == 1
+
+    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    assert {:ok, query_data} = result
+
+    contacts = get_in(query_data, [:data, "contacts"])
+    assert length(contacts) == 3
+
+    # lets make sure we dont get Test as a contact
+    assert get_in(contacts, [Access.at(0), "name"]) != "Test"
+    assert get_in(contacts, [Access.at(1), "name"]) != "Test"
+    assert get_in(contacts, [Access.at(2), "name"]) != "Test"
+  end
+
   test "contact id returns one contact or nil" do
     name = "Default Sender"
     {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
