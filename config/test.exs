@@ -24,8 +24,8 @@ config :logger, level: :warn
 config :glific, Oban, crontab: false, queues: false, prune: :disabled
 
 config :glific,
-  provider: Glific.Providers.Mock,
-  provider_id: "gupshup-provider-test",
+  provider: Glific.Providers.Gupshup,
+  provider_id: "gupshup-provider-23",
   provider_limit: 10
 
 config :tesla, adapter: Tesla.Mock

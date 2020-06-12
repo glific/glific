@@ -1,14 +1,46 @@
 defmodule Glific.CommunicationsTest do
   use Glific.DataCase, async: true
   use Oban.Testing, repo: Glific.Repo
-  alias Glific.Providers.Mock.Worker, as: Worker
+
   alias Glific.Messages
 
-  describe "messages" do
+  setup do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "submitted",
+              "messageId" => "ee4a68a0-1203-4c85-8dc3-49d0b3226a35"
+            })
+        }
+    end)
 
+    :ok
+  end
+
+  describe "gupshup_messages" do
     alias Glific.Communications.Message, as: Communications
+    alias Glific.Providers.Gupshup.Worker, as: Worker
 
-     @sender_attrs %{
+    setup do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "submitted",
+                "messageId" => "ee4a68a0-1203-4c85-8dc3-49d0b3226a35"
+              })
+          }
+      end)
+
+      :ok
+    end
+
+    @sender_attrs %{
       name: "some sender",
       optin_time: ~U[2010-04-17 14:00:00Z],
       optout_time: ~U[2010-04-17 14:00:00Z],
@@ -53,13 +85,12 @@ defmodule Glific.CommunicationsTest do
     test "send message should update the message id" do
       message = message_fixture()
       Communications.send_message(message)
-      assert_enqueued worker: Worker
-      Oban.drain_queue(:mock)
+      assert_enqueued(worker: Worker)
+      Oban.drain_queue(:gupshup)
       message = Messages.get_message!(message.id)
       assert message.provider_message_id != nil
       assert message.provider_status == :enqueued
       assert message.flow == :outbound
     end
   end
-
 end
