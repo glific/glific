@@ -31,6 +31,24 @@ defmodule GlificWeb.Schema.Query.MessageTest do
     assert get_in(message, ["receiver", "id"]) > 0
   end
 
+  test "messages field returns list of messages in various filters" do
+    result = query_gql_by(:list, variables: %{"filter" => %{"body" => "default message body"}})
+    assert {:ok, query_data} = result
+
+    messages = get_in(query_data, [:data, "messages"])
+    assert length(messages) > 0
+    [message | _] = messages
+    assert get_in(message, ["body"]) == "default message body"
+
+    result = query_gql_by(:list, variables: %{"filter" => %{"receiver" => "Default receiver"}})
+    assert {:ok, query_data} = result
+
+    messages = get_in(query_data, [:data, "messages"])
+    assert length(messages) > 0
+    [message | _] = messages
+    assert get_in(message, ["receiver", "name"]) == "Default receiver"
+  end
+
   test "messages field returns list of messages in desc order" do
     result = query_gql_by(:list, variables: %{"opts" => %{"order" => "DESC"}})
     assert {:ok, query_data} = result

@@ -22,3 +22,20 @@ config :glific, GlificWeb.Endpoint,
 config :logger, level: :warn
 
 config :glific, Oban, crontab: false, queues: false, prune: :disabled
+
+config :glific,
+  provider: Glific.Providers.Gupshup,
+  provider_id: "gupshup-provider-23",
+  provider_limit: 10
+
+config :tesla, adapter: Tesla.Mock
+
+config :phoenix, :json_library, Jason
+
+config :pow, Pow.Ecto.Schema.Password, iterations: 1
+
+# There is an issue with CI, Will move this to test.secret.exs in the future
+# import_config "test.secret.exs"
+config :glific,
+  provider_url: "https://api.gupshup.io/sm/api/v1",
+  provider_key: "abcdefghigklmnop"

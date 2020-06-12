@@ -30,9 +30,9 @@ config :glific, GlificWeb.Endpoint,
     ]
   ]
 
-config :absinthe, Absinthe.Logger,
-  pipeline: true,
-  level: :debug
+# config :absinthe, Absinthe.Logger,
+#  pipeline: true,
+#  level: :debug
 
 # ## SSL Support
 #
