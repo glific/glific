@@ -32,6 +32,10 @@ config :tesla, adapter: Tesla.Mock
 
 config :phoenix, :json_library, Jason
 
-import_config "test.secret.exs"
-
 config :pow, Pow.Ecto.Schema.Password, iterations: 1
+
+# There is an issue with CI, Will move this to test.secret.exs in the future
+# import_config "test.secret.exs"
+config :glific,
+  provider_url: "https://api.gupshup.io/sm/api/v1",
+  provider_key: "abcdefghigklmnop"
