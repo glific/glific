@@ -31,6 +31,35 @@ defmodule GlificWeb.Schema.Query.MessageTest do
     assert get_in(message, ["receiver", "id"]) > 0
   end
 
+  test "messages field returns list of messages in desc order" do
+    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "DESC"}})
+    assert {:ok, query_data} = result
+
+    messages = get_in(query_data, [:data, "messages"])
+    assert length(messages) > 0
+
+    [message | _] = messages
+
+    assert get_in(message, ["body"]) == "default message body"
+  end
+
+  test "messages field obeys limit and offset" do
+    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "messages"])) == 1
+
+    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    assert {:ok, query_data} = result
+
+    messages = get_in(query_data, [:data, "messages"])
+    assert length(messages) == 3
+
+    # lets make sure we dont get Test as a message
+    assert get_in(messages, [Access.at(0), "body"]) != "Test"
+    assert get_in(messages, [Access.at(1), "body"]) != "Test"
+    assert get_in(messages, [Access.at(2), "body"]) != "Test"
+  end
+
   test "message id returns one message or nil" do
     body = "default message body"
     {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})

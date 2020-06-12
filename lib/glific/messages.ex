@@ -23,13 +23,26 @@ defmodule Glific.Messages do
   def list_messages(args \\ %{}) do
     args
     |> Enum.reduce(Message, fn
-      {:order, order}, query ->
-        query |> order_by({^order, :id})
+      {:opts, opts}, query ->
+        query |> opts_with(opts)
 
       {:filter, filter}, query ->
         query |> filter_with(filter)
     end)
     |> Repo.all()
+  end
+
+  defp opts_with(query, opts) do
+    Enum.reduce(opts, query, fn
+      {:order, order}, query ->
+        query |> order_by({^order, :body})
+
+      {:limit, limit}, query ->
+        query |> limit(^limit)
+
+      {:offset, offset}, query ->
+        query |> offset(^offset)
+    end)
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()

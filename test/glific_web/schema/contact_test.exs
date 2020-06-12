@@ -27,7 +27,7 @@ defmodule GlificWeb.Schema.Query.ContactTest do
     assert res == "Default Sender"
   end
 
-  test "contacts field returns list of contacts in desc order" do
+  test "contacts field returns list of contacts in asc order" do
     result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 

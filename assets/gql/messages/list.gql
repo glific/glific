@@ -1,5 +1,5 @@
-query messages {
-  messages {
+query messages ($filter: MessageFilter, $opts: Opts) {
+  messages (filter: $filter, opts: $opts) {
     id
     body
     sender {

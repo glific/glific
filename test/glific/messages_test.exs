@@ -66,11 +66,13 @@ defmodule Glific.MessagesTest do
 
     test "list_messages/1 with multiple messages filtered" do
       message = message_fixture()
-      assert [message] == Messages.list_messages(%{order: :asc, filter: %{body: message.body}})
+
+      assert [message] ==
+               Messages.list_messages(%{opts: %{order: :asc}, filter: %{body: message.body}})
 
       assert [message] ==
                Messages.list_messages(%{
-                 order: :asc,
+                 opts: %{order: :asc},
                  filter: %{provider_status: message.provider_status}
                })
     end
