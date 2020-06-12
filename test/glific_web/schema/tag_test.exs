@@ -15,11 +15,10 @@ defmodule GlificWeb.Schema.Query.TagTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/tags/delete.gql")
 
   test "tags field returns list of tags" do
-    result = query_gql_by(:list)
+    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) > 0
-
     [tag | _] = tags
     assert get_in(tag, ["label"]) == "Child"
 
@@ -28,7 +27,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
   end
 
   test "tags field returns list of tags in desc order" do
-    result = query_gql_by(:list, variables: %{"order" => "DESC"})
+    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "DESC"}})
     assert {:ok, query_data} = result
 
     tags = get_in(query_data, [:data, "tags"])
@@ -71,6 +70,23 @@ defmodule GlificWeb.Schema.Query.TagTest do
     assert {:ok, query_data} = result
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) > 0
+  end
+
+  test "tags field obeys limit and offset" do
+    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "tags"])) == 1
+
+    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    assert {:ok, query_data} = result
+
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) == 3
+
+    # lets make sure we dont get child as a tag
+    assert get_in(tags, [Access.at(0), "label"]) != "Child"
+    assert get_in(tags, [Access.at(1), "label"]) != "Child"
+    assert get_in(tags, [Access.at(2), "label"]) != "Child"
   end
 
   test "tag id returns one tag or nil" do
