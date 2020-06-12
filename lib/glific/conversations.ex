@@ -12,7 +12,7 @@ defmodule Glific.Conversations do
 
   alias Glific.{Messages, Repo}
 
-  @sql """
+  @sql_all """
   WITH cte AS
   (SELECT *, ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY updated_at DESC) AS rn FROM messages)
   SELECT id FROM cte WHERE rn <= $2 AND contact_id IN (
@@ -20,7 +20,15 @@ defmodule Glific.Conversations do
   ORDER BY updated_at DESC
   LIMIT $1
   )
-  ORDER BY sender_id, updated_at DESC
+  ORDER BY contact_id, updated_at DESC
+  LIMIT $1 * $2
+  """
+
+  @sql_ids """
+  WITH cte AS
+  (SELECT *, ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY updated_at DESC) AS rn FROM messages)
+  SELECT id FROM cte WHERE rn <= $2 AND contact_id = ANY($3)
+  ORDER BY contact_id, updated_at DESC
   LIMIT $1 * $2
   """
 
@@ -29,8 +37,12 @@ defmodule Glific.Conversations do
   """
   @spec list_conversations(map()) :: any
   def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args) do
-    {:ok, result} = Repo.query(@sql, [nc, sc])
+    {:ok, result} = get_message_ids(nc, sc, args)
 
     Messages.list_conversations(Map.put(args, :ids, List.flatten(result.rows)))
   end
+
+  defp get_message_ids(nc, sc, %{filter: %{id: id}}), do: Repo.query(@sql_ids, [nc, sc, [id]])
+  defp get_message_ids(nc, sc, %{filter: %{ids: ids}}), do: Repo.query(@sql_ids, [nc, sc, ids])
+  defp get_message_ids(nc, sc, _), do: Repo.query(@sql_all, [nc, sc])
 end
