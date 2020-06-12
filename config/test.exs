@@ -33,3 +33,5 @@ config :tesla, adapter: Tesla.Mock
 config :phoenix, :json_library, Jason
 
 import_config "test.secret.exs"
+
+config :pow, Pow.Ecto.Schema.Password, iterations: 1
