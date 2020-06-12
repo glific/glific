@@ -45,10 +45,6 @@ defmodule Glific.SeedsScale do
     Enum.map(1..len, fn _ -> create_message(Enum.random(1..4)) end)
   end
 
-  @doc """
-  Rather than creating
-  """
-
   defp create_message_entry(contact_ids, message, "ngo") do
     # random seconds in last month
     sub_time = Enum.random((-31 * 24 * 60)..0)

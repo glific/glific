@@ -293,22 +293,22 @@ defmodule Glific.Messages do
   """
   @spec list_conversations(map()) :: [Conversation.t()]
   def list_conversations(args) do
-      args
-      |> Enum.reduce(Message, fn
-        {:ids, ids}, query ->
-          query |> where([m], m.id in ^ids)
+    args
+    |> Enum.reduce(Message, fn
+      {:ids, ids}, query ->
+        query |> where([m], m.id in ^ids)
 
-        {:filter, filter}, query ->
-          query |> conversations_with(filter)
+      {:filter, filter}, query ->
+        query |> conversations_with(filter)
 
-        _, query ->
-          query
-      end)
-      |> order_by([m], asc: m.updated_at)
-      |> Repo.all()
-      |> Repo.preload([:contact, :tags])
-      |> make_conversations()
-      |> add_empty_conversations(args)
+      _, query ->
+        query
+    end)
+    |> order_by([m], asc: m.updated_at)
+    |> Repo.all()
+    |> Repo.preload([:contact, :tags])
+    |> make_conversations()
+    |> add_empty_conversations(args)
   end
 
   defp make_conversations(results) do
@@ -320,8 +320,12 @@ defmodule Glific.Messages do
     )
   end
 
-  defp add_empty_conversations(results, %{filter: %{id: id}}), do: add_empty_conversation(results, [id])
-  defp add_empty_conversations(results, %{filter: %{ids: ids}}), do: add_empty_conversation(results, ids)
+  defp add_empty_conversations(results, %{filter: %{id: id}}),
+    do: add_empty_conversation(results, [id])
+
+  defp add_empty_conversations(results, %{filter: %{ids: ids}}),
+    do: add_empty_conversation(results, ids)
+
   defp add_empty_conversations(results, _), do: results
 
   defp add_empty_conversation(results, contact_ids) do
@@ -338,7 +342,7 @@ defmodule Glific.Messages do
     else
       case Repo.fetch(Contact, contact_id) do
         {:ok, contact} -> [Conversation.new(contact, []) | results]
-        _ -> results
+        {:error, _} -> results
       end
     end
   end

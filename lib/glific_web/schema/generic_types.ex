@@ -27,4 +27,27 @@ defmodule GlificWeb.Schema.GenericTypes do
     field :status, non_null(:api_status_enum)
     field :errors, list_of(:input_error)
   end
+
+  scalar :gid do
+    description """
+    The `gid` scalar appears in JSON as a String. The string appears to
+    the glific backend as an integer
+    """
+    parse &parse_maybe_integer/1
+    serialize &Integer.to_string/1
+  end
+
+  @doc """
+  A forgivable parser which allows integers or strings to represent integers
+  """
+  @spec parse_maybe_integer(Absinthe.Blueprint.Input.String.t) :: {:ok, Integer.t} | :error
+  def parse_maybe_integer(%Absinthe.Blueprint.Input.String{value: value}) when is_integer(value), do: value
+  def parse_maybe_integer(%Absinthe.Blueprint.Input.String{value: value}) when is_binary(value) do
+    case Integer.parse(value) do
+      {n, _} -> {:ok, n}
+      :error -> :error
+    end
+  end
+  def parse_maybe_integer(_), do: :error
+
 end
