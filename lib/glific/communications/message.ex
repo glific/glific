@@ -38,13 +38,14 @@ defmodule Glific.Communications.Message do
   end
 
   @doc false
-  @spec send_media(%Message{:media_id => nil}) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  defp send_media(%Message{:media_id => nil} = message) do
-    handle_error_response(%{body: "no media found"}, message)
+  # Since the arity is same we can just define the results to one of the main function to pass dialyzer checks
+  defp send_media(%Message{media_id: nil} = message) do
+    handle_error_response(%{body: "Invalid request"}, message)
   end
 
   @doc false
-  @spec send_media(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec send_media(Message.t()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   defp send_media(message) do
     case message.type do
       :image ->
@@ -65,7 +66,6 @@ defmodule Glific.Communications.Message do
     end
   end
 
-
   @doc """
   Callback when message send succsully
   """
@@ -79,7 +79,7 @@ defmodule Glific.Communications.Message do
     |> Messages.update_message(%{
       provider_message_id: body["messageId"],
       provider_status: :enqueued,
-      flow: :outbound,
+      flow: :outbound
     })
 
     {:ok, message}
@@ -88,12 +88,12 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback in case of any error while sending the message
   """
-  @spec handle_error_response(Tesla.Env.t(), any) :: {:error, String.t()}
+  @spec handle_error_response(any(), Message.t()) :: {:error, String.t()}
   def handle_error_response(response, message) do
     message
     |> Poison.encode!()
     |> Poison.decode!(as: %Message{})
-    |> Messages.update_message(%{ provider_status: :error, flow: :outbound})
+    |> Messages.update_message(%{provider_status: :error, flow: :outbound})
 
     {:error, response.body}
   end

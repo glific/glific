@@ -27,7 +27,8 @@ defmodule Glific.CommunicationsTest do
         %{method: :post} ->
           %Tesla.Env{
             status: 200,
-            body: Jason.encode!(%{
+            body:
+              Jason.encode!(%{
                 "status" => "submitted",
                 "messageId" => "ee4a68a0-1203-4c85-8dc3-49d0b3226a35"
               })
@@ -140,7 +141,9 @@ defmodule Glific.CommunicationsTest do
       assert message.flow == :outbound
 
       # audio message
-      {:ok, message} = Messages.update_message(message, %{type: :audio, media_id: message_media.id})
+      {:ok, message} =
+        Messages.update_message(message, %{type: :audio, media_id: message_media.id})
+
       message = Glific.Repo.preload(message, [:receiver, :sender, :media])
       Communications.send_message(message)
       assert_enqueued(worker: Worker)
@@ -151,7 +154,9 @@ defmodule Glific.CommunicationsTest do
       assert message.flow == :outbound
 
       # video message
-      {:ok, message} = Messages.update_message(message, %{type: :video, media_id: message_media.id})
+      {:ok, message} =
+        Messages.update_message(message, %{type: :video, media_id: message_media.id})
+
       message = Glific.Repo.preload(message, [:receiver, :sender, :media])
       Communications.send_message(message)
       assert_enqueued(worker: Worker)
@@ -162,7 +167,9 @@ defmodule Glific.CommunicationsTest do
       assert message.flow == :outbound
 
       # document message
-      {:ok, message} = Messages.update_message(message, %{type: :document, media_id: message_media.id})
+      {:ok, message} =
+        Messages.update_message(message, %{type: :document, media_id: message_media.id})
+
       message = Glific.Repo.preload(message, [:receiver, :sender, :media])
       Communications.send_message(message)
       assert_enqueued(worker: Worker)
@@ -171,7 +178,6 @@ defmodule Glific.CommunicationsTest do
       assert message.provider_message_id != nil
       assert message.provider_status == :enqueued
       assert message.flow == :outbound
-
     end
 
     test "sending media message without media object should be handled " do
@@ -190,6 +196,5 @@ defmodule Glific.CommunicationsTest do
       assert message.provider_status == :error
       assert message.flow == :outbound
     end
-
   end
 end
