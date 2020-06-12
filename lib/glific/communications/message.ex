@@ -38,12 +38,6 @@ defmodule Glific.Communications.Message do
   end
 
   @doc false
-  # Since the arity is same we can just define the results to one of the main function to pass dialyzer checks
-  defp send_media(%Message{media_id: nil} = message) do
-    handle_error_response(%{body: "Invalid request"}, message)
-  end
-
-  @doc false
   @spec send_media(Message.t()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   defp send_media(message) do
