@@ -1,5 +1,5 @@
-query tags($filter: TagFilter, $order: SortOrder, $limit: Int, $offset: Int) {
-  tags(filter: $filter, order: $order, limit: $limit, offset: $offset) {
+query tags($filter: TagFilter, $opts: Opts) {
+  tags(filter: $filter, opts: $opts) {
     id
     label
     language {

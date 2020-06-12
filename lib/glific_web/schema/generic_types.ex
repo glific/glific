@@ -12,6 +12,13 @@ defmodule GlificWeb.Schema.GenericTypes do
     field :message, non_null(:string)
   end
 
+  @desc "Lets collapse sort order, limit and offset into its own little groups"
+  input_object :opts do
+    field(:order, type: :sort_order, default_value: :asc)
+    field(:limit, :integer)
+    field(:offset, :integer)
+  end
+
   @desc """
   A generic status results for calls that dont return a value.
   Typically this is for delete operations

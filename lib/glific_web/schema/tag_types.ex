@@ -92,9 +92,7 @@ defmodule GlificWeb.Schema.TagTypes do
     @desc "Get a list of all tags filtered by various criteria"
     field :tags, list_of(:tag) do
       arg(:filter, :tag_filter)
-      arg(:order, type: :sort_order, default_value: :asc)
-      arg(:limit, :integer)
-      arg(:offset, :integer)
+      arg(:opts, :opts)
       resolve(&Resolvers.Tags.tags/3)
     end
   end
