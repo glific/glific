@@ -65,7 +65,6 @@ defmodule Glific.Communications.Message do
   @spec handle_success_response(Tesla.Env.t(), Message.t()) :: {:ok, Message.t()}
   def handle_success_response(response, message) do
     body = response.body |> Jason.decode!()
-
     message
     |> Poison.encode!()
     |> Poison.decode!(as: %Message{})

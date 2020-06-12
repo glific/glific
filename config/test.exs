@@ -22,3 +22,14 @@ config :glific, GlificWeb.Endpoint,
 config :logger, level: :warn
 
 config :glific, Oban, crontab: false, queues: false, prune: :disabled
+
+config :glific,
+  provider: Glific.Providers.Mock,
+  provider_id: "gupshup-provider-test",
+  provider_limit: 10
+
+config :tesla, adapter: Tesla.Mock
+
+config :phoenix, :json_library, Jason
+
+import_config "test.secret.exs"

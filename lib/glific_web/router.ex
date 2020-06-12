@@ -37,7 +37,6 @@ defmodule GlificWeb.Router do
       socket: GlificWeb.UserSocket
   end
 
-
   scope "/", GlificWeb do
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
   end
