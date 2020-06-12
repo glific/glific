@@ -117,6 +117,23 @@ defmodule Glific.MessagesTest do
         })
 
       assert length(message_list) == 2
+
+      # Check if tag id is wrong, no message should be fetched
+      [last_tag_id] =
+        Glific.Tags.Tag
+        |> order_by([t], desc: t.id)
+        |> limit(1)
+        |> select([t], t.id)
+        |> Repo.all()
+
+      wrong_tag_id = last_tag_id + 1
+
+      message_list =
+        Messages.list_messages(%{
+          filter: %{tags_included: [wrong_tag_id]}
+        })
+
+      assert message_list == []
     end
 
     test "list_messages/1 with tags excluded filters" do
