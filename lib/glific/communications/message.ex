@@ -38,6 +38,12 @@ defmodule Glific.Communications.Message do
   end
 
   @doc false
+  @spec send_media(%Message{:media_id => nil}) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  defp send_media(%Message{:media_id => nil} = message) do
+    handle_error_response(%{body: "no media found"}, message)
+  end
+
+  @doc false
   @spec send_media(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp send_media(message) do
     case message.type do
@@ -59,6 +65,7 @@ defmodule Glific.Communications.Message do
     end
   end
 
+
   @doc """
   Callback when message send succsully
   """
@@ -71,7 +78,8 @@ defmodule Glific.Communications.Message do
     |> Poison.decode!(as: %Message{})
     |> Messages.update_message(%{
       provider_message_id: body["messageId"],
-      provider_status: :enqueued
+      provider_status: :enqueued,
+      flow: :outbound,
     })
 
     {:ok, message}
@@ -81,7 +89,12 @@ defmodule Glific.Communications.Message do
   Callback in case of any error while sending the message
   """
   @spec handle_error_response(Tesla.Env.t(), any) :: {:error, String.t()}
-  def handle_error_response(response, _message) do
+  def handle_error_response(response, message) do
+    message
+    |> Poison.encode!()
+    |> Poison.decode!(as: %Message{})
+    |> Messages.update_message(%{ provider_status: :error, flow: :outbound})
+
     {:error, response.body}
   end
 
