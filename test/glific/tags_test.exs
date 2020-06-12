@@ -133,7 +133,7 @@ defmodule Glific.TagsTest do
     test "list_tags/1 with multiple items sorted" do
       tag1 = tag_fixture()
       tag2 = tag_fixture(@valid_more_attrs)
-      tags = Tags.list_tags(%{order: :asc})
+      tags = Tags.list_tags(%{opts: %{order: :asc}})
       assert length(tags) == 2
       [h, t | _] = tags
       assert h == tag2 && t == tag1
@@ -142,7 +142,7 @@ defmodule Glific.TagsTest do
     test "list_tags/1 with items filtered" do
       _tag1 = tag_fixture()
       tag2 = tag_fixture(@valid_more_attrs)
-      tags = Tags.list_tags(%{order: :asc, filter: %{label: "more label"}})
+      tags = Tags.list_tags(%{opts: %{order: :asc}, filter: %{label: "more label"}})
       assert length(tags) == 1
       [h] = tags
       assert h == tag2
@@ -151,7 +151,7 @@ defmodule Glific.TagsTest do
     test "list_tags/1 with language filtered" do
       _tag1 = tag_fixture()
       tag2 = tag_fixture(@valid_more_attrs)
-      tags = Tags.list_tags(%{order: :asc, filter: %{language: "hindi"}})
+      tags = Tags.list_tags(%{opts: %{order: :asc}, filter: %{language: "hindi"}})
       assert length(tags) == 1
       [h] = tags
       assert h == tag2

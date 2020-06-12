@@ -58,7 +58,7 @@ defmodule Glific.Templates.SessionTemplate do
     belongs_to :parent, SessionTemplate, foreign_key: :parent_id
     has_many :child, SessionTemplate, foreign_key: :parent_id
 
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
   @doc """

@@ -51,7 +51,7 @@ defmodule Glific.Partners.Organization do
     belongs_to :provider, Provider
     belongs_to :contact, Contact
 
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
   @doc """

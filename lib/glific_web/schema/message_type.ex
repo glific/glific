@@ -22,6 +22,10 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :provider_status, :message_status_enum
 
+    # expose the date we processed this message since external clients need it
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+
     field :sender, :contact do
       resolve(dataloader(Repo))
     end
