@@ -25,6 +25,21 @@ defmodule GlificWeb.Schema.Query.MessageMediaTest do
     assert get_in(message_media, ["caption"]) == "default caption"
   end
 
+  test "messages media field obeys limit and offset" do
+    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "messagesMedia"])) == 1
+
+    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    assert {:ok, query_data} = result
+
+    messages_media = get_in(query_data, [:data, "messagesMedia"])
+    assert length(messages_media) == 3
+
+    # lets make sure we dont get Test as a message media caption
+    assert get_in(messages_media, [Access.at(0), "caption"]) != "Test"
+  end
+
   test "message media id returns one message media or nil" do
     caption = "default caption"
     {:ok, message_media} = Glific.Repo.fetch_by(MessageMedia, %{caption: caption})
