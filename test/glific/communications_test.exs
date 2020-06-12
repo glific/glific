@@ -30,7 +30,7 @@ defmodule Glific.CommunicationsTest do
             body:
               Jason.encode!(%{
                 "status" => "submitted",
-                "messageId" => "ee4a68a0-1203-4c85-8dc3-49d0b3226a35"
+                "messageId" => Faker.String.base64(36)
               })
           }
       end)
@@ -113,7 +113,7 @@ defmodule Glific.CommunicationsTest do
         %{method: :post} ->
           %Tesla.Env{
             status: 400,
-            body: "Hello"
+            body: "Error"
           }
       end)
 
