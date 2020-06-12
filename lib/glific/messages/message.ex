@@ -26,13 +26,13 @@ defmodule Glific.Messages.Message do
   @required_fields [
     :type,
     :flow,
-    :provider_status,
     :sender_id,
     :receiver_id,
     :contact_id
   ]
   @optional_fields [
     :body,
+    :provider_status,
     :provider_message_id,
     :media_id
   ]
