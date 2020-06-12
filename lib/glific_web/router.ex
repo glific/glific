@@ -41,10 +41,6 @@ defmodule GlificWeb.Router do
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
   end
 
-  scope "/", GlificWeb do
-    get "/test", Providers.Gupshup.Controllers.DefaultController, :unknown
-  end
-
   # defp debug_response(conn, _) do
   #  Plug.Conn.register_before_send(conn, fn conn ->
   #    conn.resp_body |> IO.puts()
