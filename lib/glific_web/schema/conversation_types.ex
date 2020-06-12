@@ -16,16 +16,16 @@ defmodule GlificWeb.Schema.ConversationTypes do
   @desc "Filtering options for conversations"
   input_object :conversation_filter do
     @desc "Match one contact ID"
-    field :id, :id
+    field :id, :gid
 
     @desc "Match multiple contact ids"
-    field :ids, list_of(:id)
+    field :ids, list_of(:gid)
 
     @desc "Include conversations with these tags"
-    field :include_tags, list_of(:id)
+    field :include_tags, list_of(:gid)
 
     @desc "Exclude conversations with these tags"
-    field :exclude_tags, list_of(:id)
+    field :exclude_tags, list_of(:gid)
   end
 
   object :conversation_queries do

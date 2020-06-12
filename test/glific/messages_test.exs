@@ -1,5 +1,5 @@
 defmodule Glific.MessagesTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{
     Contacts,

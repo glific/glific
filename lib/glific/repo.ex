@@ -14,7 +14,8 @@ defmodule Glific.Repo do
   @doc """
   Glific version of get, which returns a tuple with an :ok | :error as the first element
   """
-  @spec fetch(Ecto.Queryable.t(), term(), Keyword.t()) :: {atom(), Ecto.Schema.t() | String.t()}
+  @spec fetch(Ecto.Queryable.t(), term(), Keyword.t()) ::
+          {:ok, Ecto.Schema.t()} | {:error, [String.t()]}
   def fetch(queryable, id, opts \\ []) do
     case get(queryable, id, opts) do
       nil -> {:error, ["#{queryable} #{id}", "Resource not found"]}
