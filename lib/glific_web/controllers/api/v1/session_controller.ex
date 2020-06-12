@@ -25,7 +25,7 @@ defmodule GlificWeb.API.V1.SessionController do
       {:error, conn} ->
         conn
         |> put_status(401)
-        |> json(%{error: %{status: 401, message: "Invalid email or password"}})
+        |> json(%{error: %{status: 401, message: "Invalid phone or password"}})
     end
   end
 

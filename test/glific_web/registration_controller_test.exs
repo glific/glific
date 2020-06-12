@@ -6,13 +6,17 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   describe "create/2" do
     @valid_params %{
       "user" => %{
-        "email" => "test@example.com",
+        "phone" => "+919820198765",
         "password" => @password,
         "password_confirmation" => @password
       }
     }
     @invalid_params %{
-      "user" => %{"email" => "invalid", "password" => @password, "password_confirmation" => ""}
+      "user" => %{
+        "phone" => "phone has no checks for now",
+        "password" => @password,
+        "password_confirmation" => ""
+      }
     }
 
     test "with valid params", %{conn: conn} do
@@ -30,7 +34,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json["error"]["message"] == "Couldn't create user"
       assert json["error"]["status"] == 500
       assert json["error"]["errors"]["password_confirmation"] == ["does not match confirmation"]
-      assert json["error"]["errors"]["email"] == ["has invalid format"]
+      # assert json["error"]["errors"]["phone"] == ["has invalid format"]
     end
   end
 end

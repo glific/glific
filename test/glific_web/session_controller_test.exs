@@ -9,7 +9,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
     user =
       %User{}
       |> User.changeset(%{
-        email: "test@example.com",
+        phone: "+919820198765",
         password: @password,
         password_confirmation: @password
       })
@@ -19,8 +19,8 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
   end
 
   describe "create/2" do
-    @valid_params %{"user" => %{"email" => "test@example.com", "password" => @password}}
-    @invalid_params %{"user" => %{"email" => "test@example.com", "password" => "invalid"}}
+    @valid_params %{"user" => %{"phone" => "+919820198765", "password" => @password}}
+    @invalid_params %{"user" => %{"phone" => "+919820198765", "password" => "invalid"}}
 
     test "with valid params", %{conn: conn} do
       conn = post(conn, Routes.api_v1_session_path(conn, :create, @valid_params))
@@ -34,7 +34,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
       conn = post(conn, Routes.api_v1_session_path(conn, :create, @invalid_params))
 
       assert json = json_response(conn, 401)
-      assert json["error"]["message"] == "Invalid email or password"
+      assert json["error"]["message"] == "Invalid phone or password"
       assert json["error"]["status"] == 401
     end
   end
