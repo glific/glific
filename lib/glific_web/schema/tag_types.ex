@@ -95,6 +95,12 @@ defmodule GlificWeb.Schema.TagTypes do
       arg(:opts, :opts)
       resolve(&Resolvers.Tags.tags/3)
     end
+
+    @desc "Get a count of all tags filtered by various criteria"
+    field :count_tags, :integer do
+      arg(:filter, :tag_filter)
+      resolve(&Resolvers.Tags.count_tags/3)
+    end
   end
 
   object :tag_mutations do

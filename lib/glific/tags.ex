@@ -30,6 +30,19 @@ defmodule Glific.Tags do
     |> Repo.all()
   end
 
+  @doc """
+  Return the count of tags, using the same filter as list_tags
+  """
+  @spec count_tags(map()) :: integer
+  def count_tags(args \\ %{}) do
+    args
+    |> Enum.reduce(Tag, fn
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
+    |> Repo.aggregate(:count)
+  end
+
   defp opts_with(query, opts) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->

@@ -20,10 +20,17 @@ defmodule GlificWeb.Resolvers.Tags do
   @doc """
   Get the list of tags filtered by args
   """
-  @spec tags(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
+  @spec tags(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Tag]}
   def tags(_, args, _) do
     {:ok, Tags.list_tags(args)}
+  end
+
+  @doc """
+  Get the count of tags filtered by args
+  """
+  @spec count_tags(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_tags(_, args, _) do
+    {:ok, Tags.count_tags(args)}
   end
 
   @doc false
