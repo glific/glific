@@ -39,23 +39,25 @@ defmodule GlificWeb.MessageControllerTest do
   describe "text" do
 
     setup do
-      message_body = "Inbound Message"
+      message_payload = %{
+        "text" => "Inbound Message"
+      }
       message_params =
-          put_in(@message_request_params, ["payload", "payload", "text"], message_body)
+          @message_request_params
           |> put_in(["payload", "type"], "text")
           |> put_in(["payload", "id"], Faker.String.base64(36))
-        %{message_params: message_params, message_body: message_body}
+          |> put_in(["payload", "payload"], message_payload)
+        %{message_params: message_params}
     end
-
 
     test "Incoming text message should be stored in the database", setup_config = %{conn: conn} do
       conn =  post(conn, "/gupshup", setup_config.message_params)
       json_response(conn, 200)
-      {:ok, message} = Glific.Repo.fetch_by(Message, %{body: setup_config.message_body})
+      provider_message_id =  get_in(setup_config.message_params, ["payload", "id"])
+      {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
       message = Glific.Repo.preload(message, [:receiver, :sender, :media])
 
       # Provider message id should be updated
-      assert message.provider_message_id == get_in(setup_config.message_params, ["payload", "id"])
       assert message.provider_status == :delivered
       assert message.flow == :inbound
 
@@ -67,8 +69,8 @@ defmodule GlificWeb.MessageControllerTest do
   describe "image" do
     setup do
       image_payload = %{
-        "caption" => "Sample image",
-        "url" =>  "https://smapi.gupshup.io/sm/api/wamedia/demobot1/546af999-825e-485b-bf54-4a3323824cca",
+        "caption" => Faker.Lorem.sentence(),
+        "url" =>  Faker.Avatar.image_url(200, 200),
         "urlExpiry" => 1580832695997
       }
 
