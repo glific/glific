@@ -5,6 +5,7 @@ defmodule Glific.Messages do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts.Contact,
     Conversations.Conversation,
     Messages.Message,
     Repo,
@@ -292,7 +293,6 @@ defmodule Glific.Messages do
   """
   @spec list_conversations(map()) :: [Conversation.t()]
   def list_conversations(args) do
-    results =
       args
       |> Enum.reduce(Message, fn
         {:ids, ids}, query ->
@@ -307,13 +307,40 @@ defmodule Glific.Messages do
       |> order_by([m], asc: m.updated_at)
       |> Repo.all()
       |> Repo.preload([:contact, :tags])
+      |> make_conversations()
+      |> add_empty_conversations(args)
+  end
 
+  defp make_conversations(results) do
     # now format the results,
     Enum.reduce(
       Enum.reduce(results, %{}, fn x, acc -> add(x, acc) end),
       [],
       fn {contact, messages}, acc -> [Conversation.new(contact, messages) | acc] end
     )
+  end
+
+  defp add_empty_conversations(results, %{filter: %{id: id}}), do: add_empty_conversation(results, [id])
+  defp add_empty_conversations(results, %{filter: %{ids: ids}}), do: add_empty_conversation(results, ids)
+  defp add_empty_conversations(results, _), do: results
+
+  defp add_empty_conversation(results, contact_ids) do
+    Enum.reduce(
+      contact_ids,
+      results,
+      fn id, acc -> check_and_add_conversation(acc, id) end
+    )
+  end
+
+  defp check_and_add_conversation(results, contact_id) do
+    if Enum.find(results, fn x -> x.contact.id == contact_id end) do
+      results
+    else
+      case Repo.fetch(Contact, contact_id) do
+        {:ok, contact} -> [Conversation.new(contact, []) | results]
+        _ -> results
+      end
+    end
   end
 
   @spec conversations_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
