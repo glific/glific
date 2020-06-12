@@ -62,7 +62,7 @@ defmodule Glific.Messages do
       {:tags_included, tags_included}, query ->
         message_ids =
           MessageTag
-          |> where([p], p.id in ^tags_included)
+          |> where([p], p.tag_id in ^tags_included)
           |> select([p], p.message_id)
           |> Repo.all()
 
@@ -71,7 +71,7 @@ defmodule Glific.Messages do
       {:tags_excluded, tags_excluded}, query ->
         message_ids =
           MessageTag
-          |> where([p], p.id in ^tags_excluded)
+          |> where([p], p.tag_id in ^tags_excluded)
           |> select([p], p.message_id)
           |> Repo.all()
 
