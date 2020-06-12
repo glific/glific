@@ -110,7 +110,8 @@ defmodule Glific.Communications.Message do
     |> Map.merge(%{
       type: :text,
       sender_id: contact.id,
-      receiver_id: organization_contact_id()
+      receiver_id: organization_contact_id(),
+      flow: :inbound
     })
     |> Messages.create_message()
     |> publish_message()
@@ -128,7 +129,8 @@ defmodule Glific.Communications.Message do
     |> Map.merge(%{
       sender_id: contact.id,
       media_id: message_media.id,
-      receiver_id: organization_contact_id()
+      receiver_id: organization_contact_id(),
+      flow: :inbound
     })
     |> Messages.create_message()
     |> publish_message()
@@ -160,6 +162,8 @@ defmodule Glific.Communications.Message do
   @doc false
   @spec organization_contact_id() :: integer()
   def organization_contact_id do
-    1
+    {:ok, contact } = Glific.Repo.fetch_by(Contacts.Contact, %{name: "Default receiver"})
+    contact.id
   end
+
 end

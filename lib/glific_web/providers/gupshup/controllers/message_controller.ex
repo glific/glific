@@ -10,14 +10,15 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
-  def handler(conn, _params, _msg) do
-    json(conn, nil)
+  def handler(conn, _params, msg) do
+    json(conn, msg)
   end
 
   @doc false
   @spec message(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def message(conn, params),
-    do: handler(conn, params, "message handler")
+  def message(conn, params) do
+    handler(conn, params, "message handler")
+  end
 
   @doc false
   @spec text(Plug.Conn.t(), map()) :: Plug.Conn.t()
