@@ -31,41 +31,27 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
 
   @doc false
   @spec image(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def image(conn, params) do
-    GupshupMessage.receive_media(params)
-    |> Map.merge(%{type: :image})
-    |> Communications.receive_media()
-
-    handler(conn, params, "image handler")
-  end
+  def image(conn, params), do: media(conn, params, %{type: :image})
 
   @doc false
   @spec file(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def file(conn, params) do
-    GupshupMessage.receive_media(params)
-    |> Map.merge(%{type: :document})
-    |> Communications.receive_media()
-
-    handler(conn, params, "file handler")
-  end
+  def file(conn, params), do: media(conn, params, %{type: :document})
 
   @doc false
   @spec audio(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def audio(conn, params) do
-    GupshupMessage.receive_media(params)
-    |> Map.merge(%{type: :audio})
-    |> Communications.receive_media()
-
-    handler(conn, params, "file handler")
-  end
+  def audio(conn, params), do: media(conn, params, %{type: :audio})
 
   @doc false
   @spec video(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def video(conn, params) do
+  def video(conn, params), do: media(conn, params, %{type: :video})
+
+  @doc false
+  @spec media(Plug.Conn.t(), map(), map()) :: Plug.Conn.t()
+  defp media(conn, params, type) do
     GupshupMessage.receive_media(params)
-    |> Map.merge(%{type: :video})
+    |> Map.merge(type)
     |> Communications.receive_media()
 
-    handler(conn, params, "file handler")
+    handler(conn, params, "media handler")
   end
 end
