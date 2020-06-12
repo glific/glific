@@ -103,16 +103,4 @@ defmodule GlificWeb.MessageControllerTest do
       assert message.sender.phone == get_in(setup_config.message_params, ["payload", "sender", "phone"])
     end
   end
-
-
-
-
-  describe "file" do
-  end
-
-  describe "audio" do
-  end
-
-  describe "video" do
-  end
 end
