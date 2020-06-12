@@ -162,8 +162,7 @@ defmodule Glific.Communications.Message do
   @doc false
   @spec organization_contact_id() :: integer()
   def organization_contact_id do
-    {:ok, contact } = Glific.Repo.fetch_by(Contacts.Contact, %{name: "Default receiver"})
+    {:ok, contact} = Glific.Repo.fetch_by(Contacts.Contact, %{name: "Default receiver"})
     contact.id
   end
-
 end

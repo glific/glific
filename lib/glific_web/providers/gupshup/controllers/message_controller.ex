@@ -25,6 +25,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   def text(conn, params) do
     GupshupMessage.receive_text(params)
     |> Communications.receive_text()
+
     handler(conn, params, "text handler")
   end
 
