@@ -7,7 +7,8 @@ defmodule Glific.Messages do
   alias Glific.{
     Conversations.Conversation,
     Messages.Message,
-    Repo
+    Repo,
+    Tags.MessageTag
   }
 
   @doc """
@@ -57,6 +58,24 @@ defmodule Glific.Messages do
         from q in query,
           join: c in assoc(q, :contact),
           where: ilike(c.phone, ^"%#{phone}%")
+
+      {:tags_included, tags_included}, query ->
+        message_ids =
+          MessageTag
+          |> where([p], p.id in ^tags_included)
+          |> select([p], p.message_id)
+          |> Repo.all()
+
+        query |> where([m], m.id in ^message_ids)
+
+      {:tags_excluded, tags_excluded}, query ->
+        message_ids =
+          MessageTag
+          |> where([p], p.id in ^tags_excluded)
+          |> select([p], p.message_id)
+          |> Repo.all()
+
+        query |> where([m], m.id not in ^message_ids)
 
       {:provider_status, provider_status}, query ->
         from q in query, where: q.provider_status == ^provider_status
