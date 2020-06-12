@@ -93,6 +93,8 @@ defmodule GlificWeb.Schema.TagTypes do
     field :tags, list_of(:tag) do
       arg(:filter, :tag_filter)
       arg(:order, type: :sort_order, default_value: :asc)
+      arg(:limit, :integer)
+      arg(:offset, :integer)
       resolve(&Resolvers.Tags.tags/3)
     end
   end

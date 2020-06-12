@@ -73,6 +73,23 @@ defmodule GlificWeb.Schema.Query.TagTest do
     assert length(tags) > 0
   end
 
+  test "tags field obeys limit and offset" do
+    result = query_gql_by(:list, variables: %{"limit" => 1, "offset" => 0})
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "tags"])) == 1
+
+    result = query_gql_by(:list, variables: %{"limit" => 3, "offset" => 1})
+    assert {:ok, query_data} = result
+
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) == 3
+
+    # lets make sure we dont get child as a tag
+    assert get_in(tags, [Access.at(0), "label"]) != "Child"
+    assert get_in(tags, [Access.at(1), "label"]) != "Child"
+    assert get_in(tags, [Access.at(2), "label"]) != "Child"
+  end
+
   test "tag id returns one tag or nil" do
     label = "This is for testing"
     {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})

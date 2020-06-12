@@ -26,6 +26,12 @@ defmodule Glific.Tags do
 
       {:filter, filter}, query ->
         query |> filter_with(filter)
+
+      {:limit, limit}, query ->
+        query |> limit(^limit)
+
+      {:offset, offset}, query ->
+        query |> offset(^offset)
     end)
     |> Repo.all()
   end
