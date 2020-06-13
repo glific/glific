@@ -145,3 +145,55 @@ mutation createOrganization($input: OrganizationInput!) {
     "provider_number": "10101010101"
   }
 }
+
+
+
+subscription {
+  sentMessage {
+    id
+    body
+    flow
+    type
+    receiver {
+      id
+      phone
+    }
+    sender {
+      id
+      phone
+    }
+  }
+}
+
+mutation cre_send_message($input: MessageInput!) {
+  createAndSendMessage(input: $input) {
+    message {
+      id
+      body
+      flow
+      type
+      receiver {
+        id
+        phone
+      }
+      sender {
+        id
+        phone
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "body": "Lets see how this goes 1",
+    "flow": "OUTBOUND",
+    "receiverId": "10",
+    "senderId": "1",
+    "type": "TEXT"
+  }
+}

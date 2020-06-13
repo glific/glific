@@ -54,7 +54,7 @@ defmodule Glific.Providers.Gupshup.Message do
     message_media = message.media
 
     %{
-      type: :audio,
+      type: :video,
       url: message_media.source_url,
       caption: message_media.caption
     }
