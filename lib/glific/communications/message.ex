@@ -13,51 +13,21 @@ defmodule Glific.Communications.Message do
     end
   end
 
+  @type_to_token %{
+    text: :send_text,
+    image: :send_image,
+    audio: :send_audio,
+    video: :send_video,
+    document: :send_document
+  }
+
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(%Message{:type => :text}) ::
-          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_message(%Message{type: :text} = message) do
-    message
-    |> send_text()
-  end
-
-  @doc false
   @spec send_message(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_message(message) do
-    message
-    |> send_media()
-  end
-
-  @doc false
-  @spec send_text(%Message{:type => :text}) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  defp send_text(message) do
     provider_module()
-    |> apply(:send_text, [message])
-  end
-
-  @doc false
-  @spec send_media(Message.t()) ::
-          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
-  defp send_media(message) do
-    case message.type do
-      :image ->
-        provider_module()
-        |> apply(:send_image, [message])
-
-      :audio ->
-        provider_module()
-        |> apply(:send_audio, [message])
-
-      :video ->
-        provider_module()
-        |> apply(:send_video, [message])
-
-      _ ->
-        provider_module()
-        |> apply(:send_document, [message])
-    end
+    |> apply(@type_to_token[message.type], [message])
   end
 
   @doc """
@@ -108,7 +78,7 @@ defmodule Glific.Communications.Message do
       flow: :inbound
     })
     |> Messages.create_message()
-    |> publish_message()
+    |> publish_message(:received_message)
   end
 
   @doc """
@@ -127,24 +97,20 @@ defmodule Glific.Communications.Message do
       flow: :inbound
     })
     |> Messages.create_message()
-    |> publish_message()
+    |> publish_message(:received_message)
   end
 
   @doc false
-  @spec publish_message({:ok, Message.t()}) :: {:ok, Message.t()}
-  defp publish_message({:ok, message}) do
+  @spec publish_message({:ok, Message.t()}, atom()) :: {:ok, Message.t()}
+  def publish_message({:ok, message}, topic) do
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
       message,
-      received_message: "*"
+      [{topic, :glific}]
     )
 
     {:ok, message}
   end
-
-  @doc false
-  @spec publish_message(String.t()) :: String.t()
-  defp publish_message(err), do: err
 
   @doc false
   @spec provider_module() :: atom()

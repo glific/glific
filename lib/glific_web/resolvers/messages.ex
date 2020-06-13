@@ -31,7 +31,6 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def create_message(_, %{input: params}, _) do
     with {:ok, message} <- Messages.create_message(params) do
-      send_message(nil, %{id: message.id}, nil)
       {:ok, %{message: message}}
     end
   end
@@ -61,11 +60,27 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, map()}
   def send_message(_, %{id: id}, _) do
     with {:ok, message} <- Repo.fetch(Message, id) do
-      Repo.preload(message, [:receiver, :sender, :media])
-      |> Communications.send_message()
-
-      {:ok, %{message: message}}
+      send_message(message)
     end
+  end
+
+  @doc false
+  @spec create_and_send_message(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_and_send_message(_, %{input: params}, _) do
+    with {:ok, message} <- Messages.create_message(params) do
+      send_message(message)
+    end
+  end
+
+  @spec send_message(Message.t()) :: {:ok, any}
+  defp send_message(message) do
+    message
+    |> Repo.preload([:receiver, :sender, :media])
+    |> Communications.send_message()
+
+    Communications.publish_message({:ok, message}, :sent_message)
+    {:ok, %{message: message}}
   end
 
   # Message Media Resolver which sits between the GraphQL schema and Glific
