@@ -1,6 +1,9 @@
 defmodule Glific.MixProject do
   use Mix.Project
 
+  @github_url "https://github.com/glific/"
+  @home_url "https://github.com/glific/"
+
   def project do
     [
       app: :glific,
@@ -16,9 +19,26 @@ defmodule Glific.MixProject do
       aliases: aliases(),
       deps: deps(),
       test_coverage: [tool: ExCoveralls],
+      docs: [
+        main: "readme",
+        extras: ["README.md", "CHANGELOG.md"]
+      ],
       preferred_cli_env: [
         "test.nodrop": :test,
         coveralls: :test
+      ],
+
+      # Lets add meta information on project
+      name: "Glific",
+      description: "A open source two way communication platform for the social sector",
+      source_url: @github_url,
+      homepage_url: @home_url,
+      package: [
+        maintainers: ["Glific Project Team"],
+        licenses: ["AGPL 3.0"],
+        links: %{
+          "GitHub" => @github_url
+        }
       ]
     ]
   end

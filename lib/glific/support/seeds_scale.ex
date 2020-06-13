@@ -109,6 +109,7 @@ defmodule Glific.SeedsScale do
       %{message_id: message_id, tag_id: t4}
     ]
 
+    # seed message_tags on received messages only: 10% no tags etc
     cond do
       x < 10 -> acc
       x < 40 -> [m0 | acc]
@@ -129,34 +130,22 @@ defmodule Glific.SeedsScale do
 
   defp seed_messages do
     # get all beneficiaries ids
-    contact_ids = Repo.all(from c in "contacts", select: c.id, where: c.id != 1) |> Enum.shuffle()
-
-    conversations =
-      Enum.flat_map(
-        contact_ids,
-        &create_conversation(&1)
-      )
-
-    # postgresql protocol can not handle more than 65535 parameters for bulk insert
-    # create list of messages
-    # chunk into groups of 3000 and then insert
-    Enum.map(
-      Enum.chunk_every(conversations, 1000),
-      &Repo.insert_all(Message, &1)
-    )
+    Repo.all(from c in "contacts", select: c.id, where: c.id != 1)
+    |> Enum.shuffle()
+    |> Enum.flat_map(&create_conversation(&1))
+    # this enables us to send smaller chunks to postgres for insert
+    |> Enum.chunk_every(3000)
+    |> Enum.map(&Repo.insert_all(Message, &1))
   end
 
   defp seed_message_tags do
-    # seed message_tags on received messages only: 25% no tags, 25% 1 tag, 50% 2 - 4 tags, only do
-    message_ids =
-      Repo.all(from m in "messages", select: m.id, where: m.receiver_id == 1) |> Enum.shuffle()
-
     tag_ids = Repo.all(from t in "tags", select: t.id) |> Enum.shuffle()
 
-    message_tags =
-      Enum.reduce(message_ids, [], fn x, acc -> create_message_tag(x, tag_ids, acc) end)
-
-    Repo.insert_all(MessageTag, message_tags)
+    Repo.all(from m in "messages", select: m.id, where: m.receiver_id == 1)
+    |> Enum.shuffle()
+    |> Enum.reduce([], fn x, acc -> create_message_tag(x, tag_ids, acc) end)
+    |> Enum.chunk_every(3000)
+    |> Enum.map(&Repo.insert_all(MessageTag, &1))
   end
 
   @doc false
