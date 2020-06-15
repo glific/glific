@@ -185,7 +185,7 @@ defmodule Glific.Seeds do
     })
 
     Repo.insert!(%Message{
-      body: Faker.Lorem.sentence(),
+      body: "ZZZ message body for order test",
       flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),

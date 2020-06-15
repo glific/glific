@@ -58,7 +58,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
 
     [message | _] = messages
 
-    assert get_in(message, ["body"]) == "default message body"
+    assert get_in(message, ["body"]) == "ZZZ message body for order test"
   end
 
   test "messages field obeys limit and offset" do
