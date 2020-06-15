@@ -1,6 +1,8 @@
 defmodule Glific.MessagesTest do
   use Glific.DataCase
 
+  alias Faker.Phone
+
   alias Glific.{
     Contacts,
     Messages,
@@ -47,12 +49,14 @@ defmodule Glific.MessagesTest do
     defp foreign_key_constraint do
       {:ok, sender} =
         @sender_attrs
-        |> Map.merge(%{phone: Faker.Phone.EnUs.phone()})
+        |> Map.merge(%{phone: Phone.EnUs.phone()})
         |> Contacts.create_contact()
+
       {:ok, receiver} =
         @receiver_attrs
-        |> Map.merge(%{phone: Faker.Phone.EnUs.phone()})
+        |> Map.merge(%{phone: Phone.EnUs.phone()})
         |> Contacts.create_contact()
+
       %{sender_id: sender.id, receiver_id: receiver.id}
     end
 
@@ -162,7 +166,13 @@ defmodule Glific.MessagesTest do
     test "create_message/1 with valid data will assign parent id if exists" do
       body = "Body for parent id"
       message1 = message_fixture()
-      message_fixture(%{body: body, sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      message_fixture(%{
+        body: body,
+        sender_id: message1.sender_id,
+        receiver_id: message1.receiver_id
+      })
+
       {:ok, message2} = Glific.Repo.fetch_by(Message, %{body: body})
       assert message1.id == message2.parent_id
     end
