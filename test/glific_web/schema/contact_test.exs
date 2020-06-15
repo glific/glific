@@ -39,7 +39,8 @@ defmodule GlificWeb.Schema.Query.ContactTest do
 
     assert get_in(query_data, [:data, "countContacts"]) == 0
 
-    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"name" => "Default Sender"}})
+    {:ok, query_data} =
+      query_gql_by(:count, variables: %{"filter" => %{"name" => "Default Sender"}})
 
     assert get_in(query_data, [:data, "countContacts"]) == 1
   end

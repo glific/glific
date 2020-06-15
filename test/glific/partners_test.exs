@@ -185,6 +185,16 @@ defmodule Glific.PartnersTest do
       assert Partners.list_organizations() == [organization]
     end
 
+    test "count_organizations/0 returns count of all organizations" do
+      organization_fixture()
+      assert Partners.count_organizations() == 1
+
+      organization_fixture(@valid_org_attrs_1)
+      assert Partners.count_organizations() == 2
+
+      assert Partners.count_organizations(%{filter: %{name: "Organization Name 1"}}) == 1
+    end
+
     test "get_organization!/1 returns the organization with given id" do
       organization = organization_fixture()
       assert Partners.get_organization!(organization.id) == organization
