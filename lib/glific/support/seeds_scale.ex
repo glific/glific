@@ -154,7 +154,7 @@ defmodule Glific.SeedsScale do
     # create seed for deterministic random data
     :rand.seed(:exrop, {101, 102, 103})
 
-    seed_contacts(500)
+    seed_contacts(10)
 
     seed_messages()
 
