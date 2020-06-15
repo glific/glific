@@ -46,13 +46,16 @@ defmodule Glific.Taggers.Numeric do
     "\U0038\UFEOF\U20E3" => 8, "\U0039\UFEOF\U20E3" => 9
   }
 
-  @spec tag_message(Message.t()) :: {:ok, String.t()} | :error
-  def tag_message(message) do
+  @spec get_numeric_map() :: %{String.t() => integer}
+  def get_numeric_map(), do: @numeric_map
+
+  @spec tag_message(Message.t(), %{String.t() => integer}) :: {:ok, String.t()} | :error
+  def tag_message(message, numeric_map) do
     body =
       message.body
       |> Taggers.string_clean
 
-    case Map.fetch(@numeric_map, body) do
+    case Map.fetch(numeric_map, body) do
       {:ok, value} -> {:ok, to_string(value)}
       :error -> :error
     end

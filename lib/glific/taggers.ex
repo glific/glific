@@ -21,9 +21,9 @@ defmodule Glific.Taggers do
     Taggers.Numeric
   }
 
-  @spec tag_message(Message.t()) :: {:ok, String.t()} | {:error, nil}
-  def tag_message(message) do
-    Numeric.tag_message(message)
+  @spec tag_message(Message.t(), %{String.t() => integer}) :: {:ok, String.t()} | {:error, nil}
+  def tag_message(message, numeric_map) do
+    Numeric.tag_message(message, numeric_map)
   end
 
   def string_clean(str) do

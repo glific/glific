@@ -43,7 +43,7 @@ defmodule Glific.Seeds do
 
     tags = [
       # Intent of message
-      %{label: "Compliments", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Compliment", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Good Bye", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Greeting", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Thank You", language_id: en_us.id, parent_id: message_tags_mt.id},
@@ -55,11 +55,16 @@ defmodule Glific.Seeds do
       %{label: "Read", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
 
+      # Tags with Value
+      %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, has_value: true},
+      %{label: "Keyword", language_id: en_us.id, parent_id: message_tags_mt.id, has_value: true},
+
       # Type of Contact
       %{label: "Child", language_id: en_us.id, parent_id: message_tags_ct.id},
       %{label: "Parent", language_id: en_us.id, parent_id: message_tags_ct.id},
       %{label: "Participant", language_id: en_us.id, parent_id: message_tags_ct.id},
       %{label: "User", language_id: en_us.id, parent_id: message_tags_ct.id}
+
     ]
 
     inserted_time = DateTime.utc_now() |> DateTime.truncate(:second)

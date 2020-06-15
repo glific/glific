@@ -14,10 +14,11 @@ defmodule Glific.Processor.Producer do
   end
 
   # public endpoint for adding a new message
-  def add(message), do: GenServer.cast(__MODULE__, {:add, message})
+  def add(messages) when is_list(messages), do: GenServer.cast(__MODULE__, {:add, messages})
+  def add(message), do: GenServer.cast(__MODULE__, {:add, [message]})
 
   # push a message to all consumers on adding
-  def handle_cast({:add, message}, state), do: {:noreply, [message], state}
+  def handle_cast({:add, messages}, state), do: {:noreply, messages, state}
 
   # ignore all requests from consumers via demand call
   def handle_demand(_, state), do: {:noreply, [], state}

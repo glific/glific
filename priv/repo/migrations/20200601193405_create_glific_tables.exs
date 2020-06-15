@@ -70,6 +70,11 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # Is this a predefined system object?
       add :is_reserved, :boolean, default: false
 
+      # Does this tag potentially have a value associated with it
+      # If so, this value will be stored in the join tables. This is applicable only
+      # for message tags for now (Numeric and Keyword)
+      add :is_value, :boolean, default: false
+
       # foreign key to  option_value:value column with the option_group.name being "language"
       add :language_id, references(:languages, on_delete: :restrict), null: false
 
@@ -160,7 +165,6 @@ defmodule Glific.Repo.Migrations.GlificTables do
   @doc """
   Information for all media messages sent and/or received by the system
   """
-
   def messages_media do
     create table(:messages_media) do
       # url to be sent to BSP
@@ -249,9 +253,36 @@ defmodule Glific.Repo.Migrations.GlificTables do
     create table(:messages_tags) do
       add :message_id, references(:messages, on_delete: :delete_all), null: false
       add :tag_id, references(:tags, on_delete: :delete_all), null: false
+
+      # the value of the tag if applicable
+      add :value, :string, default: null
     end
 
     create unique_index(:messages_tags, [:message_id, :tag_id])
+  end
+
+  @doc """
+  The keyword table to maintain a list of user entered keywords which when matched
+  tag the message with the Keyword tag with the value
+  """
+  def keywords do
+    create table(:tags) do
+      # The keyword label
+      add :label, :string, null: false
+
+      # An optional description
+      add :description, :string, null: true
+
+      # Is this keyword being currently used
+      add :is_active, :boolean, default: true
+
+      # value of the keyword to be associated with the join table
+      add :value, :string
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:tags, :label)
   end
 
   @doc """
