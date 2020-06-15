@@ -37,7 +37,7 @@ defmodule Glific.Messages do
   defp opts_with(query, opts) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->
-        query |> order_by({^order, :body})
+        query |> order_by([m], {^order, fragment("lower(?)", m.body)})
 
       {:limit, limit}, query ->
         query |> limit(^limit)
@@ -233,7 +233,7 @@ defmodule Glific.Messages do
   defp opts_media_with(query, opts) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->
-        query |> order_by({^order, :caption})
+        query |> order_by([m], {^order, fragment("lower(?)", m.caption)})
 
       {:limit, limit}, query ->
         query |> limit(^limit)

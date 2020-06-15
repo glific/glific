@@ -24,7 +24,7 @@ defmodule Glific.Partners do
     args
     |> Enum.reduce(Provider, fn
       {:order, order}, query ->
-        query |> order_by({^order, :name})
+        query |> order_by([p], {^order, fragment("lower(?)", p.name)})
 
       {:filter, filter}, query ->
         query |> filter_provider_with(filter)
@@ -159,7 +159,7 @@ defmodule Glific.Partners do
     args
     |> Enum.reduce(Organization, fn
       {:order, order}, query ->
-        query |> order_by({^order, :name})
+        query |> order_by([o], {^order, fragment("lower(?)", o.name)})
 
       {:filter, filter}, query ->
         query |> filter_with(filter)

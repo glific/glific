@@ -31,7 +31,7 @@ defmodule Glific.Contacts do
   defp opts_with(query, opts) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->
-        query |> order_by({^order, :name})
+        query |> order_by([c], {^order, fragment("lower(?)", c.name)})
 
       {:limit, limit}, query ->
         query |> limit(^limit)
