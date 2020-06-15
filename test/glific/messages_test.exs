@@ -163,7 +163,7 @@ defmodule Glific.MessagesTest do
       assert {:error, %Ecto.Changeset{}} = Messages.create_message(@invalid_attrs)
     end
 
-    test "create_message/1 with valid data will assign parent id if exists" do
+    test "create_message/1 with valid data will set parent id if exists" do
       body = "Body for parent id"
       message1 = message_fixture()
 
@@ -175,6 +175,35 @@ defmodule Glific.MessagesTest do
 
       {:ok, message2} = Glific.Repo.fetch_by(Message, %{body: body})
       assert message1.id == message2.parent_id
+    end
+
+    test "create_message/1 with valid data will set ancestors id if exists" do
+      message1 = message_fixture()
+
+      message2 =
+        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      message3 =
+        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      message4 =
+        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      message5 =
+        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      body = "Body for ancestors message"
+
+      message_fixture(%{
+        body: body,
+        sender_id: message1.sender_id,
+        receiver_id: message1.receiver_id
+      })
+
+      {:ok, message6} = Glific.Repo.fetch_by(Message, %{body: body})
+      assert message5.id == message6.parent_id
+      assert length(message6.ancestors) == 4
+      assert [message4.id, message3.id, message2.id, message1.id] == message6.ancestors
     end
 
     test "update_message/2 with valid data updates the message" do
