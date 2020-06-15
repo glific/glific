@@ -16,6 +16,8 @@ defmodule GlificWeb.Schema.ContactTagTypes do
   object :contact_tag do
     field :id, :id
 
+    field :value, :string
+
     field :contact, :contact do
       resolve(dataloader(Repo))
     end

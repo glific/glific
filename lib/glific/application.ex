@@ -21,9 +21,8 @@ defmodule Glific.Application do
 
       # Add Absinthe's subscription
       {Absinthe.Subscription, GlificWeb.Endpoint},
-
       Glific.Processor.Producer,
-      Glific.Processor.ConsumerText,
+      Glific.Processor.ConsumerText
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

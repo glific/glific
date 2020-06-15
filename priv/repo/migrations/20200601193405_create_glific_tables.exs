@@ -72,7 +72,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
       # Does this tag potentially have a value associated with it
       # If so, this value will be stored in the join tables. This is applicable only
-      # for message tags for now (Numeric and Keyword)
+      # for Numeric and Keyword message tags for now, but also include contact tags to
+      # keep them in sync
       add :is_value, :boolean, default: false
 
       # foreign key to  option_value:value column with the option_group.name being "language"
@@ -241,6 +242,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
     create table(:contacts_tags) do
       add :contact_id, references(:contacts, on_delete: :delete_all), null: false
       add :tag_id, references(:tags, on_delete: :delete_all), null: false
+
+      # the value of the tag if applicable
+      add :value, :string
     end
 
     create unique_index(:contacts_tags, [:contact_id, :tag_id])
@@ -255,7 +259,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :tag_id, references(:tags, on_delete: :delete_all), null: false
 
       # the value of the tag if applicable
-      add :value, :string, default: null
+      add :value, :string
     end
 
     create unique_index(:messages_tags, [:message_id, :tag_id])

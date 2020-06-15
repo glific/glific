@@ -5,21 +5,37 @@ defmodule Glific.Processor.Producer do
   """
   use GenStage
 
+  alias Glific.Messages.Message
+
+  @doc false
+  @spec start_link(any) :: GenServer.on_start()
   def start_link(_) do
     GenStage.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
+  @doc false
   def init(:ok) do
     {:producer, nil, dispatcher: GenStage.BroadcastDispatcher}
   end
 
-  # public endpoint for adding a new message
+  @doc """
+  public endpoint for adding a new message or a set of messages
+  """
+  @spec add([Message.t()]) :: :ok
   def add(messages) when is_list(messages), do: GenServer.cast(__MODULE__, {:add, messages})
+
+  @spec add(Message.t()) :: :ok
   def add(message), do: GenServer.cast(__MODULE__, {:add, [message]})
 
-  # push a message to all consumers on adding
+  @doc """
+  push a message to all consumers on adding
+  """
+  @spec handle_cast({:add, [Message.t()]}, map()) :: {:noreply, [Message.t()], map()}
   def handle_cast({:add, messages}, state), do: {:noreply, messages, state}
 
-  # ignore all requests from consumers via demand call
+  @doc """
+  ignore all requests from consumers via demand call
+  """
+  @spec handle_demand(integer, any) :: {:noreply, [], map()}
   def handle_demand(_, state), do: {:noreply, [], state}
 end
