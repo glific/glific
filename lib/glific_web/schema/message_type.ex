@@ -90,7 +90,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     @desc "Get a list of all messages filtered by various criteria"
     field :messages, list_of(:message) do
       arg(:filter, :message_filter)
-      arg(:order, type: :sort_order, default_value: :asc)
+      arg(:opts, :opts)
       resolve(&Resolvers.Messages.messages/3)
     end
 

@@ -23,7 +23,7 @@ defmodule Glific.Templates do
     args
     |> Enum.reduce(SessionTemplate, fn
       {:order, order}, query ->
-        query |> order_by({^order, :label})
+        query |> order_by([t], {^order, fragment("lower(?)", t.label)})
 
       {:filter, filter}, query ->
         query |> filter_with(filter)

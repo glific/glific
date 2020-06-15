@@ -16,7 +16,7 @@ defmodule GlificWeb.Schema.Query.MessageTagTest do
   test "create a message tag and test possible scenarios and errors" do
     label = "This is for testing"
     {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
-    body = "default message body"
+    body = "Default message body"
     {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
 
     result =
@@ -45,7 +45,7 @@ defmodule GlificWeb.Schema.Query.MessageTagTest do
   test "delete a message tag" do
     label = "This is for testing"
     {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
-    body = "default message body"
+    body = "Default message body"
     {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
 
     {:ok, query_data} =

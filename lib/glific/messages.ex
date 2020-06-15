@@ -13,11 +13,11 @@ defmodule Glific.Messages do
   }
 
   @doc """
-  Returns the list of messages.
+  Returns the list of filtered messages.
 
   ## Examples
 
-      iex> list_messages()
+      iex> list_messages(map())
       [%Message{}, ...]
 
   """
@@ -25,13 +25,26 @@ defmodule Glific.Messages do
   def list_messages(args \\ %{}) do
     args
     |> Enum.reduce(Message, fn
-      {:order, order}, query ->
-        query |> order_by({^order, :id})
+      {:opts, opts}, query ->
+        query |> opts_with(opts)
 
       {:filter, filter}, query ->
         query |> filter_with(filter)
     end)
     |> Repo.all()
+  end
+
+  defp opts_with(query, opts) do
+    Enum.reduce(opts, query, fn
+      {:order, order}, query ->
+        query |> order_by([m], {^order, fragment("lower(?)", m.body)})
+
+      {:limit, limit}, query ->
+        query |> limit(^limit)
+
+      {:offset, offset}, query ->
+        query |> offset(^offset)
+    end)
   end
 
   @doc """
@@ -203,13 +216,31 @@ defmodule Glific.Messages do
 
   ## Examples
 
-      iex> list_messages_media()
+      iex> list_messages_media(map())
       [%MessageMedia{}, ...]
 
   """
   @spec list_messages_media(map()) :: [MessageMedia.t()]
-  def list_messages_media(_args \\ %{}) do
-    Repo.all(MessageMedia)
+  def list_messages_media(args \\ %{}) do
+    args
+    |> Enum.reduce(MessageMedia, fn
+      {:opts, opts}, query ->
+        query |> opts_media_with(opts)
+    end)
+    |> Repo.all()
+  end
+
+  defp opts_media_with(query, opts) do
+    Enum.reduce(opts, query, fn
+      {:order, order}, query ->
+        query |> order_by([m], {^order, fragment("lower(?)", m.caption)})
+
+      {:limit, limit}, query ->
+        query |> limit(^limit)
+
+      {:offset, offset}, query ->
+        query |> offset(^offset)
+    end)
   end
 
   @doc """
