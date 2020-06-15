@@ -31,6 +31,19 @@ defmodule Glific.Templates do
     |> Repo.all()
   end
 
+  @doc """
+  Return the count of session_templates, using the same filter as list_session_templates
+  """
+  @spec count_session_templates(map()) :: integer
+  def count_session_templates(args \\ %{}) do
+    args
+    |> Enum.reduce(SessionTemplate, fn
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
+    |> Repo.aggregate(:count)
+  end
+
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn

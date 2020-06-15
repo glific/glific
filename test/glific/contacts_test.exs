@@ -68,6 +68,13 @@ defmodule Glific.ContactsTest do
       assert Contacts.list_contacts() == [contact]
     end
 
+    test "count_contacts/0 returns count of all contacts" do
+      _ = contact_fixture()
+      assert Contacts.count_contacts() == 1
+
+      assert Contacts.count_contacts(%{filter: %{name: "some name"}}) == 1
+    end
+
     test "get_contact!/1 returns the contact with given id" do
       contact = contact_fixture()
       assert Contacts.get_contact!(contact.id) == contact

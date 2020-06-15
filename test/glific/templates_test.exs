@@ -69,6 +69,16 @@ defmodule Glific.TemplatesTest do
       assert Templates.list_session_templates() == [session_template]
     end
 
+    test "count_session_templates/0 returns count of all session templates" do
+      _ = session_template_fixture()
+      assert Templates.count_session_templates() == 1
+
+      # _ = session_template_fixture(@valid_more_attrs)
+      # assert Templates.count_session_templates() == 2
+
+      assert Templates.count_session_templates(%{filter: %{label: "some label"}}) == 1
+    end
+
     test "list_session_templates/1 with multiple session_templates filteres" do
       _session_template = session_template_fixture(@valid_attrs)
       session_template1 = session_template_fixture(@valid_attrs_1)

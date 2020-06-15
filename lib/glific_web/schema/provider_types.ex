@@ -46,6 +46,12 @@ defmodule GlificWeb.Schema.ProviderTypes do
       arg(:order, type: :sort_order, default_value: :asc)
       resolve(&Resolvers.Partners.providers/3)
     end
+
+    @desc "Get a count of all providers filtered by various criteria"
+    field :count_providers, :integer do
+      arg(:filter, :provider_filter)
+      resolve(&Resolvers.Partners.count_providers/3)
+    end
   end
 
   object :provider_mutations do

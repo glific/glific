@@ -87,6 +87,13 @@ defmodule Glific.MessagesTest do
                })
     end
 
+    test "count_messages/0 returns count of all messages" do
+      _ = message_fixture()
+      assert Messages.count_messages() == 1
+
+      assert Messages.count_messages(%{filter: %{body: "some body"}}) == 1
+    end
+
     test "list_messages/1 with foreign key filters" do
       {:ok, sender} = Contacts.create_contact(@sender_attrs)
       {:ok, receiver} = Contacts.create_contact(@receiver_attrs)
@@ -276,6 +283,11 @@ defmodule Glific.MessagesTest do
     test "list_messages_media/0 returns all message_media" do
       message_media = message_media_fixture()
       assert Messages.list_messages_media() == [message_media]
+    end
+
+    test "count_messages_media/0 returns count of all message media" do
+      _ = message_media_fixture()
+      assert Messages.count_messages_media() == 1
     end
 
     test "get_message_media!/1 returns the message_media with given id" do

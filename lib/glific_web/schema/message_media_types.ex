@@ -35,9 +35,14 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
       resolve(&Resolvers.Messages.message_media/3)
     end
 
-    @desc "Get a list of all message_media filtered by various criteria"
+    @desc "Get a list of all message_media"
     field :messages_media, list_of(:message_media) do
       resolve(&Resolvers.Messages.messages_media/3)
+    end
+
+    @desc "Get a count of all message media"
+    field :count_messages_media, :integer do
+      resolve(&Resolvers.Messages.count_messages_media/3)
     end
   end
 

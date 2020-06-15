@@ -78,6 +78,12 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       arg(:order, type: :sort_order, default_value: :asc)
       resolve(&Resolvers.Partners.organizations/3)
     end
+
+    @desc "Get a count of all organizations filtered by various criteria"
+    field :count_organizations, :integer do
+      arg(:filter, :organization_filter)
+      resolve(&Resolvers.Partners.count_organizations/3)
+    end
   end
 
   object :organization_mutations do

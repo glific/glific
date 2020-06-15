@@ -32,6 +32,19 @@ defmodule Glific.Partners do
     |> Repo.all()
   end
 
+  @doc """
+  Return the count of providers, using the same filter as list_providers
+  """
+  @spec count_providers(map()) :: integer
+  def count_providers(args \\ %{}) do
+    args
+    |> Enum.reduce(Provider, fn
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
+    |> Repo.aggregate(:count)
+  end
+
   @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_provider_with(query, filter) do
     Enum.reduce(filter, query, fn
@@ -152,6 +165,19 @@ defmodule Glific.Partners do
         query |> filter_with(filter)
     end)
     |> Repo.all()
+  end
+
+  @doc """
+  Return the count of organizations, using the same filter as list_organizations
+  """
+  @spec count_organizations(map()) :: integer
+  def count_organizations(args \\ %{}) do
+    args
+    |> Enum.reduce(Organization, fn
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
+    |> Repo.aggregate(:count)
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()

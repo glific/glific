@@ -1,5 +1,5 @@
-query organizations {
-  organizations {
+query organizations($filter: OrganizationFilter) {
+  organizations(filter: $filter) {
     name
     email
     provider_number

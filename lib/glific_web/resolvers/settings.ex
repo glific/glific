@@ -26,6 +26,14 @@ defmodule GlificWeb.Resolvers.Settings do
   end
 
   @doc """
+  Get the count of languages filtered by args
+  """
+  @spec count_languages(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_languages(_, args, _) do
+    {:ok, Settings.count_languages(args)}
+  end
+
+  @doc """
   Get the list of objects in the database that match the term
   """
   @spec search(Absinthe.Resolution.t(), %{matching: String.t()}, %{context: map()}) ::

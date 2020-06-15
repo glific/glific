@@ -9,6 +9,7 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
     :ok
   end
 
+  load_gql(:count, GlificWeb.Schema, "assets/gql/organizations/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/organizations/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/organizations/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/organizations/create.gql")
@@ -28,6 +29,23 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
       |> Enum.find(fn x -> x == "Default Organization" end)
 
     assert res == "Default Organization"
+  end
+
+  test "count returns the number of organizations" do
+    {:ok, query_data} = query_gql_by(:count)
+    assert get_in(query_data, [:data, "countOrganizations"]) == 2
+
+    {:ok, query_data} =
+      query_gql_by(:count,
+        variables: %{"filter" => %{"name" => "This organization should never ever exist"}}
+      )
+
+    assert get_in(query_data, [:data, "countOrganizations"]) == 0
+
+    {:ok, query_data} =
+      query_gql_by(:count, variables: %{"filter" => %{"name" => "Default Organization"}})
+
+    assert get_in(query_data, [:data, "countOrganizations"]) == 1
   end
 
   test "organization id returns one organization or nil" do
