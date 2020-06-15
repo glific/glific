@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
     :ok
   end
 
+  load_gql(:count, GlificWeb.Schema, "assets/gql/session_templates/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/session_templates/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/session_templates/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/session_templates/create.gql")
@@ -27,6 +28,21 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
       |> Enum.find(fn x -> x == "Default Template" end)
 
     assert res == "Default Template"
+  end
+
+  test "count returns the number of session templates" do
+    {:ok, query_data} = query_gql_by(:count)
+    assert get_in(query_data, [:data, "countSessionTemplates"]) == 4
+
+    {:ok, query_data} =
+      query_gql_by(:count,
+        variables: %{"filter" => %{"label" => "This session template should never ever exist"}}
+      )
+
+    assert get_in(query_data, [:data, "countSessionTemplates"]) == 0
+
+    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"label" => "Default Template Label"}})
+    assert get_in(query_data, [:data, "countSessionTemplates"]) == 1
   end
 
   test "session_templates field returns list of session_templates in desc order" do
