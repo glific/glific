@@ -217,6 +217,10 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # message media ids
       add :media_id, references(:messages_media, on_delete: :delete_all), null: true
 
+      add :parent_id, references(:messages, on_delete: :nilify_all), null: true
+
+      add :ancestors, {:array, :bigint}
+
       timestamps(type: :utc_datetime)
     end
 
