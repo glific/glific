@@ -25,7 +25,6 @@ defmodule GlificWeb.Schema.Query.MessageTest do
     assert length(messages) > 0
 
     [message | _] = messages
-    assert get_in(message, ["body"]) == "Default message body"
 
     # lets ensure that the sender and receiver field exists and has a valid id
     assert get_in(message, ["sender", "id"]) > 0
