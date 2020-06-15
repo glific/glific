@@ -16,10 +16,8 @@ defmodule Glific.Taggers do
       Spam
   """
 
-  alias __MODULE__
   alias Glific.{
     Messages.Message,
-    Tags.Tag,
     Taggers.Numeric
   }
 

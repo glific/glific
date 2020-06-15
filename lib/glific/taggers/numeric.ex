@@ -8,7 +8,6 @@ defmodule Glific.Taggers.Numeric do
     Cardinal Hindi Numbers
   """
 
-  alias __MODULE__
   alias Glific.Taggers
 
   @numeric_map %{
@@ -54,7 +53,7 @@ defmodule Glific.Taggers.Numeric do
       |> Taggers.string_clean
 
     case Map.fetch(@numeric_map, body) do
-      {:ok, value} -> to_string(value)
+      {:ok, value} -> {:ok, to_string(value)}
       :error -> :error
     end
   end
