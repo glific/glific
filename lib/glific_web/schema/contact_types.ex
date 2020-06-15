@@ -64,6 +64,12 @@ defmodule GlificWeb.Schema.ContactTypes do
       resolve(&Resolvers.Contacts.contacts/3)
     end
 
+    @desc "Get a count of all contacts filtered by various criteria"
+    field :count_contacts, :integer do
+      arg(:filter, :contact_filter)
+      resolve(&Resolvers.Contacts.count_contacts/3)
+    end
+
     field :search, list_of(:contact) do
       arg(:term, non_null(:string))
       arg(:order, type: :sort_order, default_value: :asc)
