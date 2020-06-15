@@ -1,6 +1,8 @@
 defmodule Glific.Repo.Migrations.AddParentIdToMessages do
   use Ecto.Migration
 
+  @ancestors_limit Application.fetch_env!(:glific, :message_ancestors_limit)
+
   def up do
     alter table(:messages) do
       add :parent_id, references(:messages)
@@ -14,7 +16,7 @@ defmodule Glific.Repo.Migrations.AddParentIdToMessages do
       IF (TG_OP = 'INSERT') THEN
         UPDATE messages SET parent_id = (SELECT id from messages where contact_id = NEW.contact_id and id < NEW.id ORDER BY id DESC LIMIT 1) where id = NEW.id;
 
-        UPDATE messages SET ancestors = (Array(SELECT parent_id from messages where contact_id = NEW.contact_id and id < NEW.id and parent_id is not NULL ORDER BY id DESC LIMIT 10))
+        UPDATE messages SET ancestors = (Array(SELECT parent_id from messages where contact_id = NEW.contact_id and id < NEW.id and parent_id is not NULL ORDER BY id DESC LIMIT #{@ancestors_limit}))
         where id = NEW.id;
 
         RETURN NEW;
