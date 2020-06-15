@@ -20,9 +20,10 @@ defmodule Glific.Application do
       {Oban, oban_config()},
 
       # Add Absinthe's subscription
-      {Absinthe.Subscription, GlificWeb.Endpoint}
-      # Start a worker by calling: Glific.Worker.start_link(arg)
-      # {Glific.Worker, arg}
+      {Absinthe.Subscription, GlificWeb.Endpoint},
+
+      Glific.Processor.Producer,
+      Glific.Processor.ConsumerText,
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
