@@ -101,7 +101,8 @@ defmodule Glific.MixProject do
       {:cors_plug, "~> 2.0"},
       {:ex_check, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.8", only: [:dev, :test]},
-      {:wormwood, "~> 0.1"}
+      {:wormwood, "~> 0.1"},
+      (:gen_stage, ":~> 1.0"},
     ]
   end
 
