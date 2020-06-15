@@ -113,6 +113,14 @@ defmodule GlificWeb.Resolvers.Messages do
     {:ok, Messages.list_messages_media(args)}
   end
 
+  @doc """
+  Get the count of message media
+  """
+  @spec count_messages_media(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_messages_media(_, args, _) do
+    {:ok, Messages.count_messages_media(args)}
+  end
+
   @doc false
   @spec create_message_media(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}

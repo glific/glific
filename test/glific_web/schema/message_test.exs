@@ -61,7 +61,8 @@ defmodule GlificWeb.Schema.Query.MessageTest do
 
     assert get_in(query_data, [:data, "countMessages"]) == 0
 
-    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"body" => "default message body"}})
+    {:ok, query_data} =
+      query_gql_by(:count, variables: %{"filter" => %{"body" => "default message body"}})
 
     assert get_in(query_data, [:data, "countMessages"]) == 1
   end

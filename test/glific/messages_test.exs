@@ -230,6 +230,11 @@ defmodule Glific.MessagesTest do
       assert Messages.list_messages_media() == [message_media]
     end
 
+    test "count_messages_media/0 returns count of all message media" do
+      _ = message_media_fixture()
+      assert Messages.count_messages_media() == 1
+    end
+
     test "get_message_media!/1 returns the message_media with given id" do
       message_media = message_media_fixture()
       assert Messages.get_message_media!(message_media.id) == message_media

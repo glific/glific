@@ -213,6 +213,19 @@ defmodule Glific.Messages do
   end
 
   @doc """
+  Return the count of messages, using the same filter as list_messages
+  """
+  @spec count_messages_media(map()) :: integer
+  def count_messages_media(args \\ %{}) do
+    args
+    |> Enum.reduce(MessageMedia, fn
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
   Gets a single message media.
 
   Raises `Ecto.NoResultsError` if the Message media does not exist.
