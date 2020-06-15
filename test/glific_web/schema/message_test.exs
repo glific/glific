@@ -24,7 +24,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
     assert length(messages) > 0
 
     [message | _] = messages
-    assert get_in(message, ["body"]) == "default message body"
+    assert get_in(message, ["body"]) == "Default message body"
 
     # lets ensure that the sender and receiver field exists and has a valid id
     assert get_in(message, ["sender", "id"]) > 0
@@ -32,13 +32,13 @@ defmodule GlificWeb.Schema.Query.MessageTest do
   end
 
   test "messages field returns list of messages in various filters" do
-    result = query_gql_by(:list, variables: %{"filter" => %{"body" => "default message body"}})
+    result = query_gql_by(:list, variables: %{"filter" => %{"body" => "Default message body"}})
     assert {:ok, query_data} = result
 
     messages = get_in(query_data, [:data, "messages"])
     assert length(messages) > 0
     [message | _] = messages
-    assert get_in(message, ["body"]) == "default message body"
+    assert get_in(message, ["body"]) == "Default message body"
 
     result = query_gql_by(:list, variables: %{"filter" => %{"receiver" => "Default receiver"}})
     assert {:ok, query_data} = result
@@ -79,7 +79,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
   end
 
   test "message id returns one message or nil" do
-    body = "default message body"
+    body = "Default message body"
     {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
 
     result = query_gql_by(:by_id, variables: %{"id" => message.id})
@@ -96,7 +96,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
   end
 
   test "create a message and test possible scenarios and errors" do
-    body = "default message body"
+    body = "Default message body"
     {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
 
     result =
@@ -136,7 +136,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
   end
 
   test "update a message and test possible scenarios and errors" do
-    body = "default message body"
+    body = "Default message body"
     {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
 
     result =
@@ -161,7 +161,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
   end
 
   test "delete a message" do
-    body = "default message body"
+    body = "Default message body"
     {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
 
     result = query_gql_by(:delete, variables: %{"id" => message.id})

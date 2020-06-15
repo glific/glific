@@ -174,7 +174,7 @@ defmodule Glific.Seeds do
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
     Repo.insert!(%Message{
-      body: "default message body",
+      body: "Default message body",
       flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),

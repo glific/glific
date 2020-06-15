@@ -8,9 +8,6 @@ config :glific, Glific.Repo,
   hostname: "localhost",
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
-  # template: "template0",
-  # lc_collate: "en_GB",
-  # lc_type: "en_GB"
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
