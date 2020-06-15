@@ -202,8 +202,10 @@ defmodule Glific.MessagesTest do
 
       {:ok, message6} = Glific.Repo.fetch_by(Message, %{body: body})
       assert message5.id == message6.parent_id
-      assert length(message6.ancestors) == 4
-      assert [message4.id, message3.id, message2.id, message1.id] == message6.ancestors
+      assert length(message6.ancestors) == 5
+
+      assert [message5.id, message4.id, message3.id, message2.id, message1.id] ==
+               message6.ancestors
     end
 
     test "update_message/2 with valid data updates the message" do
