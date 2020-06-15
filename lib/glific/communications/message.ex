@@ -69,7 +69,7 @@ defmodule Glific.Communications.Message do
   Callback when we receive a text message
   """
 
-  @spec receive_text(map()) :: {:ok, Message.t()}
+  @spec receive_text(map()) :: Message.t()
   def receive_text(message_params) do
     contact = Contacts.upsert(message_params.sender)
 
@@ -82,12 +82,13 @@ defmodule Glific.Communications.Message do
     })
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
+    |> Glific.Processor.Producer.add
   end
 
   @doc """
   Callback when we receive a media (image|video|audio) message
   """
-  @spec receive_media(map()) :: {:ok, Message.t()}
+  @spec receive_media(map()) :: Message.t()
   def receive_media(message_params) do
     contact = Contacts.upsert(message_params.sender)
     {:ok, message_media} = Messages.create_message_media(message_params)

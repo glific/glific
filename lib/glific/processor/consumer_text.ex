@@ -79,7 +79,7 @@ defmodule Glific.Processor.ConsumerText do
     nil
   end
 
-  @spec add_numeric_tag(Message.t(), String.t(), atom() | map()) :: {:ok, map()}
+  @spec add_numeric_tag(Message.t(), String.t(), atom() | map()) :: Message.t()
   defp add_numeric_tag(message, value, state) do
     Tags.create_message_tag(%{
       message_id: message.id,
