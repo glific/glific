@@ -7,7 +7,12 @@ defmodule Glific.Processor.ConsumerText do
 
   use GenStage
 
-  alias Glific.Taggers.Numeric
+  alias Glific.{
+    Repo,
+    Tags,
+    Tags.Tag,
+    Taggers.Numeric
+  }
 
   @min_demand 0
   @max_demand 1
@@ -18,9 +23,11 @@ defmodule Glific.Processor.ConsumerText do
 
   @doc false
   def init(:ok) do
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: "Numeric"})
     state = %{
       producer: Glific.Processor.Producer,
-      numeric_map: Numeric.get_numeric_map()
+      numeric_map: Numeric.get_numeric_map(),
+      numeric_tag_id: tag.id,
     }
 
     {:consumer, state,
@@ -50,18 +57,27 @@ defmodule Glific.Processor.ConsumerText do
 
   @doc false
   def handle_events(messages, _from, state) do
-    _ = Enum.map(messages, &process_message(&1, state.numeric_map))
+    _ = Enum.map(messages, &process_message(&1, state))
 
     {:noreply, [], state}
   end
 
-  @spec process_message(atom() | map(), %{binary() => integer()}) :: nil
-  defp process_message(message, numeric_map) do
-    case Numeric.tag_message(message, numeric_map) do
-      {:ok, value} -> IO.puts("Text Consumer: #{value}")
+  @spec process_message(atom() | Message.t(), map()) :: nil
+  defp process_message(message, state) do
+    case Numeric.tag_message(message, state.numeric_map) do
+      {:ok, value} -> add_numeric_tag(message, value, state)
       :error -> IO.puts("Text Consumer: Not numeric")
     end
-
     nil
+  end
+
+  @spec add_numeric_tag(Message.t(), integer, map()) :: nil
+  defp add_numeric_tag(message, value, state) do
+    message_tag = Tags.create_message_tag(
+      %{
+        message_id: message.id,
+        tag_id: state.numeric_tag_id,
+        value: value
+      })
   end
 end
