@@ -77,6 +77,13 @@ defmodule Glific.MessagesTest do
                })
     end
 
+    test "count_messages/0 returns count of all messages" do
+      _ = message_fixture()
+      assert Messages.count_messages() == 1
+
+      assert Messages.count_messages(%{filter: %{body: "some body"}}) == 1
+    end
+
     test "list_messages/1 with foreign key filters" do
       {:ok, sender} = Contacts.create_contact(@sender_attrs)
       {:ok, receiver} = Contacts.create_contact(@receiver_attrs)

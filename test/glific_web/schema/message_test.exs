@@ -10,6 +10,7 @@ defmodule GlificWeb.Schema.Query.MessageTest do
     :ok
   end
 
+  load_gql(:count, GlificWeb.Schema, "assets/gql/messages/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/messages/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/messages/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/messages/create.gql")
@@ -47,6 +48,22 @@ defmodule GlificWeb.Schema.Query.MessageTest do
     assert length(messages) > 0
     [message | _] = messages
     assert get_in(message, ["body"]) == "default message body"
+  end
+
+  test "count returns the number of messages" do
+    {:ok, query_data} = query_gql_by(:count)
+    assert get_in(query_data, [:data, "countMessages"]) == 4
+
+    {:ok, query_data} =
+      query_gql_by(:count,
+        variables: %{"filter" => %{"body" => "This message should never ever exist"}}
+      )
+
+    assert get_in(query_data, [:data, "countMessages"]) == 0
+
+    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"body" => "default message body"}})
+
+    assert get_in(query_data, [:data, "countMessages"]) == 1
   end
 
   test "message id returns one message or nil" do

@@ -34,6 +34,19 @@ defmodule Glific.Messages do
     |> Repo.all()
   end
 
+  @doc """
+  Return the count of messages, using the same filter as list_messages
+  """
+  @spec count_messages(map()) :: integer
+  def count_messages(args \\ %{}) do
+    args
+    |> Enum.reduce(Message, fn
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
+    |> Repo.aggregate(:count)
+  end
+
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn
