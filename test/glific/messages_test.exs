@@ -45,8 +45,14 @@ defmodule Glific.MessagesTest do
     @invalid_attrs %{body: nil, flow: nil, type: nil, provider_message_id: nil}
 
     defp foreign_key_constraint do
-      {:ok, sender} = Contacts.create_contact(@sender_attrs)
-      {:ok, receiver} = Contacts.create_contact(@receiver_attrs)
+      {:ok, sender} =
+        @sender_attrs
+        |> Map.merge(%{phone: Faker.Phone.EnUs.phone()})
+        |> Contacts.create_contact()
+      {:ok, receiver} =
+        @receiver_attrs
+        |> Map.merge(%{phone: Faker.Phone.EnUs.phone()})
+        |> Contacts.create_contact()
       %{sender_id: sender.id, receiver_id: receiver.id}
     end
 
@@ -151,6 +157,14 @@ defmodule Glific.MessagesTest do
 
     test "create_message/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Messages.create_message(@invalid_attrs)
+    end
+
+    test "create_message/1 with valid data will assign parent id if exists" do
+      body = "Body for parent id"
+      message1 = message_fixture()
+      message_fixture(%{body: body, sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+      {:ok, message2} = Glific.Repo.fetch_by(Message, %{body: body})
+      assert message1.id == message2.parent_id
     end
 
     test "update_message/2 with valid data updates the message" do

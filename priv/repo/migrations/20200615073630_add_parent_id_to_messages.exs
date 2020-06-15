@@ -5,7 +5,7 @@ defmodule Glific.Repo.Migrations.AddParentIdToMessages do
 
   def up do
     alter table(:messages) do
-      add :parent_id, references(:messages)
+      add :parent_id, :bigint
       add :ancestors, {:array, :bigint}
     end
 

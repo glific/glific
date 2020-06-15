@@ -17,6 +17,7 @@ defmodule Glific.Messages.Message do
           receiver: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
+          parent: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           body: String.t() | nil,
           provider_message_id: String.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -47,6 +48,7 @@ defmodule Glific.Messages.Message do
     belongs_to :sender, Contact
     belongs_to :receiver, Contact
     belongs_to :contact, Contact
+    belongs_to :parent, Message
 
     belongs_to :media, MessageMedia
 
