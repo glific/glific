@@ -41,7 +41,9 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
 
     assert get_in(query_data, [:data, "countSessionTemplates"]) == 0
 
-    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"label" => "Default Template Label"}})
+    {:ok, query_data} =
+      query_gql_by(:count, variables: %{"filter" => %{"label" => "Default Template Label"}})
+
     assert get_in(query_data, [:data, "countSessionTemplates"]) == 1
   end
 

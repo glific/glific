@@ -35,6 +35,13 @@ defmodule Glific.SettingsTest do
       assert Settings.list_languages() == [language]
     end
 
+    test "count_languages/0 returns count of all languages" do
+      _ = language_fixture()
+      assert Settings.count_languages() == 1
+
+      assert Settings.count_languages(%{filter: %{label: "English (United States)"}}) == 1
+    end
+
     test "get_language!/1 returns the language with given id" do
       language = language_fixture()
       assert Settings.get_language!(language.id) == language

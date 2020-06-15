@@ -28,7 +28,8 @@ defmodule GlificWeb.Resolvers.Templates do
   @doc """
   Get the count of sessiont templates filtered by args
   """
-  @spec count_session_templates(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  @spec count_session_templates(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, integer}
   def count_session_templates(_, args, _) do
     {:ok, Templates.count_session_templates(args)}
   end
