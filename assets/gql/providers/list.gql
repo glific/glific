@@ -1,5 +1,5 @@
-query providers {
-  providers {
+query providers($filter: ProviderFilter) {
+  providers (filter: $filter) {
     name
   }
 }

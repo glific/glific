@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.Query.ProviderTest do
     :ok
   end
 
+  load_gql(:count, GlificWeb.Schema, "assets/gql/providers/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/providers/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/providers/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/providers/create.gql")
@@ -26,6 +27,23 @@ defmodule GlificWeb.Schema.Query.ProviderTest do
       |> Enum.find(fn x -> x == "Default Provider" end)
 
     assert res == "Default Provider"
+  end
+
+  test "count returns the number of providers" do
+    {:ok, query_data} = query_gql_by(:count)
+    assert get_in(query_data, [:data, "countProviders"]) == 3
+
+    {:ok, query_data} =
+      query_gql_by(:count,
+        variables: %{"filter" => %{"name" => "This provider should never ever exist"}}
+      )
+
+    assert get_in(query_data, [:data, "countProviders"]) == 0
+
+    {:ok, query_data} =
+      query_gql_by(:count, variables: %{"filter" => %{"name" => "Default Provider"}})
+
+    assert get_in(query_data, [:data, "countProviders"]) == 1
   end
 
   test "provider id returns one provider or nil" do

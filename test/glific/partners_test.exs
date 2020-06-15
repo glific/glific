@@ -65,6 +65,16 @@ defmodule Glific.PartnersTest do
       assert length(provider_list) == 2
     end
 
+    test "count_providers/0 returns count of all providers" do
+      provider_fixture()
+      assert Partners.count_providers() == 1
+
+      provider_fixture(@valid_attrs_1)
+      assert Partners.count_providers() == 2
+
+      assert Partners.count_providers(%{filter: %{name: "some name 1"}}) == 1
+    end
+
     test "get_provider!/1 returns the provider with given id" do
       provider = provider_fixture()
       assert Partners.get_provider!(provider.id) == provider

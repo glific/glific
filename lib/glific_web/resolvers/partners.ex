@@ -88,6 +88,14 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
+  Get the count of providers filtered by args
+  """
+  @spec count_providers(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_providers(_, args, _) do
+    {:ok, Partners.count_providers(args)}
+  end
+
+  @doc """
   Creates a provider
   """
   @spec create_provider(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
