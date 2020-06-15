@@ -3,9 +3,12 @@ defmodule Glific.Communications.Message do
   The Message Communication Context, which encapsulates and manages tags and the related join tables.
   """
 
-  alias Glific.Contacts
-  alias Glific.Messages
-  alias Glific.Messages.Message
+  alias Glific.{
+    Communications,
+    Contacts,
+    Messages,
+    Messages.Message
+  }
 
   @doc false
   defmacro __using__(_opts \\ []) do
@@ -78,7 +81,7 @@ defmodule Glific.Communications.Message do
       flow: :inbound
     })
     |> Messages.create_message()
-    |> publish_message(:received_message)
+    |> Communications.publish_data(:received_message)
   end
 
   @doc """
@@ -97,19 +100,7 @@ defmodule Glific.Communications.Message do
       flow: :inbound
     })
     |> Messages.create_message()
-    |> publish_message(:received_message)
-  end
-
-  @doc false
-  @spec publish_message({:ok, Message.t()}, atom()) :: {:ok, Message.t()}
-  def publish_message({:ok, message}, topic) do
-    Absinthe.Subscription.publish(
-      GlificWeb.Endpoint,
-      message,
-      [{topic, :glific}]
-    )
-
-    {:ok, message}
+    |> Communications.publish_data(:received_message)
   end
 
   @doc false

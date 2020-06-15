@@ -119,7 +119,7 @@ defmodule Glific.Taggers.Numeric do
 
     case Map.fetch(numeric_map, body) do
       {:ok, value} -> {:ok, to_string(value)}
-      :error -> :error
+      _ -> :error
     end
   end
 end
