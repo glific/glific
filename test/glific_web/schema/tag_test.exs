@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
     :ok
   end
 
+  load_gql(:count, GlificWeb.Schema, "assets/gql/tags/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/tags/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/tags/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/tags/create.gql")
@@ -87,6 +88,21 @@ defmodule GlificWeb.Schema.Query.TagTest do
     assert get_in(tags, [Access.at(0), "label"]) != "Child"
     assert get_in(tags, [Access.at(1), "label"]) != "Child"
     assert get_in(tags, [Access.at(2), "label"]) != "Child"
+  end
+
+  test "count returns the number of tags" do
+    {:ok, query_data} = query_gql_by(:count)
+    assert get_in(query_data, [:data, "countTags"]) == 16
+
+    {:ok, query_data} =
+      query_gql_by(:count,
+        variables: %{"filter" => %{"label" => "This tag should never ever exist"}}
+      )
+
+    assert get_in(query_data, [:data, "countTags"]) == 0
+
+    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"label" => "Welcome"}})
+    assert get_in(query_data, [:data, "countTags"]) == 1
   end
 
   test "tag id returns one tag or nil" do

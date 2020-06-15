@@ -179,22 +179,5 @@ defmodule Glific.CommunicationsTest do
       assert message.provider_status == :enqueued
       assert message.flow == :outbound
     end
-
-    test "sending media message without media object should be handled " do
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 400,
-            body: "error occured"
-          }
-      end)
-
-      message = message_fixture(%{type: :image})
-      Communications.send_message(message)
-      message = Messages.get_message!(message.id)
-      assert message.provider_message_id == nil
-      assert message.provider_status == :error
-      assert message.flow == :outbound
-    end
   end
 end

@@ -68,7 +68,7 @@ defmodule GlificWeb.MessageControllerTest do
     end
   end
 
-  describe "image" do
+  describe "media" do
     setup do
       image_payload = %{
         "caption" => Faker.Lorem.sentence(),

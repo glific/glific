@@ -1,5 +1,5 @@
 defmodule Glific.MessagesTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{
     Contacts,
@@ -192,6 +192,14 @@ defmodule Glific.MessagesTest do
     test "change_message/1 returns a message changeset" do
       message = message_fixture()
       assert %Ecto.Changeset{} = Messages.change_message(message)
+    end
+
+    test "create message with media type and without media id returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} =
+               @valid_attrs
+               |> Map.merge(foreign_key_constraint())
+               |> Map.merge(%{type: :image})
+               |> Messages.create_message()
     end
   end
 

@@ -1,7 +1,7 @@
-$ curl -X POST -d "user[email]=test@example.com&user[password]=secret1234&user[password_confirmation]=secret1234" http://localhost:4000/api/v1/registration
+$ curl -X POST -d "user[phone]=test@example.com&user[password]=secret1234&user[password_confirmation]=secret1234" http://localhost:4000/api/v1/registration
 {"data":{"renewal_token":"RENEW_TOKEN","access_token":"AUTH_TOKEN"}}
 
-$ curl -X POST -d "user[email]=test@example.com&user[password]=secret1234" http://localhost:4000/api/v1/session
+$ curl -X POST -d "user[phone]=test@example.com&user[password]=secret1234" http://localhost:4000/api/v1/session
 {"data":{"renewal_token":"RENEW_TOKEN","access_token":"AUTH_TOKEN"}}
 
 $ curl -X DELETE -H "Authorization: AUTH_TOKEN" http://localhost:4000/api/v1/session
@@ -143,5 +143,57 @@ mutation createOrganization($input: OrganizationInput!) {
     "provider": "gupshup",
     "provider_key": "random",
     "provider_number": "10101010101"
+  }
+}
+
+
+
+subscription {
+  sentMessage {
+    id
+    body
+    flow
+    type
+    receiver {
+      id
+      phone
+    }
+    sender {
+      id
+      phone
+    }
+  }
+}
+
+mutation cre_send_message($input: MessageInput!) {
+  createAndSendMessage(input: $input) {
+    message {
+      id
+      body
+      flow
+      type
+      receiver {
+        id
+        phone
+      }
+      sender {
+        id
+        phone
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "body": "Lets see how this goes 1",
+    "flow": "OUTBOUND",
+    "receiverId": "10",
+    "senderId": "1",
+    "type": "TEXT"
   }
 }

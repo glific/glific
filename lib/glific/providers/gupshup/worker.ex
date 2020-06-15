@@ -5,7 +5,7 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   use Oban.Worker,
     queue: :gupshup,
-    max_attempts: 3,
+    max_attempts: 1,
     priority: 0
 
   alias Glific.Communications.Message, as: Communications

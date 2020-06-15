@@ -106,6 +106,11 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.send_message/3)
     end
 
+    field :create_and_send_message, :message_result do
+      arg(:input, non_null(:message_input))
+      resolve(&Resolvers.Messages.create_and_send_message/3)
+    end
+
     field :update_message, :message_result do
       arg(:id, non_null(:id))
       arg(:input, :message_input)
@@ -121,22 +126,18 @@ defmodule GlificWeb.Schema.MessageTypes do
   object :message_subscriptions do
     field :received_message, :message do
       config(fn _args, _info ->
-        {:ok, topic: "*"}
+        {:ok, topic: :glific}
       end)
     end
 
     field :sent_message, :message do
-      arg(:id, non_null(:id))
-
-      config(fn args, _info ->
-        {:ok, topic: args.id}
+      config(fn _args, _info ->
+        {:ok, topic: :glific}
       end)
 
-      trigger([:send_message],
-        topic: fn
-          %{message: message} -> message.id
-          _ -> []
-        end
+      trigger(
+        [:send_message, :create_and_send_message],
+        :glific
       )
 
       resolve(fn %{message: message}, _, _ ->

@@ -1,6 +1,9 @@
-name: continuous-integration
+name: Continuous Integration
+
 
 on:
+  push:
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -67,3 +70,9 @@ jobs:
 
       - name: Run check
         run: mix check
+
+      - name: Coveralls for code covarage
+        run: mix do compile --warnings-as-errors, coveralls.json
+
+      - name: Code coverage
+        run: bash <(curl -s https://codecov.io/bash)

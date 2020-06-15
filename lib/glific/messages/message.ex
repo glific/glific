@@ -63,13 +63,37 @@ defmodule Glific.Messages.Message do
     message
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_media(message)
   end
 
   @doc """
   Convert message structure to map
   """
+
   @spec to_minimal_map(Message.t()) :: map()
   def to_minimal_map(message) do
-    Map.take(message, [:id | @required_fields])
+    Map.take(message, [:id | @required_fields ++ @optional_fields])
+  end
+
+  @doc false
+  # if message type is not text then it should have media id
+  @spec changeset(Ecto.Changeset.t(), Message.t()) :: Ecto.Changeset.t()
+  defp validate_media(changeset, message) do
+    type = changeset.changes[:type]
+    media_id = changeset.changes[:media_id] || message.media_id
+
+    cond do
+      type == nil ->
+        changeset
+
+      type == :text ->
+        changeset
+
+      media_id == nil ->
+        add_error(changeset, :type, "#{Atom.to_string(type)} message type should have a media id")
+
+      true ->
+        changeset
+    end
   end
 end

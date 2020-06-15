@@ -1,5 +1,5 @@
 defmodule Glific.TagsTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{Settings, Tags, Tags.ContactTag, Tags.MessageTag, Tags.Tag}
 
@@ -70,6 +70,16 @@ defmodule Glific.TagsTest do
     test "list_tags/0 returns all tags" do
       tag = tag_fixture()
       assert Tags.list_tags() == [tag]
+    end
+
+    test "count_tags/0 returns count of all tags" do
+      _ = tag_fixture()
+      assert Tags.count_tags() == 1
+
+      _ = tag_fixture(@valid_more_attrs)
+      assert Tags.count_tags() == 2
+
+      assert Tags.count_tags(%{filter: %{label: "more label"}}) == 1
     end
 
     test "get_tag!/1 returns the tag with given id" do
