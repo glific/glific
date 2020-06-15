@@ -1,5 +1,5 @@
-query contacts($filter: ContactFilter) {
-  contacts (filter: $filter) {
+query contacts ($filter: ContactFilter, $opts: Opts) {
+  contacts (filter: $filter, opts: $opts) {
     id
     name
     phone

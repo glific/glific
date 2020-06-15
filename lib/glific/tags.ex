@@ -46,7 +46,7 @@ defmodule Glific.Tags do
   defp opts_with(query, opts) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->
-        query |> order_by({^order, :label})
+        query |> order_by([t], {^order, fragment("lower(?)", t.label)})
 
       {:limit, limit}, query ->
         query |> limit(^limit)

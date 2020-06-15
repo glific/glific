@@ -37,6 +37,7 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
 
     @desc "Get a list of all message_media"
     field :messages_media, list_of(:message_media) do
+      arg(:opts, :opts)
       resolve(&Resolvers.Messages.messages_media/3)
     end
 

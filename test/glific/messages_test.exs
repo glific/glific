@@ -78,11 +78,13 @@ defmodule Glific.MessagesTest do
 
     test "list_messages/1 with multiple messages filtered" do
       message = message_fixture()
-      assert [message] == Messages.list_messages(%{order: :asc, filter: %{body: message.body}})
+
+      assert [message] ==
+               Messages.list_messages(%{opts: %{order: :asc}, filter: %{body: message.body}})
 
       assert [message] ==
                Messages.list_messages(%{
-                 order: :asc,
+                 opts: %{order: :asc},
                  filter: %{provider_status: message.provider_status}
                })
     end
@@ -132,6 +134,23 @@ defmodule Glific.MessagesTest do
         })
 
       assert length(message_list) == 2
+
+      # Check if tag id is wrong, no message should be fetched
+      [last_tag_id] =
+        Glific.Tags.Tag
+        |> order_by([t], desc: t.id)
+        |> limit(1)
+        |> select([t], t.id)
+        |> Repo.all()
+
+      wrong_tag_id = last_tag_id + 1
+
+      message_list =
+        Messages.list_messages(%{
+          filter: %{tags_included: [wrong_tag_id]}
+        })
+
+      assert message_list == []
     end
 
     test "list_messages/1 with tags excluded filters" do
