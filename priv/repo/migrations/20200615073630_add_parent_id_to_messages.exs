@@ -3,7 +3,7 @@ defmodule Glific.Repo.Migrations.AddParentIdToMessages do
 
   def up do
     alter table(:messages) do
-      add :parent_id, :integer, default: 0
+      add :parent_id, references(:messages)
     end
 
     execute """
