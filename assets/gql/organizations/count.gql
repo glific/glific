@@ -1,0 +1,3 @@
+query count_organizations($filter: OrganizationFilter) {
+  countOrganizations(filter: $filter)
+}

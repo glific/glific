@@ -89,6 +89,12 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       arg(:order, type: :sort_order, default_value: :asc)
       resolve(&Resolvers.Templates.session_templates/3)
     end
+
+    @desc "Get a count of all session_templates filtered by various criteria"
+    field :count_session_templates, :integer do
+      arg(:filter, :session_template_filter)
+      resolve(&Resolvers.Templates.count_session_templates/3)
+    end
   end
 
   object :session_template_mutations do

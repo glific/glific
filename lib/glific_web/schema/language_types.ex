@@ -38,6 +38,11 @@ defmodule GlificWeb.Schema.LanguageTypes do
     field :languages, list_of(:language) do
       resolve(&Resolvers.Settings.languages/3)
     end
+
+    @desc "Get a count of all languages"
+    field :count_languages, :integer do
+      resolve(&Resolvers.Settings.count_languages/3)
+    end
   end
 
   object :language_mutations do

@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.Query.ContactTest do
     :ok
   end
 
+  load_gql(:count, GlificWeb.Schema, "assets/gql/contacts/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/contacts/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/contacts/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/contacts/create.gql")
@@ -54,6 +55,23 @@ defmodule GlificWeb.Schema.Query.ContactTest do
     assert get_in(contacts, [Access.at(0), "name"]) != "Test"
     assert get_in(contacts, [Access.at(1), "name"]) != "Test"
     assert get_in(contacts, [Access.at(2), "name"]) != "Test"
+  end
+
+  test "count returns the number of contacts" do
+    {:ok, query_data} = query_gql_by(:count)
+    assert get_in(query_data, [:data, "countContacts"]) == 6
+
+    {:ok, query_data} =
+      query_gql_by(:count,
+        variables: %{"filter" => %{"name" => "This contact should never ever exist"}}
+      )
+
+    assert get_in(query_data, [:data, "countContacts"]) == 0
+
+    {:ok, query_data} =
+      query_gql_by(:count, variables: %{"filter" => %{"name" => "Default Sender"}})
+
+    assert get_in(query_data, [:data, "countContacts"]) == 1
   end
 
   test "contact id returns one contact or nil" do

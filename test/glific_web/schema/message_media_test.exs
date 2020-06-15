@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.Query.MessageMediaTest do
     :ok
   end
 
+  load_gql(:count, GlificWeb.Schema, "assets/gql/messages_media/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/messages_media/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/messages_media/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/messages_media/create.gql")
@@ -38,6 +39,11 @@ defmodule GlificWeb.Schema.Query.MessageMediaTest do
 
     # lets make sure we dont get Test as a message media caption
     assert get_in(messages_media, [Access.at(0), "caption"]) != "Test"
+  end
+
+  test "count returns the number of messages media" do
+    {:ok, query_data} = query_gql_by(:count)
+    assert get_in(query_data, [:data, "countMessagesMedia"]) == 4
   end
 
   test "message media id returns one message media or nil" do

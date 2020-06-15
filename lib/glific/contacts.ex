@@ -41,6 +41,19 @@ defmodule Glific.Contacts do
     end)
   end
 
+  @doc """
+  Return the count of contacts, using the same filter as list_contacts
+  """
+  @spec count_contacts(map()) :: integer
+  def count_contacts(args \\ %{}) do
+    args
+    |> Enum.reduce(Contact, fn
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
+    |> Repo.aggregate(:count)
+  end
+
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn

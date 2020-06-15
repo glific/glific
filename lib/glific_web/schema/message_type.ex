@@ -93,6 +93,12 @@ defmodule GlificWeb.Schema.MessageTypes do
       arg(:opts, :opts)
       resolve(&Resolvers.Messages.messages/3)
     end
+
+    @desc "Get a count of all messages filtered by various criteria"
+    field :count_messages, :integer do
+      arg(:filter, :message_filter)
+      resolve(&Resolvers.Messages.count_messages/3)
+    end
   end
 
   object :message_mutations do

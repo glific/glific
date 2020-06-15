@@ -26,6 +26,14 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
+  Get the count of organizations filtered by args
+  """
+  @spec count_organizations(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_organizations(_, args, _) do
+    {:ok, Partners.count_organizations(args)}
+  end
+
+  @doc """
   Creates an organization
   """
   @spec create_organization(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
@@ -77,6 +85,14 @@ defmodule GlificWeb.Resolvers.Partners do
   @spec providers(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, any} | {:error, any}
   def providers(_, args, _) do
     {:ok, Partners.list_providers(args)}
+  end
+
+  @doc """
+  Get the count of providers filtered by args
+  """
+  @spec count_providers(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_providers(_, args, _) do
+    {:ok, Partners.count_providers(args)}
   end
 
   @doc """

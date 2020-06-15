@@ -1,6 +1,8 @@
 defmodule Glific.MessagesTest do
   use Glific.DataCase
 
+  alias Faker.Phone
+
   alias Glific.{
     Contacts,
     Messages,
@@ -45,8 +47,16 @@ defmodule Glific.MessagesTest do
     @invalid_attrs %{body: nil, flow: nil, type: nil, provider_message_id: nil}
 
     defp foreign_key_constraint do
-      {:ok, sender} = Contacts.create_contact(@sender_attrs)
-      {:ok, receiver} = Contacts.create_contact(@receiver_attrs)
+      {:ok, sender} =
+        @sender_attrs
+        |> Map.merge(%{phone: Phone.EnUs.phone()})
+        |> Contacts.create_contact()
+
+      {:ok, receiver} =
+        @receiver_attrs
+        |> Map.merge(%{phone: Phone.EnUs.phone()})
+        |> Contacts.create_contact()
+
       %{sender_id: sender.id, receiver_id: receiver.id}
     end
 
@@ -77,6 +87,13 @@ defmodule Glific.MessagesTest do
                  opts: %{order: :asc},
                  filter: %{provider_status: message.provider_status}
                })
+    end
+
+    test "count_messages/0 returns count of all messages" do
+      _ = message_fixture()
+      assert Messages.count_messages() == 1
+
+      assert Messages.count_messages(%{filter: %{body: "some body"}}) == 1
     end
 
     test "list_messages/1 with foreign key filters" do
@@ -172,6 +189,51 @@ defmodule Glific.MessagesTest do
       assert {:error, %Ecto.Changeset{}} = Messages.create_message(@invalid_attrs)
     end
 
+    test "create_message/1 with valid data will set parent id if exists" do
+      body = "Body for parent id"
+      message1 = message_fixture()
+
+      message_fixture(%{
+        body: body,
+        sender_id: message1.sender_id,
+        receiver_id: message1.receiver_id
+      })
+
+      {:ok, message2} = Glific.Repo.fetch_by(Message, %{body: body})
+      assert message1.id == message2.parent_id
+    end
+
+    test "create_message/1 with valid data will set ancestors id if exists" do
+      message1 = message_fixture()
+
+      message2 =
+        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      message3 =
+        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      message4 =
+        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      message5 =
+        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      body = "Body for ancestors message"
+
+      message_fixture(%{
+        body: body,
+        sender_id: message1.sender_id,
+        receiver_id: message1.receiver_id
+      })
+
+      {:ok, message6} = Glific.Repo.fetch_by(Message, %{body: body})
+      assert message5.id == message6.parent_id
+      assert length(message6.ancestors) == 5
+
+      assert [message5.id, message4.id, message3.id, message2.id, message1.id] ==
+               message6.ancestors
+    end
+
     test "update_message/2 with valid data updates the message" do
       message = message_fixture()
       assert {:ok, %Message{} = message} = Messages.update_message(message, @update_attrs)
@@ -240,6 +302,11 @@ defmodule Glific.MessagesTest do
     test "list_messages_media/0 returns all message_media" do
       message_media = message_media_fixture()
       assert Messages.list_messages_media() == [message_media]
+    end
+
+    test "count_messages_media/0 returns count of all message media" do
+      _ = message_media_fixture()
+      assert Messages.count_messages_media() == 1
     end
 
     test "get_message_media!/1 returns the message_media with given id" do

@@ -22,6 +22,15 @@ defmodule Glific.Settings do
   end
 
   @doc """
+  Return the count of languages, using the same filter as list_languages
+  """
+  @spec count_languages(map()) :: integer
+  def count_languages(_args \\ %{}) do
+    Language
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
   Gets a single language.
 
   Raises `Ecto.NoResultsError` if the Language does not exist.
