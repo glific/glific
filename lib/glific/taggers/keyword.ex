@@ -3,7 +3,7 @@ defmodule Glific.Taggers.Keyword do
   This module is user driven via keywords associated with tags. It reads in all the keywords associated
   with each tag in the DB and matches it to the input text.
   """
-
+  alias Glific.Messages.Message
   alias Glific.Taggers
 
   # hardcoding greeting as 5, since this is our testcase
@@ -29,6 +29,7 @@ defmodule Glific.Taggers.Keyword do
     |> tag_body(keyword_map)
   end
 
+  @doc false
   @spec tag_body(String.t(), %{String.t() => integer}) :: {:ok, String.t()} | :error
   def tag_body(body, keyword_map) do
     case Map.fetch(keyword_map, body) do

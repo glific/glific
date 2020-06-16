@@ -115,6 +115,7 @@ defmodule Glific.Taggers.Numeric do
     |> tag_body(numeric_map)
   end
 
+  @doc false
   @spec tag_body(String.t(), %{String.t() => integer}) :: {:ok, String.t()} | :error
   def tag_body(body, numeric_map) do
     case Map.fetch(numeric_map, body) do
