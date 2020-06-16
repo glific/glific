@@ -12,7 +12,7 @@ defmodule Glific.Repo.Migrations.AddParentIdToMessages do
       IF (TG_OP = 'INSERT') THEN
         message_ids := Array(SELECT id from messages where contact_id = NEW.contact_id and id < NEW.id ORDER BY id DESC LIMIT #{
       @ancestors_limit
-    } );
+    });
 
         UPDATE messages SET parent_id = message_ids[1], ancestors = message_ids where id = NEW.id;
         RETURN NEW;

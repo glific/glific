@@ -52,7 +52,7 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback in case of any error while sending the message
   """
-  @spec handle_error_response(any(), Message.t()) :: {:error, String.t()}
+  @spec handle_error_response(Tesla.Env.t(), Message.t()) :: {:error, String.t()}
   def handle_error_response(response, message) do
     message
     |> Poison.encode!()
