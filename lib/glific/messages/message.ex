@@ -21,6 +21,7 @@ defmodule Glific.Messages.Message do
           ancestors: list() | [],
           body: String.t() | nil,
           provider_message_id: String.t() | nil,
+          sent_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -36,7 +37,8 @@ defmodule Glific.Messages.Message do
     :body,
     :provider_status,
     :provider_message_id,
-    :media_id
+    :media_id,
+    :sent_at
   ]
 
   schema "messages" do
@@ -46,6 +48,7 @@ defmodule Glific.Messages.Message do
     field :provider_message_id, :string
     field :provider_status, MessageStatus
     field :ancestors, {:array, :integer}, default: []
+    field :sent_at, :utc_datetime
 
     belongs_to :sender, Contact
     belongs_to :receiver, Contact
