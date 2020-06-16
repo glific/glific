@@ -70,6 +70,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # Is this a predefined system object?
       add :is_reserved, :boolean, default: false
 
+      # keywords assosiacted with tags
+      add :keywords, {:array, :string}
+
       # foreign key to  option_value:value column with the option_group.name being "language"
       add :language_id, references(:languages, on_delete: :restrict), null: false
 

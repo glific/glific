@@ -2,6 +2,7 @@ fragment TagFields on TagResult {
   tag {
     id
     label
+    keywords
 
     language {
       id
