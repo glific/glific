@@ -265,12 +265,14 @@ defmodule Glific.Seeds do
       Repo.insert!(%SessionTemplate{
         label: "Default Template Label",
         body: "Default Template",
+        type: :text,
         language_id: en_us.id
       })
 
     Repo.insert!(%SessionTemplate{
       label: "Another Template Label",
       body: "Another Template",
+      type: :text,
       language_id: en_us.id,
       parent_id: session_template_parent.id
     })
@@ -278,6 +280,7 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "New User",
       body: "Welcome to Glific",
+      type: :text,
       shortcode: "welcome",
       is_reserved: true,
       language_id: en_us.id
@@ -286,6 +289,7 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "Goodbye",
       body: "Goodbye",
+      type: :text,
       shortcode: "bye",
       is_reserved: true,
       language_id: en_us.id

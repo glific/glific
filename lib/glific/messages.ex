@@ -4,6 +4,8 @@ defmodule Glific.Messages do
   """
   import Ecto.Query, warn: false
 
+  alias Glific.Communications.Message, as: Communications
+
   alias Glific.{
     Contacts.Contact,
     Conversations.Conversation,
@@ -139,7 +141,7 @@ defmodule Glific.Messages do
 
   """
   @spec create_message(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
-  def create_message(attrs \\ %{}) do
+  def create_message(attrs) do
     attrs =
       %{flow: :inbound, provider_status: :delivered}
       |> Map.merge(attrs)
@@ -207,6 +209,18 @@ defmodule Glific.Messages do
   @spec change_message(Message.t(), map()) :: Ecto.Changeset.t()
   def change_message(%Message{} = message, attrs \\ %{}) do
     Message.changeset(message, attrs)
+  end
+
+  @doc false
+  @spec fetch_and_send_message(map()) :: {:ok, Message.t()}
+  def fetch_and_send_message(attrs) do
+    with {:ok, message} <- Repo.fetch(Message, attrs), do: Communications.send_message(message)
+  end
+
+  @doc false
+  @spec create_and_send_message(map()) :: {:ok, Message.t()}
+  def create_and_send_message(attrs) do
+    with {:ok, message} <- create_message(attrs), do: Communications.send_message(message)
   end
 
   alias Glific.Messages.MessageMedia
