@@ -88,6 +88,7 @@ defmodule Glific.Processor.ConsumerText do
       {:ok, value} -> add_keyword_tag(message, value, state)
       _ -> nil
     end
+
     nil
   end
 
