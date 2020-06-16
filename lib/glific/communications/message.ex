@@ -7,7 +7,8 @@ defmodule Glific.Communications.Message do
     Communications,
     Contacts,
     Messages,
-    Messages.Message
+    Messages.Message,
+    Processor.Producer
   }
 
   @doc false
@@ -82,7 +83,7 @@ defmodule Glific.Communications.Message do
     })
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
-    |> Glific.Processor.Producer.add
+    |> Producer.add()
   end
 
   @doc """

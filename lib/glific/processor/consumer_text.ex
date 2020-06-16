@@ -79,26 +79,26 @@ defmodule Glific.Processor.ConsumerText do
   defp process_message(message, state) do
     body = Taggers.string_clean(message.body)
 
-    with {:ok, value} <- Numeric.tag_body(body, state.numeric_map) do
-      add_numeric_tag(message, value, state)
-    else
-      :error ->
-        with {:ok, value} <- Keyword.tag_body(body, state.keyword_map) do
-          add_keyword_tag(message, value, state)
-        else
-          :error -> IO.puts("Did not match number or keyword")
-        end
+    case {:ok, value} <- Numeric.tag_body(body, state.numeric_map) do
+      {:ok, value} -> add_numeric_tag(message, value, state)
+      _ -> nil
     end
+
+    case {:ok, value} <- Keyword.tag_body(body, state.keyword_map) do
+      add_keyword_tag(message, value, state)
+      _ -> nil
+    end
+
     nil
   end
 
   @spec add_numeric_tag(Message.t(), String.t(), atom() | map()) :: Message.t()
   defp add_numeric_tag(message, value, state) do
     Tags.create_message_tag(%{
-          message_id: message.id,
-          tag_id: state.numeric_tag_id,
-          value: value
-                            })
+      message_id: message.id,
+      tag_id: state.numeric_tag_id,
+      value: value
+    })
     # now publish the message tag event
     |> Communications.publish_data(:created_message_tag)
   end
@@ -106,9 +106,9 @@ defmodule Glific.Processor.ConsumerText do
   @spec add_keyword_tag(Message.t(), String.t(), atom() | map()) :: Message.t()
   defp add_keyword_tag(message, value, _state) do
     Tags.create_message_tag(%{
-          message_id: message.id,
-          tag_id: String.to_integer(value)
-                            })
+      message_id: message.id,
+      tag_id: String.to_integer(value)
+    })
     # now publish the message tag event
     |> Communications.publish_data(:created_message_tag)
   end

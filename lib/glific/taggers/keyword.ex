@@ -14,7 +14,7 @@ defmodule Glific.Taggers.Keyword do
     "hi" => 7,
     "goodmorning" => 7,
     "hey" => 7,
-    "whatsup" => 7,
+    "whatsup" => 7
   }
 
   @doc false
@@ -36,6 +36,4 @@ defmodule Glific.Taggers.Keyword do
       _ -> :error
     end
   end
-
-
 end
