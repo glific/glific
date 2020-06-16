@@ -12,7 +12,7 @@ config :glific,
   provider: Glific.Providers.Gupshup,
   provider_id: "gupshup-provider-23",
   provider_limit: 10,
-  message_ancestors_limit: 25
+  message_ancestors_limit: 75
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,
@@ -38,8 +38,9 @@ config :glific,
 config :glific, Oban,
   repo: Glific.Repo,
   prune: {:maxlen, 10_000},
-  # queues: [default: 10, gupshup: 10, webhook: 10],
-  queues: nil
+  queues: [default: 10, gupshup: 10, webhook: 10]
+
+# queues: nil
 
 config :tesla, adapter: Tesla.Adapter.Hackney
 

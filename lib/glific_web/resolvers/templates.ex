@@ -5,6 +5,7 @@ defmodule GlificWeb.Resolvers.Templates do
   """
 
   alias Glific.{Repo, Templates, Templates.SessionTemplate}
+  alias Glific.{Communications, Contacts, Messages}
 
   @doc """
   Get a specific session template by id
@@ -62,6 +63,29 @@ defmodule GlificWeb.Resolvers.Templates do
     with {:ok, session_template} <- Repo.fetch(SessionTemplate, id),
          {:ok, session_template} <- Templates.delete_session_template(session_template) do
       {:ok, session_template}
+    end
+  end
+
+  @doc false
+  @spec send_session_message(Absinthe.Resolution.t(), %{id: integer, receiver_id: integer}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def send_session_message(_, %{id: id, receiver_id: receiver_id}, _) do
+    {:ok, session_template} = Repo.fetch(SessionTemplate, id)
+    {:ok, receiver} = Repo.fetch(Contacts.Contact, receiver_id)
+
+    message_params = %{
+      body: session_template.body,
+      type: session_template.type,
+      media_id: session_template.message_media_id,
+      sender_id: Communications.Message.organization_contact_id(),
+      receiver_id: receiver.id,
+      contact_id: receiver.id
+    }
+
+    with {:ok, message} <- Messages.create_and_send_message(message_params) do
+      {:ok, %{message: message}}
     end
   end
 end
