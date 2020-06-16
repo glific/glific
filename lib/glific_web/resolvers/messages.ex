@@ -81,6 +81,18 @@ defmodule GlificWeb.Resolvers.Messages do
     end
   end
 
+  @doc false
+  @spec create_and_send_message_to_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_and_send_message_to_contacts(_, %{input: messages}, _) do
+    messages
+    |> Enum.reduce([], fn params, _ ->
+      with {:ok, message} <- Messages.create_message(params) do
+        send_message(message)
+      end
+    end)
+  end
+
   @spec send_message(Message.t()) :: {:ok, any}
   defp send_message(message) do
     message

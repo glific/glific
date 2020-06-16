@@ -117,6 +117,11 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.create_and_send_message/3)
     end
 
+    field :create_and_send_message_to_contacts, :message_result do
+      arg(:input, non_null(list_of(:message_input)))
+      resolve(&Resolvers.Messages.create_and_send_message_to_contacts/3)
+    end
+
     field :update_message, :message_result do
       arg(:id, non_null(:id))
       arg(:input, :message_input)
