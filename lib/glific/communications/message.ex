@@ -64,6 +64,19 @@ defmodule Glific.Communications.Message do
   end
 
   @doc """
+  Callback to update the provider status for a message
+  """
+  @spec update_provider_status(String.t(), atom()) :: {:ok, Message.t()}
+  def update_provider_status(provider_message_id, provider_status) do
+    # Improve me
+    # We will improve that and complete this action in a Single Query.
+
+    {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+    Messages.update_message(message, %{provider_status: provider_status})
+    {:ok, message}
+  end
+
+  @doc """
   Callback when we receive a text message
   """
 

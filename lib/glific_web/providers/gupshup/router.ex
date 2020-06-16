@@ -38,7 +38,7 @@ defmodule GlificWeb.Providers.Gupshup.Router do
       post("/sandbox-start", UserEventController, :sandbox_start)
       post("/opted-in", UserEventController, :opted_in)
       post("/opted-out", UserEventController, :opted_out)
-      # post("/*unknown", DefaultController, :unknown)
+      post("/*unknown", DefaultController, :unknown)
     end
 
     scope "/message-event" do
@@ -47,7 +47,8 @@ defmodule GlificWeb.Providers.Gupshup.Router do
       post("/failed", MessageEventController, :failed)
       post("/sent", MessageEventController, :sent)
       post("/delivered", MessageEventController, :delivered)
-      # post("/*unknown", DefaultController, :unknown)
+      post("/read", MessageEventController, :read)
+      post("/*unknown", DefaultController, :unknown)
     end
 
     scope "/message" do
