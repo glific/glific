@@ -89,15 +89,13 @@ defmodule Glific.TagsTest do
 
     test "create_tag/1 with valid data creates a tag" do
       language = language_fixture()
-      keywords = ["Hello","hi","hola", "namaste", "good morning" ]
-      attrs = Map.merge(@valid_attrs, %{language_id: language.id, keywords: keywords})
+      attrs = Map.merge(@valid_attrs, %{language_id: language.id})
       assert {:ok, %Tag{} = tag} = Tags.create_tag(attrs)
       assert tag.description == "some description"
       assert tag.is_active == true
       assert tag.is_reserved == true
       assert tag.label == "some label"
       assert tag.language_id == language.id
-      assert tag.keywords == keywords
     end
 
     test "create_tag/1 with invalid data returns error changeset" do
@@ -174,6 +172,23 @@ defmodule Glific.TagsTest do
       attrs = Map.merge(@valid_attrs, %{language_id: language.id * 10})
       assert {:error, %Ecto.Changeset{}} = Tags.create_tag(attrs)
     end
+
+    test "keywords tag can be added to tags" do
+      language = language_fixture()
+      keywords = ["Hello","hi","hola", "namaste", "good morning" ]
+      attrs = Map.merge(@valid_attrs, %{language_id: language.id, keywords: keywords})
+      assert {:ok, %Tag{} = tag} = Tags.create_tag(attrs)
+      assert tag.keywords == keywords
+    end
+
+    test "keywords can be updated" do
+      tag = tag_fixture()
+      keywords = ["Hello","hi","hola", "namaste"]
+      attrs = Map.merge(@update_attrs, %{keywords: keywords})
+      assert {:ok, %Tag{} = tag} = Tags.update_tag(tag, attrs)
+      assert tag.keywords == keywords
+    end
+
   end
 
   describe "messages_tags" do
