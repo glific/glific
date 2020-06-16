@@ -9,11 +9,14 @@ defmodule Glific.Templates.SessionTemplate do
     Settings.Language
   }
 
+  alias Glific.Enums.MessageTypes
+
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           label: String.t() | nil,
           body: String.t() | nil,
+          type: String.t() | nil,
           shortcode: String.t() | nil,
           is_source: boolean(),
           is_active: boolean(),
@@ -31,6 +34,7 @@ defmodule Glific.Templates.SessionTemplate do
   @required_fields [
     :label,
     :body,
+    :type,
     :language_id
   ]
   @optional_fields [
@@ -45,6 +49,7 @@ defmodule Glific.Templates.SessionTemplate do
   schema "session_templates" do
     field :label, :string
     field :body, :string
+    field :type, MessageTypes
     field :shortcode, :string
 
     field :is_source, :boolean, default: false
@@ -69,8 +74,32 @@ defmodule Glific.Templates.SessionTemplate do
     session_template
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_media(session_template)
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
     |> unique_constraint([:label, :language_id])
+  end
+
+  @doc false
+  # if template type is not text then it should have media id
+  @spec changeset(Ecto.Changeset.t(), Message.t()) :: Ecto.Changeset.t()
+  defp validate_media(changeset, template) do
+
+    type = changeset.changes[:type]
+    message_media_id = changeset.changes[:message_media_id] || template.message_media_id
+
+    cond do
+      type == nil ->
+        changeset
+
+      type == :text ->
+        changeset
+
+      message_media_id == nil ->
+        add_error(changeset, :type, "#{Atom.to_string(type)} template type should have a message media id")
+
+      true ->
+        changeset
+    end
   end
 end

@@ -97,6 +97,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # The body of the message
       add :body, :text, null: false
 
+      # Options are: text, audio, video, image, contact, location, file
+      add :type, :message_types_enum
+
       # Is this a predefined system object?
       add :is_reserved, :boolean, default: false
 

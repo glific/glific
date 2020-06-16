@@ -128,6 +128,7 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
           "input" => %{
             "label" => "Test Label",
             "body" => "Test Template",
+            "type" => "TEXT",
             "languageId" => language_id
           }
         }
@@ -144,6 +145,7 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
           "input" => %{
             "label" => "Test Label 2",
             "body" => "Test Template 2",
+            "type" => "TEXT",
             "languageId" => language_id
           }
         }
@@ -155,6 +157,7 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
           "input" => %{
             "label" => "Test Label 2",
             "body" => "Test Template 2",
+            "type" => "TEXT",
             "languageId" => language_id
           }
         }

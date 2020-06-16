@@ -18,6 +18,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :id, :id
     field :label, :string
     field :body, :string
+    field :type, :message_types_enum
     field :shortcode, :string
     field :is_reserved, :boolean
     field :is_active, :boolean
@@ -69,6 +70,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   input_object :session_template_input do
     field :label, :string
     field :body, :string
+    field :type, :message_types_enum
     field :shortcode, :string
     field :is_reserved, :boolean
     field :is_active, :boolean
