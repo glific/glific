@@ -67,7 +67,9 @@ defmodule GlificWeb.Resolvers.Templates do
   end
 
   @doc false
-  @spec send_session_message(Absinthe.Resolution.t(), %{id: integer, receiver_id: integer}, %{context: map()}) ::
+  @spec send_session_message(Absinthe.Resolution.t(), %{id: integer, receiver_id: integer}, %{
+          context: map()
+        }) ::
           {:ok, any} | {:error, any}
   def send_session_message(_, %{id: id, receiver_id: receiver_id}, _) do
     {:ok, session_template} = Repo.fetch(SessionTemplate, id)
@@ -77,9 +79,9 @@ defmodule GlificWeb.Resolvers.Templates do
       body: session_template.body,
       type: session_template.type,
       media_id: session_template.message_media_id,
-      sender_id: 1,
+      sender_id: Glific.Communications.Message.organization_contact_id,
       receiver_id: receiver.id,
-      contact_id: receiver.id,
+      contact_id: receiver.id
     }
 
     with {:ok, message} <- Glific.Messages.create_message(message_params) do
@@ -87,7 +89,7 @@ defmodule GlificWeb.Resolvers.Templates do
     end
   end
 
-  @spec send_message(Message.t()) :: {:ok, any}
+  @spec send_message(Glific.Messages.Message.t()) :: {:ok, any}
   defp send_message(message) do
     message
     |> Repo.preload([:receiver, :sender, :media])
