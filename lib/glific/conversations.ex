@@ -23,43 +23,25 @@ defmodule Glific.Conversations do
   @doc """
   Returns the last M conversations, each conversation not more than N messages
   """
-  @spec list_conversations(map()) :: any
-  def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args) do
-    ids = get_message_ids(nc, sc, args)
-    Messages.list_conversations(Map.put(args, :ids, ids))
-  end
+  @spec list_conversations(map()) :: list()
+  def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args),
+    do: Messages.list_conversations(Map.put(args, :ids, get_message_ids(nc, sc, args)))
 
-  defp get_message_ids(nc, sc, %{filter: %{id: id}}) do
-    {:ok, results} = Repo.query(@sql_ids, [nc, [id]])
+  @spec get_message_ids(integer(), integer(), map() | nil) :: list()
+  defp get_message_ids(nc, sc, %{filter: %{id: id}}),
+    do: process_results(Repo.query(@sql_ids, [nc, [id]]), sc)
+
+  defp get_message_ids(nc, sc, %{filter: %{ids: ids}}),
+    do: process_results(Repo.query(@sql_ids, [nc, ids]), sc)
+
+  defp get_message_ids(nc, sc, _),
+    do: process_results(Repo.query(@sql_all, [nc]), sc)
+
+  @spec process_results({:ok, map()}, integer()) :: list()
+  defp process_results({:ok, results}, sc) do
     results.rows
-    |> Enum.reduce([], fn [ last_message_id | [ancestors]], acc
-        -> acc = acc ++ [last_message_id | Enum.take(ancestors, sc)]
-    end)
-  end
-
-
-  defp get_message_ids(nc, sc, %{filter: %{ids: ids}}) do
-    {:ok, results} = Repo.query(@sql_ids, [nc, ids])
-    results.rows
-    |> Enum.reduce([], fn [ last_message_id | [ancestors]], acc
-        -> acc = acc ++ [last_message_id | Enum.take(ancestors, sc)]
-    end)
-  end
-
-  defp get_message_ids(nc, sc, _) do
-    {:ok, results} = Repo.query(@sql_all, [nc])
-    results.rows
-    |> Enum.reduce([], fn [ last_message_id | [ancestors]], acc
-        -> acc = acc ++ [last_message_id | Enum.take(ancestors, sc)]
-    end)
-  end
-
-
-  defp process_query(query, sc, args) do
-    {:ok, results} = Repo.query(query, args)
-    results.rows
-    |> Enum.reduce([], fn [ last_message_id | [ancestors]], acc
-        -> acc = acc ++ [last_message_id | Enum.take(ancestors, sc)]
+    |> Enum.reduce([], fn [last_message_id | [ancestors]], acc ->
+      acc ++ [last_message_id | Enum.take(ancestors, sc)]
     end)
   end
 end
