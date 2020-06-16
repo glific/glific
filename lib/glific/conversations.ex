@@ -12,37 +12,36 @@ defmodule Glific.Conversations do
 
   alias Glific.{Messages, Repo}
 
-  @sql_all """
-  WITH cte AS
-  (SELECT *, ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY updated_at DESC) AS rn FROM messages)
-  SELECT id FROM cte WHERE rn <= $2 AND contact_id IN (
-  SELECT contact_id FROM cte WHERE rn = 1
-  ORDER BY updated_at DESC
-  LIMIT $1
-  )
-  ORDER BY contact_id, updated_at DESC
-  LIMIT $1 * $2
+  @sql_ids """
+      SELECT id, ancestors FROM messages WHERE id IN ( SELECT MAX(id) FROM messages GROUP BY contact_id ) and contact_id = ANY($2) ORDER By updated_at DESC LIMIT $1;
   """
 
-  @sql_ids """
-  WITH cte AS
-  (SELECT *, ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY updated_at DESC) AS rn FROM messages)
-  SELECT id FROM cte WHERE rn <= $2 AND contact_id = ANY($3)
-  ORDER BY contact_id, updated_at DESC
-  LIMIT $1 * $2
+  @sql_all """
+      SELECT id, ancestors FROM messages WHERE id IN ( SELECT MAX(id) FROM messages GROUP BY contact_id ) ORDER By updated_at DESC LIMIT $1;
   """
 
   @doc """
   Returns the last M conversations, each conversation not more than N messages
   """
-  @spec list_conversations(map()) :: any
-  def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args) do
-    {:ok, result} = get_message_ids(nc, sc, args)
+  @spec list_conversations(map()) :: list()
+  def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args),
+    do: Messages.list_conversations(Map.put(args, :ids, get_message_ids(nc, sc, args)))
 
-    Messages.list_conversations(Map.put(args, :ids, List.flatten(result.rows)))
+  @spec get_message_ids(integer(), integer(), map() | nil) :: list()
+  defp get_message_ids(nc, sc, %{filter: %{id: id}}),
+    do: process_results(Repo.query(@sql_ids, [nc, [id]]), sc)
+
+  defp get_message_ids(nc, sc, %{filter: %{ids: ids}}),
+    do: process_results(Repo.query(@sql_ids, [nc, ids]), sc)
+
+  defp get_message_ids(nc, sc, _),
+    do: process_results(Repo.query(@sql_all, [nc]), sc)
+
+  @spec process_results({:ok, map()}, integer()) :: list()
+  defp process_results({:ok, results}, sc) do
+    results.rows
+    |> Enum.reduce([], fn [last_message_id | [ancestors]], acc ->
+      acc ++ [last_message_id | Enum.take(ancestors, sc)]
+    end)
   end
-
-  defp get_message_ids(nc, sc, %{filter: %{id: id}}), do: Repo.query(@sql_ids, [nc, sc, [id]])
-  defp get_message_ids(nc, sc, %{filter: %{ids: ids}}), do: Repo.query(@sql_ids, [nc, sc, ids])
-  defp get_message_ids(nc, sc, _), do: Repo.query(@sql_all, [nc, sc])
 end

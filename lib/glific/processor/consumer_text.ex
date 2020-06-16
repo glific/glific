@@ -89,16 +89,17 @@ defmodule Glific.Processor.ConsumerText do
           :error -> IO.puts("Did not match number or keyword")
         end
     end
+
     nil
   end
 
   @spec add_numeric_tag(Message.t(), String.t(), atom() | map()) :: Message.t()
   defp add_numeric_tag(message, value, state) do
     Tags.create_message_tag(%{
-          message_id: message.id,
-          tag_id: state.numeric_tag_id,
-          value: value
-                            })
+      message_id: message.id,
+      tag_id: state.numeric_tag_id,
+      value: value
+    })
     # now publish the message tag event
     |> Communications.publish_data(:created_message_tag)
   end
@@ -106,9 +107,9 @@ defmodule Glific.Processor.ConsumerText do
   @spec add_keyword_tag(Message.t(), String.t(), atom() | map()) :: Message.t()
   defp add_keyword_tag(message, value, _state) do
     Tags.create_message_tag(%{
-          message_id: message.id,
-          tag_id: String.to_integer(value)
-                            })
+      message_id: message.id,
+      tag_id: String.to_integer(value)
+    })
     # now publish the message tag event
     |> Communications.publish_data(:created_message_tag)
   end

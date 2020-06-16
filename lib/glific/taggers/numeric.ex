@@ -122,5 +122,4 @@ defmodule Glific.Taggers.Numeric do
       _ -> :error
     end
   end
-
 end
