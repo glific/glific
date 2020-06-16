@@ -3,10 +3,14 @@ defmodule Glific.Communications do
   Glific interface for all provider communication
   """
 
+  alias Glific.{
+    Messages.Message,
+    Tags.MessageTag
+  }
+
   @doc """
     Get the current provider based on the organization | Config | Default
   """
-
   @spec effective_provider :: atom()
   def effective_provider do
     with nil <- provider_per_organisation(),
@@ -27,5 +31,22 @@ defmodule Glific.Communications do
 
   defp provider_default do
     Glific.Providers.Gupshup
+  end
+
+  @doc """
+  Unified function to publish data on the graphql subscription endpoint. This  is still looking for a
+  place to actually reside. This is a good next stop for now
+
+  For now the data types are Message and MessageTag
+  """
+  @spec publish_data({:ok, Message.t() | MessageTag.t()}, atom()) :: Message.t() | MessageTag.t()
+  def publish_data({:ok, data}, topic) do
+    Absinthe.Subscription.publish(
+      GlificWeb.Endpoint,
+      data,
+      [{topic, :glific}]
+    )
+
+    data
   end
 end

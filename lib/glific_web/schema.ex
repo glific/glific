@@ -69,6 +69,8 @@ defmodule GlificWeb.Schema do
 
   subscription do
     import_fields(:message_subscriptions)
+
+    import_fields(:message_tag_subscriptions)
   end
 
   @doc """
@@ -95,7 +97,8 @@ defmodule GlificWeb.Schema do
   Used to set some values in the context that we may need in order to run. For now we are just using it
   for Dataloader perspectives.
 
-  I think we will be storing authentication and current user in the context map in future releases
+  I think we will be storing authentication and current user in the context map in future releases. We have
+  already started storing current user info in the context map.
   """
   @spec context(map()) :: map()
   def context(ctx) do

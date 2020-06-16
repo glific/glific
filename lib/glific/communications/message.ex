@@ -3,9 +3,13 @@ defmodule Glific.Communications.Message do
   The Message Communication Context, which encapsulates and manages tags and the related join tables.
   """
 
-  alias Glific.Contacts
-  alias Glific.Messages
-  alias Glific.Messages.Message
+  alias Glific.{
+    Communications,
+    Contacts,
+    Messages,
+    Messages.Message,
+    Processor.Producer
+  }
 
   @doc false
   defmacro __using__(_opts \\ []) do
@@ -26,14 +30,9 @@ defmodule Glific.Communications.Message do
   """
   @spec send_message(Message.t()) :: {:ok, Message.t()}
   def send_message(message) do
-    message =
-      message
-      |> Glific.Repo.preload([:receiver, :sender, :media])
-
-    provider_module()
-    |> apply(@type_to_token[message.type], [message])
-
-    publish_message({:ok, message}, :sent_message)
+    message = Glific.Repo.preload(message, [:receiver, :sender, :media])
+    apply(provider_module(), @type_to_token[message.type], [message])
+    {:ok, Communications.publish_data({:ok, message}, :sent_message)}
   end
 
   @doc """
@@ -86,7 +85,7 @@ defmodule Glific.Communications.Message do
   Callback when we receive a text message
   """
 
-  @spec receive_text(map()) :: {:ok, Message.t()}
+  @spec receive_text(map()) :: :ok
   def receive_text(message_params) do
     contact = Contacts.upsert(message_params.sender)
 
@@ -98,13 +97,14 @@ defmodule Glific.Communications.Message do
       flow: :inbound
     })
     |> Messages.create_message()
-    |> publish_message(:received_message)
+    |> Communications.publish_data(:received_message)
+    |> Producer.add()
   end
 
   @doc """
   Callback when we receive a media (image|video|audio) message
   """
-  @spec receive_media(map()) :: {:ok, Message.t()}
+  @spec receive_media(map()) :: :ok
   def receive_media(message_params) do
     contact = Contacts.upsert(message_params.sender)
     {:ok, message_media} = Messages.create_message_media(message_params)
@@ -117,19 +117,9 @@ defmodule Glific.Communications.Message do
       flow: :inbound
     })
     |> Messages.create_message()
-    |> publish_message(:received_message)
-  end
+    |> Communications.publish_data(:received_message)
 
-  @doc false
-  @spec publish_message({:ok, Message.t()}, atom()) :: {:ok, Message.t()}
-  def publish_message({:ok, message}, topic) do
-    Absinthe.Subscription.publish(
-      GlificWeb.Endpoint,
-      message,
-      [{topic, :glific}]
-    )
-
-    {:ok, message}
+    :ok
   end
 
   @doc false
