@@ -76,6 +76,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # keep them in sync
       add :is_value, :boolean, default: false
 
+      # keywords assosiacted with tags.
+      add :keywords, {:array, :string}
+
       # foreign key to  option_value:value column with the option_group.name being "language"
       add :language_id, references(:languages, on_delete: :restrict), null: false
 
@@ -222,9 +225,14 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # message media ids
       add :media_id, references(:messages_media, on_delete: :delete_all), null: true
 
+      # parent message id for same contact
       add :parent_id, references(:messages, on_delete: :nilify_all), null: true
 
+      # ancestors array for same contact
       add :ancestors, {:array, :bigint}
+
+      # timestamp when message will be sent from queue worker
+      add :sent_at, :timestamptz
 
       timestamps(type: :utc_datetime)
     end

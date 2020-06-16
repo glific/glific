@@ -10,7 +10,7 @@ defmodule Glific.Tags.Tag do
   alias Glific.{Contacts.Contact, Messages.Message}
 
   @required_fields [:label, :language_id]
-  @optional_fields [:description, :is_active, :is_reserved, :is_value, :parent_id]
+  @optional_fields [:description, :is_active, :is_reserved, :is_value, :parent_id, :keywords]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -20,6 +20,7 @@ defmodule Glific.Tags.Tag do
           is_active: boolean(),
           is_reserved: boolean(),
           is_value: boolean(),
+          keywords: list(),
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           parent_id: non_neg_integer | nil,
@@ -35,6 +36,7 @@ defmodule Glific.Tags.Tag do
     field :is_active, :boolean, default: false
     field :is_reserved, :boolean, default: false
     field :is_value, :boolean, default: false
+    field :keywords, {:array, :string}, default: []
 
     belongs_to :language, Language
 

@@ -104,6 +104,7 @@ defmodule Glific.CommunicationsTest do
       Oban.drain_queue(:gupshup)
       message = Messages.get_message!(message.id)
       assert message.provider_message_id != nil
+      assert message.sent_at != nil
       assert message.provider_status == :enqueued
       assert message.flow == :outbound
     end
@@ -125,6 +126,7 @@ defmodule Glific.CommunicationsTest do
       assert message.provider_message_id == nil
       assert message.provider_status == :error
       assert message.flow == :outbound
+      assert message.sent_at == nil
     end
 
     test "send media message should update the provider message id" do
@@ -139,6 +141,7 @@ defmodule Glific.CommunicationsTest do
       assert message.provider_message_id != nil
       assert message.provider_status == :enqueued
       assert message.flow == :outbound
+      assert message.sent_at != nil
 
       # audio message
       {:ok, message} =

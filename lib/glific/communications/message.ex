@@ -8,7 +8,11 @@ defmodule Glific.Communications.Message do
     Contacts,
     Messages,
     Messages.Message,
+<<<<<<< HEAD
     Processor.Producer
+=======
+    Processor
+>>>>>>> 7acba9c3d5f21f0e3b6bfbca11ec60dc23a9f16c
   }
 
   @doc false
@@ -47,7 +51,8 @@ defmodule Glific.Communications.Message do
     |> Messages.update_message(%{
       provider_message_id: body["messageId"],
       provider_status: :enqueued,
-      flow: :outbound
+      flow: :outbound,
+      sent_at: DateTime.truncate(DateTime.utc_now(), :second)
     })
 
     {:ok, message}
@@ -56,7 +61,7 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback in case of any error while sending the message
   """
-  @spec handle_error_response(any(), Message.t()) :: {:error, String.t()}
+  @spec handle_error_response(Tesla.Env.t(), Message.t()) :: {:error, String.t()}
   def handle_error_response(response, message) do
     message
     |> Poison.encode!()
@@ -67,10 +72,23 @@ defmodule Glific.Communications.Message do
   end
 
   @doc """
+  Callback to update the provider status for a message
+  """
+  @spec update_provider_status(String.t(), atom()) :: {:ok, Message.t()}
+  def update_provider_status(provider_message_id, provider_status) do
+    # Improve me
+    # We will improve that and complete this action in a Single Query.
+
+    {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+    Messages.update_message(message, %{provider_status: provider_status})
+    {:ok, message}
+  end
+
+  @doc """
   Callback when we receive a text message
   """
 
-  @spec receive_text(map()) :: Message.t()
+  @spec receive_text(map()) :: :ok
   def receive_text(message_params) do
     contact = Contacts.upsert(message_params.sender)
 
@@ -89,7 +107,7 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback when we receive a media (image|video|audio) message
   """
-  @spec receive_media(map()) :: Message.t()
+  @spec receive_media(map()) :: :ok
   def receive_media(message_params) do
     contact = Contacts.upsert(message_params.sender)
     {:ok, message_media} = Messages.create_message_media(message_params)
@@ -103,6 +121,8 @@ defmodule Glific.Communications.Message do
     })
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
+
+    :ok
   end
 
   @doc false
