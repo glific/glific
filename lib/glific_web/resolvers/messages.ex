@@ -85,12 +85,15 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec create_and_send_message_to_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_and_send_message_to_contacts(_, %{input: message, contact_ids: contact_ids}, _) do
-    IO.inspect message
-    IO.inspect contact_ids
-
     contact_ids
     |> Enum.reduce([], fn contact_id, _ ->
-      # Map.put(message, %{receiver_id: contact_id, contact_id: contact_id})
+      contact_attrs = %{
+        receiver_id: contact_id,
+        contact_id: contact_id
+      }
+
+      message = Map.merge(message, contact_attrs)
+
       with {:ok, message} <- Messages.create_message(message) do
         send_message(message)
       end
