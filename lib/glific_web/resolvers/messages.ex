@@ -82,18 +82,8 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec create_and_send_message_to_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_and_send_message_to_contacts(_, %{input: message, contact_ids: contact_ids}, _) do
-    contact_ids
-    |> Enum.reduce([], fn contact_id, _ ->
-      contact_attrs = %{
-        receiver_id: contact_id,
-        contact_id: contact_id
-      }
-
-      message = Map.merge(message, contact_attrs)
-
-      with {:ok, message} <- Messages.create_and_send_message(message),
-           do: {:ok, %{message: message}}
-    end)
+    with {:ok, message} <- Messages.create_and_send_message_to_contacts(message, contact_ids),
+         do: {:ok, %{message: message}}
   end
 
   # Message Media Resolver which sits between the GraphQL schema and Glific

@@ -223,6 +223,23 @@ defmodule Glific.Messages do
     with {:ok, message} <- create_message(attrs), do: Communications.send_message(message)
   end
 
+  @doc false
+  @spec create_and_send_message_to_contacts(map(), []) :: {:ok, Message.t()}
+  def create_and_send_message_to_contacts(message, contact_ids) do
+    contact_ids
+    |> Enum.reduce(fn contact_id, _ ->
+      contact_attrs = %{
+        receiver_id: contact_id,
+        contact_id: contact_id
+      }
+
+      message = Map.merge(message, contact_attrs)
+
+      with {:ok, message} <- create_message(message),
+           do: Communications.send_message(message)
+    end)
+  end
+
   alias Glific.Messages.MessageMedia
 
   @doc """
