@@ -5,8 +5,15 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
   setup do
     lang = Glific.Seeds.seed_language()
     Glific.Seeds.seed_session_templates(lang)
+    Glific.Seeds.seed_contacts()
     :ok
   end
+
+  load_gql(
+    :send_session_message,
+    GlificWeb.Schema,
+    "assets/gql/session_templates/send_session_message.gql"
+  )
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/session_templates/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/session_templates/list.gql")
@@ -128,6 +135,7 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
           "input" => %{
             "label" => "Test Label",
             "body" => "Test Template",
+            "type" => "TEXT",
             "languageId" => language_id
           }
         }
@@ -144,6 +152,7 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
           "input" => %{
             "label" => "Test Label 2",
             "body" => "Test Template 2",
+            "type" => "TEXT",
             "languageId" => language_id
           }
         }
@@ -155,6 +164,7 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
           "input" => %{
             "label" => "Test Label 2",
             "body" => "Test Template 2",
+            "type" => "TEXT",
             "languageId" => language_id
           }
         }
@@ -216,5 +226,23 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
       get_in(query_data, [:data, "deleteSessionTemplate", "errors", Access.at(0), "message"])
 
     assert message == "Resource not found"
+  end
+
+  test "send_session_message" do
+    body = "Default Template"
+
+    {:ok, session_template} =
+      Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{body: body})
+
+    name = "Adelle Cavin"
+    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+
+    result =
+      query_gql_by(:send_session_message,
+        variables: %{"id" => session_template.id, "receiver_id" => contact.id}
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "sendSessionTemplate", "errors"]) == nil
   end
 end
