@@ -79,13 +79,13 @@ defmodule Glific.Processor.ConsumerText do
   defp process_message(message, state) do
     body = Taggers.string_clean(message.body)
 
-    case {:ok, value} <- Numeric.tag_body(body, state.numeric_map) do
+    case Numeric.tag_body(body, state.numeric_map) do
       {:ok, value} -> add_numeric_tag(message, value, state)
       _ -> nil
     end
 
-    case {:ok, value} <- Keyword.tag_body(body, state.keyword_map) do
-      add_keyword_tag(message, value, state)
+    case Keyword.tag_body(body, state.keyword_map) do
+      {:ok, value} -> add_keyword_tag(message, value, state)
       _ -> nil
     end
     nil
