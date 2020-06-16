@@ -8,11 +8,7 @@ defmodule Glific.Communications.Message do
     Contacts,
     Messages,
     Messages.Message,
-<<<<<<< HEAD
     Processor.Producer
-=======
-    Processor
->>>>>>> 7acba9c3d5f21f0e3b6bfbca11ec60dc23a9f16c
   }
 
   @doc false
