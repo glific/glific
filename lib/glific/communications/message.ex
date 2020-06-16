@@ -43,7 +43,8 @@ defmodule Glific.Communications.Message do
     |> Messages.update_message(%{
       provider_message_id: body["messageId"],
       provider_status: :enqueued,
-      flow: :outbound
+      flow: :outbound,
+      sent_at: DateTime.truncate(DateTime.utc_now(), :second)
     })
 
     {:ok, message}
