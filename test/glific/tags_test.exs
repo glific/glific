@@ -175,7 +175,7 @@ defmodule Glific.TagsTest do
 
     test "keywords tag can be added to tags" do
       language = language_fixture()
-      keywords = ["Hello","hi","hola", "namaste", "good morning" ]
+      keywords = ["Hello", "hi", "hola", "namaste", "good morning"]
       attrs = Map.merge(@valid_attrs, %{language_id: language.id, keywords: keywords})
       assert {:ok, %Tag{} = tag} = Tags.create_tag(attrs)
       assert tag.keywords == keywords
@@ -183,12 +183,11 @@ defmodule Glific.TagsTest do
 
     test "keywords can be updated" do
       tag = tag_fixture()
-      keywords = ["Hello","hi","hola", "namaste"]
+      keywords = ["Hello", "hi", "hola", "namaste"]
       attrs = Map.merge(@update_attrs, %{keywords: keywords})
       assert {:ok, %Tag{} = tag} = Tags.update_tag(tag, attrs)
       assert tag.keywords == keywords
     end
-
   end
 
   describe "messages_tags" do

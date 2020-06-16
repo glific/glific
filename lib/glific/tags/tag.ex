@@ -19,7 +19,7 @@ defmodule Glific.Tags.Tag do
           description: String.t() | nil,
           is_active: boolean(),
           is_reserved: boolean(),
-          keywords: String.t(),
+          keywords: list(),
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           parent_id: non_neg_integer | nil,
