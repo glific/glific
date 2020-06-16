@@ -185,15 +185,14 @@ defmodule GlificWeb.Schema.Query.TagTest do
     label = "This is for testing"
     {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
     language_id = tag.language_id
-
+    keywords = ["Hii", "Hello"]
     result =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "Keyword tag", "languageId" => language_id, "keywords" => ["Hii", "Hello"] }}
+        variables: %{"input" => %{"label" => "Keyword tag", "languageId" => language_id, "keywords" =>  keywords}}
       )
 
     assert {:ok, query_data} = result
-    label = get_in(query_data, [:data, "createTag", "tag", "label"])
-    assert label == "Keyword tag"
+    assert keywords == get_in(query_data, [:data, "createTag", "tag", "keywords"])
   end
 
   test "delete a tag" do
