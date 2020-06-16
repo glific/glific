@@ -24,10 +24,16 @@ defmodule Glific.Communications.Message do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec send_message(Message.t()) :: {:ok, Message.t()}
   def send_message(message) do
+    message =
+      message
+      |> Glific.Repo.preload([:receiver, :sender, :media])
+
     provider_module()
     |> apply(@type_to_token[message.type], [message])
+
+    publish_message({:ok, message}, :sent_message)
   end
 
   @doc """
