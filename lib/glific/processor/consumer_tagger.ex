@@ -1,4 +1,4 @@
-defmodule Glific.Processor.ConsumerText do
+defmodule Glific.Processor.ConsumerTagger do
   @moduledoc """
   Process all messages of type consumer and run them thru the various in-built taggers.
   At a later stage, we will also do translation and dialogflow queries as an offshoot
@@ -15,6 +15,7 @@ defmodule Glific.Processor.ConsumerText do
     Taggers.Keyword,
     Taggers.Numeric,
     Tags,
+    Tags.MessageTag,
     Tags.Tag
   }
 
@@ -43,7 +44,7 @@ defmodule Glific.Processor.ConsumerText do
     # Once we switch keyword to the DB, we will merge the map obtained from
     # the DB here
 
-    {:consumer, state,
+    {:producer_consumer, state,
      subscribe_to: [
        {state.producer,
         selector: fn %{type: type} -> type == :text end,
@@ -70,29 +71,51 @@ defmodule Glific.Processor.ConsumerText do
 
   @doc false
   def handle_events(messages, _from, state) do
-    _ = Enum.map(messages, &process_message(&1, state))
+    messages_with_tags = Enum.map(messages, &process_message(&1, state))
 
-    {:noreply, [], state}
+    {:noreply, [messages_with_tags], state}
   end
 
-  @spec process_message(atom() | Message.t(), map()) :: nil
+  @spec process_message(atom() | Message.t(), map()) :: Message.t()
   defp process_message(message, state) do
     body = Taggers.string_clean(message.body)
 
-    case Numeric.tag_body(body, state.numeric_map) do
-      {:ok, value} -> add_numeric_tag(message, value, state)
-      _ -> nil
-    end
+    numeric = numeric_tagger(message, body, state)
+    keyword = keyword_tagger(message, body, state)
 
-    case Keyword.tag_body(body, state.keyword_map) do
-      {:ok, value} -> add_keyword_tag(message, value, state)
-      _ -> nil
+    # lets preload the tags if any
+    if numeric or keyword do
+      Repo.preload(message, [:tags])
+    else
+      message
     end
-
-    nil
   end
 
-  @spec add_numeric_tag(Message.t(), String.t(), atom() | map()) :: Message.t()
+  @spec numeric_tagger(atom() | Message.t(), String.t(), map()) :: boolean
+  defp numeric_tagger(message, body, state) do
+    case Numeric.tag_body(body, state.numeric_map) do
+      {:ok, value} ->
+        _ = add_numeric_tag(message, value, state)
+        true
+
+      _ ->
+        false
+    end
+  end
+
+  @spec keyword_tagger(atom() | Message.t(), String.t(), map()) :: boolean
+  defp keyword_tagger(message, body, state) do
+    case Keyword.tag_body(body, state.keyword_map) do
+      {:ok, value} ->
+        _ = add_keyword_tag(message, value, state)
+        true
+
+      _ ->
+        false
+    end
+  end
+
+  @spec add_numeric_tag(Message.t(), String.t(), atom() | map()) :: MessageTag.t()
   defp add_numeric_tag(message, value, state) do
     Tags.create_message_tag(%{
       message_id: message.id,
@@ -103,7 +126,7 @@ defmodule Glific.Processor.ConsumerText do
     |> Communications.publish_data(:created_message_tag)
   end
 
-  @spec add_keyword_tag(Message.t(), String.t(), atom() | map()) :: Message.t()
+  @spec add_keyword_tag(Message.t(), String.t(), atom() | map()) :: MessageTag.t()
   defp add_keyword_tag(message, value, _state) do
     Tags.create_message_tag(%{
       message_id: message.id,
