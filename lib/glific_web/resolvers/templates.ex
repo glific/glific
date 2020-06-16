@@ -79,7 +79,7 @@ defmodule GlificWeb.Resolvers.Templates do
       body: session_template.body,
       type: session_template.type,
       media_id: session_template.message_media_id,
-      sender_id: Glific.Communications.Message.organization_contact_id,
+      sender_id: Glific.Communications.Message.organization_contact_id(),
       receiver_id: receiver.id,
       contact_id: receiver.id
     }
