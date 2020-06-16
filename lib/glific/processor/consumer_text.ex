@@ -11,6 +11,8 @@ defmodule Glific.Processor.ConsumerText do
     Communications,
     Messages.Message,
     Repo,
+    Taggers,
+    Taggers.Keyword,
     Taggers.Numeric,
     Tags,
     Tags.Tag
@@ -27,6 +29,7 @@ defmodule Glific.Processor.ConsumerText do
   def init(:ok) do
     state = %{
       producer: Glific.Processor.Producer,
+      keyword_map: Keyword.get_keyword_map(),
       numeric_map: Numeric.get_numeric_map(),
       numeric_tag_id: 0
     }
@@ -36,6 +39,9 @@ defmodule Glific.Processor.ConsumerText do
         {:ok, tag} -> Map.put(state, :numeric_tag_id, tag.id)
         _ -> state
       end
+
+    # Once we switch keyword to the DB, we will merge the map obtained from
+    # the DB here
 
     {:consumer, state,
      subscribe_to: [
@@ -71,21 +77,38 @@ defmodule Glific.Processor.ConsumerText do
 
   @spec process_message(atom() | Message.t(), map()) :: nil
   defp process_message(message, state) do
-    case Numeric.tag_message(message, state.numeric_map) do
-      {:ok, value} -> add_numeric_tag(message, value, state)
-      :error -> IO.puts("Text Consumer: Not numeric")
-    end
+    body = Taggers.string_clean(message.body)
 
+    with {:ok, value} <- Numeric.tag_body(body, state.numeric_map) do
+      add_numeric_tag(message, value, state)
+    else
+      :error ->
+        with {:ok, value} <- Keyword.tag_body(body, state.keyword_map) do
+          add_keyword_tag(message, value, state)
+        else
+          :error -> IO.puts("Did not match number or keyword")
+        end
+    end
     nil
   end
 
   @spec add_numeric_tag(Message.t(), String.t(), atom() | map()) :: Message.t()
   defp add_numeric_tag(message, value, state) do
     Tags.create_message_tag(%{
-      message_id: message.id,
-      tag_id: state.numeric_tag_id,
-      value: value
-    })
+          message_id: message.id,
+          tag_id: state.numeric_tag_id,
+          value: value
+                            })
+    # now publish the message tag event
+    |> Communications.publish_data(:created_message_tag)
+  end
+
+  @spec add_keyword_tag(Message.t(), String.t(), atom() | map()) :: Message.t()
+  defp add_keyword_tag(message, value, _state) do
+    Tags.create_message_tag(%{
+          message_id: message.id,
+          tag_id: String.to_integer(value)
+                            })
     # now publish the message tag event
     |> Communications.publish_data(:created_message_tag)
   end

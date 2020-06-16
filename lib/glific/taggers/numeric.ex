@@ -107,19 +107,20 @@ defmodule Glific.Taggers.Numeric do
   @spec get_numeric_map :: %{String.t() => integer}
   def get_numeric_map, do: @numeric_map
 
-  @doc """
-  Our tagger, which will do things sequentially, but these are all map lookups so should be
-  blazingly fast.
-  """
+  @doc false
   @spec tag_message(Message.t(), %{String.t() => integer}) :: {:ok, String.t()} | :error
   def tag_message(message, numeric_map) do
-    body =
-      message.body
-      |> Taggers.string_clean()
+    message.body
+    |> Taggers.string_clean()
+    |> tag_body(numeric_map)
+  end
 
+  @spec tag_body(String.t(), %{String.t() => integer}) :: {:ok, String.t()} | :error
+  def tag_body(body, numeric_map) do
     case Map.fetch(numeric_map, body) do
       {:ok, value} -> {:ok, to_string(value)}
       _ -> :error
     end
   end
+
 end
