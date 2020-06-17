@@ -1,7 +1,7 @@
 # Things coming in the near/far future
 
 * Mnesia and PoW Integration
-* Passwordless login via SMS
+* Password less login via SMS
 * General structure for actions on events
   * Structure for actions on matching tags + value
   * Structure for actions on message type
@@ -12,7 +12,7 @@
 * Integrate WhatsApp location
 * More details on a contact from WA Profile
 
-## External API Intergations
+## External API Integrations
 * Translation API - Google Translate
 * Transcription API - ??
 * DialogFlow
