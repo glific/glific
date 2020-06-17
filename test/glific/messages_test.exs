@@ -284,8 +284,11 @@ defmodule Glific.MessagesTest do
     end
 
     test "create and send message to multiple contacts should update the provider_message_id field in message" do
-      {:ok, receiver_1} = Contacts.create_contact(@receiver_attrs |> Map.merge(%{phone: Phone.EnUs.phone()}))
-      {:ok, receiver_2} = Contacts.create_contact(@receiver_attrs |> Map.merge(%{phone: Phone.EnUs.phone()}))
+      {:ok, receiver_1} =
+        Contacts.create_contact(@receiver_attrs |> Map.merge(%{phone: Phone.EnUs.phone()}))
+
+      {:ok, receiver_2} =
+        Contacts.create_contact(@receiver_attrs |> Map.merge(%{phone: Phone.EnUs.phone()}))
 
       contact_ids = [receiver_1.id, receiver_2.id]
 
@@ -297,14 +300,14 @@ defmodule Glific.MessagesTest do
 
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint())
 
-      [message1, message2 | _] = Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
+      [message1, message2 | _] =
+        Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
 
       assert_enqueued(worker: Worker)
       Oban.drain_queue(:gupshup)
 
       message1 = Messages.get_message!(message1.id)
       message2 = Messages.get_message!(message2.id)
-
 
       assert message1.provider_message_id != nil
       assert message1.provider_status == :enqueued
