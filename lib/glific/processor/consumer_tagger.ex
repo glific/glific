@@ -82,6 +82,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
     numeric = numeric_tagger(message, body, state)
     keyword = keyword_tagger(message, body, state)
+    status =  message_status_tagger(message, :unread, state)
 
     # lets preload the tags if any
     if numeric or keyword do
@@ -107,13 +108,13 @@ defmodule Glific.Processor.ConsumerTagger do
   defp keyword_tagger(message, body, state) do
     case Keyword.tag_body(body, state.keyword_map) do
       {:ok, value} ->
-        _ = add_keyword_tag(message, value, state)
+        add_keyword_tag(message, value, state)
         true
-
-      _ ->
-        false
+      _ -> false
     end
   end
+
+  defp
 
   @spec add_numeric_tag(Message.t(), String.t(), atom() | map()) :: MessageTag.t()
   defp add_numeric_tag(message, value, state) do
