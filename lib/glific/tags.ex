@@ -170,6 +170,27 @@ defmodule Glific.Tags do
     Tag.changeset(tag, attrs)
   end
 
+  @doc """
+    Converts all tag kewords into the map where keyword is the key and tag id is the value
+  """
+  @spec keyword_map() :: map()
+  def keyword_map do
+    {:ok, results} =
+      "SELECT id, keywords FROM tags where keywords is not NULL and array_length(keywords, 1) > 0;"
+      |> Repo.query()
+
+    results.rows
+    |> Enum.reduce(%{}, fn [tag_id | [keywords]], acc ->
+      Map.merge(acc, keyword_map(tag_id, keywords))
+    end)
+  end
+
+  @spec keyword_map(integer(), list()) :: map()
+  defp keyword_map(tag_id, keywords) do
+    keywords
+    |> Enum.reduce(%{}, fn keyword, acc -> Map.merge(acc, %{keyword => tag_id}) end)
+  end
+
   @doc ~S"""
   Commenting out for now till we integrate search via GraphQL across all data types
 
