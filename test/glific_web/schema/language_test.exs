@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.Query.LanguageTest do
     :ok
   end
 
+  load_gql(:count, GlificWeb.Schema, "assets/gql/languages/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/languages/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/languages/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/languages/create.gql")
@@ -22,6 +23,11 @@ defmodule GlificWeb.Schema.Query.LanguageTest do
 
     assert (label_0 == "English (United States)" and label_1 == "Hindi (India)") or
              (label_1 == "English (United States)" and label_0 == "Hindi (India)")
+  end
+
+  test "count returns the number of languages" do
+    {:ok, query_data} = query_gql_by(:count)
+    assert get_in(query_data, [:data, "countLanguages"]) == 2
   end
 
   test "language id returns one language or nil" do

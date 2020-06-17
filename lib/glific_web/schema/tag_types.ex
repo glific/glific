@@ -37,6 +37,7 @@ defmodule GlificWeb.Schema.TagTypes do
     field :description, :string
     field :is_active, :boolean
     field :is_reserved, :boolean
+    field :keywords, list_of(:string)
 
     field :parent, :tag do
       resolve(dataloader(Repo))
@@ -80,6 +81,7 @@ defmodule GlificWeb.Schema.TagTypes do
     field :is_active, :boolean
     field :is_reserved, :boolean
     field :language_id, :id
+    field :keywords, list_of(:string)
   end
 
   object :tag_queries do

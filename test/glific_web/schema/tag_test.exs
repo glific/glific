@@ -2,6 +2,9 @@ defmodule GlificWeb.Schema.Query.TagTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
+  # the number of tags we ship with by default
+  @tag_count 19
+
   setup do
     lang = Glific.Seeds.seed_language()
     Glific.Seeds.seed_tag(lang)
@@ -92,7 +95,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
 
   test "count returns the number of tags" do
     {:ok, query_data} = query_gql_by(:count)
-    assert get_in(query_data, [:data, "countTags"]) == 16
+    assert get_in(query_data, [:data, "countTags"]) == @tag_count
 
     {:ok, query_data} =
       query_gql_by(:count,
@@ -179,6 +182,27 @@ defmodule GlificWeb.Schema.Query.TagTest do
 
     message = get_in(query_data, [:data, "updateTag", "errors", Access.at(0), "message"])
     assert message == "has already been taken"
+  end
+
+  test "create a tag with keywords" do
+    label = "This is for testing"
+    {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
+    language_id = tag.language_id
+    keywords = ["Hii", "Hello"]
+
+    result =
+      query_gql_by(:create,
+        variables: %{
+          "input" => %{
+            "label" => "Keyword tag",
+            "languageId" => language_id,
+            "keywords" => keywords
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert keywords == get_in(query_data, [:data, "createTag", "tag", "keywords"])
   end
 
   test "delete a tag" do

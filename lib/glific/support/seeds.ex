@@ -20,19 +20,8 @@ defmodule Glific.Seeds do
   """
   @spec seed_language() :: {Language.t(), Language.t()}
   def seed_language do
-    en_us =
-      Repo.insert!(%Language{
-        label: "English (United States)",
-        locale: "en_US"
-      })
-
-    hi_in =
-      Repo.insert!(%Language{
-        label: "Hindi (India)",
-        locale: "hi_IN"
-      })
-
-    {en_us, hi_in}
+    {Repo.insert!(%Language{label: "English (United States)", locale: "en_US"}),
+     Repo.insert!(%Language{label: "Hindi (India)", locale: "hi_IN"})}
   end
 
   @doc false
@@ -43,7 +32,7 @@ defmodule Glific.Seeds do
 
     tags = [
       # Intent of message
-      %{label: "Compliments", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Compliment", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Good Bye", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Greeting", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Thank You", language_id: en_us.id, parent_id: message_tags_mt.id},
@@ -52,8 +41,13 @@ defmodule Glific.Seeds do
       # Status of Message
       %{label: "Critical", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Important", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Read", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "New User", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Not Replied", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Unread", language_id: en_us.id, parent_id: message_tags_mt.id},
+
+      # Tags with Value
+      %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
 
       # Type of Contact
       %{label: "Child", language_id: en_us.id, parent_id: message_tags_ct.id},
@@ -174,7 +168,7 @@ defmodule Glific.Seeds do
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
     Repo.insert!(%Message{
-      body: "default message body",
+      body: "Default message body",
       flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
@@ -185,7 +179,7 @@ defmodule Glific.Seeds do
     })
 
     Repo.insert!(%Message{
-      body: Faker.Lorem.sentence(),
+      body: "ZZZ message body for order test",
       flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
@@ -261,12 +255,14 @@ defmodule Glific.Seeds do
       Repo.insert!(%SessionTemplate{
         label: "Default Template Label",
         body: "Default Template",
+        type: :text,
         language_id: en_us.id
       })
 
     Repo.insert!(%SessionTemplate{
       label: "Another Template Label",
       body: "Another Template",
+      type: :text,
       language_id: en_us.id,
       parent_id: session_template_parent.id
     })
@@ -274,6 +270,7 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "New User",
       body: "Welcome to Glific",
+      type: :text,
       shortcode: "welcome",
       is_reserved: true,
       language_id: en_us.id
@@ -282,6 +279,7 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "Goodbye",
       body: "Goodbye",
+      type: :text,
       shortcode: "bye",
       is_reserved: true,
       language_id: en_us.id

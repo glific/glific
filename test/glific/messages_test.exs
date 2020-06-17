@@ -1,5 +1,8 @@
 defmodule Glific.MessagesTest do
   use Glific.DataCase
+  use Oban.Testing, repo: Glific.Repo
+
+  alias Faker.Phone
 
   alias Glific.{
     Contacts,
@@ -10,6 +13,24 @@ defmodule Glific.MessagesTest do
   alias Glific.Fixtures
 
   describe "messages" do
+    alias Glific.Providers.Gupshup.Worker
+
+    setup do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "submitted",
+                "messageId" => Faker.String.base64(36)
+              })
+          }
+      end)
+
+      :ok
+    end
+
     @sender_attrs %{
       name: "some sender",
       optin_time: ~U[2010-04-17 14:00:00Z],
@@ -45,8 +66,16 @@ defmodule Glific.MessagesTest do
     @invalid_attrs %{body: nil, flow: nil, type: nil, provider_message_id: nil}
 
     defp foreign_key_constraint do
-      {:ok, sender} = Contacts.create_contact(@sender_attrs)
-      {:ok, receiver} = Contacts.create_contact(@receiver_attrs)
+      {:ok, sender} =
+        @sender_attrs
+        |> Map.merge(%{phone: Phone.EnUs.phone()})
+        |> Contacts.create_contact()
+
+      {:ok, receiver} =
+        @receiver_attrs
+        |> Map.merge(%{phone: Phone.EnUs.phone()})
+        |> Contacts.create_contact()
+
       %{sender_id: sender.id, receiver_id: receiver.id}
     end
 
@@ -68,13 +97,22 @@ defmodule Glific.MessagesTest do
 
     test "list_messages/1 with multiple messages filtered" do
       message = message_fixture()
-      assert [message] == Messages.list_messages(%{order: :asc, filter: %{body: message.body}})
+
+      assert [message] ==
+               Messages.list_messages(%{opts: %{order: :asc}, filter: %{body: message.body}})
 
       assert [message] ==
                Messages.list_messages(%{
-                 order: :asc,
+                 opts: %{order: :asc},
                  filter: %{provider_status: message.provider_status}
                })
+    end
+
+    test "count_messages/0 returns count of all messages" do
+      _ = message_fixture()
+      assert Messages.count_messages() == 1
+
+      assert Messages.count_messages(%{filter: %{body: "some body"}}) == 1
     end
 
     test "list_messages/1 with foreign key filters" do
@@ -115,6 +153,23 @@ defmodule Glific.MessagesTest do
         })
 
       assert length(message_list) == 2
+
+      # Check if tag id is wrong, no message should be fetched
+      [last_tag_id] =
+        Glific.Tags.Tag
+        |> order_by([t], desc: t.id)
+        |> limit(1)
+        |> select([t], t.id)
+        |> Repo.all()
+
+      wrong_tag_id = last_tag_id + 1
+
+      message_list =
+        Messages.list_messages(%{
+          filter: %{tags_included: [wrong_tag_id]}
+        })
+
+      assert message_list == []
     end
 
     test "list_messages/1 with tags excluded filters" do
@@ -153,6 +208,51 @@ defmodule Glific.MessagesTest do
       assert {:error, %Ecto.Changeset{}} = Messages.create_message(@invalid_attrs)
     end
 
+    test "create_message/1 with valid data will set parent id if exists" do
+      body = "Body for parent id"
+      message1 = message_fixture()
+
+      message_fixture(%{
+        body: body,
+        sender_id: message1.sender_id,
+        receiver_id: message1.receiver_id
+      })
+
+      {:ok, message2} = Glific.Repo.fetch_by(Message, %{body: body})
+      assert message1.id == message2.parent_id
+    end
+
+    test "create_message/1 with valid data will set ancestors id if exists" do
+      message1 = message_fixture()
+
+      message2 =
+        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      message3 =
+        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      message4 =
+        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      message5 =
+        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
+
+      body = "Body for ancestors message"
+
+      message_fixture(%{
+        body: body,
+        sender_id: message1.sender_id,
+        receiver_id: message1.receiver_id
+      })
+
+      {:ok, message6} = Glific.Repo.fetch_by(Message, %{body: body})
+      assert message5.id == message6.parent_id
+      assert length(message6.ancestors) == 5
+
+      assert [message5.id, message4.id, message3.id, message2.id, message1.id] ==
+               message6.ancestors
+    end
+
     test "update_message/2 with valid data updates the message" do
       message = message_fixture()
       assert {:ok, %Message{} = message} = Messages.update_message(message, @update_attrs)
@@ -181,6 +281,42 @@ defmodule Glific.MessagesTest do
                |> Map.merge(foreign_key_constraint())
                |> Map.merge(%{type: :image})
                |> Messages.create_message()
+    end
+
+    test "create and send message to multiple contacts should update the provider_message_id field in message" do
+      {:ok, receiver_1} =
+        Contacts.create_contact(@receiver_attrs |> Map.merge(%{phone: Phone.EnUs.phone()}))
+
+      {:ok, receiver_2} =
+        Contacts.create_contact(@receiver_attrs |> Map.merge(%{phone: Phone.EnUs.phone()}))
+
+      contact_ids = [receiver_1.id, receiver_2.id]
+
+      valid_attrs = %{
+        body: "some body",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint())
+
+      [message1, message2 | _] =
+        Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
+
+      assert_enqueued(worker: Worker)
+      Oban.drain_queue(:gupshup)
+
+      message1 = Messages.get_message!(message1.id)
+      message2 = Messages.get_message!(message2.id)
+
+      assert message1.provider_message_id != nil
+      assert message1.provider_status == :enqueued
+      assert message1.flow == :outbound
+      assert message1.sent_at != nil
+      assert message2.provider_message_id != nil
+      assert message2.provider_status == :enqueued
+      assert message2.flow == :outbound
+      assert message2.sent_at != nil
     end
   end
 
@@ -221,6 +357,11 @@ defmodule Glific.MessagesTest do
     test "list_messages_media/0 returns all message_media" do
       message_media = message_media_fixture()
       assert Messages.list_messages_media() == [message_media]
+    end
+
+    test "count_messages_media/0 returns count of all message media" do
+      _ = message_media_fixture()
+      assert Messages.count_messages_media() == 1
     end
 
     test "get_message_media!/1 returns the message_media with given id" do

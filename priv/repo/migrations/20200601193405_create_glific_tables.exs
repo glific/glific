@@ -70,6 +70,15 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # Is this a predefined system object?
       add :is_reserved, :boolean, default: false
 
+      # Does this tag potentially have a value associated with it
+      # If so, this value will be stored in the join tables. This is applicable only
+      # for Numeric and Keyword message tags for now, but also include contact tags to
+      # keep them in sync
+      add :is_value, :boolean, default: false
+
+      # keywords assosiacted with tags.
+      add :keywords, {:array, :string}
+
       # foreign key to  option_value:value column with the option_group.name being "language"
       add :language_id, references(:languages, on_delete: :restrict), null: false
 
@@ -97,6 +106,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
       # The body of the message
       add :body, :text, null: false
+
+      # Options are: text, audio, video, image, contact, location, file
+      add :type, :message_types_enum
 
       # Is this a predefined system object?
       add :is_reserved, :boolean, default: false
@@ -161,7 +173,6 @@ defmodule Glific.Repo.Migrations.GlificTables do
   @doc """
   Information for all media messages sent and/or received by the system
   """
-
   def messages_media do
     create table(:messages_media) do
       # url to be sent to BSP
@@ -218,6 +229,15 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # message media ids
       add :media_id, references(:messages_media, on_delete: :delete_all), null: true
 
+      # parent message id for same contact
+      add :parent_id, references(:messages, on_delete: :nilify_all), null: true
+
+      # ancestors array for same contact
+      add :ancestors, {:array, :bigint}
+
+      # timestamp when message will be sent from queue worker
+      add :sent_at, :timestamptz
+
       timestamps(type: :utc_datetime)
     end
 
@@ -234,6 +254,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
     create table(:contacts_tags) do
       add :contact_id, references(:contacts, on_delete: :delete_all), null: false
       add :tag_id, references(:tags, on_delete: :delete_all), null: false
+
+      # the value of the tag if applicable
+      add :value, :string
     end
 
     create unique_index(:contacts_tags, [:contact_id, :tag_id])
@@ -246,9 +269,36 @@ defmodule Glific.Repo.Migrations.GlificTables do
     create table(:messages_tags) do
       add :message_id, references(:messages, on_delete: :delete_all), null: false
       add :tag_id, references(:tags, on_delete: :delete_all), null: false
+
+      # the value of the tag if applicable
+      add :value, :string
     end
 
     create unique_index(:messages_tags, [:message_id, :tag_id])
+  end
+
+  @doc """
+  The keyword table to maintain a list of user entered keywords which when matched
+  tag the message with the Keyword tag with the value
+  """
+  def keywords do
+    create table(:tags) do
+      # The keyword label
+      add :label, :string, null: false
+
+      # An optional description
+      add :description, :string, null: true
+
+      # Is this keyword being currently used
+      add :is_active, :boolean, default: true
+
+      # value of the keyword to be associated with the join table
+      add :value, :string
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:tags, :label)
   end
 
   @doc """

@@ -1,0 +1,3 @@
+query count_providers($filter: ProviderFilter) {
+  countProviders(filter: $filter)
+}

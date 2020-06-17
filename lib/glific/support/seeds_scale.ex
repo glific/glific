@@ -41,100 +41,82 @@ defmodule Glific.SeedsScale do
   defp create_message(3), do: Shakespeare.king_richard_iii()
   defp create_message(4), do: Shakespeare.romeo_and_juliet()
 
-  defp create_messages(len) do
-    Enum.map(1..len, fn _ -> create_message(Enum.random(1..4)) end)
+  defp create_message, do: create_message(Enum.random(1..4))
+
+  @sender_id 1
+  defp create_message_entry(contact_id, "ngo", index) do
+    create_message_entry(
+      %{
+        flow: "outbound",
+        sender_id: @sender_id,
+        receiver_id: contact_id,
+        contact_id: contact_id
+      },
+      index
+    )
   end
 
-  defp create_message_entry(contact_ids, message, "ngo") do
+  defp create_message_entry(contact_id, "beneficiary", index) do
+    create_message_entry(
+      %{
+        flow: "inbound",
+        sender_id: contact_id,
+        receiver_id: @sender_id,
+        contact_id: contact_id
+      },
+      index
+    )
+  end
+
+  defp create_message_entry(difference, index) do
     # random seconds in last month
-    sub_time = Enum.random((-31 * 24 * 60)..0)
+    sub_time = Enum.random(((-index - 1) * 24 * 60 * 60)..(-index * 24 * 60 * 60))
+    record_time = DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second)
 
-    receiver_id = Enum.random(contact_ids)
-
-    %{
-      type: "text",
-      flow: "inbound",
-      body: message,
-      provider_status: "delivered",
-      sender_id: 1,
-      receiver_id: receiver_id,
-      contact_id: receiver_id,
-      inserted_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second),
-      updated_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second)
-    }
+    Map.merge(
+      %{
+        type: "text",
+        body: create_message(),
+        provider_status: "delivered",
+        inserted_at: record_time,
+        updated_at: record_time
+      },
+      difference
+    )
   end
 
-  defp create_message_entry(contact_ids, message, "beneficiary") do
-    # random seconds in last month
-    sub_time = Enum.random((-31 * 24 * 60)..0)
+  @num_messages_per_conversation 40
+  defp create_conversation(contact_id) do
+    num_messages = Enum.random(1..@num_messages_per_conversation)
 
-    %{
-      type: "text",
-      flow: "inbound",
-      body: message,
-      provider_status: "delivered",
-      sender_id: Enum.random(contact_ids),
-      receiver_id: 1,
-      contact_id: 1,
-      inserted_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second),
-      updated_at: DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second)
-    }
-  end
-
-  defp create_message_entries(contact_ids, messages, "ngo") do
-    Enum.map(messages, fn message -> create_message_entry(contact_ids, message, "ngo") end)
-  end
-
-  defp create_message_entries(contact_ids, messages, "beneficiary") do
-    Enum.map(messages, fn message -> create_message_entry(contact_ids, message, "beneficiary") end)
+    for i <- 1..num_messages do
+      case rem(Enum.random(1..10), 2) do
+        0 -> create_message_entry(contact_id, "ngo", num_messages - i + 1)
+        1 -> create_message_entry(contact_id, "beneficiary", num_messages - i + 1)
+      end
+    end
   end
 
   defp create_message_tag(message_id, tag_ids, acc) do
     x = Enum.random(0..100)
-    [t0, t1, t2, t3] = Enum.take_random(tag_ids, 4)
+    [t0, t1, t2, t3, t4] = Enum.take_random(tag_ids, 5)
 
+    [m0, m1, m2, m3, m4] = [
+      %{message_id: message_id, tag_id: t0},
+      %{message_id: message_id, tag_id: t1},
+      %{message_id: message_id, tag_id: t2},
+      %{message_id: message_id, tag_id: t3},
+      %{message_id: message_id, tag_id: t4}
+    ]
+
+    # seed message_tags on received messages only: 10% no tags etc
     cond do
-      x < 25 ->
-        acc
-
-      x < 50 ->
-        [%{message_id: message_id, tag_id: t0} | acc]
-
-      x < 75 ->
-        [
-          %{message_id: message_id, tag_id: t0}
-          | [
-              %{message_id: message_id, tag_id: t1}
-              | acc
-            ]
-        ]
-
-      x < 90 ->
-        [
-          %{message_id: message_id, tag_id: t0}
-          | [
-              %{message_id: message_id, tag_id: t1}
-              | [
-                  %{message_id: message_id, tag_id: t2}
-                  | acc
-                ]
-            ]
-        ]
-
-      true ->
-        [
-          %{message_id: message_id, tag_id: t0}
-          | [
-              %{message_id: message_id, tag_id: t1}
-              | [
-                  %{message_id: message_id, tag_id: t2}
-                  | [
-                      %{message_id: message_id, tag_id: t3}
-                      | acc
-                    ]
-                ]
-            ]
-        ]
+      x < 10 -> acc
+      x < 40 -> [m0 | acc]
+      x < 60 -> [m0 | [m1 | acc]]
+      x < 80 -> [m0 | [m1 | [m2 | acc]]]
+      x < 90 -> [m0 | [m1 | [m2 | [m3 | acc]]]]
+      true -> [m0 | [m1 | [m2 | [m3 | [m4 | acc]]]]]
     end
   end
 
@@ -146,41 +128,24 @@ defmodule Glific.SeedsScale do
     Repo.insert_all(Contact, contact_entries)
   end
 
-  defp seed_messages(messages_count) do
+  defp seed_messages do
     # get all beneficiaries ids
-    contact_ids =
-      Glific.Contacts.list_contacts()
-      |> Enum.filter(fn c -> c.id != 1 end)
-      |> Enum.map(fn c -> c.id end)
-
-    # postgresql protocol can not handle more than 65535 parameters for bulk insert
-    # create list of messages
-    ngo_user_messages_list = create_messages(div(messages_count, 2))
-    beneficiary_user_messages_list = create_messages(div(messages_count, 2))
-
-    # create message entries for ngo users
-    ngo_user_message_entries = create_message_entries(contact_ids, ngo_user_messages_list, "ngo")
-
-    # seed messages
-    Repo.insert_all(Message, ngo_user_message_entries)
-
-    # create message entries for beneficiaries
-    beneficiary_message_entries =
-      create_message_entries(contact_ids, beneficiary_user_messages_list, "beneficiary")
-
-    # seed messages
-    Repo.insert_all(Message, beneficiary_message_entries)
+    Repo.all(from c in "contacts", select: c.id, where: c.id != 1)
+    |> Enum.shuffle()
+    |> Enum.flat_map(&create_conversation(&1))
+    # this enables us to send smaller chunks to postgres for insert
+    |> Enum.chunk_every(3000)
+    |> Enum.map(&Repo.insert_all(Message, &1))
   end
 
   defp seed_message_tags do
-    # seed message_tags on received messages only: 25% no tags, 25% 1 tag, 50% 2 - 4 tags, only do
-    message_ids = Repo.all(from m in "messages", select: m.id, where: m.receiver_id == 1)
-    tag_ids = Repo.all(from t in "tags", select: t.id)
+    tag_ids = Repo.all(from t in "tags", select: t.id) |> Enum.shuffle()
 
-    message_tags =
-      Enum.reduce(message_ids, [], fn x, acc -> create_message_tag(x, tag_ids, acc) end)
-
-    Repo.insert_all(MessageTag, message_tags)
+    Repo.all(from m in "messages", select: m.id, where: m.receiver_id == 1)
+    |> Enum.shuffle()
+    |> Enum.reduce([], fn x, acc -> create_message_tag(x, tag_ids, acc) end)
+    |> Enum.chunk_every(3000)
+    |> Enum.map(&Repo.insert_all(MessageTag, &1))
   end
 
   @doc false
@@ -191,7 +156,7 @@ defmodule Glific.SeedsScale do
 
     seed_contacts(500)
 
-    seed_messages(10_000)
+    seed_messages()
 
     seed_message_tags()
 

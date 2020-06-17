@@ -11,6 +11,7 @@ defmodule Glific.TemplatesTest do
     @valid_attrs %{
       label: "some label",
       body: "some body",
+      type: :text,
       is_active: true,
       is_reserved: true
     }
@@ -18,6 +19,7 @@ defmodule Glific.TemplatesTest do
       label: "some label 1",
       body: "some body 1",
       shortcode: "sl1",
+      type: :text,
       is_active: true,
       is_reserved: true
     }
@@ -67,6 +69,16 @@ defmodule Glific.TemplatesTest do
     test "list_session_templates/0 returns all session_templates" do
       session_template = session_template_fixture()
       assert Templates.list_session_templates() == [session_template]
+    end
+
+    test "count_session_templates/0 returns count of all session templates" do
+      session_template_fixture()
+      assert Templates.count_session_templates() == 1
+
+      session_template_fixture(@valid_attrs_1)
+      assert Templates.count_session_templates() == 2
+
+      assert Templates.count_session_templates(%{filter: %{label: "some label 1"}}) == 1
     end
 
     test "list_session_templates/1 with multiple session_templates filteres" do
@@ -131,6 +143,16 @@ defmodule Glific.TemplatesTest do
 
     test "create_session_template/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Templates.create_session_template(@invalid_attrs)
+    end
+
+    test "create session template with media type and without media id returns error changeset" do
+      language = language_fixture()
+      attrs = Map.merge(@valid_attrs, %{language_id: language.id})
+
+      assert {:error, %Ecto.Changeset{}} =
+               attrs
+               |> Map.merge(%{type: :image})
+               |> Templates.create_session_template()
     end
 
     test "update_session_template/2 with valid data updates the session_template" do

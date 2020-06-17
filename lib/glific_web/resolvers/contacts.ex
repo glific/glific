@@ -21,6 +21,14 @@ defmodule GlificWeb.Resolvers.Contacts do
     {:ok, Contacts.list_contacts(args)}
   end
 
+  @doc """
+  Get the count of contacts filtered by args
+  """
+  @spec count_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_contacts(_, args, _) do
+    {:ok, Contacts.count_contacts(args)}
+  end
+
   @doc false
   @spec create_contact(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}

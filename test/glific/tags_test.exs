@@ -172,6 +172,33 @@ defmodule Glific.TagsTest do
       attrs = Map.merge(@valid_attrs, %{language_id: language.id * 10})
       assert {:error, %Ecto.Changeset{}} = Tags.create_tag(attrs)
     end
+
+    test "keywords can be added to tags" do
+      language = language_fixture()
+      keywords = ["Hello", "hi", "hola", "namaste", "good morning"]
+      attrs = Map.merge(@valid_attrs, %{language_id: language.id, keywords: keywords})
+      assert {:ok, %Tag{} = tag} = Tags.create_tag(attrs)
+      assert tag.keywords == keywords
+    end
+
+    test "keywords can be updated for a tag" do
+      tag = tag_fixture()
+      keywords = ["Hello", "hi", "hola", "namaste"]
+      attrs = Map.merge(@update_attrs, %{keywords: keywords})
+      assert {:ok, %Tag{} = tag} = Tags.update_tag(tag, attrs)
+      assert tag.keywords == keywords
+    end
+
+    test "keyword_map/0 returns a keyword map with ids" do
+      tag = tag_fixture()
+      tag2 = tag_fixture(%{label: "tag 2"})
+      Tags.update_tag(tag, %{keywords: ["Hello", "hi", "hola", "namaste"]})
+      Tags.update_tag(tag2, %{keywords: ["Tag2", "Tag21", "Tag22", "Tag23"]})
+      keyword_map = Tags.keyword_map()
+      assert is_map(keyword_map)
+      assert keyword_map["Hello"] == tag.id
+      assert keyword_map["Tag2"] == tag2.id
+    end
   end
 
   describe "messages_tags" do
@@ -214,13 +241,14 @@ defmodule Glific.TagsTest do
       assert %Ecto.Changeset{} = Tags.change_message_tag(message_tag)
     end
 
-    test "ensure that creating message_tag with same message and tag give an error" do
+    test "ensure that creating message_tag with same message and tag does not give an error" do
       message = Fixtures.message_fixture()
       tag = Fixtures.tag_fixture()
       Fixtures.message_tag_fixture(%{message_id: message.id, tag_id: tag.id})
 
-      assert {:error, %Ecto.Changeset{}} =
-               Tags.create_message_tag(%{message_id: message.id, tag_id: tag.id})
+      # we love upserts!
+      assert {:ok, %MessageTag{}}
+      Tags.create_message_tag(%{message_id: message.id, tag_id: tag.id})
     end
   end
 

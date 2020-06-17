@@ -68,6 +68,13 @@ defmodule Glific.ContactsTest do
       assert Contacts.list_contacts() == [contact]
     end
 
+    test "count_contacts/0 returns count of all contacts" do
+      _ = contact_fixture()
+      assert Contacts.count_contacts() == 1
+
+      assert Contacts.count_contacts(%{filter: %{name: "some name"}}) == 1
+    end
+
     test "get_contact!/1 returns the contact with given id" do
       contact = contact_fixture()
       assert Contacts.get_contact!(contact.id) == contact
@@ -130,10 +137,10 @@ defmodule Glific.ContactsTest do
       c2 = contact_fixture(@valid_attrs_2)
       c3 = contact_fixture(@valid_attrs_3)
 
-      cs = Contacts.list_contacts(%{order: :asc})
+      cs = Contacts.list_contacts(%{opts: %{order: :asc}})
       assert [c0, c1, c2, c3] == cs
 
-      cs = Contacts.list_contacts(%{order: :desc})
+      cs = Contacts.list_contacts(%{opts: %{order: :desc}})
       assert [c3, c2, c1, c0] == cs
     end
 
@@ -143,18 +150,18 @@ defmodule Glific.ContactsTest do
       _c2 = contact_fixture(@valid_attrs_2)
       c3 = contact_fixture(@valid_attrs_3)
 
-      cs = Contacts.list_contacts(%{order: :asc, filter: %{phone: "some phone 3"}})
+      cs = Contacts.list_contacts(%{opts: %{order: :asc}, filter: %{phone: "some phone 3"}})
       assert cs == [c3]
 
       cs = Contacts.list_contacts(%{filter: %{phone: "some phone"}})
       assert length(cs) == 4
 
-      cs = Contacts.list_contacts(%{order: :asc, filter: %{name: "some name 1"}})
+      cs = Contacts.list_contacts(%{opts: %{order: :asc}, filter: %{name: "some name 1"}})
       assert cs == [c1]
 
       cs =
         Contacts.list_contacts(%{
-          order: :asc,
+          opts: %{order: :asc},
           filter: %{status: :valid, provider_status: :invalid}
         })
 

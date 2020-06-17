@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.Query.MessageMediaTest do
     :ok
   end
 
+  load_gql(:count, GlificWeb.Schema, "assets/gql/messages_media/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/messages_media/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/messages_media/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/messages_media/create.gql")
@@ -23,6 +24,26 @@ defmodule GlificWeb.Schema.Query.MessageMediaTest do
 
     [message_media | _] = messages_media
     assert get_in(message_media, ["caption"]) == "default caption"
+  end
+
+  test "messages media field obeys limit and offset" do
+    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "messagesMedia"])) == 1
+
+    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    assert {:ok, query_data} = result
+
+    messages_media = get_in(query_data, [:data, "messagesMedia"])
+    assert length(messages_media) == 3
+
+    # lets make sure we dont get Test as a message media caption
+    assert get_in(messages_media, [Access.at(0), "caption"]) != "Test"
+  end
+
+  test "count returns the number of messages media" do
+    {:ok, query_data} = query_gql_by(:count)
+    assert get_in(query_data, [:data, "countMessagesMedia"]) == 4
   end
 
   test "message media id returns one message media or nil" do

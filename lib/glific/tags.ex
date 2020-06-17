@@ -46,7 +46,7 @@ defmodule Glific.Tags do
   defp opts_with(query, opts) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->
-        query |> order_by({^order, :label})
+        query |> order_by([t], {^order, fragment("lower(?)", t.label)})
 
       {:limit, limit}, query ->
         query |> limit(^limit)
@@ -170,6 +170,26 @@ defmodule Glific.Tags do
     Tag.changeset(tag, attrs)
   end
 
+  @doc """
+    Converts all tag kewords into the map where keyword is the key and tag id is the value
+  """
+  @spec keyword_map() :: map()
+  def keyword_map do
+    {:ok, results} =
+      "SELECT id, keywords FROM tags where keywords is not NULL and array_length(keywords, 1) > 0;"
+      |> Repo.query()
+
+    results.rows
+    |> Enum.reduce(%{}, &keyword_map(&1, &2))
+  end
+
+  @spec keyword_map(list(integer() | [String.t()]), map) :: map()
+  defp keyword_map([tag_id | [keywords]], acc) do
+    keywords
+    |> Enum.reduce(%{}, &Map.put(&2, &1, tag_id))
+    |> Map.merge(acc)
+  end
+
   @doc ~S"""
   Commenting out for now till we integrate search via GraphQL across all data types
 
@@ -243,9 +263,10 @@ defmodule Glific.Tags do
   @spec create_message_tag(map()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def create_message_tag(attrs \\ %{}) do
     # Merge default values if not present in attributes
+    # do an upsert
     %MessageTag{}
     |> MessageTag.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])
   end
 
   @doc """

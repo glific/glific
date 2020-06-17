@@ -90,8 +90,14 @@ defmodule GlificWeb.Schema.MessageTypes do
     @desc "Get a list of all messages filtered by various criteria"
     field :messages, list_of(:message) do
       arg(:filter, :message_filter)
-      arg(:order, type: :sort_order, default_value: :asc)
+      arg(:opts, :opts)
       resolve(&Resolvers.Messages.messages/3)
+    end
+
+    @desc "Get a count of all messages filtered by various criteria"
+    field :count_messages, :integer do
+      arg(:filter, :message_filter)
+      resolve(&Resolvers.Messages.count_messages/3)
     end
   end
 
@@ -109,6 +115,12 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :create_and_send_message, :message_result do
       arg(:input, non_null(:message_input))
       resolve(&Resolvers.Messages.create_and_send_message/3)
+    end
+
+    field :create_and_send_message_to_contacts, list_of(:message) do
+      arg(:input, non_null(:message_input))
+      arg(:contact_ids, non_null(list_of(:id)))
+      resolve(&Resolvers.Messages.create_and_send_message_to_contacts/3)
     end
 
     field :update_message, :message_result do

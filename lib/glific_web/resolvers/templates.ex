@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Templates do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Repo, Templates, Templates.SessionTemplate}
+  alias Glific.{Messages, Repo, Templates, Templates.SessionTemplate}
 
   @doc """
   Get a specific session template by id
@@ -23,6 +23,15 @@ defmodule GlificWeb.Resolvers.Templates do
           {:ok, any} | {:error, any}
   def session_templates(_, args, _) do
     {:ok, Templates.list_session_templates(args)}
+  end
+
+  @doc """
+  Get the count of sessiont templates filtered by args
+  """
+  @spec count_session_templates(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, integer}
+  def count_session_templates(_, args, _) do
+    {:ok, Templates.count_session_templates(args)}
   end
 
   @doc false
@@ -55,4 +64,12 @@ defmodule GlificWeb.Resolvers.Templates do
       {:ok, session_template}
     end
   end
+
+  @doc false
+  @spec send_session_message(Absinthe.Resolution.t(), %{id: integer, receiver_id: integer}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def send_session_message(_, %{id: id, receiver_id: receiver_id}, _),
+    do: Messages.create_and_send_session_template(id, receiver_id)
 end

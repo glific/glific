@@ -3,9 +3,15 @@ defmodule Glific.Communications.Message do
   The Message Communication Context, which encapsulates and manages tags and the related join tables.
   """
 
-  alias Glific.Contacts
-  alias Glific.Messages
-  alias Glific.Messages.Message
+  alias Glific.{
+    Communications,
+    Contacts,
+    Contacts.Contact,
+    Messages,
+    Messages.Message,
+    Processor.Producer,
+    Repo
+  }
 
   @doc false
   defmacro __using__(_opts \\ []) do
@@ -24,10 +30,11 @@ defmodule Glific.Communications.Message do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec send_message(Message.t()) :: {:ok, Message.t()}
   def send_message(message) do
-    provider_module()
-    |> apply(@type_to_token[message.type], [message])
+    message = Repo.preload(message, [:receiver, :sender, :media])
+    apply(provider_module(), @type_to_token[message.type], [message])
+    {:ok, Communications.publish_data({:ok, message}, :sent_message)}
   end
 
   @doc """
@@ -43,7 +50,8 @@ defmodule Glific.Communications.Message do
     |> Messages.update_message(%{
       provider_message_id: body["messageId"],
       provider_status: :enqueued,
-      flow: :outbound
+      flow: :outbound,
+      sent_at: DateTime.truncate(DateTime.utc_now(), :second)
     })
 
     {:ok, message}
@@ -52,7 +60,7 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback in case of any error while sending the message
   """
-  @spec handle_error_response(any(), Message.t()) :: {:error, String.t()}
+  @spec handle_error_response(Tesla.Env.t(), Message.t()) :: {:error, String.t()}
   def handle_error_response(response, message) do
     message
     |> Poison.encode!()
@@ -63,10 +71,23 @@ defmodule Glific.Communications.Message do
   end
 
   @doc """
+  Callback to update the provider status for a message
+  """
+  @spec update_provider_status(String.t(), atom()) :: {:ok, Message.t()}
+  def update_provider_status(provider_message_id, provider_status) do
+    # Improve me
+    # We will improve that and complete this action in a Single Query.
+
+    {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+    Messages.update_message(message, %{provider_status: provider_status})
+    {:ok, message}
+  end
+
+  @doc """
   Callback when we receive a text message
   """
 
-  @spec receive_text(map()) :: {:ok, Message.t()}
+  @spec receive_text(map()) :: :ok
   def receive_text(message_params) do
     contact = Contacts.upsert(message_params.sender)
 
@@ -78,13 +99,14 @@ defmodule Glific.Communications.Message do
       flow: :inbound
     })
     |> Messages.create_message()
-    |> publish_message(:received_message)
+    |> Communications.publish_data(:received_message)
+    |> Producer.add()
   end
 
   @doc """
   Callback when we receive a media (image|video|audio) message
   """
-  @spec receive_media(map()) :: {:ok, Message.t()}
+  @spec receive_media(map()) :: :ok
   def receive_media(message_params) do
     contact = Contacts.upsert(message_params.sender)
     {:ok, message_media} = Messages.create_message_media(message_params)
@@ -97,32 +119,22 @@ defmodule Glific.Communications.Message do
       flow: :inbound
     })
     |> Messages.create_message()
-    |> publish_message(:received_message)
-  end
+    |> Communications.publish_data(:received_message)
 
-  @doc false
-  @spec publish_message({:ok, Message.t()}, atom()) :: {:ok, Message.t()}
-  def publish_message({:ok, message}, topic) do
-    Absinthe.Subscription.publish(
-      GlificWeb.Endpoint,
-      message,
-      [{topic, :glific}]
-    )
-
-    {:ok, message}
+    :ok
   end
 
   @doc false
   @spec provider_module() :: atom()
   def provider_module do
-    provider = Glific.Communications.effective_provider()
+    provider = Communications.effective_provider()
     String.to_existing_atom(to_string(provider) <> ".Message")
   end
 
   @doc false
   @spec organization_contact_id() :: integer()
   def organization_contact_id do
-    {:ok, contact} = Glific.Repo.fetch_by(Contacts.Contact, %{name: "Default receiver"})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Default receiver"})
     contact.id
   end
 end

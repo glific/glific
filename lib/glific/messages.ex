@@ -5,19 +5,21 @@ defmodule Glific.Messages do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Communications,
     Contacts.Contact,
     Conversations.Conversation,
     Messages.Message,
     Repo,
-    Tags.MessageTag
+    Tags.MessageTag,
+    Templates.SessionTemplate
   }
 
   @doc """
-  Returns the list of messages.
+  Returns the list of filtered messages.
 
   ## Examples
 
-      iex> list_messages()
+      iex> list_messages(map())
       [%Message{}, ...]
 
   """
@@ -25,13 +27,39 @@ defmodule Glific.Messages do
   def list_messages(args \\ %{}) do
     args
     |> Enum.reduce(Message, fn
-      {:order, order}, query ->
-        query |> order_by({^order, :id})
+      {:opts, opts}, query ->
+        query |> opts_with(opts)
 
       {:filter, filter}, query ->
         query |> filter_with(filter)
     end)
     |> Repo.all()
+  end
+
+  defp opts_with(query, opts) do
+    Enum.reduce(opts, query, fn
+      {:order, order}, query ->
+        query |> order_by([m], {^order, fragment("lower(?)", m.body)})
+
+      {:limit, limit}, query ->
+        query |> limit(^limit)
+
+      {:offset, offset}, query ->
+        query |> offset(^offset)
+    end)
+  end
+
+  @doc """
+  Return the count of messages, using the same filter as list_messages
+  """
+  @spec count_messages(map()) :: integer
+  def count_messages(args \\ %{}) do
+    args
+    |> Enum.reduce(Message, fn
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
+    |> Repo.aggregate(:count)
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -113,7 +141,7 @@ defmodule Glific.Messages do
 
   """
   @spec create_message(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
-  def create_message(attrs \\ %{}) do
+  def create_message(attrs) do
     attrs =
       %{flow: :inbound, provider_status: :delivered}
       |> Map.merge(attrs)
@@ -183,6 +211,51 @@ defmodule Glific.Messages do
     Message.changeset(message, attrs)
   end
 
+  @doc false
+  @spec fetch_and_send_message(map()) :: {:ok, Message.t()}
+  def fetch_and_send_message(attrs) do
+    with {:ok, message} <- Repo.fetch(Message, attrs),
+         do: Communications.Message.send_message(message)
+  end
+
+  @doc false
+  @spec create_and_send_message(map()) :: {:ok, Message.t()}
+  def create_and_send_message(attrs) do
+    with {:ok, message} <- create_message(attrs),
+         do: Communications.Message.send_message(message)
+  end
+
+  @doc false
+  @spec create_and_send_session_template(integer, integer) :: {:ok, Message.t()}
+  def create_and_send_session_template(template_id, receiver_id) do
+    {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
+
+    message_params = %{
+      body: session_template.body,
+      type: session_template.type,
+      media_id: session_template.message_media_id,
+      sender_id: Communications.Message.organization_contact_id(),
+      receiver_id: receiver_id
+    }
+
+    with {:ok, message} <- create_and_send_message(message_params) do
+      {:ok, message}
+    end
+  end
+
+  @doc false
+  @spec create_and_send_message_to_contacts(map(), []) :: {:ok, Message.t()}
+  def create_and_send_message_to_contacts(message_params, contact_ids) do
+    contact_ids
+    |> Enum.reduce([], fn contact_id, messages ->
+      message_params = Map.merge(message_params, %{receiver_id: contact_id})
+
+      with {:ok, message} <- create_and_send_message(message_params) do
+        [message | messages]
+      end
+    end)
+  end
+
   alias Glific.Messages.MessageMedia
 
   @doc """
@@ -190,13 +263,44 @@ defmodule Glific.Messages do
 
   ## Examples
 
-      iex> list_messages_media()
+      iex> list_messages_media(map())
       [%MessageMedia{}, ...]
 
   """
   @spec list_messages_media(map()) :: [MessageMedia.t()]
-  def list_messages_media(_args \\ %{}) do
-    Repo.all(MessageMedia)
+  def list_messages_media(args \\ %{}) do
+    args
+    |> Enum.reduce(MessageMedia, fn
+      {:opts, opts}, query ->
+        query |> opts_media_with(opts)
+    end)
+    |> Repo.all()
+  end
+
+  defp opts_media_with(query, opts) do
+    Enum.reduce(opts, query, fn
+      {:order, order}, query ->
+        query |> order_by([m], {^order, fragment("lower(?)", m.caption)})
+
+      {:limit, limit}, query ->
+        query |> limit(^limit)
+
+      {:offset, offset}, query ->
+        query |> offset(^offset)
+    end)
+  end
+
+  @doc """
+  Return the count of messages, using the same filter as list_messages
+  """
+  @spec count_messages_media(map()) :: integer
+  def count_messages_media(args \\ %{}) do
+    args
+    |> Enum.reduce(MessageMedia, fn
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
+    |> Repo.aggregate(:count)
   end
 
   @doc """
