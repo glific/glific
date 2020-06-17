@@ -6,7 +6,11 @@ defmodule Glific.Processor.ConsumerAutomation do
 
   use GenStage
 
-  alias Glific.{}
+  alias Glific.{
+    Messages,
+    Messages.Message,
+    Tags.Tag
+  }
 
   @min_demand 0
   @max_demand 1
@@ -31,17 +35,26 @@ defmodule Glific.Processor.ConsumerAutomation do
   end
 
   @doc false
-  def handle_call({:add_numeric, {key, value}}, _from, state) do
-    new_numeric_map = Map.put(state.numeric_map, key, value)
-
-    {:reply, "Numeric Map Updated", [], Map.put(state, :numeric_map, new_numeric_map)}
-  end
-
-  @doc false
   def handle_info(_, state), do: {:noreply, [], state}
 
   @doc false
-  def handle_events(_messages, _from, state) do
+  def handle_events(messages, _from, state) do
+    _ =
+      messages
+      |> Enum.filter(fn m -> Ecto.assoc_loaded?(m.tags) end)
+      |> Enum.map(fn m ->
+        Enum.map(m.tags, fn t -> process_tag(m, t) end)
+      end)
+
     {:noreply, [], state}
+  end
+
+  @spec process_tag(Message.t(), Tag.t()) :: nil
+  defp process_tag(message, tag) do
+    if tag.label == "Welcome" do
+      Messages.create_and_send_session_template(3, message.receiver_id)
+    end
+
+    nil
   end
 end

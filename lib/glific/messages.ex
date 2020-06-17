@@ -4,14 +4,14 @@ defmodule Glific.Messages do
   """
   import Ecto.Query, warn: false
 
-  alias Glific.Communications.Message, as: Communications
-
   alias Glific.{
+    Communications,
     Contacts.Contact,
     Conversations.Conversation,
     Messages.Message,
     Repo,
-    Tags.MessageTag
+    Tags.MessageTag,
+    Templates.SessionTemplate
   }
 
   @doc """
@@ -214,13 +214,34 @@ defmodule Glific.Messages do
   @doc false
   @spec fetch_and_send_message(map()) :: {:ok, Message.t()}
   def fetch_and_send_message(attrs) do
-    with {:ok, message} <- Repo.fetch(Message, attrs), do: Communications.send_message(message)
+    with {:ok, message} <- Repo.fetch(Message, attrs),
+         do: Communications.Message.send_message(message)
   end
 
   @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()}
   def create_and_send_message(attrs) do
-    with {:ok, message} <- create_message(attrs), do: Communications.send_message(message)
+    with {:ok, message} <- create_message(attrs),
+         do: Communications.Message.send_message(message)
+  end
+
+  @doc false
+  @spec create_and_send_session_template(integer, integer) :: {:ok, Message.t()}
+  def create_and_send_session_template(template_id, receiver_id) do
+    {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
+
+    message_params = %{
+      body: session_template.body,
+      type: session_template.type,
+      media_id: session_template.message_media_id,
+      sender_id: Communications.Message.organization_contact_id(),
+      receiver_id: receiver_id,
+      contact_id: receiver_id
+    }
+
+    with {:ok, message} <- create_and_send_message(message_params) do
+      {:ok, message}
+    end
   end
 
   alias Glific.Messages.MessageMedia

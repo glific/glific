@@ -41,8 +41,10 @@ defmodule Glific.Seeds do
       # Status of Message
       %{label: "Critical", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Important", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Read", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "New User", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Not Replied", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Unread", language_id: en_us.id, parent_id: message_tags_mt.id},
 
       # Tags with Value
       %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},

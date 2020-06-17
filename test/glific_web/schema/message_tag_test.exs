@@ -31,6 +31,7 @@ defmodule GlificWeb.Schema.Query.MessageTagTest do
     assert message_tag["tag"]["id"] |> String.to_integer() == tag.id
 
     # try creating the same message tag twice
+    # upserts come into play here and we dont return an error
     result =
       query_gql_by(:create,
         variables: %{"input" => %{"message_id" => message.id, "tag_id" => tag.id}}
@@ -38,8 +39,9 @@ defmodule GlificWeb.Schema.Query.MessageTagTest do
 
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "createMessageTag", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    message_tag = get_in(query_data, [:data, "createMessageTag", "message_tag"])
+    assert get_in(message_tag, ["message", "id"]) |> String.to_integer() == message.id
+    assert get_in(message_tag, ["tag", "id"]) |> String.to_integer() == tag.id
   end
 
   test "delete a message tag" do

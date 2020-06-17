@@ -73,7 +73,7 @@ defmodule Glific.Processor.ConsumerTagger do
   def handle_events(messages, _from, state) do
     messages_with_tags = Enum.map(messages, &process_message(&1, state))
 
-    {:noreply, [messages_with_tags], state}
+    {:noreply, messages_with_tags, state}
   end
 
   @spec process_message(atom() | Message.t(), map()) :: Message.t()
