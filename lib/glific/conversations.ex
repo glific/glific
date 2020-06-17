@@ -37,10 +37,16 @@ defmodule Glific.Conversations do
     filter = Map.put(filter, :id, contact_id)
     args = Map.merge(args, %{filter: filter})
 
-    [conversation] =
+    conversations_list =
       Messages.list_conversations(Map.put(args, :ids, get_message_ids(1, sc, args)))
 
-    conversation
+    case conversations_list do
+      [conversation] ->
+        conversation
+
+      [] ->
+        nil
+    end
   end
 
   @spec get_message_ids(integer(), integer(), map() | nil) :: list()

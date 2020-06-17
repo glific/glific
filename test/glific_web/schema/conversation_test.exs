@@ -61,5 +61,13 @@ defmodule GlificWeb.Schema.Query.ConversationTest do
     assert get_in(result, [:data, "conversation"]) != nil
     assert get_in(result, [:data, "conversation", "contact", "id"]) == cid
     assert get_in(result, [:data, "conversation", "messages"]) == []
+
+    # if we send in an invalid id, we should get nil
+    {:ok, result} =
+      query_gql_by(:by_contact_id,
+        variables: %{"contact_id" => "234567893453", "sc" => 3, "filter" => %{}}
+      )
+
+    assert get_in(result, [:data, "conversation"]) == nil
   end
 end
