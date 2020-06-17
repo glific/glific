@@ -22,14 +22,14 @@ defmodule Glific.Search.Full do
     quote do
       fragment(
         """
-        SELECT message_search.id AS id,
+        SELECT search_messages.contact_id AS id,
         ts_rank(
-        message_search.document, plainto_tsquery(unaccent(?))
+        search_messages.document, plainto_tsquery(unaccent(?))
         ) AS rank
-        FROM message_search
-        WHERE message_search.document @@ plainto_tsquery(unaccent(?))
-        OR message_search.contact_label ILIKE ?
-        OR message_search.tag_label ILIKE ?
+        FROM search_messages
+        WHERE search_messages.document @@ plainto_tsquery(unaccent(?))
+        OR search_messages.name ILIKE ?
+        OR ? ILIKE ANY(tag_label)
         """,
         ^unquote(term),
         ^unquote(term),

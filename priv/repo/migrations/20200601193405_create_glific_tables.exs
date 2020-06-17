@@ -95,6 +95,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
   Store a set of predefined messages that the organization communicates to its users
   on a regular basis.
 
+
   Handle multiple versions of the message for different languages. We will also need to think
   about incorporating short codes for session templates for easier retrieval by end user
   """
@@ -274,30 +275,6 @@ defmodule Glific.Repo.Migrations.GlificTables do
     end
 
     create unique_index(:messages_tags, [:message_id, :tag_id])
-  end
-
-  @doc """
-  The keyword table to maintain a list of user entered keywords which when matched
-  tag the message with the Keyword tag with the value
-  """
-  def keywords do
-    create table(:tags) do
-      # The keyword label
-      add :label, :string, null: false
-
-      # An optional description
-      add :description, :string, null: true
-
-      # Is this keyword being currently used
-      add :is_active, :boolean, default: true
-
-      # value of the keyword to be associated with the join table
-      add :value, :string
-
-      timestamps(type: :utc_datetime)
-    end
-
-    create unique_index(:tags, :label)
   end
 
   @doc """

@@ -52,7 +52,9 @@ defmodule GlificWeb.Schema.Query.MessageTagTest do
 
     {:ok, query_data} =
       query_gql_by(:create,
-        variables: %{"input" => %{"message_id" => message.id, "tag_id" => tag.id}}
+        variables: %{
+          "input" => %{"message_id" => to_string(message.id), "tag_id" => to_string(tag.id)}
+        }
       )
 
     message_tag_id = get_in(query_data, [:data, "createMessageTag", "message_tag", "id"])
