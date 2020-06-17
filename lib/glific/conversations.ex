@@ -32,7 +32,7 @@ defmodule Glific.Conversations do
   """
   @spec conversation_by_id(map()) :: Conversation.t()
   def conversation_by_id(%{contact_id: contact_id, size_of_conversations: sc} = args) do
-    args = put_in(args[:filter][:id], contact_id)
+    args = put_in(args, [Access.key(:filter, %{}), :id], contact_id)
 
     conversations_list =
       Messages.list_conversations(Map.put(args, :ids, get_message_ids(1, sc, args)))
