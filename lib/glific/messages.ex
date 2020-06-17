@@ -235,8 +235,7 @@ defmodule Glific.Messages do
       type: session_template.type,
       media_id: session_template.message_media_id,
       sender_id: Communications.Message.organization_contact_id(),
-      receiver_id: receiver_id,
-      contact_id: receiver_id
+      receiver_id: receiver_id
     }
 
     with {:ok, message} <- create_and_send_message(message_params) do
@@ -250,14 +249,14 @@ defmodule Glific.Messages do
     contact_ids
     |> Enum.reduce(fn contact_id, _ ->
       contact_attrs = %{
-        receiver_id: contact_id,
-        contact_id: contact_id
+        receiver_id: contact_id
       }
 
-      message = Map.merge(message, contact_attrs)
+      message_params = Map.merge(message, contact_attrs)
 
-      with {:ok, message} <- create_message(message),
-           do: Communications.Message.send_message(message)
+      with {:ok, message} <- create_and_send_message(message_params) do
+        {:ok, message}
+      end
     end)
   end
 
