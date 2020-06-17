@@ -36,7 +36,6 @@ defmodule Glific.Seeds do
       %{label: "Good Bye", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Greeting", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Thank You", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Welcome", language_id: en_us.id, parent_id: message_tags_mt.id},
 
       # Status of Message
       %{label: "Critical", language_id: en_us.id, parent_id: message_tags_mt.id},

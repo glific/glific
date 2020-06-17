@@ -3,7 +3,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
   use Wormwood.GQLCase
 
   # the number of tags we ship with by default
-  @tag_count 19
+  @tag_count 18
 
   setup do
     lang = Glific.Seeds.seed_language()
