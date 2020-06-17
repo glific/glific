@@ -27,6 +27,20 @@ defmodule Glific.Conversations do
   def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args),
     do: Messages.list_conversations(Map.put(args, :ids, get_message_ids(nc, sc, args)))
 
+  @doc """
+  Returns the conversation by contact id
+  """
+  @spec conversation_by_id(map()) :: map()
+  def conversation_by_id(
+        %{contact_id: contact_id, size_of_conversations: sc, filter: filter} = args
+      ) do
+    filter = Map.put(filter, :id, contact_id)
+    args = Map.merge(args, %{filter: filter})
+
+    [message] = Messages.list_conversations(Map.put(args, :ids, get_message_ids(1, sc, args)))
+    message
+  end
+
   @spec get_message_ids(integer(), integer(), map() | nil) :: list()
   defp get_message_ids(nc, sc, %{filter: %{id: id}}),
     do: process_results(Repo.query(@sql_ids, [nc, [id]]), sc)
