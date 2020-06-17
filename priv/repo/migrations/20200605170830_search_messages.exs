@@ -177,7 +177,7 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
               tag_label = CASE
                 WHEN label = ANY (tag_label) then tag_label
                 WHEN label is null then tag_label
-                ELSE tag_label || label::TEXT
+                ELSE array_prepend(label::character varying, tag_label)
               END,
               document  = (document || (setweight(to_tsvector(unaccent(coalesce(label, ' '))), 'B')))::tsvector
             FROM new_data

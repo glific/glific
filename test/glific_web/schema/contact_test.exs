@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.Query.ContactTest do
 
   setup do
     Glific.Seeds.seed_contacts()
+    Glific.Seeds.seed_messages()
     :ok
   end
 
@@ -174,27 +175,17 @@ defmodule GlificWeb.Schema.Query.ContactTest do
   end
 
   test "search for contacts" do
-    {:ok, sender} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Sender"})
     {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
 
-    sender_id = to_string(sender.id)
     receiver_id = to_string(receiver.id)
 
-    result = query_gql_by(:search, variables: %{"term" => "Default Sender"})
+    result = query_gql_by(:search, variables: %{"term" => "Default"})
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "search", Access.at(0), "id"]) == sender_id
+    assert get_in(query_data, [:data, "search", Access.at(0), "id"]) == receiver_id
 
     result = query_gql_by(:search, variables: %{"term" => "Default receiver"})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "search", Access.at(0), "id"]) == receiver_id
-
-    result = query_gql_by(:search, variables: %{"term" => "Default"})
-    assert {:ok, query_data} = result
-    id_1 = get_in(query_data, [:data, "search", Access.at(0), "id"])
-    id_2 = get_in(query_data, [:data, "search", Access.at(1), "id"])
-
-    assert (id_1 == sender_id and id_2 == receiver_id) or
-             (id_2 == sender_id and id_1 == receiver_id)
 
     result =
       query_gql_by(:search,
