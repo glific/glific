@@ -28,7 +28,7 @@ defmodule Glific.Conversations do
     do: Messages.list_conversations(Map.put(args, :ids, get_message_ids(nc, sc, args)))
 
   @doc """
-  Returns the conversation by contact id
+  Returns the filtered conversation by contact id
   """
   @spec conversation_by_id(map()) :: Conversation.t()
   def conversation_by_id(
@@ -36,6 +36,21 @@ defmodule Glific.Conversations do
       ) do
     filter = Map.put(filter, :id, contact_id)
     args = Map.merge(args, %{filter: filter})
+
+    [conversation] =
+      Messages.list_conversations(Map.put(args, :ids, get_message_ids(1, sc, args)))
+
+    conversation
+  end
+
+  @doc """
+  Returns the conversation by contact id
+  """
+  @spec conversation_by_id(map()) :: Conversation.t()
+  def conversation_by_id(
+        %{contact_id: contact_id, size_of_conversations: sc} = args
+      ) do
+    args = Map.merge(args, %{filter: %{id: contact_id}})
 
     [conversation] =
       Messages.list_conversations(Map.put(args, :ids, get_message_ids(1, sc, args)))

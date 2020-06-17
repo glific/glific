@@ -11,6 +11,7 @@ defmodule GlificWeb.Schema.Query.ConversationTest do
   end
 
   load_gql(:list, GlificWeb.Schema, "assets/gql/conversations/list.gql")
+  load_gql(:by_contact_id, GlificWeb.Schema, "assets/gql/conversations/by_contact_id.gql")
 
   test "conversations always returns a few threads" do
     {:ok, result} = query_gql_by(:list, variables: %{"nc" => 1, "sc" => 3})
@@ -45,5 +46,20 @@ defmodule GlificWeb.Schema.Query.ConversationTest do
     assert get_in(result, [:data, "conversations"]) |> length == 1
     assert get_in(result, [:data, "conversations", Access.at(0), "contact", "id"]) == cid
     assert get_in(result, [:data, "conversations", Access.at(0), "messages"]) == []
+  end
+
+  test "conversation by id" do
+    # lets create a new contact with no message
+    {:ok, contact} =
+      Contacts.create_contact(%{name: "My conversation contact", phone: "+123456789"})
+
+    cid = Integer.to_string(contact.id)
+
+    {:ok, result} =
+      query_gql_by(:by_contact_id, variables: %{"contact_id" => cid, "sc" => 1})
+
+    assert get_in(result, [:data, "conversation"]) != nil
+    assert get_in(result, [:data, "conversation", "contact", "id"]) == cid
+    assert get_in(result, [:data, "conversation", "messages"]) == []
   end
 end
