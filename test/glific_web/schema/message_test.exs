@@ -10,6 +10,12 @@ defmodule GlificWeb.Schema.Query.MessageTest do
     :ok
   end
 
+  load_gql(
+    :create_and_send_message_to_contacts,
+    GlificWeb.Schema,
+    "assets/gql/messages/create_and_send_message_to_contacts.gql"
+  )
+
   load_gql(:count, GlificWeb.Schema, "assets/gql/messages/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/messages/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/messages/by_id.gql")
@@ -191,5 +197,30 @@ defmodule GlificWeb.Schema.Query.MessageTest do
 
     message = get_in(query_data, [:data, "deleteMessage", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "send message to multiple contacts" do
+    name = "Margarita Quinteros"
+    {:ok, contact1} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+
+    name = "Adelle Cavin"
+    {:ok, contact2} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+
+    result =
+      query_gql_by(:create_and_send_message_to_contacts,
+        variables: %{
+          "input" => %{
+            "body" => "Message body",
+            "flow" => "OUTBOUND",
+            "type" => "TEXT",
+            "sender_id" => Glific.Communications.Message.organization_contact_id(),
+            "providerStatus" => "DELIVERED"
+          },
+          "contact_ids" => [contact1.id, contact2.id]
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "createAndSendMessageToContacts", "errors"]) == nil
   end
 end

@@ -1,5 +1,6 @@
 defmodule Glific.MessagesTest do
   use Glific.DataCase
+  use Oban.Testing, repo: Glific.Repo
 
   alias Faker.Phone
 
@@ -12,6 +13,24 @@ defmodule Glific.MessagesTest do
   alias Glific.Fixtures
 
   describe "messages" do
+    alias Glific.Providers.Gupshup.Worker
+
+    setup do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "submitted",
+                "messageId" => Faker.String.base64(36)
+              })
+          }
+      end)
+
+      :ok
+    end
+
     @sender_attrs %{
       name: "some sender",
       optin_time: ~U[2010-04-17 14:00:00Z],
@@ -262,6 +281,42 @@ defmodule Glific.MessagesTest do
                |> Map.merge(foreign_key_constraint())
                |> Map.merge(%{type: :image})
                |> Messages.create_message()
+    end
+
+    test "create and send message to multiple contacts should update the provider_message_id field in message" do
+      {:ok, receiver_1} =
+        Contacts.create_contact(@receiver_attrs |> Map.merge(%{phone: Phone.EnUs.phone()}))
+
+      {:ok, receiver_2} =
+        Contacts.create_contact(@receiver_attrs |> Map.merge(%{phone: Phone.EnUs.phone()}))
+
+      contact_ids = [receiver_1.id, receiver_2.id]
+
+      valid_attrs = %{
+        body: "some body",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint())
+
+      [message1, message2 | _] =
+        Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
+
+      assert_enqueued(worker: Worker)
+      Oban.drain_queue(:gupshup)
+
+      message1 = Messages.get_message!(message1.id)
+      message2 = Messages.get_message!(message2.id)
+
+      assert message1.provider_message_id != nil
+      assert message1.provider_status == :enqueued
+      assert message1.flow == :outbound
+      assert message1.sent_at != nil
+      assert message2.provider_message_id != nil
+      assert message2.provider_status == :enqueued
+      assert message2.flow == :outbound
+      assert message2.sent_at != nil
     end
   end
 

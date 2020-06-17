@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createAndSendMessageToContacts($input:MessageInput!, $contact_ids: [ID]!) {
+  createAndSendMessageToContacts(input: $input, contact_ids: $contact_ids) {
+    ...MessageFields
+
+    ...ErrorFields
+  }
+}
