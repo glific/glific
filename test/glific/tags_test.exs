@@ -173,7 +173,7 @@ defmodule Glific.TagsTest do
       assert {:error, %Ecto.Changeset{}} = Tags.create_tag(attrs)
     end
 
-    test "keywords tag can be added to tags" do
+    test "keywords can be added to tags" do
       language = language_fixture()
       keywords = ["Hello", "hi", "hola", "namaste", "good morning"]
       attrs = Map.merge(@valid_attrs, %{language_id: language.id, keywords: keywords})
@@ -181,12 +181,23 @@ defmodule Glific.TagsTest do
       assert tag.keywords == keywords
     end
 
-    test "keywords can be updated" do
+    test "keywords can be updated for a tag" do
       tag = tag_fixture()
       keywords = ["Hello", "hi", "hola", "namaste"]
       attrs = Map.merge(@update_attrs, %{keywords: keywords})
       assert {:ok, %Tag{} = tag} = Tags.update_tag(tag, attrs)
       assert tag.keywords == keywords
+    end
+
+    test "keyword_map/0 returns a keyword map with ids" do
+      tag = tag_fixture()
+      tag2 = tag_fixture(%{label: "tag 2"})
+      Tags.update_tag(tag, %{keywords: ["Hello", "hi", "hola", "namaste"]})
+      Tags.update_tag(tag2, %{keywords: ["Tag2", "Tag21", "Tag22", "Tag23"]})
+      keyword_map = Tags.keyword_map()
+      assert is_map(keyword_map)
+      assert keyword_map["Hello"] == tag.id
+      assert keyword_map["Tag2"] == tag2.id
     end
   end
 

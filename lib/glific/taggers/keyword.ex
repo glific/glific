@@ -8,18 +8,10 @@ defmodule Glific.Taggers.Keyword do
 
   # hardcoding greeting as 5, since this is our testcase
   # need to handle keywords in tags
-  @keyword_map %{
-    "hola" => 7,
-    "hello" => 7,
-    "hi" => 7,
-    "goodmorning" => 7,
-    "hey" => 7,
-    "whatsup" => 7
-  }
 
   @doc false
   @spec get_keyword_map :: %{String.t() => integer}
-  def get_keyword_map, do: @keyword_map
+  def get_keyword_map, do: Glific.Tags.keyword_map()
 
   @doc false
   @spec tag_message(Message.t(), %{String.t() => integer}) :: {:ok, String.t()} | :error
