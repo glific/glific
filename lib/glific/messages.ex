@@ -257,7 +257,7 @@ defmodule Glific.Messages do
       message = Map.merge(message, contact_attrs)
 
       with {:ok, message} <- create_message(message),
-           do: Communications.send_message(message)
+           do: Communications.Message.send_message(message)
     end)
   end
 
