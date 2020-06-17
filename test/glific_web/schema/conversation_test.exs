@@ -56,7 +56,7 @@ defmodule GlificWeb.Schema.Query.ConversationTest do
     cid = Integer.to_string(contact.id)
 
     {:ok, result} =
-      query_gql_by(:by_contact_id, variables: %{"contact_id" => cid, "sc" => 1})
+      query_gql_by(:by_contact_id, variables: %{"contact_id" => cid, "sc" => 1, "filter" => %{}})
 
     assert get_in(result, [:data, "conversation"]) != nil
     assert get_in(result, [:data, "conversation", "contact", "id"]) == cid
