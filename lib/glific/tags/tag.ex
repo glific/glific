@@ -57,8 +57,16 @@ defmodule Glific.Tags.Tag do
     tag
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> lowercase_keywords(attrs[:keywords])
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
     |> unique_constraint([:label, :language_id])
+  end
+
+  defp lowercase_keywords(changeset, keywords) do
+    case keywords do
+      nil -> changeset
+      _ -> put_change(changeset, :keywords, Enum.map(keywords, &String.downcase(&1)))
+    end
   end
 end

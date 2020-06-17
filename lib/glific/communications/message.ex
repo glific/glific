@@ -78,9 +78,14 @@ defmodule Glific.Communications.Message do
     # Improve me
     # We will improve that and complete this action in a Single Query.
 
-    {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
-    Messages.update_message(message, %{provider_status: provider_status})
-    {:ok, message}
+    case Repo.fetch_by(Message, %{provider_message_id: provider_message_id}) do
+      {:ok, message} ->
+        Messages.update_message(message, %{provider_status: provider_status})
+        {:ok, message}
+
+      _ ->
+        {:ok, nil}
+    end
   end
 
   @doc """
@@ -134,7 +139,7 @@ defmodule Glific.Communications.Message do
   @doc false
   @spec organization_contact_id() :: integer()
   def organization_contact_id do
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+    {:ok, contact} = Repo.fetch_by(Contact, %{phone: "917834811114"})
     contact.id
   end
 end
