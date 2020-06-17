@@ -16,6 +16,8 @@ defmodule GlificWeb.Schema.MessageTagTypes do
   object :message_tag do
     field :id, :id
 
+    field :value, :string
+
     field :message, :message do
       resolve(dataloader(Repo))
     end
@@ -39,6 +41,38 @@ defmodule GlificWeb.Schema.MessageTagTypes do
     field :delete_message_tag, :message_tag_result do
       arg(:id, non_null(:id))
       resolve(&Resolvers.Tags.delete_message_tag/3)
+    end
+  end
+
+  object :message_tag_subscriptions do
+    field :created_message_tag, :message_tag do
+      config(fn _args, _info ->
+        {:ok, topic: :glific}
+      end)
+
+      trigger(
+        [:create_message_tag],
+        :glific
+      )
+
+      resolve(fn %{message_tag: message_tag}, _, _ ->
+        {:ok, message_tag}
+      end)
+    end
+
+    field :deleted_message_tag, :message_tag do
+      config(fn _args, _info ->
+        {:ok, topic: :glific}
+      end)
+
+      trigger(
+        [:delete_message_tag],
+        :glific
+      )
+
+      resolve(fn %{message_tag: message_tag}, _, _ ->
+        {:ok, message_tag}
+      end)
     end
   end
 end

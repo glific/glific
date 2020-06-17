@@ -11,7 +11,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
   def handler(conn, _params, msg) do
-    json(conn, msg)
+    IO.puts(msg)
+    json(conn, nil)
   end
 
   @doc false

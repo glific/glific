@@ -101,7 +101,8 @@ defmodule Glific.MixProject do
       {:cors_plug, "~> 2.0"},
       {:ex_check, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.8", only: [:dev, :test]},
-      {:wormwood, "~> 0.1"}
+      {:wormwood, "~> 0.1"},
+      {:gen_stage, "~> 1.0"}
     ]
   end
 
@@ -117,7 +118,7 @@ defmodule Glific.MixProject do
       reset: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      # test: ["ecto.drop", "ecto.create --quiet", "ecto.migrate", "test"]
+      # test: ["ecto.create --quiet", "ecto.migrate", "test"]
       test: ["ecto.drop", "ecto.create --quiet", "ecto.migrate", "test"]
     ]
   end

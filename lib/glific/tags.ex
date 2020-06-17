@@ -243,9 +243,10 @@ defmodule Glific.Tags do
   @spec create_message_tag(map()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def create_message_tag(attrs \\ %{}) do
     # Merge default values if not present in attributes
+    # do an upsert
     %MessageTag{}
     |> MessageTag.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])
   end
 
   @doc """

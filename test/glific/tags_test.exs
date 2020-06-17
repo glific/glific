@@ -230,13 +230,14 @@ defmodule Glific.TagsTest do
       assert %Ecto.Changeset{} = Tags.change_message_tag(message_tag)
     end
 
-    test "ensure that creating message_tag with same message and tag give an error" do
+    test "ensure that creating message_tag with same message and tag does not give an error" do
       message = Fixtures.message_fixture()
       tag = Fixtures.tag_fixture()
       Fixtures.message_tag_fixture(%{message_id: message.id, tag_id: tag.id})
 
-      assert {:error, %Ecto.Changeset{}} =
-               Tags.create_message_tag(%{message_id: message.id, tag_id: tag.id})
+      # we love upserts!
+      assert {:ok, %MessageTag{}}
+      Tags.create_message_tag(%{message_id: message.id, tag_id: tag.id})
     end
   end
 
