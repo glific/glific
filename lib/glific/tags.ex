@@ -180,15 +180,14 @@ defmodule Glific.Tags do
       |> Repo.query()
 
     results.rows
-    |> Enum.reduce(%{}, fn [tag_id | [keywords]], acc ->
-      Map.merge(acc, keyword_map(tag_id, keywords))
-    end)
+    |> Enum.reduce(%{}, &keyword_map(&1, &2))
   end
 
-  @spec keyword_map(integer(), list()) :: map()
-  defp keyword_map(tag_id, keywords) do
+  @spec keyword_map(list(integer() | [String.t()]), map) :: map()
+  defp keyword_map([tag_id | [keywords]], acc) do
     keywords
-    |> Enum.reduce(%{}, fn keyword, acc -> Map.merge(acc, %{keyword => tag_id}) end)
+    |> Enum.reduce(%{}, &Map.put(&2, &1, tag_id))
+    |> Map.merge(acc)
   end
 
   @doc ~S"""
