@@ -11,6 +11,9 @@
 * Multiple producers/consumers in receive message pipeline
 * Integrate WhatsApp location
 * More details on a contact from WA Profile
+* Users and Groups
+* User Roles and permissions
+* Claiming conversations by user-groups
 
 ## External API Integrations
 * Translation API - Google Translate

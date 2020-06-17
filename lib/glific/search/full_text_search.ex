@@ -18,10 +18,8 @@ defmodule Glific.Search.FullTextSearch do
           contact_phone: String.t() | nil,
           tags_label: String.t() | nil,
           document: String.t() | nil,
-
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
-
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
