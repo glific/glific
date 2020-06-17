@@ -228,7 +228,7 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
     assert message == "Resource not found"
   end
 
-  test "send_session_message" do
+  test "send session message" do
     body = "Default Template"
 
     {:ok, session_template} =
@@ -243,6 +243,6 @@ defmodule GlificWeb.Schema.Query.SessionTemplateTest do
       )
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "sendSessionTemplate", "errors"]) == nil
+    assert get_in(query_data, [:data, "sendSessionMessage", "errors"]) == nil
   end
 end

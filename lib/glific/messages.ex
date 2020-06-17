@@ -235,13 +235,25 @@ defmodule Glific.Messages do
       type: session_template.type,
       media_id: session_template.message_media_id,
       sender_id: Communications.Message.organization_contact_id(),
-      receiver_id: receiver_id,
-      contact_id: receiver_id
+      receiver_id: receiver_id
     }
 
     with {:ok, message} <- create_and_send_message(message_params) do
       {:ok, message}
     end
+  end
+
+  @doc false
+  @spec create_and_send_message_to_contacts(map(), []) :: {:ok, Message.t()}
+  def create_and_send_message_to_contacts(message_params, contact_ids) do
+    contact_ids
+    |> Enum.reduce([], fn contact_id, messages ->
+      message_params = Map.merge(message_params, %{receiver_id: contact_id})
+
+      with {:ok, message} <- create_and_send_message(message_params) do
+        [message | messages]
+      end
+    end)
   end
 
   alias Glific.Messages.MessageMedia
