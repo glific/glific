@@ -20,19 +20,8 @@ defmodule Glific.Seeds do
   """
   @spec seed_language() :: {Language.t(), Language.t()}
   def seed_language do
-    en_us =
-      Repo.insert!(%Language{
-        label: "English (United States)",
-        locale: "en_US"
-      })
-
-    hi_in =
-      Repo.insert!(%Language{
-        label: "Hindi (India)",
-        locale: "hi_IN"
-      })
-
-    {en_us, hi_in}
+    {Repo.insert!(%Language{label: "English (United States)", locale: "en_US"}),
+     Repo.insert!(%Language{label: "Hindi (India)", locale: "hi_IN"})}
   end
 
   @doc false
@@ -52,12 +41,13 @@ defmodule Glific.Seeds do
       # Status of Message
       %{label: "Critical", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Important", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Read", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "New User", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Not Replied", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Unread", language_id: en_us.id, parent_id: message_tags_mt.id},
 
       # Tags with Value
       %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
-      %{label: "Keyword", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
 
       # Type of Contact
       %{label: "Child", language_id: en_us.id, parent_id: message_tags_ct.id},

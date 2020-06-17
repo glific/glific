@@ -6,9 +6,11 @@ defmodule Glific.Communications.Message do
   alias Glific.{
     Communications,
     Contacts,
+    Contacts.Contact,
     Messages,
     Messages.Message,
-    Processor.Producer
+    Processor.Producer,
+    Repo
   }
 
   @doc false
@@ -30,7 +32,7 @@ defmodule Glific.Communications.Message do
   """
   @spec send_message(Message.t()) :: {:ok, Message.t()}
   def send_message(message) do
-    message = Glific.Repo.preload(message, [:receiver, :sender, :media])
+    message = Repo.preload(message, [:receiver, :sender, :media])
     apply(provider_module(), @type_to_token[message.type], [message])
     {:ok, Communications.publish_data({:ok, message}, :sent_message)}
   end
@@ -76,7 +78,7 @@ defmodule Glific.Communications.Message do
     # Improve me
     # We will improve that and complete this action in a Single Query.
 
-    {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+    {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
     Messages.update_message(message, %{provider_status: provider_status})
     {:ok, message}
   end
@@ -125,14 +127,14 @@ defmodule Glific.Communications.Message do
   @doc false
   @spec provider_module() :: atom()
   def provider_module do
-    provider = Glific.Communications.effective_provider()
+    provider = Communications.effective_provider()
     String.to_existing_atom(to_string(provider) <> ".Message")
   end
 
   @doc false
   @spec organization_contact_id() :: integer()
   def organization_contact_id do
-    {:ok, contact} = Glific.Repo.fetch_by(Contacts.Contact, %{name: "Default receiver"})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Default receiver"})
     contact.id
   end
 end
