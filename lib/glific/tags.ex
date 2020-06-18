@@ -175,16 +175,16 @@ defmodule Glific.Tags do
   """
   @spec keyword_map() :: map()
   def keyword_map do
-    {:ok, results} =
-      "SELECT id, keywords FROM tags where keywords is not NULL and array_length(keywords, 1) > 0;"
-      |> Repo.query()
-
-    results.rows
-    |> Enum.reduce(%{}, &keyword_map(&1, &2))
+      Tag
+      |> where([t], not(is_nil(t.keywords)))
+      |> where([t], fragment("array_length(?, 1)", t.keywords) > 0)
+      |> select([:id, :keywords])
+      |> Repo.all()
+      |> Enum.reduce(%{}, &keyword_map(&1, &2))
   end
 
-  @spec keyword_map(list(integer() | [String.t()]), map) :: map()
-  defp keyword_map([tag_id | [keywords]], acc) do
+  @spec keyword_map(map(), map) :: map()
+  defp keyword_map(%{id: tag_id, keywords: keywords}, acc) do
     keywords
     |> Enum.reduce(%{}, &Map.put(&2, &1, tag_id))
     |> Map.merge(acc)
