@@ -52,7 +52,7 @@ defmodule Glific.Processor.ConsumerAutomation do
   @spec process_tag(Message.t(), Tag.t()) :: nil
   defp process_tag(message, tag) do
     if tag.label == "Welcome" do
-      Messages.create_and_send_session_template(3, message.receiver_id)
+      Messages.create_and_send_session_template(3, message.sender_id)
     end
 
     nil

@@ -202,7 +202,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
       )
 
     assert {:ok, query_data} = result
-    assert keywords == get_in(query_data, [:data, "createTag", "tag", "keywords"])
+    assert ["hii", "hello"] == get_in(query_data, [:data, "createTag", "tag", "keywords"])
   end
 
   test "delete a tag" do
