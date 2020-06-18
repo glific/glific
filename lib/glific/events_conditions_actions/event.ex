@@ -9,6 +9,7 @@ defmodule Glific.EventsConditionsActions.Event do
 
   alias Glific.{
     Enums.MessageTypes,
+    EventsConditionsActions.Action
   }
 
   @conditions %{
@@ -16,19 +17,23 @@ defmodule Glific.EventsConditionsActions.Event do
       type: :message,
       filters: %{
         type: MessageTypes,
-        tags: [], # We will load this dynamically from the DB at init time
+        # We will load this dynamically from the DB at init time
+        tags: [],
         parent_type: MessageTypes,
-        parent_tags: [], # Same deal as tags
+        # Same deal as tags
+        parent_tags: [],
         ancestors_type: MessageTypes,
-        ancestors_tags: [], # Same deal as tags
+        # Same deal as tags
+        ancestors_tags: [],
         body: [:has_any, :has_all, :has_phrase, :has_only_phrase, :is_number]
       }
     },
     message_tag: %{
       type: :message_tag,
       filters: %{
-        tags: [], # We will load this dynamically from the DB at init time
-        value: [:has_any, :has_all],
+        # We will load this dynamically from the DB at init time
+        tags: [],
+        value: [:has_any, :has_all]
       }
     }
   }
@@ -38,26 +43,17 @@ defmodule Glific.EventsConditionsActions.Event do
     message_sent: @conditions[:message],
     # untagged is the same as tag, we create the message
     # without the deleted tag
-    message_tagged: @conditions[:message_tag],
+    message_tagged: @conditions[:message_tag]
   }
 
   @actions %{
-    add_tag_to_message: %{
-      params: [:message, :tag, :string],
-      return: [:message],
-    },
-
-    remove_tag_from_message: %{
-      params: [:message, :tag],
-      return: [:message],
-    },
-
-    send_session_templates: %{
-      params: [:message, :session_template, :when],
-      return: [:message]
-    },
+    add_tag_to_message: Action,
+    remove_tag_from_message: Action,
+    send_session_template: Action
   }
 
+  @doc false
+  @spec init() :: %{atom() => map()}
   def init do
     %{
       events: @events,
@@ -69,5 +65,4 @@ defmodule Glific.EventsConditionsActions.Event do
   defp load_from_db(conditions) do
     conditions
   end
-
 end
