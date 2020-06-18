@@ -24,6 +24,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.ProviderTypes)
   import_types(__MODULE__.SessionTemplateTypes)
   import_types(__MODULE__.TagTypes)
+  import_types(__MODULE__.AuthenticationTypes)
 
   query do
     import_fields(:contact_queries)
@@ -65,6 +66,8 @@ defmodule GlificWeb.Schema do
     import_fields(:session_template_mutations)
 
     import_fields(:tag_mutations)
+
+    import_fields(:authentication_mutations)
   end
 
   subscription do
