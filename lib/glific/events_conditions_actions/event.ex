@@ -9,7 +9,7 @@ defmodule Glific.EventsConditionsActions.Event do
 
   alias Glific.{
     Enums.MessageTypes,
-    EventsConditionsActions.Action
+    EventsConditionsActions.Action.AddTags
   }
 
   @conditions %{
@@ -26,7 +26,7 @@ defmodule Glific.EventsConditionsActions.Event do
         # Same deal as tags
         ancestors_tags: [],
         body: [:has_any, :has_all, :has_phrase, :has_only_phrase],
-        clean_body: [:is_keyword, :is_number],
+        clean_body: [:is_keyword, :is_number]
       }
     },
     message_tag: %{
@@ -47,32 +47,20 @@ defmodule Glific.EventsConditionsActions.Event do
     message_tagged: @conditions[:message_tag]
   }
 
-  @actions %{
-    add_tag_to_message: Action,
-    remove_tag_from_message: Action,
-    send_session_template: Action
-  }
-
-  @standard_ecas = [
+  @standard_ecas [
     %{
       event: :message_received,
-      conditions: %{
-        type: :text,
-        clean_body: [:is_number],
-      },
-      actions: [:add_tag_to_message, ]
-
-
-      }
+      action: AddTags
     }
   ]
+
   @doc false
   @spec init() :: %{atom() => map()}
   def init do
     %{
       events: @events,
       conditions: load_from_db(@conditions),
-      actions: @actions
+      standard: @standard_ecas
     }
   end
 
