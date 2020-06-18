@@ -25,7 +25,8 @@ defmodule Glific.EventsConditionsActions.Event do
         ancestors_type: MessageTypes,
         # Same deal as tags
         ancestors_tags: [],
-        body: [:has_any, :has_all, :has_phrase, :has_only_phrase, :is_number]
+        body: [:has_any, :has_all, :has_phrase, :has_only_phrase],
+        clean_body: [:is_keyword, :is_number],
       }
     },
     message_tag: %{
@@ -52,6 +53,19 @@ defmodule Glific.EventsConditionsActions.Event do
     send_session_template: Action
   }
 
+  @standard_ecas = [
+    %{
+      event: :message_received,
+      conditions: %{
+        type: :text,
+        clean_body: [:is_number],
+      },
+      actions: [:add_tag_to_message, ]
+
+
+      }
+    }
+  ]
   @doc false
   @spec init() :: %{atom() => map()}
   def init do
