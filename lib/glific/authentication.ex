@@ -26,8 +26,8 @@ defmodule Glific.Authentication do
       :ok ->
         {:ok, "OTP verified successfully for #{phone}"}
 
-      {:error, :incorrect_code} ->
-        {:ok, "Incorrect OTP"}
+      {:error, error} ->
+        {:ok, Atom.to_string(error)}
     end
   end
 end
