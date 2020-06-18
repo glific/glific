@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Authentication do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Authentication}
+  alias Glific.Authentication
 
   @doc false
   @spec send_otp(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) :: {:ok, String.t()}

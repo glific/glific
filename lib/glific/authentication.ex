@@ -3,12 +3,13 @@ defmodule Glific.Authentication do
   The Authentication context.
   """
   import Ecto.Query, warn: false
+  alias PasswordlessAuth
 
   @doc """
   Creates and sends the OTP to phone number
   """
   @spec create_and_send_otp_to_phone(map()) :: {:ok, String.t()}
-  def create_and_send_otp_to_phone(args \\ %{}) do
+  def create_and_send_otp_to_phone(args) do
     %{phone: phone} = args
 
     {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(phone)
@@ -24,7 +25,7 @@ defmodule Glific.Authentication do
   def verify_otp(%{phone: phone, otp: otp}) do
     case PasswordlessAuth.verify_code(phone, otp) do
       :ok ->
-        # Todo: Update contact table
+        # To do: Update contact table
 
         # Remove otp code
         PasswordlessAuth.remove_code(phone)

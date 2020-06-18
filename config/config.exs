@@ -49,10 +49,14 @@ config :glific, :pow,
   repo: Glific.Repo
 
 config :passwordless_auth,
-  garbage_collector_frequency: 30, # seconds; optional (defaults to 30 if not provided)
-  num_attempts_before_timeout: 5, # optional (defaults to 5 if not provided)
-  rate_limit_timeout_length: 60, # seconds; optional (defaults to 60 if not provided)
-  verification_code_ttl: 300 # seconds, optional (defaults to 300 if not provided)
+  # seconds; optional (defaults to 30 if not provided)
+  garbage_collector_frequency: 30,
+  # optional (defaults to 5 if not provided)
+  num_attempts_before_timeout: 5,
+  # seconds; optional (defaults to 60 if not provided)
+  rate_limit_timeout_length: 60,
+  # seconds, optional (defaults to 300 if not provided)
+  verification_code_ttl: 300
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
