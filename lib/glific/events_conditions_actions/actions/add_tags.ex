@@ -17,9 +17,9 @@ defmodule Glific.EventsConditionsActions.Action.AddTags do
   }
 
   @doc false
+  @spec init(:ok) :: map()
   def init(:ok) do
     state = %{
-      producer: Glific.Processor.Producer,
       keyword_map: Keyword.get_keyword_map(),
       status_map: Status.get_status_map(),
       numeric_map: Numeric.get_numeric_map(),
@@ -43,7 +43,7 @@ defmodule Glific.EventsConditionsActions.Action.AddTags do
       |> new_contact_tagger(state)
       |> numeric_tagger(body, state)
       |> keyword_tagger(body, state)
-      |> Repo.preload(message, [:tags])
+      |> Repo.preload(:tags)
       |> Communications.publish_data(:created_message_tag)
 
     {%{message: message}, state}

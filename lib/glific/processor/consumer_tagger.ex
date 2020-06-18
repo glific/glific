@@ -83,7 +83,7 @@ defmodule Glific.Processor.ConsumerTagger do
     |> new_contact_tagger(state)
     |> numeric_tagger(body, state)
     |> keyword_tagger(body, state)
-    |> Repo.preload(message, [:tags])
+    |> Repo.preload(:tags)
     |> Communications.publish_data(:created_message_tag)
   end
 

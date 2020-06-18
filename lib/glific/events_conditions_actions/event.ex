@@ -55,7 +55,7 @@ defmodule Glific.EventsConditionsActions.Event do
   ]
 
   @doc false
-  @spec init() :: %{atom() => map()}
+  @spec init() :: %{atom() => map() | list()}
   def init do
     %{
       events: @events,
@@ -64,6 +64,7 @@ defmodule Glific.EventsConditionsActions.Event do
     }
   end
 
+  @spec load_from_db(map()) :: map()
   defp load_from_db(conditions) do
     conditions
   end
