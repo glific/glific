@@ -10,7 +10,7 @@ defmodule Glific.Conversations do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Messages, Repo}
+  alias Glific.{Conversations.Conversation, Messages, Repo}
 
   @sql_ids """
       SELECT id, ancestors FROM messages WHERE id IN ( SELECT MAX(id) FROM messages GROUP BY contact_id ) and contact_id = ANY($2) ORDER By updated_at DESC LIMIT $1;
@@ -26,6 +26,21 @@ defmodule Glific.Conversations do
   @spec list_conversations(map()) :: list()
   def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args),
     do: Messages.list_conversations(Map.put(args, :ids, get_message_ids(nc, sc, args)))
+
+  @doc """
+  Returns the filtered conversation by contact id
+  """
+  @spec conversation_by_id(map()) :: Conversation.t()
+  def conversation_by_id(%{contact_id: contact_id, size_of_conversations: sc} = args) do
+    args = put_in(args, [Access.key(:filter, %{}), :id], contact_id)
+
+    case args
+         |> Map.put(:ids, get_message_ids(1, sc, args))
+         |> Messages.list_conversations() do
+      [conversation] -> conversation
+      _ -> nil
+    end
+  end
 
   @spec get_message_ids(integer(), integer(), map() | nil) :: list()
   defp get_message_ids(nc, sc, %{filter: %{id: id}}),
