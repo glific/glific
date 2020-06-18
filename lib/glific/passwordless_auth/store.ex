@@ -1,5 +1,6 @@
 defmodule PasswordlessAuth.Store do
   @moduledoc """
+  https://github.com/madebymany/passwordless_auth
   Agent for storing verification codes
   """
   use Agent

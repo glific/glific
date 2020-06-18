@@ -1,5 +1,7 @@
 defmodule PasswordlessAuth.VerificationCode do
   @moduledoc false
+  # https://github.com/madebymany/passwordless_auth
+
   @enforce_keys [:code, :expires]
   defstruct attempts: 0, attempts_blocked_until: nil, code: nil, expires: nil
 

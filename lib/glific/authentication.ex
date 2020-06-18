@@ -24,6 +24,11 @@ defmodule Glific.Authentication do
   def verify_otp(%{phone: phone, otp: otp}) do
     case PasswordlessAuth.verify_code(phone, otp) do
       :ok ->
+        # Todo: Update contact table
+
+        # Remove otp code
+        PasswordlessAuth.remove_code(phone)
+
         {:ok, "OTP verified successfully for #{phone}"}
 
       {:error, error} ->
