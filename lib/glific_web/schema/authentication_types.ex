@@ -4,9 +4,7 @@ defmodule GlificWeb.Schema.AuthenticationTypes do
   """
 
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
-  alias Glific.Repo
   alias GlificWeb.Resolvers
 
   input_object :authentication_input do

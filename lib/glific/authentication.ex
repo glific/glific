@@ -7,7 +7,7 @@ defmodule Glific.Authentication do
   @doc """
   Creates and sends the OTP to phone number
   """
-  @spec create_and_send_otp_to_phone(map()) :: String.t()
+  @spec create_and_send_otp_to_phone(map()) :: {:ok, String.t()}
   def create_and_send_otp_to_phone(args \\ %{}) do
     %{phone: phone} = args
 
@@ -20,7 +20,7 @@ defmodule Glific.Authentication do
   Verifies otp and updates database with new contact
   Removes otp from agent
   """
-  @spec verify_otp(map()) :: String.t()
+  @spec verify_otp(map()) :: {:ok, String.t()}
   def verify_otp(%{phone: phone, otp: otp}) do
     PasswordlessAuth.verify_code(
       phone,

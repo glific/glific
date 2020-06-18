@@ -17,7 +17,7 @@ defmodule PasswordlessAuth do
   @default_verification_code_ttl 300
   @default_num_attempts_before_timeout 5
   @default_rate_limit_timeout_length 60
-  @twilio_adapter Application.get_env(:passwordless_auth, :twilio_adapter) || ExTwilio
+  # @twilio_adapter Application.get_env(:passwordless_auth, :twilio_adapter) || ExTwilio
 
   @type verification_failed_reason() ::
           :attempt_blocked | :code_expired | :does_not_exist | :incorrect_code
@@ -64,6 +64,8 @@ defmodule PasswordlessAuth do
   @spec create_and_send_verification_code(String.t(), list()) ::
           {:ok, map()} | {:error, String.t()}
   def create_and_send_verification_code(phone_number, opts \\ []) do
+    Store.start_link("test")
+
     message = opts[:message] || "Your verification code is: {{code}}"
     code_length = opts[:code_length] || 6
     code = VerificationCode.generate_code(code_length)
@@ -76,9 +78,7 @@ defmodule PasswordlessAuth do
 
     twilio_request_options = opts[:twilio_request_options] || []
 
-    {:ok, code}
-
-    # Would use gupshup instead of twilio
+    # Will use gupshup instead of twilio
 
     # request =
     #   Enum.into(twilio_request_options, %{
@@ -87,20 +87,23 @@ defmodule PasswordlessAuth do
     #   })
 
     # case @twilio_adapter.Message.create(request) do
-    #   {:ok, response} ->
-    #     Agent.update(
-    #       Store,
-    #       &Map.put(&1, phone_number, %VerificationCode{
-    #         code: code,
-    #         expires: expires
-    #       })
-    #     )
+    case {:ok, "test"} do
+      {:ok, response} ->
+        Agent.update(
+          Store,
+          &Map.put(&1, phone_number, %VerificationCode{
+            code: code,
+            expires: expires
+          })
+        )
 
-    #     {:ok, response}
+        {:ok, response}
 
-    #   {:error, message, _code} ->
-    #     {:error, message}
-    # end
+      {:error, message, _code} ->
+        {:error, message}
+    end
+
+    {:ok, code}
   end
 
   @doc """
