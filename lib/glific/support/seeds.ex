@@ -40,7 +40,7 @@ defmodule Glific.Seeds do
       # Status of Message
       %{label: "Critical", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Important", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "New User", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "New Contact", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Not Replied", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Unread", language_id: en_us.id, parent_id: message_tags_mt.id},
@@ -267,10 +267,10 @@ defmodule Glific.Seeds do
     })
 
     Repo.insert!(%SessionTemplate{
-      label: "New User",
+      label: "New Contact",
       body: "Welcome to Glific",
       type: :text,
-      shortcode: "welcome",
+      shortcode: "new contact",
       is_reserved: true,
       language_id: en_us.id
     })

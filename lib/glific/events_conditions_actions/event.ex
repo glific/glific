@@ -50,7 +50,14 @@ defmodule Glific.EventsConditionsActions.Event do
   @standard_ecas [
     %{
       event: :message_received,
-      action: AddTags
+      action: AddTags,
+      only_once: true
+    },
+    %{
+      event: :message_tagged,
+      condition: NewUser,
+      action: NewUser,
+      only_once: true
     }
   ]
 

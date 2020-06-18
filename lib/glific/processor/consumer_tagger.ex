@@ -126,7 +126,7 @@ defmodule Glific.Processor.ConsumerTagger do
   defp add_new_user_tag(message, state) do
     Tags.create_message_tag(%{
       message_id: message.id,
-      tag_id: state.status_map["New User"]
+      tag_id: state.status_map["New Contact"]
     })
 
     message

@@ -1,7 +1,10 @@
 defmodule Glific.EventsConditionsActions.Action.AddTags do
   @moduledoc """
-  The API container that exposes all actions. These functions do minimal work, but harness the power
-  of the respective context APIs
+  Lets do all the initial tagging that is in memory and fast in one place. This
+  avoids the overhead of splitting things up into too many small chunks.
+
+  The heavier pieces, like integration with external APIs will be done by its own
+  separate action. Seems like each action might be a GenStage or something like that
   """
 
   alias Glific.{
@@ -88,7 +91,7 @@ defmodule Glific.EventsConditionsActions.Action.AddTags do
   defp add_new_user_tag(message, state) do
     Tags.create_message_tag(%{
       message_id: message.id,
-      tag_id: state.status_map["New User"]
+      tag_id: state.status_map["New Contact"]
     })
 
     message
