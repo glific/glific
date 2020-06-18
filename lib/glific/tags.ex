@@ -190,6 +190,16 @@ defmodule Glific.Tags do
     |> Map.merge(acc)
   end
 
+  def status_map do
+    status_tags = ["New User", "Not Replied", "Unread"]
+     Tag
+      |> where([t], t.label in ^status_tags)
+      |> select([:id, :label])
+      |> Repo.all()
+      |> Enum.reduce(%{}, fn tag, acc -> Map.put(acc, tag.label, tag.id ) end)
+  end
+
+
   @doc ~S"""
   Commenting out for now till we integrate search via GraphQL across all data types
 

@@ -24,6 +24,7 @@ defmodule GlificWeb.MessageControllerTest do
   }
 
   setup do
+    Glific.Seeds.seed_tag(Glific.Seeds.seed_language())
     Glific.Seeds.seed_contacts()
     Glific.Seeds.seed_messages()
     :ok
@@ -66,6 +67,7 @@ defmodule GlificWeb.MessageControllerTest do
       assert message.sender.phone ==
                get_in(setup_config.message_params, ["payload", "sender", "phone"])
     end
+
   end
 
   describe "media" do

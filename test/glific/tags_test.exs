@@ -199,6 +199,15 @@ defmodule Glific.TagsTest do
       assert keyword_map["hello"] == tag.id
       assert keyword_map["tag2"] == tag2.id
     end
+
+    test "status_map/0 returns a keyword map with ids" do
+      tag = tag_fixture(%{label: "Unread"})
+      tag2 = tag_fixture(%{label: "New User"})
+      status_map = Tags.status_map()
+      assert is_map(status_map)
+      assert status_map["Unread"] == tag.id
+      assert status_map["New User"] == tag2.id
+    end
   end
 
   describe "messages_tags" do

@@ -14,6 +14,7 @@ defmodule Glific.Processor.ConsumerTagger do
     Taggers,
     Taggers.Keyword,
     Taggers.Numeric,
+    Taggers.Status,
     Tags,
     Tags.MessageTag,
     Tags.Tag
@@ -31,6 +32,7 @@ defmodule Glific.Processor.ConsumerTagger do
     state = %{
       producer: Glific.Processor.Producer,
       keyword_map: Keyword.get_keyword_map(),
+      status_map: Status.get_status_map(),
       numeric_map: Numeric.get_numeric_map(),
       numeric_tag_id: 0
     }
@@ -79,13 +81,11 @@ defmodule Glific.Processor.ConsumerTagger do
   @spec process_message(atom() | Message.t(), map()) :: Message.t()
   defp process_message(message, state) do
     body = Taggers.string_clean(message.body)
+    add_unread_tag(message, state)
     numeric = numeric_tagger(message, body, state)
     keyword = keyword_tagger(message, body, state)
-    message_status_tagger(message, "Unread", state)
-
-    # lets preload the tags if any
+    new_user = new_contact_tagger(message, state)
     if numeric or keyword, do: Repo.preload(message, [:tags]), else: message
-
   end
 
   @spec numeric_tagger(atom() | Message.t(), String.t(), map()) :: boolean
@@ -112,14 +112,31 @@ defmodule Glific.Processor.ConsumerTagger do
     end
   end
 
-  @spec message_status_tagger(Message.t(), String.t(), map()) :: boolean
-  defp message_status_tagger(message, status, state) do
-    # case Keyword.tag_body(body, state.keyword_map) do
-    #   {:ok, value} ->
-    #     add_keyword_tag(message, value, state)
-    #     true
-    #   _ -> false
-    # end
+  @spec new_contact_tagger(Message.t(), map()) :: boolean
+  defp new_contact_tagger(message, state) do
+      case Status.is_new_contact(message.sender_id) do
+        true ->
+          add_new_user_tag(message, state)
+          true
+        _ ->
+          false
+      end
+  end
+
+  defp add_unread_tag(message, state) do
+    Tags.create_message_tag(%{
+      message_id: message.id, tag_id: state.status_map["Unread"]
+    })
+    # now publish the message tag event
+    |> Communications.publish_data(:created_message_tag)
+  end
+
+  defp add_new_user_tag(message, state) do
+    Tags.create_message_tag(%{
+      message_id: message.id, tag_id: state.status_map["New User"]
+    })
+
+    |> Communications.publish_data(:created_message_tag)
   end
 
   @spec add_numeric_tag(Message.t(), String.t(), atom() | map()) :: MessageTag.t()
