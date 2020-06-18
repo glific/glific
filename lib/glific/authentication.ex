@@ -22,11 +22,12 @@ defmodule Glific.Authentication do
   """
   @spec verify_otp(map()) :: {:ok, String.t()}
   def verify_otp(%{phone: phone, otp: otp}) do
-    PasswordlessAuth.verify_code(
-      phone,
-      otp
-    )
+    case PasswordlessAuth.verify_code(phone, otp) do
+      :ok ->
+        {:ok, "OTP verified successfully for #{phone}"}
 
-    {:ok, "OTP verified successfully for #{phone}"}
+      {:error, :incorrect_code} ->
+        {:ok, "Incorrect OTP"}
+    end
   end
 end
