@@ -2,9 +2,6 @@ defmodule Glific.Taggers.Status do
   @moduledoc """
   This module will be responsible for all the contact and message status tagging. Like new user and unread
   """
-  alias Glific.Messages.Message
-  alias Glific.Taggers
-
 
   @doc false
   @spec get_status_map :: %{String.t() => integer}
@@ -13,5 +10,4 @@ defmodule Glific.Taggers.Status do
   @doc false
   @spec is_new_contact(integer()) :: boolean()
   def is_new_contact(contact_id), do: Glific.Contacts.is_new_contact(contact_id)
-
 end

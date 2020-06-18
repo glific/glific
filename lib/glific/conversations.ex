@@ -35,10 +35,10 @@ defmodule Glific.Conversations do
     args = put_in(args, [Access.key(:filter, %{}), :id], contact_id)
 
     case args
-        |> Map.put(:ids, get_message_ids(1, sc, args))
-        |> Messages.list_conversations() do
-        [conversation] -> conversation
-        _ -> nil
+         |> Map.put(:ids, get_message_ids(1, sc, args))
+         |> Messages.list_conversations() do
+      [conversation] -> conversation
+      _ -> nil
     end
   end
 

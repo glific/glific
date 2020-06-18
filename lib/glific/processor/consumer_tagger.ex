@@ -82,9 +82,10 @@ defmodule Glific.Processor.ConsumerTagger do
   defp process_message(message, state) do
     body = Taggers.string_clean(message.body)
     add_unread_tag(message, state)
+    new_contact_tagger(message, state)
     numeric = numeric_tagger(message, body, state)
     keyword = keyword_tagger(message, body, state)
-    new_user = new_contact_tagger(message, state)
+
     if numeric or keyword, do: Repo.preload(message, [:tags]), else: message
   end
 
@@ -114,18 +115,20 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @spec new_contact_tagger(Message.t(), map()) :: boolean
   defp new_contact_tagger(message, state) do
-      case Status.is_new_contact(message.sender_id) do
-        true ->
-          add_new_user_tag(message, state)
-          true
-        _ ->
-          false
-      end
+    case Status.is_new_contact(message.sender_id) do
+      true ->
+        add_new_user_tag(message, state)
+        true
+
+      _ ->
+        false
+    end
   end
 
   defp add_unread_tag(message, state) do
     Tags.create_message_tag(%{
-      message_id: message.id, tag_id: state.status_map["Unread"]
+      message_id: message.id,
+      tag_id: state.status_map["Unread"]
     })
     # now publish the message tag event
     |> Communications.publish_data(:created_message_tag)
@@ -133,9 +136,9 @@ defmodule Glific.Processor.ConsumerTagger do
 
   defp add_new_user_tag(message, state) do
     Tags.create_message_tag(%{
-      message_id: message.id, tag_id: state.status_map["New User"]
+      message_id: message.id,
+      tag_id: state.status_map["New User"]
     })
-
     |> Communications.publish_data(:created_message_tag)
   end
 

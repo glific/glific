@@ -175,12 +175,12 @@ defmodule Glific.Tags do
   """
   @spec keyword_map() :: map()
   def keyword_map do
-      Tag
-      |> where([t], not(is_nil(t.keywords)))
-      |> where([t], fragment("array_length(?, 1)", t.keywords) > 0)
-      |> select([:id, :keywords])
-      |> Repo.all()
-      |> Enum.reduce(%{}, &keyword_map(&1, &2))
+    Tag
+    |> where([t], not is_nil(t.keywords))
+    |> where([t], fragment("array_length(?, 1)", t.keywords) > 0)
+    |> select([:id, :keywords])
+    |> Repo.all()
+    |> Enum.reduce(%{}, &keyword_map(&1, &2))
   end
 
   @spec keyword_map(map(), map) :: map()
@@ -190,15 +190,20 @@ defmodule Glific.Tags do
     |> Map.merge(acc)
   end
 
+  @doc """
+    Filter all the status tag and returns as a map
+  """
+
+  @spec status_map() :: map()
   def status_map do
     status_tags = ["New User", "Not Replied", "Unread"]
-     Tag
-      |> where([t], t.label in ^status_tags)
-      |> select([:id, :label])
-      |> Repo.all()
-      |> Enum.reduce(%{}, fn tag, acc -> Map.put(acc, tag.label, tag.id ) end)
-  end
 
+    Tag
+    |> where([t], t.label in ^status_tags)
+    |> select([:id, :label])
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn tag, acc -> Map.put(acc, tag.label, tag.id) end)
+  end
 
   @doc ~S"""
   Commenting out for now till we integrate search via GraphQL across all data types

@@ -67,7 +67,6 @@ defmodule GlificWeb.MessageControllerTest do
       assert message.sender.phone ==
                get_in(setup_config.message_params, ["payload", "sender", "phone"])
     end
-
   end
 
   describe "media" do
