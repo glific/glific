@@ -181,4 +181,19 @@ defmodule Glific.Contacts do
     |> Full.run(term)
     |> Repo.all()
   end
+
+  @doc """
+  Check if this contact id is a new conatct
+  """
+
+  @spec is_new_contact(integer()) :: boolean()
+  def is_new_contact(contact_id) do
+    case Glific.Messages.Message
+         |> where([c], c.contact_id == ^contact_id)
+         |> where([c], c.flow == "outbound")
+         |> Repo.all() do
+      [] -> true
+      _ -> false
+    end
+  end
 end

@@ -221,7 +221,7 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()}
   def create_and_send_message(attrs) do
-    with {:ok, message} <- create_message(attrs),
+    with {:ok, message} <- create_message(Map.put(attrs, :flow, :outbound)),
          do: Communications.Message.send_message(message)
   end
 
