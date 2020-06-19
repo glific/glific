@@ -9,6 +9,7 @@ defmodule Glific.Processor.ConsumerAutomation do
   alias Glific.{
     Messages,
     Messages.Message,
+    Repo,
     Tags.Tag
   }
 
@@ -49,12 +50,11 @@ defmodule Glific.Processor.ConsumerAutomation do
     {:noreply, [], state}
   end
 
-  @spec process_tag(Message.t(), Tag.t()) :: nil
-  defp process_tag(message, tag) do
-    if tag.label == "Welcome" do
-      Messages.create_and_send_session_template(3, message.sender_id)
-    end
-
-    nil
+  @spec process_tag(Message.t(), Tag.t()) :: Message.t()
+  defp process_tag(message, %Tag{label: label}) when label == "New Contact" do
+    with {:ok, session_template} <- Repo.fetch_by(SessionTemplate, %{shortcode: "new contact"}),
+         {:ok, message} <-
+           Messages.create_and_send_session_template(session_template, message.sender_id),
+         do: message
   end
 end

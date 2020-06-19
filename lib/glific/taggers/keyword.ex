@@ -22,11 +22,7 @@ defmodule Glific.Taggers.Keyword do
   end
 
   @doc false
-  @spec tag_body(String.t(), %{String.t() => integer}) :: {:ok, String.t()} | :error
-  def tag_body(body, keyword_map) do
-    case Map.fetch(keyword_map, body) do
-      {:ok, value} -> {:ok, to_string(value)}
-      _ -> :error
-    end
-  end
+  @spec tag_body(String.t(), %{String.t() => integer}) :: {:ok, integer} | :error
+  def tag_body(body, keyword_map),
+    do: Map.fetch(keyword_map, body)
 end

@@ -45,6 +45,14 @@ defmodule Glific.Seeds do
       %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Unread", language_id: en_us.id, parent_id: message_tags_mt.id},
 
+      # Languages
+      %{
+        label: "Language",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["hindi", "english", "हिंदी", "अंग्रेज़ी"]
+      },
+
       # Tags with Value
       %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
 
@@ -249,7 +257,7 @@ defmodule Glific.Seeds do
 
   @doc false
   @spec seed_session_templates({Language.t(), Language.t()}) :: nil
-  def seed_session_templates({en_us, _hi_in}) do
+  def seed_session_templates({en_us, hi_in}) do
     session_template_parent =
       Repo.insert!(%SessionTemplate{
         label: "Default Template Label",
@@ -282,6 +290,50 @@ defmodule Glific.Seeds do
       shortcode: "bye",
       is_reserved: true,
       language_id: en_us.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Help",
+      body: "Hre we will enter some help text",
+      type: :text,
+      shortcode: "help",
+      is_reserved: true,
+      language_id: en_us.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Help (Hindi)",
+      body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ",
+      type: :text,
+      shortcode: "",
+      is_reserved: true,
+      language_id: hi_in.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Language",
+      body: """
+      What language do you want to receive messages in?
+      हिंदी के लिए 1 दबाएँहिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
+      Type English to receive messages in English
+      """,
+      type: :text,
+      shortcode: "language",
+      is_reserved: true,
+      language_id: en_us.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Language",
+      body: """
+      आप किस भाषा में संदेश प्राप्त करना चाहते हैं?
+      हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
+      Type English to receive messages in English
+      """,
+      type: :text,
+      shortcode: "language",
+      is_reserved: true,
+      language_id: hi_in.id
     })
   end
 

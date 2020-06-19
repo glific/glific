@@ -196,7 +196,7 @@ defmodule Glific.Tags do
 
   @spec status_map() :: map()
   def status_map do
-    status_tags = ["New Contact", "Not Replied", "Unread"]
+    status_tags = ["Language", "New Contact", "Not Replied", "Unread"]
 
     Tag
     |> where([t], t.label in ^status_tags)
