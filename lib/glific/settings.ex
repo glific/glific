@@ -17,8 +17,16 @@ defmodule Glific.Settings do
 
   """
   @spec list_languages(map()) :: [Language.t(), ...]
-  def list_languages(_args \\ %{}) do
-    Repo.all(Language)
+  def list_languages(args \\ %{}) do
+    args
+    |> Enum.reduce(Language, fn
+      {:label, label}, query ->
+        from q in query, where: ilike(q.label, ^"%#{label}%")
+
+      {:locale, locale}, query ->
+        from q in query, where: ilike(q.locale, ^"%#{locale}%")
+    end)
+    |> Repo.all()
   end
 
   @doc """
@@ -101,7 +109,6 @@ defmodule Glific.Settings do
   def delete_language(%Language{} = language) do
     language
     |> Ecto.Changeset.change()
-    |> Ecto.Changeset.no_assoc_constraint(:tags)
     |> Repo.delete()
   end
 

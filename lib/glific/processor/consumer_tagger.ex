@@ -108,7 +108,6 @@ defmodule Glific.Processor.ConsumerTagger do
     if Status.is_new_contact(message.sender_id) do
       message
       |> add_status_tag("New User", state)
-      |> add_status_tag("Language", state)
     end
 
     message

@@ -217,6 +217,28 @@ defmodule Glific.Seeds do
       receiver_id: receiver.id,
       contact_id: receiver.id
     })
+
+    Repo.insert!(%Message{
+      body: "hindi",
+      flow: :outbound,
+      type: :text,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
+      sender_id: sender.id,
+      receiver_id: receiver.id,
+      contact_id: receiver.id
+    })
+
+    Repo.insert!(%Message{
+      body: "hola",
+      flow: :outbound,
+      type: :text,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
+      sender_id: sender.id,
+      receiver_id: receiver.id,
+      contact_id: receiver.id
+    })
   end
 
   @doc false
@@ -276,11 +298,32 @@ defmodule Glific.Seeds do
 
     Repo.insert!(%SessionTemplate{
       label: "New Contact",
-      body: "Welcome to Glific",
+      body: """
+      Welcome to Glific.
+
+      What language do you want to receive messages in?
+      हिंदी के लिए 1 दबाएँहिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
+      Type English to receive messages in English
+      """,
       type: :text,
       shortcode: "new contact",
       is_reserved: true,
       language_id: en_us.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "New Contact",
+      body: """
+      ग्लिफ़िक में आपका स्वागत है
+
+      आप किस भाषा में संदेश प्राप्त करना चाहते हैं?
+      हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
+      Type English to receive messages in English
+      """,
+      type: :text,
+      shortcode: "new contact",
+      is_reserved: true,
+      language_id: hi_in.id
     })
 
     Repo.insert!(%SessionTemplate{
@@ -294,7 +337,7 @@ defmodule Glific.Seeds do
 
     Repo.insert!(%SessionTemplate{
       label: "Help",
-      body: "Hre we will enter some help text",
+      body: "Here we will enter some help text",
       type: :text,
       shortcode: "help",
       is_reserved: true,
@@ -313,7 +356,10 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "Language",
       body: """
-      What language do you want to receive messages in?
+      Your preferred language is: #language#
+
+      Do you want to change the language you want to receive messages in?
+
       हिंदी के लिए 1 दबाएँहिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
       Type English to receive messages in English
       """,
@@ -326,6 +372,7 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "Language",
       body: """
+
       आप किस भाषा में संदेश प्राप्त करना चाहते हैं?
       हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
       Type English to receive messages in English

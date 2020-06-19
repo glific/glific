@@ -86,7 +86,7 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "count returns the number of messages" do
     {:ok, query_data} = query_gql_by(:count)
-    assert get_in(query_data, [:data, "countMessages"]) == 4
+    assert get_in(query_data, [:data, "countMessages"]) > 5
 
     {:ok, query_data} =
       query_gql_by(:count,

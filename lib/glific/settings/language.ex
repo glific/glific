@@ -29,8 +29,6 @@ defmodule Glific.Settings.Language do
 
     field :is_active, :boolean, default: false
 
-    has_many :tags, Glific.Tags.Tag
-
     timestamps(type: :utc_datetime)
   end
 
