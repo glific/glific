@@ -12,7 +12,15 @@ defmodule Glific.Contacts.Contact do
   alias Glific.Tags.Tag
 
   @required_fields [:phone]
-  @optional_fields [:name, :provider_status, :status, :optin_time, :optout_time, :language_id]
+  @optional_fields [
+    :name,
+    :provider_status,
+    :status,
+    :optin_time,
+    :optout_time,
+    :last_message_at,
+    :language_id
+  ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),

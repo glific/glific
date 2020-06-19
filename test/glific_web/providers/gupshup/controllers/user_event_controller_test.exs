@@ -6,7 +6,7 @@ defmodule GlificWeb.UserEventControllerTest do
   @user_event_request_params %{
     "app" => "TidesTestApi",
     "payload" => %{
-      "phone" => Faker.Phone.EnUs.phone(),
+      "phone" => Phone.EnUs.phone(),
       "type" => "opted-in"
     },
     "timestamp" => 1_592_559_772_322,

@@ -207,4 +207,15 @@ defmodule Glific.Contacts do
 
     {:ok}
   end
+
+  @doc """
+  Check if we can send a message to the contact
+  """
+  @spec can_send_message_to?(Contact.t()) :: boolean()
+
+  def can_send_message_to?(contact) do
+    with true <- contact.provider_status == :valid,
+         true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24,
+         do: true
+  end
 end
