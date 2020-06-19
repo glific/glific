@@ -34,6 +34,17 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json["data"]["renewal_token"]
     end
 
+    test "with wrong otp", %{conn: conn} do
+      invalid_params =
+        @valid_params
+        |> put_in(["user", "otp"], "wrong_otp")
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :create, invalid_params))
+
+      assert json = json_response(conn, 401)
+      assert json["error"]["status"] == 401
+    end
+
     test "with invalid params", %{conn: conn} do
       phone = get_in(@invalid_params, ["user", "phone"])
       {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(phone)
