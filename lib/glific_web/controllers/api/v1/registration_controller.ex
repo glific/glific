@@ -45,6 +45,5 @@ defmodule GlificWeb.API.V1.RegistrationController do
         |> put_status(401)
         |> json(%{error: %{status: 401, message: Atom.to_string(error)}})
     end
-
   end
 end

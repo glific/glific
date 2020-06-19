@@ -4,8 +4,6 @@ defmodule GlificWeb.Resolvers.Registration do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.Registration
-
   @doc false
   @spec send_otp(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) :: {:ok, String.t()}
   def send_otp(_, %{input: params}, _) do
