@@ -1,0 +1,50 @@
+defmodule GlificWeb.UserEventControllerTest do
+  use GlificWeb.ConnCase
+
+  @user_event_request_params %{
+    "app" => "TidesTestApi",
+    "payload" => %{
+      "phone" => "919917443994",
+      "type" => "opted-in"
+    },
+    "timestamp" => 1_592_559_772_322,
+    "type" => "user-event",
+    "version" => 2
+  }
+
+  setup do
+    Glific.Seeds.seed_contacts()
+    Glific.Seeds.seed_messages()
+    :ok
+  end
+
+  describe "handler" do
+    test "handler should return nil data", %{conn: conn} do
+      conn = post(conn, "/gupshup", @user_event_request_params)
+      assert json_response(conn, 200) == nil
+    end
+  end
+
+  describe "opted_in" do
+    setup do
+      contact_payload = %{
+        "phone" => "917834811231",
+        "type" => "opted-in"
+      }
+
+      message_params =
+        @user_event_request_params
+        |> put_in(["payload"], contact_payload)
+
+      %{message_params: message_params}
+    end
+
+    test "optin_time should be updated", setup_config = %{conn: conn} do
+      phone = get_in(setup_config.message_params, ["payload", "phone"])
+      conn = post(conn, "/gupshup", setup_config.message_params)
+      json_response(conn, 200)
+      {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone})
+      assert contact.optin_time != nil
+    end
+  end
+end

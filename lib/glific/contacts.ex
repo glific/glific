@@ -196,4 +196,17 @@ defmodule Glific.Contacts do
       _ -> false
     end
   end
+
+  @doc """
+  Check if this contact id is a new conatct
+  """
+  @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
+  def contact_opted_in(phone, utc_time) do
+    # Still need to figure out how to do that in single query
+    with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}) do
+      update_contact(contact, %{optin_time: utc_time})
+    end
+
+    {:ok}
+  end
 end
