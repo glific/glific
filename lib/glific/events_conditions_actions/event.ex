@@ -8,8 +8,13 @@ defmodule Glific.EventsConditionsActions.Event do
   """
 
   alias Glific.{
-    Enums.MessageTypes,
-    EventsConditionsActions.Action.AddTags
+    Enums.MessageTypes
+  }
+
+  alias Glific.EventsConditionsActions.Action.{
+    AddTags,
+    DetectLanguage,
+    NewUser
   }
 
   @conditions %{
@@ -57,6 +62,12 @@ defmodule Glific.EventsConditionsActions.Event do
       event: :message_tagged,
       condition: NewUser,
       action: NewUser,
+      only_once: true
+    },
+    %{
+      event: :message_tagged,
+      condition: NewUser,
+      action: DetectLanguage,
       only_once: true
     }
   ]

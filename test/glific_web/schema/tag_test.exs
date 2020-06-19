@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.Query.TagTest do
+defmodule GlificWeb.Schema.TagTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 

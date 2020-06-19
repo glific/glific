@@ -8,8 +8,8 @@ defmodule Glific.EventsConditionsActions.Action.NewContact do
     Messages,
     Messages.Message,
     Repo,
-    Templates,
-    Taggers.Status
+    Taggers.Status,
+    Templates.SessionTemplate
   }
 
   @doc false
@@ -34,8 +34,7 @@ defmodule Glific.EventsConditionsActions.Action.NewContact do
   @spec perform(%{message: Message.t()}, map()) :: {map(), map()}
   def perform(%{message: message}, state) do
     # lets send the welcome message to the new contact
-    {:ok, session_template} =
-      Repo.fetch_by(SessionTemplate, %{shortcode: "new contact"})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{shortcode: "new contact"})
 
     {:ok, sent_message} =
       Messages.create_and_send_session_template(session_template, message.sender_id)

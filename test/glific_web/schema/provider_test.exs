@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.Query.ProviderTest do
+defmodule GlificWeb.Schema.ProviderTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 

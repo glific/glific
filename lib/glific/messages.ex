@@ -235,6 +235,12 @@ defmodule Glific.Messages do
     create_and_send_session_template(session_template, receiver_id)
   end
 
+  @spec create_and_send_session_template(String.t(), integer) :: {:ok, Message.t()}
+  def create_and_send_session_template(template_id, receiver_id) when is_binary(template_id) do
+    {:ok, session_template} = Repo.fetch(SessionTemplate, String.to_integer(template_id))
+    create_and_send_session_template(session_template, receiver_id)
+  end
+
   @spec create_and_send_session_template(SessionTemplate.t(), integer) :: {:ok, Message.t()}
   def create_and_send_session_template(session_template, receiver_id) do
     message_params = %{

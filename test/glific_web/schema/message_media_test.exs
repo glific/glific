@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.Query.MessageMediaTest do
+defmodule GlificWeb.Schema.MessageMediaTest do
   alias Glific.Messages.MessageMedia
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
