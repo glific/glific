@@ -1,10 +1,12 @@
 defmodule GlificWeb.UserEventControllerTest do
   use GlificWeb.ConnCase
 
+  alias Faker.Phone
+
   @user_event_request_params %{
     "app" => "TidesTestApi",
     "payload" => %{
-      "phone" => "919917443994",
+      "phone" => Faker.Phone.EnUs.phone(),
       "type" => "opted-in"
     },
     "timestamp" => 1_592_559_772_322,
@@ -28,7 +30,7 @@ defmodule GlificWeb.UserEventControllerTest do
   describe "opted_in" do
     setup do
       contact_payload = %{
-        "phone" => "917834811231",
+        "phone" => Phone.EnUs.phone(),
         "type" => "opted-in"
       }
 

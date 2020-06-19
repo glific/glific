@@ -10,8 +10,8 @@ defmodule Glific.Contacts.Contact do
   alias Glific.Enums.ContactStatus
   alias Glific.Tags.Tag
 
-  @required_fields [:name, :phone]
-  @optional_fields [:provider_status, :status, :optin_time, :optout_time]
+  @required_fields [:phone]
+  @optional_fields [:name, :provider_status, :status, :optin_time, :optout_time]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),

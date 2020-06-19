@@ -145,7 +145,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
   def contacts do
     create table(:contacts) do
       # Contact Name
-      add :name, :string, null: false
+      add :name, :string
 
       # Contact Phone (this is the primary point of identification)
       # We will treat this as a whats app ID as well
@@ -161,8 +161,13 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # this is our status, based on what the Provider tell us
       # the current options are: valid or invalid
       add :status, :contact_status_enum, null: false, default: "valid"
+
+      # contact language for templates and other communications
+      add :language_id, references(:languages, on_delete: :restrict), null: true
+
       add :optin_time, :timestamptz
       add :optout_time, :timestamptz
+      add :last_message_at, :timestamptz
 
       timestamps(type: :utc_datetime)
     end
