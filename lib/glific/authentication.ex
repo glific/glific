@@ -25,14 +25,13 @@ defmodule Glific.Authentication do
   def verify_otp(%{phone: phone, otp: otp}) do
     case PasswordlessAuth.verify_code(phone, otp) do
       :ok ->
-        # To do: Update contact table
-
         # Remove otp code
         PasswordlessAuth.remove_code(phone)
 
         {:ok, "OTP verified successfully for #{phone}"}
 
       {:error, error} ->
+        # Error response options: :attempt_blocked | :code_expired | :does_not_exist | :incorrect_code
         {:ok, Atom.to_string(error)}
     end
   end

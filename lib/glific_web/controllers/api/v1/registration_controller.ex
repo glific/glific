@@ -7,11 +7,26 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   alias Ecto.Changeset
   alias GlificWeb.ErrorHelpers
+  alias PasswordlessAuth
   alias Plug.Conn
 
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
   def create(conn, %{"user" => user_params}) do
+    %{"phone" => phone, "otp" => otp} = user_params
+
+    case PasswordlessAuth.verify_code(phone, otp) do
+      :ok ->
+        # Remove otp code
+        PasswordlessAuth.remove_code(phone)
+
+      {:error, error} ->
+        # Error response options: :attempt_blocked | :code_expired | :does_not_exist | :incorrect_code
+        conn
+        |> put_status(401)
+        |> json(%{error: %{status: 401, message: Atom.to_string(error)}})
+    end
+
     conn
     |> Pow.Plug.create_user(user_params)
     |> case do

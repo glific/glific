@@ -8,14 +8,16 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       "user" => %{
         "phone" => "+919820198765",
         "password" => @password,
-        "password_confirmation" => @password
+        "password_confirmation" => @password,
+        "otp" => "123456"
       }
     }
     @invalid_params %{
       "user" => %{
         "phone" => "phone has no checks for now",
         "password" => @password,
-        "password_confirmation" => ""
+        "password_confirmation" => "",
+        "otp" => "123456"
       }
     }
 
