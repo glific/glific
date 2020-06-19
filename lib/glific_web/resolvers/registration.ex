@@ -1,10 +1,10 @@
-defmodule GlificWeb.Resolvers.Authentication do
+defmodule GlificWeb.Resolvers.Registration do
   @moduledoc """
-  Authentication Resolver which sits between the GraphQL schema and Glific Authentication Context API. This layer basically stiches together
+  Registration Resolver which sits between the GraphQL schema. This layer basically stiches together
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.Authentication
+  alias Glific.Registration
 
   @doc false
   @spec send_otp(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) :: {:ok, String.t()}
