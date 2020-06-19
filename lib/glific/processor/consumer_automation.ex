@@ -78,6 +78,8 @@ defmodule Glific.Processor.ConsumerAutomation do
     {:ok, message_tag} = Repo.fetch_by(MessageTag, %{message_id: message.id, tag_id: tag.id})
     [language | _] = Settings.list_languages(%{label: message_tag.value})
 
+    # We need to update sender id and set their language to this language
+
     with {:ok, session_template} <-
            Repo.fetch_by(SessionTemplate, %{shortcode: "language", language_id: language.id}),
          {:ok, message} <-

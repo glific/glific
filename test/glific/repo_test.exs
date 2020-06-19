@@ -9,12 +9,14 @@ defmodule Glific.RepoTest do
   describe "repo" do
     @valid_attrs %{
       label: "English (United States)",
+      label_locale: "English",
       locale: "en_US",
       is_active: true
     }
 
     @valid_hindi_attrs %{
       label: "Hindi (India)",
+      label_locale: "हिन्दी",
       locale: "hi_IN",
       is_active: true
     }

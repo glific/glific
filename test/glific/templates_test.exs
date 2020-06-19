@@ -36,11 +36,13 @@ defmodule Glific.TemplatesTest do
 
     @valid_language_attrs %{
       label: "English (United States)",
+      label_locale: "English",
       locale: "en_US",
       is_active: true
     }
     @valid_language_attrs_1 %{
       label: "Hindi (United States)",
+      label_locale: "हिन्दी",
       locale: "hi_US",
       is_active: true
     }

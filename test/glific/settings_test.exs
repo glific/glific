@@ -9,6 +9,7 @@ defmodule Glific.SettingsTest do
   describe "languages" do
     @valid_attrs %{
       label: "English (United States)",
+      label_locale: "English",
       locale: "en_US",
       is_active: true
     }

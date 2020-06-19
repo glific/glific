@@ -49,7 +49,11 @@ defmodule GlificWeb.Schema.LanguageTest do
 
   test "create a language and test possible scenarios and errors" do
     result =
-      query_gql_by(:create, variables: %{"input" => %{"label" => "Klingon", "locale" => "kl_KL"}})
+      query_gql_by(:create,
+        variables: %{
+          "input" => %{"label" => "Klingon", "labelLocale" => "Klingon", "locale" => "kl_KL"}
+        }
+      )
 
     assert {:ok, query_data} = result
 
@@ -57,10 +61,18 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert language == "Klingon"
 
     _ =
-      query_gql_by(:create, variables: %{"input" => %{"label" => "Klingon", "locale" => "kl_KL"}})
+      query_gql_by(:create,
+        variables: %{
+          "input" => %{"label" => "Klingon", "labelLocale" => "Klingon", "locale" => "kl_KL"}
+        }
+      )
 
     result =
-      query_gql_by(:create, variables: %{"input" => %{"label" => "Klingon", "locale" => "kl_KL"}})
+      query_gql_by(:create,
+        variables: %{
+          "input" => %{"label" => "Klingon", "labelLocale" => "Klingon", "locale" => "kl_KL"}
+        }
+      )
 
     assert {:ok, query_data} = result
 
@@ -74,7 +86,10 @@ defmodule GlificWeb.Schema.LanguageTest do
 
     result =
       query_gql_by(:update,
-        variables: %{"id" => lang.id, "input" => %{"label" => "Klingon", "locale" => "kl_KL"}}
+        variables: %{
+          "id" => lang.id,
+          "input" => %{"label" => "Klingon", "labelLocale" => "Klinfon", "locale" => "kl_KL"}
+        }
       )
 
     assert {:ok, query_data} = result
@@ -86,7 +101,7 @@ defmodule GlificWeb.Schema.LanguageTest do
       query_gql_by(:update,
         variables: %{
           "id" => lang.id,
-          "input" => %{"label" => "Hindi (India)", "locale" => "hi_IN"}
+          "input" => %{"label" => "Hindi (India)", "labelLocale" => "Hindi", "locale" => "hi_IN"}
         }
       )
 

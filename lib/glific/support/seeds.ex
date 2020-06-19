@@ -20,8 +20,11 @@ defmodule Glific.Seeds do
   """
   @spec seed_language() :: {Language.t(), Language.t()}
   def seed_language do
-    {Repo.insert!(%Language{label: "English (United States)", locale: "en_US"}),
-     Repo.insert!(%Language{label: "Hindi (India)", locale: "hi_IN"})}
+    {Repo.insert!(%Language{
+       label: "English (United States)",
+       label_locale: "English",
+       locale: "en_US"
+     }), Repo.insert!(%Language{label: "Hindi (India)", label_locale: "हिंदी", locale: "hi_IN"})}
   end
 
   @doc false
@@ -356,11 +359,11 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "Language",
       body: """
-      Your preferred language is: #language#
+      Your preferred language is <%= language %>
 
       Do you want to change the language you want to receive messages in?
 
-      हिंदी के लिए 1 दबाएँहिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
+      हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
       Type English to receive messages in English
       """,
       type: :text,
@@ -372,8 +375,10 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "Language",
       body: """
+      आपकी पसंदीदा भाषा <%= language %> है
 
-      आप किस भाषा में संदेश प्राप्त करना चाहते हैं?
+      आप किस भाषा में संदेश प्राप्त करना चाहते हैं?क्या आप उस भाषा को बदलना चाहते हैं जिसमें आप संदेश प्राप्त करना चाहते हैं?
+
       हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
       Type English to receive messages in English
       """,

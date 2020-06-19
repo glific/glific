@@ -37,6 +37,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # The language label, typically the full name, like English (US) or Hindi
       add :label, :string, null: false
 
+      # The language label in its default locale, e.g: हिंदी
+      add :label_locale, :string, null: false
+
       # An optional description
       add :description, :string, null: true
 
