@@ -34,7 +34,7 @@ defmodule Glific.Communications.Message do
   def send_message(message) do
     message = Repo.preload(message, [:receiver, :sender, :media])
     apply(provider_module(), @type_to_token[message.type], [message])
-    {:ok, Communications.publish_data({:ok, message}, :sent_message)}
+    {:ok, Communications.publish_data(message, :sent_message)}
   end
 
   @doc """

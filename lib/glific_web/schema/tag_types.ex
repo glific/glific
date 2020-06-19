@@ -6,23 +6,8 @@ defmodule GlificWeb.Schema.TagTypes do
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
-  alias Glific.{Repo, Settings.Language, Tags.Tag}
+  alias Glific.Repo
   alias GlificWeb.Resolvers
-
-  interface :search_result do
-    field :label, :string
-
-    resolve_type(fn
-      %Tag{}, _ ->
-        :tag
-
-      %Language{}, _ ->
-        :language
-
-      _, _ ->
-        nil
-    end)
-  end
 
   object :tag_result do
     field :tag, :tag
@@ -30,8 +15,6 @@ defmodule GlificWeb.Schema.TagTypes do
   end
 
   object :tag do
-    interfaces([:search_result])
-
     field :id, :id
     field :label, :string
     field :description, :string

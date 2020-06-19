@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.Query.MessageTagTest do
+defmodule GlificWeb.Schema.MessageTagTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 

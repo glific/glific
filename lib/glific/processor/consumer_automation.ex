@@ -1,7 +1,7 @@
 defmodule Glific.Processor.ConsumerAutomation do
   @moduledoc """
   Process all messages of type consumer and run them thru a few automations. Our initial
-  automation is response to a new user tag with a welcome message
+  automation is response to a new contact tag with a welcome message
   """
 
   use GenStage

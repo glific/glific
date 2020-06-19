@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.Query.OrganizationTest do
+defmodule GlificWeb.Schema.OrganizationTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 

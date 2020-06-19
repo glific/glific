@@ -225,11 +225,24 @@ defmodule Glific.Messages do
          do: Communications.Message.send_message(message)
   end
 
-  @doc false
-  @spec create_and_send_session_template(integer, integer) :: {:ok, Message.t()}
-  def create_and_send_session_template(template_id, receiver_id) do
-    {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
+  @doc """
+  Send a session template to the specific contact. This is typically used in automation
+  """
 
+  @spec create_and_send_session_template(integer, integer) :: {:ok, Message.t()}
+  def create_and_send_session_template(template_id, receiver_id) when is_integer(template_id) do
+    {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
+    create_and_send_session_template(session_template, receiver_id)
+  end
+
+  @spec create_and_send_session_template(String.t(), integer) :: {:ok, Message.t()}
+  def create_and_send_session_template(template_id, receiver_id) when is_binary(template_id) do
+    {:ok, session_template} = Repo.fetch(SessionTemplate, String.to_integer(template_id))
+    create_and_send_session_template(session_template, receiver_id)
+  end
+
+  @spec create_and_send_session_template(SessionTemplate.t(), integer) :: {:ok, Message.t()}
+  def create_and_send_session_template(session_template, receiver_id) do
     message_params = %{
       body: session_template.body,
       type: session_template.type,
@@ -238,9 +251,7 @@ defmodule Glific.Messages do
       receiver_id: receiver_id
     }
 
-    with {:ok, message} <- create_and_send_message(message_params) do
-      {:ok, message}
-    end
+    create_and_send_message(message_params)
   end
 
   @doc false
@@ -248,12 +259,21 @@ defmodule Glific.Messages do
   def create_and_send_message_to_contacts(message_params, contact_ids) do
     contact_ids
     |> Enum.reduce([], fn contact_id, messages ->
-      message_params = Map.merge(message_params, %{receiver_id: contact_id})
+      message_params = Map.put(message_params, :receiver_id, contact_id)
 
       with {:ok, message} <- create_and_send_message(message_params) do
         [message | messages]
       end
     end)
+  end
+
+  @doc """
+  Check if the tag is present in message
+  """
+  @spec tag_in_message?(Message.t(), integer) :: boolean
+  def tag_in_message?(message, tag_id) do
+    Ecto.assoc_loaded?(message.tags) &&
+      Enum.find(message.tags, fn t -> t.id == tag_id end) != nil
   end
 
   alias Glific.Messages.MessageMedia

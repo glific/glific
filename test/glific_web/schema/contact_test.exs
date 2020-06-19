@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.Query.ContactTest do
+defmodule GlificWeb.Schema.ContactTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 

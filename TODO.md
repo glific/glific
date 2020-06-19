@@ -1,7 +1,7 @@
 # Things coming in the near/far future
 
 * Mnesia and PoW Integration
-* Password less login via SMS
+* SMS verification of account
 * General structure for actions on events
   * Structure for actions on matching tags + value
   * Structure for actions on message type
@@ -11,9 +11,18 @@
 * Multiple producers/consumers in receive message pipeline
 * Integrate WhatsApp location
 * More details on a contact from WA Profile
-* Users and Groups
-* User Roles and permissions
-* Claiming conversations by user-groups
+* Users
+  * Add name to schema and user creation flow?
+  * Roles
+  * Groups
+  * Permissions
+* Claiming conversations by Groups
+* [Integrate Sentry](https://github.com/getsentry/sentry-elixir_
+* [Integrate CORS](https://hexdocs.pm/cors_plug/readme.html)
+
+## Other Advanced models we should investigate
+* [EventBus](https://hexdocs.pm/event_bus/readme.html)
+* [Commanded](https://hexdocs.pm/commanded/Commanded.html)
 
 ## External API Integrations
 * Translation API - Google Translate

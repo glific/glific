@@ -1,9 +1,9 @@
-defmodule GlificWeb.Schema.Query.TagTest do
+defmodule GlificWeb.Schema.TagTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
   # the number of tags we ship with by default
-  @tag_count 19
+  @tag_count 18
 
   setup do
     lang = Glific.Seeds.seed_language()
@@ -38,7 +38,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
     assert length(tags) > 0
 
     [tag | _] = tags
-    assert get_in(tag, ["label"]) == "Welcome"
+    assert get_in(tag, ["label"]) == "User"
   end
 
   test "tags field returns list of tags in various filters" do
@@ -104,7 +104,7 @@ defmodule GlificWeb.Schema.Query.TagTest do
 
     assert get_in(query_data, [:data, "countTags"]) == 0
 
-    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"label" => "Welcome"}})
+    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"label" => "Greeting"}})
     assert get_in(query_data, [:data, "countTags"]) == 1
   end
 

@@ -1,11 +1,11 @@
-defmodule Glific.Processor.ConsumerTagger do
+defmodule Glific.EventsConditionsActions.Action.AddTags do
   @moduledoc """
-  Process all messages of type consumer and run them thru the various in-built taggers.
-  At a later stage, we will also do translation and dialogflow queries as an offshoot
-  from this GenStage
-  """
+  Lets do all the initial tagging that is in memory and fast in one place. This
+  avoids the overhead of splitting things up into too many small chunks.
 
-  use GenStage
+  The heavier pieces, like integration with external APIs will be done by its own
+  separate action. Seems like each action might be a GenStage or something like that
+  """
 
   alias Glific.{
     Communications,
@@ -19,72 +19,37 @@ defmodule Glific.Processor.ConsumerTagger do
     Tags.Tag
   }
 
-  @min_demand 0
-  @max_demand 1
-
   @doc false
-  @spec start_link(any) :: GenServer.on_start()
-  def start_link(_), do: GenStage.start_link(__MODULE__, :ok, name: __MODULE__)
-
-  @doc false
+  @spec init(:ok) :: map()
   def init(:ok) do
     state = %{
-      producer: Glific.Processor.Producer,
       keyword_map: Keyword.get_keyword_map(),
       status_map: Status.get_status_map(),
       numeric_map: Numeric.get_numeric_map(),
       numeric_tag_id: 0
     }
 
-    state =
-      case Repo.fetch_by(Tag, %{label: "Numeric"}) do
-        {:ok, tag} -> Map.put(state, :numeric_tag_id, tag.id)
-        _ -> state
-      end
-
-    {:producer_consumer, state,
-     subscribe_to: [
-       {state.producer,
-        selector: fn %{type: type} -> type == :text end,
-        min_demand: @min_demand,
-        max_demand: @max_demand}
-     ]}
-  end
-
-  @doc """
-  public endpoint for adding a number and a value
-  """
-  @spec add_numeric(String.t(), integer) :: :ok
-  def add_numeric(key, value), do: GenServer.call(__MODULE__, {:add_numeric, {key, value}})
-
-  @doc false
-  def handle_call({:add_numeric, {key, value}}, _from, state) do
-    new_numeric_map = Map.put(state.numeric_map, key, value)
-
-    {:reply, "Numeric Map Updated", [], Map.put(state, :numeric_map, new_numeric_map)}
+    case Repo.fetch_by(Tag, %{label: "Numeric"}) do
+      {:ok, tag} -> Map.put(state, :numeric_tag_id, tag.id)
+      _ -> state
+    end
   end
 
   @doc false
-  def handle_info(_, state), do: {:noreply, [], state}
-
-  @doc false
-  def handle_events(messages, _from, state) do
-    messages_with_tags = Enum.map(messages, &process_message(&1, state))
-
-    {:noreply, messages_with_tags, state}
-  end
-
-  @spec process_message(atom() | Message.t(), map()) :: Message.t()
-  defp process_message(message, state) do
+  @spec perform(%{atom() => any}, map()) :: {%{atom() => any}, map()}
+  def perform(%{message: message}, state) do
     body = Taggers.string_clean(message.body)
 
-    message
-    |> add_unread_tag(state)
-    |> new_contact_tagger(state)
-    |> numeric_tagger(body, state)
-    |> keyword_tagger(body, state)
-    |> Repo.preload(:tags)
-    |> Communications.publish_data(:created_message_tag)
+    message =
+      message
+      |> add_unread_tag(state)
+      |> new_contact_tagger(state)
+      |> numeric_tagger(body, state)
+      |> keyword_tagger(body, state)
+      |> Repo.preload(:tags)
+      |> Communications.publish_data(:created_message_tag)
+
+    {%{message: message}, state}
   end
 
   @spec numeric_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()

@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.Query.ConversationTest do
+defmodule GlificWeb.Schema.ConversationTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
