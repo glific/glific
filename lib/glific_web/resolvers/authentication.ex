@@ -9,15 +9,9 @@ defmodule GlificWeb.Resolvers.Authentication do
   @doc false
   @spec send_otp(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) :: {:ok, String.t()}
   def send_otp(_, %{input: params}, _) do
-    with {:ok, response_message} <- Authentication.create_and_send_otp_to_phone(params),
-         do: {:ok, response_message}
-  end
+    %{phone: phone} = params
 
-  @doc false
-  @spec verify_otp(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
-          {:ok, String.t()}
-  def verify_otp(_, %{input: params}, _) do
-    with {:ok, response_message} <- Authentication.verify_otp(params),
-         do: {:ok, response_message}
+    with {:ok, otp} <- PasswordlessAuth.create_and_send_verification_code(phone),
+         do: {:ok, "OTP #{otp} sent successfully to #{phone}"}
   end
 end
