@@ -1,5 +1,7 @@
 defmodule Glific.ContactsTest do
   use Glific.DataCase, async: true
+
+  alias Faker.Phone
   alias Glific.Contacts
 
   describe "contacts" do
@@ -177,6 +179,32 @@ defmodule Glific.ContactsTest do
     test "ensure that creating contacts with same name/phone give an error" do
       contact_fixture(@valid_attrs)
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(@valid_attrs)
+    end
+
+    test "ensure that contact returns the valid state for sending the message" do
+      contact =
+        contact_fixture(%{
+          provider_status: :valid,
+          last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      contact2 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :invalid,
+          last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      contact3 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :valid,
+          last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
+        })
+
+      assert true == Contacts.can_send_message_to?(contact)
+      assert false == Contacts.can_send_message_to?(contact2)
+      assert false == Contacts.can_send_message_to?(contact3)
     end
   end
 end

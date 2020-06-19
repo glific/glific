@@ -8,10 +8,19 @@ defmodule Glific.Contacts.Contact do
   import Ecto.Changeset
 
   alias Glific.Enums.ContactStatus
+  alias Glific.Settings.Language
   alias Glific.Tags.Tag
 
-  @required_fields [:name, :phone]
-  @optional_fields [:provider_status, :status, :optin_time, :optout_time]
+  @required_fields [:phone]
+  @optional_fields [
+    :name,
+    :provider_status,
+    :status,
+    :optin_time,
+    :optout_time,
+    :last_message_at,
+    :language_id
+  ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -20,8 +29,10 @@ defmodule Glific.Contacts.Contact do
           phone: String.t() | nil,
           status: ContactStatus | nil,
           provider_status: ContactStatus | nil,
+          language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           optin_time: :utc_datetime | nil,
           optout_time: :utc_datetime | nil,
+          last_message_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -33,8 +44,11 @@ defmodule Glific.Contacts.Contact do
     field :status, ContactStatus
     field :provider_status, ContactStatus
 
+    belongs_to :language, Language
+
     field :optin_time, :utc_datetime
     field :optout_time, :utc_datetime
+    field :last_message_at, :utc_datetime
 
     many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
 
