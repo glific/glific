@@ -2,6 +2,8 @@ defmodule GlificWeb.Schema.ContactTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
+  alias Glific.Contacts
+
   setup do
     Glific.Seeds.seed_language()
     Glific.Seeds.seed_contacts()
@@ -195,5 +197,15 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "search"]) == []
+
+    # lets do an empty search
+    # should return all contacts
+    result =
+      query_gql_by(:search,
+        variables: %{"term" => ""}
+      )
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "search"])) == Contacts.count_contacts()
   end
 end

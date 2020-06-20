@@ -35,7 +35,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert length(tags) > 0
 
     [tag | _] = tags
-    assert get_in(tag, ["label"]) == "User"
+    assert get_in(tag, ["label"]) == "यह परीक्षण के लिए है"
   end
 
   test "tags field returns list of tags in various filters" do
