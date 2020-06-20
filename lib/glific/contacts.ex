@@ -181,4 +181,41 @@ defmodule Glific.Contacts do
     |> Full.run(term)
     |> Repo.all()
   end
+
+  @doc """
+  Check if this contact id is a new conatct
+  """
+
+  @spec is_new_contact(integer()) :: boolean()
+  def is_new_contact(contact_id) do
+    case Glific.Messages.Message
+         |> where([c], c.contact_id == ^contact_id)
+         |> where([c], c.flow == "outbound")
+         |> Repo.all() do
+      [] -> true
+      _ -> false
+    end
+  end
+
+  @doc """
+  Check if this contact id is a new conatct
+  """
+  @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
+  def contact_opted_in(phone, utc_time) do
+    # Still need to figure out how to do that in single query
+    upsert(%{phone: phone, optin_time: utc_time})
+
+    {:ok}
+  end
+
+  @doc """
+  Check if we can send a message to the contact
+  """
+  @spec can_send_message_to?(Contact.t()) :: boolean()
+
+  def can_send_message_to?(contact) do
+    with true <- contact.provider_status == :valid,
+         true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24,
+         do: true
+  end
 end

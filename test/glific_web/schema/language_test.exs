@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.Query.LanguageTest do
+defmodule GlificWeb.Schema.LanguageTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 

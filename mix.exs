@@ -104,7 +104,8 @@ defmodule Glific.MixProject do
       {:wormwood, "~> 0.1"},
       {:gen_stage, "~> 1.0"},
       {:passwordless_auth,
-       git: "https://github.com/glific/passwordless_auth.git", branch: "develop"}
+       git: "https://github.com/glific/passwordless_auth.git", branch: "develop"},
+      {:timex, "~> 3.0"}
     ]
   end
 

@@ -178,15 +178,15 @@ defmodule Glific.TagsTest do
       keywords = ["Hello", "hi", "hola", "namaste", "good morning"]
       attrs = Map.merge(@valid_attrs, %{language_id: language.id, keywords: keywords})
       assert {:ok, %Tag{} = tag} = Tags.create_tag(attrs)
-      assert tag.keywords == keywords
+      assert tag.keywords == ["hello", "hi", "hola", "namaste", "good morning"]
     end
 
     test "keywords can be updated for a tag" do
       tag = tag_fixture()
-      keywords = ["Hello", "hi", "hola", "namaste"]
+      keywords = ["Hello", "Hi", "Hola", "Namaste"]
       attrs = Map.merge(@update_attrs, %{keywords: keywords})
       assert {:ok, %Tag{} = tag} = Tags.update_tag(tag, attrs)
-      assert tag.keywords == keywords
+      assert tag.keywords == ["hello", "hi", "hola", "namaste"]
     end
 
     test "keyword_map/0 returns a keyword map with ids" do
@@ -196,8 +196,17 @@ defmodule Glific.TagsTest do
       Tags.update_tag(tag2, %{keywords: ["Tag2", "Tag21", "Tag22", "Tag23"]})
       keyword_map = Tags.keyword_map()
       assert is_map(keyword_map)
-      assert keyword_map["Hello"] == tag.id
-      assert keyword_map["Tag2"] == tag2.id
+      assert keyword_map["hello"] == tag.id
+      assert keyword_map["tag2"] == tag2.id
+    end
+
+    test "status_map/0 returns a keyword map with ids" do
+      tag = tag_fixture(%{label: "Unread"})
+      tag2 = tag_fixture(%{label: "New Contact"})
+      status_map = Tags.status_map()
+      assert is_map(status_map)
+      assert status_map["Unread"] == tag.id
+      assert status_map["New Contact"] == tag2.id
     end
   end
 

@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.Query.ContactTagTest do
+defmodule GlificWeb.Schema.ContactTagTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 

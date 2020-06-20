@@ -8,7 +8,6 @@ defmodule GlificWeb.Schema.LanguageTypes do
   alias GlificWeb.Resolvers
 
   object :language do
-    interfaces([:search_result])
     field :id, :id
     field :label, :string
     field :locale, :string

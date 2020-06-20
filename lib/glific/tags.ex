@@ -175,45 +175,35 @@ defmodule Glific.Tags do
   """
   @spec keyword_map() :: map()
   def keyword_map do
-    {:ok, results} =
-      "SELECT id, keywords FROM tags where keywords is not NULL and array_length(keywords, 1) > 0;"
-      |> Repo.query()
-
-    results.rows
+    Tag
+    |> where([t], not is_nil(t.keywords))
+    |> where([t], fragment("array_length(?, 1)", t.keywords) > 0)
+    |> select([:id, :keywords])
+    |> Repo.all()
     |> Enum.reduce(%{}, &keyword_map(&1, &2))
   end
 
-  @spec keyword_map(list(integer() | [String.t()]), map) :: map()
-  defp keyword_map([tag_id | [keywords]], acc) do
+  @spec keyword_map(map(), map) :: map()
+  defp keyword_map(%{id: tag_id, keywords: keywords}, acc) do
     keywords
     |> Enum.reduce(%{}, &Map.put(&2, &1, tag_id))
     |> Map.merge(acc)
   end
 
-  @doc ~S"""
-  Commenting out for now till we integrate search via GraphQL across all data types
-
-  Simple stub for now in our experiments to implement Search
-  across a variety of data types in the system.
-
-  @search [Tag, Language]
-  # can we make the return type: maybe_improper_list(Tag.t(), Language.t())
-  @spec search(String.t()) :: [...]
-  def search(term) do
-    pattern = "%#{term}%"
-    Enum.flat_map(@search, &search_ecto(&1, pattern))
-  end
-
-  @spec search_ecto(atom(), String.t()) :: [Tag.t()] | [Language.t()] | nil
-  defp search_ecto(ecto_schema, pattern) do
-    Repo.all(
-      from q in ecto_schema,
-        where: ilike(q.label, ^pattern) or ilike(q.description, ^pattern)
-    )
-  end
+  @doc """
+    Filter all the status tag and returns as a map
   """
-  @spec no_warnings :: nil
-  def no_warnings, do: nil
+
+  @spec status_map() :: map()
+  def status_map do
+    status_tags = ["New Contact", "Not Replied", "Unread"]
+
+    Tag
+    |> where([t], t.label in ^status_tags)
+    |> select([:id, :label])
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn tag, acc -> Map.put(acc, tag.label, tag.id) end)
+  end
 
   @doc """
   Returns the list of messages tags.

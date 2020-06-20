@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.Query.MessageTest do
+defmodule GlificWeb.Schema.MessageTest do
   alias Glific.Messages.Message
   use GlificWeb.ConnCase, async: true
 

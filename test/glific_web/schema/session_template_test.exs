@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.Query.SessionTemplateTest do
+defmodule GlificWeb.Schema.SessionTemplateTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 

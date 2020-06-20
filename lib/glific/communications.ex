@@ -39,8 +39,14 @@ defmodule Glific.Communications do
 
   For now the data types are Message and MessageTag
   """
+
   @spec publish_data({:ok, Message.t() | MessageTag.t()}, atom()) :: Message.t() | MessageTag.t()
   def publish_data({:ok, data}, topic) do
+    publish_data(data, topic)
+  end
+
+  @spec publish_data(Message.t() | MessageTag.t(), atom()) :: Message.t() | MessageTag.t()
+  def publish_data(data, topic) do
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
       data,

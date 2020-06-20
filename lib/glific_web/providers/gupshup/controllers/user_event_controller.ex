@@ -6,8 +6,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
-  def handler(conn, params, _msg) do
-    json(conn, params)
+  def handler(conn, _params, _msg) do
+    json(conn, nil)
   end
 
   @doc false
@@ -22,8 +22,14 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
 
   @doc false
   @spec opted_in(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def opted_in(conn, params),
-    do: handler(conn, params, "Opted in handler")
+  def opted_in(conn, params) do
+    {:ok, timestamp} = DateTime.from_unix(params["timestamp"], :millisecond)
+
+    get_in(params, ["payload", "phone"])
+    |> Glific.Contacts.contact_opted_in(timestamp)
+
+    handler(conn, params, "Opted in handler")
+  end
 
   @doc false
   @spec opted_out(Plug.Conn.t(), map()) :: Plug.Conn.t()
