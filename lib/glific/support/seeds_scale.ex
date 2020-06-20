@@ -85,7 +85,7 @@ defmodule Glific.SeedsScale do
     )
   end
 
-  @num_messages_per_conversation 40
+  @num_messages_per_conversation 30
   defp create_conversation(contact_id) do
     num_messages = Enum.random(1..@num_messages_per_conversation)
 
@@ -125,7 +125,9 @@ defmodule Glific.SeedsScale do
     contact_entries = create_contact_entries(contacts_count)
 
     # seed contacts
-    Repo.insert_all(Contact, contact_entries)
+    contact_entries
+    |> Enum.chunk_every(100)
+    |> Enum.map(&Repo.insert_all(Contact, &1))
   end
 
   defp seed_messages do
@@ -134,8 +136,8 @@ defmodule Glific.SeedsScale do
     |> Enum.shuffle()
     |> Enum.flat_map(&create_conversation(&1))
     # this enables us to send smaller chunks to postgres for insert
-    |> Enum.chunk_every(3000)
-    |> Enum.map(&Repo.insert_all(Message, &1))
+    |> Enum.chunk_every(50)
+    |> Enum.map(&Repo.insert_all(Message, &1, [timeout: 120_000]))
   end
 
   defp seed_message_tags do
@@ -144,7 +146,7 @@ defmodule Glific.SeedsScale do
     Repo.all(from m in "messages", select: m.id, where: m.receiver_id == 1)
     |> Enum.shuffle()
     |> Enum.reduce([], fn x, acc -> create_message_tag(x, tag_ids, acc) end)
-    |> Enum.chunk_every(3000)
+    |> Enum.chunk_every(100)
     |> Enum.map(&Repo.insert_all(MessageTag, &1))
   end
 
@@ -154,7 +156,7 @@ defmodule Glific.SeedsScale do
     # create seed for deterministic random data
     :rand.seed(:exrop, {101, 102, 103})
 
-    seed_contacts(500)
+    seed_contacts(100)
 
     seed_messages()
 

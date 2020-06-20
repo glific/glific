@@ -48,6 +48,9 @@ config :glific, :pow,
   user: Glific.Users.User,
   repo: Glific.Repo
 
+config :passwordless_auth,
+  sms_adapter: Glific.SMSAdapter.Gupshup
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"

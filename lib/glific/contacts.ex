@@ -196,4 +196,26 @@ defmodule Glific.Contacts do
       _ -> false
     end
   end
+
+  @doc """
+  Check if this contact id is a new conatct
+  """
+  @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
+  def contact_opted_in(phone, utc_time) do
+    # Still need to figure out how to do that in single query
+    upsert(%{phone: phone, optin_time: utc_time})
+
+    {:ok}
+  end
+
+  @doc """
+  Check if we can send a message to the contact
+  """
+  @spec can_send_message_to?(Contact.t()) :: boolean()
+
+  def can_send_message_to?(contact) do
+    with true <- contact.provider_status == :valid,
+         true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24,
+         do: true
+  end
 end
