@@ -85,7 +85,7 @@ defmodule Glific.SeedsScale do
     )
   end
 
-  @num_messages_per_conversation 30
+  @num_messages_per_conversation 40
   defp create_conversation(contact_id) do
     num_messages = Enum.random(1..@num_messages_per_conversation)
 
@@ -126,28 +126,38 @@ defmodule Glific.SeedsScale do
 
     # seed contacts
     contact_entries
-    |> Enum.chunk_every(100)
+    |> Enum.chunk_every(300)
     |> Enum.map(&Repo.insert_all(Contact, &1))
   end
 
   defp seed_messages do
+    Repo.query!("ALTER TABLE messages DISABLE TRIGGER update_search_message_trigger;")
+
     # get all beneficiaries ids
-    Repo.all(from c in "contacts", select: c.id, where: c.id != 1)
-    |> Enum.shuffle()
-    |> Enum.flat_map(&create_conversation(&1))
-    # this enables us to send smaller chunks to postgres for insert
-    |> Enum.chunk_every(50)
-    |> Enum.map(&Repo.insert_all(Message, &1, timeout: 120_000))
+    _ =
+      Repo.all(from c in "contacts", select: c.id, where: c.id != 1)
+      |> Enum.shuffle()
+      |> Enum.flat_map(&create_conversation(&1))
+      # this enables us to send smaller chunks to postgres for insert
+      |> Enum.chunk_every(1000)
+      |> Enum.map(&Repo.insert_all(Message, &1, timeout: 120_000))
+
+    Repo.query!("ALTER TABLE messages ENABLE TRIGGER update_search_message_trigger;")
   end
 
   defp seed_message_tags do
     tag_ids = Repo.all(from t in "tags", select: t.id) |> Enum.shuffle()
 
-    Repo.all(from m in "messages", select: m.id, where: m.receiver_id == 1)
-    |> Enum.shuffle()
-    |> Enum.reduce([], fn x, acc -> create_message_tag(x, tag_ids, acc) end)
-    |> Enum.chunk_every(100)
-    |> Enum.map(&Repo.insert_all(MessageTag, &1))
+    Repo.query!("ALTER TABLE messages_tags DISABLE TRIGGER update_search_message_trigger;")
+
+    _ =
+      Repo.all(from m in "messages", select: m.id, where: m.receiver_id == 1)
+      |> Enum.shuffle()
+      |> Enum.reduce([], fn x, acc -> create_message_tag(x, tag_ids, acc) end)
+      |> Enum.chunk_every(1000)
+      |> Enum.map(&Repo.insert_all(MessageTag, &1))
+
+    Repo.query!("ALTER TABLE messages_tags ENABLE TRIGGER update_search_message_trigger;")
   end
 
   @doc false
@@ -156,11 +166,14 @@ defmodule Glific.SeedsScale do
     # create seed for deterministic random data
     :rand.seed(:exrop, {101, 102, 103})
 
-    seed_contacts(100)
+    seed_contacts(500)
 
     seed_messages()
 
     seed_message_tags()
+
+    # now execute the stored procedure to build the search index
+    Repo.query!("SELECT create_search_messages(100)")
 
     nil
   end
