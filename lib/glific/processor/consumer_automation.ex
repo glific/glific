@@ -9,6 +9,7 @@ defmodule Glific.Processor.ConsumerAutomation do
   import Ecto.Query
 
   alias Glific.{
+    Contacts.Contact,
     Messages,
     Messages.Message,
     Repo,
@@ -57,12 +58,7 @@ defmodule Glific.Processor.ConsumerAutomation do
 
   @spec process_tag(Message.t(), Tag.t()) :: Message.t()
   defp process_tag(message, %Tag{label: label}) when label == "New Contact" do
-    message =
-      message
-      |> join(:left, [msg], _ in assoc(msg, :sender))
-      |> join(:left, [msg, sender], _ in assoc(sender, :language))
-      |> preload([_, sender, language], sender: {sender, language: language})
-      |> Repo.one()
+    message = Repo.preload(message, :sender)
 
     with {:ok, session_template} <-
            Repo.fetch_by(SessionTemplate, %{
@@ -79,9 +75,20 @@ defmodule Glific.Processor.ConsumerAutomation do
     [language | _] = Settings.list_languages(%{label: message_tag.value})
 
     # We need to update sender id and set their language to this language
+    query = from(c in Contact, where: c.id == ^message.sender_id)
+
+    Repo.update_all(query,
+      set: [language_id: language.id, updated_at: DateTime.utc_now()]
+    )
 
     with {:ok, session_template} <-
            Repo.fetch_by(SessionTemplate, %{shortcode: "language", language_id: language.id}),
+         session_template =
+           Map.put(
+             session_template,
+             :body,
+             EEx.eval_string(session_template.body, language: language.label_locale)
+           ),
          {:ok, message} <-
            Messages.create_and_send_session_template(session_template, message.sender_id),
          do: message

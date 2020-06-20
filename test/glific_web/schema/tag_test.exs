@@ -67,7 +67,7 @@ defmodule GlificWeb.Schema.TagTest do
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) > 0
 
-    result = query_gql_by(:list, variables: %{"filter" => %{"language" => "English"}})
+    result = query_gql_by(:list, variables: %{"filter" => %{"language" => "Hindi"}})
     assert {:ok, query_data} = result
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) > 0

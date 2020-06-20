@@ -9,6 +9,7 @@ defmodule Glific.Seeds do
     Partners.Organization,
     Partners.Provider,
     Repo,
+    Settings,
     Settings.Language,
     Tags.Tag,
     Templates.SessionTemplate
@@ -20,11 +21,14 @@ defmodule Glific.Seeds do
   """
   @spec seed_language() :: {Language.t(), Language.t()}
   def seed_language do
-    {Repo.insert!(%Language{
-       label: "English (United States)",
-       label_locale: "English",
-       locale: "en_US"
-     }), Repo.insert!(%Language{label: "Hindi (India)", label_locale: "हिंदी", locale: "hi_IN"})}
+    {
+      Repo.insert!(%Language{label: "Hindi (India)", label_locale: "हिंदी", locale: "hi_IN"}),
+      Repo.insert!(%Language{
+        label: "English (United States)",
+        label_locale: "English",
+        locale: "en_US"
+      })
+    }
   end
 
   @doc false
@@ -84,24 +88,31 @@ defmodule Glific.Seeds do
   @doc false
   @spec seed_contacts :: {Contact.t()}
   def seed_contacts do
+    [hindi | _] = Settings.list_languages(%{label: "hindi"})
+    [english | _] = Settings.list_languages(%{label: "english"})
+
     contacts = [
-      %{phone: "917834811114", name: "Default Sender"},
-      %{phone: "917834811231", name: "Default receiver"},
+      %{phone: "917834811114", name: "Default Sender", language_id: hindi.id},
+      %{phone: "917834811231", name: "Default receiver", language_id: hindi.id},
       %{
         name: "Adelle Cavin",
-        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+        language_id: hindi.id
       },
       %{
         name: "Margarita Quinteros",
-        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+        language_id: hindi.id
       },
       %{
         name: "Chrissy Cron",
-        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+        language_id: english.id
       },
       %{
         name: "Hailey Wardlaw",
-        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+        language_id: english.id
       }
     ]
 
@@ -223,6 +234,17 @@ defmodule Glific.Seeds do
 
     Repo.insert!(%Message{
       body: "hindi",
+      flow: :outbound,
+      type: :text,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
+      sender_id: sender.id,
+      receiver_id: receiver.id,
+      contact_id: receiver.id
+    })
+
+    Repo.insert!(%Message{
+      body: "english",
       flow: :outbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
@@ -395,7 +417,7 @@ defmodule Glific.Seeds do
   """
   @spec seed :: nil
   def seed do
-    {en_us, hi_in} = seed_language()
+    {hi_in, en_us} = seed_language()
 
     seed_tag({en_us, hi_in})
 

@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.ContactTest do
   use Wormwood.GQLCase
 
   setup do
+    Glific.Seeds.seed_language()
     Glific.Seeds.seed_contacts()
     Glific.Seeds.seed_messages()
     :ok
