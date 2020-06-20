@@ -65,6 +65,7 @@ defmodule Glific.Fixtures do
   def language_fixture(attrs \\ %{}) do
     valid_attrs = %{
       label: Faker.Lorem.word(),
+      label_locale: Faker.Lorem.word(),
       locale: Faker.Lorem.word(),
       is_active: true
     }

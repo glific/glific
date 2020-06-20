@@ -10,12 +10,14 @@ defmodule GlificWeb.Schema.LanguageTypes do
   object :language do
     field :id, :id
     field :label, :string
+    field :label_locale, :string
     field :locale, :string
     field :is_active, :boolean
   end
 
   input_object :language_input do
     field :label, non_null(:string)
+    field :label_locale, non_null(:string)
     field :locale, non_null(:string)
     field :is_active, :boolean
     field :is_reserved, :boolean

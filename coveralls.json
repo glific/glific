@@ -8,6 +8,7 @@
         "lib/glific_web/telemetry.ex",
         "lib/glific/support/seeds.ex",
         "lib/glific/support/seeds_scale.ex",
+        "lib.glific/events_conditions_actions",
         "lib/glific.ex",
         "test/support"
     ]

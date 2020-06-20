@@ -6,10 +6,17 @@ defmodule Glific.Processor.ConsumerAutomation do
 
   use GenStage
 
+  import Ecto.Query
+
   alias Glific.{
+    Contacts.Contact,
     Messages,
     Messages.Message,
-    Tags.Tag
+    Repo,
+    Settings,
+    Tags.MessageTag,
+    Tags.Tag,
+    Templates.SessionTemplate
   }
 
   @min_demand 0
@@ -49,12 +56,43 @@ defmodule Glific.Processor.ConsumerAutomation do
     {:noreply, [], state}
   end
 
-  @spec process_tag(Message.t(), Tag.t()) :: nil
-  defp process_tag(message, tag) do
-    if tag.label == "Welcome" do
-      Messages.create_and_send_session_template(3, message.sender_id)
-    end
+  @spec process_tag(Message.t(), Tag.t()) :: Message.t()
+  defp process_tag(message, %Tag{label: label}) when label == "New Contact" do
+    message = Repo.preload(message, :sender)
 
-    nil
+    with {:ok, session_template} <-
+           Repo.fetch_by(SessionTemplate, %{
+             shortcode: "new contact",
+             language_id: message.sender.language_id
+           }),
+         {:ok, message} <-
+           Messages.create_and_send_session_template(session_template, message.sender_id),
+         do: message
   end
+
+  defp process_tag(message, %Tag{label: label} = tag) when label == "Language" do
+    {:ok, message_tag} = Repo.fetch_by(MessageTag, %{message_id: message.id, tag_id: tag.id})
+    [language | _] = Settings.list_languages(%{label: message_tag.value})
+
+    # We need to update sender id and set their language to this language
+    query = from(c in Contact, where: c.id == ^message.sender_id)
+
+    Repo.update_all(query,
+      set: [language_id: language.id, updated_at: DateTime.utc_now()]
+    )
+
+    with {:ok, session_template} <-
+           Repo.fetch_by(SessionTemplate, %{shortcode: "language", language_id: language.id}),
+         session_template =
+           Map.put(
+             session_template,
+             :body,
+             EEx.eval_string(session_template.body, language: language.label_locale)
+           ),
+         {:ok, message} <-
+           Messages.create_and_send_session_template(session_template, message.sender_id),
+         do: message
+  end
+
+  defp process_tag(message, _tag), do: message
 end

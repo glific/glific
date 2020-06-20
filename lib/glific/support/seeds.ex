@@ -9,6 +9,7 @@ defmodule Glific.Seeds do
     Partners.Organization,
     Partners.Provider,
     Repo,
+    Settings,
     Settings.Language,
     Tags.Tag,
     Templates.SessionTemplate
@@ -20,8 +21,14 @@ defmodule Glific.Seeds do
   """
   @spec seed_language() :: {Language.t(), Language.t()}
   def seed_language do
-    {Repo.insert!(%Language{label: "English (United States)", locale: "en_US"}),
-     Repo.insert!(%Language{label: "Hindi (India)", locale: "hi_IN"})}
+    {
+      Repo.insert!(%Language{label: "Hindi (India)", label_locale: "हिंदी", locale: "hi_IN"}),
+      Repo.insert!(%Language{
+        label: "English (United States)",
+        label_locale: "English",
+        locale: "en_US"
+      })
+    }
   end
 
   @doc false
@@ -33,9 +40,24 @@ defmodule Glific.Seeds do
     tags = [
       # Intent of message
       %{label: "Compliment", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Good Bye", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Greeting", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Thank You", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{
+        label: "Good Bye",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["bye", "byebye", "goodbye", "goodnight", "goodnite"]
+      },
+      %{
+        label: "Greeting",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["hello", "good morning", "hi", "hey"]
+      },
+      %{
+        label: "Thank You",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["thanks", "thank you", "awesome", "great"]
+      },
 
       # Status of Message
       %{label: "Critical", language_id: en_us.id, parent_id: message_tags_mt.id},
@@ -44,6 +66,14 @@ defmodule Glific.Seeds do
       %{label: "Not Replied", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Unread", language_id: en_us.id, parent_id: message_tags_mt.id},
+
+      # Languages
+      %{
+        label: "Language",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["hindi", "english", "हिंदी", "अंग्रेज़ी"]
+      },
 
       # Tags with Value
       %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
@@ -73,24 +103,31 @@ defmodule Glific.Seeds do
   @doc false
   @spec seed_contacts :: {Contact.t()}
   def seed_contacts do
+    [hindi | _] = Settings.list_languages(%{label: "hindi"})
+    [english | _] = Settings.list_languages(%{label: "english"})
+
     contacts = [
-      %{phone: "917834811114", name: "Default Sender"},
-      %{phone: "917834811231", name: "Default receiver"},
+      %{phone: "917834811114", name: "Default Sender", language_id: hindi.id},
+      %{phone: "917834811231", name: "Default receiver", language_id: hindi.id},
       %{
         name: "Adelle Cavin",
-        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+        language_id: hindi.id
       },
       %{
         name: "Margarita Quinteros",
-        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+        language_id: hindi.id
       },
       %{
         name: "Chrissy Cron",
-        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+        language_id: english.id
       },
       %{
         name: "Hailey Wardlaw",
-        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+        language_id: english.id
       }
     ]
 
@@ -209,6 +246,39 @@ defmodule Glific.Seeds do
       receiver_id: receiver.id,
       contact_id: receiver.id
     })
+
+    Repo.insert!(%Message{
+      body: "hindi",
+      flow: :outbound,
+      type: :text,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
+      sender_id: sender.id,
+      receiver_id: receiver.id,
+      contact_id: receiver.id
+    })
+
+    Repo.insert!(%Message{
+      body: "english",
+      flow: :outbound,
+      type: :text,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
+      sender_id: sender.id,
+      receiver_id: receiver.id,
+      contact_id: receiver.id
+    })
+
+    Repo.insert!(%Message{
+      body: "hola",
+      flow: :outbound,
+      type: :text,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
+      sender_id: sender.id,
+      receiver_id: receiver.id,
+      contact_id: receiver.id
+    })
   end
 
   @doc false
@@ -249,7 +319,7 @@ defmodule Glific.Seeds do
 
   @doc false
   @spec seed_session_templates({Language.t(), Language.t()}) :: nil
-  def seed_session_templates({en_us, _hi_in}) do
+  def seed_session_templates({en_us, hi_in}) do
     session_template_parent =
       Repo.insert!(%SessionTemplate{
         label: "Default Template Label",
@@ -268,11 +338,32 @@ defmodule Glific.Seeds do
 
     Repo.insert!(%SessionTemplate{
       label: "New Contact",
-      body: "Welcome to Glific",
+      body: """
+      Welcome to Glific.
+
+      What language do you want to receive messages in?
+      हिंदी के लिए 1 दबाएँहिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
+      Type English to receive messages in English
+      """,
       type: :text,
       shortcode: "new contact",
       is_reserved: true,
       language_id: en_us.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "New Contact",
+      body: """
+      ग्लिफ़िक में आपका स्वागत है
+
+      आप किस भाषा में संदेश प्राप्त करना चाहते हैं?
+      हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
+      Type English to receive messages in English
+      """,
+      type: :text,
+      shortcode: "new contact",
+      is_reserved: true,
+      language_id: hi_in.id
     })
 
     Repo.insert!(%SessionTemplate{
@@ -283,6 +374,56 @@ defmodule Glific.Seeds do
       is_reserved: true,
       language_id: en_us.id
     })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Help",
+      body: "Here we will enter some help text",
+      type: :text,
+      shortcode: "help",
+      is_reserved: true,
+      language_id: en_us.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Help (Hindi)",
+      body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ",
+      type: :text,
+      shortcode: "",
+      is_reserved: true,
+      language_id: hi_in.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Language",
+      body: """
+      Your preferred language is <%= language %>
+
+      Do you want to change the language you want to receive messages in?
+
+      हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
+      Type English to receive messages in English
+      """,
+      type: :text,
+      shortcode: "language",
+      is_reserved: true,
+      language_id: en_us.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Language",
+      body: """
+      आपकी पसंदीदा भाषा <%= language %> है
+
+      आप किस भाषा में संदेश प्राप्त करना चाहते हैं?क्या आप उस भाषा को बदलना चाहते हैं जिसमें आप संदेश प्राप्त करना चाहते हैं?
+
+      हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
+      Type English to receive messages in English
+      """,
+      type: :text,
+      shortcode: "language",
+      is_reserved: true,
+      language_id: hi_in.id
+    })
   end
 
   @doc """
@@ -291,7 +432,7 @@ defmodule Glific.Seeds do
   """
   @spec seed :: nil
   def seed do
-    {en_us, hi_in} = seed_language()
+    {hi_in, en_us} = seed_language()
 
     seed_tag({en_us, hi_in})
 

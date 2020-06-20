@@ -5,6 +5,7 @@ defmodule GlificWeb.Schema.ConversationTest do
   alias Glific.Contacts
 
   setup do
+    Glific.Seeds.seed_language()
     Glific.Seeds.seed_contacts()
     Glific.Seeds.seed_messages()
     :ok

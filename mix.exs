@@ -24,7 +24,6 @@ defmodule Glific.MixProject do
         extras: ["README.md", "CHANGELOG.md"]
       ],
       preferred_cli_env: [
-        "test.nodrop": :test,
         coveralls: :test
       ],
 

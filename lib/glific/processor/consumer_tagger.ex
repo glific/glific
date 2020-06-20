@@ -79,7 +79,7 @@ defmodule Glific.Processor.ConsumerTagger do
     body = Taggers.string_clean(message.body)
 
     message
-    |> add_unread_tag(state)
+    |> add_status_tag("Unread", state)
     |> new_contact_tagger(state)
     |> numeric_tagger(body, state)
     |> keyword_tagger(body, state)
@@ -90,7 +90,7 @@ defmodule Glific.Processor.ConsumerTagger do
   @spec numeric_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()
   defp numeric_tagger(message, body, state) do
     case Numeric.tag_body(body, state.numeric_map) do
-      {:ok, value} -> add_numeric_tag(message, value, state)
+      {:ok, value} -> add_tag(message, state.numeric_tag_id, value)
       _ -> message
     end
   end
@@ -98,7 +98,7 @@ defmodule Glific.Processor.ConsumerTagger do
   @spec keyword_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()
   defp keyword_tagger(message, body, state) do
     case Keyword.tag_body(body, state.keyword_map) do
-      {:ok, value} -> add_keyword_tag(message, value, state)
+      {:ok, value} -> add_tag(message, value, body)
       _ -> message
     end
   end
@@ -106,48 +106,23 @@ defmodule Glific.Processor.ConsumerTagger do
   @spec new_contact_tagger(Message.t(), map()) :: Message.t()
   defp new_contact_tagger(message, state) do
     if Status.is_new_contact(message.sender_id) do
-      add_new_user_tag(message, state)
+      message
+      |> add_status_tag("New User", state)
     end
 
     message
   end
 
-  @spec add_unread_tag(Message.t(), map()) :: Message.t()
-  defp add_unread_tag(message, state) do
+  @spec add_status_tag(Message.t(), String.t(), map()) :: Message.t()
+  defp add_status_tag(message, status, state),
+    do: add_tag(message, state.status_map[status])
+
+  @spec add_tag(Message.t(), integer, String.t() | nil) :: Message.t()
+  defp add_tag(message, tag_id, value \\ nil) do
     Tags.create_message_tag(%{
       message_id: message.id,
-      tag_id: state.status_map["Unread"]
-    })
-
-    message
-  end
-
-  @spec add_new_user_tag(Message.t(), map()) :: Message.t()
-  defp add_new_user_tag(message, state) do
-    Tags.create_message_tag(%{
-      message_id: message.id,
-      tag_id: state.status_map["New Contact"]
-    })
-
-    message
-  end
-
-  @spec add_numeric_tag(Message.t(), String.t(), atom() | map()) :: Message.t()
-  defp add_numeric_tag(message, value, state) do
-    Tags.create_message_tag(%{
-      message_id: message.id,
-      tag_id: state.numeric_tag_id,
+      tag_id: tag_id,
       value: value
-    })
-
-    message
-  end
-
-  @spec add_keyword_tag(Message.t(), String.t(), atom() | map()) :: Message.t()
-  defp add_keyword_tag(message, value, _state) do
-    Tags.create_message_tag(%{
-      message_id: message.id,
-      tag_id: String.to_integer(value)
     })
 
     message

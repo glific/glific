@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   use Wormwood.GQLCase
 
   setup do
+    Glific.Seeds.seed_language()
     provider = Glific.Seeds.seed_providers()
     contact = Glific.Seeds.seed_contacts()
     Glific.Seeds.seed_organizations(provider, contact)

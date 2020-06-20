@@ -137,7 +137,7 @@ defmodule Glific.SeedsScale do
     |> Enum.flat_map(&create_conversation(&1))
     # this enables us to send smaller chunks to postgres for insert
     |> Enum.chunk_every(50)
-    |> Enum.map(&Repo.insert_all(Message, &1, [timeout: 120_000]))
+    |> Enum.map(&Repo.insert_all(Message, &1, timeout: 120_000))
   end
 
   defp seed_message_tags do

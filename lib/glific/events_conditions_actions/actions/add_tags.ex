@@ -108,11 +108,11 @@ defmodule Glific.EventsConditionsActions.Action.AddTags do
     message
   end
 
-  @spec add_keyword_tag(Message.t(), String.t(), atom() | map()) :: Message.t()
+  @spec add_keyword_tag(Message.t(), integer, atom() | map()) :: Message.t()
   defp add_keyword_tag(message, value, _state) do
     Tags.create_message_tag(%{
       message_id: message.id,
-      tag_id: String.to_integer(value)
+      tag_id: value
     })
 
     message

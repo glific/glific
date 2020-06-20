@@ -2,6 +2,7 @@ fragment LanguageFields on LanguageResult {
   language {
     id
     label
+    label_locale
     locale
   }
 }

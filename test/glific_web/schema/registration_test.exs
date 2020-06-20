@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.Query.RegistrationTest do
+defmodule GlificWeb.Schema.RegistrationTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
@@ -10,6 +10,6 @@ defmodule GlificWeb.Schema.Query.RegistrationTest do
         variables: %{"input" => %{"name" => "John", "phone" => "919820198765"}}
       )
 
-    response = get_in(query_data, [:data, "sendOtp"]) != nil
+    assert get_in(query_data, [:data, "sendOtp"]) != nil
   end
 end
