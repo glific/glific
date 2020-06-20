@@ -21,7 +21,8 @@ defmodule Glific.Settings do
     args
     |> Enum.reduce(Language, fn
       {:label, label}, query ->
-        from q in query, where: ilike(q.label, ^"%#{label}%")
+        from q in query,
+          where: ilike(q.label, ^"%#{label}%") or ilike(q.label_locale, ^"%#{label}%")
 
       {:locale, locale}, query ->
         from q in query, where: ilike(q.locale, ^"%#{locale}%")

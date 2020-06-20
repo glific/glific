@@ -1,11 +1,10 @@
-defmodule Glific.TaggersTest do
+defmodule Glific.TaggersNumericTest do
   use Glific.DataCase, async: true
 
   alias Glific.{
     Messages.Message,
     Taggers,
-    Taggers.Keyword,
-    Taggers.Numeric,
+    Taggers.Numeric
   }
 
   # and some random ordinals, hindi numbers, and emojis
@@ -52,7 +51,7 @@ defmodule Glific.TaggersTest do
     )
   end
 
-  test "string clean does a good jonb of cleaning string, but leaves unicode and hindi intact" do
+  test "taggers string clean does a good jonb of cleaning string, but leaves unicode and hindi intact" do
     Enum.map(
       @checker,
       fn {_, v} -> assert Taggers.string_clean(v) == String.downcase(v) end

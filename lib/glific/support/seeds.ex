@@ -40,9 +40,24 @@ defmodule Glific.Seeds do
     tags = [
       # Intent of message
       %{label: "Compliment", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Good Bye", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Greeting", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Thank You", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{
+        label: "Good Bye",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["bye", "byebye", "goodbye", "goodnight", "goodnite"]
+      },
+      %{
+        label: "Greeting",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["hello", "good morning", "hi", "hey"]
+      },
+      %{
+        label: "Thank You",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["thanks", "thank you", "awesome", "great"]
+      },
 
       # Status of Message
       %{label: "Critical", language_id: en_us.id, parent_id: message_tags_mt.id},
