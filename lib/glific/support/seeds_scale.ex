@@ -134,12 +134,13 @@ defmodule Glific.SeedsScale do
     Repo.query!("ALTER TABLE messages DISABLE TRIGGER update_search_message_trigger;")
 
     # get all beneficiaries ids
-    Repo.all(from c in "contacts", select: c.id, where: c.id != 1)
-    |> Enum.shuffle()
-    |> Enum.flat_map(&create_conversation(&1))
-    # this enables us to send smaller chunks to postgres for insert
-    |> Enum.chunk_every(1000)
-    |> Enum.map(&Repo.insert_all(Message, &1, timeout: 120_000))
+    _ =
+      Repo.all(from c in "contacts", select: c.id, where: c.id != 1)
+      |> Enum.shuffle()
+      |> Enum.flat_map(&create_conversation(&1))
+      # this enables us to send smaller chunks to postgres for insert
+      |> Enum.chunk_every(1000)
+      |> Enum.map(&Repo.insert_all(Message, &1, timeout: 120_000))
 
     Repo.query!("ALTER TABLE messages ENABLE TRIGGER update_search_message_trigger;")
   end
@@ -149,14 +150,15 @@ defmodule Glific.SeedsScale do
 
     Repo.query!("ALTER TABLE messages_tags DISABLE TRIGGER update_search_message_trigger;")
 
-    Repo.all(from m in "messages", select: m.id, where: m.receiver_id == 1)
-    |> Enum.shuffle()
-    |> Enum.reduce([], fn x, acc -> create_message_tag(x, tag_ids, acc) end)
-    |> Enum.chunk_every(1000)
-    |> Enum.map(&Repo.insert_all(MessageTag, &1))
+    _ =
+      Repo.all(from m in "messages", select: m.id, where: m.receiver_id == 1)
+      |> Enum.shuffle()
+      |> Enum.reduce([], fn x, acc -> create_message_tag(x, tag_ids, acc) end)
+      |> Enum.chunk_every(1000)
+      |> Enum.map(&Repo.insert_all(MessageTag, &1))
 
     Repo.query!("ALTER TABLE messages_tags ENABLE TRIGGER update_search_message_trigger;")
-end
+  end
 
   @doc false
   @spec seed_scale :: nil
