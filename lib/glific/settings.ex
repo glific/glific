@@ -109,7 +109,7 @@ defmodule Glific.Settings do
   @spec delete_language(Language.t()) :: {:ok, Language.t()} | {:error, Ecto.Changeset.t()}
   def delete_language(%Language{} = language) do
     language
-    |> Ecto.Changeset.change()
+    |> Language.delete_changeset()
     |> Repo.delete()
   end
 

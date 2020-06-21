@@ -53,6 +53,6 @@ defmodule Glific.Settings.Language do
   def delete_changeset(language) do
     language
     |> cast(%{}, @required_fields ++ @optional_fields)
-    |> foreign_key_constraint(:tags_language_id_fk)
+    |> foreign_key_constraint(:tags_language_id_fkey, name: :tags_language_id_fkey)
   end
 end

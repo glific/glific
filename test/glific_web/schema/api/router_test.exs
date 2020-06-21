@@ -47,14 +47,14 @@ defmodule GlificWeb.RouterTest do
       response =
         build_conn()
         |> post("/secure/api", %{query: "", variables: %{}})
+
       assert response.status == 401
 
       response =
         build_conn()
         |> post("/secure/graphiql", %{query: "", variables: %{}})
+
       assert response.status == 401
     end
-
   end
-
 end

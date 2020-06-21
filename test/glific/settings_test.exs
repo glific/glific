@@ -34,6 +34,9 @@ defmodule Glific.SettingsTest do
     test "list_languages/0 returns all languages" do
       language = language_fixture()
       assert Settings.list_languages() == [language]
+
+      assert Settings.list_languages(%{label: "English", locale: "en"}) == [language]
+      assert Settings.list_languages(%{label: "English", locale: "hi"}) == []
     end
 
     test "count_languages/0 returns count of all languages" do
@@ -92,6 +95,13 @@ defmodule Glific.SettingsTest do
     test "table constraint on languages with the same label and locale" do
       _language = language_fixture()
       assert {:error, %Ecto.Changeset{}} = Settings.create_language(@valid_attrs)
+    end
+
+    test "deleting a language with tags associated, should result in an error" do
+      lang = Glific.Seeds.seed_language()
+      Glific.Seeds.seed_tag(lang)
+
+      assert {:error, %Ecto.Changeset{}} = Settings.delete_language(elem(lang, 0))
     end
   end
 end
