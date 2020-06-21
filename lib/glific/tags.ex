@@ -191,15 +191,20 @@ defmodule Glific.Tags do
   end
 
   @doc """
-    Filter all the status tag and returns as a map
+  Filter all the status tag and returns as a map
   """
+  @spec status_map() :: %{String.t() => integer}
+  def status_map,
+    do: tags_map(["Language", "New Contact", "Not Replied", "Unread"])
 
-  @spec status_map() :: map()
-  def status_map do
-    status_tags = ["Language", "New Contact", "Not Replied", "Unread"]
-
+  @doc """
+  Generic function to build a tag map for easy queries. Suspect we'll need it
+  for all objects soon, and will promote this to Repo
+  """
+  @spec tags_map([String.t()]) :: %{String.t() => integer}
+  def tags_map(tags) do
     Tag
-    |> where([t], t.label in ^status_tags)
+    |> where([t], t.label in ^tags)
     |> select([:id, :label])
     |> Repo.all()
     |> Enum.reduce(%{}, fn tag, acc -> Map.put(acc, tag.label, tag.id) end)

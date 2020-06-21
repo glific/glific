@@ -23,13 +23,17 @@ defmodule Glific.Processor.ConsumerAutomation do
   @max_demand 1
 
   @doc false
-  @spec start_link(any) :: GenServer.on_start()
-  def start_link(_), do: GenStage.start_link(__MODULE__, :ok, name: __MODULE__)
+  @spec start_link([]) :: GenServer.on_start()
+  def start_link(opts) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    producer = Keyword.get(opts, :producer, Glific.Processor.Producer)
+    GenStage.start_link(__MODULE__, [producer: producer], name: name)
+  end
 
   @doc false
-  def init(:ok) do
+  def init(opts) do
     state = %{
-      producer: Glific.Processor.ConsumerTagger
+      producer: opts[:producer]
     }
 
     {:consumer, state,

@@ -12,25 +12,28 @@ defmodule Glific.Processor.ConsumerTagger do
     Messages.Message,
     Repo,
     Taggers,
-    Taggers.Keyword,
     Taggers.Numeric,
     Taggers.Status,
     Tags,
     Tags.Tag
   }
 
-  @min_demand 0
-  @max_demand 1
+  @min_demand 1
+  @max_demand 5
 
   @doc false
-  @spec start_link(any) :: GenServer.on_start()
-  def start_link(_), do: GenStage.start_link(__MODULE__, :ok, name: __MODULE__)
+  @spec start_link([]) :: GenServer.on_start()
+  def start_link(opts) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    producer = Keyword.get(opts, :producer, Glific.Processor.Producer)
+    GenStage.start_link(__MODULE__, [producer: producer], name: name)
+  end
 
   @doc false
-  def init(:ok) do
+  def init(opts) do
     state = %{
-      producer: Glific.Processor.Producer,
-      keyword_map: Keyword.get_keyword_map(),
+      producer: opts[:producer],
+      keyword_map: Taggers.Keyword.get_keyword_map(),
       status_map: Status.get_status_map(),
       numeric_map: Numeric.get_numeric_map(),
       numeric_tag_id: 0
@@ -70,8 +73,8 @@ defmodule Glific.Processor.ConsumerTagger do
   @doc false
   def handle_events(messages, _from, state) do
     messages_with_tags = Enum.map(messages, &process_message(&1, state))
-
     {:noreply, messages_with_tags, state}
+    # {:noreply, [], state}
   end
 
   @spec process_message(atom() | Message.t(), map()) :: Message.t()
@@ -97,7 +100,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @spec keyword_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()
   defp keyword_tagger(message, body, state) do
-    case Keyword.tag_body(body, state.keyword_map) do
+    case Taggers.Keyword.tag_body(body, state.keyword_map) do
       {:ok, value} -> add_tag(message, value, body)
       _ -> message
     end
