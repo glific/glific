@@ -42,14 +42,8 @@ defmodule GlificWeb.Schema.GenericTypes do
   A forgivable parser which allows integers or strings to represent integers
   """
   @spec parse_maybe_integer(Absinthe.Blueprint.Input.String.t()) :: {:ok, integer} | :error
-  def parse_maybe_integer(%Absinthe.Blueprint.Input.String{value: value}) when is_integer(value),
-    do: {:ok, value}
-
   def parse_maybe_integer(%Absinthe.Blueprint.Input.String{value: value}) when is_binary(value) do
-    case Integer.parse(value) do
-      {n, _} -> {:ok, n}
-      :error -> :error
-    end
+    Glific.parse_maybe_integer(value)
   end
 
   def parse_maybe_integer(_), do: :error

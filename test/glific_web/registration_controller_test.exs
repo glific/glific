@@ -7,6 +7,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     @valid_params %{
       "user" => %{
         "phone" => "+919820198765",
+        "name" => "John Doe",
         "password" => @password,
         "password_confirmation" => @password
       }
@@ -14,6 +15,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     @invalid_params %{
       "user" => %{
         "phone" => "+919820198765",
+        "name" => "John Doe",
         "password" => @password,
         "password_confirmation" => ""
       }
