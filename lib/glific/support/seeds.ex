@@ -33,7 +33,7 @@ defmodule Glific.Seeds do
 
   @doc false
   @spec seed_tag({Language.t(), Language.t()}) :: nil
-  def seed_tag({en_us, _hi_in}) do
+  def seed_tag({hi_in, en_us}) do
     message_tags_mt = Repo.insert!(%Tag{label: "Messages", language: en_us})
     message_tags_ct = Repo.insert!(%Tag{label: "Contacts", language: en_us})
 
@@ -98,6 +98,7 @@ defmodule Glific.Seeds do
     Repo.insert_all(Tag, tag_entries)
 
     Repo.insert!(%Tag{label: "This is for testing", language: en_us})
+    Repo.insert!(%Tag{label: "यह परीक्षण के लिए है", language: hi_in})
   end
 
   @doc false
@@ -319,7 +320,7 @@ defmodule Glific.Seeds do
 
   @doc false
   @spec seed_session_templates({Language.t(), Language.t()}) :: nil
-  def seed_session_templates({en_us, hi_in}) do
+  def seed_session_templates({hi_in, en_us}) do
     session_template_parent =
       Repo.insert!(%SessionTemplate{
         label: "Default Template Label",
@@ -432,9 +433,9 @@ defmodule Glific.Seeds do
   """
   @spec seed :: nil
   def seed do
-    {hi_in, en_us} = seed_language()
+    lang = seed_language()
 
-    seed_tag({en_us, hi_in})
+    seed_tag(lang)
 
     {default_contact} = seed_contacts()
 
@@ -442,7 +443,7 @@ defmodule Glific.Seeds do
 
     seed_organizations({default_provider}, {default_contact})
 
-    seed_session_templates({en_us, hi_in})
+    seed_session_templates(lang)
 
     seed_messages()
 
