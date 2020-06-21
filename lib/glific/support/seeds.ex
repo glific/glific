@@ -50,13 +50,13 @@ defmodule Glific.Seeds do
         label: "Greeting",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
-        keywords: ["hello", "good morning", "hi", "hey"]
+        keywords: ["hello", "goodmorning", "hi", "hey"]
       },
       %{
         label: "Thank You",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
-        keywords: ["thanks", "thank you", "awesome", "great"]
+        keywords: ["thanks", "thankyou", "awesome", "great"]
       },
 
       # Status of Message

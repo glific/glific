@@ -9,8 +9,9 @@ defmodule Glific.Processor.Producer do
 
   @doc false
   @spec start_link(any) :: GenServer.on_start()
-  def start_link(_) do
-    GenStage.start_link(__MODULE__, :ok, name: __MODULE__)
+  def start_link(opts) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenStage.start_link(__MODULE__, :ok, name: name)
   end
 
   @doc false

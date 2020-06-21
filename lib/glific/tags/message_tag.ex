@@ -35,5 +35,7 @@ defmodule Glific.Tags.MessageTag do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:message_id, :tag_id])
+    |> foreign_key_constraint(:message_id)
+    |> foreign_key_constraint(:tag_id)
   end
 end
