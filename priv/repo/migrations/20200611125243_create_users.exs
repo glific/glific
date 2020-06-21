@@ -6,7 +6,10 @@ defmodule Glific.Repo.Migrations.CreateUsers do
       add :phone, :string, null: false
       add :password_hash, :string
 
-      timestamps()
+      add :name, :string
+      add :roles, {:array, :string}, default: ["none"]
+
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:users, [:phone])

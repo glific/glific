@@ -1,5 +1,5 @@
 defmodule Glific.SettingsTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase, async: false
 
   alias Glific.{
     Settings,

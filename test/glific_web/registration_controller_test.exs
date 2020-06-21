@@ -7,6 +7,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     @valid_params %{
       "user" => %{
         "phone" => "+919820198765",
+        "name" => "John Doe",
         "password" => @password,
         "password_confirmation" => @password
       }
@@ -14,6 +15,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     @invalid_params %{
       "user" => %{
         "phone" => "+919820198765",
+        "name" => "John Doe",
         "password" => @password,
         "password_confirmation" => ""
       }
@@ -41,8 +43,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :create, invalid_params))
 
-      assert json = json_response(conn, 401)
-      assert json["error"]["status"] == 401
+      assert json = json_response(conn, 500)
+      assert json["error"]["status"] == 500
     end
 
     test "with invalid params", %{conn: conn} do
@@ -60,6 +62,21 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json["error"]["status"] == 500
       assert json["error"]["errors"]["password_confirmation"] == ["does not match confirmation"]
       # assert json["error"]["errors"]["phone"] == ["has invalid format"]
+    end
+  end
+
+  describe "send_otp/2" do
+    @valid_params %{
+      "user" => %{
+        "phone" => "919820198765"
+      }
+    }
+
+    test "send otp", %{conn: conn} do
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, @valid_params))
+      assert json = json_response(conn, 200)
+      assert get_in(json, ["data", "phone"]) == @valid_params["user"]["phone"]
+      assert String.length(get_in(json, ["data", "otp"])) == 6
     end
   end
 end

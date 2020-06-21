@@ -10,6 +10,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
       %User{}
       |> User.changeset(%{
         phone: "+919820198765",
+        name: "Jane Jana",
         password: @password,
         password_confirmation: @password
       })
@@ -19,8 +20,12 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
   end
 
   describe "create/2" do
-    @valid_params %{"user" => %{"phone" => "+919820198765", "password" => @password}}
-    @invalid_params %{"user" => %{"phone" => "+919820198765", "password" => "invalid"}}
+    @valid_params %{
+      "user" => %{"phone" => "+919820198765", "name" => "Jane Doe", "password" => @password}
+    }
+    @invalid_params %{
+      "user" => %{"phone" => "+919820198765", "name" => "Jane Doe", "password" => "invalid"}
+    }
 
     test "with valid params", %{conn: conn} do
       conn = post(conn, Routes.api_v1_session_path(conn, :create, @valid_params))

@@ -14,7 +14,14 @@ defmodule Glific.Users.User do
           updated_at: :utc_datetime | nil
         }
 
+  @required_fields [:phone, :name, :password]
+  @optional_fields [:name, :roles]
+  @user_roles ~w(none basic advanced admin)
+
   schema "users" do
+    field :name, :string
+    field :roles, {:array, :string}, default: ["none"]
+
     pow_user_fields()
 
     timestamps()
@@ -26,6 +33,9 @@ defmodule Glific.Users.User do
   """
   def changeset(user_or_changeset, attrs) do
     user_or_changeset
+    |> Changeset.cast(attrs, @required_fields ++ @optional_fields)
+    |> Changeset.validate_required(@required_fields)
+    |> Changeset.validate_inclusion(:roles, @user_roles)
     |> glific_phone_field_changeset(attrs, @pow_config)
     |> current_password_changeset(attrs, @pow_config)
     |> password_changeset(attrs, @pow_config)
