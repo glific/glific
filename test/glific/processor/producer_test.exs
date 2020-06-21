@@ -23,7 +23,7 @@ defmodule Glific.Processor.ProducerTest do
 
   alias Glific.{
     Fixtures,
-    Processor.Producer,
+    Processor.Producer
   }
 
   setup do

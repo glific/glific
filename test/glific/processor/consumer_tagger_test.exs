@@ -5,7 +5,7 @@ defmodule TestProducer do
     Fixtures,
     Processor.ConsumerTagger,
     Repo,
-    Tags,
+    Tags
   }
 
   @checks %{
@@ -18,10 +18,12 @@ defmodule TestProducer do
     6 => {"thanks", "Thank You", nil},
     7 => {"ek", "Numeric", "1"},
     8 => {"हिंदी", "Language", nil},
-    9 => {to_string(['\u0039', 65_039, 8419]), "Numeric", "9"},
+    9 => {to_string(['\u0039', 65_039, 8419]), "Numeric", "9"}
   }
 
-  def get_checks(), do: @checks
+  @doc false
+  @spec get_checks() :: %{integer => {}}
+  def get_checks, do: @checks
 
   def start_link(demand) do
     GenStage.start_link(__MODULE__, demand, name: TestProducer)
@@ -35,13 +37,14 @@ defmodule TestProducer do
   end
 
   def handle_demand(demand, counter) when demand > 0 do
-    events = Enum.map(
-      counter..(counter + demand - 1),
-      fn c -> Fixtures.message_fixture(%{body: elem(@checks[rem(c, 10)], 0)})
-      end)
+    events =
+      Enum.map(
+        counter..(counter + demand - 1),
+        fn c -> Fixtures.message_fixture(%{body: elem(@checks[rem(c, 10)], 0)}) end
+      )
+
     {:noreply, events, demand + counter}
   end
-
 end
 
 defmodule Glific.Processor.ConsumerTaggerTest do
@@ -52,7 +55,7 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     Processor.ConsumerTagger,
     Repo,
     Tags,
-    Tags.MessageTag,
+    Tags.MessageTag
   }
 
   setup do
@@ -66,8 +69,10 @@ defmodule Glific.Processor.ConsumerTaggerTest do
 
   test "should behave like consumer" do
     {:ok, producer} = TestProducer.start_link(1)
-    {:ok, consumer} = ConsumerTagger.start_link([producer: producer, name: TestConsumerTagger])
-    {:ok, _automation} = ConsumerAutomation.start_link([producer: consumer, name: TestConsumerAutomation])
+    {:ok, consumer} = ConsumerTagger.start_link(producer: producer, name: TestConsumerTagger)
+
+    {:ok, _automation} =
+      ConsumerAutomation.start_link(producer: consumer, name: TestConsumerAutomation)
 
     Process.register(self(), :test)
     assert_receive({:called_back}, 1000)
@@ -78,25 +83,37 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     # check the message tags
     tags = ["Language", "Unread", "Greeting", "Thank You", "Numeric", "Good Bye"]
     tag_ids = Tags.tags_map(tags)
-    Enum.map(TestProducer.get_checks(),
+
+    Enum.map(
+      TestProducer.get_checks(),
       # ensure that a tag with that value exists in the DB
       fn
         {_, {_, tag, nil}} ->
           {:ok, result} =
-            Repo.query("""
-            SELECT count(*) FROM messages_tags
-            WHERE tag_id = $1
-            """, [tag_ids[tag]])
-        [[count]] = result.rows
-        assert count > 0
-      {_, {_, tag, value}} ->
+            Repo.query(
+              """
+              SELECT count(*) FROM messages_tags
+              WHERE tag_id = $1
+              """,
+              [tag_ids[tag]]
+            )
+
+          [[count]] = result.rows
+          assert count > 0
+
+        {_, {_, tag, value}} ->
           {:ok, result} =
-            Repo.query("""
-            SELECT count(*) FROM messages_tags
-            WHERE tag_id = $1 AND value = $2
-            """, [tag_ids[tag], value])
-        [[count]] = result.rows
-        assert count > 0
-      end)
+            Repo.query(
+              """
+              SELECT count(*) FROM messages_tags
+              WHERE tag_id = $1 AND value = $2
+              """,
+              [tag_ids[tag], value]
+            )
+
+          [[count]] = result.rows
+          assert count > 0
+      end
+    )
   end
 end
