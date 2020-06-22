@@ -56,7 +56,6 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @doc false
   def handle_events(messages, _from, state) do
-    IO.inspect(messages)
     messages_with_tags = Enum.map(messages, &process_message(&1, state))
     {:noreply, messages_with_tags, state}
   end
