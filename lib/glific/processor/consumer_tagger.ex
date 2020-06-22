@@ -18,8 +18,8 @@ defmodule Glific.Processor.ConsumerTagger do
     Tags.Tag
   }
 
-  @min_demand 1
-  @max_demand 5
+  @min_demand 0
+  @max_demand 1
 
   @doc false
   @spec start_link([]) :: GenServer.on_start()
@@ -56,9 +56,9 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @doc false
   def handle_events(messages, _from, state) do
+    IO.inspect(messages)
     messages_with_tags = Enum.map(messages, &process_message(&1, state))
     {:noreply, messages_with_tags, state}
-    # {:noreply, [], state}
   end
 
   @spec process_message(atom() | Message.t(), map()) :: Message.t()
