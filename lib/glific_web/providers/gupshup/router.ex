@@ -34,8 +34,6 @@ defmodule GlificWeb.Providers.Gupshup.Router do
   """
   scope "/gupshup", Controllers do
     scope "/user-event" do
-      post("/", UserEventController, :user_event)
-      post("/sandbox-start", UserEventController, :sandbox_start)
       post("/opted-in", UserEventController, :opted_in)
       post("/opted-out", UserEventController, :opted_out)
       post("/*unknown", DefaultController, :unknown)
@@ -52,14 +50,11 @@ defmodule GlificWeb.Providers.Gupshup.Router do
     end
 
     scope "/message" do
-      post("/", MessageController, :message)
       post("/text", MessageController, :text)
       post("/image", MessageController, :image)
       post("/file", MessageController, :file)
       post("/audio", MessageController, :audio)
       post("/video", MessageController, :video)
-      post("/contact", MessageController, :contact)
-      post("/location", MessageController, :location)
       post("/*unknown", DefaultController, :unknown)
     end
 

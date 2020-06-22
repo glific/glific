@@ -23,7 +23,8 @@ defmodule GlificWeb.UserEventControllerTest do
 
   describe "handler" do
     test "handler should return nil data", %{conn: conn} do
-      conn = post(conn, "/gupshup", @user_event_request_params)
+      params = put_in(@user_event_request_params, ["payload", "type"], "not defined")
+      conn = post(conn, "/gupshup", params)
       assert json_response(conn, 200) == nil
     end
   end

@@ -107,5 +107,68 @@ defmodule GlificWeb.MessageControllerTest do
       assert message.sender.phone ==
                get_in(setup_config.message_params, ["payload", "sender", "phone"])
     end
+
+    test "Incoming audio message should be stored in the database",
+         setup_config = %{conn: conn} do
+      message_params =
+        setup_config.message_params
+        |> put_in(["payload", "type"], "audio")
+        |> put_in(["payload", "payload", "caption"], nil)
+
+      conn = post(conn, "/gupshup", message_params)
+      json_response(conn, 200)
+      provider_message_id = get_in(message_params, ["payload", "id"])
+      {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      message = Glific.Repo.preload(message, [:media, :sender])
+
+      # test media fields
+      assert message.media.url == setup_config.image_payload["url"]
+      assert message.media.source_url == setup_config.image_payload["url"]
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(setup_config.message_params, ["payload", "sender", "phone"])
+    end
+
+    test "Incoming video message should be stored in the database",
+         setup_config = %{conn: conn} do
+      message_params =
+        setup_config.message_params
+        |> put_in(["payload", "type"], "video")
+
+      conn = post(conn, "/gupshup", message_params)
+      json_response(conn, 200)
+      provider_message_id = get_in(message_params, ["payload", "id"])
+      {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      message = Glific.Repo.preload(message, [:media, :sender])
+
+      # test media fields
+      assert message.media.url == setup_config.image_payload["url"]
+      assert message.media.source_url == setup_config.image_payload["url"]
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(setup_config.message_params, ["payload", "sender", "phone"])
+    end
+
+    test "Incoming file message should be stored in the database", setup_config = %{conn: conn} do
+      message_params =
+        setup_config.message_params
+        |> put_in(["payload", "type"], "file")
+
+      conn = post(conn, "/gupshup", message_params)
+      json_response(conn, 200)
+      provider_message_id = get_in(message_params, ["payload", "id"])
+      {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      message = Glific.Repo.preload(message, [:media, :sender])
+
+      # test media fields
+      assert message.media.url == setup_config.image_payload["url"]
+      assert message.media.source_url == setup_config.image_payload["url"]
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(setup_config.message_params, ["payload", "sender", "phone"])
+    end
   end
 end
