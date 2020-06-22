@@ -3,7 +3,7 @@ defmodule Glific.ConversationsTest do
   use Oban.Testing, repo: Glific.Repo
 
   alias Glific.{
-    Contacts
+    Contacts,
     Conversations.Conversation,
     Messages
   }
@@ -19,7 +19,7 @@ defmodule Glific.ConversationsTest do
     test "new/2 will create a conversation object with contact and messages" do
       [contact | _] = Contacts.list_contacts()
       messages = Messages.list_messages()
-      conversation = Conversations.Conversation.new(contact, messages)
+      conversation = Conversation.new(contact, messages)
       assert conversation.id == nil
       assert conversation.contact == contact
       assert conversation.messages == messages
@@ -28,7 +28,7 @@ defmodule Glific.ConversationsTest do
     test "conversation struct will be generate via embedded schema " do
       [contact | _] = Contacts.list_contacts()
       messages = Messages.list_messages()
-      conversation = %Conversations.Conversation{contact: contact, messages: messages}
+      conversation = %Conversation{contact: contact, messages: messages}
       assert conversation.contact == contact
       assert conversation.messages == messages
     end
