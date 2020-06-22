@@ -15,13 +15,6 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
   end
 
   @doc """
-  For any message status which does not have a callback defined in this controller
-  """
-  @spec message_event(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def message_event(conn, params),
-    do: update_status(conn, params, :enqueued)
-
-  @doc """
   Message status when the message has been sent to gupshup
   """
   @spec enqueued(Plug.Conn.t(), map()) :: Plug.Conn.t()
@@ -33,7 +26,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
   """
   @spec failed(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def failed(conn, params),
-    do: update_status(conn, params, :failed)
+    do: update_status(conn, params, :error)
 
   @doc """
   Message has been sent to whats app via Gupshup

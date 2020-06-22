@@ -1,4 +1,4 @@
-defmodule GlificWeb.UserEventControllerTest do
+defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
   use GlificWeb.ConnCase
 
   alias Faker.Phone

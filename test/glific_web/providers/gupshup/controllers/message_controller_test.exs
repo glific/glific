@@ -1,4 +1,4 @@
-defmodule GlificWeb.MessageControllerTest do
+defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   use GlificWeb.ConnCase
 
   alias Glific.Messages.Message

@@ -40,7 +40,6 @@ defmodule GlificWeb.Providers.Gupshup.Router do
     end
 
     scope "/message-event" do
-      post("/", MessageEventController, :message_event)
       post("/enqueued", MessageEventController, :enqueued)
       post("/failed", MessageEventController, :failed)
       post("/sent", MessageEventController, :sent)
