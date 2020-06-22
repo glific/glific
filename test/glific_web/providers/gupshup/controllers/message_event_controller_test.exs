@@ -4,7 +4,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
   @message_event_request_params %{
     "app" => "Glific App",
     "payload" => %{
-      "destination" => "919917443994",
+      "destination" => "1234567851",
       "gsId" => "853bab23-0963-42c7-8436-7fe4f5866c76",
       "id" => "gBEGkZkXRDmUAgl5FpzpjNgI5Co",
       "payload" => %{
