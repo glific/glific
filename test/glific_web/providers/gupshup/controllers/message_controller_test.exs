@@ -62,6 +62,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       # Provider message id should be updated
       assert message.provider_status == :delivered
       assert message.flow == :inbound
+      assert message.sender.last_message_at != nil
+      assert true == Timex.diff(DateTime.utc_now(), message.sender.last_message_at, :seconds) < 10
 
       # Sender should be stored into the db
       assert message.sender.phone ==
@@ -86,10 +88,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       %{message_params: message_params, image_payload: image_payload}
     end
 
-    test "Incoming image message should be stored in the database", setup_config = %{conn: conn} do
+    test "Incoming image message should be stored in the database",
+         setup_config = %{conn: conn} do
       conn = post(conn, "/gupshup", setup_config.message_params)
       json_response(conn, 200)
-
 
       provider_message_id = get_in(setup_config.message_params, ["payload", "id"])
       {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
@@ -104,8 +106,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.media.url == setup_config.image_payload["url"]
       assert message.media.source_url == setup_config.image_payload["url"]
 
+      assert true == Timex.diff(DateTime.utc_now(), message.sender.last_message_at, :seconds) < 10
+
       # Sender should be stored into the db
-      assert message.sender.phone == get_in(setup_config.message_params, ["payload", "sender", "phone"])
+      assert message.sender.phone ==
+               get_in(setup_config.message_params, ["payload", "sender", "phone"])
     end
 
     test "Incoming audio message should be stored in the database",
@@ -126,12 +131,16 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.media.source_url == setup_config.image_payload["url"]
 
       # Sender should be stored into the db
-      assert message.sender.phone == get_in(setup_config.message_params, ["payload", "sender", "phone"])
+      assert message.sender.phone ==
+               get_in(setup_config.message_params, ["payload", "sender", "phone"])
     end
 
-    test "Incoming video message should be stored in the database", setup_config = %{conn: conn} do
-      message_params = setup_config.message_params
+    test "Incoming video message should be stored in the database",
+         setup_config = %{conn: conn} do
+      message_params =
+        setup_config.message_params
         |> put_in(["payload", "type"], "video")
+
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
       provider_message_id = get_in(message_params, ["payload", "id"])
@@ -148,8 +157,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     end
 
     test "Incoming file message should be stored in the database", setup_config = %{conn: conn} do
-      message_params = setup_config.message_params
-          |> put_in(["payload", "type"], "file")
+      message_params =
+        setup_config.message_params
+        |> put_in(["payload", "type"], "file")
 
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)

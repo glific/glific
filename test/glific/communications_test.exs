@@ -2,6 +2,7 @@ defmodule Glific.CommunicationsTest do
   use Glific.DataCase, async: true
   use Oban.Testing, repo: Glific.Repo
 
+  alias Faker.Phone
   alias Glific.Messages
 
   describe "communications" do
@@ -41,19 +42,15 @@ defmodule Glific.CommunicationsTest do
     @sender_attrs %{
       name: "some sender",
       optin_time: ~U[2010-04-17 14:00:00Z],
-      optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "12345671",
-      status: :valid,
-      provider_status: :invalid
+      last_message_at: DateTime.utc_now()
     }
 
     @receiver_attrs %{
       name: "some receiver",
       optin_time: ~U[2010-04-17 14:00:00Z],
-      optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "101013131",
-      status: :valid,
-      provider_status: :invalid
+      last_message_at: DateTime.utc_now()
     }
 
     @valid_attrs %{
@@ -77,7 +74,7 @@ defmodule Glific.CommunicationsTest do
     end
 
     defp message_fixture(attrs \\ %{}) do
-      valid_attrs = Map.merge(@valid_attrs, foreign_key_constraint())
+      valid_attrs = Map.merge(foreign_key_constraint(), @valid_attrs)
 
       {:ok, message} =
         valid_attrs
@@ -181,6 +178,39 @@ defmodule Glific.CommunicationsTest do
       assert message.provider_message_id != nil
       assert message.provider_status == :enqueued
       assert message.flow == :outbound
+    end
+
+    test "sending message to contact having invalid status will return error" do
+      {:ok, receiver} =
+        @receiver_attrs
+        |> Map.merge(%{status: :invalid, phone: Phone.EnUs.phone()})
+        |> Glific.Contacts.create_contact()
+
+      message = message_fixture(%{receiver_id: receiver.id})
+      assert {:error, _msg} = Communications.send_message(message)
+    end
+
+    test "sending message to contact having invalid provider status will return error" do
+      {:ok, receiver} =
+        @receiver_attrs
+        |> Map.merge(%{provider_status: :invalid, phone: Phone.EnUs.phone()})
+        |> Glific.Contacts.create_contact()
+
+      message = message_fixture(%{receiver_id: receiver.id})
+      assert {:error, _msg} = Communications.send_message(message)
+    end
+
+    test "sending message if last received message is more then 24 hours returns error" do
+      {:ok, receiver} =
+        @receiver_attrs
+        |> Map.merge(%{
+          phone: Phone.EnUs.phone(),
+          last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
+        })
+        |> Glific.Contacts.create_contact()
+
+      message = message_fixture(%{receiver_id: receiver.id})
+      assert {:error, _msg} = Communications.send_message(message)
     end
 
     test "update_provider_status/2 will update the message status based on provider message ID" do

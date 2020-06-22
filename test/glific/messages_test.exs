@@ -36,8 +36,7 @@ defmodule Glific.MessagesTest do
       optin_time: ~U[2010-04-17 14:00:00Z],
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "12345671",
-      status: :valid,
-      provider_status: :invalid
+      last_message_at: DateTime.utc_now()
     }
 
     @receiver_attrs %{
@@ -45,8 +44,7 @@ defmodule Glific.MessagesTest do
       optin_time: ~U[2010-04-17 14:00:00Z],
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "101013131",
-      status: :valid,
-      provider_status: :invalid
+      last_message_at: DateTime.utc_now()
     }
 
     @valid_attrs %{
