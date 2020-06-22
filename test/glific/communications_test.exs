@@ -184,15 +184,15 @@ defmodule Glific.CommunicationsTest do
     end
 
     test "update_provider_status/2 will update the message status based on provider message ID" do
-        message = message_fixture(%{provider_message_id: Faker.String.base64(36),provider_status: :enqueued})
-        Communications.update_provider_status(message.provider_message_id, :read)
-        message = Messages.get_message!(message.id)
+      message =
+        message_fixture(%{
+          provider_message_id: Faker.String.base64(36),
+          provider_status: :enqueued
+        })
 
-        assert message.provider_status == :read
-
-        # Call communication method with provider id and message status as read
-        # check if status is updated is read or not
-
+      Communications.update_provider_status(message.provider_message_id, :read)
+      message = Messages.get_message!(message.id)
+      assert message.provider_status == :read
     end
   end
 end
