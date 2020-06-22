@@ -13,7 +13,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:11 # postgres image for test database.
+        image: postgres:12 # postgres image for test database.
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
