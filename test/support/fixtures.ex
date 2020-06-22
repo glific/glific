@@ -24,7 +24,7 @@ defmodule Glific.Fixtures do
       optout_time: DateTime.backward(1),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      provider_status: :invalid,
+      provider_status: :invalid
     }
 
     {:ok, contact} =

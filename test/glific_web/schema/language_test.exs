@@ -21,8 +21,8 @@ defmodule GlificWeb.Schema.LanguageTest do
     label_0 = get_in(query_data, [:data, "languages", Access.at(0), "label"])
     label_1 = get_in(query_data, [:data, "languages", Access.at(1), "label"])
 
-    assert (label_0 == "English (United States)" and label_1 == "Hindi (India)") or
-             (label_1 == "English (United States)" and label_0 == "Hindi (India)")
+    assert (label_0 == "English (United States)" and label_1 == "Hindi") or
+             (label_1 == "English (United States)" and label_0 == "Hindi")
   end
 
   test "count returns the number of languages" do
@@ -101,7 +101,7 @@ defmodule GlificWeb.Schema.LanguageTest do
       query_gql_by(:update,
         variables: %{
           "id" => lang.id,
-          "input" => %{"label" => "Hindi (India)", "labelLocale" => "Hindi", "locale" => "hi_IN"}
+          "input" => %{"label" => "Hindi", "labelLocale" => "Hindi", "locale" => "hi_IN"}
         }
       )
 

@@ -21,20 +21,31 @@ defmodule TestConsumerTagger do
       counter: demand,
       new_contact_tag_id: tag_ids["New Contact"],
       language_tag_id: tag_ids["Language"],
-      language_id: language_ids["Hindi"],
+      language_id: language_ids["Hindi"]
     }
+
     {:producer, state}
   end
 
-  defp create_message_new_contact(%{new_contact_tag_id: new_contact_tag_id, language_id: language_id}) do
-    m = Fixtures.message_fixture(%{body: "This is a random first message", language_id: language_id})
+  defp create_message_new_contact(%{
+         new_contact_tag_id: new_contact_tag_id,
+         language_id: language_id
+       }) do
+    m =
+      Fixtures.message_fixture(%{body: "This is a random first message", language_id: language_id})
+
     {:ok, _} = Tags.create_message_tag(%{message_id: m.id, tag_id: new_contact_tag_id})
 
     Repo.preload(m, :tags)
   end
 
-  defp create_message_language(%{language_tag_id: language_tag_id, language_id: language_id}, value) do
-    m = Fixtures.message_fixture(%{body: "This is a random first message", language_id: language_id})
+  defp create_message_language(
+         %{language_tag_id: language_tag_id, language_id: language_id},
+         value
+       ) do
+    m =
+      Fixtures.message_fixture(%{body: "This is a random first message", language_id: language_id})
+
     {:ok, _} = Tags.create_message_tag(%{message_id: m.id, tag_id: language_tag_id, value: value})
 
     Repo.preload(m, :tags)
@@ -68,9 +79,10 @@ defmodule Glific.Processor.ConsumerAutomationTest do
   use Glific.DataCase
 
   alias Glific.{
+    Messages,
     Messages.Message,
     Processor.ConsumerAutomation,
-    Repo,
+    Repo
   }
 
   setup do
@@ -86,7 +98,9 @@ defmodule Glific.Processor.ConsumerAutomationTest do
     original_count = Repo.aggregate(Message, :count)
 
     {:ok, producer} = TestConsumerTagger.start_link(1)
-    {:ok, _consumer} = ConsumerAutomation.start_link(producer: producer, name: TestConsumerAutomation)
+
+    {:ok, _consumer} =
+      ConsumerAutomation.start_link(producer: producer, name: TestConsumerAutomation)
 
     Process.register(self(), :test)
     assert_receive({:called_back}, 1000)
@@ -95,5 +109,14 @@ defmodule Glific.Processor.ConsumerAutomationTest do
     assert Repo.aggregate(Message, :count) > original_count
 
     # Lets add checks here to make sure that we have both hindi and english language messages sent
+    l =
+      Messages.list_messages(%{
+        filter: %{
+          body: "हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें\nType English to receive messages in English"
+        }
+      })
+
+    # since we sent 5 messages, all of which send the language chooser message
+    assert length(l) == 5
   end
 end

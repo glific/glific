@@ -60,6 +60,7 @@ defmodule Glific.Processor.ConsumerAutomation do
   @spec process_tag(Message.t(), Tag.t()) :: Message.t()
   defp process_tag(message, %Tag{label: label}) when label == "New Contact" do
     message = Repo.preload(message, :sender)
+
     with {:ok, session_template} <-
            Repo.fetch_by(SessionTemplate, %{
              shortcode: "new contact",
