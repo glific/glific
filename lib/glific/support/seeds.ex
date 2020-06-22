@@ -22,7 +22,7 @@ defmodule Glific.Seeds do
   @spec seed_language() :: {Language.t(), Language.t()}
   def seed_language do
     {
-      Repo.insert!(%Language{label: "Hindi (India)", label_locale: "हिंदी", locale: "hi_IN"}),
+      Repo.insert!(%Language{label: "Hindi", label_locale: "हिंदी", locale: "hi_IN"}),
       Repo.insert!(%Language{
         label: "English (United States)",
         label_locale: "English",
