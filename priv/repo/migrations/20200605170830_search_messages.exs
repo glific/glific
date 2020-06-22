@@ -58,7 +58,7 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
   end
 
   defp create_view() do
-    drop_view
+    drop_view()
 
     # this view partitions messages which can be used to pick last n messages per contact id
     execute("""

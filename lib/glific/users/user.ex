@@ -56,6 +56,4 @@ defmodule Glific.Users.User do
 
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),
     do: Pow.Ecto.Schema.normalize_user_id_field_value(value)
-
-  defp maybe_normalize_user_id_field_value(any), do: any
 end

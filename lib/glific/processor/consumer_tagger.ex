@@ -54,22 +54,6 @@ defmodule Glific.Processor.ConsumerTagger do
      ]}
   end
 
-  @doc """
-  public endpoint for adding a number and a value
-  """
-  @spec add_numeric(String.t(), integer) :: :ok
-  def add_numeric(key, value), do: GenServer.call(__MODULE__, {:add_numeric, {key, value}})
-
-  @doc false
-  def handle_call({:add_numeric, {key, value}}, _from, state) do
-    new_numeric_map = Map.put(state.numeric_map, key, value)
-
-    {:reply, "Numeric Map Updated", [], Map.put(state, :numeric_map, new_numeric_map)}
-  end
-
-  @doc false
-  def handle_info(_, state), do: {:noreply, [], state}
-
   @doc false
   def handle_events(messages, _from, state) do
     messages_with_tags = Enum.map(messages, &process_message(&1, state))
