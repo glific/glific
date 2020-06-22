@@ -62,6 +62,8 @@ defmodule GlificWeb.MessageControllerTest do
       # Provider message id should be updated
       assert message.provider_status == :delivered
       assert message.flow == :inbound
+      assert message.sender.last_message_at != nil
+      assert true == Timex.diff(DateTime.utc_now(), message.sender.last_message_at, :seconds) < 10
 
       # Sender should be stored into the db
       assert message.sender.phone ==
@@ -102,6 +104,8 @@ defmodule GlificWeb.MessageControllerTest do
       assert message.media.caption == setup_config.image_payload["caption"]
       assert message.media.url == setup_config.image_payload["url"]
       assert message.media.source_url == setup_config.image_payload["url"]
+
+      assert true == Timex.diff(DateTime.utc_now(), message.sender.last_message_at, :seconds) < 10
 
       # Sender should be stored into the db
       assert message.sender.phone ==
