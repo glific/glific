@@ -165,7 +165,12 @@ defmodule Glific.Templates do
     SessionTemplate.changeset(session_template, attrs)
   end
 
-  @spec template_upsert(map()) :: {:ok, Language.t()}
+  @doc """
+  Gets or Creates a template based on the unique indexes in the table. If there is a match
+  it returns the existing template, else it creates a new one
+  """
+
+  @spec template_upsert(map()) :: {:ok, SessionTemplate.t()}
   def template_upsert(attrs) do
     template =
       Repo.insert!(
@@ -177,13 +182,22 @@ defmodule Glific.Templates do
     {:ok, template}
   end
 
-  @spec create_template_from_message(%{message_id: integer, input: map}) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
+  @doc """
+    Create a session template form message
+    Body and type will be the message attributes
+  """
+
+  @spec create_template_from_message(%{message_id: integer, input: map}) ::
+          {:ok, SessionTemplate.t()} | {:error, String.t()}
   def create_template_from_message(%{message_id: message_id, input: input}) do
-    message = Glific.Messages.get_message!(message_id)
+    message =
+      Glific.Messages.get_message!(message_id)
       |> Repo.preload([:contact])
 
-    Map.merge(%{ body: message.body, type: message.type, language_id: message.contact.language_id }, input)
+    Map.merge(
+      %{body: message.body, type: message.type, language_id: message.contact.language_id},
+      input
+    )
     |> create_session_template()
   end
-
 end

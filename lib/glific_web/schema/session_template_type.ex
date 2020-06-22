@@ -128,7 +128,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       resolve(&Resolvers.Templates.send_session_message/3)
     end
 
-    field :create_teamplate_form_message, :session_template_result do
+    field :create_template_form_message, :session_template_result do
       arg(:message_id, non_null(:id))
       arg(:input, :message_to_template_input)
       resolve(&Resolvers.Templates.create_template_from_message/3)

@@ -73,12 +73,15 @@ defmodule GlificWeb.Resolvers.Templates do
   def send_session_message(_, %{id: id, receiver_id: receiver_id}, _),
     do: Messages.create_and_send_session_template(id, receiver_id)
 
-
   @doc """
   Converting a message to message template
   """
-  @spec create_template_from_message(Absinthe.Resolution.t(), %{message_id: integer, input: integer}, %{context: map()}) ::
-  {:ok, any} | {:error, any}
+  @spec create_template_from_message(
+          Absinthe.Resolution.t(),
+          %{message_id: integer, input: map()},
+          %{context: map()}
+        ) ::
+          {:ok, any} | {:error, any}
   def create_template_from_message(_, params, _) do
     with {:ok, session_template} <- Templates.create_template_from_message(params) do
       {:ok, %{session_template: session_template}}

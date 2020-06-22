@@ -133,7 +133,6 @@ defmodule GlificWeb.Schema.MessageTypes do
       arg(:id, non_null(:id))
       resolve(&Resolvers.Messages.delete_message/3)
     end
-
   end
 
   object :message_subscriptions do

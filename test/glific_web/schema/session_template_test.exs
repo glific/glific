@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     lang = Glific.Seeds.seed_language()
     Glific.Seeds.seed_session_templates(lang)
     Glific.Seeds.seed_contacts()
+    Glific.Seeds.seed_messages()
     :ok
   end
 
@@ -21,6 +22,12 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/session_templates/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/session_templates/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/session_templates/delete.gql")
+
+  load_gql(
+    :create_from_message,
+    GlificWeb.Schema,
+    "assets/gql/session_templates/create_from_message.gql"
+  )
 
   test "session_templates field returns list of session_templates" do
     result = query_gql_by(:list)
@@ -244,5 +251,43 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "sendSessionMessage", "errors"]) == nil
+  end
+
+  test "create a session_template from message" do
+    label = "Default Template Label"
+
+    {:ok, session_template} =
+      Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{label: label})
+
+    language_id = session_template.language_id
+    [message | _] = Glific.Messages.list_messages()
+
+    result =
+      query_gql_by(:create_from_message,
+        variables: %{
+          "messageId" => message.id,
+          "input" => %{"label" => "From Message", "languageId" => language_id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    label = get_in(query_data, [:data, "createTemplateFormMessage", "sessionTemplate", "label"])
+    assert label == "From Message"
+
+    result =
+      query_gql_by(:create_from_message,
+        variables: %{
+          "messageId" => message.id,
+          "input" => %{"label" => "From Message", "languageId" => language_id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    message =
+      get_in(query_data, [:data, "createTemplateFormMessage", "errors", Access.at(0), "message"])
+
+    assert message == "has already been taken"
   end
 end
