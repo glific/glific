@@ -7,7 +7,7 @@ defmodule Glific.Users do
   alias Glific.{Users.User, Repo, Search.Full}
 
   @doc """
-  Returns the list of users.
+  Returns the list of filtered users.
 
   ## Examples
 
@@ -17,8 +17,41 @@ defmodule Glific.Users do
   """
   @spec list_users(map()) :: [User.t()]
   def list_users(args \\ %{}) do
-    User
+    args
+    |> Enum.reduce(User, fn
+      {:opts, opts}, query ->
+        query |> opts_with(opts)
+
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
     |> Repo.all()
+  end
+
+  defp opts_with(query, opts) do
+    Enum.reduce(opts, query, fn
+      {:order, order}, query ->
+        query |> order_by([c], {^order, fragment("lower(?)", c.name)})
+
+      {:limit, limit}, query ->
+        query |> limit(^limit)
+
+      {:offset, offset}, query ->
+        query |> offset(^offset)
+    end)
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:name, name}, query ->
+        from q in query, where: ilike(q.name, ^"%#{name}%")
+
+      {:phone, phone}, query ->
+        from q in query, where: ilike(q.phone, ^"%#{phone}%")
+
+      # filter for roles
+    end)
   end
 
   @doc """
@@ -26,7 +59,11 @@ defmodule Glific.Users do
   """
   @spec count_users(map()) :: integer
   def count_users(args \\ %{}) do
-    User
+    args
+    |> Enum.reduce(User, fn
+      {:filter, filter}, query ->
+        query |> filter_with(filter)
+    end)
     |> Repo.aggregate(:count)
   end
 
