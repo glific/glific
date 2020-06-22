@@ -80,7 +80,7 @@ defmodule Glific.Seeds do
         label: "Optout",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
-        keywords: ["stop", "unsubscribe", "हिंदी", "सदस्यता समाप्त"]
+        keywords: ["stop", "unsubscribe", "halt", "सदस्यता समाप्त"]
       },
 
       # Tags with Value
