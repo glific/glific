@@ -74,7 +74,6 @@ defmodule Glific.Processor.ConsumerAutomation do
   defp process_tag(message, %Tag{label: label} = tag) when label == "Language" do
     {:ok, message_tag} = Repo.fetch_by(MessageTag, %{message_id: message.id, tag_id: tag.id})
     [language | _] = Settings.list_languages(%{label: message_tag.value})
-
     # We need to update sender id and set their language to this language
     query = from(c in Contact, where: c.id == ^message.sender_id)
 
