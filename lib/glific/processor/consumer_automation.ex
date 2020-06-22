@@ -26,7 +26,7 @@ defmodule Glific.Processor.ConsumerAutomation do
   @spec start_link([]) :: GenServer.on_start()
   def start_link(opts) do
     name = Keyword.get(opts, :name, __MODULE__)
-    producer = Keyword.get(opts, :producer, Glific.Processor.Producer)
+    producer = Keyword.get(opts, :producer, Glific.Processor.ConsumerTagger)
     GenStage.start_link(__MODULE__, [producer: producer], name: name)
   end
 
