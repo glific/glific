@@ -34,14 +34,13 @@ defmodule Glific.Communications.Message do
   def send_message(message) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
-    case Contacts.can_send_message_to?(message.receiver) do
-      true ->
-        apply(provider_module(), @type_to_token[message.type], [message])
-        {:ok, Communications.publish_data(message, :sent_message)}
-
-      _ ->
-        {:error, "Can not send the message to the contact."}
+    if(Contacts.can_send_message_to?(message.receiver)) do
+      apply(provider_module(), @type_to_token[message.type], [message])
+      {:ok, Communications.publish_data(message, :sent_message)}
+    else
+       {:error, "Can not send the message to the contact."}
     end
+
   end
 
   @doc """
