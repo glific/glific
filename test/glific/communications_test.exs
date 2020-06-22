@@ -211,6 +211,17 @@ defmodule Glific.CommunicationsTest do
 
       message = message_fixture(%{receiver_id: receiver.id})
       assert {:error, _msg} = Communications.send_message(message)
+
+    test "update_provider_status/2 will update the message status based on provider message ID" do
+      message =
+        message_fixture(%{
+          provider_message_id: Faker.String.base64(36),
+          provider_status: :enqueued
+        })
+
+      Communications.update_provider_status(message.provider_message_id, :read)
+      message = Messages.get_message!(message.id)
+      assert message.provider_status == :read
     end
   end
 end

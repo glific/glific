@@ -1,4 +1,4 @@
-defmodule GlificWeb.DefaultControllerTest do
+defmodule GlificWeb.Providers.Gupshup.Controllers.DefaultControllerTest do
   use GlificWeb.ConnCase
 
   describe "unknown" do
