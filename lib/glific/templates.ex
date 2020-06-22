@@ -164,4 +164,26 @@ defmodule Glific.Templates do
   def change_session_template(%SessionTemplate{} = session_template, attrs \\ %{}) do
     SessionTemplate.changeset(session_template, attrs)
   end
+
+  @spec template_upsert(map()) :: {:ok, Language.t()}
+  def template_upsert(attrs) do
+    template =
+      Repo.insert!(
+        change_session_template(%SessionTemplate{}, attrs),
+        on_conflict: [set: [label: attrs.label]],
+        conflict_target: [:language_id, :label]
+      )
+
+    {:ok, template}
+  end
+
+  @spec create_template_from_message(%{message_id: integer, input: map}) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
+  def create_template_from_message(%{message_id: message_id, input: input}) do
+    message = Glific.Messages.get_message!(message_id)
+      |> Repo.preload([:contact])
+
+    Map.merge(%{ body: message.body, type: message.type, language_id: message.contact.language_id }, input)
+    |> create_session_template()
+  end
+
 end

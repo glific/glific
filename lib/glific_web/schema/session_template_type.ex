@@ -78,6 +78,12 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :language_id, :id
   end
 
+  input_object :message_to_template_input do
+    field :label, :string
+    field :shortcode, :string
+    field :language_id, :id
+  end
+
   object :session_template_queries do
     @desc "get the details of one session_template"
     field :session_template, :session_template_result do
@@ -120,6 +126,12 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       arg(:id, non_null(:id))
       arg(:receiver_id, non_null(:id))
       resolve(&Resolvers.Templates.send_session_message/3)
+    end
+
+    field :create_teamplate_form_message, :session_template_result do
+      arg(:message_id, non_null(:id))
+      arg(:input, :message_to_template_input)
+      resolve(&Resolvers.Templates.create_template_from_message/3)
     end
   end
 end
