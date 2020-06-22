@@ -39,19 +39,31 @@ defmodule Glific.Processor.ProducerTest do
     {:ok, stage} = Producer.start_link(name: TestProducer)
     {:ok, _cons} = TestConsumer.start_link(stage)
 
-    msg = Fixtures.message_fixture()
-
     body = ["12", "hindi", "hello"]
 
     Enum.map(
       body,
       fn txt ->
-        msg = Map.put(msg, :body, txt)
+        msg = Fixtures.message_fixture(%{body: txt})
         # now add this to the processor queue
         GenServer.cast(stage, {:add, [msg]})
         assert_receive {:received, events}
+        assert length(events) == 1
       end
     )
+
+    # lets do multiple messages at once
+    msgs =
+      Enum.map(
+        body,
+        fn txt ->
+          Fixtures.message_fixture(%{body: txt})
+        end
+      )
+
+    GenServer.cast(stage, {:add, msgs})
+    assert_receive {:received, events}
+    assert length(events) == length(body)
 
     GenStage.stop(stage)
   end

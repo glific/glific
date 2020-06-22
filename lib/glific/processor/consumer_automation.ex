@@ -46,9 +46,6 @@ defmodule Glific.Processor.ConsumerAutomation do
   end
 
   @doc false
-  def handle_info(_, state), do: {:noreply, [], state}
-
-  @doc false
   def handle_events(messages, _from, state) do
     _ =
       messages
