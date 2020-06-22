@@ -211,6 +211,7 @@ defmodule Glific.CommunicationsTest do
 
       message = message_fixture(%{receiver_id: receiver.id})
       assert {:error, _msg} = Communications.send_message(message)
+    end
 
     test "update_provider_status/2 will update the message status based on provider message ID" do
       message =
