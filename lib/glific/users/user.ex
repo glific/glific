@@ -54,6 +54,17 @@ defmodule Glific.Users.User do
     |> Changeset.unique_constraint(:phone)
   end
 
+  @doc """
+  Simple changeset for update name and roles
+  """
+  @spec update_fields_changeset(Ecto.Schema.t() | Changeset.t(), map()) ::
+          Changeset.t()
+  def update_fields_changeset(user_or_changeset, params) do
+    user_or_changeset
+    |> Changeset.cast(params, [:name, :roles])
+    |> Changeset.validate_inclusion(:roles, @user_roles)
+  end
+
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),
     do: Pow.Ecto.Schema.normalize_user_id_field_value(value)
 end
