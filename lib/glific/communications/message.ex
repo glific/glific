@@ -2,6 +2,7 @@ defmodule Glific.Communications.Message do
   @moduledoc """
   The Message Communication Context, which encapsulates and manages tags and the related join tables.
   """
+  import Ecto.Query
 
   alias Glific.{
     Communications,
@@ -75,17 +76,8 @@ defmodule Glific.Communications.Message do
   """
   @spec update_provider_status(String.t(), atom()) :: {:ok, Message.t()}
   def update_provider_status(provider_message_id, provider_status) do
-    # Improve me
-    # We will improve that and complete this action in a Single Query.
-
-    case Repo.fetch_by(Message, %{provider_message_id: provider_message_id}) do
-      {:ok, message} ->
-        Messages.update_message(message, %{provider_status: provider_status})
-        {:ok, message}
-
-      _ ->
-        {:ok, nil}
-    end
+    from(m in Message, where: m.provider_message_id == ^provider_message_id)
+    |> Repo.update_all(set: [provider_status: provider_status, updated_at: DateTime.utc_now()])
   end
 
   @doc """

@@ -11,16 +11,6 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
   end
 
   @doc false
-  @spec user_event(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def user_event(conn, params),
-    do: handler(conn, params, "User event handler")
-
-  @doc false
-  @spec sandbox_start(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def sandbox_start(conn, params),
-    do: handler(conn, params, "Sandbox start handler")
-
-  @doc false
   @spec opted_in(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def opted_in(conn, params) do
     {:ok, timestamp} = DateTime.from_unix(params["timestamp"], :millisecond)
