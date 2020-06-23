@@ -56,7 +56,7 @@ defmodule Glific.Conversations do
   defp process_results({:ok, results}, sc) do
     results.rows
     |> Enum.reduce([], fn [last_message_id | [ancestors]], acc ->
-      acc ++ [last_message_id | Enum.take(ancestors, sc)]
+      acc ++ [last_message_id | Enum.take(ancestors, sc - 1)]
     end)
   end
 end

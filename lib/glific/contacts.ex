@@ -173,13 +173,16 @@ defmodule Glific.Contacts do
   @doc """
   Full text search interface via Postgres
   """
-  @spec search(String.t()) :: [Contact.t()]
+  @spec search(String.t()) :: [Conversations.t()]
   def search(term) do
-    query = from(c in Contact)
+    query = from c in Contact, select: c.id
 
-    query
-    |> Full.run(term)
-    |> Repo.all()
+    contact_ids =
+      query
+      |> Full.run(term)
+      |> Repo.all()
+
+    Glific.Messages.list_conversations(%{filter: %{ids: contact_ids}})
   end
 
   @doc """
