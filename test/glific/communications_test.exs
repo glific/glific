@@ -22,6 +22,7 @@ defmodule Glific.CommunicationsTest do
   describe "gupshup_messages" do
     alias Glific.Communications.Message, as: Communications
     alias Glific.Providers.Gupshup.Worker, as: Worker
+    alias Glific.Settings
 
     setup do
       Tesla.Mock.mock(fn
@@ -67,9 +68,30 @@ defmodule Glific.CommunicationsTest do
       provider_media_id: "some provider_media_id"
     }
 
+    @valid_default_organization_language_attrs %{
+      label: "English (United States)",
+      label_locale: "English",
+      locale: "en_US",
+      is_active: true
+    }
+
+    def default_organization_language_fixture() do
+      {:ok, default_organization_language} =
+        @valid_default_organization_language_attrs
+        |> Settings.language_upsert()
+
+      default_organization_language
+    end
+
     defp foreign_key_constraint do
-      {:ok, sender} = Glific.Contacts.create_contact(@sender_attrs)
-      {:ok, receiver} = Glific.Contacts.create_contact(@receiver_attrs)
+      default_organization_language = default_organization_language_fixture()
+      sender_attrs = @sender_attrs
+        |> Map.merge(%{language_id: default_organization_language.id})
+      receiver_attrs = @receiver_attrs
+        |> Map.merge(%{language_id: default_organization_language.id})
+
+      {:ok, sender} = Glific.Contacts.create_contact(sender_attrs)
+      {:ok, receiver} = Glific.Contacts.create_contact(receiver_attrs)
       %{sender_id: sender.id, receiver_id: receiver.id}
     end
 
@@ -181,9 +203,11 @@ defmodule Glific.CommunicationsTest do
     end
 
     test "sending message to contact having invalid status will return error" do
+      default_organization_language = default_organization_language_fixture()
+
       {:ok, receiver} =
         @receiver_attrs
-        |> Map.merge(%{status: :invalid, phone: Phone.EnUs.phone()})
+        |> Map.merge(%{status: :invalid, phone: Phone.EnUs.phone(), language_id: default_organization_language.id})
         |> Glific.Contacts.create_contact()
 
       message = message_fixture(%{receiver_id: receiver.id})
@@ -191,9 +215,11 @@ defmodule Glific.CommunicationsTest do
     end
 
     test "sending message to contact having invalid provider status will return error" do
+      default_organization_language = default_organization_language_fixture()
+
       {:ok, receiver} =
         @receiver_attrs
-        |> Map.merge(%{provider_status: :invalid, phone: Phone.EnUs.phone()})
+        |> Map.merge(%{provider_status: :invalid, phone: Phone.EnUs.phone(), language_id: default_organization_language.id})
         |> Glific.Contacts.create_contact()
 
       message = message_fixture(%{receiver_id: receiver.id})
@@ -201,11 +227,14 @@ defmodule Glific.CommunicationsTest do
     end
 
     test "sending message if last received message is more then 24 hours returns error" do
+      default_organization_language = default_organization_language_fixture()
+
       {:ok, receiver} =
         @receiver_attrs
         |> Map.merge(%{
           phone: Phone.EnUs.phone(),
-          last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
+          last_message_at: Timex.shift(DateTime.utc_now(), days: -2),
+          language_id: default_organization_language.id
         })
         |> Glific.Contacts.create_contact()
 
