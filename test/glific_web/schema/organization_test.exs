@@ -91,7 +91,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "provider_key" => provider_key,
             "provider_id" => provider.id,
             "provider_number" => provider_number,
-            "language_id" => language.id
+            "default_language_id" => language.id
           }
         }
       )
@@ -112,7 +112,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "provider_key" => provider_key,
           "provider_id" => provider.id,
           "provider_number" => provider_number,
-          "language_id" => language.id
+          "default_language_id" => language.id
         }
       }
     )
@@ -128,7 +128,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "provider_key" => provider_key,
             "provider_id" => provider.id,
             "provider_number" => provider_number,
-            "language_id" => language.id
+            "default_language_id" => language.id
           }
         }
       )
@@ -168,7 +168,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "provider_key" => provider_key,
             "provider_id" => provider.id,
             "provider_number" => provider_number,
-            "language_id" => language.id
+            "default_language_id" => language.id
           }
         }
       )
@@ -189,7 +189,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "provider_key" => provider_key,
           "provider_id" => provider.id,
           "provider_number" => "new provider_number",
-          "language_id" => language.id
+          "default_language_id" => language.id
         }
       }
     )
@@ -207,7 +207,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "provider_key" => provider_key,
             "provider_id" => provider.id,
             "provider_number" => "new provider_number",
-            "language_id" => language.id
+            "default_language_id" => language.id
           }
         }
       )

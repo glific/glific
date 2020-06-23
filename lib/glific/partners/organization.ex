@@ -20,7 +20,7 @@ defmodule Glific.Partners.Organization do
     :provider_id,
     :provider_key,
     :provider_number,
-    :language_id
+    :default_language_id
   ]
 
   # define all the optional fields for organization
@@ -39,8 +39,8 @@ defmodule Glific.Partners.Organization do
           provider: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
           provider_key: String.t() | nil,
           provider_number: String.t() | nil,
-          language_id: non_neg_integer | nil,
-          language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          default_language_id: non_neg_integer | nil,
+          default_language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -54,7 +54,7 @@ defmodule Glific.Partners.Organization do
     field :provider_key, :string
     belongs_to :provider, Provider
     belongs_to :contact, Contact
-    belongs_to :language, Language
+    belongs_to :default_language, Language
 
     timestamps(type: :utc_datetime)
   end

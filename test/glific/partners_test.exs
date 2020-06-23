@@ -167,20 +167,20 @@ defmodule Glific.PartnersTest do
 
     @invalid_org_attrs %{provider_id: nil, name: nil, contact_name: nil}
 
-    @valid_language_attrs %{
+    @valid_default_language_attrs %{
       label: "English (United States)",
       label_locale: "English",
       locale: "en_US",
       is_active: true
     }
 
-    def language_fixture(attrs \\ %{}) do
-      {:ok, language} =
+    def default_language_fixture(attrs \\ %{}) do
+      {:ok, default_language} =
         attrs
-        |> Enum.into(@valid_language_attrs)
+        |> Enum.into(@valid_default_language_attrs)
         |> Settings.language_upsert()
 
-      language
+      default_language
     end
 
     @spec contact_fixture() :: Contacts.Contact.t()
@@ -195,14 +195,14 @@ defmodule Glific.PartnersTest do
     end
 
     def organization_fixture(attrs \\ %{}) do
-      language = language_fixture(attrs)
+      default_language = default_language_fixture(attrs)
       provider = provider_fixture(%{name: Faker.Name.name()})
       contact = contact_fixture()
 
       {:ok, organization} =
         attrs
         |> Enum.into(@valid_org_attrs)
-        |> Map.merge(%{provider_id: provider.id, contact_id: contact.id, language_id: language.id})
+        |> Map.merge(%{provider_id: provider.id, contact_id: contact.id, default_language_id: default_language.id})
         |> Partners.create_organization()
 
       organization
@@ -233,7 +233,7 @@ defmodule Glific.PartnersTest do
                @valid_org_attrs
                |> Map.merge(%{provider_id: provider_fixture().id})
                |> Map.merge(%{contact_id: contact_fixture().id})
-               |> Map.merge(%{language_id: language_fixture().id})
+               |> Map.merge(%{default_language_id: default_language_fixture().id})
                |> Partners.create_organization()
 
       assert organization.name == @valid_org_attrs.name
@@ -311,14 +311,17 @@ defmodule Glific.PartnersTest do
 
     test "list_organizations/1 with foreign key filters" do
       provider = provider_fixture(@valid_attrs)
+      default_language = default_language_fixture()
 
       {:ok, organization} =
         @valid_org_attrs
-        |> Map.merge(%{language_id: language_fixture().id})
+        |> Map.merge(%{default_language_id: default_language.id})
         |> Map.merge(%{provider_id: provider.id})
         |> Partners.create_organization()
 
       assert [organization] == Partners.list_organizations(%{filter: %{provider: provider.name}})
+
+      assert [organization] == Partners.list_organizations(%{filter: %{default_language: default_language.label}})
 
       assert [] == Partners.list_organizations(%{filter: %{provider: "RandomString"}})
     end

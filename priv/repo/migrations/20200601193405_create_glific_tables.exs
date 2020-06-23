@@ -319,7 +319,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :provider_number, :string, null: false
 
       # organization default language
-      add :language_id, references(:languages, on_delete: :restrict), null: false
+      add :default_language_id, references(:languages, on_delete: :restrict), null: false
 
       timestamps(type: :utc_datetime)
     end

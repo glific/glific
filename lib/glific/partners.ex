@@ -203,10 +203,10 @@ defmodule Glific.Partners do
       {:provider_number, provider_number}, query ->
         from q in query, where: ilike(q.provider_number, ^"%#{provider_number}%")
 
-      {:language, language}, query ->
+      {:default_language, default_language}, query ->
         from q in query,
-          join: c in assoc(q, :language),
-          where: ilike(c.label, ^"%#{language}%")
+          join: c in assoc(q, :default_language),
+          where: ilike(c.label, ^"%#{default_language}%")
     end)
   end
 

@@ -185,7 +185,7 @@ defmodule Glific.Seeds do
       provider_id: default_provider.id,
       provider_key: "random",
       provider_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-      language_id: en_us.id
+      default_language_id: en_us.id
     })
 
     Repo.insert!(%Organization{
@@ -196,7 +196,7 @@ defmodule Glific.Seeds do
       provider_id: default_provider.id,
       provider_key: "random",
       provider_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-      language_id: en_us.id
+      default_language_id: en_us.id
     })
   end
 
