@@ -85,31 +85,33 @@ defmodule Glific.Communications.Message do
     |> Repo.update_all(set: [provider_status: provider_status, updated_at: DateTime.utc_now()])
   end
 
-
+  @doc """
+  Callback when we receive a message form whats app
+  """
+  @spec receive_message(map(), atom()) :: {:ok }
   def receive_message(message_params, type \\ :text) do
     {:ok, contact} =
       Contacts.upsert(message_params.sender)
       |> Contacts.update_contact(%{last_message_at: DateTime.utc_now()})
 
-    message_params = message_params
-    |> Map.merge(%{
-      type: type,
-      sender_id: contact.id,
-      receiver_id: organization_contact_id(),
-      flow: :inbound
-    })
+      message_params = message_params
+      |> Map.merge(%{
+        type: type,
+        sender_id: contact.id,
+        receiver_id: organization_contact_id(),
+        flow: :inbound
+      })
 
-    cond do
-      type == :text -> receive_text(message_params)
-      type in [:video, :audio, :image, :file] -> receive_media
-      # For location and address messages, will add that when there will be a use case
-      _  -> {:ok }
-    end
+      cond do
+        type in [:video, :audio, :image, :document] -> receive_media(message_params)
+        type == :text -> receive_text(message_params)
+        # For location and address messages, will add that when there will be a use case
+        true  -> {:ok }
+      end
   end
 
 
-  #Callback when we receive a text message
-
+  #handler for receiving the text message
   @spec receive_text(map()) :: {:ok }
   defp receive_text(message_params) do
     message_params
@@ -120,14 +122,13 @@ defmodule Glific.Communications.Message do
     {:ok }
   end
 
-  @doc """
-  Callback when we receive a media (image|video|audio) message
-  """
+
+  #handler for receiving the media (image|video|audio)  message
   @spec receive_media(map()) :: {:ok }
   defp receive_media(message_params) do
     {:ok, message_media} = Messages.create_message_media(message_params)
     message_params
-    |> Map.put(media_id: message_media.id)
+    |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
     {:ok }
