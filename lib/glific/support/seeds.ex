@@ -397,7 +397,7 @@ defmodule Glific.Seeds do
       label: "Help (Hindi)",
       body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ",
       type: :text,
-      shortcode: "",
+      shortcode: "help",
       is_reserved: true,
       language_id: hi_in.id
     })
