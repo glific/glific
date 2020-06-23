@@ -4,7 +4,12 @@ defmodule Glific.Contacts do
   """
   import Ecto.Query, warn: false
 
-  alias Glific.{Contacts.Contact, Repo, Search.Full}
+  alias Glific.{
+    Contacts.Contact,
+    Conversations.Conversation,
+    Repo,
+    Search.Full
+  }
 
   @doc """
   Returns the list of contacts.
@@ -173,7 +178,7 @@ defmodule Glific.Contacts do
   @doc """
   Full text search interface via Postgres
   """
-  @spec search(String.t()) :: [Conversations.t()]
+  @spec search(String.t()) :: [Conversation.t()]
   def search(term) do
     query = from c in Contact, select: c.id
 
