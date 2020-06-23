@@ -4,7 +4,8 @@ defmodule GlificWeb.Resolvers.Users do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Users, Users.User, Repo}
+  alias Glific.Repo
+  alias Glific.{Users, Users.User}
 
   @doc false
   @spec user(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::

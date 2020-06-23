@@ -4,7 +4,8 @@ defmodule Glific.Users do
   """
   import Ecto.Query, warn: false
 
-  alias Glific.{Users.User, Repo}
+  alias Glific.Repo
+  alias Glific.Users.User
 
   @doc """
   Returns the list of filtered users.
@@ -50,7 +51,7 @@ defmodule Glific.Users do
       {:phone, phone}, query ->
         from q in query, where: ilike(q.phone, ^"%#{phone}%")
 
-      # filter for roles
+        # filter for roles
     end)
   end
 
