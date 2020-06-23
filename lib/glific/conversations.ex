@@ -16,6 +16,10 @@ defmodule Glific.Conversations do
       SELECT id, ancestors FROM messages WHERE id IN ( SELECT MAX(id) FROM messages GROUP BY contact_id ) and contact_id = ANY($2) ORDER By updated_at DESC LIMIT $1;
   """
 
+  @sql_for_message_ids """
+    SELECT get_conversation(ids => $1, contact_limit => $2, contact_offset => $3, message_limit => $4, message_offset => $5)
+  """
+
   @sql_all """
       SELECT id, ancestors FROM messages WHERE id IN ( SELECT MAX(id) FROM messages GROUP BY contact_id ) ORDER By updated_at DESC LIMIT $1;
   """
@@ -24,8 +28,10 @@ defmodule Glific.Conversations do
   Returns the last M conversations, each conversation not more than N messages
   """
   @spec list_conversations(map()) :: list()
-  def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args),
-    do: Messages.list_conversations(Map.put(args, :ids, get_message_ids(nc, sc, args)))
+  def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args) do
+  Messages.list_conversations(Map.put(args, :ids, [] ))
+  end
+
 
   @doc """
   Returns the filtered conversation by contact id
@@ -43,8 +49,9 @@ defmodule Glific.Conversations do
   end
 
   @spec get_message_ids(integer(), integer(), map() | nil) :: list()
-  defp get_message_ids(nc, sc, %{filter: %{id: id}}),
-    do: process_results(Repo.query(@sql_ids, [nc, [id]]), sc)
+  defp get_message_ids(nc, sc, %{filter: %{id: id}}) do
+    process_results(Repo.query(@sql_for_message_ids, [[id], nc, 0, sc, 0]))
+  end
 
   defp get_message_ids(nc, sc, %{filter: %{ids: ids}}),
     do: process_results(Repo.query(@sql_ids, [nc, ids]), sc)
@@ -58,5 +65,9 @@ defmodule Glific.Conversations do
     |> Enum.reduce([], fn [last_message_id | [ancestors]], acc ->
       acc ++ [last_message_id | Enum.take(ancestors, sc)]
     end)
+  end
+
+  defp process_results({:ok, results}) do
+    List.flatten(results.rows)
   end
 end
