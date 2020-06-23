@@ -71,6 +71,23 @@ defmodule Glific.Processor.ConsumerAutomation do
          do: message
   end
 
+  defp process_tag(message, %Tag{label: label} = _tag) when label == "Optout" do
+    # We need to update the contact with optout_time and status
+    query = from(c in Contact, where: c.id == ^message.sender_id)
+
+    Repo.update_all(query,
+      set: [status: "invalid", optout_time: DateTime.utc_now(), updated_at: DateTime.utc_now()]
+    )
+
+    contact = Repo.get!(Contact, message.sender_id)
+
+    with {:ok, session_template} <-
+           Repo.fetch_by(SessionTemplate, %{shortcode: "optout", language_id: contact.language_id}),
+         {:ok, message} <-
+           Messages.create_and_send_session_template(session_template, message.sender_id),
+         do: message
+  end
+
   defp process_tag(message, %Tag{label: label} = tag) when label == "Language" do
     {:ok, message_tag} = Repo.fetch_by(MessageTag, %{message_id: message.id, tag_id: tag.id})
     [language | _] = Settings.list_languages(%{label: message_tag.value})
