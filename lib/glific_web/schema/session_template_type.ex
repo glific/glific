@@ -72,7 +72,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :body, :string
     field :type, :message_types_enum
     field :shortcode, :string
-    field :is_reserved, :boolean
     field :is_active, :boolean
     field :is_source, :boolean
     field :language_id, :id
