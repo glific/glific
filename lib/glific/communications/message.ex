@@ -88,13 +88,14 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback when we receive a message form whats app
   """
-  @spec receive_message(map(), atom()) :: {:ok }
+  @spec receive_message(map(), atom()) :: {:ok}
   def receive_message(message_params, type \\ :text) do
     {:ok, contact} =
       Contacts.upsert(message_params.sender)
       |> Contacts.update_contact(%{last_message_at: DateTime.utc_now()})
 
-      message_params = message_params
+    message_params =
+      message_params
       |> Map.merge(%{
         type: type,
         sender_id: contact.id,
@@ -102,36 +103,36 @@ defmodule Glific.Communications.Message do
         flow: :inbound
       })
 
-      cond do
-        type in [:video, :audio, :image, :document] -> receive_media(message_params)
-        type == :text -> receive_text(message_params)
-        # For location and address messages, will add that when there will be a use case
-        true  -> {:ok }
-      end
+    cond do
+      type in [:video, :audio, :image, :document] -> receive_media(message_params)
+      type == :text -> receive_text(message_params)
+      # For location and address messages, will add that when there will be a use case
+      true -> {:ok}
+    end
   end
 
-
-  #handler for receiving the text message
-  @spec receive_text(map()) :: {:ok }
+  # handler for receiving the text message
+  @spec receive_text(map()) :: {:ok}
   defp receive_text(message_params) do
     message_params
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
     |> Producer.add()
 
-    {:ok }
+    {:ok}
   end
 
-
-  #handler for receiving the media (image|video|audio|document)  message
-  @spec receive_media(map()) :: {:ok }
+  # handler for receiving the media (image|video|audio|document)  message
+  @spec receive_media(map()) :: {:ok}
   defp receive_media(message_params) do
     {:ok, message_media} = Messages.create_message_media(message_params)
+
     message_params
     |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
-    {:ok }
+
+    {:ok}
   end
 
   @doc false

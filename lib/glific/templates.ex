@@ -194,10 +194,7 @@ defmodule Glific.Templates do
       Glific.Messages.get_message!(message_id)
       |> Repo.preload([:contact])
 
-    Map.merge(
-      %{body: message.body, type: message.type, language_id: message.contact.language_id},
-      input
-    )
+    Map.merge(%{body: message.body, type: message.type}, input)
     |> create_session_template()
   end
 end

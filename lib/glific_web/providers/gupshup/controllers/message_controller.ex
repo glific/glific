@@ -51,7 +51,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
 
   @doc false
   # Handle Gupshup media message and convert them into Glific Message struct
-  @spec media(Plug.Conn.t(), map(), map()) :: Plug.Conn.t()
+  @spec media(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
   defp media(conn, params, type) do
     GupshupMessage.receive_media(params)
     |> Communications.receive_message(type)
