@@ -17,7 +17,7 @@ defmodule Glific.Conversations do
   """
 
   @sql_for_message_ids """
-    SELECT get_conversation(ids => $1, contact_limit => $2, contact_offset => $3, message_limit => $4, message_offset => $5)
+    SELECT conversation_message_ids(ids => $1, contact_limit => $2, contact_offset => $3, message_limit => $4, message_offset => $5)
   """
 
   @sql_all """
@@ -29,7 +29,7 @@ defmodule Glific.Conversations do
   """
   @spec list_conversations(map()) :: list()
   def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args) do
-  Messages.list_conversations(Map.put(args, :ids, [] ))
+  Messages.list_conversations(Map.put(args, :ids, get_message_ids(nc, sc, args)))
   end
 
 
@@ -49,15 +49,14 @@ defmodule Glific.Conversations do
   end
 
   @spec get_message_ids(integer(), integer(), map() | nil) :: list()
-  defp get_message_ids(nc, sc, %{filter: %{id: id}}) do
-    process_results(Repo.query(@sql_for_message_ids, [[id], nc, 0, sc, 0]))
-  end
+  defp get_message_ids(nc, sc, %{filter: %{id: id}}),
+    do: process_results(Repo.query(@sql_for_message_ids, [[id], nc, 0, sc, 0]))
 
   defp get_message_ids(nc, sc, %{filter: %{ids: ids}}),
-    do: process_results(Repo.query(@sql_ids, [nc, ids]), sc)
+    do: process_results(Repo.query(@sql_for_message_ids, [ids, nc, 0, sc, 0]))
 
   defp get_message_ids(nc, sc, _),
-    do: process_results(Repo.query(@sql_all, [nc]), sc)
+    do: process_results(Repo.query(@sql_for_message_ids, [[], nc, 0, sc, 0]))
 
   @spec process_results({:ok, map()}, integer()) :: list()
   defp process_results({:ok, results}, sc) do
