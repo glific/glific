@@ -21,6 +21,15 @@ defmodule GlificWeb.Schema.UserTypes do
     field :roles, list_of(:string)
   end
 
+  @desc "Filtering options for users"
+  input_object :user_filter do
+    @desc "Match the name"
+    field :name, :string
+
+    @desc "Match the phone"
+    field :phone, :string
+  end
+
   input_object :user_input do
     field :name, :string
     field :roles, list_of(:string)
@@ -35,14 +44,14 @@ defmodule GlificWeb.Schema.UserTypes do
 
     @desc "Get a list of all users filtered by various criteria"
     field :users, list_of(:user) do
-      # arg(:filter, :user_filter)
-      # arg(:opts, :opts)
+      arg(:filter, :user_filter)
+      arg(:opts, :opts)
       resolve(&Resolvers.Users.users/3)
     end
 
     @desc "Get a count of all users filtered by various criteria"
     field :count_users, :integer do
-      # arg(:filter, :user_filter)
+      arg(:filter, :user_filter)
       resolve(&Resolvers.Users.count_users/3)
     end
   end

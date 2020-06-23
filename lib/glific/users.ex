@@ -4,7 +4,7 @@ defmodule Glific.Users do
   """
   import Ecto.Query, warn: false
 
-  alias Glific.{Users.User, Repo, Search.Full}
+  alias Glific.{Users.User, Repo}
 
   @doc """
   Returns the list of filtered users.
