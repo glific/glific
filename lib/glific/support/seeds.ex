@@ -433,6 +433,32 @@ defmodule Glific.Seeds do
       is_reserved: true,
       language_id: hi_in.id
     })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Optout",
+      body: """
+      Your subscription is ended now.
+
+      Type subscribe to start receiving messages again.
+      """,
+      type: :text,
+      shortcode: "optout",
+      is_reserved: true,
+      language_id: en_us.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Optout",
+      body: """
+      अब आपकी सदस्यता समाप्त हो गई है।
+
+      फिर से संदेश प्राप्त करने के लिए सदस्यता टाइप करें।
+      """,
+      type: :text,
+      shortcode: "optout",
+      is_reserved: true,
+      language_id: hi_in.id
+    })
   end
 
   @doc """
