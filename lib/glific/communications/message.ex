@@ -88,7 +88,7 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback when we receive a message form whats app
   """
-  @spec receive_message(map(), atom()) :: {:ok}
+  @spec receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
   def receive_message(message_params, type \\ :text) do
     {:ok, contact} =
       Contacts.upsert(message_params.sender)
@@ -107,7 +107,7 @@ defmodule Glific.Communications.Message do
       type in [:video, :audio, :image, :document] -> receive_media(message_params)
       type == :text -> receive_text(message_params)
       # For location and address messages, will add that when there will be a use case
-      true -> {:ok}
+      true -> {:error, "Message type not supported"}
     end
   end
 
