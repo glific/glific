@@ -12,7 +12,8 @@ defmodule Glific.Seeds do
     Settings,
     Settings.Language,
     Tags.Tag,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Users.User
   }
 
   @doc """
@@ -424,6 +425,24 @@ defmodule Glific.Seeds do
       shortcode: "language",
       is_reserved: true,
       language_id: hi_in.id
+    })
+  end
+
+  @doc false
+  @spec seed_users :: {User.t()}
+  def seed_users do
+    Repo.insert!(%User{
+      name: "John Doe",
+      phone: "+919820198765",
+      password: "secret1234",
+      roles: ["admin"]
+    })
+
+    Repo.insert!(%User{
+      name: "Jane Doe",
+      phone: "+918820198765",
+      password: "secret1234",
+      roles: ["basic", "admin"]
     })
   end
 
