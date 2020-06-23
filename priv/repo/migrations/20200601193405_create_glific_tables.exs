@@ -166,7 +166,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :status, :contact_status_enum, null: false, default: "valid"
 
       # contact language for templates and other communications
-      add :language_id, references(:languages, on_delete: :restrict), null: true
+      add :language_id, references(:languages, on_delete: :restrict), null: false
 
       add :optin_time, :timestamptz
       add :optout_time, :timestamptz

@@ -6,6 +6,7 @@ defmodule Glific.ContactsTest do
 
   describe "contacts" do
     alias Glific.Contacts.Contact
+    alias Glific.Settings
 
     @valid_attrs %{
       name: "some name",
@@ -56,10 +57,28 @@ defmodule Glific.ContactsTest do
       provider_status: nil
     }
 
+    @valid_default_organization_language_attrs %{
+      label: "English (United States)",
+      label_locale: "English",
+      locale: "en_US",
+      is_active: true
+    }
+
+    def default_organization_language_fixture() do
+      {:ok, default_organization_language} =
+        @valid_default_organization_language_attrs
+        |> Settings.language_upsert()
+
+      default_organization_language
+    end
+
     def contact_fixture(attrs \\ %{}) do
+      default_organization_language = default_organization_language_fixture()
+
       {:ok, contact} =
         attrs
         |> Enum.into(@valid_attrs)
+        |> Map.merge(%{language_id: default_organization_language.id})
         |> Contacts.create_contact()
 
       contact
@@ -83,7 +102,13 @@ defmodule Glific.ContactsTest do
     end
 
     test "create_contact/1 with valid data creates a contact" do
-      assert {:ok, %Contact{} = contact} = Contacts.create_contact(@valid_attrs)
+      default_organization_language = default_organization_language_fixture()
+
+      assert {:ok, %Contact{} = contact} =
+               @valid_attrs
+               |> Map.merge(%{language_id: default_organization_language.id})
+               |> Contacts.create_contact()
+
       assert contact.name == "some name"
       assert contact.optin_time == ~U[2010-04-17 14:00:00Z]
       assert contact.optout_time == ~U[2010-04-17 14:00:00Z]
@@ -171,9 +196,18 @@ defmodule Glific.ContactsTest do
     end
 
     test "upsert contacts" do
-      c0 = contact_fixture(@valid_attrs)
+      default_organization_language = default_organization_language_fixture()
 
-      assert Contacts.upsert(%{phone: c0.phone, name: c0.name}).id == c0.id
+      {:ok, c0} =
+        @valid_attrs
+        |> Map.merge(%{language_id: default_organization_language.id})
+        |> Contacts.create_contact()
+
+      assert Contacts.upsert(%{
+               phone: c0.phone,
+               name: c0.name,
+               language_id: default_organization_language.id
+             }).id == c0.id
     end
 
     test "ensure that creating contacts with same name/phone give an error" do
