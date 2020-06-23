@@ -3,10 +3,10 @@ defmodule GlificWeb.Schema.OrganizationTest do
   use Wormwood.GQLCase
 
   setup do
-    Glific.Seeds.seed_language()
+    lang = Glific.Seeds.seed_language()
     provider = Glific.Seeds.seed_providers()
     contact = Glific.Seeds.seed_contacts()
-    Glific.Seeds.seed_organizations(provider, contact)
+    Glific.Seeds.seed_organizations(provider, contact, lang)
     :ok
   end
 
@@ -77,6 +77,9 @@ defmodule GlificWeb.Schema.OrganizationTest do
     provider_name = "Default Provider"
     {:ok, provider} = Glific.Repo.fetch_by(Glific.Partners.Provider, %{name: provider_name})
 
+    language_locale = "en_US"
+    {:ok, language} = Glific.Repo.fetch_by(Glific.Settings.Language, %{locale: language_locale})
+
     result =
       query_gql_by(:create,
         variables: %{
@@ -87,7 +90,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "contact_name" => contact_name,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
-            "provider_number" => provider_number
+            "provider_number" => provider_number,
+            "language_id" => language.id
           }
         }
       )
@@ -107,7 +111,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "contact_name" => contact_name,
           "provider_key" => provider_key,
           "provider_id" => provider.id,
-          "provider_number" => provider_number
+          "provider_number" => provider_number,
+          "language_id" => language.id
         }
       }
     )
@@ -122,7 +127,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "contact_name" => contact_name,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
-            "provider_number" => provider_number
+            "provider_number" => provider_number,
+            "language_id" => language.id
           }
         }
       )
@@ -147,6 +153,9 @@ defmodule GlificWeb.Schema.OrganizationTest do
     provider_name = "Default Provider"
     {:ok, provider} = Glific.Repo.fetch_by(Glific.Partners.Provider, %{name: provider_name})
 
+    language_locale = "en_US"
+    {:ok, language} = Glific.Repo.fetch_by(Glific.Settings.Language, %{locale: language_locale})
+
     result =
       query_gql_by(:update,
         variables: %{
@@ -158,7 +167,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "contact_name" => contact_name,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
-            "provider_number" => provider_number
+            "provider_number" => provider_number,
+            "language_id" => language.id
           }
         }
       )
@@ -178,7 +188,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "contact_name" => contact_name,
           "provider_key" => provider_key,
           "provider_id" => provider.id,
-          "provider_number" => "new provider_number"
+          "provider_number" => "new provider_number",
+          "language_id" => language.id
         }
       }
     )
@@ -195,7 +206,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "contact_name" => contact_name,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
-            "provider_number" => "new provider_number"
+            "provider_number" => "new provider_number",
+            "language_id" => language.id
           }
         }
       )
