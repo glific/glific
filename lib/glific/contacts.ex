@@ -202,9 +202,7 @@ defmodule Glific.Contacts do
   """
   @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
   def contact_opted_in(phone, utc_time) do
-    # Still need to figure out how to do that in single query
-    upsert(%{phone: phone, optin_time: utc_time})
-
+    upsert(%{phone: phone, optin_time: utc_time, status: :valid})
     {:ok}
   end
 
@@ -214,7 +212,8 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t()) :: boolean()
 
   def can_send_message_to?(contact) do
-    with true <- contact.provider_status == :valid,
+    with true <- contact.status == :valid,
+         true <- contact.provider_status == :valid,
          true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24,
          do: true
   end

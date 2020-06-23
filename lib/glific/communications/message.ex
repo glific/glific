@@ -2,6 +2,7 @@ defmodule Glific.Communications.Message do
   @moduledoc """
   The Message Communication Context, which encapsulates and manages tags and the related join tables.
   """
+  import Ecto.Query
 
   alias Glific.{
     Communications,
@@ -30,11 +31,16 @@ defmodule Glific.Communications.Message do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(Message.t()) :: {:ok, Message.t()}
+  @spec send_message(Message.t()) :: {:ok, Message.t()} | {:error, String.t()}
   def send_message(message) do
     message = Repo.preload(message, [:receiver, :sender, :media])
-    apply(provider_module(), @type_to_token[message.type], [message])
-    {:ok, Communications.publish_data(message, :sent_message)}
+
+    if Contacts.can_send_message_to?(message.receiver) do
+      apply(provider_module(), @type_to_token[message.type], [message])
+      {:ok, Communications.publish_data(message, :sent_message)}
+    else
+      {:error, "Can not send the message to the contact."}
+    end
   end
 
   @doc """
@@ -75,17 +81,8 @@ defmodule Glific.Communications.Message do
   """
   @spec update_provider_status(String.t(), atom()) :: {:ok, Message.t()}
   def update_provider_status(provider_message_id, provider_status) do
-    # Improve me
-    # We will improve that and complete this action in a Single Query.
-
-    case Repo.fetch_by(Message, %{provider_message_id: provider_message_id}) do
-      {:ok, message} ->
-        Messages.update_message(message, %{provider_status: provider_status})
-        {:ok, message}
-
-      _ ->
-        {:ok, nil}
-    end
+    from(m in Message, where: m.provider_message_id == ^provider_message_id)
+    |> Repo.update_all(set: [provider_status: provider_status, updated_at: DateTime.utc_now()])
   end
 
   @doc """
@@ -94,7 +91,9 @@ defmodule Glific.Communications.Message do
 
   @spec receive_text(map()) :: :ok
   def receive_text(message_params) do
-    contact = Contacts.upsert(message_params.sender)
+    {:ok, contact} =
+      Contacts.upsert(message_params.sender)
+      |> Contacts.update_contact(%{last_message_at: DateTime.utc_now()})
 
     message_params
     |> Map.merge(%{
@@ -113,7 +112,10 @@ defmodule Glific.Communications.Message do
   """
   @spec receive_media(map()) :: :ok
   def receive_media(message_params) do
-    contact = Contacts.upsert(message_params.sender)
+    {:ok, contact} =
+      Contacts.upsert(message_params.sender)
+      |> Contacts.update_contact(%{last_message_at: DateTime.utc_now()})
+
     {:ok, message_media} = Messages.create_message_media(message_params)
 
     message_params

@@ -6,6 +6,10 @@ defmodule Glific.Repo do
   not provide.
   """
 
+  alias __MODULE__
+
+  import Ecto.Query
+
   use Ecto.Repo,
     otp_app: :glific,
     adapter: Ecto.Adapters.Postgres
@@ -32,6 +36,18 @@ defmodule Glific.Repo do
       nil -> {:error, "Resource not found"}
       resource -> {:ok, resource}
     end
+  end
+
+  @doc """
+  Get map of label to ids for easier lookup for various system objects - language, tag
+  """
+  @spec label_id_map(Ecto.Queryable.t(), [String.t()]) :: %{String.t() => integer}
+  def label_id_map(queryable, labels) do
+    queryable
+    |> where([q], q.label in ^labels)
+    |> select([:id, :label])
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn tag, acc -> Map.put(acc, tag.label, tag.id) end)
   end
 
   @doc """

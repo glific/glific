@@ -14,32 +14,37 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
     json(conn, nil)
   end
 
-  @doc false
-  @spec message_event(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def message_event(conn, params),
-    do: update_status(conn, params, :enqueued)
-
-  @doc false
+  @doc """
+  Message status when the message has been sent to gupshup
+  """
   @spec enqueued(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def enqueued(conn, params),
     do: update_status(conn, params, :enqueued)
 
-  @doc false
+  @doc """
+  Message status when gupshup could not send the message to whats app
+  """
   @spec failed(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def failed(conn, params),
-    do: update_status(conn, params, :failed)
+    do: update_status(conn, params, :error)
 
-  @doc false
+  @doc """
+  Message has been sent to whats app via Gupshup
+  """
   @spec sent(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def sent(conn, params),
     do: update_status(conn, params, :sent)
 
-  @doc false
+  @doc """
+  Message has been delivered to whats app
+  """
   @spec delivered(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def delivered(conn, params),
     do: update_status(conn, params, :delivered)
 
-  @doc false
+  @doc """
+  Message has been read by the beneficiary
+  """
   @spec read(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def read(conn, params),
     do: update_status(conn, params, :read)

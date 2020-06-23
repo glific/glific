@@ -38,8 +38,8 @@ defmodule Glific.Fixtures do
   @doc false
   @spec message_fixture(map()) :: Messages.Message.t()
   def message_fixture(attrs \\ %{}) do
-    sender = contact_fixture()
-    receiver = contact_fixture()
+    sender = contact_fixture(attrs)
+    receiver = contact_fixture(attrs)
 
     valid_attrs = %{
       body: Faker.Lorem.sentence(),

@@ -2,6 +2,8 @@ defmodule GlificWeb.Schema.ConversationTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
+  import Ecto.Query
+
   alias Glific.Contacts
 
   setup do
@@ -70,5 +72,21 @@ defmodule GlificWeb.Schema.ConversationTest do
       )
 
     assert get_in(result, [:data, "conversation"]) == nil
+  end
+
+  test "conversation by ids" do
+    # lets create a new contact with no message
+    Contacts.create_contact(%{name: "My conversation contact", phone: "+123456789"})
+
+    contact_ids =
+      from(c in Contacts.Contact, select: c.id)
+      |> Glific.Repo.all()
+      |> Enum.map(&Integer.to_string(&1))
+
+    {:ok, result} =
+      query_gql_by(:list, variables: %{"nc" => 1, "sc" => 1, "filter" => %{"ids" => contact_ids}})
+
+    assert get_in(result, [:data, "conversations"]) |> length == length(contact_ids)
+    assert get_in(result, [:data, "conversations", Access.at(0), "contact", "id"]) in contact_ids
   end
 end
