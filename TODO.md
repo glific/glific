@@ -12,8 +12,6 @@
 * Integrate WhatsApp location
 * More details on a contact from WA Profile
 * Users
-  * Add name to schema and user creation flow?
-  * Roles
   * Groups
   * Permissions
 * Claiming conversations by Groups

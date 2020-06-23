@@ -1,7 +1,15 @@
 query search($term: String!) {
   search(term: $term) {
-    id
-    name
-    phone
+    contact {
+      id
+      name
+      phone
+    }
+    messages {
+      id
+      body
+      flow
+      type
+    }
   }
 }

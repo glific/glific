@@ -86,49 +86,53 @@ defmodule Glific.Communications.Message do
   end
 
   @doc """
-  Callback when we receive a text message
+  Callback when we receive a message from whats app
   """
-
-  @spec receive_text(map()) :: :ok
-  def receive_text(message_params) do
+  @spec receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
+  def receive_message(message_params, type \\ :text) do
     {:ok, contact} =
       Contacts.upsert(message_params.sender)
       |> Contacts.update_contact(%{last_message_at: DateTime.utc_now()})
 
+    message_params =
+      message_params
+      |> Map.merge(%{
+        type: type,
+        sender_id: contact.id,
+        receiver_id: organization_contact_id(),
+        flow: :inbound
+      })
+
+    cond do
+      type in [:video, :audio, :image, :document] -> receive_media(message_params)
+      type == :text -> receive_text(message_params)
+      # For location and address messages, will add that when there will be a use case
+      true -> {:error, "Message type not supported"}
+    end
+  end
+
+  # handler for receiving the text message
+  @spec receive_text(map()) :: {:ok}
+  defp receive_text(message_params) do
     message_params
-    |> Map.merge(%{
-      type: :text,
-      sender_id: contact.id,
-      receiver_id: organization_contact_id(),
-      flow: :inbound
-    })
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
     |> Producer.add()
+
+    {:ok}
   end
 
-  @doc """
-  Callback when we receive a media (image|video|audio) message
-  """
-  @spec receive_media(map()) :: :ok
-  def receive_media(message_params) do
-    {:ok, contact} =
-      Contacts.upsert(message_params.sender)
-      |> Contacts.update_contact(%{last_message_at: DateTime.utc_now()})
-
+  # handler for receiving the media (image|video|audio|document)  message
+  @spec receive_media(map()) :: {:ok}
+  defp receive_media(message_params) do
     {:ok, message_media} = Messages.create_message_media(message_params)
 
     message_params
-    |> Map.merge(%{
-      sender_id: contact.id,
-      media_id: message_media.id,
-      receiver_id: organization_contact_id(),
-      flow: :inbound
-    })
+    |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
 
-    :ok
+    {:ok}
   end
 
   @doc false
