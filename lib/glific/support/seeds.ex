@@ -12,7 +12,8 @@ defmodule Glific.Seeds do
     Settings,
     Settings.Language,
     Tags.Tag,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Users.User
   }
 
   @doc """
@@ -418,7 +419,7 @@ defmodule Glific.Seeds do
       Do you want to change the language you want to receive messages in?
 
       हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
-      Type English to receive messages in English
+      To receive messages in English, type English
       """,
       type: :text,
       shortcode: "language",
@@ -429,12 +430,12 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "Language",
       body: """
-      आपकी पसंदीदा भाषा <%= language %> है
+      क्या आपकी पसंदीदा भाषा <%= language %> है?
 
-      आप किस भाषा में संदेश प्राप्त करना चाहते हैं?क्या आप उस भाषा को बदलना चाहते हैं जिसमें आप संदेश प्राप्त करना चाहते हैं?
+      आप अपनी पसंदीदा भाषा में संदेश प्राप्त कर सकते हैं।
 
       हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
-      Type English to receive messages in English
+      To receive messages in English, type English
       """,
       type: :text,
       shortcode: "language",
@@ -466,6 +467,24 @@ defmodule Glific.Seeds do
       shortcode: "optout",
       is_reserved: true,
       language_id: hi_in.id
+    })
+  end
+
+  @doc false
+  @spec seed_users :: {User.t()}
+  def seed_users do
+    Repo.insert!(%User{
+      name: "John Doe",
+      phone: "+919820198765",
+      password: "secret1234",
+      roles: ["admin"]
+    })
+
+    Repo.insert!(%User{
+      name: "Jane Doe",
+      phone: "+918820198765",
+      password: "secret1234",
+      roles: ["basic", "admin"]
     })
   end
 

@@ -16,7 +16,7 @@ defmodule GlificWeb.Schema.GenericTypes do
   input_object :opts do
     field(:order, type: :sort_order, default_value: :asc)
     field(:limit, :integer)
-    field(:offset, :integer)
+    field(:offset, :integer, default_value: 0)
   end
 
   @desc """

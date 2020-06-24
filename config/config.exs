@@ -11,8 +11,7 @@ config :glific,
   ecto_repos: [Glific.Repo],
   provider: Glific.Providers.Gupshup,
   provider_id: "gupshup-provider-23",
-  provider_limit: 10,
-  message_ancestors_limit: 75
+  provider_limit: 10
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,

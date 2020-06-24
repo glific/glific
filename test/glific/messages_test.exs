@@ -206,49 +206,52 @@ defmodule Glific.MessagesTest do
       assert {:error, %Ecto.Changeset{}} = Messages.create_message(@invalid_attrs)
     end
 
-    test "create_message/1 with valid data will set parent id if exists" do
-      body = "Body for parent id"
-      message1 = message_fixture()
+    test "create_message/1 with valid data will have the message number for the same contact" do
+      message1 = message_fixture(%{body: "message 1"})
 
       message_fixture(%{
-        body: body,
+        body: "message 2",
         sender_id: message1.sender_id,
         receiver_id: message1.receiver_id
       })
 
-      {:ok, message2} = Glific.Repo.fetch_by(Message, %{body: body})
-      assert message1.id == message2.parent_id
-    end
-
-    test "create_message/1 with valid data will set ancestors id if exists" do
-      message1 = message_fixture()
-
-      message2 =
-        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
-
-      message3 =
-        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
-
-      message4 =
-        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
-
-      message5 =
-        message_fixture(%{sender_id: message1.sender_id, receiver_id: message1.receiver_id})
-
-      body = "Body for ancestors message"
-
       message_fixture(%{
-        body: body,
+        body: "message 3",
         sender_id: message1.sender_id,
         receiver_id: message1.receiver_id
       })
 
-      {:ok, message6} = Glific.Repo.fetch_by(Message, %{body: body})
-      assert message5.id == message6.parent_id
-      assert length(message6.ancestors) == 5
+      message_fixture(%{
+        body: "message 4",
+        sender_id: message1.sender_id,
+        receiver_id: message1.receiver_id
+      })
 
-      assert [message5.id, message4.id, message3.id, message2.id, message1.id] ==
-               message6.ancestors
+      message_fixture(%{
+        body: "message 5",
+        sender_id: message1.sender_id,
+        receiver_id: message1.receiver_id
+      })
+
+      message_fixture(%{
+        body: "message 6",
+        sender_id: message1.sender_id,
+        receiver_id: message1.receiver_id
+      })
+
+      {:ok, message6} = Glific.Repo.fetch_by(Message, %{body: "message 6"})
+      {:ok, message5} = Glific.Repo.fetch_by(Message, %{body: "message 5"})
+      {:ok, message4} = Glific.Repo.fetch_by(Message, %{body: "message 4"})
+      {:ok, message3} = Glific.Repo.fetch_by(Message, %{body: "message 3"})
+      {:ok, message2} = Glific.Repo.fetch_by(Message, %{body: "message 2"})
+      {:ok, message1} = Glific.Repo.fetch_by(Message, %{body: "message 1"})
+
+      assert message6.message_number == 0
+      assert message5.message_number == 1
+      assert message4.message_number == 2
+      assert message3.message_number == 3
+      assert message2.message_number == 4
+      assert message1.message_number == 5
     end
 
     test "update_message/2 with valid data updates the message" do

@@ -1,0 +1,7 @@
+query users ($filter: UserFilter, $opts: Opts) {
+  users (filter: $filter, opts: $opts) {
+    id
+    name
+    phone
+  }
+}
