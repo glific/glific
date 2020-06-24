@@ -76,13 +76,13 @@ defmodule Glific.Conversations do
   # Get the latest contact ids form messages
   @spec get_recent_contact_ids(map()) :: list()
   defp get_recent_contact_ids(contact_opts) do
-      Messages.Message
-      |> where([m], m.message_number == 0)
-      |> order_by([m], desc: m.updated_at)
-      |> offset(^contact_opts.offset)
-      |> limit(^contact_opts.limit)
-      |> select([m], [m.contact_id])
-      |> Repo.all()
-      |> List.flatten()
+    query = from m in Messages.Message,
+      where: m.message_number == 0,
+      order_by: [desc: m.updated_at],
+      offset: ^contact_opts.offset,
+      limit: ^contact_opts.limit,
+      select: m.contact_id
+
+    Repo.all(query)
   end
 end
