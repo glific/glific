@@ -68,7 +68,7 @@ defmodule Glific.Processor.Helper do
   @spec start_link([], atom()) :: GenServer.on_start()
   def start_link(opts, module) do
     name = Keyword.get(opts, :name, module)
-    producer = Keyword.get(opts, :producer, module)
+    producer = Keyword.get(opts, :producer, Glific.Processor.ConsumerTagger)
     GenStage.start_link(module, [producer: producer], name: name)
   end
 
@@ -87,6 +87,19 @@ defmodule Glific.Processor.Helper do
         max_demand: @max_demand}
      ]}
   end
+  def init(opts) do
+    state = %{
+      producer: opts[:producer]
+    }
+
+    {:consumer, state,
+     subscribe_to: [
+       {state.producer,
+        min_demand: @min_demand,
+        max_demand: @max_demand}
+     ]}
+  end
+
 
   @doc false
   @spec handle_events([], any, map(), (any, any -> any)) :: tuple()
