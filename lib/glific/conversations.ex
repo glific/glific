@@ -18,18 +18,19 @@ defmodule Glific.Conversations do
 
   # Default values for the conversation. User will be able to override them in the API calls
   @default_opts %{
-      message_opts: %{offset: 0, limit: 25},
-      contact_opts: %{offset: 0, limit: 10}
+    message_opts: %{offset: 0, limit: 25},
+    contact_opts: %{offset: 0, limit: 10}
   }
-
 
   @doc """
   Returns the last M conversations, each conversation not more than N messages
   """
   @spec list_conversations(map()) :: list()
   def list_conversations(args) do
-    args = Map.merge(@default_opts, args)
-    Messages.list_conversations(Map.put(args, :ids, get_message_ids(args.contact_opts, args.message_opts, args)))
+    args = Map.merge(@default_opts, args, fn _k, v1, v2 -> v1 |> Map.merge(v2) end)
+    Messages.list_conversations(
+      Map.put(args, :ids, get_message_ids(args.contact_opts, args.message_opts, args))
+    )
   end
 
   @doc """
@@ -50,11 +51,21 @@ defmodule Glific.Conversations do
   end
 
   @spec get_message_ids(map(), map(), map() | nil) :: list()
-  defp get_message_ids(contact_opts, message_opts, %{filter: %{id: id}}), do: get_message_ids([[id], contact_opts.limit, 0, message_opts.limit, message_opts.offset])
+  defp get_message_ids(contact_opts, message_opts, %{filter: %{id: id}}),
+    do: get_message_ids([[id], contact_opts.limit, 0, message_opts.limit, message_opts.offset])
 
-  defp get_message_ids(contact_opts, message_opts, %{filter: %{ids: ids}}), do: get_message_ids([ids, contact_opts.limit, 0, message_opts.limit, message_opts.offset])
+  defp get_message_ids(contact_opts, message_opts, %{filter: %{ids: ids}}),
+    do: get_message_ids([ids, contact_opts.limit, 0, message_opts.limit, message_opts.offset])
 
-  defp get_message_ids(contact_opts, message_opts, _), do: get_message_ids([[], contact_opts.limit, contact_opts.offset, message_opts.limit, message_opts.offset])
+  defp get_message_ids(contact_opts, message_opts, _),
+    do:
+      get_message_ids([
+        [],
+        contact_opts.limit,
+        contact_opts.offset,
+        message_opts.limit,
+        message_opts.offset
+      ])
 
   defp get_message_ids(opts) do
     {:ok, results} = Repo.query(@sql_ids, opts)
