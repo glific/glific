@@ -14,44 +14,54 @@ defmodule TestConsumerTagger do
   end
 
   def init(demand) do
-    tag_ids = Tags.tags_map(["New Contact", "Language"])
+    tag_ids = Tags.tags_map(["New Contact", "Language", "Optout"])
     language_ids = Repo.label_id_map(Language, ["Hindi", "English (United States)"])
 
     state = %{
       counter: demand,
       new_contact_tag_id: tag_ids["New Contact"],
       language_tag_id: tag_ids["Language"],
+      optout_tag_id: tag_ids["Optout"],
       language_id: language_ids["Hindi"]
     }
 
     {:producer, state}
   end
 
+  defp create_message_tag(tag_id, language_id, body, value \\ nil) do
+    m = Fixtures.message_fixture(%{body: body, language_id: language_id})
+    {:ok, _} = Tags.create_message_tag(%{message_id: m.id, tag_id: tag_id, value: value})
+    Repo.preload(m, :tags)
+  end
+
   defp create_message_new_contact(%{
          new_contact_tag_id: new_contact_tag_id,
          language_id: language_id
        }) do
-    m =
-      Fixtures.message_fixture(%{body: "This is a random first message", language_id: language_id})
-
-    {:ok, _} = Tags.create_message_tag(%{message_id: m.id, tag_id: new_contact_tag_id})
-
-    Repo.preload(m, :tags)
+    create_message_tag(
+      new_contact_tag_id,
+      language_id,
+      "Test message for testing new contact tag"
+    )
   end
 
   defp create_message_language(
          %{language_tag_id: language_tag_id, language_id: language_id},
          value
        ) do
-    m =
-      Fixtures.message_fixture(%{body: "This is a random first message", language_id: language_id})
-
-    {:ok, _} = Tags.create_message_tag(%{message_id: m.id, tag_id: language_tag_id, value: value})
-
-    Repo.preload(m, :tags)
+    create_message_tag(
+      language_tag_id,
+      language_id,
+      "Test message for testing language switch",
+      value
+    )
   end
 
-  def handle_demand(_demand, %{counter: counter} = state) when counter > 5 do
+  defp create_message_optout(%{optout_tag_id: optout_tag_id, language_id: language_id}) do
+    create_message_tag(optout_tag_id, language_id, "Test message for testing optout tag")
+  end
+
+  def handle_demand(_demand, %{counter: counter} = state) when counter > 6 do
     send(:test, {:called_back})
     {:stop, :normal, state}
   end
@@ -61,12 +71,13 @@ defmodule TestConsumerTagger do
       Enum.map(
         counter..(counter + demand - 1),
         fn c ->
-          case rem(c, 5) do
-            0 -> create_message_language(state, "hindi")
+          case rem(c, 6) do
+            0 -> create_message_optout(state)
             1 -> create_message_language(state, "english")
             2 -> create_message_new_contact(state)
             3 -> create_message_language(state, "हिंदी")
             4 -> create_message_new_contact(state)
+            5 -> create_message_language(state, "hindi")
           end
         end
       )
@@ -116,7 +127,18 @@ defmodule Glific.Processor.ConsumerAutomationTest do
         }
       })
 
-    # since we sent 5 messages, all of which send the language chooser message
+    # since we sent 5 messages that talk about language
+    # all of which send the language chooser message
     assert length(l) == 5
+
+    # lets ensure we have one optout message also
+    l =
+      Messages.list_messages(%{
+        filter: %{
+          body: "अब आपकी सदस्यता समाप्त हो गई है"
+        }
+      })
+
+    assert length(l) == 1
   end
 end

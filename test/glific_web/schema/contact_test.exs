@@ -184,11 +184,13 @@ defmodule GlificWeb.Schema.ContactTest do
 
     result = query_gql_by(:search, variables: %{"term" => "Default"})
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "search", Access.at(0), "id"]) == receiver_id
+
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
+             receiver_id
 
     result = query_gql_by(:search, variables: %{"term" => "Default receiver"})
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "search", Access.at(0), "id"]) == receiver_id
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == receiver_id
 
     result =
       query_gql_by(:search,
