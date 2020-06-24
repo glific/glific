@@ -21,10 +21,10 @@ defmodule Glific.Fixtures do
     valid_attrs = %{
       name: Name.name(),
       optin_time: DateTime.backward(1),
-      optout_time: DateTime.backward(1),
+      last_message_at: DateTime.backward(0),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      provider_status: :invalid
+      provider_status: :valid
     }
 
     {:ok, contact} =
