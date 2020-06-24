@@ -62,18 +62,14 @@ defmodule Glific.Conversations do
   defp get_message_ids(_contact_opts, message_opts, %{filter: %{ids: ids}}),
     do: get_message_ids([ids, message_opts.offset, message_opts.limit])
 
-  defp get_message_ids(contact_opts, message_opts, _),
-    do:
-      get_message_ids([
-        [],
+  defp get_message_ids(contact_opts, message_opts, _) do
+    {:ok, results} = Repo.query(@sql_ids_all, [
         contact_opts.limit,
         contact_opts.offset,
         message_opts.limit,
         message_opts.offset
       ])
 
-  defp get_message_ids([[] | opts]) do
-    {:ok, results} = Repo.query(@sql_ids_all, opts)
     List.flatten(results.rows)
   end
 
