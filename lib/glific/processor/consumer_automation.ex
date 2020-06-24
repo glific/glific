@@ -108,6 +108,11 @@ defmodule Glific.Processor.ConsumerAutomation do
     )
   end
 
+  @spec process_tag(Message.t(), Tag.t()) :: Message.t()
+  defp process_tag(message, %Tag{label: label}) when label == "Help" do
+    send_session_message_template(message, "help")
+  end
+
   defp process_tag(message, %Tag{label: label} = tag) when label == "Language" do
     {:ok, message_tag} = Repo.fetch_by(MessageTag, %{message_id: message.id, tag_id: tag.id})
     [language | _] = Settings.list_languages(%{label: message_tag.value})

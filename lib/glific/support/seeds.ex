@@ -83,6 +83,14 @@ defmodule Glific.Seeds do
         keywords: ["stop", "unsubscribe", "halt", "सदस्यता समाप्त"]
       },
 
+      # Help
+      %{
+        label: "Help",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["help", "मदद"]
+      },
+
       # Tags with Value
       %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
 
