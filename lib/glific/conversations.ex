@@ -77,7 +77,7 @@ defmodule Glific.Conversations do
     List.flatten(results.rows)
   end
 
-  defp get_message_ids([_head | _tail] = opts) do
+  defp get_message_ids(opts) do
     {:ok, results} = Repo.query(@sql_ids, opts)
     List.flatten(results.rows)
   end
