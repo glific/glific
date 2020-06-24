@@ -6,7 +6,8 @@ defmodule TestConsumerTagger do
     Processor.ConsumerAutomation,
     Repo,
     Settings.Language,
-    Tags
+    Tags,
+    Tags.Tag
   }
 
   def start_link(demand) do
@@ -50,7 +51,7 @@ defmodule TestConsumerTagger do
   defp create_message_language(
          %{language_tag_id: language_tag_id, language_id: language_id},
          value
-  ) do
+       ) do
     create_message_tag(
       language_tag_id,
       language_id,
@@ -63,7 +64,25 @@ defmodule TestConsumerTagger do
     create_message_tag(optout_tag_id, language_id, "Test message for testing optout tag")
   end
 
-  def handle_demand(_demand, %{counter: counter} = state) when counter > 7 do
+  def handle_demand(demand, %{counter: counter} = state) when counter < 6 do
+    events =
+      Enum.map(
+        counter..(counter + demand - 1),
+        fn _ ->
+          [
+            Fixtures.message_fixture(%{
+              body: "This is just a filler message while we wait",
+              language_id: state.language_id
+            }),
+            %Tag{}
+          ]
+        end
+      )
+
+    {:noreply, events, Map.put(state, :counter, demand + counter)}
+  end
+
+  def handle_demand(_demand, %{counter: counter} = state) when counter > 11 do
     send(:test, {:called_back})
     {:stop, :normal, state}
   end
@@ -80,7 +99,6 @@ defmodule TestConsumerTagger do
             3 -> create_message_new_contact(state)
             4 -> create_message_language(state, "हिंदी")
             5 -> create_message_language(state, "hindi")
-            6 -> create_message_new_contact(state)
           end
         end
       )
@@ -118,8 +136,12 @@ defmodule Glific.Processor.ConsumerAutomationTest do
 
     {:ok, _consumer} =
       ConsumerAutomation.start_link(producer: producer, name: TestConsumerAutomation)
+
     {:ok, _consumer} = ConsumerLanguage.start_link(producer: producer, name: TestConsumerLanguage)
-    {:ok, _consumer} = ConsumerNewContact.start_link(producer: producer, name: TestConsumerNewContact)
+
+    {:ok, _consumer} =
+      ConsumerNewContact.start_link(producer: producer, name: TestConsumerNewContact)
+
     {:ok, _consumer} = ConsumerOptout.start_link(producer: producer, name: TestConsumerOptout)
 
     Process.register(self(), :test)

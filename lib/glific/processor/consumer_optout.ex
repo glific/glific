@@ -16,41 +16,25 @@ defmodule Glific.Processor.ConsumerOptout do
     Tags.Tag
   }
 
-  @min_demand 0
-  @max_demand 1
-
   @doc false
   @spec start_link([]) :: GenServer.on_start()
   def start_link(opts) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    producer = Keyword.get(opts, :producer, Glific.Processor.ConsumerOptout)
-    GenStage.start_link(__MODULE__, [producer: producer], name: name)
+    Helper.start_link(opts, __MODULE__)
   end
 
   @doc false
   def init(opts) do
-    state = %{
-      producer: opts[:producer]
-    }
-
-    {:consumer, state,
-     subscribe_to: [
-       {state.producer,
-        selector: fn [_, %{label: label}] -> label == "Optout" end,
-        min_demand: @min_demand,
-        max_demand: @max_demand}
-     ]}
+    Helper.init(opts, "Optout")
   end
 
   @doc false
-  def handle_events(messages_tags, _from, state) do
-    _ = Enum.map(messages_tags, fn [m, t] -> process_tag(m, t) end)
-    {:noreply, [], state}
+  def handle_events(messages_tags, from, state) do
+    Helper.handle_events(messages_tags, from, state, &process_tag/2)
   end
 
   # Process the optout tag. Send a confirmation to the sender and set the contact fields
   @spec process_tag(Message.t(), Tag.t()) :: any
-  defp process_tag(message, _) do
+  def process_tag(message, _tag) do
     # lets send the message first, so it goes out
     Helper.send_session_message_template(message, "optout")
 

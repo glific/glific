@@ -25,9 +25,7 @@ defmodule Glific.Processor.ConsumerAutomation do
 
     {:consumer, state,
      subscribe_to: [
-       {state.producer,
-        min_demand: @min_demand,
-        max_demand: @max_demand}
+       {state.producer, min_demand: @min_demand, max_demand: @max_demand}
      ]}
   end
 
@@ -37,8 +35,5 @@ defmodule Glific.Processor.ConsumerAutomation do
     {:noreply, [], state}
   end
 
-  defp process_tag(message, tag) do
-    IO.puts("#{message.id}, #{message.body}, #{tag.id}, #{tag.label}")
-    message
-  end
+  defp process_tag(message, _tag), do: message
 end

@@ -58,4 +58,40 @@ defmodule Glific.Processor.Helper do
 
     message
   end
+
+  @min_demand 0
+  @max_demand 1
+
+  @doc """
+  Common function for downstream consumers since they follow the same pattern
+  """
+  @spec start_link([], atom()) :: GenServer.on_start()
+  def start_link(opts, module) do
+    name = Keyword.get(opts, :name, module)
+    producer = Keyword.get(opts, :producer, module)
+    GenStage.start_link(module, [producer: producer], name: name)
+  end
+
+  @doc false
+  @spec init([], String.t()) :: tuple()
+  def init(opts, label) do
+    state = %{
+      producer: opts[:producer]
+    }
+
+    {:consumer, state,
+     subscribe_to: [
+       {state.producer,
+        selector: fn [_, %{label: l}] -> l == label end,
+        min_demand: @min_demand,
+        max_demand: @max_demand}
+     ]}
+  end
+
+  @doc false
+  @spec handle_events([], any, map(), (any, any -> any)) :: tuple()
+  def handle_events(messages_tags, _from, state, processFn) do
+    _ = Enum.map(messages_tags, fn [m, t] -> processFn.(m, t) end)
+    {:noreply, [], state}
+  end
 end
