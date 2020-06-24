@@ -185,13 +185,10 @@ defmodule Glific.PartnersTest do
 
     @spec contact_fixture() :: Contacts.Contact.t()
     def contact_fixture do
-      default_organization_language = default_language_fixture()
-
       {:ok, contact} =
         Glific.Contacts.create_contact(%{
           name: Name.name(),
-          phone: Phone.EnUs.phone(),
-          language_id: default_organization_language.id
+          phone: Phone.EnUs.phone()
         })
 
       contact
@@ -205,11 +202,7 @@ defmodule Glific.PartnersTest do
       {:ok, organization} =
         attrs
         |> Enum.into(@valid_org_attrs)
-        |> Map.merge(%{
-          provider_id: provider.id,
-          contact_id: contact.id,
-          default_language_id: default_language.id
-        })
+        |> Map.merge(%{provider_id: provider.id, contact_id: contact.id, default_language_id: default_language.id})
         |> Partners.create_organization()
 
       organization
@@ -328,8 +321,7 @@ defmodule Glific.PartnersTest do
 
       assert [organization] == Partners.list_organizations(%{filter: %{provider: provider.name}})
 
-      assert [organization] ==
-               Partners.list_organizations(%{filter: %{default_language: default_language.label}})
+      assert [organization] == Partners.list_organizations(%{filter: %{default_language: default_language.label}})
 
       assert [] == Partners.list_organizations(%{filter: %{provider: "RandomString"}})
     end

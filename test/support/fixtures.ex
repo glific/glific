@@ -18,16 +18,13 @@ defmodule Glific.Fixtures do
   @doc false
   @spec contact_fixture(map()) :: Contacts.Contact.t()
   def contact_fixture(attrs \\ %{}) do
-    language = language_fixture()
-
     valid_attrs = %{
       name: Name.name(),
       optin_time: DateTime.backward(1),
       optout_time: DateTime.backward(1),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      provider_status: :invalid,
-      language_id: language.id
+      provider_status: :invalid
     }
 
     {:ok, contact} =
