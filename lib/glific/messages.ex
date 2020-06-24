@@ -501,12 +501,12 @@ defmodule Glific.Messages do
 
       {:include_tags, tag_ids}, query ->
         query
-        |> join(:left, [m], mt in MessageTag, on: m.id == mt.tag_id)
+        |> join(:left, [m], mt in MessageTag, on: m.id == mt.message_id)
         |> where([m, mt], mt.tag_id in ^tag_ids)
 
       {:exclude_tags, tag_ids}, query ->
         query
-        |> join(:left, [m], mt in MessageTag, on: m.id == mt.tag_id)
+        |> join(:left, [m], mt in MessageTag, on: m.id == mt.message_id)
         |> where([m, mt], mt.tag_id not in ^tag_ids)
     end)
   end
