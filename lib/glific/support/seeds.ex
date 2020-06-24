@@ -413,12 +413,12 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "Language",
       body: """
-      आपकी पसंदीदा भाषा <%= language %> है
+      क्या आपकी पसंदीदा भाषा <%= language %> है?
 
-      आप किस भाषा में संदेश प्राप्त करना चाहते हैं?क्या आप उस भाषा को बदलना चाहते हैं जिसमें आप संदेश प्राप्त करना चाहते हैं?
+      आप अपनी पसंदीदा भाषा में संदेश प्राप्त कर सकते हैं।
 
       हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
-      Type English to receive messages in English
+      To receive messages in English, type English
       """,
       type: :text,
       shortcode: "language",
