@@ -16,7 +16,7 @@ defmodule Glific.Conversations do
     SELECT conversation_message_ids(ids => $1, contact_limit => $2, contact_offset => $3, message_limit => $4, message_offset => $5)
   """
 
-  # still thinking that should we put them into config or not
+  # Default values for the conversation. User will be able to override them in the API calls
   @default_opts %{
       message_opts: %{offset: 0, limit: 25},
       contact_opts: %{offset: 0, limit: 10}
