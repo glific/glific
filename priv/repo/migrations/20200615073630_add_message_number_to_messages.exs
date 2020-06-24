@@ -1,8 +1,6 @@
 defmodule Glific.Repo.Migrations.AddMessageNumberToMessages do
   use Ecto.Migration
 
-  @ancestors_limit Application.fetch_env!(:glific, :message_ancestors_limit)
-
   def up do
     execute """
     CREATE OR REPLACE FUNCTION update_message_number()
