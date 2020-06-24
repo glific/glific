@@ -12,10 +12,6 @@ defmodule Glific.Conversations do
 
   alias Glific.{Conversations.Conversation, Messages, Repo}
 
-  @sql_ids_all """
-    SELECT id FROM messages  where contact_id in (SELECT contact_id FROM messages where message_number = 0 ORDER BY updated_at DESC OFFSET $2 LIMIT $1) and message_number >= $4 and message_number < $3 + $4 ORDER by message_number
-  """
-
   # Default values for the conversation. User will be able to override them in the API calls
   @default_opts %{
     message_opts: %{offset: 0, limit: 25},
@@ -59,26 +55,34 @@ defmodule Glific.Conversations do
     do: get_message_ids(ids, message_opts)
 
   defp get_message_ids(contact_opts, message_opts, _) do
-    {:ok, results} =
-      Repo.query(@sql_ids_all, [
-        contact_opts.limit,
-        contact_opts.offset,
-        message_opts.limit,
-        message_opts.offset
-      ])
-
-    List.flatten(results.rows)
+    contact_opts
+    |> get_recent_contact_ids()
+    |> get_message_ids(message_opts)
   end
 
   @spec get_message_ids(list(), map()) :: list()
-  defp get_message_ids(ids, %{limit: message_limit, offset: message_offset}),
-    do:
-      Glific.Messages.Message
+  defp get_message_ids(ids, %{limit: message_limit, offset: message_offset}) do
+      Messages.Message
       |> where([m], m.contact_id in ^ids)
       |> where([m], m.message_number >= ^message_offset)
       |> where([m], m.message_number < ^(message_limit + message_offset))
       |> order_by([m], m.message_number)
       |> select([m], [m.id])
-      |> Glific.Repo.all()
+      |> Repo.all()
       |> List.flatten()
+
+  end
+
+  # Get the latest contact ids form messages
+  @spec get_recent_contact_ids(map()) :: list()
+  defp get_recent_contact_ids(contact_opts) do
+      Messages.Message
+      |> where([m], m.message_number == 0)
+      |> order_by([m], desc: m.updated_at)
+      |> offset(^contact_opts.offset)
+      |> limit(^contact_opts.limit)
+      |> select([m], [m.contact_id])
+      |> Repo.all()
+      |> List.flatten()
+  end
 end
