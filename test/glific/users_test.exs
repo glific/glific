@@ -93,7 +93,6 @@ defmodule Glific.UsersTest do
 
     test "update_user/2 with invalid data returns error changeset" do
       user = user_fixture()
-      IO.inspect user
       assert {:error, %Ecto.Changeset{}} = Users.update_user(user, @invalid_attrs)
       assert user |> Map.put(:password, nil) == Users.get_user!(user.id)
     end

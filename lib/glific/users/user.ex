@@ -63,7 +63,7 @@ defmodule Glific.Users.User do
     user_or_changeset
     |> Changeset.cast(params, [:name, :roles])
     |> Changeset.validate_required([:name, :roles])
-    |> Changeset.validate_inclusion(:roles, @user_roles)
+    |> Changeset.validate_subset(:roles, @user_roles)
   end
 
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),

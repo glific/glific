@@ -2,8 +2,6 @@ defmodule GlificWeb.Schema.UserTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
-  alias Glific.Users
-
   setup do
     Glific.Seeds.seed_users()
     :ok
@@ -97,9 +95,22 @@ defmodule GlificWeb.Schema.UserTest do
 
     assert {:ok, query_data} = result
 
-    user = get_in(query_data, [:data, "updateUser", "user"])
-    assert user["name"] == name
-    assert user["roles"] == roles
+    user_result = get_in(query_data, [:data, "updateUser", "user"])
+    assert user_result["name"] == name
+    assert user_result["roles"] == roles
+
+    # update with incorrect role should give error
+    roles = ["admin", "incorrect_role"]
+
+    result =
+      query_gql_by(:update,
+        variables: %{"id" => user.id, "input" => %{"name" => name, "roles" => roles}}
+      )
+
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "updateUser", "errors", Access.at(0), "message"])
+    assert message == "has an invalid entry"
   end
 
   test "delete a user" do
