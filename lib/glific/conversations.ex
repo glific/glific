@@ -62,26 +62,26 @@ defmodule Glific.Conversations do
 
   @spec get_message_ids(list(), map()) :: list()
   defp get_message_ids(ids, %{limit: message_limit, offset: message_offset}) do
-      Messages.Message
-      |> where([m], m.contact_id in ^ids)
-      |> where([m], m.message_number >= ^message_offset)
-      |> where([m], m.message_number < ^(message_limit + message_offset))
-      |> order_by([m], m.message_number)
-      |> select([m], [m.id])
-      |> Repo.all()
-      |> List.flatten()
-
+    Messages.Message
+    |> where([m], m.contact_id in ^ids)
+    |> where([m], m.message_number >= ^message_offset)
+    |> where([m], m.message_number < ^(message_limit + message_offset))
+    |> order_by([m], m.message_number)
+    |> select([m], [m.id])
+    |> Repo.all()
+    |> List.flatten()
   end
 
   # Get the latest contact ids form messages
   @spec get_recent_contact_ids(map()) :: list()
   defp get_recent_contact_ids(contact_opts) do
-    query = from m in Messages.Message,
-      where: m.message_number == 0,
-      order_by: [desc: m.updated_at],
-      offset: ^contact_opts.offset,
-      limit: ^contact_opts.limit,
-      select: m.contact_id
+    query =
+      from m in Messages.Message,
+        where: m.message_number == 0,
+        order_by: [desc: m.updated_at],
+        offset: ^contact_opts.offset,
+        limit: ^contact_opts.limit,
+        select: m.contact_id
 
     Repo.all(query)
   end
