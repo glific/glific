@@ -1,0 +1,8 @@
+#import "./fields.frag.gql"
+
+mutation createTemplateFormMessage($messageId: ID!, $input: MessageToTemplateInput!) {
+  createTemplateFormMessage(messageId: $messageId, input: $input ) {
+    ...SessionTemplateFields
+    ...ErrorFields
+  }
+}

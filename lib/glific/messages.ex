@@ -435,6 +435,9 @@ defmodule Glific.Messages do
     |> add_empty_conversations(args)
   end
 
+  # given all the messages related to multiple contacts, group them
+  # by contact id into conversation objects
+  @spec make_conversations([Message.t()]) :: [Conversation.t()]
   defp make_conversations(results) do
     # now format the results,
     Enum.reduce(
@@ -444,6 +447,9 @@ defmodule Glific.Messages do
     )
   end
 
+  # for all input contact ids that do not have messages attached to them
+  # return a conversation data type with empty messages
+  @spec add_empty_conversations([Conversation.t()], map()) :: [Conversation.t()]
   defp add_empty_conversations(results, %{filter: %{id: id}}),
     do: add_empty_conversation(results, [id])
 
@@ -452,25 +458,38 @@ defmodule Glific.Messages do
 
   defp add_empty_conversations(results, _), do: results
 
-  defp add_empty_conversation(results, contact_ids) do
+  # helper function that actually implements the above functionality
+  @spec add_empty_conversations([Conversation.t()], [integer]) :: [Conversation.t()]
+  defp add_empty_conversation(results, contact_ids) when is_list(contact_ids) do
+    # first find all the contact ids that we have some messages
+    present_contact_ids =
+      Enum.reduce(
+        results,
+        [],
+        fn r, acc -> [r.contact.id | acc] end
+      )
+
+    # the difference is the empty contacts id list
+    empty_contact_ids = contact_ids -- present_contact_ids
+
+    # now only generate conversations objects for the empty contact ids
     Enum.reduce(
-      contact_ids,
+      empty_contact_ids,
       results,
-      fn id, acc -> check_and_add_conversation(acc, id) end
+      fn id, acc -> add_conversation(acc, id) end
     )
   end
 
-  defp check_and_add_conversation(results, contact_id) do
-    if Enum.find(results, fn x -> x.contact.id == contact_id end) do
-      results
-    else
-      case Repo.fetch(Contact, contact_id) do
-        {:ok, contact} -> [Conversation.new(contact, []) | results]
-        {:error, _} -> results
-      end
+  # add an empty conversation for a specific contact if ONLY if it exists
+  @spec add_conversation([Conversation.t()], integer) :: [Conversation.t()]
+  defp add_conversation(results, contact_id) do
+    case Repo.fetch(Contact, contact_id) do
+      {:ok, contact} -> [Conversation.new(contact, []) | results]
+      {:error, _} -> results
     end
   end
 
+  # restrict the conversations query based on the filters in the input args
   @spec conversations_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp conversations_with(query, filter) do
     Enum.reduce(filter, query, fn
@@ -482,12 +501,12 @@ defmodule Glific.Messages do
 
       {:include_tags, tag_ids}, query ->
         query
-        |> join(:left, [m], mt in MessageTag, on: m.id == mt.tag_id)
+        |> join(:left, [m], mt in MessageTag, on: m.id == mt.message_id)
         |> where([m, mt], mt.tag_id in ^tag_ids)
 
       {:exclude_tags, tag_ids}, query ->
         query
-        |> join(:left, [m], mt in MessageTag, on: m.id == mt.tag_id)
+        |> join(:left, [m], mt in MessageTag, on: m.id == mt.message_id)
         |> where([m, mt], mt.tag_id not in ^tag_ids)
     end)
   end

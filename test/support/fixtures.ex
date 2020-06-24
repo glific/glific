@@ -21,10 +21,10 @@ defmodule Glific.Fixtures do
     valid_attrs = %{
       name: Name.name(),
       optin_time: DateTime.backward(1),
-      optout_time: DateTime.backward(1),
+      last_message_at: DateTime.backward(0),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      provider_status: :invalid
+      provider_status: :valid
     }
 
     {:ok, contact} =
@@ -38,8 +38,8 @@ defmodule Glific.Fixtures do
   @doc false
   @spec message_fixture(map()) :: Messages.Message.t()
   def message_fixture(attrs \\ %{}) do
-    sender = contact_fixture()
-    receiver = contact_fixture()
+    sender = contact_fixture(attrs)
+    receiver = contact_fixture(attrs)
 
     valid_attrs = %{
       body: Faker.Lorem.sentence(),

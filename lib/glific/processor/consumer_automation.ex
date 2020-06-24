@@ -57,18 +57,55 @@ defmodule Glific.Processor.ConsumerAutomation do
     {:noreply, [], state}
   end
 
+  defp get_session_message_template(shortcode, language_id) do
+    result =
+      Repo.fetch_by(SessionTemplate, %{
+        shortcode: shortcode,
+        language_id: language_id
+      })
+
+    case result do
+      {:ok, session_template} -> session_template
+      _ -> get_session_message_template(shortcode)
+    end
+  end
+
+  defp get_session_message_template(shortcode) do
+    {:ok, session_template} =
+      Repo.fetch_by(SessionTemplate, %{
+        shortcode: shortcode
+      })
+
+    session_template
+  end
+
+  defp send_session_message_template(message, shortcode) do
+    message = Repo.preload(message, :sender)
+    language_id = message.sender.language_id
+
+    session_template = get_session_message_template(shortcode, language_id)
+
+    {:ok, message} =
+      Messages.create_and_send_session_template(session_template, message.sender_id)
+
+    message
+  end
+
   @spec process_tag(Message.t(), Tag.t()) :: Message.t()
   defp process_tag(message, %Tag{label: label}) when label == "New Contact" do
-    message = Repo.preload(message, :sender)
+    send_session_message_template(message, "new contact")
+  end
 
-    with {:ok, session_template} <-
-           Repo.fetch_by(SessionTemplate, %{
-             shortcode: "new contact",
-             language_id: message.sender.language_id
-           }),
-         {:ok, message} <-
-           Messages.create_and_send_session_template(session_template, message.sender_id),
-         do: message
+  defp process_tag(message, %Tag{label: label}) when label == "Optout" do
+    # lets send the message first, so it goes out
+    send_session_message_template(message, "optout")
+
+    # We need to update the contact with optout_time and status
+    query = from(c in Contact, where: c.id == ^message.sender_id)
+
+    Repo.update_all(query,
+      set: [status: "invalid", optout_time: DateTime.utc_now(), updated_at: DateTime.utc_now()]
+    )
   end
 
   defp process_tag(message, %Tag{label: label} = tag) when label == "Language" do
@@ -82,17 +119,18 @@ defmodule Glific.Processor.ConsumerAutomation do
       set: [language_id: language.id, updated_at: DateTime.utc_now()]
     )
 
-    with {:ok, session_template} <-
-           Repo.fetch_by(SessionTemplate, %{shortcode: "language", language_id: language.id}),
-         session_template =
-           Map.put(
-             session_template,
-             :body,
-             EEx.eval_string(session_template.body, language: language.label_locale)
-           ),
-         {:ok, message} <-
-           Messages.create_and_send_session_template(session_template, message.sender_id),
-         do: message
+    session_template = get_session_message_template("language", language.id)
+
+    Map.put(
+      session_template,
+      :body,
+      EEx.eval_string(session_template.body, language: language.label_locale)
+    )
+
+    {:ok, message} =
+      Messages.create_and_send_session_template(session_template, message.sender_id)
+
+    message
   end
 
   defp process_tag(message, _tag), do: message

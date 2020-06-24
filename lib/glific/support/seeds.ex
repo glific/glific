@@ -23,7 +23,7 @@ defmodule Glific.Seeds do
   @spec seed_language() :: {Language.t(), Language.t()}
   def seed_language do
     {
-      Repo.insert!(%Language{label: "Hindi (India)", label_locale: "हिंदी", locale: "hi_IN"}),
+      Repo.insert!(%Language{label: "Hindi", label_locale: "हिंदी", locale: "hi_IN"}),
       Repo.insert!(%Language{
         label: "English (United States)",
         label_locale: "English",
@@ -74,6 +74,14 @@ defmodule Glific.Seeds do
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["hindi", "english", "हिंदी", "अंग्रेज़ी"]
+      },
+
+      # Optout
+      %{
+        label: "Optout",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["stop", "unsubscribe", "halt", "सदस्यता समाप्त"]
       },
 
       # Tags with Value
@@ -390,7 +398,7 @@ defmodule Glific.Seeds do
       label: "Help (Hindi)",
       body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ",
       type: :text,
-      shortcode: "",
+      shortcode: "help",
       is_reserved: true,
       language_id: hi_in.id
     })
@@ -423,6 +431,32 @@ defmodule Glific.Seeds do
       """,
       type: :text,
       shortcode: "language",
+      is_reserved: true,
+      language_id: hi_in.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Optout",
+      body: """
+      Your subscription is ended now.
+
+      Type subscribe to start receiving messages again.
+      """,
+      type: :text,
+      shortcode: "optout",
+      is_reserved: true,
+      language_id: en_us.id
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Optout",
+      body: """
+      अब आपकी सदस्यता समाप्त हो गई है।
+
+      फिर से संदेश प्राप्त करने के लिए सदस्यता टाइप करें।
+      """,
+      type: :text,
+      shortcode: "optout",
       is_reserved: true,
       language_id: hi_in.id
     })

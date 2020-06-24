@@ -6,16 +6,13 @@
   * Structure for actions on matching tags + value
   * Structure for actions on message type
 * Scheduling message sends for simple workflows (Saajha, LeapForWord, Noora)
+  * Lets call thsi global workflows
 * RapidPro like FlowBuilder functionality
+  * [Floweditor git repository](https://github.com/nyaruka/floweditor)
+* [Integrate fasttext.cc for language identification](https://fasttext.cc/docs/en/language-identification.html)
 * High throughput testing framework
-* Multiple producers/consumers in receive message pipeline
 * Integrate WhatsApp location
 * More details on a contact from WA Profile
-* Users
-  * Add name to schema and user creation flow?
-  * Roles
-  * Groups
-  * Permissions
 * Claiming conversations by Groups
 * [Integrate Sentry](https://github.com/getsentry/sentry-elixir_
 * [Integrate CORS](https://hexdocs.pm/cors_plug/readme.html)

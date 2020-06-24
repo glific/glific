@@ -4,7 +4,12 @@ defmodule Glific.Contacts do
   """
   import Ecto.Query, warn: false
 
-  alias Glific.{Contacts.Contact, Repo, Search.Full}
+  alias Glific.{
+    Contacts.Contact,
+    Conversations.Conversation,
+    Repo,
+    Search.Full
+  }
 
   @doc """
   Returns the list of contacts.
@@ -173,13 +178,16 @@ defmodule Glific.Contacts do
   @doc """
   Full text search interface via Postgres
   """
-  @spec search(String.t()) :: [Contact.t()]
+  @spec search(String.t()) :: [Conversation.t()]
   def search(term) do
-    query = from(c in Contact)
+    query = from c in Contact, select: c.id
 
-    query
-    |> Full.run(term)
-    |> Repo.all()
+    contact_ids =
+      query
+      |> Full.run(term)
+      |> Repo.all()
+
+    Glific.Messages.list_conversations(%{filter: %{ids: contact_ids}})
   end
 
   @doc """
@@ -202,9 +210,7 @@ defmodule Glific.Contacts do
   """
   @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
   def contact_opted_in(phone, utc_time) do
-    # Still need to figure out how to do that in single query
-    upsert(%{phone: phone, optin_time: utc_time})
-
+    upsert(%{phone: phone, optin_time: utc_time, status: :valid})
     {:ok}
   end
 
@@ -214,7 +220,8 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t()) :: boolean()
 
   def can_send_message_to?(contact) do
-    with true <- contact.provider_status == :valid,
+    with true <- contact.status == :valid,
+         true <- contact.provider_status == :valid,
          true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24,
          do: true
   end

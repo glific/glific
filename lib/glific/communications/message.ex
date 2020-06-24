@@ -2,6 +2,7 @@ defmodule Glific.Communications.Message do
   @moduledoc """
   The Message Communication Context, which encapsulates and manages tags and the related join tables.
   """
+  import Ecto.Query
 
   alias Glific.{
     Communications,
@@ -30,11 +31,16 @@ defmodule Glific.Communications.Message do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(Message.t()) :: {:ok, Message.t()}
+  @spec send_message(Message.t()) :: {:ok, Message.t()} | {:error, String.t()}
   def send_message(message) do
     message = Repo.preload(message, [:receiver, :sender, :media])
-    apply(provider_module(), @type_to_token[message.type], [message])
-    {:ok, Communications.publish_data(message, :sent_message)}
+
+    if Contacts.can_send_message_to?(message.receiver) do
+      apply(provider_module(), @type_to_token[message.type], [message])
+      {:ok, Communications.publish_data(message, :sent_message)}
+    else
+      {:error, "Can not send the message to the contact."}
+    end
   end
 
   @doc """
@@ -75,58 +81,58 @@ defmodule Glific.Communications.Message do
   """
   @spec update_provider_status(String.t(), atom()) :: {:ok, Message.t()}
   def update_provider_status(provider_message_id, provider_status) do
-    # Improve me
-    # We will improve that and complete this action in a Single Query.
+    from(m in Message, where: m.provider_message_id == ^provider_message_id)
+    |> Repo.update_all(set: [provider_status: provider_status, updated_at: DateTime.utc_now()])
+  end
 
-    case Repo.fetch_by(Message, %{provider_message_id: provider_message_id}) do
-      {:ok, message} ->
-        Messages.update_message(message, %{provider_status: provider_status})
-        {:ok, message}
+  @doc """
+  Callback when we receive a message from whats app
+  """
+  @spec receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
+  def receive_message(message_params, type \\ :text) do
+    {:ok, contact} =
+      Contacts.upsert(message_params.sender)
+      |> Contacts.update_contact(%{last_message_at: DateTime.utc_now()})
 
-      _ ->
-        {:ok, nil}
+    message_params =
+      message_params
+      |> Map.merge(%{
+        type: type,
+        sender_id: contact.id,
+        receiver_id: organization_contact_id(),
+        flow: :inbound
+      })
+
+    cond do
+      type in [:video, :audio, :image, :document] -> receive_media(message_params)
+      type == :text -> receive_text(message_params)
+      # For location and address messages, will add that when there will be a use case
+      true -> {:error, "Message type not supported"}
     end
   end
 
-  @doc """
-  Callback when we receive a text message
-  """
-
-  @spec receive_text(map()) :: :ok
-  def receive_text(message_params) do
-    contact = Contacts.upsert(message_params.sender)
-
+  # handler for receiving the text message
+  @spec receive_text(map()) :: {:ok}
+  defp receive_text(message_params) do
     message_params
-    |> Map.merge(%{
-      type: :text,
-      sender_id: contact.id,
-      receiver_id: organization_contact_id(),
-      flow: :inbound
-    })
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
     |> Producer.add()
+
+    {:ok}
   end
 
-  @doc """
-  Callback when we receive a media (image|video|audio) message
-  """
-  @spec receive_media(map()) :: :ok
-  def receive_media(message_params) do
-    contact = Contacts.upsert(message_params.sender)
+  # handler for receiving the media (image|video|audio|document)  message
+  @spec receive_media(map()) :: {:ok}
+  defp receive_media(message_params) do
     {:ok, message_media} = Messages.create_message_media(message_params)
 
     message_params
-    |> Map.merge(%{
-      sender_id: contact.id,
-      media_id: message_media.id,
-      receiver_id: organization_contact_id(),
-      flow: :inbound
-    })
+    |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
 
-    :ok
+    {:ok}
   end
 
   @doc false
