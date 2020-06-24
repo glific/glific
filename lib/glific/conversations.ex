@@ -28,6 +28,7 @@ defmodule Glific.Conversations do
   @spec list_conversations(map()) :: list()
   def list_conversations(args) do
     args = Map.merge(@default_opts, args, fn _k, v1, v2 -> v1 |> Map.merge(v2) end)
+
     Messages.list_conversations(
       Map.put(args, :ids, get_message_ids(args.contact_opts, args.message_opts, args))
     )
