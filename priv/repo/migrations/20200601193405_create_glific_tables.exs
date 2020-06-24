@@ -326,4 +326,18 @@ defmodule Glific.Repo.Migrations.GlificTables do
     create unique_index(:organizations, :email)
     create unique_index(:organizations, :contact_id)
   end
+
+  @doc """
+  Groups for users and contacts
+  """
+  def groups do
+    create table(:groups) do
+      # Label of the group
+      add :label, :string, null: false
+      # visibility of conversations with to the other groups
+      add :is_restricted, :boolean, default: false
+
+      timestamps(type: :utc_datetime)
+    end
+  end
 end
