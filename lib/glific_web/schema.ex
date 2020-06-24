@@ -25,6 +25,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.SessionTemplateTypes)
   import_types(__MODULE__.TagTypes)
   import_types(__MODULE__.RegistrationTypes)
+  import_types(__MODULE__.UserTypes)
 
   query do
     import_fields(:contact_queries)
@@ -44,6 +45,8 @@ defmodule GlificWeb.Schema do
     import_fields(:session_template_queries)
 
     import_fields(:tag_queries)
+
+    import_fields(:user_queries)
   end
 
   mutation do
@@ -68,6 +71,8 @@ defmodule GlificWeb.Schema do
     import_fields(:tag_mutations)
 
     import_fields(:registration_mutations)
+
+    import_fields(:user_mutations)
   end
 
   subscription do
