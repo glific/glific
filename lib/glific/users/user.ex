@@ -62,6 +62,7 @@ defmodule Glific.Users.User do
   def update_fields_changeset(user_or_changeset, params) do
     user_or_changeset
     |> Changeset.cast(params, [:name, :roles])
+    |> Changeset.validate_required([:name, :roles])
     |> Changeset.validate_inclusion(:roles, @user_roles)
   end
 

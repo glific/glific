@@ -15,7 +15,7 @@ defmodule GlificWeb.Schema.UserTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/users/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/users/delete.gql")
 
-  test "users field returns list of users" do
+  test "users returns list of users" do
     result = query_gql_by(:list)
     assert {:ok, query_data} = result
 
@@ -27,7 +27,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert res == "John Doe"
   end
 
-  test "users field returns list of users in asc order" do
+  test "users returns list of users in asc order" do
     result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
@@ -39,7 +39,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert get_in(user, ["name"]) == "Jane Doe"
   end
 
-  test "users field obeys limit and offset" do
+  test "users obeys limit and offset" do
     result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "users"])) == 1
