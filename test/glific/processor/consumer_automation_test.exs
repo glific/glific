@@ -25,13 +25,15 @@ defmodule TestConsumerTagger do
       language_id: language_ids["Hindi"]
     }
 
-    {:producer, state}
+    {:producer, state, dispatcher: GenStage.BroadcastDispatcher}
   end
 
   defp create_message_tag(tag_id, language_id, body, value \\ nil) do
     m = Fixtures.message_fixture(%{body: body, language_id: language_id})
     {:ok, _} = Tags.create_message_tag(%{message_id: m.id, tag_id: tag_id, value: value})
-    Repo.preload(m, :tags)
+    m = Repo.preload(m, :tags)
+    [ht | _] = m.tags
+    [m, ht]
   end
 
   defp create_message_new_contact(%{
@@ -48,7 +50,7 @@ defmodule TestConsumerTagger do
   defp create_message_language(
          %{language_tag_id: language_tag_id, language_id: language_id},
          value
-       ) do
+  ) do
     create_message_tag(
       language_tag_id,
       language_id,
@@ -61,7 +63,7 @@ defmodule TestConsumerTagger do
     create_message_tag(optout_tag_id, language_id, "Test message for testing optout tag")
   end
 
-  def handle_demand(_demand, %{counter: counter} = state) when counter > 6 do
+  def handle_demand(_demand, %{counter: counter} = state) when counter > 7 do
     send(:test, {:called_back})
     {:stop, :normal, state}
   end
@@ -73,11 +75,12 @@ defmodule TestConsumerTagger do
         fn c ->
           case rem(c, 6) do
             0 -> create_message_optout(state)
-            1 -> create_message_language(state, "english")
-            2 -> create_message_new_contact(state)
-            3 -> create_message_language(state, "हिंदी")
-            4 -> create_message_new_contact(state)
+            1 -> create_message_new_contact(state)
+            2 -> create_message_language(state, "english")
+            3 -> create_message_new_contact(state)
+            4 -> create_message_language(state, "हिंदी")
             5 -> create_message_language(state, "hindi")
+            6 -> create_message_new_contact(state)
           end
         end
       )
@@ -93,6 +96,9 @@ defmodule Glific.Processor.ConsumerAutomationTest do
     Messages,
     Messages.Message,
     Processor.ConsumerAutomation,
+    Processor.ConsumerLanguage,
+    Processor.ConsumerNewContact,
+    Processor.ConsumerOptout,
     Repo
   }
 
@@ -112,6 +118,9 @@ defmodule Glific.Processor.ConsumerAutomationTest do
 
     {:ok, _consumer} =
       ConsumerAutomation.start_link(producer: producer, name: TestConsumerAutomation)
+    {:ok, _consumer} = ConsumerLanguage.start_link(producer: producer, name: TestConsumerLanguage)
+    {:ok, _consumer} = ConsumerNewContact.start_link(producer: producer, name: TestConsumerNewContact)
+    {:ok, _consumer} = ConsumerOptout.start_link(producer: producer, name: TestConsumerOptout)
 
     Process.register(self(), :test)
     assert_receive({:called_back}, 1000)
@@ -119,22 +128,25 @@ defmodule Glific.Processor.ConsumerAutomationTest do
     # ensure we have a few more messages in the DB
     assert Repo.aggregate(Message, :count) > original_count
 
+    # IO.inspect(Repo.query("select id, body from messages"))
     # Lets add checks here to make sure that we have both hindi and english language messages sent
     l =
       Messages.list_messages(%{
-            filter: %{
-              body: "हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें\nTo receive messages in English, type English"
-            }
-                             })
+        filter: %{
+          body: "हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें\nTo receive messages in English, type English"
+        }
+      })
+
     assert length(l) == 3
 
     # Lets add checks here to make sure that we have both new contact tags recorded
     l =
       Messages.list_messages(%{
-            filter: %{
-              body: "हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें\nType English to receive messages in English"
-            }
-                             })
+        filter: %{
+          body: "हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें\nType English to receive messages in English"
+        }
+      })
+
     assert length(l) == 2
 
     # lets ensure we have one optout message also
@@ -144,6 +156,7 @@ defmodule Glific.Processor.ConsumerAutomationTest do
           body: "अब आपकी सदस्यता समाप्त हो गई है"
         }
       })
+
     assert length(l) == 1
   end
 end
