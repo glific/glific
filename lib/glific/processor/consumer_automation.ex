@@ -108,7 +108,6 @@ defmodule Glific.Processor.ConsumerAutomation do
     )
   end
 
-  @spec process_tag(Message.t(), Tag.t()) :: Message.t()
   defp process_tag(message, %Tag{label: label}) when label == "Help" do
     send_session_message_template(message, "help")
   end
