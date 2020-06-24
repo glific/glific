@@ -21,9 +21,8 @@ defmodule Glific.Conversations do
   """
   @spec list_conversations(map()) :: list()
   def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args) do
-  Messages.list_conversations(Map.put(args, :ids, get_message_ids(nc, sc, args)))
+    Messages.list_conversations(Map.put(args, :ids, get_message_ids(nc, sc, args)))
   end
-
 
   @doc """
   Returns the filtered conversation by contact id

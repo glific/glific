@@ -1,5 +1,5 @@
 defmodule Glific.Repo.Migrations.AddGetConversationFunction do
-   use Ecto.Migration
+  use Ecto.Migration
 
   def up do
     execute """
@@ -10,21 +10,15 @@ defmodule Glific.Repo.Migrations.AddGetConversationFunction do
 
     DECLARE message_ids BIGINT[];
     DECLARE contact_ids BIGINT[];
-    DECLARE i integer;
 
     BEGIN
       contact_ids := ids;
 
       IF CARDINALITY(ids) < 1 THEN
-          contact_ids := Array(SELECT contact_id FROM messages GROUP BY contact_id ORDER BY max(updated_at) DESC OFFSET contact_offset 		LIMIT contact_limit);
+          contact_ids := Array(SELECT contact_id FROM messages where message_number = 0 ORDER BY updated_at DESC OFFSET contact_offset LIMIT contact_limit);
       END IF;
 
-      FOR i IN 1 .. array_upper(contact_ids, 1)
-      LOOP
-        message_ids := message_ids || Array(SELECT id FROM messages where contact_id = contact_ids[i]
-        ORDER BY updated_at DESC OFFSET message_offset LIMIT message_limit);
-
-      END LOOP;
+      message_ids := Array(SELECT id FROM messages where contact_id = ANY(contact_ids) and message_number >= message_offset and message_number < message_offset + message_limit ORDER by message_number);
 
       RETURN message_ids;
     END;
