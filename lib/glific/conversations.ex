@@ -12,7 +12,7 @@ defmodule Glific.Conversations do
 
   alias Glific.{Conversations.Conversation, Messages, Repo}
 
-  # Default values for the conversation. User will be able to override them in the API calls
+  # Default values for the conversation. User will be able to override them in the API calls.
   @default_opts %{
     message_opts: %{offset: 0, limit: 25},
     contact_opts: %{offset: 0, limit: 10}
@@ -62,14 +62,16 @@ defmodule Glific.Conversations do
 
   @spec get_message_ids(list(), map()) :: list()
   defp get_message_ids(ids, %{limit: message_limit, offset: message_offset}) do
-    Messages.Message
-    |> where([m], m.contact_id in ^ids)
-    |> where([m], m.message_number >= ^message_offset)
-    |> where([m], m.message_number < ^(message_limit + message_offset))
-    |> order_by([m], m.message_number)
-    |> select([m], [m.id])
-    |> Repo.all()
-    |> List.flatten()
+    query =
+      from m in Messages.Message,
+        where:
+          m.contact_id in ^ids and
+            m.message_number >= ^message_offset and
+            m.message_number < ^(message_limit + message_offset),
+        order_by: [m.message_number],
+        select: m.id
+
+    Repo.all(query)
   end
 
   # Get the latest contact ids form messages
