@@ -147,7 +147,6 @@ mutation createOrganization($input: OrganizationInput!) {
 }
 
 
-
 subscription {
   sentMessage {
     id
@@ -195,5 +194,76 @@ mutation cre_send_message($input: MessageInput!) {
     "receiverId": "10",
     "senderId": "1",
     "type": "TEXT"
+  }
+}
+
+
+query conversations($messageOpts: Opts!, $contactOpts: Opts!, $filter: ConversationsFilter! ) {
+  conversations(messageOpts: $messageOpts, contactOpts: $contactOpts, filter: $filter ) {
+    contact {
+      id
+      name
+    }
+    messages {
+      id
+      body
+    }
+  }
+}
+
+{
+  "messageOpts": {
+    "limit": 100,
+    "offset": 2
+  },
+  
+  "contactOpts": {
+    "limit": 20,
+    "offset": 3
+  },
+
+  "filter" : {
+    "excludeTags": ["Unread"]
+  }
+}
+
+# Without any parameters
+query conversations {
+  conversations {
+    contact {
+      id
+      name
+    }
+    messages {
+      id
+      body
+    }
+  }
+}
+
+
+query conversation($messageOpts: Opts!, $contactId: Gid!, $filter: ConversationFilter! ) {
+  conversation(messageOpts: $sc, contactId: $contactId, filter: $filter) {
+    contact {
+      id
+      name
+    }
+    messages {
+      id
+      body
+    }
+    
+  }
+}
+
+{
+  "contactId": "2",
+  "filter": {
+    "excludeTags": ["1"]
+  },
+  
+  "messageOpts": {
+    "limit": 10,
+    "offset": 1
   }
 }
