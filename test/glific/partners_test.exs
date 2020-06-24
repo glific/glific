@@ -185,10 +185,13 @@ defmodule Glific.PartnersTest do
 
     @spec contact_fixture() :: Contacts.Contact.t()
     def contact_fixture do
+      default_organization_language = default_language_fixture()
+
       {:ok, contact} =
         Glific.Contacts.create_contact(%{
           name: Name.name(),
-          phone: Phone.EnUs.phone()
+          phone: Phone.EnUs.phone(),
+          language_id: default_organization_language.id
         })
 
       contact

@@ -85,9 +85,13 @@ defmodule Glific.CommunicationsTest do
 
     defp foreign_key_constraint do
       default_organization_language = default_organization_language_fixture()
-      sender_attrs = @sender_attrs
+
+      sender_attrs =
+        @sender_attrs
         |> Map.merge(%{language_id: default_organization_language.id})
-      receiver_attrs = @receiver_attrs
+
+      receiver_attrs =
+        @receiver_attrs
         |> Map.merge(%{language_id: default_organization_language.id})
 
       {:ok, sender} = Glific.Contacts.create_contact(sender_attrs)
@@ -207,7 +211,11 @@ defmodule Glific.CommunicationsTest do
 
       {:ok, receiver} =
         @receiver_attrs
-        |> Map.merge(%{status: :invalid, phone: Phone.EnUs.phone(), language_id: default_organization_language.id})
+        |> Map.merge(%{
+          status: :invalid,
+          phone: Phone.EnUs.phone(),
+          language_id: default_organization_language.id
+        })
         |> Glific.Contacts.create_contact()
 
       message = message_fixture(%{receiver_id: receiver.id})
@@ -219,7 +227,11 @@ defmodule Glific.CommunicationsTest do
 
       {:ok, receiver} =
         @receiver_attrs
-        |> Map.merge(%{provider_status: :invalid, phone: Phone.EnUs.phone(), language_id: default_organization_language.id})
+        |> Map.merge(%{
+          provider_status: :invalid,
+          phone: Phone.EnUs.phone(),
+          language_id: default_organization_language.id
+        })
         |> Glific.Contacts.create_contact()
 
       message = message_fixture(%{receiver_id: receiver.id})

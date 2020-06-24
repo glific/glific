@@ -14,6 +14,7 @@ defmodule Glific.MessagesTest do
 
   describe "messages" do
     alias Glific.Providers.Gupshup.Worker
+    alias Glific.Settings
 
     setup do
       Tesla.Mock.mock(fn
@@ -63,15 +64,32 @@ defmodule Glific.MessagesTest do
 
     @invalid_attrs %{body: nil, flow: nil, type: nil, provider_message_id: nil}
 
+    @valid_default_organization_language_attrs %{
+      label: "English (United States)",
+      label_locale: "English",
+      locale: "en_US",
+      is_active: true
+    }
+
+    def default_organization_language_fixture() do
+      {:ok, default_organization_language} =
+        @valid_default_organization_language_attrs
+        |> Settings.language_upsert()
+
+      default_organization_language
+    end
+
     defp foreign_key_constraint do
+      default_organization_language = default_organization_language_fixture()
+
       {:ok, sender} =
         @sender_attrs
-        |> Map.merge(%{phone: Phone.EnUs.phone()})
+        |> Map.merge(%{phone: Phone.EnUs.phone(), language_id: default_organization_language.id})
         |> Contacts.create_contact()
 
       {:ok, receiver} =
         @receiver_attrs
-        |> Map.merge(%{phone: Phone.EnUs.phone()})
+        |> Map.merge(%{phone: Phone.EnUs.phone(), language_id: default_organization_language.id})
         |> Contacts.create_contact()
 
       %{sender_id: sender.id, receiver_id: receiver.id}
@@ -114,8 +132,17 @@ defmodule Glific.MessagesTest do
     end
 
     test "list_messages/1 with foreign key filters" do
-      {:ok, sender} = Contacts.create_contact(@sender_attrs)
-      {:ok, receiver} = Contacts.create_contact(@receiver_attrs)
+      default_organization_language = default_organization_language_fixture()
+
+      {:ok, sender} =
+        @sender_attrs
+        |> Map.merge(%{phone: Phone.EnUs.phone(), language_id: default_organization_language.id})
+        |> Contacts.create_contact()
+
+      {:ok, receiver} =
+        @receiver_attrs
+        |> Map.merge(%{phone: Phone.EnUs.phone(), language_id: default_organization_language.id})
+        |> Contacts.create_contact()
 
       {:ok, message} =
         @valid_attrs
@@ -282,11 +309,17 @@ defmodule Glific.MessagesTest do
     end
 
     test "create and send message to multiple contacts should update the provider_message_id field in message" do
+      default_organization_language = default_organization_language_fixture()
+
       {:ok, receiver_1} =
-        Contacts.create_contact(@receiver_attrs |> Map.merge(%{phone: Phone.EnUs.phone()}))
+        @receiver_attrs
+        |> Map.merge(%{phone: Phone.EnUs.phone(), language_id: default_organization_language.id})
+        |> Contacts.create_contact()
 
       {:ok, receiver_2} =
-        Contacts.create_contact(@receiver_attrs |> Map.merge(%{phone: Phone.EnUs.phone()}))
+        @receiver_attrs
+        |> Map.merge(%{phone: Phone.EnUs.phone(), language_id: default_organization_language.id})
+        |> Contacts.create_contact()
 
       contact_ids = [receiver_1.id, receiver_2.id]
 
