@@ -411,7 +411,7 @@ defmodule Glific.Seeds do
       Do you want to change the language you want to receive messages in?
 
       हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
-      Type English to receive messages in English
+      To receive messages in English, type English
       """,
       type: :text,
       shortcode: "language",

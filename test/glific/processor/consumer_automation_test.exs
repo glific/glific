@@ -122,14 +122,20 @@ defmodule Glific.Processor.ConsumerAutomationTest do
     # Lets add checks here to make sure that we have both hindi and english language messages sent
     l =
       Messages.list_messages(%{
-        filter: %{
-          body: "हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें\nType English to receive messages in English"
-        }
-      })
+            filter: %{
+              body: "हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें\nTo receive messages in English, type English"
+            }
+                             })
+    assert length(l) == 3
 
-    # since we sent 5 messages that talk about language
-    # all of which send the language chooser message
-    assert length(l) == 5
+    # Lets add checks here to make sure that we have both new contact tags recorded
+    l =
+      Messages.list_messages(%{
+            filter: %{
+              body: "हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें\nType English to receive messages in English"
+            }
+                             })
+    assert length(l) == 2
 
     # lets ensure we have one optout message also
     l =
@@ -138,7 +144,6 @@ defmodule Glific.Processor.ConsumerAutomationTest do
           body: "अब आपकी सदस्यता समाप्त हो गई है"
         }
       })
-
     assert length(l) == 1
   end
 end
