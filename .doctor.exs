@@ -1,6 +1,9 @@
 %Doctor.Config{
   ignore_modules: [
     Glific.Processor.ConsumerAutomation,
+    Glific.Processor.ConsumerLanguage,
+    Glific.Processor.ConsumerNewContact,
+    Glific.Processor.ConsumerOptout,
     Glific.Processor.ConsumerTagger,
     Glific.Processor.Producer
   ],
