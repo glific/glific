@@ -1,7 +1,6 @@
 defmodule Glific.UsersTest do
   use Glific.DataCase, async: true
 
-  alias Faker.Phone
   alias Glific.Users
 
   describe "users" do
@@ -13,7 +12,8 @@ defmodule Glific.UsersTest do
       name: "some name",
       phone: "some phone",
       password: @password,
-      password_confirmation: @password
+      password_confirmation: @password,
+      roles: ["admin"]
     }
     @valid_attrs_1 %{
       name: "some name 1",
@@ -37,7 +37,8 @@ defmodule Glific.UsersTest do
       name: "some updated name",
       phone: "some updated phone",
       password: @password,
-      password_confirmation: @password
+      password_confirmation: @password,
+      roles: ["basic", "admin"]
     }
     @invalid_attrs %{
       name: nil,
@@ -75,6 +76,7 @@ defmodule Glific.UsersTest do
       assert {:ok, %User{} = user} = Users.create_user(@valid_attrs)
       assert user.name == "some name"
       assert user.phone == "some phone"
+      assert user.roles == ["admin"]
     end
 
     test "create_user/1 with invalid data returns error changeset" do
@@ -86,6 +88,7 @@ defmodule Glific.UsersTest do
 
       assert {:ok, %User{} = user} = Users.update_user(user, @update_attrs)
       assert user.name == "some updated name"
+      assert user.roles == ["basic", "admin"]
 
       # Check phone doesn't get updated
       assert user.phone == "some phone"

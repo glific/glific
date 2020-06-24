@@ -35,7 +35,7 @@ defmodule Glific.Users.User do
     user_or_changeset
     |> Changeset.cast(attrs, @required_fields ++ @optional_fields)
     |> Changeset.validate_required(@required_fields)
-    |> Changeset.validate_inclusion(:roles, @user_roles)
+    |> Changeset.validate_subset(:roles, @user_roles)
     |> glific_phone_field_changeset(attrs, @pow_config)
     |> current_password_changeset(attrs, @pow_config)
     |> password_changeset(attrs, @pow_config)
