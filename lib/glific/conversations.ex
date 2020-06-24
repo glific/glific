@@ -16,10 +16,6 @@ defmodule Glific.Conversations do
     SELECT id FROM messages  where contact_id in (SELECT contact_id FROM messages where message_number = 0 ORDER BY updated_at DESC OFFSET $2 LIMIT $1) and message_number >= $4 and message_number < $3 + $4 ORDER by message_number
   """
 
-  @sql_ids """
-    SELECT id FROM messages  where contact_id = ANY($1) and message_number >= $2 and message_number < $2 + $3  ORDER by message_number
-  """
-
   # Default values for the conversation. User will be able to override them in the API calls
   @default_opts %{
     message_opts: %{offset: 0, limit: 25},
@@ -57,13 +53,14 @@ defmodule Glific.Conversations do
 
   @spec get_message_ids(map(), map(), map() | nil) :: list()
   defp get_message_ids(_contact_opts, message_opts, %{filter: %{id: id}}),
-    do: get_message_ids([[id], message_opts.offset, message_opts.limit])
+    do: get_message_ids([id], message_opts)
 
   defp get_message_ids(_contact_opts, message_opts, %{filter: %{ids: ids}}),
-    do: get_message_ids([ids, message_opts.offset, message_opts.limit])
+    do: get_message_ids(ids, message_opts)
 
   defp get_message_ids(contact_opts, message_opts, _) do
-    {:ok, results} = Repo.query(@sql_ids_all, [
+    {:ok, results} =
+      Repo.query(@sql_ids_all, [
         contact_opts.limit,
         contact_opts.offset,
         message_opts.limit,
@@ -73,8 +70,15 @@ defmodule Glific.Conversations do
     List.flatten(results.rows)
   end
 
-  defp get_message_ids(opts) do
-    {:ok, results} = Repo.query(@sql_ids, opts)
-    List.flatten(results.rows)
-  end
+  @spec get_message_ids(list(), map()) :: list()
+  defp get_message_ids(ids, %{limit: message_limit, offset: message_offset}),
+    do:
+      Glific.Messages.Message
+      |> where([m], m.contact_id in ^ids)
+      |> where([m], m.message_number >= ^message_offset)
+      |> where([m], m.message_number < ^(message_limit + message_offset))
+      |> order_by([m], m.message_number)
+      |> select([m], [m.id])
+      |> Glific.Repo.all()
+      |> List.flatten()
 end
