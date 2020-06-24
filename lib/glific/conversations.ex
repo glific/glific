@@ -12,8 +12,12 @@ defmodule Glific.Conversations do
 
   alias Glific.{Conversations.Conversation, Messages, Repo}
 
+  @sql_ids_all """
+    SELECT id FROM messages  where contact_id in (SELECT contact_id FROM messages where message_number = 0 ORDER BY updated_at DESC OFFSET $2 LIMIT $1) and message_number >= $4 and message_number < $3 + $4 ORDER by message_number
+  """
+
   @sql_ids """
-    SELECT conversation_message_ids(ids => $1, contact_limit => $2, contact_offset => $3, message_limit => $4, message_offset => $5)
+    SELECT id FROM messages  where contact_id = ANY($1) and message_number >= $2 and message_number < $2 + $3  ORDER by message_number
   """
 
   # Default values for the conversation. User will be able to override them in the API calls
@@ -52,11 +56,11 @@ defmodule Glific.Conversations do
   end
 
   @spec get_message_ids(map(), map(), map() | nil) :: list()
-  defp get_message_ids(contact_opts, message_opts, %{filter: %{id: id}}),
-    do: get_message_ids([[id], contact_opts.limit, 0, message_opts.limit, message_opts.offset])
+  defp get_message_ids(_contact_opts, message_opts, %{filter: %{id: id}}),
+    do: get_message_ids([[id], message_opts.offset, message_opts.limit])
 
-  defp get_message_ids(contact_opts, message_opts, %{filter: %{ids: ids}}),
-    do: get_message_ids([ids, contact_opts.limit, 0, message_opts.limit, message_opts.offset])
+  defp get_message_ids(_contact_opts, message_opts, %{filter: %{ids: ids}}),
+    do: get_message_ids([ids, message_opts.offset, message_opts.limit])
 
   defp get_message_ids(contact_opts, message_opts, _),
     do:
@@ -68,7 +72,12 @@ defmodule Glific.Conversations do
         message_opts.offset
       ])
 
-  defp get_message_ids(opts) do
+  defp get_message_ids([[] | opts]) do
+    {:ok, results} = Repo.query(@sql_ids_all, opts)
+    List.flatten(results.rows)
+  end
+
+  defp get_message_ids([_head | _tail] = opts) do
     {:ok, results} = Repo.query(@sql_ids, opts)
     List.flatten(results.rows)
   end
