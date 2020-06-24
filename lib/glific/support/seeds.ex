@@ -460,32 +460,35 @@ defmodule Glific.Seeds do
       shortcode: "optout",
       is_reserved: true,
       language_id: hi_in.id
-                 })
+    })
 
     for label <- ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight"] do
       Repo.insert!(%SessionTemplate{
-            label: label,
-            type: :text,
-            shortcode: String.downcase(label),
-            is_reserved: false,
-            language_id: hi_in.id,
-            body: """
-            इस संदेश की सामग्री संख्यात्मक मूल्य का प्रतिनिधित्व करने के लिए विशिष्ट होगी: #{label}.
-            जंगली जाओ !, अपनी बात करो। मैं सिर्फ एक स्क्रिप्ट हूं
-            """
-                    })
+        label: label,
+        type: :text,
+        shortcode: String.downcase(label),
+        is_reserved: false,
+        language_id: hi_in.id,
+        body: """
+        इस संदेश की सामग्री संख्यात्मक मूल्य का प्रतिनिधित्व करने के लिए विशिष्ट होगी: #{label}.
+        जंगली जाओ !, अपनी बात करो। मैं सिर्फ एक स्क्रिप्ट हूं
+        """
+      })
+
       Repo.insert!(%SessionTemplate{
-            label: label,
-            type: :text,
-            shortcode: String.downcase(label),
-            is_reserved: false,
-            language_id: en_us.id,
-            body: """
-            Contents of this message will be specific to the numeric value representing: #{label}.
-            Go wild!, Do your own thing. I am just a script
-            """,
-                    })
+        label: label,
+        type: :text,
+        shortcode: String.downcase(label),
+        is_reserved: false,
+        language_id: en_us.id,
+        body: """
+        Contents of this message will be specific to the numeric value representing: #{label}.
+        Go wild!, Do your own thing. I am just a script
+        """
+      })
     end
+
+    nil
   end
 
   @doc false

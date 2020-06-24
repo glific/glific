@@ -10,7 +10,7 @@ defmodule Glific.Processor.ConsumerNumeric do
     Processor.Helper,
     Repo,
     Tags.MessageTag,
-    Tags.Tag,
+    Tags.Tag
   }
 
   @automaton %{
@@ -23,7 +23,7 @@ defmodule Glific.Processor.ConsumerNumeric do
     6 => %{label: "Numeric", value: 6, shortcode: "six"},
     7 => %{label: "Numeric", value: 7, shortcode: "seven"},
     8 => %{label: "Numeric", value: 8, shortcode: "eight"},
-    9 => %{label: "Numeric", value: 9, shortcode: "help"},
+    9 => %{label: "Numeric", value: 9, shortcode: "help"}
   }
 
   @doc false
@@ -51,6 +51,7 @@ defmodule Glific.Processor.ConsumerNumeric do
     value = String.to_integer(message_tag.value)
 
     auto = Map.get(@automaton, value)
+
     if auto != nil do
       Helper.send_session_message_template(message, auto.shortcode)
     end
