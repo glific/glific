@@ -120,7 +120,7 @@ defmodule Glific.Taggers.Numeric do
   def tag_body(body, numeric_map) do
     case Map.fetch(numeric_map, body) do
       {:ok, value} -> {:ok, to_string(value)}
-      _ -> case Glific.parse_maybe_integer(value) do
+      _ -> case Glific.parse_maybe_integer(body) do
              {:ok, value} -> {:ok, to_string(value)}
              _ -> :error
            end
