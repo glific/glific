@@ -49,16 +49,17 @@ defmodule Glific.Processor.ConsumerTagger do
      ]}
   end
 
-  defp reload(%{numeric_tag_id: 0} = state) do
+  defp reload(%{numeric_tag_id: numeric_tag_id} = state) when numeric_tag_id == 0 do
     case Repo.fetch_by(Tag, %{label: "Numeric"}) do
       {:ok, tag} -> Map.put(state, :numeric_tag_id, tag.id)
       _ -> state
     end
     |> Map.merge(%{
-          keyword_map: Taggers.Keyword.get_keyword_map(),
-          status_map: Status.get_status_map()
-                 })
+      keyword_map: Taggers.Keyword.get_keyword_map(),
+      status_map: Status.get_status_map()
+    })
   end
+
   defp reload(state), do: state
 
   @doc false
@@ -126,12 +127,14 @@ defmodule Glific.Processor.ConsumerTagger do
   # our indexes are empty
   defp add_tag(message, 0, _value), do: message
   defp add_tag(message, nil, _value), do: message
+
   defp add_tag(message, tag_id, value) do
-    {:ok, _} = Tags.create_message_tag(%{
-      message_id: message.id,
-      tag_id: tag_id,
-      value: value
-    })
+    {:ok, _} =
+      Tags.create_message_tag(%{
+        message_id: message.id,
+        tag_id: tag_id,
+        value: value
+      })
 
     message
   end

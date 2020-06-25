@@ -20,8 +20,7 @@ defmodule Glific.Application do
       {Oban, oban_config()},
 
       # Add Absinthe's subscription
-      {Absinthe.Subscription, GlificWeb.Endpoint},
-
+      {Absinthe.Subscription, GlificWeb.Endpoint}
     ]
 
     glific_children = [
@@ -36,7 +35,10 @@ defmodule Glific.Application do
       Glific.Processor.ConsumerOptout
     ]
 
-    children = if Mix.env() == :test, do: children, else: children ++ glific_children
+    children =
+      if Application.get_env(:glific, :environment) == :test,
+        do: children,
+        else: children ++ glific_children
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

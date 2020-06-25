@@ -9,6 +9,9 @@ config :glific, Glific.Repo,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
+# setting the state of the environment for use within code base
+config :glific, :environment, :dev
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
