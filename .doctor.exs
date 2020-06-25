@@ -3,6 +3,7 @@
     Glific.Processor.ConsumerAutomation,
     Glific.Processor.ConsumerLanguage,
     Glific.Processor.ConsumerNewContact,
+    Glific.Processor.ConsumerNumeric,
     Glific.Processor.ConsumerOptout,
     Glific.Processor.ConsumerTagger,
     Glific.Processor.Producer

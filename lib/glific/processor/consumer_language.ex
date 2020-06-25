@@ -52,11 +52,12 @@ defmodule Glific.Processor.ConsumerLanguage do
 
     session_template = Helper.get_session_message_template("language", language.id)
 
-    Map.put(
-      session_template,
-      :body,
-      EEx.eval_string(session_template.body, language: language.label_locale)
-    )
+    session_template =
+      Map.put(
+        session_template,
+        :body,
+        EEx.eval_string(session_template.body, language: language.label_locale)
+      )
 
     {:ok, message} =
       Messages.create_and_send_session_template(session_template, message.sender_id)

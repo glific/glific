@@ -15,31 +15,23 @@ defmodule Glific.Processor.Helper do
   Given a shortcode and an optional language_id, get the session template matching
   both, and if not found, just for the shortcode
   """
-  @spec get_session_message_template(String.t(), integer) :: SessionTemplate.t()
-  def get_session_message_template(shortcode, language_id) do
-    result =
-      Repo.fetch_by(SessionTemplate, %{
-        shortcode: shortcode,
-        language_id: language_id
-      })
+  @spec get_session_message_template(String.t(), integer | nil) :: SessionTemplate.t()
+  def get_session_message_template(shortcode, language_id \\ nil)
 
-    case result do
-      {:ok, session_template} -> session_template
-      _ -> get_session_message_template(shortcode)
-    end
-  end
-
-  @doc """
-  Given a shortcode get the session template matching it.
-  """
-  @spec get_session_message_template(String.t()) :: SessionTemplate.t()
-  def get_session_message_template(shortcode) do
-    {:ok, session_template} =
-      Repo.fetch_by(SessionTemplate, %{
-        shortcode: shortcode
-      })
+  def get_session_message_template(shortcode, nil) do
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{shortcode: shortcode})
 
     session_template
+  end
+
+  def get_session_message_template(shortcode, language_id) do
+    case Repo.fetch_by(SessionTemplate, %{
+           shortcode: shortcode,
+           language_id: language_id
+         }) do
+      {:ok, session_template} -> session_template
+      _ -> get_session_message_template(shortcode, nil)
+    end
   end
 
   @doc """
@@ -68,13 +60,13 @@ defmodule Glific.Processor.Helper do
   @spec start_link([], atom()) :: GenServer.on_start()
   def start_link(opts, module) do
     name = Keyword.get(opts, :name, module)
-    producer = Keyword.get(opts, :producer, module)
+    producer = Keyword.get(opts, :producer, Glific.Processor.ConsumerTagger)
     GenStage.start_link(module, [producer: producer], name: name)
   end
 
   @doc false
-  @spec init([], String.t()) :: tuple()
-  def init(opts, label) do
+  @spec init([], String.t() | nil) :: tuple()
+  def init(opts, label \\ nil) do
     state = %{
       producer: opts[:producer]
     }
@@ -82,7 +74,7 @@ defmodule Glific.Processor.Helper do
     {:consumer, state,
      subscribe_to: [
        {state.producer,
-        selector: fn [_, %{label: l}] -> l == label end,
+        selector: fn [_, %{label: l}] -> l == label or is_nil(label) end,
         min_demand: @min_demand,
         max_demand: @max_demand}
      ]}

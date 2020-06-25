@@ -6,33 +6,22 @@ defmodule Glific.Processor.ConsumerAutomation do
 
   use GenStage
 
-  @min_demand 0
-  @max_demand 1
+  alias Glific.Processor.Helper
 
   @doc false
   @spec start_link([]) :: GenServer.on_start()
   def start_link(opts) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    producer = Keyword.get(opts, :producer, Glific.Processor.ConsumerTagger)
-    GenStage.start_link(__MODULE__, [producer: producer], name: name)
+    Helper.start_link(opts, __MODULE__)
   end
 
   @doc false
   def init(opts) do
-    state = %{
-      producer: opts[:producer]
-    }
-
-    {:consumer, state,
-     subscribe_to: [
-       {state.producer, min_demand: @min_demand, max_demand: @max_demand}
-     ]}
+    Helper.init(opts)
   end
 
   @doc false
-  def handle_events(messages_tags, _from, state) do
-    _ = Enum.map(messages_tags, fn [m, t] -> process_tag(m, t) end)
-    {:noreply, [], state}
+  def handle_events(messages_tags, from, state) do
+    Helper.handle_events(messages_tags, from, state, &process_tag/2)
   end
 
   defp process_tag(message, _tag), do: message
