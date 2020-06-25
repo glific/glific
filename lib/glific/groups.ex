@@ -204,26 +204,6 @@ defmodule Glific.Groups do
   end
 
   @doc """
-  Updates a contact group.
-
-  ## Examples
-
-      iex> update_contact_group(contact_group, %{field: new_value})
-      {:ok, %ContactGroup{}}
-
-      iex> update_contact_group(contact_group, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  @spec update_contact_group(ContactGroup.t(), map()) ::
-          {:ok, ContactGroup.t()} | {:error, Ecto.Changeset.t()}
-  def update_contact_group(%ContactGroup{} = contact_group, attrs) do
-    contact_group
-    |> ContactGroup.changeset(attrs)
-    |> Repo.update()
-  end
-
-  @doc """
   Deletes a contact group.
 
   ## Examples
@@ -239,21 +219,6 @@ defmodule Glific.Groups do
   def delete_contact_group(%ContactGroup{} = contact_group) do
     Repo.delete(contact_group)
   end
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking contact changes.
-
-  ## Examples
-
-      iex> change_contact_group(contact_group)
-      %Ecto.Changeset{data: %ContactGroup{}}
-
-  """
-  @spec change_contact_group(ContactGroup.t(), map()) :: Ecto.Changeset.t()
-  def change_contact_group(%ContactGroup{} = contact_group, attrs \\ %{}) do
-    ContactGroup.changeset(contact_group, attrs)
-  end
-
 
   @doc """
   Returns the list of users groups.
@@ -309,26 +274,6 @@ defmodule Glific.Groups do
   end
 
   @doc """
-  Updates a user group.
-
-  ## Examples
-
-      iex> update_user_group(user_group, %{field: new_value})
-      {:ok, %UserGroup{}}
-
-      iex> update_user_group(user_group, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  @spec update_user_group(UserGroup.t(), map()) ::
-          {:ok, UserGroup.t()} | {:error, Ecto.Changeset.t()}
-  def update_user_group(%UserGroup{} = user_group, attrs) do
-    user_group
-    |> UserGroup.changeset(attrs)
-    |> Repo.update()
-  end
-
-  @doc """
   Deletes a user group.
 
   ## Examples
@@ -343,19 +288,5 @@ defmodule Glific.Groups do
   @spec delete_user_group(UserGroup.t()) :: {:ok, UserGroup.t()} | {:error, Ecto.Changeset.t()}
   def delete_user_group(%UserGroup{} = user_group) do
     Repo.delete(user_group)
-  end
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking user changes.
-
-  ## Examples
-
-      iex> change_user_group(user_group)
-      %Ecto.Changeset{data: %UserGroup{}}
-
-  """
-  @spec change_user_group(UserGroup.t(), map()) :: Ecto.Changeset.t()
-  def change_user_group(%UserGroup{} = user_group, attrs \\ %{}) do
-    UserGroup.changeset(user_group, attrs)
   end
 end

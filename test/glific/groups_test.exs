@@ -3,6 +3,8 @@ defmodule Glific.GroupsTest do
 
   alias Glific.{Groups, Groups.Group}
 
+  alias Glific.{Groups.ContactGroup, Groups.UserGroup}
+
   describe "groups" do
     @valid_attrs %{
       label: "some group",
@@ -109,6 +111,117 @@ defmodule Glific.GroupsTest do
       [h] = groups
       assert h == group2
     end
+  end
 
+  describe "contacts_groups" do
+    setup do
+      lang = Glific.Seeds.seed_language()
+      default_provider = Glific.Seeds.seed_providers()
+      Glific.Seeds.seed_organizations(default_provider, lang)
+      Glific.Seeds.seed_contacts()
+      :ok
+    end
+
+    def contact_group_fixture() do
+      [contact | _] = Glific.Contacts.list_contacts()
+      valid_attrs = %{
+        contact_id: contact.id,
+        group_id: group_fixture().id
+      }
+
+      {:ok, contact_group} =
+        valid_attrs
+        |> Groups.create_contact_group()
+
+      contact_group
+    end
+
+    test "list_contacts_groups/0 returns all contact_groups" do
+      contact_group = contact_group_fixture()
+      assert Groups.list_contacts_groups() == [contact_group]
+    end
+
+    test "get_contacts_group!/1 returns the contacts_group with given id" do
+      contact_group = contact_group_fixture()
+      assert Groups.get_contact_group!(contact_group.id) == contact_group
+    end
+
+    test "create_contacts_group/1 with valid data creates a group" do
+      [contact | _] = Glific.Contacts.list_contacts()
+      group = group_fixture()
+      {:ok, contact_group} = Groups.create_contact_group(%{contact_id: contact.id, group_id: group.id})
+      assert contact_group.contact_id == contact.id
+      assert contact_group.group_id == group.id
+    end
+
+    test "delete_contacts_group/1 deletes the group" do
+      contact_group = contact_group_fixture()
+      assert {:ok, %ContactGroup{}} = Groups.delete_contact_group(contact_group)
+      assert_raise Ecto.NoResultsError, fn -> Groups.get_contact_group!(contact_group.id) end
+    end
+
+    test "ensure that creating contact_group with same contact and group give an error" do
+      [contact | _] = Glific.Contacts.list_contacts()
+      group = group_fixture()
+      Groups.create_contact_group(%{contact_id: contact.id, group_id: group.id})
+
+      assert {:error, %Ecto.Changeset{}} =
+               Groups.create_contact_group(%{contact_id: contact.id, group_id: group.id})
+    end
+  end
+
+
+  describe "users_groups" do
+    setup do
+      Glific.Seeds.seed_users()
+      :ok
+    end
+
+    def user_group_fixture() do
+      [user | _] = Glific.Users.list_users()
+      valid_attrs = %{
+        user_id: user.id,
+        group_id: group_fixture().id
+      }
+
+      {:ok, user_group} =
+        valid_attrs
+        |> Groups.create_user_group()
+
+      user_group
+    end
+
+    test "list_users_groups/0 returns all user_groups" do
+      user_group = user_group_fixture()
+      assert Groups.list_users_groups() == [user_group]
+    end
+
+    test "get_users_group!/1 returns the users_group with given id" do
+      user_group = user_group_fixture()
+      assert Groups.get_user_group!(user_group.id) == user_group
+    end
+
+    test "create_users_group/1 with valid data creates a group" do
+      [user | _] = Glific.Users.list_users()
+      group = group_fixture()
+      {:ok, user_group} = Groups.create_user_group(%{user_id: user.id, group_id: group.id})
+      assert user_group.user_id == user.id
+      assert user_group.group_id == group.id
+    end
+
+    test "delete_users_group/1 deletes the group" do
+      user_group = user_group_fixture()
+      assert {:ok, %UserGroup{}} = Groups.delete_user_group(user_group)
+      assert_raise Ecto.NoResultsError, fn -> Groups.get_user_group!(user_group.id) end
+    end
+
+    test "ensure that creating user_group with same user and group give an error" do
+      [user | _] = Glific.Users.list_users()
+      group = group_fixture()
+      Groups.create_user_group(%{user_id: user.id, group_id: group.id})
+
+      assert {:error, %Ecto.Changeset{}} =
+               Groups.create_user_group(%{user_id: user.id, group_id: group.id})
+    end
   end
 end
