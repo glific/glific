@@ -75,7 +75,8 @@ defmodule Glific.MixProject do
       {:telemetry_poller, "~> 0.4"},
       {:gettext, "~> 0.18"},
       {:decimal, "~> 1.8"},
-      {:jason, "~> 1.0"},
+      {:jason, "~> 1.2"},
+      {:sentry, "~> 7.2"},
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
       {:pow, "~> 1.0"},
@@ -120,8 +121,8 @@ defmodule Glific.MixProject do
       reset: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"]
-      # test: ["ecto.drop", "ecto.create --quiet", "ecto.migrate", "test"]
+      # test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.drop", "ecto.create --quiet", "ecto.migrate", "test"]
     ]
   end
 end

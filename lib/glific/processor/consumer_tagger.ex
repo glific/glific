@@ -33,17 +33,11 @@ defmodule Glific.Processor.ConsumerTagger do
   def init(opts) do
     state = %{
       producer: opts[:producer],
-      keyword_map: Taggers.Keyword.get_keyword_map(),
-      status_map: Status.get_status_map(),
       numeric_map: Numeric.get_numeric_map(),
       numeric_tag_id: 0
     }
 
-    state =
-      case Repo.fetch_by(Tag, %{label: "Numeric"}) do
-        {:ok, tag} -> Map.put(state, :numeric_tag_id, tag.id)
-        _ -> state
-      end
+    state = reload(state)
 
     {:producer_consumer, state,
      dispatcher: GenStage.BroadcastDispatcher,
@@ -55,8 +49,23 @@ defmodule Glific.Processor.ConsumerTagger do
      ]}
   end
 
+  defp reload(%{numeric_tag_id: 0} = state) do
+    case Repo.fetch_by(Tag, %{label: "Numeric"}) do
+      {:ok, tag} -> Map.put(state, :numeric_tag_id, tag.id)
+      _ -> state
+    end
+    |> Map.merge(%{
+      keyword_map: Taggers.Keyword.get_keyword_map(),
+      status_map: Status.get_status_map()
+    })
+  end
+
+  defp reload(state), do: state
+
   @doc false
   def handle_events(messages, _from, state) do
+    state = reload(state)
+
     events =
       messages
       |> Enum.map(&process_message(&1, state))
@@ -115,12 +124,20 @@ defmodule Glific.Processor.ConsumerTagger do
     do: add_tag(message, state.status_map[status])
 
   @spec add_tag(Message.t(), integer, String.t() | nil) :: Message.t()
-  defp add_tag(message, tag_id, value \\ nil) do
-    Tags.create_message_tag(%{
-      message_id: message.id,
-      tag_id: tag_id,
-      value: value
-    })
+  defp add_tag(message, tag_id, value \\ nil)
+  # we ignore this error message for now, since we still need to ensure
+  # good sequence of process starting. The processor should start only
+  # after all the other processes, include the DB connection have started
+  defp add_tag(message, 0, _value), do: message
+  defp add_tag(message, nil, _value), do: message
+
+  defp add_tag(message, tag_id, value) do
+    {:ok, _} =
+      Tags.create_message_tag(%{
+        message_id: message.id,
+        tag_id: tag_id,
+        value: value
+      })
 
     message
   end

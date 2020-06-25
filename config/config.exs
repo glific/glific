@@ -32,6 +32,7 @@ config :phoenix, :json_library, Jason
 # Configure to use UTC timestamp in tables
 config :glific,
        Glific.Repo,
+       ownership_timeout: 60_000,
        migration_timestamps: [type: :utc_datetime]
 
 config :glific, Oban,
@@ -49,6 +50,22 @@ config :glific, :pow,
 
 config :passwordless_auth,
   sms_adapter: Glific.SMSAdapter.Gupshup
+
+# Sentry configuration
+
+# configure sentry's logger
+config :logger,
+  backends: [:console, Sentry.LoggerBackend]
+
+config :sentry,
+  dsn: "https://4ae43f4bc3c14881aace7956eb4a0b64@o412613.ingest.sentry.io/5290153",
+  environment_name: Mix.env(),
+  enable_source_code_context: true,
+  root_source_code_path: File.cwd!(),
+  tags: %{
+    env: "dev"
+  },
+  included_environments: [:prod, :dev]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
