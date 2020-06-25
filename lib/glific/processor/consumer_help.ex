@@ -1,4 +1,4 @@
-defmodule Glific.Processor.ConsumerNewContact do
+defmodule Glific.Processor.ConsumerHelp do
   @moduledoc """
   Process all messages of type consumer and run them thru a few automations. Our initial
   automation is response to a new contact tag with a welcome message
@@ -20,7 +20,7 @@ defmodule Glific.Processor.ConsumerNewContact do
 
   @doc false
   def init(opts) do
-    Helper.init(opts, "New Contact")
+    Helper.init(opts, "Help")
   end
 
   @doc false
@@ -29,11 +29,10 @@ defmodule Glific.Processor.ConsumerNewContact do
   end
 
   @doc """
-  Process the new contact tag
+  Process the help tag
   """
   @spec process_tag(Message.t(), Tag.t()) :: any
   def process_tag(message, _) do
-    # lets send the message first, so it goes out
-    Helper.send_session_message_template(message, "new contact")
+    Helper.send_session_message_template(message, "help")
   end
 end

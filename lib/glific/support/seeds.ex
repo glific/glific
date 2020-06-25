@@ -84,6 +84,14 @@ defmodule Glific.Seeds do
         keywords: ["stop", "unsubscribe", "halt", "सदस्यता समाप्त"]
       },
 
+      # Help
+      %{
+        label: "Help",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["help", "मदद"]
+      },
+
       # Tags with Value
       %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
 
@@ -396,7 +404,7 @@ defmodule Glific.Seeds do
     })
 
     Repo.insert!(%SessionTemplate{
-      label: "Help (Hindi)",
+      label: "Help",
       body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ",
       type: :text,
       shortcode: "help",

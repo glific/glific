@@ -15,7 +15,7 @@ defmodule TestConsumerTagger do
   end
 
   def init(demand) do
-    tag_ids = Tags.tags_map(["New Contact", "Language", "Optout"])
+    tag_ids = Tags.tags_map(["New Contact", "Language", "Optout", "Help"])
     language_ids = Repo.label_id_map(Language, ["Hindi", "English (United States)"])
 
     state = %{
@@ -23,6 +23,7 @@ defmodule TestConsumerTagger do
       new_contact_tag_id: tag_ids["New Contact"],
       language_tag_id: tag_ids["Language"],
       optout_tag_id: tag_ids["Optout"],
+      help_tag_id: tag_ids["Help"],
       language_id: language_ids["Hindi"]
     }
 
@@ -64,6 +65,10 @@ defmodule TestConsumerTagger do
     create_message_tag(optout_tag_id, language_id, "Test message for testing optout tag")
   end
 
+  defp create_message_help(%{help_tag_id: help_tag_id, language_id: language_id}) do
+    create_message_tag(help_tag_id, language_id, "Test message for testing help tag")
+  end
+
   def handle_demand(demand, %{counter: counter} = state) when counter < 6 do
     events =
       Enum.map(
@@ -82,7 +87,7 @@ defmodule TestConsumerTagger do
     {:noreply, events, Map.put(state, :counter, demand + counter)}
   end
 
-  def handle_demand(_demand, %{counter: counter} = state) when counter > 11 do
+  def handle_demand(_demand, %{counter: counter} = state) when counter > 12 do
     send(:test, {:called_back})
     {:stop, :normal, state}
   end
@@ -92,13 +97,14 @@ defmodule TestConsumerTagger do
       Enum.map(
         counter..(counter + demand - 1),
         fn c ->
-          case rem(c, 6) do
+          case rem(c, 7) do
             0 -> create_message_optout(state)
             1 -> create_message_new_contact(state)
             2 -> create_message_language(state, "english")
             3 -> create_message_new_contact(state)
             4 -> create_message_language(state, "हिंदी")
             5 -> create_message_language(state, "hindi")
+            6 -> create_message_help(state)
           end
         end
       )
@@ -114,6 +120,7 @@ defmodule Glific.Processor.ConsumerAutomationTest do
     Messages,
     Messages.Message,
     Processor.ConsumerAutomation,
+    Processor.ConsumerHelp,
     Processor.ConsumerLanguage,
     Processor.ConsumerNewContact,
     Processor.ConsumerOptout,
@@ -143,6 +150,8 @@ defmodule Glific.Processor.ConsumerAutomationTest do
       ConsumerNewContact.start_link(producer: producer, name: TestConsumerNewContact)
 
     {:ok, _consumer} = ConsumerOptout.start_link(producer: producer, name: TestConsumerOptout)
+
+    {:ok, _consumer} = ConsumerHelp.start_link(producer: producer, name: TestConsumerHelp)
 
     Process.register(self(), :test)
     assert_receive({:called_back}, 1000)
@@ -175,7 +184,17 @@ defmodule Glific.Processor.ConsumerAutomationTest do
     l =
       Messages.list_messages(%{
         filter: %{
-          body: "अब आपकी सदस्यता समाप्त हो गई है"
+          body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ"
+        }
+      })
+
+    assert length(l) == 1
+
+    # lets ensure we have one help message also
+    l =
+      Messages.list_messages(%{
+        filter: %{
+          body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ"
         }
       })
 

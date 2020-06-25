@@ -57,10 +57,10 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @doc false
   def handle_events(messages, _from, state) do
-    messages_with_tags = Enum.map(messages, &process_message(&1, state))
-
     events =
-      Enum.reduce(messages_with_tags, [], fn m, acc ->
+      messages
+      |> Enum.map(&process_message(&1, state))
+      |> Enum.reduce([], fn m, acc ->
         Enum.reduce(
           m.tags,
           acc,

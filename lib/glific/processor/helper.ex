@@ -74,7 +74,7 @@ defmodule Glific.Processor.Helper do
     {:consumer, state,
      subscribe_to: [
        {state.producer,
-        selector: fn [_, %{label: l}] -> l == label or is_nil(label) end,
+        selector: fn [_, %{label: l}] -> l == label end,
         min_demand: @min_demand,
         max_demand: @max_demand}
      ]}

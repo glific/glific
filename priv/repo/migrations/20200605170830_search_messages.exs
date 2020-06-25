@@ -53,7 +53,6 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
     execute("DROP TABLE IF EXISTS search_messages")
   end
 
-
   defp create_functions do
     # lets drop all functions to be on the safe side
     drop_functions()

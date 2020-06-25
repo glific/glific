@@ -36,7 +36,7 @@ defmodule Glific.Processor.ConsumerLanguage do
   end
 
   @doc """
-  Process the optout tag. Send a confirmation to the sender and set the contact fields
+  Process the language tag. Send a confirmation to the sender and set the contact fields
   """
   @spec process_tag(Message.t(), Tag.t()) :: any
   def process_tag(message, tag) do
