@@ -22,6 +22,9 @@ defmodule Glific.Application do
       # Add Absinthe's subscription
       {Absinthe.Subscription, GlificWeb.Endpoint},
 
+    ]
+
+    glific_children = [
       # Add Glific Processing pipeline (seems a bit deep and convoluted, will need to revisit)
       Glific.Processor.Producer,
       Glific.Processor.ConsumerTagger,
@@ -32,6 +35,8 @@ defmodule Glific.Application do
       Glific.Processor.ConsumerNumeric,
       Glific.Processor.ConsumerOptout
     ]
+
+    children = if Mix.env() == :test, do: children, else: children ++ glific_children
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
