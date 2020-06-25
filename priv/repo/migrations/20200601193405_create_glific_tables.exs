@@ -168,9 +168,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # contact language for templates and other communications
       add :language_id, references(:languages, on_delete: :restrict), null: true
 
-      add :optin_time, :timestamptz
-      add :optout_time, :timestamptz
-      add :last_message_at, :timestamptz
+      add :optin_time, :utc_datetime
+      add :optout_time, :utc_datetime
+      add :last_message_at, :utc_datetime
 
       timestamps(type: :utc_datetime)
     end
@@ -241,7 +241,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :media_id, references(:messages_media, on_delete: :delete_all), null: true
 
       # timestamp when message will be sent from queue worker
-      add :sent_at, :timestamptz
+      add :sent_at, :utc_datetime
 
       timestamps(type: :utc_datetime)
     end
