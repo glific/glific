@@ -5,8 +5,6 @@ defmodule Glific.Groups.Group do
 
   use Ecto.Schema
   import Ecto.Changeset
-  alias __MODULE__
-  alias Glific.Groups.Group
 
   @required_fields [:label]
   @optional_fields [:is_restricted]

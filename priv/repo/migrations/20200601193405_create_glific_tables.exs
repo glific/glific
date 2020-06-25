@@ -28,6 +28,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
     organizations()
 
     groups()
+
+    contacts_groups()
   end
 
   @doc """
@@ -340,5 +342,17 @@ defmodule Glific.Repo.Migrations.GlificTables do
     end
 
     create unique_index(:groups, :label)
+  end
+
+  @doc """
+  The join table between contacts and groups
+  """
+  def contacts_groups do
+    create table(:contacts_groups) do
+      add :contact_id, references(:contacts, on_delete: :delete_all), null: false
+      add :group_id, references(:groups, on_delete: :delete_all), null: false
+    end
+
+    create unique_index(:contacts_groups, [:contact_id, :group_id])
   end
 end

@@ -13,5 +13,19 @@ defmodule Glific.Repo.Migrations.CreateUsers do
     end
 
     create unique_index(:users, [:phone])
+
+    users_groups()
+  end
+
+  @doc """
+  The join table between users and groups
+  """
+  def users_groups do
+    create table(:users_groups) do
+      add :user_id, references(:users, on_delete: :delete_all), null: false
+      add :group_id, references(:groups, on_delete: :delete_all), null: false
+    end
+
+    create unique_index(:users_groups, [:user_id, :group_id])
   end
 end
