@@ -46,6 +46,7 @@ defmodule Glific.Processor.ConsumerTagger do
       end
 
     {:producer_consumer, state,
+     dispatcher: GenStage.BroadcastDispatcher,
      subscribe_to: [
        {state.producer,
         selector: fn %{type: type} -> type == :text end,
@@ -56,8 +57,18 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @doc false
   def handle_events(messages, _from, state) do
-    messages_with_tags = Enum.map(messages, &process_message(&1, state))
-    {:noreply, messages_with_tags, state}
+    events =
+      messages
+      |> Enum.map(&process_message(&1, state))
+      |> Enum.reduce([], fn m, acc ->
+        Enum.reduce(
+          m.tags,
+          acc,
+          fn t, acc -> [[m, t] | acc] end
+        )
+      end)
+
+    {:noreply, events, state}
   end
 
   @spec process_message(atom() | Message.t(), map()) :: Message.t()

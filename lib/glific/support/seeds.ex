@@ -156,6 +156,7 @@ defmodule Glific.Seeds do
         contact_entry
         |> Map.put(:inserted_at, inserted_time)
         |> Map.put(:updated_at, inserted_time)
+        |> Map.put(:last_message_at, inserted_time)
       end
 
     # seed contacts
@@ -403,7 +404,7 @@ defmodule Glific.Seeds do
     })
 
     Repo.insert!(%SessionTemplate{
-      label: "Help (Hindi)",
+      label: "Help",
       body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ",
       type: :text,
       shortcode: "help",
@@ -468,6 +469,34 @@ defmodule Glific.Seeds do
       is_reserved: true,
       language_id: hi_in.id
     })
+
+    for label <- ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight"] do
+      Repo.insert!(%SessionTemplate{
+        label: label,
+        type: :text,
+        shortcode: String.downcase(label),
+        is_reserved: false,
+        language_id: hi_in.id,
+        body: """
+        इस संदेश की सामग्री संख्यात्मक मूल्य का प्रतिनिधित्व करने के लिए विशिष्ट होगी: #{label}.
+        जंगली जाओ !, अपनी बात करो। मैं सिर्फ एक स्क्रिप्ट हूं
+        """
+      })
+
+      Repo.insert!(%SessionTemplate{
+        label: label,
+        type: :text,
+        shortcode: String.downcase(label),
+        is_reserved: false,
+        language_id: en_us.id,
+        body: """
+        Contents of this message will be specific to the numeric value representing: #{label}.
+        Go wild!, Do your own thing. I am just a script
+        """
+      })
+    end
+
+    nil
   end
 
   @doc false

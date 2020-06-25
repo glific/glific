@@ -1,4 +1,4 @@
-defmodule Glific.Processor.ConsumerAutomation do
+defmodule Glific.Processor.ConsumerHelp do
   @moduledoc """
   Process all messages of type consumer and run them thru a few automations. Our initial
   automation is response to a new contact tag with a welcome message
@@ -6,7 +6,11 @@ defmodule Glific.Processor.ConsumerAutomation do
 
   use GenStage
 
-  alias Glific.Processor.Helper
+  alias Glific.{
+    Messages.Message,
+    Processor.Helper,
+    Tags.Tag
+  }
 
   @doc false
   @spec start_link([]) :: GenServer.on_start()
@@ -16,13 +20,20 @@ defmodule Glific.Processor.ConsumerAutomation do
 
   @doc false
   def init(opts) do
-    Helper.init(opts)
+    Helper.init(opts, "Help")
   end
 
   @doc false
   def handle_events(messages_tags, from, state) do
+    IO.inspect(messages_tags)
     Helper.handle_events(messages_tags, from, state, &process_tag/2)
   end
 
-  defp process_tag(message, _tag), do: message
+  @doc """
+  Process the help tag
+  """
+  @spec process_tag(Message.t(), Tag.t()) :: any
+  def process_tag(message, _) do
+    Helper.send_session_message_template(message, "help")
+  end
 end

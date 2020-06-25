@@ -21,9 +21,15 @@ defmodule Glific.Application do
 
       # Add Absinthe's subscription
       {Absinthe.Subscription, GlificWeb.Endpoint},
+
+      # Add Glific Processing pipeline (seems a bit deep and convoluted, will need to revisit)
       Glific.Processor.Producer,
       Glific.Processor.ConsumerTagger,
-      Glific.Processor.ConsumerAutomation
+      Glific.Processor.ConsumerAutomation,
+      Glific.Processor.ConsumerLanguage,
+      Glific.Processor.ConsumerNewContact,
+      Glific.Processor.ConsumerNumeric,
+      Glific.Processor.ConsumerOptout
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
