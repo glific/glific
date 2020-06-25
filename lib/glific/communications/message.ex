@@ -144,6 +144,7 @@ defmodule Glific.Communications.Message do
     # Get organization
     organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
 
+    # Confirm organization's contact id
     {:ok, contact} = Repo.fetch_by(Contact, %{id: organization.contact_id})
     contact.id
   end
