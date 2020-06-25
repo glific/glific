@@ -174,13 +174,12 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_organizations(Provider.t(), Contact.t(), {Language.t(), Language.t()}) :: nil
-  def seed_organizations(default_provider, default_contact, {_hi_in, en_us}) do
+  @spec seed_organizations(Provider.t(), {Language.t(), Language.t()}) :: nil
+  def seed_organizations(default_provider, {_hi_in, en_us}) do
     Repo.insert!(%Organization{
       name: "Default Organization",
       display_name: "Default Organization",
       contact_name: "Test",
-      contact_id: default_contact.id,
       email: "test@glific.org",
       provider_id: default_provider.id,
       provider_key: "random",
@@ -437,11 +436,11 @@ defmodule Glific.Seeds do
   def seed do
     lang = seed_language()
 
-    default_contact = seed_contacts()
-
     default_provider = seed_providers()
 
-    seed_organizations(default_provider, default_contact, lang)
+    seed_organizations(default_provider, lang)
+
+    default_contact = seed_contacts()
 
     seed_session_templates(lang)
 
