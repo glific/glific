@@ -1,6 +1,6 @@
-defmodule Glific.Searches.Search do
+defmodule Glific.Searches.SavedSearch do
   @moduledoc """
-  The minimal wrapper for the base Search structure
+  The minimal wrapper for the base Saved Search structure
   """
 
   use Ecto.Schema
@@ -21,7 +21,7 @@ defmodule Glific.Searches.Search do
           updated_at: :utc_datetime | nil
         }
 
-  schema "searches" do
+  schema "saved_searches" do
     field :args, :map
     field :label, :string
     field :is_reserved, :boolean, default: false
@@ -32,10 +32,11 @@ defmodule Glific.Searches.Search do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(Search.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(SavedSearch.t(), map()) :: Ecto.Changeset.t()
   def changeset(search, attrs) do
     search
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint([:label])
   end
 end

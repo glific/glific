@@ -27,7 +27,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
     organizations()
 
-    searches()
+    saved_searches()
   end
 
   @doc """
@@ -330,8 +330,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
     All the system and user defined searches
   """
 
-  def searches() do
-    create table(:searches) do
+  def saved_searches() do
+    create table(:saved_searches) do
       add :label, :string, null: false
       add :args, :map
       # Is this a predefined system object?

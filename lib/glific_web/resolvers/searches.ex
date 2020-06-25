@@ -1,55 +1,55 @@
 defmodule GlificWeb.Resolvers.Searches do
   @moduledoc """
-  Search Resolver which sits between the GraphQL schema and Glific search Context API. This layer basically stiches together
+  Searches Resolver which sits between the GraphQL schema and Glific saved_search Context API. This layer basically stiches together
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Repo, Searches, Searches.Search}
+  alias Glific.{Repo, Searches, Searches.SavedSearch}
 
   @doc """
-  Get a specific search by id
+  Get a specific saved_search by id
   """
-  @spec search(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  @spec saved_search(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, map()} | {:error, any}
-  def search(_, %{id: id}, _) do
-    with {:ok, search} <- Repo.fetch(Search, id),
-         do: {:ok, %{search: search}}
+  def saved_search(_, %{id: id}, _) do
+    with {:ok, saved_search} <- Repo.fetch(SavedSearch, id),
+         do: {:ok, %{saved_search: saved_search}}
   end
 
   @doc """
-  Get the list of searches
+  Get the list of saved_searches
   """
-  @spec searches(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Search]}
-  def searches(_, args, _) do
-    {:ok, Searches.list_searches(args)}
+  @spec saved_searches(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [SavedSearch]}
+  def saved_searches(_, args, _) do
+    {:ok, Searches.list_saved_searches(args)}
   end
 
   @doc false
-  @spec create_search(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+  @spec create_saved_search(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_search(_, %{input: params}, _) do
-    with {:ok, search} <- Searches.create_search(params) do
-      {:ok, %{search: search}}
+  def create_saved_search(_, %{input: params}, _) do
+    with {:ok, saved_search} <- Searches.create_saved_search(params) do
+      {:ok, %{saved_search: saved_search}}
     end
   end
 
   @doc false
   @spec update_search(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_search(_, %{id: id, input: params}, _) do
-    with {:ok, search} <- Repo.fetch(Search, id),
-         {:ok, search} <- Searches.update_search(search, params) do
-      {:ok, %{search: search}}
+  def update_saved_search(_, %{id: id, input: params}, _) do
+    with {:ok, saved_search} <- Repo.fetch(SavedSearch, id),
+         {:ok, saved_search} <- Searches.update_saved_search(saved_search, params) do
+      {:ok, %{saved_search: saved_search}}
     end
   end
 
   @doc false
   @spec delete_search(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_search(_, %{id: id}, _) do
-    with {:ok, search} <- Repo.fetch(Search, id),
-         {:ok, search} <- Searches.delete_search(search) do
-      {:ok, search}
+  def delete_saved_search(_, %{id: id}, _) do
+    with {:ok, saved_search} <- Repo.fetch(SavedSearch, id),
+         {:ok, saved_search} <- Searches.delete_saved_search(saved_search) do
+      {:ok, saved_search}
     end
   end
 end
