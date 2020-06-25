@@ -26,6 +26,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
     providers()
 
     organizations()
+
+    groups()
   end
 
   @doc """
@@ -336,5 +338,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
       timestamps(type: :utc_datetime)
     end
+
+    create unique_index(:groups, :label)
   end
 end
