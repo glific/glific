@@ -25,7 +25,6 @@ defmodule Glific.Searches.SavedSearch do
     field :args, :map
     field :label, :string
     field :is_reserved, :boolean, default: false
-
     timestamps(type: :utc_datetime)
   end
 

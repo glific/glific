@@ -7,24 +7,24 @@ defmodule GlificWeb.Schema.SearchTypes do
 
   alias GlificWeb.Resolvers
 
-  object :search_result do
-    field :search, :search
+  object :saved_search_result do
+    field :saved_search, :saved_search
     field :errors, list_of(:input_error)
   end
 
-  object :search do
+  object :saved_search do
     field :id, :id
     field :label, :string
-    field :args, :string
+    field :args, :json
   end
 
-  input_object :search_input do
+  input_object :saved_search_input do
     field :label, :string
-    field :args, :search_args
+    field :args, :saved_search_args
   end
 
   @desc "args options for searches"
-  input_object :search_args do
+  input_object :saved_search_args do
     @desc "store search term"
     field :term, :string
 
@@ -36,33 +36,33 @@ defmodule GlificWeb.Schema.SearchTypes do
   end
 
   object :search_queries do
-    @desc "get the details of one search"
-    field :search, :search_result do
+    @desc "get the details of one saved search"
+    field :saved_search, :saved_search_result do
       arg(:id, non_null(:id))
-      resolve(&Resolvers.Searches.search/3)
+      resolve(&Resolvers.Searches.saved_search/3)
     end
 
     @desc "Get a list of all searches"
-    field :searches, list_of(:search) do
-      resolve(&Resolvers.Searches.searches/3)
+    field :saved_searches, list_of(:saved_search) do
+      resolve(&Resolvers.Searches.saved_searches/3)
     end
   end
 
   object :search_mutations do
-    field :create_search, :search_result do
-      arg(:input, non_null(:search_input))
-      resolve(&Resolvers.Searches.create_search/3)
+    field :create_saved_search, :saved_search_result do
+      arg(:input, non_null(:saved_search_input))
+      resolve(&Resolvers.Searches.create_saved_search/3)
     end
 
-    field :update_search, :search_result do
+    field :update_saved_search, :saved_search_result do
       arg(:id, non_null(:id))
-      arg(:input, :search_input)
-      resolve(&Resolvers.Searches.update_search/3)
+      arg(:input, :saved_search_input)
+      resolve(&Resolvers.Searches.update_saved_search/3)
     end
 
-    field :delete_search, :search_result do
+    field :delete_saved_search, :saved_search_result do
       arg(:id, non_null(:id))
-      resolve(&Resolvers.Searches.delete_search/3)
+      resolve(&Resolvers.Searches.delete_saved_search/3)
     end
   end
 end

@@ -47,4 +47,12 @@ defmodule GlificWeb.Schema.GenericTypes do
   end
 
   def parse_maybe_integer(_), do: :error
+
+  scalar :json, name: "Json" do
+    description("""
+    A generic json type so return the results as json object
+    """)
+    serialize(&Poison.encode!/1)
+    parse(&Poison.decode!(&1))
+  end
 end

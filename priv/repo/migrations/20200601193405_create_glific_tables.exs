@@ -340,6 +340,6 @@ defmodule Glific.Repo.Migrations.GlificTables do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:searches, :label)
+    create unique_index(:saved_searches, :label)
   end
 end
