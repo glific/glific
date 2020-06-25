@@ -65,8 +65,8 @@ defmodule TestConsumerTagger do
     create_message_tag(optout_tag_id, language_id, "Test message for testing optout tag")
   end
 
-  defp create_message_help(%{optout_tag_id: optout_tag_id, language_id: language_id}) do
-    create_message_tag(optout_tag_id, language_id, "Test message for testing help tag")
+  defp create_message_help(%{help_tag_id: help_tag_id, language_id: language_id}) do
+    create_message_tag(help_tag_id, language_id, "Test message for testing help tag")
   end
 
   def handle_demand(demand, %{counter: counter} = state) when counter < 6 do
@@ -159,7 +159,7 @@ defmodule Glific.Processor.ConsumerAutomationTest do
     # ensure we have a few more messages in the DB
     assert Repo.aggregate(Message, :count) > original_count
 
-    IO.inspect(Repo.query("select id, body from messages"))
+    # IO.inspect(Repo.query("select id, body from messages"))
     # Lets add checks here to make sure that we have both hindi and english language messages sent
     l =
       Messages.list_messages(%{

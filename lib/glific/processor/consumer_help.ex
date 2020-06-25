@@ -25,7 +25,6 @@ defmodule Glific.Processor.ConsumerHelp do
 
   @doc false
   def handle_events(messages_tags, from, state) do
-    IO.inspect(messages_tags)
     Helper.handle_events(messages_tags, from, state, &process_tag/2)
   end
 
