@@ -34,7 +34,9 @@ defmodule GlificWeb.Resolvers.Searches do
   end
 
   @doc false
-  @spec update_saved_search(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
+  @spec update_saved_search(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
           {:ok, any} | {:error, any}
   def update_saved_search(_, %{id: id, input: params}, _) do
     with {:ok, saved_search} <- Repo.fetch(SavedSearch, id),
@@ -57,5 +59,4 @@ defmodule GlificWeb.Resolvers.Searches do
   @spec search(Absinthe.Resolution.t(), %{term: String.t()}, %{context: map()}) ::
           {:ok, [any]}
   def search(_, params, _), do: {:ok, Searches.search(params)}
-
 end

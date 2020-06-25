@@ -52,6 +52,7 @@ defmodule GlificWeb.Schema.GenericTypes do
     description("""
     A generic json type so return the results as json object
     """)
+
     serialize(&Poison.encode!/1)
     parse(&decode_json/1)
   end

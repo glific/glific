@@ -41,14 +41,20 @@ defmodule Glific.SearchesTest do
 
     test "update_saved_search/2 with valid data updates the saved search" do
       saved_search = saved_search_fixture()
-      assert {:ok, %SavedSearch{} = saved_search} = Searches.update_saved_search(saved_search, @update_attrs)
+
+      assert {:ok, %SavedSearch{} = saved_search} =
+               Searches.update_saved_search(saved_search, @update_attrs)
+
       assert saved_search.args == %{}
       assert saved_search.label == "some updated label"
     end
 
     test "update_saved_search/2 with invalid data returns error changeset" do
       saved_search = saved_search_fixture()
-      assert {:error, %Ecto.Changeset{}} = Searches.update_saved_search(saved_search, @invalid_attrs)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Searches.update_saved_search(saved_search, @invalid_attrs)
+
       assert saved_search == Searches.get_saved_search!(saved_search.id)
     end
 

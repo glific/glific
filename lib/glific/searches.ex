@@ -4,6 +4,7 @@ defmodule Glific.Searches do
   """
 
   import Ecto.Query, warn: false
+
   alias Glific.{
     Contacts.Contact,
     Conversations.Conversation,
@@ -11,7 +12,6 @@ defmodule Glific.Searches do
     Search.Full,
     Searches.SavedSearch
   }
-
 
   @doc """
   Returns the list of searches.
@@ -75,7 +75,8 @@ defmodule Glific.Searches do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_saved_search(SavedSearch.t(), map()) :: {:ok, SavedSearch.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_saved_search(SavedSearch.t(), map()) ::
+          {:ok, SavedSearch.t()} | {:error, Ecto.Changeset.t()}
   def update_saved_search(%SavedSearch{} = search, attrs) do
     search
     |> SavedSearch.changeset(attrs)
@@ -94,7 +95,8 @@ defmodule Glific.Searches do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_saved_search(SavedSearch.t()) :: {:ok, SavedSearch.t()} | {:error, Ecto.Changeset.t()}
+  @spec delete_saved_search(SavedSearch.t()) ::
+          {:ok, SavedSearch.t()} | {:error, Ecto.Changeset.t()}
   def delete_saved_search(%SavedSearch{} = search) do
     Repo.delete(search)
   end
@@ -116,9 +118,10 @@ defmodule Glific.Searches do
   @doc """
   Full text search interface via Postgres
   """
-  @spec search(String.t()) :: [Conversation.t()]
+  @spec search(map()) :: [Conversation.t()]
   def search(%{term: term} = args) do
     query = from c in Contact, select: c.id
+
     contact_ids =
       query
       |> Full.run(term)
@@ -127,5 +130,4 @@ defmodule Glific.Searches do
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Glific.Conversations.list_conversations()
   end
-
 end
