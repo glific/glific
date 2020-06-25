@@ -168,6 +168,11 @@ defmodule Glific.Contacts do
   """
   @spec upsert(map()) :: Contact.t()
   def upsert(attrs) do
+    # Get the organization
+    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+
+    attrs = Map.put(attrs, :language_id, attrs[:language_id] || organization.default_language_id)
+
     Repo.insert!(
       change_contact(%Contact{}, attrs),
       on_conflict: [set: [phone: attrs.phone]],
