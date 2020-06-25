@@ -36,6 +36,7 @@ defmodule Glific.SeedsScale do
   defp create_contact_entries(contacts_count) do
     # Get the organization
     organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+
     Enum.map(1..contacts_count, fn _ -> create_contact_entry(organization.default_language_id) end)
   end
 
