@@ -440,7 +440,7 @@ defmodule Glific.Seeds do
 
     seed_organizations(default_provider, lang)
 
-    default_contact = seed_contacts()
+    seed_contacts()
 
     seed_session_templates(lang)
 

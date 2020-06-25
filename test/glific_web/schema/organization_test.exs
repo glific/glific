@@ -5,8 +5,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
   setup do
     lang = Glific.Seeds.seed_language()
     provider = Glific.Seeds.seed_providers()
-    contact = Glific.Seeds.seed_contacts()
-    Glific.Seeds.seed_organizations(provider, contact, lang)
+    # contact = Glific.Seeds.seed_contacts()
+    Glific.Seeds.seed_organizations(provider, lang)
     :ok
   end
 
