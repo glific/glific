@@ -166,7 +166,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :status, :contact_status_enum, null: false, default: "valid"
 
       # contact language for templates and other communications
-      add :language_id, references(:languages, on_delete: :restrict), null: true
+      add :language_id, references(:languages, on_delete: :restrict), null: false
 
       add :optin_time, :utc_datetime
       add :optout_time, :utc_datetime
@@ -314,6 +314,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :provider_id, references(:providers, on_delete: :nothing), null: false
       add :provider_key, :string, null: false
       add :provider_number, :string, null: false
+
+      # organization default language
+      add :default_language_id, references(:languages, on_delete: :restrict), null: false
 
       timestamps(type: :utc_datetime)
     end

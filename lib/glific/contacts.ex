@@ -107,6 +107,11 @@ defmodule Glific.Contacts do
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(attrs \\ %{}) do
+    # Get the organization
+    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+
+    attrs = Map.put(attrs, :language_id, attrs[:language_id] || organization.default_language_id)
+
     %Contact{}
     |> Contact.changeset(attrs)
     |> Repo.insert()
@@ -168,6 +173,11 @@ defmodule Glific.Contacts do
   """
   @spec upsert(map()) :: Contact.t()
   def upsert(attrs) do
+    # Get the organization
+    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+
+    attrs = Map.put(attrs, :language_id, attrs[:language_id] || organization.default_language_id)
+
     Repo.insert!(
       change_contact(%Contact{}, attrs),
       on_conflict: [set: [phone: attrs.phone]],
