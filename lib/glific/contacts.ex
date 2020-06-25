@@ -206,11 +206,25 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Check if this contact id is a new conatct
+  Update DB fields when contact opted in
   """
   @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
   def contact_opted_in(phone, utc_time) do
-    upsert(%{phone: phone, optin_time: utc_time, status: :valid})
+    upsert(%{phone: phone, optin_time: utc_time, status: :valid })
+    {:ok}
+  end
+
+  @doc """
+  Update DB fields when contact opted out
+  """
+  @spec contact_opted_out(String.t(), DateTime.t()) :: {:ok}
+  def contact_opted_out(phone, utc_time) do
+    upsert(%{
+      phone: phone,
+      optout_time: utc_time,
+      status: :invalid,
+      updated_at: DateTime.utc_now()
+    })
     {:ok}
   end
 
