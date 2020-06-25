@@ -4,9 +4,14 @@ defmodule Glific.Searches do
   """
 
   import Ecto.Query, warn: false
-  alias Glific.Repo
+  alias Glific.{
+    Contacts.Contact,
+    Conversations.Conversation,
+    Repo,
+    Search.Full,
+    Searches.SavedSearch
+  }
 
-  alias Glific.Searches.SavedSearch
 
   @doc """
   Returns the list of searches.
@@ -107,4 +112,19 @@ defmodule Glific.Searches do
   def change_saved_search(%SavedSearch{} = search, attrs \\ %{}) do
     SavedSearch.changeset(search, attrs)
   end
+
+  @doc """
+  Full text search interface via Postgres
+  """
+  @spec search(String.t()) :: [Conversation.t()]
+  def search(term) do
+    query = from c in Contact, select: c.id
+    contact_ids =
+      query
+      |> Full.run(term)
+      |> Repo.all()
+
+    Glific.Messages.list_conversations(%{filter: %{ids: contact_ids}})
+  end
+
 end

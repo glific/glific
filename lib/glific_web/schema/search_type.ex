@@ -36,6 +36,13 @@ defmodule GlificWeb.Schema.SearchTypes do
   end
 
   object :search_queries do
+    @desc "Search in conversations"
+    field :search, list_of(:conversation) do
+      arg(:term, non_null(:string))
+      arg(:opts, :opts)
+      resolve(&Resolvers.Searches.search/3)
+    end
+
     @desc "get the details of one saved search"
     field :saved_search, :saved_search_result do
       arg(:id, non_null(:id))

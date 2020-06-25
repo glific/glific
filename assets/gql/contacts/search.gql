@@ -1,5 +1,5 @@
-query searchConversation($term: String!) {
-  searchConversation(term: $term) {
+query search($term: String!) {
+  search(term: $term) {
     contact {
       id
       name

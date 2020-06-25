@@ -52,4 +52,12 @@ defmodule GlificWeb.Resolvers.Searches do
       {:ok, saved_search}
     end
   end
+
+  @doc false
+  @spec search(Absinthe.Resolution.t(), %{term: String.t()}, %{context: map()}) ::
+          {:ok, [any]}
+  def search(_, %{term: term}, _) do
+    {:ok, Searches.search(term)}
+  end
+
 end
