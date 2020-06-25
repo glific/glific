@@ -43,12 +43,37 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
       %{message_params: message_params}
     end
 
-    test "optin_time should be updated", setup_config = %{conn: conn} do
+    test "optin_time and status should be updated", setup_config = %{conn: conn} do
       phone = get_in(setup_config.message_params, ["payload", "phone"])
       conn = post(conn, "/gupshup", setup_config.message_params)
       json_response(conn, 200)
       {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone})
       assert contact.optin_time != nil
+      assert contact.status == :valid
+    end
+  end
+
+  describe "opted_out" do
+    setup do
+      contact_payload = %{
+        "phone" => Phone.EnUs.phone(),
+        "type" => "opted-out"
+      }
+
+      message_params =
+        @user_event_request_params
+        |> put_in(["payload"], contact_payload)
+
+      %{message_params: message_params}
+    end
+
+    test "optout_time and status should be updated", setup_config = %{conn: conn} do
+      phone = get_in(setup_config.message_params, ["payload", "phone"])
+      conn = post(conn, "/gupshup", setup_config.message_params)
+      json_response(conn, 200)
+      {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone})
+      assert contact.optout_time != nil
+      assert contact.status == :invalid
     end
   end
 end
