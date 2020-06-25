@@ -12,6 +12,13 @@ defmodule Glific.MessagesTest do
 
   alias Glific.Fixtures
 
+  setup do
+    lang = Glific.Seeds.seed_language()
+    default_provider = Glific.Seeds.seed_providers()
+    Glific.Seeds.seed_organizations(default_provider, lang)
+    :ok
+  end
+
   describe "messages" do
     alias Glific.Providers.Gupshup.Worker
 

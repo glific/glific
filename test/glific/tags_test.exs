@@ -212,6 +212,13 @@ defmodule Glific.TagsTest do
     end
   end
 
+  setup do
+    lang = Glific.Seeds.seed_language()
+    default_provider = Glific.Seeds.seed_providers()
+    Glific.Seeds.seed_organizations(default_provider, lang)
+    :ok
+  end
+
   describe "messages_tags" do
     test "list_messages_tags/0 returns all message_tags" do
       message_tag = Fixtures.message_tag_fixture()
