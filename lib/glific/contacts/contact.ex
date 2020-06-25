@@ -11,15 +11,17 @@ defmodule Glific.Contacts.Contact do
   alias Glific.Settings.Language
   alias Glific.Tags.Tag
 
-  @required_fields [:phone]
+  @required_fields [
+    :phone,
+    :language_id
+  ]
   @optional_fields [
     :name,
     :provider_status,
     :status,
     :optin_time,
     :optout_time,
-    :last_message_at,
-    :language_id
+    :last_message_at
   ]
 
   @type t() :: %__MODULE__{
@@ -29,6 +31,7 @@ defmodule Glific.Contacts.Contact do
           phone: String.t() | nil,
           status: ContactStatus | nil,
           provider_status: ContactStatus | nil,
+          language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           optin_time: :utc_datetime | nil,
           optout_time: :utc_datetime | nil,

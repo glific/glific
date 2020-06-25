@@ -107,6 +107,11 @@ defmodule Glific.Contacts do
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(attrs \\ %{}) do
+    # Get the organization
+    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+
+    attrs = Map.put(attrs, :language_id, attrs[:language_id] || organization.default_language_id)
+
     %Contact{}
     |> Contact.changeset(attrs)
     |> Repo.insert()
@@ -168,6 +173,11 @@ defmodule Glific.Contacts do
   """
   @spec upsert(map()) :: Contact.t()
   def upsert(attrs) do
+    # Get the organization
+    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+
+    attrs = Map.put(attrs, :language_id, attrs[:language_id] || organization.default_language_id)
+
     Repo.insert!(
       change_contact(%Contact{}, attrs),
       on_conflict: [set: [phone: attrs.phone]],
@@ -206,11 +216,26 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Check if this contact id is a new conatct
+  Update DB fields when contact opted in
   """
   @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
   def contact_opted_in(phone, utc_time) do
     upsert(%{phone: phone, optin_time: utc_time, status: :valid})
+    {:ok}
+  end
+
+  @doc """
+  Update DB fields when contact opted out
+  """
+  @spec contact_opted_out(String.t(), DateTime.t()) :: {:ok}
+  def contact_opted_out(phone, utc_time) do
+    upsert(%{
+      phone: phone,
+      optout_time: utc_time,
+      status: :invalid,
+      updated_at: DateTime.utc_now()
+    })
+
     {:ok}
   end
 

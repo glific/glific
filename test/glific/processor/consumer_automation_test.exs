@@ -129,6 +129,8 @@ defmodule Glific.Processor.ConsumerAutomationTest do
 
   setup do
     lang = Glific.Seeds.seed_language()
+    default_provider = Glific.Seeds.seed_providers()
+    Glific.Seeds.seed_organizations(default_provider, lang)
     Glific.Seeds.seed_tag(lang)
     Glific.Seeds.seed_contacts()
     Glific.Seeds.seed_messages()
@@ -184,7 +186,7 @@ defmodule Glific.Processor.ConsumerAutomationTest do
     l =
       Messages.list_messages(%{
         filter: %{
-          body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ"
+          body: "अब आपकी सदस्यता समाप्त हो गई है।\n\nफिर से संदेश प्राप्त करने के लिए सदस्यता टाइप करें।"
         }
       })
 
@@ -194,7 +196,7 @@ defmodule Glific.Processor.ConsumerAutomationTest do
     l =
       Messages.list_messages(%{
         filter: %{
-          body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ"
+          body: "हमे संपर्क करने के लिए धन्यवाद। क्या इसमें कुछ आपकी मदद कर सकता है-\nमेनू देखने के लिए 1. भेजें,"
         }
       })
 

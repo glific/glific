@@ -5,6 +5,13 @@ defmodule Glific.CommunicationsTest do
   alias Faker.Phone
   alias Glific.Messages
 
+  setup do
+    lang = Glific.Seeds.seed_language()
+    default_provider = Glific.Seeds.seed_providers()
+    Glific.Seeds.seed_organizations(default_provider, lang)
+    :ok
+  end
+
   describe "communications" do
     alias Glific.Communications
 
