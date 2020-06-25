@@ -35,6 +35,7 @@ defmodule Glific.Processor.ConsumerOptout do
   def process_tag(message, _tag) do
     # lets send the message first, so it goes out
     Helper.send_session_message_template(message, "optout")
+
     message =
       message
       |> Repo.preload([:sender])

@@ -210,7 +210,7 @@ defmodule Glific.Contacts do
   """
   @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
   def contact_opted_in(phone, utc_time) do
-    upsert(%{phone: phone, optin_time: utc_time, status: :valid })
+    upsert(%{phone: phone, optin_time: utc_time, status: :valid})
     {:ok}
   end
 
@@ -225,6 +225,7 @@ defmodule Glific.Contacts do
       status: :invalid,
       updated_at: DateTime.utc_now()
     })
+
     {:ok}
   end
 
