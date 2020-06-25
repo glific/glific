@@ -102,7 +102,7 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_contacts :: Contact.t()
+  @spec seed_contacts :: {integer(), nil}
   def seed_contacts do
     [hindi | _] = Settings.list_languages(%{label: "hindi"})
     [english | _] = Settings.list_languages(%{label: "english"})
