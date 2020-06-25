@@ -70,7 +70,7 @@ defmodule GlificWeb.Schema.ContactTypes do
       resolve(&Resolvers.Contacts.count_contacts/3)
     end
 
-    field :search, list_of(:conversation) do
+    field :search_conversation, list_of(:conversation) do
       arg(:term, non_null(:string))
       arg(:opts, :opts)
       resolve(&Resolvers.Contacts.search/3)

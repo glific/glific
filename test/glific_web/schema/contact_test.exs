@@ -185,12 +185,12 @@ defmodule GlificWeb.Schema.ContactTest do
     result = query_gql_by(:search, variables: %{"term" => "Default"})
     assert {:ok, query_data} = result
 
-    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
+    assert get_in(query_data, [:data, "searchConversation", Access.at(0), "contact", "id"]) ==
              receiver_id
 
     result = query_gql_by(:search, variables: %{"term" => "Default receiver"})
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == receiver_id
+    assert get_in(query_data, [:data, "searchConversation", Access.at(0), "contact", "id"]) == receiver_id
 
     result =
       query_gql_by(:search,
@@ -198,7 +198,7 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "search"]) == []
+    assert get_in(query_data, [:data, "searchConversation"]) == []
 
     # lets do an empty search
     # should return all contacts
@@ -208,6 +208,6 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "search"])) == Contacts.count_contacts()
+    assert length(get_in(query_data, [:data, "searchConversation"])) == Contacts.count_contacts()
   end
 end
