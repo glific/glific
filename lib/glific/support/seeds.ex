@@ -102,7 +102,7 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_contacts :: {Contact.t()}
+  @spec seed_contacts :: Contact.t()
   def seed_contacts do
     [hindi | _] = Settings.list_languages(%{label: "hindi"})
     [english | _] = Settings.list_languages(%{label: "english"})
@@ -145,11 +145,11 @@ defmodule Glific.Seeds do
     Repo.insert_all(Contact, contact_entries)
 
     {:ok, default_contact} = Repo.fetch_by(Contact, %{phone: "917834811114"})
-    {default_contact}
+    default_contact
   end
 
   @doc false
-  @spec seed_providers :: {Provider.t()}
+  @spec seed_providers :: Provider.t()
   def seed_providers do
     default_provider =
       Repo.insert!(%Provider{
@@ -170,12 +170,12 @@ defmodule Glific.Seeds do
       api_end_point: "test"
     })
 
-    {default_provider}
+    default_provider
   end
 
   @doc false
-  @spec seed_organizations({Provider.t()}, {Contact.t()}, {Language.t(), Language.t()}) :: nil
-  def seed_organizations({default_provider}, {default_contact}, {_hi_in, en_us}) do
+  @spec seed_organizations(Provider.t(), Contact.t(), {Language.t(), Language.t()}) :: nil
+  def seed_organizations(default_provider, default_contact, {_hi_in, en_us}) do
     Repo.insert!(%Organization{
       name: "Default Organization",
       display_name: "Default Organization",
@@ -437,15 +437,15 @@ defmodule Glific.Seeds do
   def seed do
     lang = seed_language()
 
-    seed_tag(lang)
+    default_contact = seed_contacts()
 
-    {default_contact} = seed_contacts()
+    default_provider = seed_providers()
 
-    {default_provider} = seed_providers()
-
-    seed_organizations({default_provider}, {default_contact}, lang)
+    seed_organizations(default_provider, default_contact, lang)
 
     seed_session_templates(lang)
+
+    seed_tag(lang)
 
     seed_messages()
 

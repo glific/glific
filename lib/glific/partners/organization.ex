@@ -24,7 +24,9 @@ defmodule Glific.Partners.Organization do
   ]
 
   # define all the optional fields for organization
-  @optional_fields []
+  @optional_fields [
+    :contact_id
+  ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
