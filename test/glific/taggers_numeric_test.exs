@@ -18,7 +18,7 @@ defmodule Glific.TaggersNumericTest do
     6 => "\u096C",
     7 => "saat",
     8 => "आठ",
-    9 => to_string(['\u0039', 65_039, 8419]),
+    9 => to_string(['\u0039', 65_039, 8419])
   }
 
   @checker_punct %{
@@ -32,7 +32,7 @@ defmodule Glific.TaggersNumericTest do
     7 => "  saat%$^",
     8 => "<>,.आठ  ",
     9 => to_string(['\u0039', 65_039, 8419]),
-    "23" => "23",
+    "23" => "23"
   }
 
   @invalid %{

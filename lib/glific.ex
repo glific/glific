@@ -16,6 +16,7 @@ defmodule Glific do
   @spec parse_maybe_integer(String.t() | integer) :: {:ok, integer} | :error
   def parse_maybe_integer(value) when is_integer(value),
     do: {:ok, value}
+
   def parse_maybe_integer(value) do
     case Integer.parse(value) do
       {n, ""} -> {:ok, n}
