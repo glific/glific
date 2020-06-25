@@ -189,11 +189,11 @@ defmodule Glific.Seeds do
 
   @doc false
   @spec seed_organizations(Provider.t(), {Language.t(), Language.t()}) :: nil
-  def seed_organizations(default_provider, {_hi_in, en_us}) do
+  def seed_organizations(default_provider, {hi_in, en_us}) do
     # Sender Contact for organization
     sender =
       Repo.insert!(%Contact{
-        phone: "91783481111",
+        phone: "917834811114",
         name: "Default Sender",
         language_id: en_us.id
       })
@@ -207,7 +207,7 @@ defmodule Glific.Seeds do
       provider_id: default_provider.id,
       provider_key: "random",
       provider_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-      default_language_id: en_us.id
+      default_language_id: hi_in.id
     })
 
     Repo.insert!(%Organization{
@@ -218,7 +218,7 @@ defmodule Glific.Seeds do
       provider_id: default_provider.id,
       provider_key: "random",
       provider_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-      default_language_id: en_us.id
+      default_language_id: hi_in.id
     })
   end
 
@@ -402,7 +402,13 @@ defmodule Glific.Seeds do
 
     Repo.insert!(%SessionTemplate{
       label: "Help",
-      body: "Here we will enter some help text",
+      body: """
+      Thank you for reaching out. Is this what you're looking for-
+      Send 1. to see the menu,
+      Send 2. to know more about Glific,
+      Send 3. to know the benefits of WA for business,
+      Send 4. if you'd like to be onboarded to Glific
+      """,
       type: :text,
       shortcode: "help",
       is_reserved: true,
@@ -411,7 +417,13 @@ defmodule Glific.Seeds do
 
     Repo.insert!(%SessionTemplate{
       label: "Help",
-      body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ",
+      body: """
+      हमे संपर्क करने के लिए धन्यवाद। क्या इसमें कुछ आपकी मदद कर सकता है-
+      मेनू देखने के लिए 1. भेजें,
+      ग्लिफ़िक के बारे में अधिक जानने के लिए 2. भेजें,
+      व्यापार के लिए व्हाट्सएप के लाभों को जानने के लिए 3. भेजें,
+      ग्लिफ़िक का उपयोग करने के लिए 4. भेजें
+      """,
       type: :text,
       shortcode: "help",
       is_reserved: true,
@@ -421,7 +433,7 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "Language",
       body: """
-      Your preferred language is <%= language %>
+      Is <%= language %> your preferred language?
 
       Do you want to change the language you want to receive messages in?
 
@@ -439,7 +451,7 @@ defmodule Glific.Seeds do
       body: """
       क्या आपकी पसंदीदा भाषा <%= language %> है?
 
-      आप अपनी पसंदीदा भाषा में संदेश प्राप्त कर सकते हैं।
+      आप जिस भाषा में संदेश प्राप्त करना चाहते हैं उसे बदल सकते हैं।
 
       हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
       To receive messages in English, type English

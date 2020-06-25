@@ -104,7 +104,7 @@ defmodule Glific.Processor.ConsumerTagger do
   defp new_contact_tagger(message, state) do
     if Status.is_new_contact(message.sender_id) do
       message
-      |> add_status_tag("New User", state)
+      |> add_status_tag("New Contact", state)
     end
 
     message
