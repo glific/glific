@@ -27,6 +27,7 @@ defmodule Glific.Application do
       Glific.Processor.ConsumerTagger,
       Glific.Processor.ConsumerAutomation,
       Glific.Processor.ConsumerLanguage,
+      Glific.Processor.ConsumerHelp,
       Glific.Processor.ConsumerNewContact,
       Glific.Processor.ConsumerNumeric,
       Glific.Processor.ConsumerOptout
