@@ -108,7 +108,6 @@ defmodule Glific.Seeds do
     [english | _] = Settings.list_languages(%{label: "english"})
 
     contacts = [
-      %{phone: "917834811114", name: "Default Sender", language_id: hindi.id},
       %{phone: "917834811231", name: "Default receiver", language_id: hindi.id},
       %{
         name: "Adelle Cavin",
@@ -143,9 +142,6 @@ defmodule Glific.Seeds do
 
     # seed contacts
     Repo.insert_all(Contact, contact_entries)
-
-    {:ok, default_contact} = Repo.fetch_by(Contact, %{phone: "917834811114"})
-    default_contact
   end
 
   @doc false
@@ -176,10 +172,19 @@ defmodule Glific.Seeds do
   @doc false
   @spec seed_organizations(Provider.t(), {Language.t(), Language.t()}) :: nil
   def seed_organizations(default_provider, {_hi_in, en_us}) do
+    # Sender Contact for organization
+    sender =
+      Repo.insert!(%Contact{
+        phone: "91783481111",
+        name: "Default Sender",
+        language_id: en_us.id
+      })
+
     Repo.insert!(%Organization{
       name: "Default Organization",
       display_name: "Default Organization",
       contact_name: "Test",
+      contact_id: sender.id,
       email: "test@glific.org",
       provider_id: default_provider.id,
       provider_key: "random",

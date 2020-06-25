@@ -166,7 +166,8 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "delete a contact" do
-    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Sender"})
+    # Delete a random contact
+    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Chrissy Cron"})
 
     result = query_gql_by(:delete, variables: %{"id" => contact.id})
     assert {:ok, query_data} = result

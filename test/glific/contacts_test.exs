@@ -73,13 +73,15 @@ defmodule Glific.ContactsTest do
     end
 
     test "list_contacts/0 returns all contacts" do
+      {:ok, default_sender} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Sender"})
+
       contact = contact_fixture()
-      assert Contacts.list_contacts() == [contact]
+      assert Contacts.list_contacts() == [default_sender, contact]
     end
 
     test "count_contacts/0 returns count of all contacts" do
       _ = contact_fixture()
-      assert Contacts.count_contacts() == 1
+      assert Contacts.count_contacts() == 2
 
       assert Contacts.count_contacts(%{filter: %{name: "some name"}}) == 1
     end
@@ -160,7 +162,7 @@ defmodule Glific.ContactsTest do
       _c2 = contact_fixture(@valid_attrs_2)
       _c3 = contact_fixture(@valid_attrs_3)
 
-      assert length(Contacts.list_contacts()) == 4
+      assert length(Contacts.list_contacts()) == 5
     end
 
     test "list_contacts/1 with multiple contacts sorted" do
@@ -169,11 +171,13 @@ defmodule Glific.ContactsTest do
       c2 = contact_fixture(@valid_attrs_2)
       c3 = contact_fixture(@valid_attrs_3)
 
+      {:ok, default_sender} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Sender"})
+
       cs = Contacts.list_contacts(%{opts: %{order: :asc}})
-      assert [c0, c1, c2, c3] == cs
+      assert [default_sender, c0, c1, c2, c3] == cs
 
       cs = Contacts.list_contacts(%{opts: %{order: :desc}})
-      assert [c3, c2, c1, c0] == cs
+      assert [c3, c2, c1, c0, default_sender] == cs
     end
 
     test "list_contacts/1 with multiple contacts filtered" do
