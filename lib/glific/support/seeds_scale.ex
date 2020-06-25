@@ -17,7 +17,7 @@ defmodule Glific.SeedsScale do
 
   import Ecto.Query
 
-  defp create_contact_entry do
+  defp create_contact_entry(language_id) do
     phone = EnUs.phone()
 
     %{
@@ -27,13 +27,16 @@ defmodule Glific.SeedsScale do
       optin_time: DateTime.truncate(DateTime.utc_now(), :second),
       optout_time: DateTime.truncate(DateTime.utc_now(), :second),
       status: "valid",
+      language_id: language_id,
       inserted_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.truncate(:second),
       updated_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.truncate(:second)
     }
   end
 
   defp create_contact_entries(contacts_count) do
-    Enum.map(1..contacts_count, fn _ -> create_contact_entry() end)
+    # Get the organization
+    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+    Enum.map(1..contacts_count, fn _ -> create_contact_entry(organization.default_language_id) end)
   end
 
   defp create_message(1), do: Shakespeare.as_you_like_it()
