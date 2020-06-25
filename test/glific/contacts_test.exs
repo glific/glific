@@ -97,6 +97,29 @@ defmodule Glific.ContactsTest do
       assert contact.phone == "some phone"
       assert contact.status == :valid
       assert contact.provider_status == :invalid
+
+      # Contact should be created with organization's default language
+      {:ok, organization} =
+        Repo.fetch_by(Glific.Partners.Organization, %{name: "Default Organization"})
+
+      assert contact.language_id == organization.default_language_id
+    end
+
+    test "create_contact/1 with language id creates a contact" do
+      {:ok, language} = Repo.fetch_by(Glific.Settings.Language, %{locale: "hi_IN"})
+
+      attrs =
+        @valid_attrs
+        |> Map.merge(%{language_id: language.id})
+
+      assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs)
+      assert contact.name == "some name"
+      assert contact.optin_time == ~U[2010-04-17 14:00:00Z]
+      assert contact.optout_time == ~U[2010-04-17 14:00:00Z]
+      assert contact.phone == "some phone"
+      assert contact.status == :valid
+      assert contact.provider_status == :invalid
+      assert contact.language_id == language.id
     end
 
     test "create_contact/1 with invalid data returns error changeset" do
