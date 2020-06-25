@@ -1,0 +1,15 @@
+fragment UserFields on UserResult {
+  user {
+    id
+    name
+    phone
+    roles
+  }
+}
+
+fragment ErrorFields on UserResult {
+  errors {
+    key
+    message
+  }
+}

@@ -1,5 +1,5 @@
-query conversations($nc: Int!, $sc: Int!, $filter: ConversationsFilter) {
-  conversations(numberOfConversations: $nc, sizeOfConversations: $sc, filter: $filter) {
+query conversations($messageOpts: Opts!, $contactOpts: Opts!, $filter: ConversationsFilter) {
+  conversations(messageOpts: $messageOpts, contactOpts: $contactOpts, filter: $filter) {
     contact {
       id
       name

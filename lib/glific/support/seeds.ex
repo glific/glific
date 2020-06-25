@@ -12,7 +12,8 @@ defmodule Glific.Seeds do
     Settings,
     Settings.Language,
     Tags.Tag,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Users.User
   }
 
   @doc """
@@ -83,6 +84,14 @@ defmodule Glific.Seeds do
         keywords: ["stop", "unsubscribe", "halt", "सदस्यता समाप्त"]
       },
 
+      # Help
+      %{
+        label: "Help",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["help", "मदद"]
+      },
+
       # Tags with Value
       %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
 
@@ -147,6 +156,7 @@ defmodule Glific.Seeds do
         contact_entry
         |> Map.put(:inserted_at, inserted_time)
         |> Map.put(:updated_at, inserted_time)
+        |> Map.put(:last_message_at, inserted_time)
       end
 
     # seed contacts
@@ -394,7 +404,7 @@ defmodule Glific.Seeds do
     })
 
     Repo.insert!(%SessionTemplate{
-      label: "Help (Hindi)",
+      label: "Help",
       body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ",
       type: :text,
       shortcode: "help",
@@ -410,7 +420,7 @@ defmodule Glific.Seeds do
       Do you want to change the language you want to receive messages in?
 
       हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
-      Type English to receive messages in English
+      To receive messages in English, type English
       """,
       type: :text,
       shortcode: "language",
@@ -421,12 +431,12 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "Language",
       body: """
-      आपकी पसंदीदा भाषा <%= language %> है
+      क्या आपकी पसंदीदा भाषा <%= language %> है?
 
-      आप किस भाषा में संदेश प्राप्त करना चाहते हैं?क्या आप उस भाषा को बदलना चाहते हैं जिसमें आप संदेश प्राप्त करना चाहते हैं?
+      आप अपनी पसंदीदा भाषा में संदेश प्राप्त कर सकते हैं।
 
       हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
-      Type English to receive messages in English
+      To receive messages in English, type English
       """,
       type: :text,
       shortcode: "language",
@@ -458,6 +468,52 @@ defmodule Glific.Seeds do
       shortcode: "optout",
       is_reserved: true,
       language_id: hi_in.id
+    })
+
+    for label <- ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight"] do
+      Repo.insert!(%SessionTemplate{
+        label: label,
+        type: :text,
+        shortcode: String.downcase(label),
+        is_reserved: false,
+        language_id: hi_in.id,
+        body: """
+        इस संदेश की सामग्री संख्यात्मक मूल्य का प्रतिनिधित्व करने के लिए विशिष्ट होगी: #{label}.
+        जंगली जाओ !, अपनी बात करो। मैं सिर्फ एक स्क्रिप्ट हूं
+        """
+      })
+
+      Repo.insert!(%SessionTemplate{
+        label: label,
+        type: :text,
+        shortcode: String.downcase(label),
+        is_reserved: false,
+        language_id: en_us.id,
+        body: """
+        Contents of this message will be specific to the numeric value representing: #{label}.
+        Go wild!, Do your own thing. I am just a script
+        """
+      })
+    end
+
+    nil
+  end
+
+  @doc false
+  @spec seed_users :: {User.t()}
+  def seed_users do
+    Repo.insert!(%User{
+      name: "John Doe",
+      phone: "+919820198765",
+      password: "secret1234",
+      roles: ["admin"]
+    })
+
+    Repo.insert!(%User{
+      name: "Jane Doe",
+      phone: "+918820198765",
+      password: "secret1234",
+      roles: ["basic", "admin"]
     })
   end
 

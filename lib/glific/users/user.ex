@@ -35,7 +35,7 @@ defmodule Glific.Users.User do
     user_or_changeset
     |> Changeset.cast(attrs, @required_fields ++ @optional_fields)
     |> Changeset.validate_required(@required_fields)
-    |> Changeset.validate_inclusion(:roles, @user_roles)
+    |> Changeset.validate_subset(:roles, @user_roles)
     |> glific_phone_field_changeset(attrs, @pow_config)
     |> current_password_changeset(attrs, @pow_config)
     |> password_changeset(attrs, @pow_config)
@@ -52,6 +52,18 @@ defmodule Glific.Users.User do
     |> Changeset.update_change(:phone, &maybe_normalize_user_id_field_value/1)
     |> Changeset.validate_required([:phone])
     |> Changeset.unique_constraint(:phone)
+  end
+
+  @doc """
+  Simple changeset for update name and roles
+  """
+  @spec update_fields_changeset(Ecto.Schema.t() | Changeset.t(), map()) ::
+          Changeset.t()
+  def update_fields_changeset(user_or_changeset, params) do
+    user_or_changeset
+    |> Changeset.cast(params, [:name, :roles])
+    |> Changeset.validate_required([:name, :roles])
+    |> Changeset.validate_subset(:roles, @user_roles)
   end
 
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),

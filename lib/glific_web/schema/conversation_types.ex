@@ -40,17 +40,17 @@ defmodule GlificWeb.Schema.ConversationTypes do
   object :conversation_queries do
     @desc "get the conversations"
     field :conversations, list_of(:conversation) do
-      arg(:number_of_conversations, non_null(:integer))
-      arg(:size_of_conversations, non_null(:integer))
       arg(:filter, :conversations_filter)
+      arg(:message_opts, :opts)
+      arg(:contact_opts, :opts)
       resolve(&Resolvers.Conversations.conversations/3)
     end
 
     @desc "get the details of conversation with one user"
     field :conversation, :conversation do
       arg(:contact_id, non_null(:gid))
-      arg(:size_of_conversations, non_null(:integer))
       arg(:filter, :conversation_filter)
+      arg(:message_opts, :opts)
       resolve(&Resolvers.Conversations.conversation/3)
     end
   end

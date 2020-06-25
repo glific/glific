@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query user($id: ID!) {
+  user(id: $id) {
+    ...UserFields
+
+    ...ErrorFields
+  }
+}

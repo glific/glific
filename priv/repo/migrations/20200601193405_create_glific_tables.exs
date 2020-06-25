@@ -168,9 +168,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # contact language for templates and other communications
       add :language_id, references(:languages, on_delete: :restrict), null: true
 
-      add :optin_time, :timestamptz
-      add :optout_time, :timestamptz
-      add :last_message_at, :timestamptz
+      add :optin_time, :utc_datetime
+      add :optout_time, :utc_datetime
+      add :last_message_at, :utc_datetime
 
       timestamps(type: :utc_datetime)
     end
@@ -222,6 +222,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # options: sent, delivered, read
       add :provider_status, :message_status_enum
 
+      # message number for a contact
+      add :message_number, :bigint
+
       # sender id
       add :sender_id, references(:contacts, on_delete: :delete_all), null: false
 
@@ -237,14 +240,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # message media ids
       add :media_id, references(:messages_media, on_delete: :delete_all), null: true
 
-      # parent message id for same contact
-      add :parent_id, references(:messages, on_delete: :nilify_all), null: true
-
-      # ancestors array for same contact
-      add :ancestors, {:array, :bigint}
-
       # timestamp when message will be sent from queue worker
-      add :sent_at, :timestamptz
+      add :sent_at, :utc_datetime
 
       timestamps(type: :utc_datetime)
     end
