@@ -27,7 +27,7 @@ defmodule GlificWeb.Resolvers.Searches do
   @doc false
   @spec create_saved_search(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_saved_search(_, %{input: params}, _) do
+  def create_saved_search(_, params, _) do
     with {:ok, saved_search} <- Searches.create_saved_search(params) do
       {:ok, %{saved_search: saved_search}}
     end
@@ -56,8 +56,6 @@ defmodule GlificWeb.Resolvers.Searches do
   @doc false
   @spec search(Absinthe.Resolution.t(), %{term: String.t()}, %{context: map()}) ::
           {:ok, [any]}
-  def search(_, %{term: term}, _) do
-    {:ok, Searches.search(term)}
-  end
+  def search(_, params, _), do: {:ok, Searches.search(params)}
 
 end

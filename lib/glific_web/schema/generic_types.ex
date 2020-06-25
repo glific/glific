@@ -53,6 +53,22 @@ defmodule GlificWeb.Schema.GenericTypes do
     A generic json type so return the results as json object
     """)
     serialize(&Poison.encode!/1)
-    parse(&Poison.decode!(&1))
+    parse(&decode_json/1)
+  end
+
+  @spec decode_json(Absinthe.Blueprint.Input.String.t()) :: {:ok, term()} | :error
+  defp decode_json(%Absinthe.Blueprint.Input.String{value: value}) do
+    case Jason.decode(value) do
+      {:ok, result} -> {:ok, result}
+      _ -> :error
+    end
+  end
+
+  defp decode_json(%Absinthe.Blueprint.Input.Null{}) do
+    {:ok, nil}
+  end
+
+  defp decode_json(_) do
+    :error
   end
 end
