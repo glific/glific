@@ -9,6 +9,7 @@ defmodule Glific.Processor.Helper do
     Messages.Message,
     Repo,
     Tags,
+    Tags.Tag,
     Templates.SessionTemplate
   }
 
@@ -56,28 +57,25 @@ defmodule Glific.Processor.Helper do
   Send a reply to the current sender of the incoming message in the preferred
   language of the sender and associate a tag with it
   """
-  @spec send_session_message_template_with_tag(Message.t(), Tag.t(), String.t()) :: Message.t()
-  def send_session_message_template_with_tag(message, tag, shortcode) do
+  @spec send_session_message_template_with_tag(Message.t(), Tag.t(), String.t(), String.t()) :: Message.t()
+  def send_session_message_template_with_tag(message, tag, value, shortcode) do
     sent_message = send_session_message_template(message, shortcode)
 
     # now tag this message
-    add_tag(sent_message, tag.id, shortcode)
+    add_tag(sent_message, tag.id, value)
   end
 
   @doc """
   Helper function to add tag
   """
   @spec add_tag(Message.t(), integer, String.t() | nil) :: Message.t()
-  def add_tag(message, tag_id, value \\ nil)
-  def add_tag(message, 0, _value), do: message
-  def add_tag(message, nil, _value), do: message
-  def add_tag(message, tag_id, value) do
+  def add_tag(message, tag_id, value \\ nil) do
     {:ok, _} =
       Tags.create_message_tag(%{
-            message_id: message.id,
-            tag_id: tag_id,
-            value: value
-                              })
+        message_id: message.id,
+        tag_id: tag_id,
+        value: value
+      })
 
     message
   end

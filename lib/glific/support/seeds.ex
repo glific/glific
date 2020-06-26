@@ -204,7 +204,8 @@ defmodule Glific.Seeds do
       Repo.insert!(%Contact{
         phone: "917834811114",
         name: "Default Sender",
-        language_id: en_us.id
+        language_id: en_us.id,
+        last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
       })
 
     Repo.insert!(%Organization{
@@ -524,56 +525,58 @@ defmodule Glific.Seeds do
     end
 
     Repo.insert!(%SessionTemplate{
-          label: "Start of Sequence",
-          type: :text,
-          shortcode: "start",
-          is_reserved: false,
-          language_id: hi_in.id,
-          body: """
-          This is the start of a pre-determined sequence.
-          """
-                 })
-    Repo.insert!(%SessionTemplate{
-          label: "Start of Sequence",
-          type: :text,
-          shortcode: "start",
-          is_reserved: false,
-          language_id: en_us.id,
-          body: """
-          This is the start of a pre-determined sequence
-          """
-                 })
+      label: "Start of Sequence",
+      type: :text,
+      shortcode: "start",
+      is_reserved: false,
+      language_id: hi_in.id,
+      body: """
+      This is the start of a pre-determined sequence.
+      """
+    })
 
     Repo.insert!(%SessionTemplate{
-          label: "Menu",
-          type: :text,
-          shortcode: "menu",
-          is_reserved: false,
-          language_id: hi_in.id,
-          body: """
-          Type one of the below:
+      label: "Start of Sequence",
+      type: :text,
+      shortcode: "start",
+      is_reserved: false,
+      language_id: en_us.id,
+      body: """
+      This is the start of a pre-determined sequence
+      """
+    })
 
-          next - next item in sequence
-          prev - prev item in sequence
-          start - start (or restart) the sequence
-          menu - show this menu
-          """
-                 })
     Repo.insert!(%SessionTemplate{
-          label: "Menu",
-          type: :text,
-          shortcode: "start",
-          is_reserved: false,
-          language_id: en_us.id,
-          body: """
-          Type one of the below:
+      label: "Menu",
+      type: :text,
+      shortcode: "menu",
+      is_reserved: false,
+      language_id: hi_in.id,
+      body: """
+      Type one of the below:
 
-          next - next item in sequence
-          prev - prev item in sequence
-          start - start (or restart) the sequence
-          menu - show this menu
-          """
-                 })
+      next - next item in sequence
+      prev - prev item in sequence
+      start - start (or restart) the sequence
+      menu - show this menu
+      """
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Menu",
+      type: :text,
+      shortcode: "menu",
+      is_reserved: false,
+      language_id: en_us.id,
+      body: """
+      Type one of the below:
+
+      next - next item in sequence
+      prev - prev item in sequence
+      start - start (or restart) the sequence
+      menu - show this menu
+      """
+    })
 
     nil
   end

@@ -120,5 +120,4 @@ defmodule Glific.Processor.ConsumerTagger do
   @spec add_status_tag(Message.t(), String.t(), map()) :: Message.t()
   defp add_status_tag(message, status, state),
     do: Helper.add_tag(message, state.status_map[status])
-
 end
