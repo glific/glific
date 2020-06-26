@@ -539,21 +539,21 @@ defmodule Glific.Seeds do
   @doc false
   @spec seed_saved_searches :: {:ok}
   def seed_saved_searches do
-     Repo.insert!(%SavedSearch{
-        label: "All unread conversations",
-        args: %{includeTags: ["12"]},
-        is_reserved: true
-      })
+    Repo.insert!(%SavedSearch{
+      label: "All unread conversations",
+      args: %{includeTags: ["12"]},
+      is_reserved: true
+    })
 
-      Repo.insert!(%SavedSearch{
-        label: "Conversations read but not replied",
-        args: %{includeTags: ["10"]}
-      })
+    Repo.insert!(%SavedSearch{
+      label: "Conversations read but not replied",
+      args: %{includeTags: ["10"]}
+    })
 
-      Repo.insert!(%SavedSearch{
-        label: "Conversations where the contact has opted out",
-        args: %{ includeTags: ["14"]}
-      })
+    Repo.insert!(%SavedSearch{
+      label: "Conversations where the contact has opted out",
+      args: %{includeTags: ["14"]}
+    })
 
     {:ok}
   end
