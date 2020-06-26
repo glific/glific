@@ -115,19 +115,31 @@ defmodule GlificWeb.Schema.SearchTest do
 
     receiver_id = to_string(receiver.id)
 
-    result = query_gql_by(:search, variables: %{"term" => "Default", "shouldSave" => false, "searchLabel" => ""})
+    result =
+      query_gql_by(:search,
+        variables: %{"term" => "Default", "shouldSave" => false, "searchLabel" => ""}
+      )
+
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
              receiver_id
 
-    result = query_gql_by(:search, variables: %{"term" => "Default receiver", "shouldSave" => false, "searchLabel" => ""})
+    result =
+      query_gql_by(:search,
+        variables: %{"term" => "Default receiver", "shouldSave" => false, "searchLabel" => ""}
+      )
+
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == receiver_id
 
     result =
       query_gql_by(:search,
-        variables: %{"term" => "This term is highly unlikely to occur superfragerlicious", "shouldSave" => false, "searchLabel" => ""}
+        variables: %{
+          "term" => "This term is highly unlikely to occur superfragerlicious",
+          "shouldSave" => false,
+          "searchLabel" => ""
+        }
       )
 
     assert {:ok, query_data} = result
@@ -145,8 +157,18 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   test "save search will save the arguments" do
-    result = query_gql_by(:search, variables: %{"term" => "Default", "shouldSave" => true, "searchLabel" => "Save with Search"})
+    result =
+      query_gql_by(:search,
+        variables: %{
+          "term" => "Default",
+          "shouldSave" => true,
+          "searchLabel" => "Save with Search"
+        }
+      )
+
     assert {:ok, query_data} = result
-    assert {:ok, saved_search} = Glific.Repo.fetch_by(Glific.Searches.SavedSearch, %{label: "Save with Search"})
+
+    assert {:ok, saved_search} =
+             Glific.Repo.fetch_by(Glific.Searches.SavedSearch, %{label: "Save with Search"})
   end
 end
