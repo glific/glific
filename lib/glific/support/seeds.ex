@@ -95,6 +95,15 @@ defmodule Glific.Seeds do
       # Tags with Value
       %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
 
+      # Tags for Sequence automation
+      %{
+        label: "Sequence",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        is_value: true,
+        keywords: ["start", "previous", "next", "menu"]
+      },
+
       # Type of Contact
       %{label: "Child", language_id: en_us.id, parent_id: message_tags_ct.id},
       %{label: "Parent", language_id: en_us.id, parent_id: message_tags_ct.id},
@@ -513,6 +522,58 @@ defmodule Glific.Seeds do
         """
       })
     end
+
+    Repo.insert!(%SessionTemplate{
+          label: "Start of Sequence",
+          type: :text,
+          shortcode: "start",
+          is_reserved: false,
+          language_id: hi_in.id,
+          body: """
+          This is the start of a pre-determined sequence.
+          """
+                 })
+    Repo.insert!(%SessionTemplate{
+          label: "Start of Sequence",
+          type: :text,
+          shortcode: "start",
+          is_reserved: false,
+          language_id: en_us.id,
+          body: """
+          This is the start of a pre-determined sequence
+          """
+                 })
+
+    Repo.insert!(%SessionTemplate{
+          label: "Menu",
+          type: :text,
+          shortcode: "menu",
+          is_reserved: false,
+          language_id: hi_in.id,
+          body: """
+          Type one of the below:
+
+          next - next item in sequence
+          prev - prev item in sequence
+          start - start (or restart) the sequence
+          menu - show this menu
+          """
+                 })
+    Repo.insert!(%SessionTemplate{
+          label: "Menu",
+          type: :text,
+          shortcode: "start",
+          is_reserved: false,
+          language_id: en_us.id,
+          body: """
+          Type one of the below:
+
+          next - next item in sequence
+          prev - prev item in sequence
+          start - start (or restart) the sequence
+          menu - show this menu
+          """
+                 })
 
     nil
   end

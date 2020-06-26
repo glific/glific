@@ -32,7 +32,8 @@ defmodule Glific.Application do
       Glific.Processor.ConsumerHelp,
       Glific.Processor.ConsumerNewContact,
       Glific.Processor.ConsumerNumeric,
-      Glific.Processor.ConsumerOptout
+      Glific.Processor.ConsumerOptout,
+      Glific.Processor.ConsumerSequence
     ]
 
     children =
