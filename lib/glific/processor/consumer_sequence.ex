@@ -109,7 +109,6 @@ defmodule Glific.Processor.ConsumerSequence do
   defp process_prev(message, tag) do
     # we first need to find out the last message we sent and the index
     value = last_message_sent(message.contact_id)
-    IO.inspect(value)
     entry = Map.get(@automaton, value)
 
     if entry != nil,
