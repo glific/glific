@@ -23,6 +23,9 @@ config :glific, GlificWeb.Endpoint,
 # Do not print debug messages in production
 config :logger, level: :info
 
+# setting the state of the environment for use within code base
+config :glific, :environment, :prod
+
 # ## SSL Support
 #
 # To get SSL working, you will need to add the `https` key

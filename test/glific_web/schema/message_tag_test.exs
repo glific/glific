@@ -4,6 +4,8 @@ defmodule GlificWeb.Schema.MessageTagTest do
 
   setup do
     lang = Glific.Seeds.seed_language()
+    default_provider = Glific.Seeds.seed_providers()
+    Glific.Seeds.seed_organizations(default_provider, lang)
     Glific.Seeds.seed_tag(lang)
     Glific.Seeds.seed_contacts()
     Glific.Seeds.seed_messages()

@@ -145,7 +145,11 @@ defmodule Glific.Communications.Message do
   @doc false
   @spec organization_contact_id() :: integer()
   def organization_contact_id do
-    {:ok, contact} = Repo.fetch_by(Contact, %{phone: "917834811114"})
+    # Get organization
+    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+
+    # Confirm organization's contact id
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: organization.contact_id})
     contact.id
   end
 end

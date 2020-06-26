@@ -6,10 +6,8 @@ defmodule Glific.Processor.ConsumerOptout do
 
   use GenStage
 
-  import Ecto.Query
-
   alias Glific.{
-    Contacts.Contact,
+    Contacts,
     Messages.Message,
     Processor.Helper,
     Repo,
@@ -38,11 +36,11 @@ defmodule Glific.Processor.ConsumerOptout do
     # lets send the message first, so it goes out
     Helper.send_session_message_template(message, "optout")
 
-    # We need to update the contact with optout_time and status
-    query = from(c in Contact, where: c.id == ^message.sender_id)
+    message =
+      message
+      |> Repo.preload([:sender])
 
-    Repo.update_all(query,
-      set: [status: "invalid", optout_time: DateTime.utc_now(), updated_at: DateTime.utc_now()]
-    )
+    # We need to update the contact with optout_time and status
+    Contacts.contact_opted_out(message.sender.phone, DateTime.utc_now())
   end
 end

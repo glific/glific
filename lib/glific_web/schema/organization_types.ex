@@ -30,6 +30,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :contact, :contact do
       resolve(dataloader(Repo))
     end
+
+    field :default_language, :language do
+      resolve(dataloader(Repo))
+    end
   end
 
   @desc "Filtering options for organizations"
@@ -51,6 +55,9 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     @desc "Match the provider"
     field :provider, :string
+
+    @desc "Match the default language"
+    field :default_language, :string
   end
 
   input_object :organization_input do
@@ -63,6 +70,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :provider_id, :id
     field :contact_id, :id
+    field :default_language_id, :id
   end
 
   object :organization_queries do

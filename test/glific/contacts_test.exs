@@ -4,6 +4,13 @@ defmodule Glific.ContactsTest do
   alias Faker.Phone
   alias Glific.Contacts
 
+  setup do
+    lang = Glific.Seeds.seed_language()
+    default_provider = Glific.Seeds.seed_providers()
+    Glific.Seeds.seed_organizations(default_provider, lang)
+    :ok
+  end
+
   describe "contacts" do
     alias Glific.Contacts.Contact
 
@@ -66,13 +73,13 @@ defmodule Glific.ContactsTest do
     end
 
     test "list_contacts/0 returns all contacts" do
-      contact = contact_fixture()
-      assert Contacts.list_contacts() == [contact]
+      _contact = contact_fixture()
+      assert length(Contacts.list_contacts()) == 2
     end
 
     test "count_contacts/0 returns count of all contacts" do
       _ = contact_fixture()
-      assert Contacts.count_contacts() == 1
+      assert Contacts.count_contacts() == 2
 
       assert Contacts.count_contacts(%{filter: %{name: "some name"}}) == 1
     end
@@ -90,6 +97,29 @@ defmodule Glific.ContactsTest do
       assert contact.phone == "some phone"
       assert contact.status == :valid
       assert contact.provider_status == :invalid
+
+      # Contact should be created with organization's default language
+      {:ok, organization} =
+        Repo.fetch_by(Glific.Partners.Organization, %{name: "Default Organization"})
+
+      assert contact.language_id == organization.default_language_id
+    end
+
+    test "create_contact/1 with language id creates a contact" do
+      {:ok, language} = Repo.fetch_by(Glific.Settings.Language, %{locale: "hi_IN"})
+
+      attrs =
+        @valid_attrs
+        |> Map.merge(%{language_id: language.id})
+
+      assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs)
+      assert contact.name == "some name"
+      assert contact.optin_time == ~U[2010-04-17 14:00:00Z]
+      assert contact.optout_time == ~U[2010-04-17 14:00:00Z]
+      assert contact.phone == "some phone"
+      assert contact.status == :valid
+      assert contact.provider_status == :invalid
+      assert contact.language_id == language.id
     end
 
     test "create_contact/1 with invalid data returns error changeset" do
@@ -130,7 +160,7 @@ defmodule Glific.ContactsTest do
       _c2 = contact_fixture(@valid_attrs_2)
       _c3 = contact_fixture(@valid_attrs_3)
 
-      assert length(Contacts.list_contacts()) == 4
+      assert length(Contacts.list_contacts()) == 5
     end
 
     test "list_contacts/1 with multiple contacts sorted" do
@@ -139,11 +169,14 @@ defmodule Glific.ContactsTest do
       c2 = contact_fixture(@valid_attrs_2)
       c3 = contact_fixture(@valid_attrs_3)
 
+      {:ok, default_sender} =
+        Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Sender"})
+
       cs = Contacts.list_contacts(%{opts: %{order: :asc}})
-      assert [c0, c1, c2, c3] == cs
+      assert [default_sender, c0, c1, c2, c3] == cs
 
       cs = Contacts.list_contacts(%{opts: %{order: :desc}})
-      assert [c3, c2, c1, c0] == cs
+      assert [c3, c2, c1, c0, default_sender] == cs
     end
 
     test "list_contacts/1 with multiple contacts filtered" do
@@ -171,9 +204,15 @@ defmodule Glific.ContactsTest do
     end
 
     test "upsert contacts" do
+      org = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+
       c0 = contact_fixture(@valid_attrs)
 
-      assert Contacts.upsert(%{phone: c0.phone, name: c0.name}).id == c0.id
+      assert Contacts.upsert(%{
+               phone: c0.phone,
+               name: c0.name,
+               language_id: org.default_language_id
+             }).id == c0.id
     end
 
     test "ensure that creating contacts with same name/phone give an error" do
