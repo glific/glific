@@ -133,6 +133,11 @@ defmodule Glific.Searches do
   """
   @spec search(map()) :: [Conversation.t()]
   def search(%{term: term} = args) do
+
+    if args.save_search do
+      create_saved_search(%{label: args.search_label, args: args })
+    end
+
     query = from c in Contact, select: c.id
 
     contact_ids =

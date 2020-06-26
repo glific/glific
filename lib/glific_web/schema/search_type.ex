@@ -39,6 +39,8 @@ defmodule GlificWeb.Schema.SearchTypes do
   object :search_queries do
     @desc "Search for conversations"
     field :search, list_of(:conversation) do
+      arg(:save_search, :boolean, default_value: false)
+      arg(:search_label, :string)
       arg(:term, non_null(:string))
       arg(:filter, :search_filter)
       arg(:message_opts, :opts)
