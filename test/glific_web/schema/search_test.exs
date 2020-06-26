@@ -110,7 +110,7 @@ defmodule GlificWeb.Schema.SearchTest do
     assert message == "Resource not found"
   end
 
-    test "search for conversations" do
+  test "search for conversations" do
     {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
 
     receiver_id = to_string(receiver.id)
@@ -143,5 +143,4 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "search"])) == Glific.Contacts.count_contacts()
   end
-
 end

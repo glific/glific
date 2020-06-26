@@ -2,8 +2,6 @@ defmodule GlificWeb.Schema.ContactTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
-  alias Glific.Contacts
-
   setup do
     lang = Glific.Seeds.seed_language()
     default_provider = Glific.Seeds.seed_providers()

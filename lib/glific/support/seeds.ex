@@ -537,7 +537,7 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_saved_searches :: {:ok}
+  @spec seed_saved_searches :: nil
   def seed_saved_searches do
     Repo.insert!(%SavedSearch{
       label: "All unread conversations",
@@ -554,8 +554,6 @@ defmodule Glific.Seeds do
       label: "Conversations where the contact has opted out",
       args: %{includeTags: ["14"]}
     })
-
-    {:ok}
   end
 
   @doc """
