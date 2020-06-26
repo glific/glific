@@ -1,0 +1,7 @@
+query savedSearches {
+  savedSearches {
+    id
+    label
+    args
+  }
+}

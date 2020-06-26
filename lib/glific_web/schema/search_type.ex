@@ -56,8 +56,7 @@ defmodule GlificWeb.Schema.SearchTypes do
 
   object :search_mutations do
     field :create_saved_search, :saved_search_result do
-      arg(:label, non_null(:string))
-      arg(:args, non_null(:json))
+      arg(:input, non_null(:saved_search_input))
       resolve(&Resolvers.Searches.create_saved_search/3)
     end
 

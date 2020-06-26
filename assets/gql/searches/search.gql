@@ -1,0 +1,15 @@
+query search($term: String!) {
+  search(term: $term) {
+    contact {
+      id
+      name
+      phone
+    }
+    messages {
+      id
+      body
+      flow
+      type
+    }
+  }
+}
