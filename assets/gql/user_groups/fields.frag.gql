@@ -1,0 +1,22 @@
+fragment UserGroupFields on UserGroupResult {
+  user_group {
+    id
+   
+    user {
+      id
+      name
+    }
+
+    group {
+      id
+      label
+    }
+  }
+}
+
+fragment ErrorFields on UserGroupResult {
+  errors {
+    key
+    message
+  }
+}
