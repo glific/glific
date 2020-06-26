@@ -18,6 +18,10 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :args, :json
   end
 
+  input_object :saved_search_filters do
+    field :label, :string
+  end
+
   input_object :saved_search_input do
     field :label, :string
     field :args, :json
@@ -50,6 +54,7 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "Get a list of all searches"
     field :saved_searches, list_of(:saved_search) do
+      arg(:filter, :saved_search_filters)
       resolve(&Resolvers.Searches.saved_searches/3)
     end
   end
