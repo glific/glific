@@ -136,16 +136,6 @@ defmodule Glific.GroupsTest do
       contact_group
     end
 
-    test "list_contacts_groups/0 returns all contact_groups" do
-      contact_group = contact_group_fixture()
-      assert Groups.list_contacts_groups() == [contact_group]
-    end
-
-    test "get_contacts_group!/1 returns the contacts_group with given id" do
-      contact_group = contact_group_fixture()
-      assert Groups.get_contact_group!(contact_group.id) == contact_group
-    end
-
     test "create_contacts_group/1 with valid data creates a group" do
       [contact | _] = Glific.Contacts.list_contacts()
       group = group_fixture()
@@ -157,7 +147,6 @@ defmodule Glific.GroupsTest do
     test "delete_contacts_group/1 deletes the group" do
       contact_group = contact_group_fixture()
       assert {:ok, %ContactGroup{}} = Groups.delete_contact_group(contact_group)
-      assert_raise Ecto.NoResultsError, fn -> Groups.get_contact_group!(contact_group.id) end
     end
 
     test "ensure that creating contact_group with same contact and group give an error" do
@@ -169,7 +158,6 @@ defmodule Glific.GroupsTest do
                Groups.create_contact_group(%{contact_id: contact.id, group_id: group.id})
     end
   end
-
 
   describe "users_groups" do
     setup do
@@ -191,16 +179,6 @@ defmodule Glific.GroupsTest do
       user_group
     end
 
-    test "list_users_groups/0 returns all user_groups" do
-      user_group = user_group_fixture()
-      assert Groups.list_users_groups() == [user_group]
-    end
-
-    test "get_users_group!/1 returns the users_group with given id" do
-      user_group = user_group_fixture()
-      assert Groups.get_user_group!(user_group.id) == user_group
-    end
-
     test "create_users_group/1 with valid data creates a group" do
       [user | _] = Glific.Users.list_users()
       group = group_fixture()
@@ -212,7 +190,6 @@ defmodule Glific.GroupsTest do
     test "delete_users_group/1 deletes the group" do
       user_group = user_group_fixture()
       assert {:ok, %UserGroup{}} = Groups.delete_user_group(user_group)
-      assert_raise Ecto.NoResultsError, fn -> Groups.get_user_group!(user_group.id) end
     end
 
     test "ensure that creating user_group with same user and group give an error" do
