@@ -4,6 +4,7 @@ defmodule Glific.Seeds do
   """
   alias Glific.{
     Contacts.Contact,
+    Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
     Partners.Organization,
@@ -532,6 +533,20 @@ defmodule Glific.Seeds do
       phone: "+918820198765",
       password: "secret1234",
       roles: ["basic", "admin"]
+    })
+  end
+
+  @doc false
+  @spec seed_groups :: {Group.t()}
+  def seed_groups do
+    Repo.insert!(%Group{
+      label: "Default Group",
+      is_restricted: false
+    })
+
+    Repo.insert!(%Group{
+      label: "Restricted Group",
+      is_restricted: true
     })
   end
 
