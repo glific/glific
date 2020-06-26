@@ -132,7 +132,11 @@ defmodule Glific.Searches do
   Full text search interface via Postgres
   """
   @spec search(map()) :: [Conversation.t()]
-  def search(%{term: term} = args) do
+  def search(%{term: term, save_search: save_search} = args) do
+    if save_search do
+      create_saved_search(%{label: args.search_label, args: args})
+    end
+
     query = from c in Contact, select: c.id
 
     contact_ids =
