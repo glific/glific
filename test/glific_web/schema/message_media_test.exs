@@ -1,6 +1,6 @@
 defmodule GlificWeb.Schema.MessageMediaTest do
   alias Glific.Messages.MessageMedia
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
   setup do
