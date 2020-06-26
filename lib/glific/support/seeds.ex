@@ -4,11 +4,13 @@ defmodule Glific.Seeds do
   """
   alias Glific.{
     Contacts.Contact,
+    Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
     Partners.Organization,
     Partners.Provider,
     Repo,
+    Searches.SavedSearch,
     Settings,
     Settings.Language,
     Tags.Tag,
@@ -599,6 +601,40 @@ defmodule Glific.Seeds do
     })
   end
 
+  @doc false
+  @spec seed_saved_searches :: nil
+  def seed_saved_searches do
+    Repo.insert!(%SavedSearch{
+      label: "All unread conversations",
+      args: %{includeTags: ["12"]},
+      is_reserved: true
+    })
+
+    Repo.insert!(%SavedSearch{
+      label: "Conversations read but not replied",
+      args: %{includeTags: ["10"]}
+    })
+
+    Repo.insert!(%SavedSearch{
+      label: "Conversations where the contact has opted out",
+      args: %{includeTags: ["14"]}
+    })
+  end
+
+  @doc false
+  @spec seed_groups :: {Group.t()}
+  def seed_groups do
+    Repo.insert!(%Group{
+      label: "Default Group",
+      is_restricted: false
+    })
+
+    Repo.insert!(%Group{
+      label: "Restricted Group",
+      is_restricted: true
+    })
+  end
+
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
   split this function up into multiple different ones for test, dev and production
@@ -620,5 +656,7 @@ defmodule Glific.Seeds do
     seed_messages()
 
     seed_messages_media()
+
+    seed_saved_searches()
   end
 end

@@ -57,11 +57,4 @@ defmodule GlificWeb.Resolvers.Contacts do
       {:ok, contact}
     end
   end
-
-  @doc false
-  @spec search(Absinthe.Resolution.t(), %{term: String.t()}, %{context: map()}) ::
-          {:ok, [any]}
-  def search(_, %{term: term}, _) do
-    {:ok, Contacts.search(term)}
-  end
 end

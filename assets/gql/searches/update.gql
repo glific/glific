@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateSavedSearch($id: ID!, $input: SavedSearchInput!) {
+  updateSavedSearch(id: $id, input: $input) {
+    ...SavedSearchFields
+    
+    ...ErrorFields
+  }
+}
