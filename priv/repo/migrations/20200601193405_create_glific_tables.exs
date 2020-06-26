@@ -26,6 +26,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
     providers()
 
     organizations()
+
+    saved_searches()
   end
 
   @doc """
@@ -325,5 +327,22 @@ defmodule Glific.Repo.Migrations.GlificTables do
     create unique_index(:organizations, :provider_number)
     create unique_index(:organizations, :email)
     create unique_index(:organizations, :contact_id)
+  end
+
+  @doc """
+    All the system and user defined searches
+  """
+
+  def saved_searches() do
+    create table(:saved_searches) do
+      add :label, :string, null: false
+      add :args, :map
+      # Is this a predefined system object?
+      add :is_reserved, :boolean, default: false
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:saved_searches, :label)
   end
 end

@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteSavedSearch($id: ID!) {
+  deleteSavedSearch(id: $id) {
+    ...SavedSearchFields
+
+    ...ErrorFields
+  }
+}

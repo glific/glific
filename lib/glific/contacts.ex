@@ -6,9 +6,7 @@ defmodule Glific.Contacts do
 
   alias Glific.{
     Contacts.Contact,
-    Conversations.Conversation,
-    Repo,
-    Search.Full
+    Repo
   }
 
   @doc """
@@ -182,21 +180,6 @@ defmodule Glific.Contacts do
       on_conflict: [set: Enum.map(attrs, fn({key, value}) -> {key, value} end)],
       conflict_target: :phone
     )
-  end
-
-  @doc """
-  Full text search interface via Postgres
-  """
-  @spec search(String.t()) :: [Conversation.t()]
-  def search(term) do
-    query = from c in Contact, select: c.id
-
-    contact_ids =
-      query
-      |> Full.run(term)
-      |> Repo.all()
-
-    Glific.Messages.list_conversations(%{filter: %{ids: contact_ids}})
   end
 
   @doc """

@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query savedSearch($id: ID!) {
+  savedSearch(id: $id) {
+    ...SavedSearchFields
+
+    ...ErrorFields
+  }
+}
