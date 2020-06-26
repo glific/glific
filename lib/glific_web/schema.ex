@@ -29,6 +29,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.GroupTypes)
   import_types(__MODULE__.ContactGroupTypes)
   import_types(__MODULE__.UserGroupTypes)
+  import_types(__MODULE__.SearchTypes)
 
   query do
     import_fields(:contact_queries)
@@ -52,6 +53,8 @@ defmodule GlificWeb.Schema do
     import_fields(:user_queries)
 
     import_fields(:group_queries)
+
+    import_fields(:search_queries)
   end
 
   mutation do
@@ -84,6 +87,8 @@ defmodule GlificWeb.Schema do
     import_fields(:contact_group_mutations)
 
     import_fields(:user_group_mutations)
+
+    import_fields(:search_mutations)
   end
 
   subscription do

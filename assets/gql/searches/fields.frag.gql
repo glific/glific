@@ -1,0 +1,14 @@
+fragment SavedSearchFields on SavedSearchResult {
+  savedSearch {
+    id
+    label
+    args
+  }
+}
+
+fragment ErrorFields on SavedSearchResult {
+  errors {
+    key
+    message
+  }
+}
