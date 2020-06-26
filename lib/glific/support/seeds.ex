@@ -103,7 +103,7 @@ defmodule Glific.Seeds do
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         is_value: true,
-        keywords: ["start", "previous", "next", "menu"]
+        keywords: ["start", "prev", "next", "menu"]
       },
 
       # Type of Contact
@@ -286,34 +286,34 @@ defmodule Glific.Seeds do
 
     Repo.insert!(%Message{
       body: "hindi",
-      flow: :outbound,
+      flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
       provider_status: :enqueued,
-      sender_id: sender.id,
-      receiver_id: receiver.id,
+      sender_id: receiver.id,
+      receiver_id: sender.id,
       contact_id: receiver.id
     })
 
     Repo.insert!(%Message{
       body: "english",
-      flow: :outbound,
+      flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
       provider_status: :enqueued,
-      sender_id: sender.id,
-      receiver_id: receiver.id,
+      sender_id: receiver.id,
+      receiver_id: sender.id,
       contact_id: receiver.id
     })
 
     Repo.insert!(%Message{
       body: "hola",
-      flow: :outbound,
+      flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
       provider_status: :enqueued,
-      sender_id: sender.id,
-      receiver_id: receiver.id,
+      sender_id: receiver.id,
+      receiver_id: sender.id,
       contact_id: receiver.id
     })
   end

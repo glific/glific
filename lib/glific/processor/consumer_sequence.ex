@@ -60,7 +60,7 @@ defmodule Glific.Processor.ConsumerSequence do
   end
 
   defp process_start(message, tag) do
-    Helper.send_session_message_template_with_tag(message, tag, "start", "start")
+    Helper.send_session_message_template_with_tag(message, tag, "id: start", "start")
     process_menu(message)
   end
 
@@ -69,13 +69,14 @@ defmodule Glific.Processor.ConsumerSequence do
 
   defp last_message_sent(contact_id) do
     sql = """
-    SELECT mt.value
+    SELECT substring(mt.value from 5)
     FROM messages m
     LEFT JOIN messages_tags mt ON m.id = mt.message_id
     LEFT JOIN tags t ON t.id = mt.tag_id
     WHERE m.contact_id = #{contact_id}
     AND m.flow = 'outbound'
     AND t.label = 'Sequence'
+    AND substring(mt.value from 1 for 4) = 'id: '
     ORDER BY m.inserted_at DESC
     LIMIT 1
     """
@@ -100,7 +101,7 @@ defmodule Glific.Processor.ConsumerSequence do
         Helper.send_session_message_template_with_tag(
           message,
           tag,
-          entry.next,
+          "id: " <> entry.next,
           @automaton[entry.next][:shortcode]
         )
   end
@@ -108,6 +109,7 @@ defmodule Glific.Processor.ConsumerSequence do
   defp process_prev(message, tag) do
     # we first need to find out the last message we sent and the index
     value = last_message_sent(message.contact_id)
+    IO.inspect(value)
     entry = Map.get(@automaton, value)
 
     if entry != nil,
@@ -115,8 +117,8 @@ defmodule Glific.Processor.ConsumerSequence do
         Helper.send_session_message_template_with_tag(
           message,
           tag,
-          entry.prev,
-          @automaton[entry.next][:shortcode]
+          "id: " <> entry.prev,
+          @automaton[entry.prev][:shortcode]
         )
   end
 end
