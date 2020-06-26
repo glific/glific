@@ -32,7 +32,6 @@ config :phoenix, :json_library, Jason
 # Configure to use UTC timestamp in tables
 config :glific,
        Glific.Repo,
-       ownership_timeout: 60_000,
        migration_timestamps: [type: :utc_datetime]
 
 config :glific, Oban,
