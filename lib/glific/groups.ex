@@ -151,40 +151,7 @@ defmodule Glific.Groups do
   end
 
   @doc """
-  Returns the list of contacts groups.
-
-  ## Examples
-
-      iex> list_contacts_groups()
-      [%ContactGroup{}, ...]
-
-  """
-  @spec list_contacts_groups(map()) :: [ContactGroup.t()]
-  def list_contacts_groups(_args \\ %{}) do
-    Repo.all(ContactGroup)
-  end
-
-  @doc """
-  Gets a single contact.
-
-  Raises `Ecto.NoResultsError` if the Contact does not exist.
-
-  ## Examples
-
-      iex> get_contact_group!(123)
-      %Contact{}
-
-      iex> get_contact_group!(456)
-      ** (Ecto.NoResultsError)
-
-  """
-  @spec get_contact_group!(integer) :: ContactGroup.t()
-  def get_contact_group!(id) do
-    Repo.get!(ContactGroup, id)
-  end
-
-  @doc """
-  Creates a contact.
+  Creates a contact group.
 
   ## Examples
 
@@ -221,40 +188,7 @@ defmodule Glific.Groups do
   end
 
   @doc """
-  Returns the list of users groups.
-
-  ## Examples
-
-      iex> list_users_groups()
-      [%UserGroup{}, ...]
-
-  """
-  @spec list_users_groups(map()) :: [UserGroup.t()]
-  def list_users_groups(_args \\ %{}) do
-    Repo.all(UserGroup)
-  end
-
-  @doc """
-  Gets a single user.
-
-  Raises `Ecto.NoResultsError` if the User does not exist.
-
-  ## Examples
-
-      iex> get_user_group!(123)
-      %User{}
-
-      iex> get_user_group!(456)
-      ** (Ecto.NoResultsError)
-
-  """
-  @spec get_user_group!(integer) :: UserGroup.t()
-  def get_user_group!(id) do
-    Repo.get!(UserGroup, id)
-  end
-
-  @doc """
-  Creates a user.
+  Creates a user group.
 
   ## Examples
 
