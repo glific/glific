@@ -27,9 +27,18 @@ defmodule GlificWeb.Schema.MessageTagTypes do
     end
   end
 
+  object :message_tags do
+    field :message_tags, list_of(:message_tag)
+  end
+
   input_object :message_tag_input do
     field :message_id, :id
     field :tag_id, :id
+  end
+
+  input_object :message_tags_input do
+    field :message_id, :id
+    field :tags_id, list_of(:id)
   end
 
   object :message_tag_mutations do
@@ -37,6 +46,12 @@ defmodule GlificWeb.Schema.MessageTagTypes do
       arg(:input, non_null(:message_tag_input))
       resolve(&Resolvers.Tags.create_message_tag/3)
     end
+
+    field :create_message_tags, :message_tags do
+      arg(:input, non_null(:message_tags_input))
+      resolve(&Resolvers.Tags.create_message_tags/3)
+    end
+
 
     field :delete_message_tag, :message_tag_result do
       arg(:id, non_null(:id))

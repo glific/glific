@@ -138,6 +138,6 @@ defmodule GlificWeb.Schema do
   """
   @spec plugins() :: [Absinthe.Plugin.t()]
   def plugins do
-    [Absinthe.Middleware.Dataloader] ++ Absinthe.Plugin.defaults()
+    [Absinthe.Middleware.Dataloader |Absinthe.Plugin.defaults()]
   end
 end
