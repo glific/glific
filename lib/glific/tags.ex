@@ -244,21 +244,19 @@ defmodule Glific.Tags do
   end
 
   @doc """
-  Creates a message.
+  Creates a message tag
 
   ## Examples
 
-      iex> create_message_tag(%{field: value})
-      {:ok, %Message{}}
+  iex> create_message_tag(%{field: value})
+  {:ok, %Message{}}
 
-      iex> create_message_tag(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
+  iex> create_message_tag(%{field: bad_value})
+  {:error, %Ecto.Changeset{}}
 
   """
   @spec create_message_tag(map()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def create_message_tag(attrs \\ %{}) do
-    # Merge default values if not present in attributes
-    # do an upsert
     %MessageTag{}
     |> MessageTag.changeset(attrs)
     |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])

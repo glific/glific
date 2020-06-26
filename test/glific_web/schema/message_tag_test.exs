@@ -12,8 +12,8 @@ defmodule GlificWeb.Schema.MessageTagTest do
     :ok
   end
 
-  load_gql(:create, GlificWeb.Schema, "assets/gql/message_tags/create.gql")
-  load_gql(:delete, GlificWeb.Schema, "assets/gql/message_tags/delete.gql")
+  load_gql(:create, GlificWeb.Schema, "assets/gql/message_tag/create.gql")
+  load_gql(:delete, GlificWeb.Schema, "assets/gql/message_tag/delete.gql")
 
   test "create a message tag and test possible scenarios and errors" do
     label = "This is for testing"

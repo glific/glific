@@ -216,7 +216,7 @@ query conversations($messageOpts: Opts!, $contactOpts: Opts!, $filter: Conversat
     "limit": 100,
     "offset": 2
   },
-  
+
   "contactOpts": {
     "limit": 20,
     "offset": 3
@@ -252,7 +252,7 @@ query conversation($messageOpts: Opts!, $contactId: Gid!, $filter: ConversationF
       id
       body
     }
-    
+
   }
 }
 
@@ -261,9 +261,37 @@ query conversation($messageOpts: Opts!, $contactId: Gid!, $filter: ConversationF
   "filter": {
     "excludeTags": ["1"]
   },
-  
+
   "messageOpts": {
     "limit": 10,
     "offset": 1
+  }
+}
+
+mutation createMessageTags($input: MessageTagsInput!) {
+  createMessageTags(input: $input) {
+    messageTags {
+      id
+      message {
+        id
+        body
+      }
+      tag {
+        id
+        label
+      }
+      value
+    }
+  }
+}
+
+{
+  "input": {
+    "messageId": "8",
+    "tagsId": [
+      "7",
+      "8",
+      "345"
+    ]
   }
 }

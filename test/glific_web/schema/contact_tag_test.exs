@@ -11,8 +11,8 @@ defmodule GlificWeb.Schema.ContactTagTest do
     :ok
   end
 
-  load_gql(:create, GlificWeb.Schema, "assets/gql/contact_tags/create.gql")
-  load_gql(:delete, GlificWeb.Schema, "assets/gql/contact_tags/delete.gql")
+  load_gql(:create, GlificWeb.Schema, "assets/gql/contact_tag/create.gql")
+  load_gql(:delete, GlificWeb.Schema, "assets/gql/contact_tag/delete.gql")
 
   test "create a contact tag and test possible scenarios and errors" do
     label = "This is for testing"
