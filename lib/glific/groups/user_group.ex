@@ -3,7 +3,12 @@ defmodule Glific.Groups.UserGroup do
   A pipe for managing the user groups
   """
 
-  alias Glific.{Users.User, Groups.Group}
+  alias Glific.{
+    Groups.Group,
+    Groups.UserGroup,
+    Users.User
+  }
+
   use Ecto.Schema
   import Ecto.Changeset
 

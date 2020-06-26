@@ -122,8 +122,9 @@ defmodule Glific.GroupsTest do
       :ok
     end
 
-    def contact_group_fixture() do
+    def contact_group_fixture do
       [contact | _] = Glific.Contacts.list_contacts()
+
       valid_attrs = %{
         contact_id: contact.id,
         group_id: group_fixture().id
@@ -139,7 +140,10 @@ defmodule Glific.GroupsTest do
     test "create_contacts_group/1 with valid data creates a group" do
       [contact | _] = Glific.Contacts.list_contacts()
       group = group_fixture()
-      {:ok, contact_group} = Groups.create_contact_group(%{contact_id: contact.id, group_id: group.id})
+
+      {:ok, contact_group} =
+        Groups.create_contact_group(%{contact_id: contact.id, group_id: group.id})
+
       assert contact_group.contact_id == contact.id
       assert contact_group.group_id == group.id
     end
@@ -165,8 +169,9 @@ defmodule Glific.GroupsTest do
       :ok
     end
 
-    def user_group_fixture() do
+    def user_group_fixture do
       [user | _] = Glific.Users.list_users()
+
       valid_attrs = %{
         user_id: user.id,
         group_id: group_fixture().id

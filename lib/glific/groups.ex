@@ -5,8 +5,12 @@ defmodule Glific.Groups do
   import Ecto.Query, warn: false
 
   alias Glific.Repo
-  alias Glific.Groups.Group
-  alias Glific.Groups.{ContactGroup, UserGroup}
+
+  alias Glific.Groups.{
+    ContactGroup,
+    Group,
+    UserGroup
+  }
 
   @doc """
   Returns the list of groups.
@@ -182,7 +186,8 @@ defmodule Glific.Groups do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_contact_group(ContactGroup.t()) :: {:ok, ContactGroup.t()} | {:error, Ecto.Changeset.t()}
+  @spec delete_contact_group(ContactGroup.t()) ::
+          {:ok, ContactGroup.t()} | {:error, Ecto.Changeset.t()}
   def delete_contact_group(%ContactGroup{} = contact_group) do
     Repo.delete(contact_group)
   end

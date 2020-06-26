@@ -70,7 +70,9 @@ defmodule GlificWeb.Schema.GroupTest do
 
     assert get_in(query_data, [:data, "countGroups"]) == 0
 
-    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"label" => "Default Group"}})
+    {:ok, query_data} =
+      query_gql_by(:count, variables: %{"filter" => %{"label" => "Default Group"}})
+
     assert get_in(query_data, [:data, "countGroups"]) == 1
   end
 

@@ -3,7 +3,12 @@ defmodule Glific.Groups.ContactGroup do
   A pipe for managing the contact groups
   """
 
-  alias Glific.{Contacts.Contact, Groups.Group}
+  alias Glific.{
+    Contacts.Contact,
+    Groups.ContactGroup,
+    Groups.Group
+  }
+
   use Ecto.Schema
   import Ecto.Changeset
 

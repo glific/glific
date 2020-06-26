@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Groups do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Repo, Groups, Groups.Group}
+  alias Glific.{Groups, Groups.Group, Repo}
   alias Glific.{Groups.ContactGroup, Groups.UserGroup}
 
   @doc """
@@ -33,7 +33,9 @@ defmodule GlificWeb.Resolvers.Groups do
     {:ok, Groups.count_groups(args)}
   end
 
-  @doc false
+  @doc """
+  Creates an group
+  """
   @spec create_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_group(_, %{input: params}, _) do
@@ -42,7 +44,9 @@ defmodule GlificWeb.Resolvers.Groups do
     end
   end
 
-  @doc false
+  @doc """
+  Updates an group
+  """
   @spec update_group(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_group(_, %{id: id, input: params}, _) do
@@ -52,13 +56,61 @@ defmodule GlificWeb.Resolvers.Groups do
     end
   end
 
-  @doc false
+  @doc """
+  Deletes an group
+  """
   @spec delete_group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_group(_, %{id: id}, _) do
     with {:ok, group} <- Repo.fetch(Group, id),
          {:ok, group} <- Groups.delete_group(group) do
       {:ok, group}
+    end
+  end
+
+  @doc """
+  Creates an contact group entry
+  """
+  @spec create_contact_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_contact_group(_, %{input: params}, _) do
+    with {:ok, contact_group} <- Groups.create_contact_group(params) do
+      {:ok, %{contact_group: contact_group}}
+    end
+  end
+
+  @doc """
+  Deletes an contact group entry
+  """
+  @spec delete_contact_group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def delete_contact_group(_, %{id: id}, _) do
+    with {:ok, contact_group} <- Repo.fetch(ContactGroup, id),
+         {:ok, contact_group} <- Groups.delete_contact_group(contact_group) do
+      {:ok, contact_group}
+    end
+  end
+
+  @doc """
+  Creates an user group entry
+  """
+  @spec create_user_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_user_group(_, %{input: params}, _) do
+    with {:ok, user_group} <- Groups.create_user_group(params) do
+      {:ok, %{user_group: user_group}}
+    end
+  end
+
+  @doc """
+  Deletes an user group entry
+  """
+  @spec delete_user_group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def delete_user_group(_, %{id: id}, _) do
+    with {:ok, user_group} <- Repo.fetch(UserGroup, id),
+         {:ok, user_group} <- Groups.delete_user_group(user_group) do
+      {:ok, user_group}
     end
   end
 end
