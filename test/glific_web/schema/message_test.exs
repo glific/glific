@@ -1,6 +1,6 @@
 defmodule GlificWeb.Schema.MessageTest do
   alias Glific.Messages.Message
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase
 
   use Wormwood.GQLCase
 

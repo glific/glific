@@ -21,6 +21,9 @@ config :glific, GlificWeb.Endpoint,
 # Print only warnings and errors during test
 config :logger, level: :warn
 
+# setting the state of the environment for use within code base
+config :glific, :environment, :test
+
 config :glific, Oban, crontab: false, queues: false, prune: :disabled
 
 config :glific,

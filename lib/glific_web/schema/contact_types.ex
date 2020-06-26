@@ -69,12 +69,6 @@ defmodule GlificWeb.Schema.ContactTypes do
       arg(:filter, :contact_filter)
       resolve(&Resolvers.Contacts.count_contacts/3)
     end
-
-    field :search, list_of(:conversation) do
-      arg(:term, non_null(:string))
-      arg(:opts, :opts)
-      resolve(&Resolvers.Contacts.search/3)
-    end
   end
 
   object :contact_mutations do

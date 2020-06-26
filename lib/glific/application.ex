@@ -20,17 +20,26 @@ defmodule Glific.Application do
       {Oban, oban_config()},
 
       # Add Absinthe's subscription
-      {Absinthe.Subscription, GlificWeb.Endpoint},
+      {Absinthe.Subscription, GlificWeb.Endpoint}
+    ]
 
+    glific_children = [
       # Add Glific Processing pipeline (seems a bit deep and convoluted, will need to revisit)
       Glific.Processor.Producer,
       Glific.Processor.ConsumerTagger,
       Glific.Processor.ConsumerAutomation,
       Glific.Processor.ConsumerLanguage,
+      Glific.Processor.ConsumerHelp,
       Glific.Processor.ConsumerNewContact,
       Glific.Processor.ConsumerNumeric,
-      Glific.Processor.ConsumerOptout
+      Glific.Processor.ConsumerOptout,
+      Glific.Processor.ConsumerSequence
     ]
+
+    children =
+      if Application.get_env(:glific, :environment) == :test,
+        do: children,
+        else: children ++ glific_children
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

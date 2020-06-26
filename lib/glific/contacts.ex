@@ -6,9 +6,7 @@ defmodule Glific.Contacts do
 
   alias Glific.{
     Contacts.Contact,
-    Conversations.Conversation,
-    Repo,
-    Search.Full
+    Repo
   }
 
   @doc """
@@ -175,29 +173,13 @@ defmodule Glific.Contacts do
   def upsert(attrs) do
     # Get the organization
     organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
-
     attrs = Map.put(attrs, :language_id, attrs[:language_id] || organization.default_language_id)
 
     Repo.insert!(
       change_contact(%Contact{}, attrs),
-      on_conflict: [set: [phone: attrs.phone]],
+      on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
       conflict_target: :phone
     )
-  end
-
-  @doc """
-  Full text search interface via Postgres
-  """
-  @spec search(String.t()) :: [Conversation.t()]
-  def search(term) do
-    query = from c in Contact, select: c.id
-
-    contact_ids =
-      query
-      |> Full.run(term)
-      |> Repo.all()
-
-    Glific.Messages.list_conversations(%{filter: %{ids: contact_ids}})
   end
 
   @doc """
@@ -220,7 +202,7 @@ defmodule Glific.Contacts do
   """
   @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
   def contact_opted_in(phone, utc_time) do
-    upsert(%{phone: phone, optin_time: utc_time, status: :valid})
+    upsert(%{phone: phone, optin_time: utc_time, status: :valid, provider_status: :valid})
     {:ok}
   end
 
@@ -233,6 +215,7 @@ defmodule Glific.Contacts do
       phone: phone,
       optout_time: utc_time,
       status: :invalid,
+      provider_status: :invalid,
       updated_at: DateTime.utc_now()
     })
 

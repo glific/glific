@@ -245,5 +245,25 @@ defmodule Glific.ContactsTest do
       assert false == Contacts.can_send_message_to?(contact2)
       assert false == Contacts.can_send_message_to?(contact3)
     end
+
+    test "contact_opted_in/2 will setup the contact as valid contact for message" do
+      contact = contact_fixture(%{status: :invalid})
+
+      Contacts.contact_opted_in(contact.phone, DateTime.utc_now())
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: contact.phone})
+
+      assert contact.status == :valid
+      assert contact.optin_time != nil
+    end
+
+    test "contact_opted_out/2 will setup the contact as valid contact for message" do
+      contact = contact_fixture(%{status: :valid})
+
+      Contacts.contact_opted_out(contact.phone, DateTime.utc_now())
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: contact.phone})
+
+      assert contact.status == :invalid
+      assert contact.optout_time != nil
+    end
   end
 end

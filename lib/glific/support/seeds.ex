@@ -4,11 +4,13 @@ defmodule Glific.Seeds do
   """
   alias Glific.{
     Contacts.Contact,
+    Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
     Partners.Organization,
     Partners.Provider,
     Repo,
+    Searches.SavedSearch,
     Settings,
     Settings.Language,
     Tags.Tag,
@@ -94,6 +96,15 @@ defmodule Glific.Seeds do
 
       # Tags with Value
       %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
+
+      # Tags for Sequence automation
+      %{
+        label: "Sequence",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        is_value: true,
+        keywords: ["start", "prev", "next", "menu"]
+      },
 
       # Type of Contact
       %{label: "Child", language_id: en_us.id, parent_id: message_tags_ct.id},
@@ -189,13 +200,14 @@ defmodule Glific.Seeds do
 
   @doc false
   @spec seed_organizations(Provider.t(), {Language.t(), Language.t()}) :: nil
-  def seed_organizations(default_provider, {_hi_in, en_us}) do
+  def seed_organizations(default_provider, {hi_in, en_us}) do
     # Sender Contact for organization
     sender =
       Repo.insert!(%Contact{
-        phone: "91783481111",
+        phone: "917834811114",
         name: "Default Sender",
-        language_id: en_us.id
+        language_id: en_us.id,
+        last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
       })
 
     Repo.insert!(%Organization{
@@ -207,7 +219,7 @@ defmodule Glific.Seeds do
       provider_id: default_provider.id,
       provider_key: "random",
       provider_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-      default_language_id: en_us.id
+      default_language_id: hi_in.id
     })
 
     Repo.insert!(%Organization{
@@ -218,7 +230,7 @@ defmodule Glific.Seeds do
       provider_id: default_provider.id,
       provider_key: "random",
       provider_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-      default_language_id: en_us.id
+      default_language_id: hi_in.id
     })
   end
 
@@ -274,34 +286,34 @@ defmodule Glific.Seeds do
 
     Repo.insert!(%Message{
       body: "hindi",
-      flow: :outbound,
+      flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
       provider_status: :enqueued,
-      sender_id: sender.id,
-      receiver_id: receiver.id,
+      sender_id: receiver.id,
+      receiver_id: sender.id,
       contact_id: receiver.id
     })
 
     Repo.insert!(%Message{
       body: "english",
-      flow: :outbound,
+      flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
       provider_status: :enqueued,
-      sender_id: sender.id,
-      receiver_id: receiver.id,
+      sender_id: receiver.id,
+      receiver_id: sender.id,
       contact_id: receiver.id
     })
 
     Repo.insert!(%Message{
       body: "hola",
-      flow: :outbound,
+      flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
       provider_status: :enqueued,
-      sender_id: sender.id,
-      receiver_id: receiver.id,
+      sender_id: receiver.id,
+      receiver_id: sender.id,
       contact_id: receiver.id
     })
   end
@@ -402,7 +414,13 @@ defmodule Glific.Seeds do
 
     Repo.insert!(%SessionTemplate{
       label: "Help",
-      body: "Here we will enter some help text",
+      body: """
+      Thank you for reaching out. Is this what you're looking for-
+      Send 1. to see the menu,
+      Send 2. to know more about Glific,
+      Send 3. to know the benefits of WA for business,
+      Send 4. if you'd like to be onboarded to Glific
+      """,
       type: :text,
       shortcode: "help",
       is_reserved: true,
@@ -411,7 +429,13 @@ defmodule Glific.Seeds do
 
     Repo.insert!(%SessionTemplate{
       label: "Help",
-      body: "भाषा बदलने के लिए, 1. दबाएँ मेनू देखने के लिए, 2 दबाएँ",
+      body: """
+      हमे संपर्क करने के लिए धन्यवाद। क्या इसमें कुछ आपकी मदद कर सकता है-
+      मेनू देखने के लिए 1. भेजें,
+      ग्लिफ़िक के बारे में अधिक जानने के लिए 2. भेजें,
+      व्यापार के लिए व्हाट्सएप के लाभों को जानने के लिए 3. भेजें,
+      ग्लिफ़िक का उपयोग करने के लिए 4. भेजें
+      """,
       type: :text,
       shortcode: "help",
       is_reserved: true,
@@ -421,7 +445,7 @@ defmodule Glific.Seeds do
     Repo.insert!(%SessionTemplate{
       label: "Language",
       body: """
-      Your preferred language is <%= language %>
+      Is <%= language %> your preferred language?
 
       Do you want to change the language you want to receive messages in?
 
@@ -439,7 +463,7 @@ defmodule Glific.Seeds do
       body: """
       क्या आपकी पसंदीदा भाषा <%= language %> है?
 
-      आप अपनी पसंदीदा भाषा में संदेश प्राप्त कर सकते हैं।
+      आप जिस भाषा में संदेश प्राप्त करना चाहते हैं उसे बदल सकते हैं।
 
       हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
       To receive messages in English, type English
@@ -502,6 +526,60 @@ defmodule Glific.Seeds do
       })
     end
 
+    Repo.insert!(%SessionTemplate{
+      label: "Start of Sequence",
+      type: :text,
+      shortcode: "start",
+      is_reserved: false,
+      language_id: hi_in.id,
+      body: """
+      This is the start of a pre-determined sequence.
+      """
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Start of Sequence",
+      type: :text,
+      shortcode: "start",
+      is_reserved: false,
+      language_id: en_us.id,
+      body: """
+      This is the start of a pre-determined sequence
+      """
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Menu",
+      type: :text,
+      shortcode: "menu",
+      is_reserved: false,
+      language_id: hi_in.id,
+      body: """
+      Type one of the below:
+
+      next - next item in sequence
+      prev - prev item in sequence
+      start - start (or restart) the sequence
+      menu - show this menu
+      """
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Menu",
+      type: :text,
+      shortcode: "menu",
+      is_reserved: false,
+      language_id: en_us.id,
+      body: """
+      Type one of the below:
+
+      next - next item in sequence
+      prev - prev item in sequence
+      start - start (or restart) the sequence
+      menu - show this menu
+      """
+    })
+
     nil
   end
 
@@ -520,6 +598,40 @@ defmodule Glific.Seeds do
       phone: "+918820198765",
       password: "secret1234",
       roles: ["basic", "admin"]
+    })
+  end
+
+  @doc false
+  @spec seed_saved_searches :: nil
+  def seed_saved_searches do
+    Repo.insert!(%SavedSearch{
+      label: "All unread conversations",
+      args: %{includeTags: ["12"]},
+      is_reserved: true
+    })
+
+    Repo.insert!(%SavedSearch{
+      label: "Conversations read but not replied",
+      args: %{includeTags: ["10"]}
+    })
+
+    Repo.insert!(%SavedSearch{
+      label: "Conversations where the contact has opted out",
+      args: %{includeTags: ["14"]}
+    })
+  end
+
+  @doc false
+  @spec seed_groups :: {Group.t()}
+  def seed_groups do
+    Repo.insert!(%Group{
+      label: "Default Group",
+      is_restricted: false
+    })
+
+    Repo.insert!(%Group{
+      label: "Restricted Group",
+      is_restricted: true
     })
   end
 
@@ -544,5 +656,7 @@ defmodule Glific.Seeds do
     seed_messages()
 
     seed_messages_media()
+
+    seed_saved_searches()
   end
 end

@@ -1,8 +1,6 @@
 defmodule GlificWeb.Schema.ContactTest do
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase
   use Wormwood.GQLCase
-
-  alias Glific.Contacts
 
   setup do
     lang = Glific.Seeds.seed_language()
@@ -19,7 +17,6 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/contacts/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/contacts/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contacts/delete.gql")
-  load_gql(:search, GlificWeb.Schema, "assets/gql/contacts/search.gql")
 
   test "contacts field returns list of contacts" do
     result = query_gql_by(:list)
@@ -178,39 +175,5 @@ defmodule GlificWeb.Schema.ContactTest do
 
     message = get_in(query_data, [:data, "deleteContact", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
-  end
-
-  test "search for contacts" do
-    {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
-
-    receiver_id = to_string(receiver.id)
-
-    result = query_gql_by(:search, variables: %{"term" => "Default"})
-    assert {:ok, query_data} = result
-
-    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
-             receiver_id
-
-    result = query_gql_by(:search, variables: %{"term" => "Default receiver"})
-    assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == receiver_id
-
-    result =
-      query_gql_by(:search,
-        variables: %{"term" => "This term is highly unlikely to occur superfragerlicious"}
-      )
-
-    assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "search"]) == []
-
-    # lets do an empty search
-    # should return all contacts
-    result =
-      query_gql_by(:search,
-        variables: %{"term" => ""}
-      )
-
-    assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "search"])) == Contacts.count_contacts()
   end
 end
