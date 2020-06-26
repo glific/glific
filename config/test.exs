@@ -22,7 +22,7 @@ config :glific, GlificWeb.Endpoint,
 config :logger, level: :warn
 
 # setting the state of the environment for use within code base
-config :glific, :environment, :dev
+config :glific, :environment, :test
 
 config :glific, Oban, crontab: false, queues: false, prune: :disabled
 

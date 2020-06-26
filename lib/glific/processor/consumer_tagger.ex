@@ -10,11 +10,11 @@ defmodule Glific.Processor.ConsumerTagger do
   alias Glific.{
     Communications,
     Messages.Message,
+    Processor.Helper,
     Repo,
     Taggers,
     Taggers.Numeric,
     Taggers.Status,
-    Tags,
     Tags.Tag
   }
 
@@ -94,7 +94,7 @@ defmodule Glific.Processor.ConsumerTagger do
   @spec numeric_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()
   defp numeric_tagger(message, body, state) do
     case Numeric.tag_body(body, state.numeric_map) do
-      {:ok, value} -> add_tag(message, state.numeric_tag_id, value)
+      {:ok, value} -> Helper.add_tag(message, state.numeric_tag_id, value)
       _ -> message
     end
   end
@@ -102,7 +102,7 @@ defmodule Glific.Processor.ConsumerTagger do
   @spec keyword_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()
   defp keyword_tagger(message, body, state) do
     case Taggers.Keyword.tag_body(body, state.keyword_map) do
-      {:ok, value} -> add_tag(message, value, body)
+      {:ok, value} -> Helper.add_tag(message, value, body)
       _ -> message
     end
   end
@@ -119,23 +119,5 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @spec add_status_tag(Message.t(), String.t(), map()) :: Message.t()
   defp add_status_tag(message, status, state),
-    do: add_tag(message, state.status_map[status])
-
-  @spec add_tag(Message.t(), integer, String.t() | nil) :: Message.t()
-  defp add_tag(message, tag_id, value \\ nil)
-  # due to some race conditions and our limited understanding of processes
-  # our indexes are empty
-  defp add_tag(message, 0, _value), do: message
-  defp add_tag(message, nil, _value), do: message
-
-  defp add_tag(message, tag_id, value) do
-    {:ok, _} =
-      Tags.create_message_tag(%{
-        message_id: message.id,
-        tag_id: tag_id,
-        value: value
-      })
-
-    message
-  end
+    do: Helper.add_tag(message, state.status_map[status])
 end

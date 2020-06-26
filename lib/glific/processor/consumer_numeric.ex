@@ -52,9 +52,8 @@ defmodule Glific.Processor.ConsumerNumeric do
 
     auto = Map.get(@automaton, value)
 
-    if auto != nil do
-      Helper.send_session_message_template(message, auto.shortcode)
-    end
+    if auto != nil,
+      do: Helper.send_session_message_template(message, auto.shortcode)
 
     message
   end
