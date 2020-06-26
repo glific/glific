@@ -12,6 +12,8 @@ defmodule Glific.Tags.MessageTags do
 
   use Ecto.Schema
 
+  @primary_key false
+
   @type t() :: %__MODULE__{
           message_tags: [MessageTag.t()]
         }
