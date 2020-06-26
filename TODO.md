@@ -14,8 +14,6 @@
 * Integrate WhatsApp location
 * More details on a contact from WA Profile
 * Claiming conversations by Groups
-* [Integrate Sentry](https://github.com/getsentry/sentry-elixir_
-* [Integrate CORS](https://hexdocs.pm/cors_plug/readme.html)
 
 ## Other Advanced models we should investigate
 * [EventBus](https://hexdocs.pm/event_bus/readme.html)
