@@ -31,13 +31,13 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @doc false
   def init(opts) do
-    state = %{
-      producer: opts[:producer],
-      numeric_map: Numeric.get_numeric_map(),
-      numeric_tag_id: 0
-    }
-
-    state = reload(state)
+    state =
+      %{
+        producer: opts[:producer],
+        numeric_map: Numeric.get_numeric_map(),
+        numeric_tag_id: 0
+      }
+      |> reload
 
     {:producer_consumer, state,
      dispatcher: GenStage.BroadcastDispatcher,
@@ -64,8 +64,6 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @doc false
   def handle_events(messages, _from, state) do
-    state = reload(state)
-
     events =
       messages
       |> Enum.map(&process_message(&1, state))
