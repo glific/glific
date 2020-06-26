@@ -81,6 +81,7 @@ defmodule Glific.Processor.ConsumerSequence do
     """
 
     {:ok, results} = Repo.query(sql)
+
     if results.num_rows == 1 do
       [[result]] = results.rows
       result
@@ -95,7 +96,13 @@ defmodule Glific.Processor.ConsumerSequence do
     entry = Map.get(@automaton, value)
 
     if entry != nil,
-      do: Helper.send_session_message_template_with_tag(message, tag, entry.next, @automaton[entry.next][:shortcode])
+      do:
+        Helper.send_session_message_template_with_tag(
+          message,
+          tag,
+          entry.next,
+          @automaton[entry.next][:shortcode]
+        )
   end
 
   defp process_prev(message, tag) do
@@ -104,6 +111,12 @@ defmodule Glific.Processor.ConsumerSequence do
     entry = Map.get(@automaton, value)
 
     if entry != nil,
-      do: Helper.send_session_message_template_with_tag(message, tag, entry.prev, @automaton[entry.next][:shortcode])
+      do:
+        Helper.send_session_message_template_with_tag(
+          message,
+          tag,
+          entry.prev,
+          @automaton[entry.next][:shortcode]
+        )
   end
 end

@@ -57,7 +57,8 @@ defmodule Glific.Processor.Helper do
   Send a reply to the current sender of the incoming message in the preferred
   language of the sender and associate a tag with it
   """
-  @spec send_session_message_template_with_tag(Message.t(), Tag.t(), String.t(), String.t()) :: Message.t()
+  @spec send_session_message_template_with_tag(Message.t(), Tag.t(), String.t(), String.t()) ::
+          Message.t()
   def send_session_message_template_with_tag(message, tag, value, shortcode) do
     sent_message = send_session_message_template(message, shortcode)
 

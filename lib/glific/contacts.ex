@@ -177,7 +177,7 @@ defmodule Glific.Contacts do
 
     Repo.insert!(
       change_contact(%Contact{}, attrs),
-      on_conflict: [set: Enum.map(attrs, fn({key, value}) -> {key, value} end)],
+      on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
       conflict_target: :phone
     )
   end
