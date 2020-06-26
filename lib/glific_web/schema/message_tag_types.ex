@@ -52,7 +52,6 @@ defmodule GlificWeb.Schema.MessageTagTypes do
       resolve(&Resolvers.Tags.create_message_tags/3)
     end
 
-
     field :delete_message_tag, :message_tag_result do
       arg(:id, non_null(:id))
       resolve(&Resolvers.Tags.delete_message_tag/3)

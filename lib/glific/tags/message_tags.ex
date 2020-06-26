@@ -1,15 +1,20 @@
 defmodule Glific.Tags.MessageTags do
+  @moduledoc """
+  Simple container to hold all the message tags we associate with one message
+  """
+
   alias __MODULE__
+
   alias Glific.{
     Tags,
-    Tags.MessageTag,
+    Tags.MessageTag
   }
 
   use Ecto.Schema
 
   @type t() :: %__MODULE__{
-    message_tags: [MessageTag.t()]
-  }
+          message_tags: [MessageTag.t()]
+        }
 
   embedded_schema do
     embeds_many(:message_tags, MessageTag)
@@ -18,7 +23,7 @@ defmodule Glific.Tags.MessageTags do
   @doc """
   Creates a list of message tags, each tag attached to the same message
   """
-  @spec create_message_tags(map()) :: {:ok, MessageTags.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_message_tags(map()) :: MessageTags.t()
   def create_message_tags(attrs \\ %{}) do
     # we'll ignore errors intentionally here. the return list indicates
     # what objects we created
@@ -33,8 +38,7 @@ defmodule Glific.Tags.MessageTags do
           end
         end
       )
+
     %MessageTags{message_tags: message_tags}
   end
-
-
 end

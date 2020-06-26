@@ -53,8 +53,8 @@ defmodule Glific.Repo do
   @doc """
   Need to figure out what this function does. Still learning Dataloader and its magic.
   Seems like it is not used currently, so commenting it out
-  """
   @spec data() :: Dataloader.Ecto.t()
   def data,
     do: Dataloader.Ecto.new(Repo, query: &query/2)
+  """
 end
