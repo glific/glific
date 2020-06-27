@@ -2,11 +2,6 @@
 
 * Mnesia and PoW Integration
 * SMS verification of account
-* General structure for actions on events
-  * Structure for actions on matching tags + value
-  * Structure for actions on message type
-* Scheduling message sends for simple workflows (Saajha, LeapForWord, Noora)
-  * Lets call thsi global workflows
 * RapidPro like FlowBuilder functionality
   * [Floweditor git repository](https://github.com/nyaruka/floweditor)
 * [Integrate fasttext.cc for language identification](https://fasttext.cc/docs/en/language-identification.html)
