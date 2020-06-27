@@ -1,0 +1,16 @@
+mutation createMessageTags($input:MessageTagsInput!) {
+  createMessageTags(input: $input) {
+    messageTags {
+      id
+      message {
+        id
+        body
+      }
+      tag {
+        id
+        label
+      }
+      value
+    }
+  }
+}
