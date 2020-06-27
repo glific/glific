@@ -52,3 +52,8 @@ question again
 * Question can be open ended, so potentially no checking response type
 * Store answer associated with a user
 * This will also be used to build a user profile (language, age, name, location etc)
+
+## Context Based Scheduling
+
+* This is the more complex case, where content is determined based on users past response
+* Putting this in here so we can think about it
