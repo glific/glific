@@ -16,7 +16,7 @@ defmodule GlificWeb.Schema.MessageTypes do
   object :message do
     field :id, :id
     field :body, :string
-    field :type, :message_types_enum
+    field :type, :message_type_enum
     field :flow, :message_flow_enum
     field :provider_message_id, :string
 
@@ -69,7 +69,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
   input_object :message_input do
     field :body, :string
-    field :type, :message_types_enum
+    field :type, :message_type_enum
     field :flow, :message_flow_enum
     field :provider_message_id, :string
 
