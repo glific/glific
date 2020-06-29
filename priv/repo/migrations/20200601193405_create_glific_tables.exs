@@ -248,7 +248,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :contact_id, references(:contacts, on_delete: :delete_all), null: false
 
       # user id - this will be null for automated messages and messages received
-      add :user_id, references(:users, on_delete: :delete_all), null: true
+      add :user_id, references(:users, on_delete: :restrict), null: true
 
       # message media ids
       add :media_id, references(:messages_media, on_delete: :delete_all), null: true
