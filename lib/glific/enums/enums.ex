@@ -23,7 +23,7 @@ defmodule Glific.Enums do
   [:inbound, :outbound]
 
   iex> Glific.Enums.message_status_const()
-  [:sent, :delivered, :enqueued, :error, :read, :received]
+  [:sent, :delivered, :enqueued, :error, :read, :received, :contact_opt_out]
 
   iex> Glific.Enums.message_types_const()
   [:audio, :contact, :document, :hsm, :image, :location, :text, :video]

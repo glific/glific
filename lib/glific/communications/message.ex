@@ -39,7 +39,7 @@ defmodule Glific.Communications.Message do
       apply(provider_module(), @type_to_token[message.type], [message])
       {:ok, Communications.publish_data(message, :sent_message)}
     else
-      Messages.update_message(message, %{status: :error, provider_status: nil})
+      Messages.update_message(message, %{status: :contact_opt_out, provider_status: nil})
       {:error, "Can not send the message to the contact."}
     end
   end
@@ -57,7 +57,7 @@ defmodule Glific.Communications.Message do
     |> Messages.update_message(%{
       provider_message_id: body["messageId"],
       provider_status: :enqueued,
-      status: :enqueued,
+      status: :sent,
       flow: :outbound,
       sent_at: DateTime.truncate(DateTime.utc_now(), :second)
     })
@@ -73,7 +73,11 @@ defmodule Glific.Communications.Message do
     message
     |> Poison.encode!()
     |> Poison.decode!(as: %Message{})
-    |> Messages.update_message(%{provider_status: :error, status: :error, flow: :outbound})
+    |> Messages.update_message(%{
+      provider_status: :error,
+      status: :sent,
+      flow: :outbound
+    })
 
     {:error, response.body}
   end
