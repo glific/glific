@@ -57,6 +57,7 @@ defmodule Glific.Communications.Message do
     |> Messages.update_message(%{
       provider_message_id: body["messageId"],
       provider_status: :enqueued,
+      status: :enqueued,
       flow: :outbound,
       sent_at: DateTime.truncate(DateTime.utc_now(), :second)
     })
@@ -72,7 +73,7 @@ defmodule Glific.Communications.Message do
     message
     |> Poison.encode!()
     |> Poison.decode!(as: %Message{})
-    |> Messages.update_message(%{provider_status: :error, flow: :outbound})
+    |> Messages.update_message(%{provider_status: :error, status: :error, flow: :outbound})
 
     {:error, response.body}
   end
@@ -102,7 +103,8 @@ defmodule Glific.Communications.Message do
         sender_id: contact.id,
         receiver_id: organization_contact_id(),
         flow: :inbound,
-        provider_status: :delivered
+        provider_status: :delivered,
+        status: :delivered
       })
 
     cond do
