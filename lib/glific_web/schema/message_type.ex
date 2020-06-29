@@ -61,6 +61,9 @@ defmodule GlificWeb.Schema.MessageTypes do
     @desc "Match the phone with either the sender or receiver"
     field :either, :string
 
+    @desc "Match the user"
+    field :user, :string
+
     @desc "Match the status"
     field :provider_status, :message_status_enum
 

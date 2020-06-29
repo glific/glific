@@ -88,6 +88,11 @@ defmodule Glific.Messages do
           join: c in assoc(q, :contact),
           where: ilike(c.phone, ^"%#{phone}%")
 
+      {:user, user}, query ->
+        from q in query,
+          join: c in assoc(q, :user),
+          where: ilike(c.name, ^"%#{user}%")
+
       {:tags_included, tags_included}, query ->
         message_ids =
           MessageTag
