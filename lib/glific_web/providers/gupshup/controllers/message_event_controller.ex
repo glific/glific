@@ -4,7 +4,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
   """
   use GlificWeb, :controller
 
-  alias Glific.Communications.Message, as: Communications
+  alias Glific.Communications
 
   @doc """
   Default handle for all message event callbacks
@@ -53,7 +53,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
   @spec update_status(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
   defp update_status(conn, params, status) do
     provider_message_id = get_in(params, ["payload", "gsId"]) || get_in(params, ["payload", "id"])
-    Communications.update_provider_status(provider_message_id, status)
+    Communications.Message.update_provider_status(provider_message_id, status)
     handler(conn, params, "Status updated")
   end
 end

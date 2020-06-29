@@ -78,10 +78,6 @@ defmodule GlificWeb.Router do
     1
   end
 
-  scope "/", GlificWeb do
-    forward("/glifproxy", Providers.Glifproxy.Plugs.Shunt)
-  end
-
   # defp debug_response(conn, _) do
   #  Plug.Conn.register_before_send(conn, fn conn ->
   #    conn.resp_body |> IO.puts()
