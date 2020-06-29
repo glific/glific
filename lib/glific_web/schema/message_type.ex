@@ -34,6 +34,10 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(dataloader(Repo))
     end
 
+    field :user, :user do
+      resolve(dataloader(Repo))
+    end
+
     field :media, :message_media do
       resolve(dataloader(Message))
     end
@@ -57,6 +61,9 @@ defmodule GlificWeb.Schema.MessageTypes do
     @desc "Match the phone with either the sender or receiver"
     field :either, :string
 
+    @desc "Match the user"
+    field :user, :string
+
     @desc "Match the status"
     field :provider_status, :message_status_enum
 
@@ -74,6 +81,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :sender_id, :id
     field :receiver_id, :id
+    field :user_id, :id
     field :media_id, :id
   end
 

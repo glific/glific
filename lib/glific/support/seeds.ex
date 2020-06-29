@@ -649,6 +649,8 @@ defmodule Glific.Seeds do
 
     seed_contacts()
 
+    seed_users()
+
     seed_session_templates(lang)
 
     seed_tag(lang)
