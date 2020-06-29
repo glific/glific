@@ -222,6 +222,10 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # Options are: inbound, outbound
       add :flow, :message_flow_enum
 
+      # this is our status, It will tell us that
+      # message got created but could not send because contact has optout
+      add :status, :message_status_enum, null: false, default: "enqueued"
+
       # whats app message id
       add :provider_message_id, :string, null: true
 

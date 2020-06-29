@@ -71,9 +71,6 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :body, :string
     field :type, :message_types_enum
     field :flow, :message_flow_enum
-    field :provider_message_id, :string
-
-    field :provider_status, :message_status_enum
 
     field :sender_id, :id
     field :receiver_id, :id

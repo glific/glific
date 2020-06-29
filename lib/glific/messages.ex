@@ -143,7 +143,7 @@ defmodule Glific.Messages do
   @spec create_message(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   def create_message(attrs) do
     attrs =
-      %{flow: :inbound, provider_status: :delivered}
+      %{flow: :inbound, status: :enqueued}
       |> Map.merge(attrs)
       |> put_contact_id()
 
