@@ -122,7 +122,7 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "create a message and test possible scenarios and errors" do
-    [message | _ ] = Glific.Messages.list_messages()
+    [message | _] = Glific.Messages.list_messages()
 
     result =
       query_gql_by(:create,
@@ -132,7 +132,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "flow" => "OUTBOUND",
             "receiverId" => message.receiver_id,
             "senderId" => message.sender_id,
-            "type" => "TEXT",
+            "type" => "TEXT"
           }
         }
       )
