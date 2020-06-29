@@ -29,6 +29,11 @@ Install the following packages using your favorite package manager. Links are pr
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
+## Documentation
+
+  * [Code docs at Hexdocs.pm](https://hexdocs.pm/glific/readme.html)
+  * [GraphQL API docs](https://glific.github.io/slate/#introduction)
+
 ## Learn more
 
 ### Glific
