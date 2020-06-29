@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert {:ok, query_data} = result
 
     messages = get_in(query_data, [:data, "messages"])
-    assert length(messages) == 0
+    assert messages == []
   end
 
   test "messages field returns list of messages in desc order" do
