@@ -40,7 +40,6 @@ defmodule Glific.Repo.Migrations.GlificTables do
     questions_question_sets()
 
     questions_answers()
-
   end
 
   @doc """
