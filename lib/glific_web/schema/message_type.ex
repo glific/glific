@@ -34,6 +34,10 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(dataloader(Repo))
     end
 
+    field :user, :user do
+      resolve(dataloader(Repo))
+    end
+
     field :media, :message_media do
       resolve(dataloader(Message))
     end
@@ -77,6 +81,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :sender_id, :id
     field :receiver_id, :id
+    field :user_id, :id
     field :media_id, :id
   end
 
