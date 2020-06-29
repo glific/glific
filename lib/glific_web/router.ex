@@ -75,6 +75,11 @@ defmodule GlificWeb.Router do
 
   scope "/", GlificWeb do
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
+    1
+  end
+
+  scope "/", GlificWeb do
+    forward("/glifproxy", Providers.Glifproxy.Plugs.Shunt)
   end
 
   # defp debug_response(conn, _) do

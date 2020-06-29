@@ -40,7 +40,7 @@ defmodule Glific.Communications.Message do
       {:ok, Communications.publish_data(message, :sent_message)}
     else
       Messages.update_message(message, %{status: :contact_opt_out, provider_status: nil})
-      {:error, "Can not send the message to the contact."}
+      {:error, "Cannot send the message to the contact."}
     end
   end
 
