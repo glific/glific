@@ -12,6 +12,7 @@ defmodule Glific.Messages.Message do
           id: non_neg_integer | nil,
           type: String.t() | nil,
           flow: String.t() | nil,
+          status: String.t() | nil,
           provider_status: String.t() | nil,
           message_number: integer(),
           sender: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -34,6 +35,7 @@ defmodule Glific.Messages.Message do
   ]
   @optional_fields [
     :body,
+    :status,
     :provider_status,
     :provider_message_id,
     :media_id,
@@ -44,6 +46,8 @@ defmodule Glific.Messages.Message do
     field :body, :string
     field :flow, MessageFlow
     field :type, MessageTypes
+    field :status, MessageStatus
+
     field :provider_message_id, :string
     field :provider_status, MessageStatus
     field :sent_at, :utc_datetime

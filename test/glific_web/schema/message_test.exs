@@ -122,8 +122,7 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "create a message and test possible scenarios and errors" do
-    body = "Default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
+    [message | _ ] = Glific.Messages.list_messages()
 
     result =
       query_gql_by(:create,
@@ -134,7 +133,6 @@ defmodule GlificWeb.Schema.MessageTest do
             "receiverId" => message.receiver_id,
             "senderId" => message.sender_id,
             "type" => "TEXT",
-            "providerStatus" => "DELIVERED"
           }
         }
       )
@@ -149,8 +147,7 @@ defmodule GlificWeb.Schema.MessageTest do
           "input" => %{
             "body" => "Message body",
             "flow" => "OUTBOUND",
-            "type" => "TEXT",
-            "providerStatus" => "DELIVERED"
+            "type" => "TEXT"
           }
         }
       )
@@ -216,8 +213,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "type" => "TEXT",
-            "sender_id" => Glific.Communications.Message.organization_contact_id(),
-            "providerStatus" => "DELIVERED"
+            "sender_id" => Glific.Communications.Message.organization_contact_id()
           },
           "contact_ids" => [contact1.id, contact2.id]
         }

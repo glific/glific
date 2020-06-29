@@ -39,6 +39,7 @@ defmodule Glific.Communications.Message do
       apply(provider_module(), @type_to_token[message.type], [message])
       {:ok, Communications.publish_data(message, :sent_message)}
     else
+      Messages.update_message(message, %{status: :error, provider_status: nil})
       {:error, "Can not send the message to the contact."}
     end
   end
@@ -100,7 +101,8 @@ defmodule Glific.Communications.Message do
         type: type,
         sender_id: contact.id,
         receiver_id: organization_contact_id(),
-        flow: :inbound
+        flow: :inbound,
+        provider_status: :delivered
       })
 
     cond do
