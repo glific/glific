@@ -36,7 +36,7 @@ defmodule Glific.Communications.Message do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
     if Contacts.can_send_message_to?(message.receiver) do
-      apply(provider_module(), @type_to_token[message.type], [message])
+      apply(Communications.provider(), @type_to_token[message.type], [message])
       {:ok, Communications.publish_data(message, :sent_message)}
     else
       Messages.update_message(message, %{status: :contact_opt_out, provider_status: nil})
@@ -141,13 +141,6 @@ defmodule Glific.Communications.Message do
     |> Communications.publish_data(:received_message)
 
     {:ok}
-  end
-
-  @doc false
-  @spec provider_module() :: atom()
-  def provider_module do
-    provider = Communications.effective_provider()
-    String.to_existing_atom(to_string(provider) <> ".Message")
   end
 
   @doc false

@@ -9,29 +9,16 @@ defmodule Glific.Communications do
   }
 
   @doc """
-    Get the current provider based on the organization | Config | Default
+  Get the current provider based on the config
   """
-  @spec effective_provider :: atom()
-  def effective_provider do
-    with nil <- provider_per_organisation(),
-         nil <- provider_from_config(),
-         do: provider_default()
-  end
+  @spec provider :: atom()
+  def provider, do: Application.fetch_env!(:glific, :provider)
 
-  defp provider_per_organisation do
-    nil
-  end
-
-  defp provider_from_config do
-    case Application.fetch_env!(:glific, :provider) do
-      nil -> nil
-      provider -> provider
-    end
-  end
-
-  defp provider_default do
-    Glific.Providers.Gupshup
-  end
+  @doc """
+  Get the current provider worker based on the organization | Config | Defaultconfig
+  """
+  @spec provider_worker :: atom()
+  def provider_worker, do: Application.fetch_env!(:glific, :provider_worker)
 
   @doc """
   Unified function to publish data on the graphql subscription endpoint. This  is still looking for a

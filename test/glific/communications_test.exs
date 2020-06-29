@@ -15,14 +15,9 @@ defmodule Glific.CommunicationsTest do
   describe "communications" do
     alias Glific.Communications
 
-    test "fetch default provider" do
-      Application.put_env(:glific, :provider, nil)
-      assert Glific.Providers.Gupshup == Communications.effective_provider()
-    end
-
     test "fetch provider from config" do
-      Application.put_env(:glific, :provider, Glific.Providers.Gupshup)
-      assert Glific.Providers.Gupshup == Communications.effective_provider()
+      Application.put_env(:glific, :provider, Glific.Providers.Gupshup.Message)
+      assert Glific.Providers.Gupshup.Message == Communications.provider()
     end
   end
 

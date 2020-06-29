@@ -9,7 +9,7 @@ defmodule Glific.Providers.Glifproxy.Worker do
     priority: 0
 
   alias Glific.Communications
-  alias Glific.Providers.Glifproxy.ApiClient
+  alias Glific.Providers.Gupshup.ApiClient
 
   @rate_name Application.fetch_env!(:glific, :provider_id)
   @rate_limit Application.fetch_env!(:glific, :provider_limit)
@@ -21,7 +21,7 @@ defmodule Glific.Providers.Glifproxy.Worker do
   @spec perform(map(), Oban.Job.t()) :: {:ok, :queue_started}
   def perform(%{"message" => message, "payload" => payload}, _job) do
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
-    # Refactring because of credo warning
+    # Refactoring because of credo warning
     # We are in a proxy here, we simulate the message has been sent
     # We turn around and actually flip the contact to a proxy number (or vice versa)
     # and send it back to the frontend
@@ -69,7 +69,7 @@ defmodule Glific.Providers.Glifproxy.Worker do
       }
     }
 
-    ApiClient.post("/glifproxy", new_payload)
+    ApiClient.post("/gupshup", new_payload)
     |> handle_response(message)
   end
 
