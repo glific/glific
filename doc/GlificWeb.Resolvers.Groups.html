@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.22.1">
+    <meta name="project" content="Glific v0.1.0">
+    <title>GlificWeb.Resolvers.Groups — Glific v0.1.0</title>
+    <link rel="stylesheet" href="dist/elixir-e589b8fad3dab6230c65.css" />
+    <script src="dist/sidebar_items-9a3439fc57.js"></script>
+      <script src="docs_config.js"></script>
+    <script async src="dist/app-5c0c23dfec2d63ae33a2.js"></script>
+  </head>
+  <body data-type="modules">
+    <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle">
+  <span class="icon-menu" title="Collapse/expand sidebar"></span>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button">
+      <span class="icon-search" aria-hidden="true"></span>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button">
+      <span class="icon-cross" title="Cancel search"></span>
+    </button>
+    <label class="search-label">
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectDetails">
+      <a href="https://github.com/glific/" class="sidebar-projectName">
+Glific      </a>
+      <h2 class="sidebar-projectVersion">
+        v0.1.0
+      </h2>
+    </div>
+  </div>
+
+  <ul class="sidebar-listNav">
+    <li><a id="extras-list" href="#full-list">Pages</a></li>
+
+      <li><a id="modules-list" href="#full-list">Modules</a></li>
+
+  </ul>
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+      <h1>
+        <small class="app-vsn">Glific v0.1.0</small>
+GlificWeb.Resolvers.Groups          <a href="https://github.com/glific/blob/master/lib/glific_web/resolvers/groups.ex#L1" title="View Source" class="view-source" rel="help">
+            <span class="icon-code" aria-hidden="true"></span>
+            <span class="sr-only">View Source</span>
+          </a>
+      </h1>
+
+
+        <section id="moduledoc">
+<p>Group Resolver which sits between the GraphQL schema and Glific Group Context API. This layer basically stiches together
+one or more calls to resolve the incoming queries.</p>        </section>
+
+        <section id="summary" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#summary">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+            Summary
+          </h1>
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#count_groups/3">count_groups(_, args, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Get the count of groups filtered by args</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create_contact_group/3">create_contact_group(_, map, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Creates an contact group entry</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create_group/3">create_group(_, map, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Creates an group</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create_user_group/3">create_user_group(_, map, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Creates an user group entry</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#delete_contact_group/3">delete_contact_group(_, map, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Deletes an contact group entry</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#delete_group/3">delete_group(_, map, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Deletes an group</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#delete_user_group/3">delete_user_group(_, map, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Deletes an user group entry</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#group/3">group(_, map, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Get a specific group by id</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#groups/3">groups(_, args, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Get the list of groups filtered by args</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_group/3">update_group(_, map, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Updates an group</p></div>
+</div>
+  </div>
+        </section>
+
+        <section id="functions" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#functions">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+Functions          </h1>
+          <div class="functions-list">
+<section class="detail" id="count_groups/3">
+  <div class="detail-header">
+    <a href="#count_groups/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">count_groups(_, args, _)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/resolvers/groups.ex#L32" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>count_groups(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}</pre>
+      </div>
+
+<p>Get the count of groups filtered by args</p>  </section>
+</section>
+<section class="detail" id="create_contact_group/3">
+  <div class="detail-header">
+    <a href="#create_contact_group/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_contact_group(_, map, _)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/resolvers/groups.ex#L76" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>create_contact_group(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{input: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Creates an contact group entry</p>  </section>
+</section>
+<section class="detail" id="create_group/3">
+  <div class="detail-header">
+    <a href="#create_group/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_group(_, map, _)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/resolvers/groups.ex#L41" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>create_group(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{input: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Creates an group</p>  </section>
+</section>
+<section class="detail" id="create_user_group/3">
+  <div class="detail-header">
+    <a href="#create_user_group/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_user_group(_, map, _)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/resolvers/groups.ex#L99" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>create_user_group(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{input: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Creates an user group entry</p>  </section>
+</section>
+<section class="detail" id="delete_contact_group/3">
+  <div class="detail-header">
+    <a href="#delete_contact_group/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_contact_group(_, map, _)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/resolvers/groups.ex#L87" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete_contact_group(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}, %{
+  context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()
+}) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Deletes an contact group entry</p>  </section>
+</section>
+<section class="detail" id="delete_group/3">
+  <div class="detail-header">
+    <a href="#delete_group/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_group(_, map, _)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/resolvers/groups.ex#L64" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete_group(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Deletes an group</p>  </section>
+</section>
+<section class="detail" id="delete_user_group/3">
+  <div class="detail-header">
+    <a href="#delete_user_group/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_user_group(_, map, _)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/resolvers/groups.ex#L110" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete_user_group(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Deletes an user group entry</p>  </section>
+</section>
+<section class="detail" id="group/3">
+  <div class="detail-header">
+    <a href="#group/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">group(_, map, _)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/resolvers/groups.ex#L15" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>group(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Get a specific group by id</p>  </section>
+</section>
+<section class="detail" id="groups/3">
+  <div class="detail-header">
+    <a href="#groups/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">groups(_, args, _)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/resolvers/groups.ex#L24" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>groups(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+  {:ok, [Glific.Groups.Group]}</pre>
+      </div>
+
+<p>Get the list of groups filtered by args</p>  </section>
+</section>
+<section class="detail" id="update_group/3">
+  <div class="detail-header">
+    <a href="#update_group/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_group(_, map, _)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/resolvers/groups.ex#L52" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>update_group(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), input: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}, %{
+  context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()
+}) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Updates an group</p>  </section>
+</section>
+          </div>
+        </section>
+      <footer class="footer">
+        <p>
+          <span class="line">
+            Built using
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.1),
+          </span>
+          <span class="line">
+            designed by
+            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
+          </span>
+        </p>
+        <p>
+          <button class="line footer-button display-shortcuts-help">
+            Display keyboard shortcuts
+          </button>
+          <button class="line footer-button night-mode-toggle">
+            Toggle night mode
+          </button>
+          <button class="line footer-button display-quick-switch">
+            Go to a HexDocs package
+          </button>
+          <button class="line footer-button tooltips-toggle">
+            <span class="tooltips-option-disable">Disable tooltips</span>
+            <span class="tooltips-option-enable">Enable tooltips</span>
+          </button>
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+  </body>
+</html>

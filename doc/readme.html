@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.22.1">
+    <meta name="project" content="Glific v0.1.0">
+    <title>Glific - Two Way Open Source Communication Platform — Glific v0.1.0</title>
+    <link rel="stylesheet" href="dist/elixir-e589b8fad3dab6230c65.css" />
+    <script src="dist/sidebar_items-9a3439fc57.js"></script>
+      <script src="docs_config.js"></script>
+    <script async src="dist/app-5c0c23dfec2d63ae33a2.js"></script>
+  </head>
+  <body data-type="extras">
+    <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle">
+  <span class="icon-menu" title="Collapse/expand sidebar"></span>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button">
+      <span class="icon-search" aria-hidden="true"></span>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button">
+      <span class="icon-cross" title="Cancel search"></span>
+    </button>
+    <label class="search-label">
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectDetails">
+      <a href="https://github.com/glific/" class="sidebar-projectName">
+Glific      </a>
+      <h2 class="sidebar-projectVersion">
+        v0.1.0
+      </h2>
+    </div>
+  </div>
+
+  <ul class="sidebar-listNav">
+    <li><a id="extras-list" href="#full-list">Pages</a></li>
+
+      <li><a id="modules-list" href="#full-list">Modules</a></li>
+
+  </ul>
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>Glific - Two Way Open Source Communication Platform</h1><p><a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="License: AGPL v3"></img></a>
+<img src="https://github.com/glific/glific/workflows/Continuous%20Integration/badge.svg" alt=""></img>
+<a href="https://codecov.io/gh/glific/glific/branch/master"><img src="https://img.shields.io/codecov/c/github/glific/glific/master.svg" alt="Code coverage badge"></img></a>
+<a href="https://hexdocs.pm/glific/"><img src="https://img.shields.io/hexpm/v/glific.svg" alt="Glific on hex.pm"></img></a></p><h2 id="packages-needed" class="section-heading">
+  <a href="#packages-needed" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Packages Needed
+</h2>
+<p>Install the following packages using your favorite package manager. Links are provided for some</p><ul><li><a href="https://elixir-lang.org/install.html#distributions">Install Elixir</a></li><li><a href="https://www.postgresql.org/download/">Install Postgres</a><ol><li>For Postgres, for the development server, we default to using postgres/postgres as the username/password.
+This is configurable</li><li>The db user needs to have <strong>superuser status</strong> on the database since we create a materialized view.
+This might change in a future release to a table</li></ol></li></ul><h2 id="download-code" class="section-heading">
+  <a href="#download-code" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Download code
+</h2>
+<ul><li><a href="https://github.com/glific/glific">Download the latest code from GitHub</a></li></ul><h2 id="setup" class="section-heading">
+  <a href="#setup" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Setup
+</h2>
+<ul><li>Copy the file: <code class="inline">config/dev.secret.exs.txt</code> to <code class="inline">config/dev.secret.exs</code> and edit it with your credentials</li><li>Run <code class="inline">mix setup</code></li><li>Run <a href="https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Server.html"><code class="inline">mix phx.server</code></a></li></ul><h2 id="here-we-go" class="section-heading">
+  <a href="#here-we-go" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Here we go
+</h2>
+<p>Now you can visit <a href="http://localhost:4000"><code class="inline">localhost:4000</code></a> from your browser.</p><h2 id="documentation" class="section-heading">
+  <a href="#documentation" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Documentation
+</h2>
+<ul><li><a href="https://hexdocs.pm/glific/readme.html">Code docs at Hexdocs.pm</a></li><li><a href="https://glific.github.io/slate/#introduction">GraphQL API docs</a></li></ul><h2 id="learn-more" class="section-heading">
+  <a href="#learn-more" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Learn more
+</h2>
+<h3 id="glific" class="section-heading">
+  <a href="#glific" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Glific
+</h3>
+<ul><li><a href="https://docs.google.com/document/d/1XYxNvIYzNyX2Ve99-HrmTC8utyBFaf_Y7NP1dFYxI9Q/edit?usp=sharing">One Pager</a></li><li><a href="https://drive.google.com/drive/folders/1aMQvS8xWRnIEtsIkRgLodhDAM-0hg0v1?usp=sharing">Google Drive</a></li><li><a href="https://docs.google.com/document/d/1uUWmvFkPXJ1xVMr2xaBYJztoItnqxBnfqABz5ad6Zl8/edit?usp=sharing">Product Features</a></li><li><a href="https://chintugudiya.org/tag/glific/">Glific Blogs</a></li></ul><h2 id="chat-with-us" class="section-heading">
+  <a href="#chat-with-us" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Chat with us
+</h2>
+<ul><li><a href="https://discord.gg/me6NCMu">Chat on Discord</a></li></ul>      <footer class="footer">
+        <p>
+          <span class="line">
+            Built using
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.1),
+          </span>
+          <span class="line">
+            designed by
+            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
+          </span>
+        </p>
+        <p>
+          <button class="line footer-button display-shortcuts-help">
+            Display keyboard shortcuts
+          </button>
+          <button class="line footer-button night-mode-toggle">
+            Toggle night mode
+          </button>
+          <button class="line footer-button display-quick-switch">
+            Go to a HexDocs package
+          </button>
+          <button class="line footer-button tooltips-toggle">
+            <span class="tooltips-option-disable">Disable tooltips</span>
+            <span class="tooltips-option-enable">Enable tooltips</span>
+          </button>
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+  </body>
+</html>

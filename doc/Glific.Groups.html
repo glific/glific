@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.22.1">
+    <meta name="project" content="Glific v0.1.0">
+    <title>Glific.Groups — Glific v0.1.0</title>
+    <link rel="stylesheet" href="dist/elixir-e589b8fad3dab6230c65.css" />
+    <script src="dist/sidebar_items-9a3439fc57.js"></script>
+      <script src="docs_config.js"></script>
+    <script async src="dist/app-5c0c23dfec2d63ae33a2.js"></script>
+  </head>
+  <body data-type="modules">
+    <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle">
+  <span class="icon-menu" title="Collapse/expand sidebar"></span>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button">
+      <span class="icon-search" aria-hidden="true"></span>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button">
+      <span class="icon-cross" title="Cancel search"></span>
+    </button>
+    <label class="search-label">
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectDetails">
+      <a href="https://github.com/glific/" class="sidebar-projectName">
+Glific      </a>
+      <h2 class="sidebar-projectVersion">
+        v0.1.0
+      </h2>
+    </div>
+  </div>
+
+  <ul class="sidebar-listNav">
+    <li><a id="extras-list" href="#full-list">Pages</a></li>
+
+      <li><a id="modules-list" href="#full-list">Modules</a></li>
+
+  </ul>
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+      <h1>
+        <small class="app-vsn">Glific v0.1.0</small>
+Glific.Groups          <a href="https://github.com/glific/blob/master/lib/glific/groups.ex#L1" title="View Source" class="view-source" rel="help">
+            <span class="icon-code" aria-hidden="true"></span>
+            <span class="sr-only">View Source</span>
+          </a>
+      </h1>
+
+
+        <section id="moduledoc">
+<p>The Groups context.</p>        </section>
+
+        <section id="summary" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#summary">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+            Summary
+          </h1>
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#change_group/2">change_group(group, attrs \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking group changes.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#count_groups/1">count_groups(args \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Return the count of groups, using the same filter as list_groups</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create_contact_group/1">create_contact_group(attrs \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Creates a contact group.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create_group/1">create_group(attrs \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Creates a group.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create_user_group/1">create_user_group(attrs \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Creates a user group.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#delete_contact_group/1">delete_contact_group(contact_group)</a>
+  </div>
+    <div class="summary-synopsis"><p>Deletes a contact group.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#delete_group/1">delete_group(group)</a>
+  </div>
+    <div class="summary-synopsis"><p>Deletes a group.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#delete_user_group/1">delete_user_group(user_group)</a>
+  </div>
+    <div class="summary-synopsis"><p>Deletes a user group.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_group!/1">get_group!(id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Gets a single group.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#list_groups/1">list_groups(args \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns the list of groups.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_group/2">update_group(group, attrs)</a>
+  </div>
+    <div class="summary-synopsis"><p>Updates a group.</p></div>
+</div>
+  </div>
+        </section>
+
+        <section id="functions" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#functions">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+Functions          </h1>
+          <div class="functions-list">
+<section class="detail" id="change_group/2">
+    <span id="change_group/1"></span>
+  <div class="detail-header">
+    <a href="#change_group/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">change_group(group, attrs \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/groups.ex#L153" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>change_group(<a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+      </div>
+
+<p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking group changes.</p><h2 id="change_group/2-examples" class="section-heading">
+  <a href="#change_group/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_group</span><span class="p" data-group-id="9690691373-1">(</span><span class="n">group</span><span class="p" data-group-id="9690691373-1">)</span><span class="w">
+</span><span class="p" data-group-id="9690691373-2">%</span><span class="nc" data-group-id="9690691373-2">Ecto.Changeset</span><span class="p" data-group-id="9690691373-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9690691373-3">%</span><span class="nc" data-group-id="9690691373-3">Group</span><span class="p" data-group-id="9690691373-3">{</span><span class="p" data-group-id="9690691373-3">}</span><span class="p" data-group-id="9690691373-2">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="count_groups/1">
+    <span id="count_groups/0"></span>
+  <div class="detail-header">
+    <a href="#count_groups/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">count_groups(args \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/groups.ex#L54" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>count_groups(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+      </div>
+
+<p>Return the count of groups, using the same filter as list_groups</p>  </section>
+</section>
+<section class="detail" id="create_contact_group/1">
+    <span id="create_contact_group/0"></span>
+  <div class="detail-header">
+    <a href="#create_contact_group/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_contact_group(attrs \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/groups.ex#L170" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>create_contact_group(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Groups.ContactGroup.html#t:t/0">Glific.Groups.ContactGroup.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Creates a contact group.</p><h2 id="create_contact_group/1-examples" class="section-heading">
+  <a href="#create_contact_group/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_group</span><span class="p" data-group-id="2720368245-1">(</span><span class="p" data-group-id="2720368245-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="2720368245-2">}</span><span class="p" data-group-id="2720368245-1">)</span><span class="w">
+</span><span class="p" data-group-id="2720368245-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2720368245-4">%</span><span class="nc" data-group-id="2720368245-4">Contact</span><span class="p" data-group-id="2720368245-4">{</span><span class="p" data-group-id="2720368245-4">}</span><span class="p" data-group-id="2720368245-3">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_group</span><span class="p" data-group-id="2720368245-5">(</span><span class="p" data-group-id="2720368245-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2720368245-6">}</span><span class="p" data-group-id="2720368245-5">)</span><span class="w">
+</span><span class="p" data-group-id="2720368245-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2720368245-8">%</span><span class="nc" data-group-id="2720368245-8">Ecto.Changeset</span><span class="p" data-group-id="2720368245-8">{</span><span class="p" data-group-id="2720368245-8">}</span><span class="p" data-group-id="2720368245-7">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="create_group/1">
+    <span id="create_group/0"></span>
+  <div class="detail-header">
+    <a href="#create_group/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_group(attrs \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/groups.ex#L101" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>create_group(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Creates a group.</p><h2 id="create_group/1-examples" class="section-heading">
+  <a href="#create_group/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_group</span><span class="p" data-group-id="5480328705-1">(</span><span class="p" data-group-id="5480328705-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="5480328705-2">}</span><span class="p" data-group-id="5480328705-1">)</span><span class="w">
+</span><span class="p" data-group-id="5480328705-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5480328705-4">%</span><span class="nc" data-group-id="5480328705-4">Group</span><span class="p" data-group-id="5480328705-4">{</span><span class="p" data-group-id="5480328705-4">}</span><span class="p" data-group-id="5480328705-3">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_group</span><span class="p" data-group-id="5480328705-5">(</span><span class="p" data-group-id="5480328705-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5480328705-6">}</span><span class="p" data-group-id="5480328705-5">)</span><span class="w">
+</span><span class="p" data-group-id="5480328705-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5480328705-8">%</span><span class="nc" data-group-id="5480328705-8">Ecto.Changeset</span><span class="p" data-group-id="5480328705-8">{</span><span class="p" data-group-id="5480328705-8">}</span><span class="p" data-group-id="5480328705-7">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="create_user_group/1">
+    <span id="create_user_group/0"></span>
+  <div class="detail-header">
+    <a href="#create_user_group/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_user_group(attrs \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/groups.ex#L208" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>create_user_group(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Groups.UserGroup.html#t:t/0">Glific.Groups.UserGroup.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Creates a user group.</p><h2 id="create_user_group/1-examples" class="section-heading">
+  <a href="#create_user_group/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_user_group</span><span class="p" data-group-id="5235017726-1">(</span><span class="p" data-group-id="5235017726-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="5235017726-2">}</span><span class="p" data-group-id="5235017726-1">)</span><span class="w">
+</span><span class="p" data-group-id="5235017726-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5235017726-4">%</span><span class="nc" data-group-id="5235017726-4">User</span><span class="p" data-group-id="5235017726-4">{</span><span class="p" data-group-id="5235017726-4">}</span><span class="p" data-group-id="5235017726-3">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_user_group</span><span class="p" data-group-id="5235017726-5">(</span><span class="p" data-group-id="5235017726-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5235017726-6">}</span><span class="p" data-group-id="5235017726-5">)</span><span class="w">
+</span><span class="p" data-group-id="5235017726-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5235017726-8">%</span><span class="nc" data-group-id="5235017726-8">Ecto.Changeset</span><span class="p" data-group-id="5235017726-8">{</span><span class="p" data-group-id="5235017726-8">}</span><span class="p" data-group-id="5235017726-7">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="delete_contact_group/1">
+  <div class="detail-header">
+    <a href="#delete_contact_group/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_contact_group(contact_group)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/groups.ex#L191" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete_contact_group(<a href="Glific.Groups.ContactGroup.html#t:t/0">Glific.Groups.ContactGroup.t</a>()) ::
+  {:ok, <a href="Glific.Groups.ContactGroup.html#t:t/0">Glific.Groups.ContactGroup.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Deletes a contact group.</p><h2 id="delete_contact_group/1-examples" class="section-heading">
+  <a href="#delete_contact_group/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact_group</span><span class="p" data-group-id="7103788282-1">(</span><span class="n">contact_group</span><span class="p" data-group-id="7103788282-1">)</span><span class="w">
+</span><span class="p" data-group-id="7103788282-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7103788282-3">%</span><span class="nc" data-group-id="7103788282-3">ContactGroup</span><span class="p" data-group-id="7103788282-3">{</span><span class="p" data-group-id="7103788282-3">}</span><span class="p" data-group-id="7103788282-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact_group</span><span class="p" data-group-id="7103788282-4">(</span><span class="n">contact_group</span><span class="p" data-group-id="7103788282-4">)</span><span class="w">
+</span><span class="p" data-group-id="7103788282-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7103788282-6">%</span><span class="nc" data-group-id="7103788282-6">Ecto.Changeset</span><span class="p" data-group-id="7103788282-6">{</span><span class="p" data-group-id="7103788282-6">}</span><span class="p" data-group-id="7103788282-5">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="delete_group/1">
+  <div class="detail-header">
+    <a href="#delete_group/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_group(group)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/groups.ex#L139" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete_group(<a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()) ::
+  {:ok, <a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Deletes a group.</p><h2 id="delete_group/1-examples" class="section-heading">
+  <a href="#delete_group/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_group</span><span class="p" data-group-id="2741949851-1">(</span><span class="n">group</span><span class="p" data-group-id="2741949851-1">)</span><span class="w">
+</span><span class="p" data-group-id="2741949851-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2741949851-3">%</span><span class="nc" data-group-id="2741949851-3">Group</span><span class="p" data-group-id="2741949851-3">{</span><span class="p" data-group-id="2741949851-3">}</span><span class="p" data-group-id="2741949851-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_group</span><span class="p" data-group-id="2741949851-4">(</span><span class="n">group</span><span class="p" data-group-id="2741949851-4">)</span><span class="w">
+</span><span class="p" data-group-id="2741949851-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2741949851-6">%</span><span class="nc" data-group-id="2741949851-6">Ecto.Changeset</span><span class="p" data-group-id="2741949851-6">{</span><span class="p" data-group-id="2741949851-6">}</span><span class="p" data-group-id="2741949851-5">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="delete_user_group/1">
+  <div class="detail-header">
+    <a href="#delete_user_group/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_user_group(user_group)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/groups.ex#L228" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete_user_group(<a href="Glific.Groups.UserGroup.html#t:t/0">Glific.Groups.UserGroup.t</a>()) ::
+  {:ok, <a href="Glific.Groups.UserGroup.html#t:t/0">Glific.Groups.UserGroup.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Deletes a user group.</p><h2 id="delete_user_group/1-examples" class="section-heading">
+  <a href="#delete_user_group/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_user_group</span><span class="p" data-group-id="5667882213-1">(</span><span class="n">user_group</span><span class="p" data-group-id="5667882213-1">)</span><span class="w">
+</span><span class="p" data-group-id="5667882213-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5667882213-3">%</span><span class="nc" data-group-id="5667882213-3">UserGroup</span><span class="p" data-group-id="5667882213-3">{</span><span class="p" data-group-id="5667882213-3">}</span><span class="p" data-group-id="5667882213-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_user_group</span><span class="p" data-group-id="5667882213-4">(</span><span class="n">user_group</span><span class="p" data-group-id="5667882213-4">)</span><span class="w">
+</span><span class="p" data-group-id="5667882213-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5667882213-6">%</span><span class="nc" data-group-id="5667882213-6">Ecto.Changeset</span><span class="p" data-group-id="5667882213-6">{</span><span class="p" data-group-id="5667882213-6">}</span><span class="p" data-group-id="5667882213-5">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="get_group!/1">
+  <div class="detail-header">
+    <a href="#get_group!/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_group!(id)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/groups.ex#L86" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>get_group!(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()</pre>
+      </div>
+
+<p>Gets a single group.</p><p>Raises <a href="https://hexdocs.pm/ecto/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Group does not exist.</p><h2 id="get_group!/1-examples" class="section-heading">
+  <a href="#get_group!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_group!</span><span class="p" data-group-id="9490994233-1">(</span><span class="mi">123</span><span class="p" data-group-id="9490994233-1">)</span><span class="w">
+</span><span class="p" data-group-id="9490994233-2">%</span><span class="nc" data-group-id="9490994233-2">Group</span><span class="p" data-group-id="9490994233-2">{</span><span class="p" data-group-id="9490994233-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_group!</span><span class="p" data-group-id="9490994233-3">(</span><span class="mi">456</span><span class="p" data-group-id="9490994233-3">)</span><span class="w">
+</span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
+</section>
+<section class="detail" id="list_groups/1">
+    <span id="list_groups/0"></span>
+  <div class="detail-header">
+    <a href="#list_groups/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">list_groups(args \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/groups.ex#L25" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>list_groups(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()]</pre>
+      </div>
+
+<p>Returns the list of groups.</p><h2 id="list_groups/1-examples" class="section-heading">
+  <a href="#list_groups/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_groups</span><span class="p" data-group-id="3499271062-1">(</span><span class="p" data-group-id="3499271062-1">)</span><span class="w">
+</span><span class="p" data-group-id="3499271062-2">[</span><span class="p" data-group-id="3499271062-3">%</span><span class="nc" data-group-id="3499271062-3">Group</span><span class="p" data-group-id="3499271062-3">{</span><span class="p" data-group-id="3499271062-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="3499271062-2">]</span></code></pre>  </section>
+</section>
+<section class="detail" id="update_group/2">
+  <div class="detail-header">
+    <a href="#update_group/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_group(group, attrs)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/groups.ex#L120" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>update_group(<a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Updates a group.</p><h2 id="update_group/2-examples" class="section-heading">
+  <a href="#update_group/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_group</span><span class="p" data-group-id="2575597987-1">(</span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2575597987-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="2575597987-2">}</span><span class="p" data-group-id="2575597987-1">)</span><span class="w">
+</span><span class="p" data-group-id="2575597987-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2575597987-4">%</span><span class="nc" data-group-id="2575597987-4">Group</span><span class="p" data-group-id="2575597987-4">{</span><span class="p" data-group-id="2575597987-4">}</span><span class="p" data-group-id="2575597987-3">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_group</span><span class="p" data-group-id="2575597987-5">(</span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2575597987-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2575597987-6">}</span><span class="p" data-group-id="2575597987-5">)</span><span class="w">
+</span><span class="p" data-group-id="2575597987-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2575597987-8">%</span><span class="nc" data-group-id="2575597987-8">Ecto.Changeset</span><span class="p" data-group-id="2575597987-8">{</span><span class="p" data-group-id="2575597987-8">}</span><span class="p" data-group-id="2575597987-7">}</span></code></pre>  </section>
+</section>
+          </div>
+        </section>
+      <footer class="footer">
+        <p>
+          <span class="line">
+            Built using
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.1),
+          </span>
+          <span class="line">
+            designed by
+            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
+          </span>
+        </p>
+        <p>
+          <button class="line footer-button display-shortcuts-help">
+            Display keyboard shortcuts
+          </button>
+          <button class="line footer-button night-mode-toggle">
+            Toggle night mode
+          </button>
+          <button class="line footer-button display-quick-switch">
+            Go to a HexDocs package
+          </button>
+          <button class="line footer-button tooltips-toggle">
+            <span class="tooltips-option-disable">Disable tooltips</span>
+            <span class="tooltips-option-enable">Enable tooltips</span>
+          </button>
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+  </body>
+</html>

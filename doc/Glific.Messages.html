@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.22.1">
+    <meta name="project" content="Glific v0.1.0">
+    <title>Glific.Messages — Glific v0.1.0</title>
+    <link rel="stylesheet" href="dist/elixir-e589b8fad3dab6230c65.css" />
+    <script src="dist/sidebar_items-9a3439fc57.js"></script>
+      <script src="docs_config.js"></script>
+    <script async src="dist/app-5c0c23dfec2d63ae33a2.js"></script>
+  </head>
+  <body data-type="modules">
+    <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle">
+  <span class="icon-menu" title="Collapse/expand sidebar"></span>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button">
+      <span class="icon-search" aria-hidden="true"></span>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button">
+      <span class="icon-cross" title="Cancel search"></span>
+    </button>
+    <label class="search-label">
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectDetails">
+      <a href="https://github.com/glific/" class="sidebar-projectName">
+Glific      </a>
+      <h2 class="sidebar-projectVersion">
+        v0.1.0
+      </h2>
+    </div>
+  </div>
+
+  <ul class="sidebar-listNav">
+    <li><a id="extras-list" href="#full-list">Pages</a></li>
+
+      <li><a id="modules-list" href="#full-list">Modules</a></li>
+
+  </ul>
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+      <h1>
+        <small class="app-vsn">Glific v0.1.0</small>
+Glific.Messages          <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L1" title="View Source" class="view-source" rel="help">
+            <span class="icon-code" aria-hidden="true"></span>
+            <span class="sr-only">View Source</span>
+          </a>
+      </h1>
+
+
+        <section id="moduledoc">
+<p>The Messages context.</p>        </section>
+
+        <section id="summary" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#summary">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+            Summary
+          </h1>
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#change_message/2">change_message(message, attrs \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking message changes.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#change_message_media/2">change_message_media(message_media, attrs \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking message media changes.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#count_messages/1">count_messages(args \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Return the count of messages, using the same filter as list_messages</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#count_messages_media/1">count_messages_media(args \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Return the count of messages, using the same filter as list_messages</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create_and_send_session_template/2">create_and_send_session_template(template_id, receiver_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Send a session template to the specific contact. This is typically used in automation</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create_message/1">create_message(attrs)</a>
+  </div>
+    <div class="summary-synopsis"><p>Creates a message.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create_message_media/1">create_message_media(attrs \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Creates a message media.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#delete_message/1">delete_message(message)</a>
+  </div>
+    <div class="summary-synopsis"><p>Deletes a message.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#delete_message_media/1">delete_message_media(message_media)</a>
+  </div>
+    <div class="summary-synopsis"><p>Deletes a message media.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_message!/1">get_message!(id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Gets a single message.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_message_media!/1">get_message_media!(id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Gets a single message media.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#list_conversations/1">list_conversations(args)</a>
+  </div>
+    <div class="summary-synopsis"><p>Given a list of message ids builds a conversation list with most recent conversations
+at the beginning of the list</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#list_messages/1">list_messages(args \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns the list of filtered messages.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#list_messages_media/1">list_messages_media(args \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns the list of message media.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#tag_in_message?/2">tag_in_message?(message, tag_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Check if the tag is present in message</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_message/2">update_message(message, attrs)</a>
+  </div>
+    <div class="summary-synopsis"><p>Updates a message.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_message_media/2">update_message_media(message_media, attrs)</a>
+  </div>
+    <div class="summary-synopsis"><p>Updates a message media.</p></div>
+</div>
+  </div>
+        </section>
+
+        <section id="functions" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#functions">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+Functions          </h1>
+          <div class="functions-list">
+<section class="detail" id="change_message/2">
+    <span id="change_message/1"></span>
+  <div class="detail-header">
+    <a href="#change_message/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">change_message(message, attrs \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L215" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>change_message(Glific.Messages.Message.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+      </div>
+
+<p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking message changes.</p><h2 id="change_message/2-examples" class="section-heading">
+  <a href="#change_message/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_message</span><span class="p" data-group-id="7930198963-1">(</span><span class="n">message</span><span class="p" data-group-id="7930198963-1">)</span><span class="w">
+</span><span class="p" data-group-id="7930198963-2">%</span><span class="nc" data-group-id="7930198963-2">Ecto.Changeset</span><span class="p" data-group-id="7930198963-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7930198963-3">%</span><span class="nc" data-group-id="7930198963-3">Message</span><span class="p" data-group-id="7930198963-3">{</span><span class="p" data-group-id="7930198963-3">}</span><span class="p" data-group-id="7930198963-2">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="change_message_media/2">
+    <span id="change_message_media/1"></span>
+  <div class="detail-header">
+    <a href="#change_message_media/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">change_message_media(message_media, attrs \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L415" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>change_message_media(<a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+      </div>
+
+<p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking message media changes.</p><h2 id="change_message_media/2-examples" class="section-heading">
+  <a href="#change_message_media/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_message_media</span><span class="p" data-group-id="9057936821-1">(</span><span class="n">message_media</span><span class="p" data-group-id="9057936821-1">)</span><span class="w">
+</span><span class="p" data-group-id="9057936821-2">%</span><span class="nc" data-group-id="9057936821-2">Ecto.Changeset</span><span class="p" data-group-id="9057936821-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9057936821-3">%</span><span class="nc" data-group-id="9057936821-3">MessageMedia</span><span class="p" data-group-id="9057936821-3">{</span><span class="p" data-group-id="9057936821-3">}</span><span class="p" data-group-id="9057936821-2">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="count_messages/1">
+    <span id="count_messages/0"></span>
+  <div class="detail-header">
+    <a href="#count_messages/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">count_messages(args \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L56" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>count_messages(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+      </div>
+
+<p>Return the count of messages, using the same filter as list_messages</p>  </section>
+</section>
+<section class="detail" id="count_messages_media/1">
+    <span id="count_messages_media/0"></span>
+  <div class="detail-header">
+    <a href="#count_messages_media/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">count_messages_media(args \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L322" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>count_messages_media(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+      </div>
+
+<p>Return the count of messages, using the same filter as list_messages</p>  </section>
+</section>
+<section class="detail" id="create_and_send_session_template/2">
+  <div class="detail-header">
+    <a href="#create_and_send_session_template/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_and_send_session_template(template_id, receiver_id)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L238" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>create_and_send_session_template(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) ::
+  {:ok, Glific.Messages.Message.t()}</pre>
+          <pre>create_and_send_session_template(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) ::
+  {:ok, Glific.Messages.Message.t()}</pre>
+          <pre>create_and_send_session_template(
+  Glific.Templates.SessionTemplate.t(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()
+) :: {:ok, Glific.Messages.Message.t()}</pre>
+      </div>
+
+<p>Send a session template to the specific contact. This is typically used in automation</p>  </section>
+</section>
+<section class="detail" id="create_message/1">
+  <div class="detail-header">
+    <a href="#create_message/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_message(attrs)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L149" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>create_message(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, Glific.Messages.Message.t()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Creates a message.</p><h2 id="create_message/1-examples" class="section-heading">
+  <a href="#create_message/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_message</span><span class="p" data-group-id="4715295707-1">(</span><span class="p" data-group-id="4715295707-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="4715295707-2">}</span><span class="p" data-group-id="4715295707-1">)</span><span class="w">
+</span><span class="p" data-group-id="4715295707-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4715295707-4">%</span><span class="nc" data-group-id="4715295707-4">Message</span><span class="p" data-group-id="4715295707-4">{</span><span class="p" data-group-id="4715295707-4">}</span><span class="p" data-group-id="4715295707-3">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_message</span><span class="p" data-group-id="4715295707-5">(</span><span class="p" data-group-id="4715295707-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4715295707-6">}</span><span class="p" data-group-id="4715295707-5">)</span><span class="w">
+</span><span class="p" data-group-id="4715295707-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4715295707-8">%</span><span class="nc" data-group-id="4715295707-8">Ecto.Changeset</span><span class="p" data-group-id="4715295707-8">{</span><span class="p" data-group-id="4715295707-8">}</span><span class="p" data-group-id="4715295707-7">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="create_message_media/1">
+    <span id="create_message_media/0"></span>
+  <div class="detail-header">
+    <a href="#create_message_media/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_message_media(attrs \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L361" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>create_message_media(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Creates a message media.</p><h2 id="create_message_media/1-examples" class="section-heading">
+  <a href="#create_message_media/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_message_media</span><span class="p" data-group-id="1919123401-1">(</span><span class="p" data-group-id="1919123401-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="1919123401-2">}</span><span class="p" data-group-id="1919123401-1">)</span><span class="w">
+</span><span class="p" data-group-id="1919123401-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1919123401-4">%</span><span class="nc" data-group-id="1919123401-4">MessageMedia</span><span class="p" data-group-id="1919123401-4">{</span><span class="p" data-group-id="1919123401-4">}</span><span class="p" data-group-id="1919123401-3">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_message_media</span><span class="p" data-group-id="1919123401-5">(</span><span class="p" data-group-id="1919123401-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1919123401-6">}</span><span class="p" data-group-id="1919123401-5">)</span><span class="w">
+</span><span class="p" data-group-id="1919123401-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1919123401-8">%</span><span class="nc" data-group-id="1919123401-8">Ecto.Changeset</span><span class="p" data-group-id="1919123401-8">{</span><span class="p" data-group-id="1919123401-8">}</span><span class="p" data-group-id="1919123401-7">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="delete_message/1">
+  <div class="detail-header">
+    <a href="#delete_message/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_message(message)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L201" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete_message(Glific.Messages.Message.t()) ::
+  {:ok, Glific.Messages.Message.t()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Deletes a message.</p><h2 id="delete_message/1-examples" class="section-heading">
+  <a href="#delete_message/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message</span><span class="p" data-group-id="9172189581-1">(</span><span class="n">message</span><span class="p" data-group-id="9172189581-1">)</span><span class="w">
+</span><span class="p" data-group-id="9172189581-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9172189581-3">%</span><span class="nc" data-group-id="9172189581-3">Message</span><span class="p" data-group-id="9172189581-3">{</span><span class="p" data-group-id="9172189581-3">}</span><span class="p" data-group-id="9172189581-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message</span><span class="p" data-group-id="9172189581-4">(</span><span class="n">message</span><span class="p" data-group-id="9172189581-4">)</span><span class="w">
+</span><span class="p" data-group-id="9172189581-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9172189581-6">%</span><span class="nc" data-group-id="9172189581-6">Ecto.Changeset</span><span class="p" data-group-id="9172189581-6">{</span><span class="p" data-group-id="9172189581-6">}</span><span class="p" data-group-id="9172189581-5">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="delete_message_media/1">
+  <div class="detail-header">
+    <a href="#delete_message_media/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_message_media(message_media)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L401" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete_message_media(<a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()) ::
+  {:ok, <a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Deletes a message media.</p><h2 id="delete_message_media/1-examples" class="section-heading">
+  <a href="#delete_message_media/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_media</span><span class="p" data-group-id="5114487729-1">(</span><span class="n">message_media</span><span class="p" data-group-id="5114487729-1">)</span><span class="w">
+</span><span class="p" data-group-id="5114487729-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5114487729-3">%</span><span class="nc" data-group-id="5114487729-3">MessageMedia</span><span class="p" data-group-id="5114487729-3">{</span><span class="p" data-group-id="5114487729-3">}</span><span class="p" data-group-id="5114487729-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_media</span><span class="p" data-group-id="5114487729-4">(</span><span class="n">message_media</span><span class="p" data-group-id="5114487729-4">)</span><span class="w">
+</span><span class="p" data-group-id="5114487729-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5114487729-6">%</span><span class="nc" data-group-id="5114487729-6">Ecto.Changeset</span><span class="p" data-group-id="5114487729-6">{</span><span class="p" data-group-id="5114487729-6">}</span><span class="p" data-group-id="5114487729-5">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="get_message!/1">
+  <div class="detail-header">
+    <a href="#get_message!/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_message!(id)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L134" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>get_message!(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: Glific.Messages.Message.t()</pre>
+      </div>
+
+<p>Gets a single message.</p><p>Raises <a href="https://hexdocs.pm/ecto/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Message does not exist.</p><h2 id="get_message!/1-examples" class="section-heading">
+  <a href="#get_message!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_message!</span><span class="p" data-group-id="5465630012-1">(</span><span class="mi">123</span><span class="p" data-group-id="5465630012-1">)</span><span class="w">
+</span><span class="p" data-group-id="5465630012-2">%</span><span class="nc" data-group-id="5465630012-2">Message</span><span class="p" data-group-id="5465630012-2">{</span><span class="p" data-group-id="5465630012-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message!</span><span class="p" data-group-id="5465630012-3">(</span><span class="mi">456</span><span class="p" data-group-id="5465630012-3">)</span><span class="w">
+</span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
+</section>
+<section class="detail" id="get_message_media!/1">
+  <div class="detail-header">
+    <a href="#get_message_media!/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_message_media!(id)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L346" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>get_message_media!(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()</pre>
+      </div>
+
+<p>Gets a single message media.</p><p>Raises <a href="https://hexdocs.pm/ecto/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Message media does not exist.</p><h2 id="get_message_media!/1-examples" class="section-heading">
+  <a href="#get_message_media!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_message_media!</span><span class="p" data-group-id="4196544620-1">(</span><span class="mi">123</span><span class="p" data-group-id="4196544620-1">)</span><span class="w">
+</span><span class="p" data-group-id="4196544620-2">%</span><span class="nc" data-group-id="4196544620-2">MessageMedia</span><span class="p" data-group-id="4196544620-2">{</span><span class="p" data-group-id="4196544620-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message_media!</span><span class="p" data-group-id="4196544620-3">(</span><span class="mi">456</span><span class="p" data-group-id="4196544620-3">)</span><span class="w">
+</span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
+</section>
+<section class="detail" id="list_conversations/1">
+  <div class="detail-header">
+    <a href="#list_conversations/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">list_conversations(args)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L424" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>list_conversations(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Conversations.Conversation.html#t:t/0">Glific.Conversations.Conversation.t</a>()]</pre>
+      </div>
+
+<p>Given a list of message ids builds a conversation list with most recent conversations
+at the beginning of the list</p>  </section>
+</section>
+<section class="detail" id="list_messages/1">
+    <span id="list_messages/0"></span>
+  <div class="detail-header">
+    <a href="#list_messages/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">list_messages(args \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L27" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>list_messages(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [Glific.Messages.Message.t()]</pre>
+      </div>
+
+<p>Returns the list of filtered messages.</p><h2 id="list_messages/1-examples" class="section-heading">
+  <a href="#list_messages/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages</span><span class="p" data-group-id="4043212293-1">(</span><span class="n">map</span><span class="p" data-group-id="4043212293-2">(</span><span class="p" data-group-id="4043212293-2">)</span><span class="p" data-group-id="4043212293-1">)</span><span class="w">
+</span><span class="p" data-group-id="4043212293-3">[</span><span class="p" data-group-id="4043212293-4">%</span><span class="nc" data-group-id="4043212293-4">Message</span><span class="p" data-group-id="4043212293-4">{</span><span class="p" data-group-id="4043212293-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="4043212293-3">]</span></code></pre>  </section>
+</section>
+<section class="detail" id="list_messages_media/1">
+    <span id="list_messages_media/0"></span>
+  <div class="detail-header">
+    <a href="#list_messages_media/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">list_messages_media(args \\ %{})</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L296" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>list_messages_media(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()]</pre>
+      </div>
+
+<p>Returns the list of message media.</p><h2 id="list_messages_media/1-examples" class="section-heading">
+  <a href="#list_messages_media/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages_media</span><span class="p" data-group-id="4106930362-1">(</span><span class="n">map</span><span class="p" data-group-id="4106930362-2">(</span><span class="p" data-group-id="4106930362-2">)</span><span class="p" data-group-id="4106930362-1">)</span><span class="w">
+</span><span class="p" data-group-id="4106930362-3">[</span><span class="p" data-group-id="4106930362-4">%</span><span class="nc" data-group-id="4106930362-4">MessageMedia</span><span class="p" data-group-id="4106930362-4">{</span><span class="p" data-group-id="4106930362-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="4106930362-3">]</span></code></pre>  </section>
+</section>
+<section class="detail" id="tag_in_message?/2">
+  <div class="detail-header">
+    <a href="#tag_in_message?/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">tag_in_message?(message, tag_id)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L279" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>tag_in_message?(Glific.Messages.Message.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+      </div>
+
+<p>Check if the tag is present in message</p>  </section>
+</section>
+<section class="detail" id="update_message/2">
+  <div class="detail-header">
+    <a href="#update_message/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_message(message, attrs)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L182" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>update_message(Glific.Messages.Message.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, Glific.Messages.Message.t()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Updates a message.</p><h2 id="update_message/2-examples" class="section-heading">
+  <a href="#update_message/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_message</span><span class="p" data-group-id="6218022063-1">(</span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6218022063-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="6218022063-2">}</span><span class="p" data-group-id="6218022063-1">)</span><span class="w">
+</span><span class="p" data-group-id="6218022063-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6218022063-4">%</span><span class="nc" data-group-id="6218022063-4">Message</span><span class="p" data-group-id="6218022063-4">{</span><span class="p" data-group-id="6218022063-4">}</span><span class="p" data-group-id="6218022063-3">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message</span><span class="p" data-group-id="6218022063-5">(</span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6218022063-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6218022063-6">}</span><span class="p" data-group-id="6218022063-5">)</span><span class="w">
+</span><span class="p" data-group-id="6218022063-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6218022063-8">%</span><span class="nc" data-group-id="6218022063-8">Ecto.Changeset</span><span class="p" data-group-id="6218022063-8">{</span><span class="p" data-group-id="6218022063-8">}</span><span class="p" data-group-id="6218022063-7">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="update_message_media/2">
+  <div class="detail-header">
+    <a href="#update_message_media/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_message_media(message_media, attrs)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/messages.ex#L381" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>update_message_media(<a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Updates a message media.</p><h2 id="update_message_media/2-examples" class="section-heading">
+  <a href="#update_message_media/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_message_media</span><span class="p" data-group-id="5153607996-1">(</span><span class="n">message_media</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5153607996-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="5153607996-2">}</span><span class="p" data-group-id="5153607996-1">)</span><span class="w">
+</span><span class="p" data-group-id="5153607996-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5153607996-4">%</span><span class="nc" data-group-id="5153607996-4">MessageMedia</span><span class="p" data-group-id="5153607996-4">{</span><span class="p" data-group-id="5153607996-4">}</span><span class="p" data-group-id="5153607996-3">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message_media</span><span class="p" data-group-id="5153607996-5">(</span><span class="n">message_media</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5153607996-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5153607996-6">}</span><span class="p" data-group-id="5153607996-5">)</span><span class="w">
+</span><span class="p" data-group-id="5153607996-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5153607996-8">%</span><span class="nc" data-group-id="5153607996-8">Ecto.Changeset</span><span class="p" data-group-id="5153607996-8">{</span><span class="p" data-group-id="5153607996-8">}</span><span class="p" data-group-id="5153607996-7">}</span></code></pre>  </section>
+</section>
+          </div>
+        </section>
+      <footer class="footer">
+        <p>
+          <span class="line">
+            Built using
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.1),
+          </span>
+          <span class="line">
+            designed by
+            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
+          </span>
+        </p>
+        <p>
+          <button class="line footer-button display-shortcuts-help">
+            Display keyboard shortcuts
+          </button>
+          <button class="line footer-button night-mode-toggle">
+            Toggle night mode
+          </button>
+          <button class="line footer-button display-quick-switch">
+            Go to a HexDocs package
+          </button>
+          <button class="line footer-button tooltips-toggle">
+            <span class="tooltips-option-disable">Disable tooltips</span>
+            <span class="tooltips-option-enable">Enable tooltips</span>
+          </button>
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+  </body>
+</html>
