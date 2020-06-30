@@ -513,7 +513,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :message_id, references(:messages, on_delete: :delete_all), null: false
 
       add :question_id, references(:questions, on_delete: :delete_all), null: false
-      add :question_sets_id, references(:question_sets, on_delete: :delete_all), null: false
+      add :question_set_id, references(:question_sets, on_delete: :delete_all), null: false
 
       # for now all answers are stored as string
       # at some point, we might split it based on question type
