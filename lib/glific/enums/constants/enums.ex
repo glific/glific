@@ -17,7 +17,15 @@ defmodule Glific.Enums.Constants do
       @message_flow_const [:inbound, :outbound]
 
       # the status of the message as indicated by the provider
-      @message_status_const [:sent, :delivered, :enqueued, :error, :read, :received]
+      @message_status_const [
+        :sent,
+        :delivered,
+        :enqueued,
+        :error,
+        :read,
+        :received,
+        :contact_opt_out
+      ]
 
       # the different possible types of message
       @message_type_const [:audio, :contact, :document, :hsm, :image, :location, :text, :video]

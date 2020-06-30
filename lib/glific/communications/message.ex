@@ -36,10 +36,11 @@ defmodule Glific.Communications.Message do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
     if Contacts.can_send_message_to?(message.receiver) do
-      apply(provider_module(), @type_to_token[message.type], [message])
+      apply(Communications.provider(), @type_to_token[message.type], [message])
       {:ok, Communications.publish_data(message, :sent_message)}
     else
-      {:error, "Can not send the message to the contact."}
+      Messages.update_message(message, %{status: :contact_opt_out, provider_status: nil})
+      {:error, "Cannot send the message to the contact."}
     end
   end
 
@@ -56,6 +57,7 @@ defmodule Glific.Communications.Message do
     |> Messages.update_message(%{
       provider_message_id: body["messageId"],
       provider_status: :enqueued,
+      status: :sent,
       flow: :outbound,
       sent_at: DateTime.truncate(DateTime.utc_now(), :second)
     })
@@ -71,7 +73,11 @@ defmodule Glific.Communications.Message do
     message
     |> Poison.encode!()
     |> Poison.decode!(as: %Message{})
-    |> Messages.update_message(%{provider_status: :error, flow: :outbound})
+    |> Messages.update_message(%{
+      provider_status: :error,
+      status: :sent,
+      flow: :outbound
+    })
 
     {:error, response.body}
   end
@@ -100,7 +106,9 @@ defmodule Glific.Communications.Message do
         type: type,
         sender_id: contact.id,
         receiver_id: organization_contact_id(),
-        flow: :inbound
+        flow: :inbound,
+        provider_status: :delivered,
+        status: :delivered
       })
 
     cond do
@@ -133,13 +141,6 @@ defmodule Glific.Communications.Message do
     |> Communications.publish_data(:received_message)
 
     {:ok}
-  end
-
-  @doc false
-  @spec provider_module() :: atom()
-  def provider_module do
-    provider = Communications.effective_provider()
-    String.to_existing_atom(to_string(provider) <> ".Message")
   end
 
   @doc false

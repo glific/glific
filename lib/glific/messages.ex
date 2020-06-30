@@ -88,6 +88,11 @@ defmodule Glific.Messages do
           join: c in assoc(q, :contact),
           where: ilike(c.phone, ^"%#{phone}%")
 
+      {:user, user}, query ->
+        from q in query,
+          join: c in assoc(q, :user),
+          where: ilike(c.name, ^"%#{user}%")
+
       {:tags_included, tags_included}, query ->
         message_ids =
           MessageTag
@@ -143,7 +148,7 @@ defmodule Glific.Messages do
   @spec create_message(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   def create_message(attrs) do
     attrs =
-      %{flow: :inbound, provider_status: :delivered}
+      %{flow: :inbound, status: :enqueued}
       |> Map.merge(attrs)
       |> put_contact_id()
 

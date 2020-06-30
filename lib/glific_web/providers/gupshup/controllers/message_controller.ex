@@ -5,8 +5,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
 
   use GlificWeb, :controller
 
-  alias Glific.Communications.Message, as: Communications
-  alias Glific.Providers.Gupshup.Message, as: GupshupMessage
+  alias Glific.{
+    Communications,
+    Providers.Gupshup
+  }
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
@@ -19,8 +21,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   """
   @spec text(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def text(conn, params) do
-    GupshupMessage.receive_text(params)
-    |> Communications.receive_message()
+    Gupshup.Message.receive_text(params)
+    |> Communications.Message.receive_message()
 
     handler(conn, params, "text handler")
   end
@@ -53,8 +55,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   # Handle Gupshup media message and convert them into Glific Message struct
   @spec media(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
   defp media(conn, params, type) do
-    GupshupMessage.receive_media(params)
-    |> Communications.receive_message(type)
+    Gupshup.Message.receive_media(params)
+    |> Communications.Message.receive_message(type)
 
     handler(conn, params, "media handler")
   end

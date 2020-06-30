@@ -4,7 +4,7 @@ defmodule Glific.Messages.Message do
   import Ecto.Changeset
   alias __MODULE__
 
-  alias Glific.{Contacts.Contact, Messages.MessageMedia, Tags.Tag}
+  alias Glific.{Contacts.Contact, Messages.MessageMedia, Tags.Tag, Users.User}
   alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
 
   @type t() :: %__MODULE__{
@@ -12,11 +12,13 @@ defmodule Glific.Messages.Message do
           id: non_neg_integer | nil,
           type: String.t() | nil,
           flow: String.t() | nil,
+          status: String.t() | nil,
           provider_status: String.t() | nil,
           message_number: integer(),
           sender: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           receiver: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          user: User.t() | Ecto.Association.NotLoaded.t() | nil,
           media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
           body: String.t() | nil,
           provider_message_id: String.t() | nil,
@@ -34,16 +36,20 @@ defmodule Glific.Messages.Message do
   ]
   @optional_fields [
     :body,
+    :status,
     :provider_status,
     :provider_message_id,
     :media_id,
-    :sent_at
+    :sent_at,
+    :user_id
   ]
 
   schema "messages" do
     field :body, :string
     field :flow, MessageFlow
     field :type, MessageType
+    field :status, MessageStatus
+
     field :provider_message_id, :string
     field :provider_status, MessageStatus
     field :sent_at, :utc_datetime
@@ -52,6 +58,8 @@ defmodule Glific.Messages.Message do
     belongs_to :sender, Contact
     belongs_to :receiver, Contact
     belongs_to :contact, Contact
+
+    belongs_to :user, User
 
     belongs_to :media, MessageMedia
 

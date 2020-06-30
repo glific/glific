@@ -56,6 +56,12 @@ defmodule GlificWeb.Schema.MessageTest do
     assert length(messages) > 0
     [message | _] = messages
     assert get_in(message, ["receiver", "name"]) == "Default receiver"
+
+    result = query_gql_by(:list, variables: %{"filter" => %{"user" => "John"}})
+    assert {:ok, query_data} = result
+
+    messages = get_in(query_data, [:data, "messages"])
+    assert messages == []
   end
 
   test "messages field returns list of messages in desc order" do
@@ -122,8 +128,7 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "create a message and test possible scenarios and errors" do
-    body = "Default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
+    [message | _] = Glific.Messages.list_messages()
 
     result =
       query_gql_by(:create,
@@ -133,8 +138,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "flow" => "OUTBOUND",
             "receiverId" => message.receiver_id,
             "senderId" => message.sender_id,
-            "type" => "TEXT",
-            "providerStatus" => "DELIVERED"
+            "type" => "TEXT"
           }
         }
       )
@@ -149,8 +153,7 @@ defmodule GlificWeb.Schema.MessageTest do
           "input" => %{
             "body" => "Message body",
             "flow" => "OUTBOUND",
-            "type" => "TEXT",
-            "providerStatus" => "DELIVERED"
+            "type" => "TEXT"
           }
         }
       )
@@ -216,8 +219,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "type" => "TEXT",
-            "sender_id" => Glific.Communications.Message.organization_contact_id(),
-            "providerStatus" => "DELIVERED"
+            "sender_id" => Glific.Communications.Message.organization_contact_id()
           },
           "contact_ids" => [contact1.id, contact2.id]
         }

@@ -27,7 +27,8 @@ config :glific, :environment, :test
 config :glific, Oban, crontab: false, queues: false, prune: :disabled
 
 config :glific,
-  provider: Glific.Providers.Gupshup,
+  provider: Glific.Providers.Gupshup.Message,
+  provider_worker: Glific.Providers.Gupshup.Worker,
   provider_id: "gupshup-provider-23",
   provider_limit: 10
 

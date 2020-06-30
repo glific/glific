@@ -9,7 +9,8 @@ use Mix.Config
 
 config :glific,
   ecto_repos: [Glific.Repo],
-  provider: Glific.Providers.Gupshup,
+  provider: Glific.Providers.Gupshup.Message,
+  provider_worker: Glific.Providers.Glifproxy.Worker,
   provider_id: "gupshup-provider-23",
   provider_limit: 10
 
@@ -37,9 +38,7 @@ config :glific,
 config :glific, Oban,
   repo: Glific.Repo,
   prune: {:maxlen, 10_000},
-  queues: [default: 10, gupshup: 10, webhook: 10]
-
-# queues: nil
+  queues: [default: 10, gupshup: 10, glifproxy: 10, webhook: 10]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
 

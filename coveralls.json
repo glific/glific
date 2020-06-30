@@ -9,7 +9,11 @@
         "lib/glific_web/telemetry.ex",
         "lib/glific/support/seeds.ex",
         "lib/glific/support/seeds_scale.ex",
-        "lib.glific/events_conditions_actions",
+        "lib/glific/events_conditions_actions",
+        "lib/glific/processor/consumer_numeric.ex",
+        "lib/glific/processor/consumer_sequence.ex",
+        "lib/glific/providers/glifproxy",
+        "lib/glific_web/providers/glifproxy",
         "lib/glific.ex",
         "test/support"
     ]

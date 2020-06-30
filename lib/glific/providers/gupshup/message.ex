@@ -6,8 +6,10 @@ defmodule Glific.Providers.Gupshup.Message do
   @channel "whatsapp"
   @behaviour Glific.Providers.MessageBehaviour
 
-  alias Glific.Messages.Message
-  alias Glific.Providers.Gupshup.Worker
+  alias Glific.{
+    Communications,
+    Messages.Message
+  }
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
@@ -126,8 +128,10 @@ defmodule Glific.Providers.Gupshup.Message do
       |> Map.put(:destination, message.receiver.phone)
       |> Map.put("message", Jason.encode!(payload))
 
-    %{message: Message.to_minimal_map(message), payload: request_body}
-    |> Worker.new()
+    worker_module = Communications.provider_worker()
+    worker_args = %{message: Message.to_minimal_map(message), payload: request_body}
+
+    apply(worker_module, :new, [worker_args])
     |> Oban.insert()
   end
 end
