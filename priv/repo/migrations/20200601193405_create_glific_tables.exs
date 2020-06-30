@@ -495,6 +495,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
     create table(:questions_question_sets) do
       add :question_id, references(:questions, on_delete: :delete_all), null: false
       add :question_sets_id, references(:question_sets, on_delete: :delete_all), null: false
+      timestamps(type: :utc_datetime)
     end
   end
 
