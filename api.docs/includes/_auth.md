@@ -5,7 +5,7 @@ We do **not** use GraphQL for authorization, but use REST to generate and renew 
 authentication tokens should be included in all GraphQL requests. This section will be expanded to also
 include roles and permissions. User management will be done via GraphQL
 
-The four main API endpoints are listed below
+The main API endpoints are listed below
 
 ## Create a new user
 ```shell
@@ -21,11 +21,27 @@ curl -X POST -d
 {"data":{"renewal_token":"RENEW_TOKEN","access_token":"AUTH_TOKEN"}}
 ```
 
-##
-Glific expects for the access token to be included in all API requests to the server in a header
+Glific expects for the auth token to be included in all API requests to the server in a header
 that looks like the following:
 
 `Authorization: AUTH_TOKEN`
+
+
+## Send an OTP request to verify a phone number
+(this needs to be protected by some form of access control)
+
+```shell
+curl -X POST -d
+  "user[phone]=test@example.com"
+  http://glific.io/api/v1/registration/send_otp
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{"data": {"phone": phone, "otp": otp,
+          "message": "OTP #{otp} sent successfully to #{phone}"}}
+```
 
 ## Create a new session for an existing user
 
