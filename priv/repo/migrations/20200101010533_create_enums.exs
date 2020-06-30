@@ -5,8 +5,9 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     APIStatus,
     ContactStatus,
     MessageFlow,
-    MessageTypes,
+    MessageType,
     MessageStatus,
+    QuestionType,
     SortOrder
   }
 
@@ -14,8 +15,9 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     APIStatus.create_type()
     ContactStatus.create_type()
     MessageFlow.create_type()
-    MessageTypes.create_type()
+    MessageType.create_type()
     MessageStatus.create_type()
+    QuestionType.create_type()
     SortOrder.create_type()
   end
 
@@ -24,7 +26,8 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     ContactStatus.drop_type()
     MessageFlow.drop_type()
     MessageStatus.drop_type()
-    MessageTypes.drop_type()
+    MessageType.drop_type()
+    QuestionType.drop_type()
     SortOrder.drop_type()
   end
 end

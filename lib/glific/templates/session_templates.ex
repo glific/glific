@@ -9,7 +9,7 @@ defmodule Glific.Templates.SessionTemplate do
     Settings.Language
   }
 
-  alias Glific.Enums.MessageTypes
+  alias Glific.Enums.MessageType
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -49,7 +49,7 @@ defmodule Glific.Templates.SessionTemplate do
   schema "session_templates" do
     field :label, :string
     field :body, :string
-    field :type, MessageTypes
+    field :type, MessageType
     field :shortcode, :string
 
     field :is_source, :boolean, default: false

@@ -31,9 +31,15 @@ defenum(
 )
 
 defenum(
-  Glific.Enums.MessageTypes,
-  :message_types_enum,
-  Glific.Enums.message_types_const()
+  Glific.Enums.MessageType,
+  :message_type_enum,
+  Glific.Enums.message_type_const()
+)
+
+defenum(
+  Glific.Enums.QuestionType,
+  :question_type_enum,
+  Glific.Enums.question_type_const()
 )
 
 defenum(

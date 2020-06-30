@@ -5,7 +5,7 @@ defmodule Glific.Messages.Message do
   alias __MODULE__
 
   alias Glific.{Contacts.Contact, Messages.MessageMedia, Tags.Tag, Users.User}
-  alias Glific.Enums.{MessageFlow, MessageStatus, MessageTypes}
+  alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -47,7 +47,7 @@ defmodule Glific.Messages.Message do
   schema "messages" do
     field :body, :string
     field :flow, MessageFlow
-    field :type, MessageTypes
+    field :type, MessageType
     field :status, MessageStatus
 
     field :provider_message_id, :string

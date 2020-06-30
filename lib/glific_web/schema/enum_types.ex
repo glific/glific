@@ -22,7 +22,10 @@ defmodule GlificWeb.Schema.EnumTypes do
   enum(:message_status_enum, values: Glific.Enums.message_status_const())
 
   @desc "The Message Types enum"
-  enum(:message_types_enum, values: Glific.Enums.message_types_const())
+  enum(:message_type_enum, values: Glific.Enums.message_type_const())
+
+  @desc "Enum for question types"
+  enum(:question_type_enum, values: Glific.Enums.question_type_const())
 
   @desc "Enum for ordering results"
   enum(:sort_order, values: Glific.Enums.sort_order_const())
