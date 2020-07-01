@@ -1,5 +1,5 @@
-query search($term: String!, $shouldSave: Boolean!, $searchLabel: String!) {
-  search(term: $term, saveSearch: $shouldSave, searchLabel: $searchLabel) {
+query search($term: String!, $shouldSave: Boolean!, $saveSearchLabel: String!) {
+  search(term: $term, saveSearch: $shouldSave, saveSearchLabel: $saveSearchLabel) {
     contact {
       id
       name

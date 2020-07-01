@@ -117,7 +117,7 @@ defmodule GlificWeb.Schema.SearchTest do
 
     result =
       query_gql_by(:search,
-        variables: %{"term" => "Default", "shouldSave" => false, "searchLabel" => ""}
+        variables: %{"term" => "Default", "shouldSave" => false, "saveSearchLabel" => ""}
       )
 
     assert {:ok, query_data} = result
@@ -127,7 +127,7 @@ defmodule GlificWeb.Schema.SearchTest do
 
     result =
       query_gql_by(:search,
-        variables: %{"term" => "Default receiver", "shouldSave" => false, "searchLabel" => ""}
+        variables: %{"term" => "Default receiver", "shouldSave" => false, "saveSearchLabel" => ""}
       )
 
     assert {:ok, query_data} = result
@@ -138,7 +138,7 @@ defmodule GlificWeb.Schema.SearchTest do
         variables: %{
           "term" => "This term is highly unlikely to occur superfragerlicious",
           "shouldSave" => false,
-          "searchLabel" => ""
+          "saveSearchLabel" => ""
         }
       )
 
@@ -149,7 +149,7 @@ defmodule GlificWeb.Schema.SearchTest do
     # should return all contacts
     result =
       query_gql_by(:search,
-        variables: %{"term" => "", "shouldSave" => false, "searchLabel" => ""}
+        variables: %{"term" => "", "shouldSave" => false, "saveSearchLabel" => ""}
       )
 
     assert {:ok, query_data} = result
@@ -162,7 +162,7 @@ defmodule GlificWeb.Schema.SearchTest do
         variables: %{
           "term" => "Default",
           "shouldSave" => true,
-          "searchLabel" => "Save with Search"
+          "saveSearchLabel" => "Save with Search"
         }
       )
 

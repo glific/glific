@@ -4,7 +4,7 @@
 
 ```graphql
 query search($term: String!, $shouldSave: Boolean!, $searchLabel: String!, $searchFilter: SearchFilter!) {
-  search(term: $term, saveSearch: $shouldSave, searchLabel: $searchLabel, filter: $searchFilter) {
+  search(term: $term, saveSearch: $shouldSave, saveSearchLabel: $saveSearchLabel, filter: $searchFilter) {
     messages {
       id,
       body,
@@ -22,7 +22,7 @@ query search($term: String!, $shouldSave: Boolean!, $searchLabel: String!, $sear
 {
   "term": "def",
   "shouldSave": true,
-  "searchLabel": "Save with Search",
+  "saveSearchLabel": "Save with this name",
   "searchFilter": {
     "includeTags": ["17"]
   },
@@ -80,7 +80,12 @@ This returns all the full text for the organization filtered by the input <a hre
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
+term | <a href="#sting">String</a> | nil | keyword for search
 filter | <a href="#searchfilter">SearchFilter</a> | nil | filter the list
+saveSearch | <a href="#boolean">Boolean</a> | nil | Search should be saved or not
+saveSearchLabel | <a href="#string">String</a> | nil | label for save search object
+messageOpts | <a href="#opts">Opts</a> | nil | limit / offset message options
+contactOpts | <a href="#opts">Opts</a> | nil | limit / offset contact options
 
 
 ## Search Objects
