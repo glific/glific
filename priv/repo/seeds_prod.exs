@@ -18,11 +18,12 @@ alias Glific.{
   Searches.SavedSearch,
   Settings.Language,
   Tags.Tag,
-  Templates.SessionTemplate
+  Templates.SessionTemplate,
+  Users,
 }
 
 # seed languages
-hi_in = Repo.insert!(%Language{label: "Hindi", label_locale: "हिंदी", locale: "hi"})
+hi = Repo.insert!(%Language{label: "Hindi", label_locale: "हिंदी", locale: "hi"})
 en_us = Repo.insert!(%Language{label: "English (United States)", label_locale: "English", locale: "en_US"})
 
 # seed tags
@@ -125,22 +126,31 @@ provider = Repo.insert!(%Provider{
 sender =
   Repo.insert!(%Contact{
     phone: "917834899994",
-    name: "Tech4Dev Contact",
+    name: "Glific Admin",
     language_id: en_us.id,
     last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
   })
 
 Repo.insert!(%Organization{
-  name: "Tech4Dev",
-  display_name: "Tech4Dev",
-  contact_name: "Test",
+  name: "Glific",
+  display_name: "Glific",
+  contact_name: "Glific Admin",
   contact_id: sender.id,
-  email: "test@tech4dev.eu",
+  email: "glific@glific.io",
   provider_id: provider.id,
   provider_key: "random",
   provider_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-  default_language_id: hi_in.id
+  default_language_id: hi.id
 })
+
+password = "secret1234"
+Users.create_user(%{
+      name: "Glific Admin",
+      phone: "917834899994",
+      password: password,
+      confirm_password: password,
+      roles: ["admin"]
+                         })
 
 Repo.insert!(%SessionTemplate{
   label: "New Contact",
@@ -169,7 +179,7 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "new contact",
   is_reserved: true,
-  language_id: hi_in.id
+  language_id: hi.id
 })
 
 Repo.insert!(%SessionTemplate{
@@ -208,7 +218,7 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "help",
   is_reserved: true,
-  language_id: hi_in.id
+  language_id: hi.id
 })
 
 Repo.insert!(%SessionTemplate{
@@ -240,7 +250,7 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "language",
   is_reserved: true,
-  language_id: hi_in.id
+  language_id: hi.id
 })
 
 Repo.insert!(%SessionTemplate{
@@ -266,7 +276,7 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "optout",
   is_reserved: true,
-  language_id: hi_in.id
+  language_id: hi.id
 })
 
 for label <- ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight"] do
@@ -275,7 +285,7 @@ for label <- ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Ei
     type: :text,
     shortcode: String.downcase(label),
     is_reserved: false,
-    language_id: hi_in.id,
+    language_id: hi.id,
     body: """
     इस संदेश की सामग्री संख्यात्मक मूल्य का प्रतिनिधित्व करने के लिए विशिष्ट होगी: #{label}.
     जंगली जाओ !, अपनी बात करो। मैं सिर्फ एक स्क्रिप्ट हूं
@@ -300,7 +310,7 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "start",
   is_reserved: false,
-  language_id: hi_in.id,
+  language_id: hi.id,
   body: """
   This is the start of a pre-determined sequence.
   """
@@ -322,7 +332,7 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "menu",
   is_reserved: false,
-  language_id: hi_in.id,
+  language_id: hi.id,
   body: """
   Type one of the below:
 
@@ -350,18 +360,21 @@ Repo.insert!(%SessionTemplate{
 })
 
 # Seed saved searches
+{:ok, unread} = Repo.fetch_by(Tag, %{label: "Unread"})
 Repo.insert!(%SavedSearch{
   label: "All unread conversations",
-  args: %{includeTags: ["12"]},
+  args: %{includeTags: [to_string(unread.id)]},
   is_reserved: true
 })
 
+{:ok, not_replied} = Repo.fetch_by(Tag, %{label: "Not Replied"})
 Repo.insert!(%SavedSearch{
   label: "Conversations read but not replied",
-  args: %{includeTags: ["10"]}
+  args: %{includeTags: [to_string(not_replied.id)]}
 })
 
+{:ok, optout} = Repo.fetch_by(Tag, %{label: "Optout"})
 Repo.insert!(%SavedSearch{
   label: "Conversations where the contact has opted out",
-  args: %{includeTags: ["14"]}
+  args: %{includeTags: [to_string(optout.id)]}
 })

@@ -47,11 +47,12 @@ defmodule Glific.TagsTest do
 
     test "list_tags/0 returns all tags" do
       tag = tag_fixture()
+
       assert Enum.filter(
-        Tags.list_tags(),
-        fn t -> t.label == tag.label end
-        )
-      == [tag]
+               Tags.list_tags(),
+               fn t -> t.label == tag.label end
+             ) ==
+               [tag]
     end
 
     test "count_tags/0 returns count of all tags" do
@@ -157,7 +158,7 @@ defmodule Glific.TagsTest do
       tags = Tags.list_tags(%{opts: %{order: :asc}, filter: %{language: "hindi"}})
       assert length(tags) == 2
       [h | [t]] = tags
-      assert (h == tag2 && t == tag1) ||  (h == tag1 && t == tag2)
+      assert (h == tag2 && t == tag1) || (h == tag1 && t == tag2)
     end
 
     test "create_tags fails with constraint violation on language" do
@@ -185,7 +186,11 @@ defmodule Glific.TagsTest do
     test "keyword_map/0 returns a keyword map with ids" do
       tag = tag_fixture()
       tag2 = tag_fixture(%{label: "tag 2"})
-      Tags.update_tag(tag, %{keywords: ["Hello foobar", "hi example", "hola test", "namaste saab"]})
+
+      Tags.update_tag(tag, %{
+        keywords: ["Hello foobar", "hi example", "hola test", "namaste saab"]
+      })
+
       Tags.update_tag(tag2, %{keywords: ["Tag2", "Tag21", "Tag22", "Tag23"]})
       keyword_map = Tags.keyword_map()
       assert is_map(keyword_map)

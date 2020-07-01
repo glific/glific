@@ -13,7 +13,7 @@ defmodule Glific.SeedsDev do
     Settings,
     Tags.Tag,
     Templates.SessionTemplate,
-    Users.User
+    Users
   }
 
   @doc """
@@ -267,18 +267,14 @@ defmodule Glific.SeedsDev do
   @doc false
   @spec seed_users :: {User.t()}
   def seed_users do
-    Repo.insert!(%User{
-      name: "John Doe",
-      phone: "+919820198765",
-      password: "secret1234",
-      roles: ["admin"]
-    })
+    password = "secret1234"
 
-    Repo.insert!(%User{
-      name: "Jane Doe",
-      phone: "+918820198765",
-      password: "secret1234",
-      roles: ["basic", "admin"]
+    Users.create_user(%{
+      name: "NGO Basic User 1",
+      phone: "919820112345",
+      password: password,
+      confirm_password: password,
+      roles: ["basic"]
     })
   end
 

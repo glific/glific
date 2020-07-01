@@ -113,9 +113,10 @@ defmodule GlificWeb.Schema.LanguageTest do
           "input" => %{"label" => "Klingon", "labelLocale" => "Klingon", "locale" => "kl_KL"}
         }
       )
+
     assert {:ok, query_data} = result
     language = get_in(query_data, [:data, "createLanguage", "language", "label"])
-    language_id =  get_in(query_data, [:data, "createLanguage", "language", "id"])
+    language_id = get_in(query_data, [:data, "createLanguage", "language", "id"])
     assert language == "Klingon"
 
     # now lets delete it
