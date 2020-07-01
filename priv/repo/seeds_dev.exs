@@ -10,6 +10,6 @@
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
 
-alias Glific.Seeds
+alias Glific.SeedsDev
 
-Seeds.seed()
+SeedsDev.seed()

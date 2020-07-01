@@ -6,8 +6,8 @@ defmodule Glific.CommunicationsTest do
   alias Glific.Messages
 
   setup do
-    default_provider = Glific.Seeds.seed_providers()
-    Glific.Seeds.seed_organizations(default_provider)
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
     :ok
   end
 

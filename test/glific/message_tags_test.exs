@@ -4,9 +4,9 @@ defmodule Glific.MessageTagsTest do
   alias Glific.{Fixtures, Tags, Tags.MessageTags}
 
   setup do
-    default_provider = Glific.Seeds.seed_providers()
-    Glific.Seeds.seed_organizations(default_provider)
-    Glific.Seeds.seed_tag()
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
+    Glific.SeedsDev.seed_tag()
     :ok
   end
 

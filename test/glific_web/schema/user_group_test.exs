@@ -3,10 +3,10 @@ defmodule GlificWeb.Schema.UserGroupTest do
   use Wormwood.GQLCase
 
   setup do
-    #     # default_provider = Glific.Seeds.seed_providers()
-    # Glific.Seeds.seed_organizations(default_provider)
-    Glific.Seeds.seed_users()
-    Glific.Seeds.seed_groups()
+    #     # default_provider = Glific.SeedsDev.seed_providers()
+    # Glific.SeedsDev.seed_organizations(default_provider)
+    Glific.SeedsDev.seed_users()
+    Glific.SeedsDev.seed_groups()
     :ok
   end
 

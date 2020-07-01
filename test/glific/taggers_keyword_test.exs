@@ -7,7 +7,7 @@ defmodule Glific.TaggersKeywordTest do
   }
 
   setup do
-    Glific.Seeds.seed_tag()
+    Glific.SeedsDev.seed_tag()
     :ok
   end
 

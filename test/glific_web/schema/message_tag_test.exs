@@ -3,11 +3,11 @@ defmodule GlificWeb.Schema.MessageTagTest do
   use Wormwood.GQLCase
 
   setup do
-    default_provider = Glific.Seeds.seed_providers()
-    Glific.Seeds.seed_organizations(default_provider)
-    Glific.Seeds.seed_tag()
-    Glific.Seeds.seed_contacts()
-    Glific.Seeds.seed_messages()
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
+    Glific.SeedsDev.seed_tag()
+    Glific.SeedsDev.seed_contacts()
+    Glific.SeedsDev.seed_messages()
     :ok
   end
 

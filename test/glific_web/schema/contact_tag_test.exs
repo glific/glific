@@ -3,10 +3,10 @@ defmodule GlificWeb.Schema.ContactTagTest do
   use Wormwood.GQLCase
 
   setup do
-    default_provider = Glific.Seeds.seed_providers()
-    Glific.Seeds.seed_organizations(default_provider)
-    Glific.Seeds.seed_tag()
-    Glific.Seeds.seed_contacts()
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
+    Glific.SeedsDev.seed_tag()
+    Glific.SeedsDev.seed_contacts()
     :ok
   end
 

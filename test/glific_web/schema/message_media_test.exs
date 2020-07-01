@@ -4,7 +4,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
   use Wormwood.GQLCase
 
   setup do
-    Glific.Seeds.seed_messages_media()
+    Glific.SeedsDev.seed_messages_media()
     :ok
   end
 

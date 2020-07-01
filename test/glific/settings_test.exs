@@ -99,7 +99,7 @@ defmodule Glific.SettingsTest do
 
     test "deleting a language with tags associated, should result in an error" do
       [hi_in | _] = Settings.list_languages(%{label: "hindi"})
-      Glific.Seeds.seed_tag()
+      Glific.SeedsDev.seed_tag()
 
       assert {:error, %Ecto.Changeset{}} = Settings.delete_language(hi_in)
     end

@@ -2,7 +2,7 @@ defmodule GlificWeb.RouterTest do
   use GlificWeb.ConnCase, async: true
 
   setup do
-    Glific.Seeds.seed_tag()
+    Glific.SeedsDev.seed_tag()
     :ok
   end
 

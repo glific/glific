@@ -3,7 +3,7 @@ defmodule GlificWeb.Schema.UserTest do
   use Wormwood.GQLCase
 
   setup do
-    Glific.Seeds.seed_users()
+    Glific.SeedsDev.seed_users()
     :ok
   end
 

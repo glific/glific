@@ -1,4 +1,4 @@
-defmodule Glific.Seeds do
+defmodule Glific.SeedsDev do
   @moduledoc """
   Script for populating the database. We can call this from tests and/or /priv/repo
   """
