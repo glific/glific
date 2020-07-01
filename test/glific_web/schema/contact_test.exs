@@ -61,7 +61,8 @@ defmodule GlificWeb.Schema.ContactTest do
 
   test "count returns the number of contacts" do
     {:ok, query_data} = query_gql_by(:count)
-    assert get_in(query_data, [:data, "countContacts"]) == 6
+    # we are adding 6 contacts, but we dont know intial state of DB, hence using >=
+    assert get_in(query_data, [:data, "countContacts"]) >= 6
 
     {:ok, query_data} =
       query_gql_by(:count,
