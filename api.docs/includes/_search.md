@@ -3,8 +3,8 @@
 ## Search In conversation
 
 ```graphql
-query search($term: String!, $shouldSave: Boolean!, $searchLabel: String!, $searchFilter: SearchFilter!) {
-  search(term: $term, saveSearch: $shouldSave, saveSearchLabel: $saveSearchLabel, filter: $searchFilter) {
+query search($term: String!, $searchFilter: SearchFilter!, $shouldSave: Boolean!, $saveSearchLabel: String!) {
+  search(term: $term, filter: $searchFilter, saveSearch: $shouldSave, saveSearchLabel: $saveSearchLabel) {
     messages {
       id,
       body,
@@ -12,7 +12,7 @@ query search($term: String!, $shouldSave: Boolean!, $searchLabel: String!, $sear
         label
       }
     }
-    
+
     contact {
       name
     }
