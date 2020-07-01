@@ -3,8 +3,7 @@ defmodule GlificWeb.Schema.TagTest do
   use Wormwood.GQLCase
 
   setup do
-    lang = Glific.Seeds.seed_language()
-    Glific.Seeds.seed_tag(lang)
+    Glific.Seeds.seed_tag()
     :ok
   end
 

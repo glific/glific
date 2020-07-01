@@ -213,9 +213,8 @@ defmodule Glific.TagsTest do
   end
 
   setup do
-    lang = Glific.Seeds.seed_language()
     default_provider = Glific.Seeds.seed_providers()
-    Glific.Seeds.seed_organizations(default_provider, lang)
+    Glific.Seeds.seed_organizations(default_provider)
     :ok
   end
 

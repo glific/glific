@@ -3,10 +3,9 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   use Wormwood.GQLCase
 
   setup do
-    lang = Glific.Seeds.seed_language()
     default_provider = Glific.Seeds.seed_providers()
-    Glific.Seeds.seed_organizations(default_provider, lang)
-    Glific.Seeds.seed_session_templates(lang)
+    Glific.Seeds.seed_organizations(default_provider)
+    Glific.Seeds.seed_session_templates()
     Glific.Seeds.seed_contacts()
     Glific.Seeds.seed_messages()
     :ok

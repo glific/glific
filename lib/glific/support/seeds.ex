@@ -11,7 +11,6 @@ defmodule Glific.Seeds do
     Partners.Provider,
     Repo,
     Settings,
-    Settings.Language,
     Tags.Tag,
     Templates.SessionTemplate,
     Users.User
@@ -21,17 +20,11 @@ defmodule Glific.Seeds do
   Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
   In the next phase we will also add unseeder functions as we learn more of the test capabilities
   """
-  @spec seed_language() :: {Language.t(), Language.t()}
-  def seed_language do
+  @spec seed_tag() :: nil
+  def seed_tag() do
     [hi_in | _] = Settings.list_languages(%{label: "hindi"})
     [en_us | _] = Settings.list_languages(%{label: "english"})
 
-    {hi_in, en_us}
-  end
-
-  @doc false
-  @spec seed_tag({Language.t(), Language.t()}) :: nil
-  def seed_tag({hi_in, en_us}) do
     Repo.insert!(%Tag{label: "This is for testing", language: en_us})
     Repo.insert!(%Tag{label: "यह परीक्षण के लिए है", language: hi_in})
   end
@@ -100,8 +93,11 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_organizations(Provider.t(), {Language.t(), Language.t()}) :: nil
-  def seed_organizations(default_provider, {hi_in, en_us}) do
+  @spec seed_organizations(Provider.t()) :: nil
+  def seed_organizations(default_provider) do
+    [hi_in | _] = Settings.list_languages(%{label: "hindi"})
+    [en_us | _] = Settings.list_languages(%{label: "english"})
+
     # Sender Contact for organization
     sender =
       Repo.insert!(%Contact{
@@ -245,8 +241,10 @@ defmodule Glific.Seeds do
   end
 
   @doc false
-  @spec seed_session_templates({Language.t(), Language.t()}) :: nil
-  def seed_session_templates({_hi_in, en_us}) do
+  @spec seed_session_templates() :: nil
+  def seed_session_templates() do
+    [en_us | _] = Settings.list_languages(%{label: "english"})
+
     session_template_parent =
       Repo.insert!(%SessionTemplate{
         label: "Default Template Label",
@@ -304,19 +302,17 @@ defmodule Glific.Seeds do
   """
   @spec seed :: nil
   def seed do
-    lang = seed_language()
-
     default_provider = seed_providers()
 
-    seed_organizations(default_provider, lang)
+    seed_organizations(default_provider)
 
     seed_contacts()
 
     seed_users()
 
-    seed_session_templates(lang)
+    seed_session_templates()
 
-    seed_tag(lang)
+    seed_tag()
 
     seed_messages()
 

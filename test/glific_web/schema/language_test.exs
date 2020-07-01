@@ -3,7 +3,6 @@ defmodule GlificWeb.Schema.LanguageTest do
   use Wormwood.GQLCase
 
   setup do
-    Glific.Seeds.seed_language()
     :ok
   end
 
