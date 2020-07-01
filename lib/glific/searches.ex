@@ -141,7 +141,7 @@ defmodule Glific.Searches do
 
     contact_ids =
       query
-      |> Full.run(term)
+      |> Full.run(term, args)
       |> Repo.all()
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
