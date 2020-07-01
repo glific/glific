@@ -49,8 +49,6 @@ defmodule Glific.Search.Full do
     end
   end
 
-
-
   @spec run_helper(Ecto.Query.t(), String.t(), map()) :: Ecto.Query.t()
   defp run_helper(query, "", _), do: query
 
@@ -60,7 +58,6 @@ defmodule Glific.Search.Full do
       on: id_and_rank.id == q.id,
       order_by: [desc: id_and_rank.rank]
   end
-
 
   @spec normalize(String.t()) :: String.t()
   defp normalize(term) do
