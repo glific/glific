@@ -163,21 +163,24 @@ defmodule Glific.ContactsTest do
     end
 
     test "list_contacts/1 with multiple contacts sorted" do
-      c0 = contact_fixture(@valid_attrs)
-      c1 = contact_fixture(@valid_attrs_1)
-      c2 = contact_fixture(@valid_attrs_2)
-      c3 = contact_fixture(@valid_attrs_3)
+      contact_fixture(@valid_attrs)
+      contact_fixture(@valid_attrs_1)
+      contact_fixture(@valid_attrs_2)
+      contact_fixture(@valid_attrs_3)
 
-      {:ok, default_sender} =
-        Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Sender"})
-      {:ok, prod_sender} =
-        Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Tech4Dev Contact"})
+      [c1, c2 | _] = Contacts.list_contacts(%{opts: %{order: :asc}})
+      name1 = get_in(c1, [Access.key(:name)])
+      name2 = get_in(c2, [Access.key(:name)])
+      assert Enum.sort([name1, name2]) == [name1, name2]
 
-      cs = Contacts.list_contacts(%{opts: %{order: :asc}})
-      assert [default_sender, c0, c1, c2, c3, prod_sender] == cs
+      [c1, c2 | _] = Contacts.list_contacts(%{opts: %{order: :desc}})
+      name1 = get_in(c1, [Access.key(:name)])
+      name2 = get_in(c2, [Access.key(:name)])
 
-      cs = Contacts.list_contacts(%{opts: %{order: :desc}})
-      assert [prod_sender, c3, c2, c1, c0, default_sender] == cs
+      assert Enum.sort([String.downcase(name1), String.downcase(name2)], :desc) == [
+               String.downcase(name1),
+               String.downcase(name2)
+             ]
     end
 
     test "list_contacts/1 with multiple contacts filtered" do
