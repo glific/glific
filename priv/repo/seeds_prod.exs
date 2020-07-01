@@ -125,7 +125,7 @@ provider = Repo.insert!(%Provider{
 sender =
   Repo.insert!(%Contact{
     phone: "917834899994",
-    name: "Default Contact",
+    name: "Tech4Dev Contact",
     language_id: en_us.id,
     last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
   })
@@ -365,4 +365,3 @@ Repo.insert!(%SavedSearch{
   label: "Conversations where the contact has opted out",
   args: %{includeTags: ["14"]}
 })
-
