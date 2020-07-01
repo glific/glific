@@ -105,7 +105,7 @@ defmodule Glific.ContactsTest do
     end
 
     test "create_contact/1 with language id creates a contact" do
-      {:ok, language} = Repo.fetch_by(Glific.Settings.Language, %{locale: "hi_IN"})
+      {:ok, language} = Repo.fetch_by(Glific.Settings.Language, %{locale: "hi"})
 
       attrs =
         @valid_attrs

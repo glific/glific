@@ -16,7 +16,7 @@ defmodule Glific.SettingsTest do
 
     @update_attrs %{
       description: "we now have a description",
-      locale: "hi_IN",
+      locale: "hi",
       is_active: false
     }
     @invalid_attrs %{is_active: nil, label: 123, locale: nil}
@@ -72,7 +72,7 @@ defmodule Glific.SettingsTest do
       assert {:ok, %Language{} = language} = Settings.update_language(language, @update_attrs)
       assert language.description == "we now have a description"
       assert language.is_active == false
-      assert language.locale == "hi_IN"
+      assert language.locale == "hi"
     end
 
     test "update_language/2 with invalid data returns error changeset" do

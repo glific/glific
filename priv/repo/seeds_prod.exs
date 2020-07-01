@@ -22,7 +22,7 @@ alias Glific.{
 }
 
 # seed languages
-hi_in = Repo.insert!(%Language{label: "Hindi", label_locale: "हिंदी", locale: "hi_IN"})
+hi_in = Repo.insert!(%Language{label: "Hindi", label_locale: "हिंदी", locale: "hi"})
 en_us = Repo.insert!(%Language{label: "English (United States)", label_locale: "English", locale: "en_US"})
 
 # seed tags

@@ -61,7 +61,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # An optional description
       add :description, :string, null: true
 
-      # The locale name of the language dialect, e.g. en_US, or hi_IN
+      # The locale name of the language dialect, e.g. en_US, or hi
       add :locale, :string, null: false
 
       # Is this language being currently used in the sysem

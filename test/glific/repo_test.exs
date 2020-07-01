@@ -17,7 +17,7 @@ defmodule Glific.RepoTest do
     @valid_hindi_attrs %{
       label: "Faker Hindi (India)",
       label_locale: "Faker हिन्दी",
-      locale: "faker_hi_IN",
+      locale: "faker_hi",
       is_active: true
     }
 
