@@ -18,6 +18,15 @@
 * This is the Noora Health Case/Dost Case, where once a person enters the system, they get a message every day.
 * If a message was not delivered, all future messages are pushed back, while we retry to deliver the message
 
+## Date Based
+
+* This is based on the SlamOutLoud Use Case
+* Different content is presented on a daily basis
+* Content is uploaded weekly and will be multi-lingual
+* We'll have fallback mechanisms if no content is present for any given day
+* We will figure out how to expose more of the content to users, rather than limit them
+to a daily selection
+
 ## Standard Menu Based
 
 * Users can pull in sequential content, using Prev/Next/Start/Menu system
