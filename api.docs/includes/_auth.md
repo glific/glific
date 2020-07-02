@@ -10,7 +10,7 @@ The main API endpoints are listed below
 ## Create a new user
 ```shell
 curl -X POST -d \
-  "user[name]='Test User'&user[phone]=919820176543&user[password]=secret1234 \
+  "user[name]='Test User'&user[phone]=911234554321&user[password]=secret1234 \
   &user[password_confirmation]=secret1234" \
   http://YOUR_HOSTNAME_AND_PORT/api/v1/registration
 ```
@@ -32,7 +32,7 @@ that looks like the following:
 
 ```shell
 curl -X POST -d \
-  "user[phone]=919820176543" \
+  "user[phone]=911234554321" \
   http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send_otp
 ```
 
@@ -47,7 +47,7 @@ curl -X POST -d \
 
 ```shell
 curl -X POST -d \
-  "user[phone]=919820176543&user[password]=secret1234" \
+  "user[phone]=911234554321&user[password]=secret1234" \
   http://YOUR_HOSTNAME_AND_PORT/api/v1/session
 ```
 
