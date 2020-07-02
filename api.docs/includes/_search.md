@@ -27,12 +27,12 @@ query search($term: String!, $searchFilter: SearchFilter!, $shouldSave: Boolean!
     "includeTags": ["17"]
   },
   "messageOpts": {
-    "limit": 1,
+    "limit": 3,
     "order": "ASC"
   },
   "contactOpts": {
     "order": "DESC",
-    "limit": 2
+    "limit": 1
   },
 }
 ```
