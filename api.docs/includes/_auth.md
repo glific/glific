@@ -9,9 +9,9 @@ The main API endpoints are listed below
 
 ## Create a new user
 ```shell
-curl -X POST -d
+curl -X POST -d \
   "user[phone]=919820176543&user[password]=secret1234 \
-  &user[password_confirmation]=secret1234"
+  &user[password_confirmation]=secret1234" \
   http://YOUR_HOSTNAME_AND_PORT/api/v1/registration
 ```
 
@@ -31,8 +31,8 @@ that looks like the following:
 (this needs to be protected by some form of access control)
 
 ```shell
-curl -X POST -d
-  "user[phone]=919820176543"
+curl -X POST -d \
+  "user[phone]=919820176543" \
   http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send_otp
 ```
 
@@ -46,8 +46,8 @@ curl -X POST -d
 ## Create a new session for an existing user
 
 ```shell
-curl -X POST -d
-  "user[phone]=919820176543&user[password]=secret1234"
+curl -X POST -d \
+  "user[phone]=919820176543&user[password]=secret1234" \
   http://YOUR_HOSTNAME_AND_PORT/api/v1/session
 ```
 
@@ -60,7 +60,7 @@ curl -X POST -d
 ## Renew an existing session
 
 ```shell
-curl -X POST -H "Authorization: RENEW_TOKEN"
+curl -X POST -H "Authorization: RENEW_TOKEN" \
   http://localhost:4000/api/v1/session/renew
 ```
 
@@ -72,7 +72,7 @@ curl -X POST -H "Authorization: RENEW_TOKEN"
 ## Delete an existing session
 
 ```shell
-curl -X DELETE -H "Authorization: AUTH_TOKEN"
+curl -X DELETE -H "Authorization: AUTH_TOKEN" \
   http://localhost:4000/api/v1/session
 ```
 

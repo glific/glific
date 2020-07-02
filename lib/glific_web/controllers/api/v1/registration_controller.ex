@@ -13,6 +13,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
   def create(conn, %{"user" => user_params}) do
+    _ = """
     %{"phone" => phone, "otp" => otp} = user_params
 
     case PasswordlessAuth.verify_code(phone, otp) do
@@ -29,6 +30,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
           error: %{status: 500, message: "Couldn't create user", errors: [Atom.to_string(error)]}
         })
     end
+    """
+    create_user(conn, user_params)
   end
 
   @spec create_user(Conn.t(), map()) :: Conn.t()
