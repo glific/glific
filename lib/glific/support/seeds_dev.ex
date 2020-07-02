@@ -20,8 +20,8 @@ defmodule Glific.SeedsDev do
   Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
   In the next phase we will also add unseeder functions as we learn more of the test capabilities
   """
-  @spec seed_tag() :: nil
-  def seed_tag() do
+  @spec seed_tag :: nil
+  def seed_tag do
     [hi_in | _] = Settings.list_languages(%{label: "hindi"})
     [en_us | _] = Settings.list_languages(%{label: "english"})
 
@@ -241,8 +241,8 @@ defmodule Glific.SeedsDev do
   end
 
   @doc false
-  @spec seed_session_templates() :: nil
-  def seed_session_templates() do
+  @spec seed_session_templates :: nil
+  def seed_session_templates do
     [en_us | _] = Settings.list_languages(%{label: "english"})
 
     session_template_parent =
