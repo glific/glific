@@ -45,6 +45,22 @@ defmodule Glific.ContactsTest do
       status: :invalid,
       provider_status: :valid
     }
+    @valid_attrs_to_test_order_1 %{
+      name: "aaaa name",
+      optin_time: ~U[2010-04-17 14:00:00Z],
+      optout_time: ~U[2010-04-17 14:00:00Z],
+      phone: "some phone 4",
+      status: :valid,
+      provider_status: :invalid
+    }
+    @valid_attrs_to_test_order_2 %{
+      name: "zzzz name",
+      optin_time: ~U[2010-04-17 14:00:00Z],
+      optout_time: ~U[2010-04-17 14:00:00Z],
+      phone: "some phone 5",
+      status: :valid,
+      provider_status: :invalid
+    }
     @update_attrs %{
       name: "some updated name",
       optin_time: ~U[2011-05-18 15:01:01Z],
@@ -72,13 +88,17 @@ defmodule Glific.ContactsTest do
     end
 
     test "list_contacts/0 returns all contacts" do
+      contacts_count = Repo.aggregate(Contact, :count)
+
       _contact = contact_fixture()
-      assert length(Contacts.list_contacts()) >= 2
+      assert length(Contacts.list_contacts()) == contacts_count + 1
     end
 
     test "count_contacts/0 returns count of all contacts" do
+      contacts_count = Repo.aggregate(Contact, :count)
+
       _ = contact_fixture()
-      assert Contacts.count_contacts() >= 2
+      assert Contacts.count_contacts() == contacts_count + 1
 
       assert Contacts.count_contacts(%{filter: %{name: "some name"}}) == 1
     end
@@ -154,33 +174,29 @@ defmodule Glific.ContactsTest do
     end
 
     test "list_contacts/1 with multiple contacts" do
+      contacts_count = Repo.aggregate(Contact, :count)
+
       _c0 = contact_fixture(@valid_attrs)
       _c1 = contact_fixture(@valid_attrs_1)
       _c2 = contact_fixture(@valid_attrs_2)
       _c3 = contact_fixture(@valid_attrs_3)
 
-      assert length(Contacts.list_contacts()) >= 4
+      assert length(Contacts.list_contacts()) == contacts_count + 4
     end
 
     test "list_contacts/1 with multiple contacts sorted" do
-      contact_fixture(@valid_attrs)
-      contact_fixture(@valid_attrs_1)
-      contact_fixture(@valid_attrs_2)
-      contact_fixture(@valid_attrs_3)
+      contacts_count = Repo.aggregate(Contact, :count)
 
-      [c1, c2 | _] = Contacts.list_contacts(%{opts: %{order: :asc}})
-      name1 = get_in(c1, [Access.key(:name)])
-      name2 = get_in(c2, [Access.key(:name)])
-      assert Enum.sort([name1, name2]) == [name1, name2]
+      c0 = contact_fixture(@valid_attrs_to_test_order_1)
+      c1 = contact_fixture(@valid_attrs_to_test_order_2)
 
-      [c1, c2 | _] = Contacts.list_contacts(%{opts: %{order: :desc}})
-      name1 = get_in(c1, [Access.key(:name)])
-      name2 = get_in(c2, [Access.key(:name)])
+      assert length(Contacts.list_contacts()) == contacts_count + 2
 
-      assert Enum.sort([String.downcase(name1), String.downcase(name2)], :desc) == [
-               String.downcase(name1),
-               String.downcase(name2)
-             ]
+      [ordered_c0 | _] = Contacts.list_contacts(%{opts: %{order: :asc}})
+      assert c0 == ordered_c0
+
+      [ordered_c1 | _] = Contacts.list_contacts(%{opts: %{order: :desc}})
+      assert c1 == ordered_c1
     end
 
     test "list_contacts/1 with multiple contacts filtered" do
