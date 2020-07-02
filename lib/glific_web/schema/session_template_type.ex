@@ -93,7 +93,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Get a list of all session_templates filtered by various criteria"
     field :session_templates, list_of(:session_template) do
       arg(:filter, :session_template_filter)
-      arg(:opts, :opts)
+      arg(:order, type: :sort_order, default_value: :asc)
       resolve(&Resolvers.Templates.session_templates/3)
     end
 

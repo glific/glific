@@ -25,7 +25,6 @@ defmodule Glific.Templates do
       {:opts, opts}, query ->
         query |> opts_with(opts)
 
-
       {:filter, filter}, query ->
         query |> filter_with(filter)
     end)

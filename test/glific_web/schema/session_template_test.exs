@@ -63,7 +63,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   end
 
   test "session_templates field returns list of session_templates in desc order" do
-    result = query_gql_by(:list, variables: %{"order" => "ASC"})
+    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
