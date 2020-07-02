@@ -31,6 +31,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
         })
     end
     """
+
     create_user(conn, user_params)
   end
 
