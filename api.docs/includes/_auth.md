@@ -12,7 +12,7 @@ The main API endpoints are listed below
 curl -X POST -d
   "user[phone]=919820176543&user[password]=secret1234 \
   &user[password_confirmation]=secret1234"
-  http://glific.io/api/v1/registration
+  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration
 ```
 
 > The above query returns JSON structured like this:
@@ -33,7 +33,7 @@ that looks like the following:
 ```shell
 curl -X POST -d
   "user[phone]=919820176543"
-  http://glific.io/api/v1/registration/send_otp
+  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send_otp
 ```
 
 > The above query returns JSON structured like this:
@@ -48,7 +48,7 @@ curl -X POST -d
 ```shell
 curl -X POST -d
   "user[phone]=919820176543&user[password]=secret1234"
-  http://glific.io/api/v1/session
+  http://YOUR_HOSTNAME_AND_PORT/api/v1/session
 ```
 
 > The above query returns JSON structured like this:
