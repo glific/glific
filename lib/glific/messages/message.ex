@@ -102,6 +102,9 @@ defmodule Glific.Messages.Message do
       type == :text ->
         changeset
 
+      type == :location ->
+        changeset
+
       media_id == nil ->
         add_error(changeset, :type, "#{Atom.to_string(type)} message type should have a media id")
 
