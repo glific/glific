@@ -3,7 +3,7 @@
 ## Get All Conversations
 
 ```graphql
-query conversations($filter: ConversationsFilter, $contactOpts: Opts, $messageOpts: Opts) {
+query conversations($filter: ConversationsFilter, $contactOpts: Opts!, $messageOpts: Opts!) {
   conversations(filter: $filter, contactOpts:$contactOpts, messageOpts: $messageOpts) {
     contact {
       id
@@ -82,8 +82,8 @@ sort order options on both the contacts and the conversations returned
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 filter | <a href="#conversationfilter">ConversationFilter</a> | nil | filter the conversations
-contactOpts | <a href="#opts">Opts</a> | nil | limit / offset / sort order contact options
-messageOpts | <a href="#opts">Opts</a> | nil | limit / offset / sort order message options
+contactOpts | <a href="#opts">Opts</a> | limit / offset / sort order contact options
+messageOpts | <a href="#opts">Opts</a> | limit / offset / sort order message options
 
 ### Return Parameters
 Type | Description
@@ -93,7 +93,7 @@ Type | Description
 ## Get a specific Conversation by Contact ID
 
 ```graphql
-query conversation($filter: ConversationFilter, $contactId: Gid!, $messageOpts: Opts) {
+query conversation($filter: ConversationFilter, $contactId: Gid!, $messageOpts: Opts!) {
   conversation(filter: $filter, contactId: $contactId, messageOpts: $messageOpts) {
     contact {
       id
@@ -162,7 +162,7 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 filter | <a href="#conversationfilter">ConversationFilter</a> | nil | filter the conversation
 contactId | <a href="#id">ID</a> | nil ||
-messageOpts | <a href="#opts">Opts</a> | nil | limit / offset / sort order message options
+messageOpts | <a href="#opts">Opts</a> | limit / offset / sort order message options
 
 ### Return Parameters
 Type | Description

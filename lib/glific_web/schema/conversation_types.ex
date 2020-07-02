@@ -41,8 +41,8 @@ defmodule GlificWeb.Schema.ConversationTypes do
     @desc "get the conversations"
     field :conversations, list_of(:conversation) do
       arg(:filter, :conversations_filter)
-      arg(:message_opts, :opts)
-      arg(:contact_opts, :opts)
+      arg(:message_opts, non_null(:opts))
+      arg(:contact_opts, non_null(:opts))
       resolve(&Resolvers.Conversations.conversations/3)
     end
 
@@ -50,7 +50,7 @@ defmodule GlificWeb.Schema.ConversationTypes do
     field :conversation, :conversation do
       arg(:contact_id, non_null(:gid))
       arg(:filter, :conversation_filter)
-      arg(:message_opts, :opts)
+      arg(:message_opts, non_null(:opts))
       resolve(&Resolvers.Conversations.conversation/3)
     end
   end
