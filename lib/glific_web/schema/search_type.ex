@@ -46,8 +46,8 @@ defmodule GlificWeb.Schema.SearchTypes do
 
       arg(:term, non_null(:string))
       arg(:filter, :search_filter)
-      arg(:message_opts, :opts)
-      arg(:contact_opts, :opts)
+      arg(:message_opts, non_null(:opts))
+      arg(:contact_opts, non_null(:opts))
       resolve(&Resolvers.Searches.search/3)
     end
 

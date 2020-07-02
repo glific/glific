@@ -12,19 +12,11 @@ defmodule Glific.Conversations do
 
   alias Glific.{Conversations.Conversation, Messages, Repo}
 
-  # Default values for the conversation. User will be able to override them in the API calls.
-  @default_opts %{
-    message_opts: %{offset: 0, limit: 25},
-    contact_opts: %{offset: 0, limit: 10}
-  }
-
   @doc """
   Returns the last M conversations, each conversation not more than N messages
   """
   @spec list_conversations(map()) :: list()
   def list_conversations(args) do
-    args = Map.merge(@default_opts, args, fn _k, v1, v2 -> v1 |> Map.merge(v2) end)
-
     Messages.list_conversations(
       Map.put(args, :ids, get_message_ids(args.contact_opts, args.message_opts, args))
     )
@@ -37,7 +29,7 @@ defmodule Glific.Conversations do
   @spec conversation_by_id(map()) :: Conversation.t() | nil
   def conversation_by_id(%{contact_id: contact_id} = args) do
     args = put_in(args, [Access.key(:filter, %{}), :id], contact_id)
-    message_opts = Map.merge(@default_opts.message_opts, args.message_opts)
+    message_opts = args.message_opts
 
     case args
          |> Map.put(:ids, get_message_ids(%{limit: 1}, message_opts, args))

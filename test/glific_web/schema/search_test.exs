@@ -117,7 +117,13 @@ defmodule GlificWeb.Schema.SearchTest do
 
     result =
       query_gql_by(:search,
-        variables: %{"term" => "Default", "shouldSave" => false, "saveSearchLabel" => ""}
+        variables: %{
+          "term" => "Default",
+          "shouldSave" => false,
+          "saveSearchLabel" => "",
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1}
+        }
       )
 
     assert {:ok, query_data} = result
@@ -127,7 +133,13 @@ defmodule GlificWeb.Schema.SearchTest do
 
     result =
       query_gql_by(:search,
-        variables: %{"term" => "Default receiver", "shouldSave" => false, "saveSearchLabel" => ""}
+        variables: %{
+          "term" => "Default receiver",
+          "shouldSave" => false,
+          "saveSearchLabel" => "",
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1}
+        }
       )
 
     assert {:ok, query_data} = result
@@ -138,7 +150,9 @@ defmodule GlificWeb.Schema.SearchTest do
         variables: %{
           "term" => "This term is highly unlikely to occur superfragerlicious",
           "shouldSave" => false,
-          "saveSearchLabel" => ""
+          "saveSearchLabel" => "",
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1}
         }
       )
 
@@ -149,7 +163,13 @@ defmodule GlificWeb.Schema.SearchTest do
     # should return all contacts
     result =
       query_gql_by(:search,
-        variables: %{"term" => "", "shouldSave" => false, "saveSearchLabel" => ""}
+        variables: %{
+          "term" => "",
+          "shouldSave" => false,
+          "saveSearchLabel" => "",
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1}
+        }
       )
 
     assert {:ok, query_data} = result
@@ -162,7 +182,9 @@ defmodule GlificWeb.Schema.SearchTest do
         variables: %{
           "term" => "Default",
           "shouldSave" => true,
-          "saveSearchLabel" => "Save with Search"
+          "saveSearchLabel" => "Save with Search",
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1}
         }
       )
 
