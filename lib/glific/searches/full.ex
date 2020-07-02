@@ -11,16 +11,12 @@ defmodule Glific.Search.Full do
   the query with the link to the fulltext index
   """
 
-  @default_opts %{
-    contact_opts: %{offset: 0, limit: 20}
-  }
-
   @spec run(Ecto.Query.t(), String.t(), map()) :: Ecto.Query.t()
   def run(query, term, args) do
     run_helper(
       query,
       normalize(term),
-      Map.merge(@default_opts, args, fn _k, v1, v2 -> v1 |> Map.merge(v2) end)
+      args
     )
   end
 
