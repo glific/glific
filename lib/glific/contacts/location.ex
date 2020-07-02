@@ -24,7 +24,7 @@ defmodule Glific.Contacts.Location do
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           longitude: float | nil,
-          latitude: Float.t() | nil,
+          latitude: float | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
