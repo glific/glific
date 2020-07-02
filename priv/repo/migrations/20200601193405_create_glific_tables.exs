@@ -44,6 +44,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
     questions_question_sets()
 
     questions_answers()
+
+    locations()
   end
 
   @doc """
@@ -260,7 +262,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :contact_id, references(:contacts, on_delete: :delete_all), null: false
 
       # user id - this will be null for automated messages and messages received
-      add :user_id, references(:users, on_delete: :restrict), null: true
+      add :user_id, references(:users, on_delete: :nilify_all), null: true
 
       # message media ids
       add :media_id, references(:messages_media, on_delete: :delete_all), null: true
@@ -517,6 +519,27 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # for now all answers are stored as string
       # at some point, we might split it based on question type
       add :answer, :string, null: false
+
+      timestamps(type: :utc_datetime)
+    end
+  end
+
+  @doc """
+  Contact's current location storage.
+  """
+  def locations do
+    create table(:locations) do
+      # contact id of the sender
+      add :contact_id, references(:contacts, on_delete: :delete_all), null: false
+
+      # reference to the incoming message
+      add :message_id, references(:messages, on_delete: :delete_all), null: false
+
+      # location longitude
+      add :longitude, :float, null: false
+
+      # location latitude
+      add :latitude, :float, null: false
 
       timestamps(type: :utc_datetime)
     end

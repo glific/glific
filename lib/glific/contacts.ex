@@ -6,6 +6,7 @@ defmodule Glific.Contacts do
 
   alias Glific.{
     Contacts.Contact,
+    Contacts.Location,
     Repo
   }
 
@@ -232,5 +233,22 @@ defmodule Glific.Contacts do
          true <- contact.provider_status == :valid,
          true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24,
          do: true
+  end
+
+  @doc """
+  Creates a location.
+
+  ## Examples
+      iex> Glific.Contacts.create_location(%{name: value})
+      {:ok, %Glific.Contacts.Location{}}
+
+      iex> Glific.Contacts.create_location(%{bad_field: bad_value})
+      {:error, %Ecto.Changeset{}}
+  """
+  @spec create_location(map()) :: {:ok, Location.t()} | {:error, Ecto.Changeset.t()}
+  def create_location(attrs \\ %{}) do
+    %Location{}
+    |> Location.changeset(attrs)
+    |> Repo.insert()
   end
 end
