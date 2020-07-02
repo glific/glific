@@ -16,7 +16,7 @@ defmodule GlificWeb.Schema.ContactTagTest do
   test "create a contact tag and test possible scenarios and errors" do
     label = "This is for testing"
     {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
-    name = "Default Sender"
+    name = "Glific Admin"
     {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
 
     result =
@@ -46,7 +46,7 @@ defmodule GlificWeb.Schema.ContactTagTest do
   test "delete a contact tag" do
     label = "This is for testing"
     {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
-    name = "Default Sender"
+    name = "Glific Admin"
     {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
 
     {:ok, query_data} =

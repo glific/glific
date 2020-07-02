@@ -173,10 +173,11 @@ defmodule Glific.Contacts do
   def upsert(attrs) do
     # Get the organization
     organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
-    attrs = Map.put(attrs, :language_id, attrs[:language_id] || organization.default_language_id)
+    # we keep this separate to avoid overwriting the language if already set by a contact
+    language = Map.put(%{}, :language_id, attrs[:language_id] || organization.default_language_id)
 
     Repo.insert!(
-      change_contact(%Contact{}, attrs),
+      change_contact(%Contact{}, Map.merge(language, attrs)),
       on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
       conflict_target: :phone
     )
