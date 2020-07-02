@@ -42,8 +42,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     assert get_in(query_data, [:data, "countOrganizations"]) == 0
 
-    {:ok, query_data} =
-      query_gql_by(:count, variables: %{"filter" => %{"name" => "Glific"}})
+    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"name" => "Glific"}})
 
     assert get_in(query_data, [:data, "countOrganizations"]) == 1
   end
@@ -139,8 +138,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   end
 
   test "update an organization and test possible scenarios and errors" do
-    {:ok, organization} =
-      Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: "Glific"})
+    {:ok, organization} = Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: "Glific"})
 
     name = "Organization Test Name"
     display_name = "Organization Test Name"
@@ -218,8 +216,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   end
 
   test "delete an organization" do
-    {:ok, organization} =
-      Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: "Glific"})
+    {:ok, organization} = Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: "Glific"})
 
     result = query_gql_by(:delete, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result

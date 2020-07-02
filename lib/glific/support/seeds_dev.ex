@@ -36,7 +36,6 @@ defmodule Glific.SeedsDev do
 
     contacts = [
       %{phone: "917834811231", name: "Default receiver", language_id: hindi.id},
-
       %{
         name: "Adelle Cavin",
         phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
