@@ -20,9 +20,9 @@ defmodule GlificWeb.Schema.UserTest do
     users = get_in(query_data, [:data, "users"])
     assert length(users) > 0
 
-    res = users |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "John Doe" end)
+    res = users |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Basic User 1" end)
 
-    assert res == "John Doe"
+    assert res == "NGO Basic User 1"
   end
 
   test "users returns list of users in asc order" do
@@ -34,7 +34,7 @@ defmodule GlificWeb.Schema.UserTest do
 
     [user | _] = users
 
-    assert get_in(user, ["name"]) == "Jane Doe"
+    assert get_in(user, ["name"]) == "Glific Admin"
   end
 
   test "users obeys limit and offset" do
@@ -60,13 +60,13 @@ defmodule GlificWeb.Schema.UserTest do
 
     assert get_in(query_data, [:data, "countUsers"]) == 0
 
-    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"name" => "John Doe"}})
+    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"name" => "NGO Basic User 1"}})
 
     assert get_in(query_data, [:data, "countUsers"]) == 1
   end
 
   test "user by id returns one user or nil" do
-    name = "John Doe"
+    name = "NGO Basic User 1"
     {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: name})
 
     result = query_gql_by(:by_id, variables: %{"id" => user.id})
@@ -83,7 +83,7 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "update a user and test possible scenarios and errors" do
-    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: "John Doe"})
+    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: "NGO Basic User 1"})
 
     name = "User Test Name New"
     roles = ["basic", "admin"]
@@ -114,7 +114,7 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "delete a user" do
-    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: "John Doe"})
+    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: "NGO Basic User 1"})
 
     result = query_gql_by(:delete, variables: %{"id" => user.id})
     assert {:ok, query_data} = result

@@ -3,8 +3,6 @@ defmodule GlificWeb.Schema.UserGroupTest do
   use Wormwood.GQLCase
 
   setup do
-    #     # default_provider = Glific.SeedsDev.seed_providers()
-    # Glific.SeedsDev.seed_organizations(default_provider)
     Glific.SeedsDev.seed_users()
     Glific.SeedsDev.seed_groups()
     :ok
@@ -16,7 +14,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
   test "create a user group and test possible scenarios and errors" do
     label = "Default Group"
     {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
-    name = "John Doe"
+    name = "NGO Basic User 1"
     {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: name})
 
     result =
@@ -46,7 +44,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
   test "delete a user group" do
     label = "Default Group"
     {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
-    name = "John Doe"
+    name = "NGO Basic User 1"
     {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: name})
 
     {:ok, query_data} =

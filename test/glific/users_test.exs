@@ -33,6 +33,18 @@ defmodule Glific.UsersTest do
       password: @password,
       password_confirmation: @password
     }
+    @valid_attrs_to_test_order_1 %{
+      name: "aaaa name",
+      phone: "some phone 4",
+      password: @password,
+      password_confirmation: @password
+    }
+    @valid_attrs_to_test_order_2 %{
+      name: "zzzz name",
+      phone: "some phone 5",
+      password: @password,
+      password_confirmation: @password
+    }
     @update_attrs %{
       name: "some updated name",
       phone: "some updated phone",
@@ -57,13 +69,18 @@ defmodule Glific.UsersTest do
     end
 
     test "list_users/0 returns all users" do
-      user = user_fixture()
-      assert Users.list_users() == [user |> Map.put(:password, nil)]
+      users_count = Repo.aggregate(User, :count)
+
+      _user = user_fixture()
+      assert length(Users.list_users()) == users_count + 1
     end
 
     test "count_users/0 returns count of all users" do
+      users_count = Repo.aggregate(User, :count)
+
       _ = user_fixture()
-      assert Users.count_users() == 1
+
+      assert Users.count_users() == users_count + 1
       assert Users.count_users(%{filter: %{name: "some name"}}) == 1
     end
 
@@ -107,46 +124,48 @@ defmodule Glific.UsersTest do
     end
 
     test "list_users/1 with multiple users" do
-      _c0 = user_fixture(@valid_attrs)
-      _c1 = user_fixture(@valid_attrs_1)
-      _c2 = user_fixture(@valid_attrs_2)
-      _c3 = user_fixture(@valid_attrs_3)
+      users_count = Repo.aggregate(User, :count)
 
-      assert length(Users.list_users()) == 4
+      user_fixture(@valid_attrs)
+      user_fixture(@valid_attrs_1)
+      user_fixture(@valid_attrs_2)
+      user_fixture(@valid_attrs_3)
+
+      assert length(Users.list_users()) == users_count + 4
     end
 
     test "list_users/1 with multiple users sorted" do
-      c0 = user_fixture(@valid_attrs)
-      c1 = user_fixture(@valid_attrs_1)
-      c2 = user_fixture(@valid_attrs_2)
-      c3 = user_fixture(@valid_attrs_3)
+      users_count = Repo.aggregate(User, :count)
 
-      c0_pr = c0 |> Map.put(:password, nil)
-      c1_pr = c1 |> Map.put(:password, nil)
-      c2_pr = c2 |> Map.put(:password, nil)
-      c3_pr = c3 |> Map.put(:password, nil)
+      u0 = user_fixture(@valid_attrs_to_test_order_1)
+      u1 = user_fixture(@valid_attrs_to_test_order_2)
 
-      cs = Users.list_users(%{opts: %{order: :asc}})
-      assert [c0_pr, c1_pr, c2_pr, c3_pr] == cs
+      u0_pr = u0 |> Map.put(:password, nil)
+      u1_pr = u1 |> Map.put(:password, nil)
 
-      cs = Users.list_users(%{opts: %{order: :desc}})
-      assert [c3_pr, c2_pr, c1_pr, c0_pr] == cs
+      assert length(Users.list_users()) == users_count + 2
+
+      [ordered_u0 | _] = Users.list_users(%{opts: %{order: :asc}})
+      assert u0_pr == ordered_u0
+
+      [ordered_u1 | _] = Users.list_users(%{opts: %{order: :desc}})
+      assert u1_pr == ordered_u1
     end
 
     test "list_users/1 with multiple users filtered" do
-      _c0 = user_fixture(@valid_attrs)
-      c1 = user_fixture(@valid_attrs_1)
-      _c2 = user_fixture(@valid_attrs_2)
-      c3 = user_fixture(@valid_attrs_3)
+      _u0 = user_fixture(@valid_attrs)
+      u1 = user_fixture(@valid_attrs_1)
+      _u2 = user_fixture(@valid_attrs_2)
+      u3 = user_fixture(@valid_attrs_3)
 
       cs = Users.list_users(%{opts: %{order: :asc}, filter: %{phone: "some phone 3"}})
-      assert cs == [c3 |> Map.put(:password, nil)]
+      assert cs == [u3 |> Map.put(:password, nil)]
 
       cs = Users.list_users(%{filter: %{phone: "some phone"}})
       assert length(cs) == 4
 
       cs = Users.list_users(%{opts: %{order: :asc}, filter: %{name: "some name 1"}})
-      assert cs == [c1 |> Map.put(:password, nil)]
+      assert cs == [u1 |> Map.put(:password, nil)]
     end
 
     test "ensure that creating users with same phone give an error" do
