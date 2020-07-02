@@ -13,9 +13,8 @@ defmodule Glific.MessagesTest do
   alias Glific.Fixtures
 
   setup do
-    lang = Glific.Seeds.seed_language()
-    default_provider = Glific.Seeds.seed_providers()
-    Glific.Seeds.seed_organizations(default_provider, lang)
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
     :ok
   end
 

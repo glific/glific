@@ -25,7 +25,7 @@ query languages {
         "isActive": false,
         "label": "Hindi",
         "labelLocale": "हिंदी",
-        "locale": "hi_IN"
+        "locale": "hi"
       },
       {
         "id": "2",

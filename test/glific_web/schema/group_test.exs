@@ -3,7 +3,7 @@ defmodule GlificWeb.Schema.GroupTest do
   use Wormwood.GQLCase
 
   setup do
-    Glific.Seeds.seed_groups()
+    Glific.SeedsDev.seed_groups()
     :ok
   end
 

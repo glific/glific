@@ -115,10 +115,9 @@ defmodule Glific.GroupsTest do
 
   describe "contacts_groups" do
     setup do
-      lang = Glific.Seeds.seed_language()
-      default_provider = Glific.Seeds.seed_providers()
-      Glific.Seeds.seed_organizations(default_provider, lang)
-      Glific.Seeds.seed_contacts()
+      default_provider = Glific.SeedsDev.seed_providers()
+      Glific.SeedsDev.seed_organizations(default_provider)
+      Glific.SeedsDev.seed_contacts()
       :ok
     end
 
@@ -165,7 +164,7 @@ defmodule Glific.GroupsTest do
 
   describe "users_groups" do
     setup do
-      Glific.Seeds.seed_users()
+      Glific.SeedsDev.seed_users()
       :ok
     end
 

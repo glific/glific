@@ -1,7 +1,7 @@
 defmodule Glific.TagsTest do
   use Glific.DataCase
 
-  alias Glific.{Settings, Tags, Tags.ContactTag, Tags.MessageTag, Tags.Tag}
+  alias Glific.{Settings.Language, Tags, Tags.ContactTag, Tags.MessageTag, Tags.Tag}
 
   alias Glific.Fixtures
 
@@ -9,15 +9,13 @@ defmodule Glific.TagsTest do
     # language id needs to be added dynamically for all the below actions
     @valid_attrs %{
       label: "some label",
-      description: "some description",
-      locale: "en_US",
+      description: "some fixed description",
       is_active: true,
       is_reserved: true
     }
     @valid_more_attrs %{
-      label: "hindi more label",
-      description: " more description",
-      locale: "hi_US",
+      label: "hindi some label",
+      description: "some fixed description",
       is_active: true,
       is_reserved: true
     }
@@ -35,30 +33,8 @@ defmodule Glific.TagsTest do
       language_id: nil
     }
 
-    @valid_language_attrs %{
-      label: "English (United States)",
-      label_locale: "English",
-      locale: "en_US",
-      is_active: true
-    }
-    @valid_hindi_attrs %{
-      label: "Hindi (United States)",
-      label_locale: "हिन्दी",
-      locale: "hi_US",
-      is_active: true
-    }
-
-    def language_fixture(attrs \\ %{}) do
-      {:ok, language} =
-        attrs
-        |> Enum.into(@valid_language_attrs)
-        |> Settings.language_upsert()
-
-      language
-    end
-
     def tag_fixture(attrs \\ %{}) do
-      language = language_fixture(attrs)
+      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
 
       {:ok, tag} =
         attrs
@@ -71,17 +47,24 @@ defmodule Glific.TagsTest do
 
     test "list_tags/0 returns all tags" do
       tag = tag_fixture()
-      assert Tags.list_tags() == [tag]
+
+      assert Enum.filter(
+               Tags.list_tags(),
+               fn t -> t.label == tag.label end
+             ) ==
+               [tag]
     end
 
     test "count_tags/0 returns count of all tags" do
+      tag_count = Repo.aggregate(Tag, :count)
+
       _ = tag_fixture()
-      assert Tags.count_tags() == 1
+      assert Tags.count_tags() == tag_count + 1
 
       _ = tag_fixture(@valid_more_attrs)
-      assert Tags.count_tags() == 2
+      assert Tags.count_tags() == tag_count + 2
 
-      assert Tags.count_tags(%{filter: %{label: "more label"}}) == 1
+      assert Tags.count_tags(%{filter: %{label: "hindi some label"}}) == 1
     end
 
     test "get_tag!/1 returns the tag with given id" do
@@ -90,10 +73,11 @@ defmodule Glific.TagsTest do
     end
 
     test "create_tag/1 with valid data creates a tag" do
-      language = language_fixture()
+      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
+
       attrs = Map.merge(@valid_attrs, %{language_id: language.id})
       assert {:ok, %Tag{} = tag} = Tags.create_tag(attrs)
-      assert tag.description == "some description"
+      assert tag.description == "some fixed description"
       assert tag.is_active == true
       assert tag.is_reserved == true
       assert tag.label == "some label"
@@ -106,7 +90,7 @@ defmodule Glific.TagsTest do
 
     test "update_tag/2 with valid data updates the tag" do
       tag = tag_fixture()
-      language = language_fixture(@valid_hindi_attrs)
+      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
       attrs = Map.merge(@update_attrs, %{language_id: language.id})
       assert {:ok, %Tag{} = tag} = Tags.update_tag(tag, attrs)
       assert tag.description == "some updated description"
@@ -134,49 +118,57 @@ defmodule Glific.TagsTest do
     end
 
     test "list_tags/1 with multiple items" do
+      tag_count = Repo.aggregate(Tag, :count)
+
       tag1 = tag_fixture()
       tag2 = tag_fixture(@valid_more_attrs)
       tags = Tags.list_tags()
-      assert length(tags) == 2
-      [h, t | _] = tags
+
+      assert length(tags) == tag_count + 2
+
+      [h, t] = Enum.filter(tags, fn t -> t.description == "some fixed description" end)
       assert (h == tag1 && t == tag2) || (h == tag2 && t == tag1)
     end
 
     test "list_tags/1 with multiple items sorted" do
+      tag_count = Repo.aggregate(Tag, :count)
+
       tag1 = tag_fixture()
       tag2 = tag_fixture(@valid_more_attrs)
       tags = Tags.list_tags(%{opts: %{order: :asc}})
-      assert length(tags) == 2
-      [h, t | _] = tags
+
+      assert length(tags) == tag_count + 2
+
+      [h, t] = Enum.filter(tags, fn t -> t.description == "some fixed description" end)
       assert h == tag2 && t == tag1
     end
 
     test "list_tags/1 with items filtered" do
       _tag1 = tag_fixture()
       tag2 = tag_fixture(@valid_more_attrs)
-      tags = Tags.list_tags(%{opts: %{order: :asc}, filter: %{label: "more label"}})
+      tags = Tags.list_tags(%{opts: %{order: :asc}, filter: %{label: "hindi some label"}})
       assert length(tags) == 1
       [h] = tags
       assert h == tag2
     end
 
     test "list_tags/1 with language filtered" do
-      _tag1 = tag_fixture()
+      tag1 = tag_fixture()
       tag2 = tag_fixture(@valid_more_attrs)
       tags = Tags.list_tags(%{opts: %{order: :asc}, filter: %{language: "hindi"}})
-      assert length(tags) == 1
-      [h] = tags
-      assert h == tag2
+      assert length(tags) == 2
+      [h | [t]] = tags
+      assert (h == tag2 && t == tag1) || (h == tag1 && t == tag2)
     end
 
     test "create_tags fails with constraint violation on language" do
-      language = language_fixture()
+      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
       attrs = Map.merge(@valid_attrs, %{language_id: language.id * 10})
       assert {:error, %Ecto.Changeset{}} = Tags.create_tag(attrs)
     end
 
     test "keywords can be added to tags" do
-      language = language_fixture()
+      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
       keywords = ["Hello", "hi", "hola", "namaste", "good morning"]
       attrs = Map.merge(@valid_attrs, %{language_id: language.id, keywords: keywords})
       assert {:ok, %Tag{} = tag} = Tags.create_tag(attrs)
@@ -194,11 +186,15 @@ defmodule Glific.TagsTest do
     test "keyword_map/0 returns a keyword map with ids" do
       tag = tag_fixture()
       tag2 = tag_fixture(%{label: "tag 2"})
-      Tags.update_tag(tag, %{keywords: ["Hello", "hi", "hola", "namaste"]})
+
+      Tags.update_tag(tag, %{
+        keywords: ["Hello foobar", "hi example", "hola test", "namaste saab"]
+      })
+
       Tags.update_tag(tag2, %{keywords: ["Tag2", "Tag21", "Tag22", "Tag23"]})
       keyword_map = Tags.keyword_map()
       assert is_map(keyword_map)
-      assert keyword_map["hello"] == tag.id
+      assert keyword_map["hello foobar"] == tag.id
       assert keyword_map["tag2"] == tag2.id
     end
 
@@ -213,9 +209,8 @@ defmodule Glific.TagsTest do
   end
 
   setup do
-    lang = Glific.Seeds.seed_language()
-    default_provider = Glific.Seeds.seed_providers()
-    Glific.Seeds.seed_organizations(default_provider, lang)
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
     :ok
   end
 

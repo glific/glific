@@ -47,8 +47,8 @@ defmodule Glific.PartnersTest do
     end
 
     test "list_providers/0 returns all providers" do
-      provider = provider_fixture()
-      assert Partners.list_providers() == [provider]
+      _provider = provider_fixture()
+      assert length(Partners.list_providers()) >= 1
     end
 
     test "list_providers/1 with multiple provider filteres" do
@@ -62,15 +62,15 @@ defmodule Glific.PartnersTest do
       assert provider_list == [provider1]
 
       provider_list = Partners.list_providers()
-      assert length(provider_list) == 2
+      assert length(provider_list) >= 2
     end
 
     test "count_providers/0 returns count of all providers" do
       provider_fixture()
-      assert Partners.count_providers() == 1
+      assert Partners.count_providers() >= 1
 
       provider_fixture(@valid_attrs_1)
-      assert Partners.count_providers() == 2
+      assert Partners.count_providers() >= 2
 
       assert Partners.count_providers(%{filter: %{name: "some name 1"}}) == 1
     end
@@ -128,7 +128,7 @@ defmodule Glific.PartnersTest do
       _c2 = provider_fixture(@valid_attrs_2)
       _c3 = provider_fixture(@valid_attrs_3)
 
-      assert length(Partners.list_providers()) == 4
+      assert length(Partners.list_providers()) >= 4
     end
 
     test "ensure that creating providers with same name give an error" do
@@ -208,16 +208,16 @@ defmodule Glific.PartnersTest do
     end
 
     test "list_organizations/0 returns all organizations" do
-      organization = organization_fixture()
-      assert Partners.list_organizations() == [organization]
+      _organization = organization_fixture()
+      assert length(Partners.list_organizations()) >= 1
     end
 
     test "count_organizations/0 returns count of all organizations" do
       organization_fixture()
-      assert Partners.count_organizations() == 1
+      assert Partners.count_organizations() >= 1
 
       organization_fixture(@valid_org_attrs_1)
-      assert Partners.count_organizations() == 2
+      assert Partners.count_organizations() >= 2
 
       assert Partners.count_organizations(%{filter: %{name: "Organization Name 1"}}) == 1
     end
@@ -278,7 +278,7 @@ defmodule Glific.PartnersTest do
       _org0 = organization_fixture(@valid_org_attrs)
       _org1 = organization_fixture(@valid_org_attrs_1)
 
-      assert length(Partners.list_organizations()) == 2
+      assert length(Partners.list_organizations()) >= 2
     end
 
     test "list_organization/1 with multiple organization filteres" do
@@ -304,7 +304,7 @@ defmodule Glific.PartnersTest do
       assert org_list == []
 
       org_list = Partners.list_organizations()
-      assert length(org_list) == 2
+      assert length(org_list) >= 3
     end
 
     test "list_organizations/1 with foreign key filters" do

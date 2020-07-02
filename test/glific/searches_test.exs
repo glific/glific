@@ -21,7 +21,7 @@ defmodule Glific.SearchesTest do
 
     test "list_saved_searches/0 returns all searches" do
       saved_search = saved_search_fixture()
-      assert Searches.list_saved_searches() == [saved_search]
+      assert saved_search in Searches.list_saved_searches()
     end
 
     test "get_saved_search!/1 returns the search with given id" do

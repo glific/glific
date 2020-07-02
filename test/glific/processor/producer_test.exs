@@ -27,13 +27,12 @@ defmodule Glific.Processor.ProducerTest do
   }
 
   setup do
-    lang = Glific.Seeds.seed_language()
-    default_provider = Glific.Seeds.seed_providers()
-    Glific.Seeds.seed_organizations(default_provider, lang)
-    Glific.Seeds.seed_tag(lang)
-    Glific.Seeds.seed_contacts()
-    Glific.Seeds.seed_messages()
-    Glific.Seeds.seed_session_templates(lang)
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
+    Glific.SeedsDev.seed_tag()
+    Glific.SeedsDev.seed_contacts()
+    Glific.SeedsDev.seed_messages()
+    Glific.SeedsDev.seed_session_templates()
     :ok
   end
 
