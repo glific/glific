@@ -8,15 +8,16 @@ defmodule Glific.SettingsTest do
 
   describe "languages" do
     @valid_attrs %{
-      label: "English (United States)",
-      label_locale: "English",
-      locale: "en_US",
+      label: "Arabic - Algeria",
+      label_locale: "Arabic-Algeria",
+      locale: "ar-DZ",
       is_active: true
     }
 
     @update_attrs %{
       description: "we now have a description",
-      locale: "hi",
+      locale: "fr-CA",
+      label: "French-Canada",
       is_active: false
     }
     @invalid_attrs %{is_active: nil, label: 123, locale: nil}
@@ -33,17 +34,14 @@ defmodule Glific.SettingsTest do
 
     test "list_languages/0 returns all languages" do
       language = language_fixture()
-      assert Settings.list_languages() == [language]
-
-      assert Settings.list_languages(%{label: "English", locale: "en"}) == [language]
+      assert language in Settings.list_languages()
       assert Settings.list_languages(%{label: "English", locale: "hi"}) == []
     end
 
     test "count_languages/0 returns count of all languages" do
+      language_count = Repo.aggregate(Language, :count)
       _ = language_fixture()
-      assert Settings.count_languages() == 1
-
-      assert Settings.count_languages(%{filter: %{label: "English (United States)"}}) == 1
+      assert Settings.count_languages() == language_count + 1
     end
 
     test "get_language!/1 returns the language with given id" do
@@ -55,8 +53,8 @@ defmodule Glific.SettingsTest do
       assert {:ok, %Language{} = language} = Settings.create_language(@valid_attrs)
       assert language.description == nil
       assert language.is_active == true
-      assert language.label == "English (United States)"
-      assert language.locale == "en_US"
+      assert language.label == @valid_attrs.label
+      assert language.locale == @valid_attrs.locale
     end
 
     test "create_language/1 with invalid data returns error changeset" do
@@ -70,9 +68,9 @@ defmodule Glific.SettingsTest do
     test "update_language/2 with valid data updates the language" do
       language = language_fixture()
       assert {:ok, %Language{} = language} = Settings.update_language(language, @update_attrs)
-      assert language.description == "we now have a description"
-      assert language.is_active == false
-      assert language.locale == "hi"
+      assert language.description == @update_attrs.description
+      assert language.is_active == @update_attrs.is_active
+      assert language.locale == @update_attrs.locale
     end
 
     test "update_language/2 with invalid data returns error changeset" do
