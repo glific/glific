@@ -265,7 +265,7 @@ defmodule Glific.SeedsDev do
   end
 
   @doc false
-  @spec seed_users :: {User.t()}
+  @spec seed_users :: Users.User.t()
   def seed_users do
     password = "secret1234"
 

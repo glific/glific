@@ -20,7 +20,8 @@ defmodule GlificWeb.Schema.UserTest do
     users = get_in(query_data, [:data, "users"])
     assert length(users) > 0
 
-    res = users |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Basic User 1" end)
+    res =
+      users |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Basic User 1" end)
 
     assert res == "NGO Basic User 1"
   end
@@ -60,7 +61,8 @@ defmodule GlificWeb.Schema.UserTest do
 
     assert get_in(query_data, [:data, "countUsers"]) == 0
 
-    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"name" => "NGO Basic User 1"}})
+    {:ok, query_data} =
+      query_gql_by(:count, variables: %{"filter" => %{"name" => "NGO Basic User 1"}})
 
     assert get_in(query_data, [:data, "countUsers"]) == 1
   end
