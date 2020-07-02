@@ -344,6 +344,45 @@ Type | Description
 --------- | ---- | ------- | -----------
 <a href="#contactresult">ContactResult</a> | An error object or empty
 
+## Get contact's location
+
+```graphql
+query contactLocation($id: ID!) {
+  contactLocation(id: $id) {
+    latitude
+    longitude
+  }
+}
+
+{
+  "id": "2"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "contactLocation": {
+      "latitude": -30.879910476061603,
+      "longitude": 156.21478312951263
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+id | <a href="#id">ID</a>!
+
+### Return Parameters
+Type | Description
+--------- | ---- | ------- | -----------
+<a href="#location">Location</a> | A location object
+
 ## Contact Objects
 
 ### Contact
@@ -361,6 +400,11 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>id</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>location</strong></td>
+<td valign="top"><a href="#location">Location</a></td>
 <td></td>
 </tr>
 <tr>
@@ -396,6 +440,31 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>tags</strong></td>
 <td valign="top">[<a href="#tag">Tag</a>]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### Location
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>latitude</strong></td>
+<td valign="top"><a href="#float">Float</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>longitude</strong></td>
+<td valign="top"><a href="#float">Float</a></td>
 <td></td>
 </tr>
 </tbody>
