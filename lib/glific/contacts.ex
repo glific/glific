@@ -240,10 +240,11 @@ defmodule Glific.Contacts do
   """
   @spec contact_location(Contact.t()) :: Location.t()
   def contact_location(contact) do
-    location = Location
-    |> where([l], l.contact_id == ^contact.id)
-    |> Ecto.Query.last
-    |> Repo.one()
+    location =
+      Location
+      |> where([l], l.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
 
     {:ok, location}
   end

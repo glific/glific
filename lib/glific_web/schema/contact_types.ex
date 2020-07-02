@@ -25,6 +25,12 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :optin_time, :datetime
     field :optout_time, :datetime
 
+    field :location, :location do
+      resolve(fn %{id: id}, _, _ ->
+        Resolvers.Contacts.contact_location(nil, %{id: id}, nil)
+      end)
+    end
+
     field :tags, list_of(:tag) do
       resolve(dataloader(Repo))
     end
