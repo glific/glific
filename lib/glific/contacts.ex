@@ -236,6 +236,19 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Get contact's current location
+  """
+  @spec contact_location(Contact.t()) :: Location.t()
+  def contact_location(contact) do
+    location = Location
+    |> where([l], l.contact_id == ^contact.id)
+    |> Ecto.Query.last
+    |> Repo.one()
+
+    {:ok, location}
+  end
+
+  @doc """
   Creates a location.
 
   ## Examples
