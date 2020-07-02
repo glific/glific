@@ -7,7 +7,6 @@ defmodule Glific.SeedsDev do
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
-    Partners.Organization,
     Partners.Provider,
     Repo,
     Settings,
@@ -94,36 +93,13 @@ defmodule Glific.SeedsDev do
 
   @doc false
   @spec seed_organizations(Provider.t()) :: nil
-  def seed_organizations(default_provider) do
-    [hi_in | _] = Settings.list_languages(%{label: "hindi"})
-    [en_us | _] = Settings.list_languages(%{label: "english"})
-
-    # Sender Contact for organization
-    sender =
-      Repo.insert!(%Contact{
-        phone: "917834811114",
-        name: "Default Sender",
-        language_id: en_us.id,
-        last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
-      })
-
-    Repo.insert!(%Organization{
-      name: "Default Organization",
-      display_name: "Default Organization",
-      contact_name: "Test",
-      contact_id: sender.id,
-      email: "test@glific.org",
-      provider_id: default_provider.id,
-      provider_key: "random",
-      provider_number: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-      default_language_id: hi_in.id
-    })
+  def seed_organizations(_default_provider) do
   end
 
   @doc false
   @spec seed_messages :: nil
   def seed_messages do
-    {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default Sender"})
+    {:ok, sender} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
     Repo.insert!(%Message{

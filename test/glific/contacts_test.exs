@@ -118,8 +118,7 @@ defmodule Glific.ContactsTest do
       assert contact.provider_status == :invalid
 
       # Contact should be created with organization's default language
-      {:ok, organization} =
-        Repo.fetch_by(Glific.Partners.Organization, %{name: "Default Organization"})
+      {:ok, organization} = Repo.fetch_by(Glific.Partners.Organization, %{name: "Glific"})
 
       assert contact.language_id == organization.default_language_id
     end

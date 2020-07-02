@@ -96,9 +96,10 @@ defmodule Glific.Communications.Message do
   """
   @spec receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
   def receive_message(message_params, type \\ :text) do
-    {:ok, contact} =
-      Contacts.upsert(message_params.sender)
-      |> Contacts.update_contact(%{last_message_at: DateTime.utc_now()})
+    contact =
+      message_params.sender
+      |> Map.merge(%{last_message_at: DateTime.utc_now()})
+      |> Contacts.upsert()
 
     message_params =
       message_params

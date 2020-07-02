@@ -24,10 +24,9 @@ defmodule GlificWeb.Schema.ContactTest do
     contacts = get_in(query_data, [:data, "contacts"])
     assert length(contacts) > 0
 
-    res =
-      contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "Default Sender" end)
+    res = contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "Glific Admin" end)
 
-    assert res == "Default Sender"
+    assert res == "Glific Admin"
   end
 
   test "contacts field returns list of contacts in asc order" do
@@ -72,13 +71,13 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(query_data, [:data, "countContacts"]) == 0
 
     {:ok, query_data} =
-      query_gql_by(:count, variables: %{"filter" => %{"name" => "Default Sender"}})
+      query_gql_by(:count, variables: %{"filter" => %{"name" => "Glific Admin"}})
 
     assert get_in(query_data, [:data, "countContacts"]) == 1
   end
 
   test "contact id returns one contact or nil" do
-    name = "Default Sender"
+    name = "Glific Admin"
     {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
 
     result = query_gql_by(:by_id, variables: %{"id" => contact.id})
@@ -126,7 +125,7 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "update a contact and test possible scenarios and errors" do
-    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default Sender"})
+    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Glific Admin"})
 
     name = "Contact Test Name New"
     phone = "1-415-555-1212 New"

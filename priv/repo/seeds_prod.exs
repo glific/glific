@@ -125,7 +125,7 @@ provider = Repo.insert!(%Provider{
 # Sender Contact for organization
 sender =
   Repo.insert!(%Contact{
-    phone: "917834899994",
+    phone: "917834811114",
     name: "Glific Admin",
     language_id: en_us.id,
     last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
@@ -146,7 +146,7 @@ Repo.insert!(%Organization{
 password = "secret1234"
 Users.create_user(%{
       name: "Glific Admin",
-      phone: "917834899994",
+      phone: "917834811114",
       password: password,
       confirm_password: password,
       roles: ["admin"]
