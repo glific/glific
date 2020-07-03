@@ -445,21 +445,30 @@ defmodule Glific.Messages do
   # given all the messages related to multiple contacts, group them
   # by contact id into conversation objects
   @spec make_conversations([Message.t()]) :: [Conversation.t()]
-  defp make_conversations(messages) do
-    contact_messages = Enum.reduce(messages, %{}, fn x, acc -> add(x, acc) end)
-    {conversations, _ } = Enum.reduce(messages, {[], %{}},
+    defp make_conversations(messages) do
+    # now format the results,
+    {contact_messages, _, contact_order} =
+      Enum.reduce(
+        messages,
+        {%{}, %{}, []},
         fn m, acc ->
-          if Map.get(elem(acc, 1), m.contact_id, false) do
-            acc
+          {conversations, processed, contact_order} = acc
+          conversations = add(m, conversations)
+          if Map.has_key?(processed, m.contact_id) do
+            {conversations, processed, contact_order}
           else
-            {
-              [Conversation.new(m.contact, Enum.reverse(contact_messages[m.contact])) | elem(acc, 0)],
-              Map.put(elem(acc, 1), m.contact_id, true)
-            }
+            {conversations, Map.put(processed, m.contact_id, true), [m.contact | contact_order]}
           end
         end
+      )
+
+    Enum.reduce(
+      contact_order,
+      [],
+      fn contact, acc ->
+        [Conversation.new(contact, Enum.reverse(contact_messages[contact])) | acc]
+      end
     )
-    Enum.reverse(conversations)
   end
 
   # for all input contact ids that do not have messages attached to them
