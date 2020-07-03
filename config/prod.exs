@@ -17,7 +17,7 @@ config :glific, GlificWeb.Endpoint,
     keyfile: System.get_env("WORK_IN_PROGRESS_SSL_KEY"),
     certfile: System.get_env("WORK_IN_PROGRESS_SSL_PATH"),
     transport_options: [socket_opts: [:inet6]]
-  ],
+  ]
   # cache_static_manifest: "priv/static/cache_manifest.json"
 
 # Do not print debug messages in production
