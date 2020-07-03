@@ -24,8 +24,8 @@ defmodule Glific.Flows.Action do
           text: String.t() | nil,
           type: FlowType,
           quick_replies: [String.t()],
-          flow_uuid: Ecto.UUID.t() | nil,
-          flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          enter_flow_uuid: Ecto.UUID.t() | nil,
+          enter_flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | Ecto.Association.NotLoaded.t() | nil
         }
@@ -36,7 +36,11 @@ defmodule Glific.Flows.Action do
     field :quick_replies, {:array, :string}, default: []
 
     belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: true
-    belongs_to :flow, Flow, foreign_key: :flow_uuid, references: :uuid, primary_key: true
+
+    belongs_to :enter_flow, Flow,
+      foreign_key: :enter_flow_uuid,
+      references: :uuid,
+      primary_key: true
   end
 
   @doc """
