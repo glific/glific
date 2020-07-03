@@ -60,7 +60,7 @@ defmodule Glific.Conversations do
           m.contact_id in ^ids and
             m.message_number >= ^message_offset and
             m.message_number < ^(message_limit + message_offset),
-        order_by: [m.message_number],
+        order_by: [{:desc, :updated_at}, {:desc, :message_number}],
         select: m.id
 
     Repo.all(query)
