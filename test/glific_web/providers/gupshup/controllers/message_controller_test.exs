@@ -178,4 +178,37 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
                get_in(setup_config.message_params, ["payload", "sender", "phone"])
     end
   end
+
+  describe "location" do
+    setup do
+      location_payload = %{
+        "longitude" => Faker.Address.longitude(),
+        "latitude" => Faker.Address.latitude()
+      }
+
+      message_params =
+        @message_request_params
+        |> put_in(["payload", "type"], "location")
+        |> put_in(["payload", "id"], Faker.String.base64(36))
+        |> put_in(["payload", "payload"], location_payload)
+
+      %{message_params: message_params, location_payload: location_payload}
+    end
+
+    test "Incoming location message and contact's location should be stored in the database",
+         setup_config = %{conn: conn} do
+      message_params = setup_config.message_params
+
+      conn = post(conn, "/gupshup", message_params)
+      json_response(conn, 200)
+      provider_message_id = get_in(message_params, ["payload", "id"])
+      {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      message = Glific.Repo.preload(message, [:media, :sender])
+
+      {:ok, location} = Glific.Repo.fetch_by(Glific.Contacts.Location, %{message_id: message.id})
+
+      # test location fields
+      assert location.longitude == setup_config.location_payload["longitude"]
+    end
+  end
 end

@@ -16,6 +16,7 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/contacts/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/contacts/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contacts/delete.gql")
+  load_gql(:contact_location, GlificWeb.Schema, "assets/gql/contacts/contact_location.gql")
 
   test "contacts field returns list of contacts" do
     result = query_gql_by(:list)
@@ -174,5 +175,25 @@ defmodule GlificWeb.Schema.ContactTest do
 
     message = get_in(query_data, [:data, "deleteContact", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "get contact location" do
+    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Chrissy Cron"})
+
+    {:ok, message} =
+      Glific.Repo.fetch_by(Glific.Messages.Message, %{body: "Default message body"})
+
+    {:ok, location} =
+      Glific.Contacts.create_location(%{
+        message_id: message.id,
+        contact_id: contact.id,
+        longitude: Faker.Address.longitude(),
+        latitude: Faker.Address.latitude()
+      })
+
+    # get contact location
+    result = query_gql_by(:contact_location, variables: %{"id" => contact.id})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "contactLocation", "longitude"]) == location.longitude
   end
 end

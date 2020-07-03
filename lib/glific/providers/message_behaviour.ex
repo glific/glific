@@ -21,4 +21,6 @@ defmodule Glific.Providers.MessageBehaviour do
   @callback receive_text(payload :: map()) :: map()
 
   @callback receive_media(payload :: map()) :: map()
+
+  @callback receive_location(payload :: map()) :: map()
 end

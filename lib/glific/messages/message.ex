@@ -96,10 +96,7 @@ defmodule Glific.Messages.Message do
     media_id = changeset.changes[:media_id] || message.media_id
 
     cond do
-      type == nil ->
-        changeset
-
-      type == :text ->
+      type in [nil, :text, :location] ->
         changeset
 
       media_id == nil ->

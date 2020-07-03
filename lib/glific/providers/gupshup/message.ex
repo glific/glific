@@ -114,6 +114,24 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
+  @impl Glific.Providers.MessageBehaviour
+  @spec receive_location(map()) :: map()
+  def receive_location(params) do
+    payload = params["payload"]
+    message_payload = payload["payload"]
+
+    %{
+      provider_message_id: payload["id"],
+      longitude: message_payload["longitude"],
+      latitude: message_payload["latitude"],
+      sender: %{
+        phone: payload["sender"]["phone"],
+        name: payload["sender"]["name"]
+      }
+    }
+  end
+
+  @doc false
   @spec format_sender(map()) :: map()
   defp format_sender(sender) do
     %{"source" => sender.phone, "src.name" => sender.name}
