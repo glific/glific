@@ -67,17 +67,40 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   end
 
   describe "send_otp/2" do
-    @valid_params %{
-      "user" => %{
-        "phone" => "919820198765"
-      }
-    }
+    setup do
+      default_provider = Glific.SeedsDev.seed_providers()
+      Glific.SeedsDev.seed_organizations(default_provider)
+      Glific.SeedsDev.seed_contacts()
+      :ok
+    end
 
     test "send otp", %{conn: conn} do
-      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, @valid_params))
+      {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+
+      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(receiver.phone)
+
+      valid_params = %{
+        "user" => %{
+          "phone" => receiver.phone
+        }
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
       assert json = json_response(conn, 200)
-      assert get_in(json, ["data", "phone"]) == @valid_params["user"]["phone"]
+      assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
       assert String.length(get_in(json, ["data", "otp"])) == 6
+    end
+
+    test "send otp to invalid contact", %{conn: conn} do
+      invalid_params = %{
+        "user" => %{
+          "phone" => "invalid contact"
+        }
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
+      assert json = json_response(conn, 400)
+      assert get_in(json, ["error", "message"]) == "Phone number is incorrect"
     end
   end
 end
