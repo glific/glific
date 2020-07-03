@@ -177,7 +177,7 @@ defmodule Glific.Contacts do
     language = Map.put(%{}, :language_id, attrs[:language_id] || organization.default_language_id)
 
     contact =
-      Repo.insert(
+      Repo.insert!(
         change_contact(%Contact{}, Map.merge(language, attrs)),
         on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
         conflict_target: :phone
