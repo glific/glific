@@ -6,7 +6,7 @@ defmodule Glific.Tags do
   alias Glific.Repo
   alias Glific.Tags.{ContactTag, MessageTag, Tag}
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   @doc """
   Returns the list of tags.
@@ -297,6 +297,26 @@ defmodule Glific.Tags do
   @spec delete_message_tag(MessageTag.t()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def delete_message_tag(%MessageTag{} = message_tag) do
     Repo.delete(message_tag)
+  end
+
+  @doc """
+  In Join tables we rarely use the table id. We always know the object ids
+  and hence more convenient to delete an entry via its object ids.
+  We will generalize this function and move it to Repo.ex when we get a better
+  handle on how to do so :)
+  """
+  @spec delete_message_tag_by_ids(integer, integer) :: {integer(), nil | [term()]}
+  def delete_message_tag_by_ids(message_id, tag_id) when is_integer(tag_id) do
+    %MessageTag{}
+    |> where([m], m.message_id == ^message_id and m.tag_id == ^tag_id)
+    |> Repo.delete_all()
+  end
+
+  @spec delete_message_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_message_tag_by_ids(message_id, tag_ids) when is_list(tag_ids) do
+    MessageTag
+    |> where([m], m.message_id == ^message_id and m.tag_id in ^tag_ids)
+    |> Repo.delete_all()
   end
 
   @doc """
