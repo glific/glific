@@ -151,4 +151,16 @@ defmodule GlificWeb.Resolvers.Messages do
       {:ok, message_media}
     end
   end
+
+  ## Subcriptions
+
+  @doc false
+  @spec publish_sent_message(map(), any(), any()) ::
+          {:ok, Message.t()} | {:error, any}
+  def publish_sent_message(args, _, _) do
+    case args do
+      %{message: message} -> {:ok, message}
+      message -> {:ok, message}
+    end
+  end
 end
