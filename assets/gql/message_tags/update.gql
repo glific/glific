@@ -1,0 +1,16 @@
+mutation updateMessageTags($input:MessageTagsInput!) {
+  updateMessageTags(input: $input) {
+    messageTags {
+      id
+      message {
+        id
+        body
+      }
+      tag {
+        id
+        label
+      }
+    }
+    numberDeleted
+  }
+}
