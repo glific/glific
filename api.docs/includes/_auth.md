@@ -8,11 +8,25 @@ include roles and permissions. User management will be done via GraphQL
 The main API endpoints are listed below
 
 ## Create a new user
+
 ```shell
 curl -X POST -d \
   "user[name]='Test User'&user[phone]=911234554321&user[password]=secret1234 \
   &user[password_confirmation]=secret1234" \
   http://YOUR_HOSTNAME_AND_PORT/api/v1/registration
+```
+
+```javascript
+If you are using axios or other libraries, send the following in the BODY of a POST request
+
+{
+    "user": {
+        "name": "Test User",
+        "phone": "911234554321",
+        "password": "secret1234",
+        "password_confirmation": "secret1234"
+    }
+}
 ```
 
 > The above query returns JSON structured like this:
@@ -28,14 +42,25 @@ that looks like the following:
 
 
 ## Send an OTP request to verify a phone number
-(this needs to be protected by some form of access control)
+
+The OTP will be sent via WhatsApp and the NGO's Glific Instance. The API will only send
+a message to contacts that have opted into the system. This also prevents the API
+from being abused.
 
 ```shell
 curl -X POST -d \
   "user[phone]=911234554321" \
   http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send_otp
 ```
+```javascript
+If you are using axios or other libraries, send the following in the BODY of a POST request
 
+{
+    "user": {
+        "phone": "911234554321"
+    }
+}
+```
 > The above query returns JSON structured like this:
 
 ```json
@@ -50,7 +75,16 @@ curl -X POST -d \
   "user[phone]=911234554321&user[password]=secret1234" \
   http://YOUR_HOSTNAME_AND_PORT/api/v1/session
 ```
+```javascript
+If you are using axios or other libraries, send the following in the BODY of a POST request
 
+{
+    "user": {
+        "phone": "911234554321",
+        "password": "secret1234"
+    }
+}
+```
 > The above query returns JSON structured like this:
 
 ```json

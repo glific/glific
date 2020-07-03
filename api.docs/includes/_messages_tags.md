@@ -68,11 +68,11 @@ Type | Description
 | ---- | -----------
 <a href="#messagetagresult">MessageTagResult</a> | The created message tag object
 
-## Create a Message with multiple Tags
+## Update a Message with tags to be added and tags to be deleted
 
 ```graphql
-mutation createMessageTags($input: MessageTagsInput!) {
-  createMessageTags(input: $input) {
+mutation updateMessageTags($input: MessageTagsInput!) {
+  updateMessageTags(input: $input) {
     messageTags {
        id,
       message {
@@ -94,7 +94,8 @@ mutation createMessageTags($input: MessageTagsInput!) {
 {
   "input": {
     "messageId": 2,
-    "tagsId": [3, 4, 5, 6]
+    "addTagIds": [3, 4, 5, 6]
+    "deleteTagIds": [7, 8]
   }
 }
 ```
@@ -104,7 +105,7 @@ mutation createMessageTags($input: MessageTagsInput!) {
 ```json
 {
   "data": {
-    "createMessageTags": {
+    "updateMessageTags": {
       "errors": null,
       "messageTags": {
          {
@@ -127,7 +128,8 @@ mutation createMessageTags($input: MessageTagsInput!) {
           }
         }
 
-      }
+      },
+      numberDeleted: 2,
     }
   }
 }
@@ -142,7 +144,8 @@ input | <a href="#messagetagsinput">MessageTagsInput</a> | required ||
 ### Return Parameters
 Type | Description
 | ---- | -----------
-<a href="#message_tags">messageTags</a> | The list of tag messages
+<a href="#message_tags">messageTags</a> | The list of tag messages added
+integer | The number of messages deleted
 
 
 ## Delete a Message Tag

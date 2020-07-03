@@ -57,4 +57,16 @@ defmodule GlificWeb.Resolvers.Contacts do
       {:ok, contact}
     end
   end
+
+  @doc """
+  Get current location of the contact
+  """
+  @spec contact_location(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def contact_location(_, %{id: id}, _) do
+    with {:ok, contact} <- Repo.fetch(Contact, id),
+         {:ok, location} <- Contacts.contact_location(contact) do
+      {:ok, location}
+    end
+  end
 end

@@ -16,7 +16,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
   test "create a contact group and test possible scenarios and errors" do
     label = "Default Group"
     {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
-    name = "Default Sender"
+    name = "Glific Admin"
     {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
 
     result =
@@ -46,7 +46,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
   test "delete a contact group" do
     label = "Default Group"
     {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
-    name = "Default Sender"
+    name = "Glific Admin"
     {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
 
     {:ok, query_data} =

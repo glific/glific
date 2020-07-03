@@ -152,14 +152,7 @@ defmodule GlificWeb.Schema.MessageTypes do
         {:ok, topic: :glific}
       end)
 
-      trigger(
-        [:send_message, :create_and_send_message],
-        :glific
-      )
-
-      resolve(fn %{message: message}, _, _ ->
-        {:ok, message}
-      end)
+      resolve(&Resolvers.Messages.publish_sent_message/3)
     end
   end
 end

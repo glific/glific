@@ -423,17 +423,21 @@ defmodule Glific.Messages do
   @spec list_conversations(map()) :: [Conversation.t()]
   def list_conversations(args) do
     args
-    |> Enum.reduce(Message, fn
-      {:ids, ids}, query ->
-        query |> where([m], m.id in ^ids)
+    |> Enum.reduce(
+      Message,
+      fn
+        {:ids, ids}, query ->
+          query
+          |> where([m], m.id in ^ids)
+          |> order_by([m], desc: m.updated_at)
 
-      {:filter, filter}, query ->
-        query |> conversations_with(filter)
+        {:filter, filter}, query ->
+          query |> conversations_with(filter)
 
-      _, query ->
-        query
-    end)
-    |> order_by([m], asc: m.updated_at)
+        _, query ->
+          query
+      end
+    )
     |> Repo.all()
     |> Repo.preload([:contact, :tags])
     |> make_conversations()
@@ -443,12 +447,36 @@ defmodule Glific.Messages do
   # given all the messages related to multiple contacts, group them
   # by contact id into conversation objects
   @spec make_conversations([Message.t()]) :: [Conversation.t()]
-  defp make_conversations(results) do
+  defp make_conversations(messages) do
     # now format the results,
+    {contact_messages, _processed_contacts, contact_order} =
+      Enum.reduce(
+        messages,
+        {%{}, %{}, []},
+        fn m, acc ->
+          {conversations, processed_contacts, contact_order} = acc
+          conversations = add(m, conversations)
+
+          # We need to do this to maintain the sort order when returning
+          # the results. The first time we see a contact, we add them to
+          # the contact_order and processed map (using a map for faster lookups)
+          if Map.has_key?(processed_contacts, m.contact_id) do
+            {conversations, processed_contacts, contact_order}
+          else
+            {conversations, Map.put(processed_contacts, m.contact_id, true),
+             [m.contact | contact_order]}
+          end
+        end
+      )
+
+    # Since we are doing two reduces, we end up with the right order due to the way lists are
+    # constructed efficiently (add to front)
     Enum.reduce(
-      Enum.reduce(results, %{}, fn x, acc -> add(x, acc) end),
+      contact_order,
       [],
-      fn {contact, messages}, acc -> [Conversation.new(contact, messages) | acc] end
+      fn contact, acc ->
+        [Conversation.new(contact, Enum.reverse(contact_messages[contact])) | acc]
+      end
     )
   end
 

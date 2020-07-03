@@ -60,4 +60,14 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
 
     handler(conn, params, "media handler")
   end
+
+  @doc false
+  # Handle Gupshup location message and convert them into Glific Message struct
+  @spec location(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def location(conn, params) do
+    Gupshup.Message.receive_location(params)
+    |> Communications.Message.receive_message(:location)
+
+    handler(conn, params, "location handler")
+  end
 end

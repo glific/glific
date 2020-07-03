@@ -97,8 +97,9 @@ defmodule Glific.Communications.Message do
   @spec receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
   def receive_message(message_params, type \\ :text) do
     {:ok, contact} =
-      Contacts.upsert(message_params.sender)
-      |> Contacts.update_contact(%{last_message_at: DateTime.utc_now()})
+      message_params.sender
+      |> Map.put(:last_message_at, DateTime.utc_now())
+      |> Contacts.upsert()
 
     message_params =
       message_params
@@ -115,6 +116,7 @@ defmodule Glific.Communications.Message do
       type in [:video, :audio, :image, :document] -> receive_media(message_params)
       type == :text -> receive_text(message_params)
       # For location and address messages, will add that when there will be a use case
+      type == :location -> receive_location(message_params)
       true -> {:error, "Message type not supported"}
     end
   end
@@ -138,6 +140,22 @@ defmodule Glific.Communications.Message do
     message_params
     |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
+    |> Communications.publish_data(:received_message)
+
+    {:ok}
+  end
+
+  # handler for receiving the location message
+  @spec receive_location(map()) :: {:ok}
+  defp receive_location(message_params) do
+    {:ok, message} = Messages.create_message(message_params)
+
+    message_params
+    |> Map.put(:contact_id, message_params.sender_id)
+    |> Map.put(:message_id, message.id)
+    |> Contacts.create_location()
+
+    message
     |> Communications.publish_data(:received_message)
 
     {:ok}

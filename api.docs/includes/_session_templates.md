@@ -3,8 +3,8 @@
 ## Get All Session Templates
 
 ```graphql
-query sessionTemplates($filter: SessionTemplateFilter, $order: SortOrder) {
-  sessionTemplates(filter: $filter, order:$order) {
+query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
+  sessionTemplates(filter: $filter, opts:$opts) {
     id
     body
     label
@@ -31,6 +31,9 @@ query sessionTemplates($filter: SessionTemplateFilter, $order: SortOrder) {
 {
   "filter": {
   	"body": "template"
+  },
+  "opts": {
+    "order": "ASC"
   }
 }
 ```
@@ -87,7 +90,7 @@ This returns all the session templates filtered by the input <a href="#sessionte
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 filter | <a href="#sessiontemplatefilter">SessionTemplateFilter</a> | nil | filter the list
-order | <a href="#sortorder">SortOrder</a> | ASC | ASC / DESC
+opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
 
 ### Return Parameters
 Type | Description

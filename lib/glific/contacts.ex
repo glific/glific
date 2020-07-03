@@ -6,6 +6,7 @@ defmodule Glific.Contacts do
 
   alias Glific.{
     Contacts.Contact,
+    Contacts.Location,
     Repo
   }
 
@@ -169,17 +170,21 @@ defmodule Glific.Contacts do
   Gets or Creates a Contact based on the unique indexes in the table. If there is a match
   it returns the existing contact, else it creates a new one
   """
-  @spec upsert(map()) :: Contact.t()
+  @spec upsert(map()) :: {:ok, Contact.t()}
   def upsert(attrs) do
     # Get the organization
     organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
-    attrs = Map.put(attrs, :language_id, attrs[:language_id] || organization.default_language_id)
+    # we keep this separate to avoid overwriting the language if already set by a contact
+    language = Map.put(%{}, :language_id, attrs[:language_id] || organization.default_language_id)
 
-    Repo.insert!(
-      change_contact(%Contact{}, attrs),
-      on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
-      conflict_target: :phone
-    )
+    contact =
+      Repo.insert!(
+        change_contact(%Contact{}, Map.merge(language, attrs)),
+        on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
+        conflict_target: :phone
+      )
+
+    {:ok, contact}
   end
 
   @doc """
@@ -232,5 +237,36 @@ defmodule Glific.Contacts do
          true <- contact.provider_status == :valid,
          true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24,
          do: true
+  end
+
+  @doc """
+  Get contact's current location
+  """
+  @spec contact_location(Contact.t()) :: {:ok, Location.t()}
+  def contact_location(contact) do
+    location =
+      Location
+      |> where([l], l.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    {:ok, location}
+  end
+
+  @doc """
+  Creates a location.
+
+  ## Examples
+      iex> Glific.Contacts.create_location(%{name: value})
+      {:ok, %Glific.Contacts.Location{}}
+
+      iex> Glific.Contacts.create_location(%{bad_field: bad_value})
+      {:error, %Ecto.Changeset{}}
+  """
+  @spec create_location(map()) :: {:ok, Location.t()} | {:error, Ecto.Changeset.t()}
+  def create_location(attrs \\ %{}) do
+    %Location{}
+    |> Location.changeset(attrs)
+    |> Repo.insert()
   end
 end

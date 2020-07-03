@@ -22,13 +22,26 @@ defmodule Glific.Templates do
   def list_session_templates(args \\ %{}) do
     args
     |> Enum.reduce(SessionTemplate, fn
-      {:order, order}, query ->
-        query |> order_by([t], {^order, fragment("lower(?)", t.label)})
+      {:opts, opts}, query ->
+        query |> opts_with(opts)
 
       {:filter, filter}, query ->
         query |> filter_with(filter)
     end)
     |> Repo.all()
+  end
+
+  defp opts_with(query, opts) do
+    Enum.reduce(opts, query, fn
+      {:order, order}, query ->
+        query |> order_by([t], {^order, fragment("lower(?)", t.label)})
+
+      {:limit, limit}, query ->
+        query |> limit(^limit)
+
+      {:offset, offset}, query ->
+        query |> offset(^offset)
+    end)
   end
 
   @doc """

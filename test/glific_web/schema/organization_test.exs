@@ -26,14 +26,14 @@ defmodule GlificWeb.Schema.OrganizationTest do
     res =
       organizations
       |> get_in([Access.all(), "name"])
-      |> Enum.find(fn x -> x == "Default Organization" end)
+      |> Enum.find(fn x -> x == "Glific" end)
 
-    assert res == "Default Organization"
+    assert res == "Glific"
   end
 
   test "count returns the number of organizations" do
     {:ok, query_data} = query_gql_by(:count)
-    assert get_in(query_data, [:data, "countOrganizations"]) == 2
+    assert get_in(query_data, [:data, "countOrganizations"]) == 1
 
     {:ok, query_data} =
       query_gql_by(:count,
@@ -42,14 +42,13 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     assert get_in(query_data, [:data, "countOrganizations"]) == 0
 
-    {:ok, query_data} =
-      query_gql_by(:count, variables: %{"filter" => %{"name" => "Default Organization"}})
+    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"name" => "Glific"}})
 
     assert get_in(query_data, [:data, "countOrganizations"]) == 1
   end
 
   test "organization id returns one organization or nil" do
-    name = "Default Organization"
+    name = "Glific"
     {:ok, organization} = Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: name})
 
     result = query_gql_by(:by_id, variables: %{"id" => organization.id})
@@ -139,8 +138,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   end
 
   test "update an organization and test possible scenarios and errors" do
-    {:ok, organization} =
-      Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: "Default Organization"})
+    {:ok, organization} = Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: "Glific"})
 
     name = "Organization Test Name"
     display_name = "Organization Test Name"
@@ -218,8 +216,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   end
 
   test "delete an organization" do
-    {:ok, organization} =
-      Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: "Default Organization"})
+    {:ok, organization} = Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: "Glific"})
 
     result = query_gql_by(:delete, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result

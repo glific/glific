@@ -30,6 +30,11 @@ defmodule GlificWeb.Schema.ContactTypes do
     end
   end
 
+  object :location do
+    field :longitude, :float
+    field :latitude, :float
+  end
+
   @desc "Filtering options for contacts"
   input_object :contact_filter do
     @desc "Match the name"
@@ -68,6 +73,12 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :count_contacts, :integer do
       arg(:filter, :contact_filter)
       resolve(&Resolvers.Contacts.count_contacts/3)
+    end
+
+    @desc "Get contact's current location"
+    field :contact_location, :location do
+      arg(:id, non_null(:id))
+      resolve(&Resolvers.Contacts.contact_location/3)
     end
   end
 

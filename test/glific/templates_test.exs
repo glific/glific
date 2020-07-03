@@ -143,10 +143,10 @@ defmodule Glific.TemplatesTest do
 
       assert length(Templates.list_session_templates()) == session_templates_count + 2
 
-      [ordered_s0 | _] = Templates.list_session_templates(%{order: :asc})
+      [ordered_s0 | _] = Templates.list_session_templates(%{opts: %{order: :asc}})
       assert s0 == ordered_s0
 
-      [ordered_s1 | _] = Templates.list_session_templates(%{order: :desc})
+      [ordered_s1 | _] = Templates.list_session_templates(%{opts: %{order: :desc}})
       assert s1 == ordered_s1
     end
 
