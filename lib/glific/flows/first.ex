@@ -26,8 +26,35 @@ defmodule Glific.Flows.First do
     # lets get rid of stuff we domnt use
     |> Map.delete("_ui")
     |> process_flow()
-    |> IO.inspect()
+    |> uuid_map()
+    |> Enum.sort(fn {_k1, v1}, {_k2, v2} -> v1 < v2 end)
   end
+
+  def uuid_map(%Flow{} = flow) do
+    flow.nodes
+    |> Enum.reduce(
+      %{flow.uuid => :flow},
+      fn n, acc -> Map.merge(acc, uuid_map(n)) end
+    )
+  end
+  def uuid_map(%Node{} = node) do
+    node.actions ++ node.exits ++ [node.router]
+    |> Enum.reduce(
+      %{node.uuid => :node},
+      fn a, acc -> Map.merge(acc, uuid_map(a)) end
+      )
+  end
+  def uuid_map(%Router{} = router) do
+    Enum.reduce(
+      router.cases ++ router.categories,
+      %{},
+      fn a, acc -> Map.merge(acc, uuid_map(a)) end)
+  end
+  def uuid_map(%Action{} = action), do: %{action.uuid => :action}
+  def uuid_map(%Exit{} = exit), do: %{exit.uuid => :exit}
+  def uuid_map(%Case{} = case), do: %{case.uuid => :case}
+  def uuid_map(%Category{} = category), do: %{category.uuid => :category}
+  def uuid_map(nil), do: %{}
 
   def process_flow(json) do
     flow = %Flow{
@@ -79,10 +106,10 @@ defmodule Glific.Flows.First do
     )
   end
 
-  def process_action(%{type: type} = json, node) when type == "enter_flow" do
+  def process_action(%{"type" => type} = json, node) when type == "enter_flow" do
     %Action{
       uuid: json["uuid"],
-      node_uuid: node[:uuid],
+      node_uuid: node.uuid,
       type: json["type"],
       enter_flow_uuid: json["flow"]["uuid"]
     }
@@ -108,7 +135,8 @@ defmodule Glific.Flows.First do
 
   def process_router(json, node) do
     router = %Router{
-      uuid: json["uuid"],
+      # A router does not have a uuid, since it is attached to a node (optionally)
+      # uuid: json["uuid"],
       node_uuid: node.uuid,
       type: json["type"],
       operand: json["operand"],
