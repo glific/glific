@@ -6,9 +6,9 @@ defmodule Glific.Schema do
   defmacro __using__(_) do
     quote do
       use Ecto.Schema
-      @primary_key {:uuid, :binary_id, autogenerate: true}
+      @primary_key {:uuid, :binary_id, autogenerate: false}
       @foreign_key_type :binary_id
-      @derive {Phoenix.Param, key: :uuid}
+      # @derive {Phoenix.Param, key: :uuid}
     end
   end
 end

@@ -2,61 +2,61 @@ defmodule Glific.Flows.Router do
   @moduledoc """
   The Router object which encapsulates the router in a given node.
   """
+  alias __MODULE__
 
   use Glific.Schema
   import Ecto.Changeset
 
-  alias Glific.Flows{
+  alias Glific.Flows.{
     Case,
     Category,
-    Exit,
     Node,
-    Wait,
+    Wait
   }
 
-  @required_fields [:node_id]
-  @optional_fields []
+  @required_fields [:type, :operand, :default_category_uuid, :node_uuid]
+  @optional_fields [:result_name, :wait_uuid]
 
   @type t() :: %__MODULE__{
-    __meta__: Ecto.Schema.Metadata.t(),
-    uuid: Ecto.UUID.t() | nil,
-
-    type: String.t() | nil,
-
-    default_category_id: Ecto.UUID.t() | nil
-    default_category: Category.t() | Ecto.Association.NotLoaded.t() | nil,
-
-    node_id: Ecto.UUID.t() | nil,
-    node: Node.t() | Ecto.Association.NotLoaded.t() | nil,
-  }
+          __meta__: Ecto.Schema.Metadata.t(),
+          uuid: Ecto.UUID.t() | nil,
+          type: String.t() | nil,
+          default_category_uuid: Ecto.UUID.t() | nil,
+          default_category: Category.t() | Ecto.Association.NotLoaded.t() | nil,
+          wait_uuid: Ecto.UUID.t() | nil,
+          wait: Wait.t() | Ecto.Association.NotLoaded.t() | nil,
+          node_uuid: Ecto.UUID.t() | nil,
+          node: Node.t() | Ecto.Association.NotLoaded.t() | nil
+        }
 
   schema "routers" do
     field :type, :string
     field :operand, :string
     field :result_name, :string
 
-    has_one :wait, Wait
-    has_one :default_category, Category
-
     has_many :cases, Case
     has_many :categories, Category
-    has_many :exits, Exit
 
-    belongs_to :node, Node
+    belongs_to :wait, Wait, foreign_key: :wait_uuid, references: :uuid, primary_key: true
+
+    belongs_to :default_category, Category,
+      foreign_key: :default_category_uuid,
+      references: :uuid,
+      primary_key: true
+
+    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: true
   end
-
 
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(Node.t(), map()) :: Ecto.Changeset.t()
-  def changeset(Node, attrs) do
-    tag
+  @spec changeset(Router.t(), map()) :: Ecto.Changeset.t()
+  def changeset(router, attrs) do
+    router
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> foreign_key_constraint(:node_id)
-    |> foreign_key_constraint(:destination_node_id)
+    |> foreign_key_constraint(:node_uuid)
+    |> foreign_key_constraint(:default_category_uuid)
+    |> foreign_key_constraint(:wait_uuid)
   end
-
-
 end

@@ -3,12 +3,13 @@ defmodule Glific.Flows.Flow do
   The flow object which encapsulates the complete flow as emitted by
   by `https://github.com/nyaruka/floweditor`
   """
+  alias __MODULE__
 
   use Glific.Schema
   import Ecto.Changeset
 
   alias Glific.{
-    Flows.Node
+    Flows.Node,
     Settings.Language
   }
 
@@ -16,12 +17,12 @@ defmodule Glific.Flows.Flow do
   @optional_fields []
 
   @type t() :: %__MODULE__{
-    __meta__: Ecto.Schema.Metadata.t(),
-    uuid: Ecto.UUID.t() | nil,
-    name: String.t() | nil,
-    language_id: non_neg_integer | nil,
-    language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
-  }
+          __meta__: Ecto.Schema.Metadata.t(),
+          uuid: Ecto.UUID.t() | nil,
+          name: String.t() | nil,
+          language_id: non_neg_integer | nil,
+          language: Language.t() | Ecto.Association.NotLoaded.t() | nil
+        }
 
   schema "flows" do
     field :name, :string
@@ -36,10 +37,9 @@ defmodule Glific.Flows.Flow do
   """
   @spec changeset(Flow.t(), map()) :: Ecto.Changeset.t()
   def changeset(flow, attrs) do
-    tag
+    flow
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:language_id)
   end
-
 end

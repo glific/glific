@@ -18,8 +18,13 @@ defmodule Glific.Enums.Constants do
 
       @flow_router_const [:switch]
 
-      @flow_type_const [:enter_flow, :send_msg, :set_contact_language, :wait_for_response,
-                       :set_contact_field]
+      @flow_type_const [
+        :enter_flow,
+        :send_msg,
+        :set_contact_language,
+        :wait_for_response,
+        :set_contact_field
+      ]
 
       # the direction of the messages: inbound: provider to glific, outbound: glific to provider
       @message_flow_const [:inbound, :outbound]
