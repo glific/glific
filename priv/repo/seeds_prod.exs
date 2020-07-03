@@ -359,6 +359,15 @@ Repo.insert!(%SessionTemplate{
   """
 })
 
+Repo.insert!(%SessionTemplate{
+  label: "Verification OTP",
+  type: :text,
+  shortcode: "verification",
+  is_reserved: true,
+  language_id: en_us.id,
+  body: "Your verification OTP is: "
+})
+
 # Seed saved searches
 {:ok, unread} = Repo.fetch_by(Tag, %{label: "Unread"})
 Repo.insert!(%SavedSearch{
