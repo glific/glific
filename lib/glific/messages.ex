@@ -425,7 +425,9 @@ defmodule Glific.Messages do
     args
     |> Enum.reduce(Message, fn
       {:ids, ids}, query ->
-        query |> where([m], m.id in ^ids)
+        query
+        |> where([m], m.id in ^ids)
+        |> order_by([m], desc: m.updated_at)
 
       {:filter, filter}, query ->
         query |> conversations_with(filter)
@@ -433,7 +435,6 @@ defmodule Glific.Messages do
       _, query ->
         query
     end)
-    |> order_by([m], asc: m.updated_at)
     |> Repo.all()
     |> Repo.preload([:contact, :tags])
     |> make_conversations()
@@ -443,12 +444,30 @@ defmodule Glific.Messages do
   # given all the messages related to multiple contacts, group them
   # by contact id into conversation objects
   @spec make_conversations([Message.t()]) :: [Conversation.t()]
-  defp make_conversations(results) do
+  defp make_conversations(messages) do
     # now format the results,
+    {contact_messages, _, contact_order} =
+      Enum.reduce(
+        messages,
+        {%{}, %{}, []},
+        fn m, acc ->
+          {conversations, processed, contact_order} = acc
+          conversations = add(m, conversations)
+
+          if Map.has_key?(processed, m.contact_id) do
+            {conversations, processed, contact_order}
+          else
+            {conversations, Map.put(processed, m.contact_id, true), [m.contact | contact_order]}
+          end
+        end
+      )
+
     Enum.reduce(
-      Enum.reduce(results, %{}, fn x, acc -> add(x, acc) end),
+      contact_order,
       [],
-      fn {contact, messages}, acc -> [Conversation.new(contact, messages) | acc] end
+      fn contact, acc ->
+        [Conversation.new(contact, Enum.reverse(contact_messages[contact])) | acc]
+      end
     )
   end
 
