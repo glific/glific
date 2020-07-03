@@ -1,5 +1,5 @@
-mutation createMessageTags($input:MessageTagsInput!) {
-  createMessageTags(input: $input) {
+mutation updateMessageTags($input:MessageTagsInput!) {
+  updateMessageTags(input: $input) {
     messageTags {
       id
       message {
@@ -10,7 +10,7 @@ mutation createMessageTags($input:MessageTagsInput!) {
         id
         label
       }
-      value
     }
+    numberDeleted
   }
 }

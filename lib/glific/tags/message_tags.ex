@@ -19,19 +19,23 @@ defmodule Glific.Tags.MessageTags do
         }
 
   embedded_schema do
+    # the number of tags we deleted
+    field :number_deleted, :integer
     embeds_many(:message_tags, MessageTag)
   end
 
   @doc """
-  Creates a list of message tags, each tag attached to the same message
+  Creates and/or deletes a list of message tags, each tag attached to the same message
   """
-  @spec create_message_tags(map()) :: MessageTags.t()
-  def create_message_tags(attrs \\ %{}) do
+  @spec update_message_tags(map()) :: MessageTags.t()
+  def update_message_tags(
+        %{message_id: message_id, add_tag_ids: add_ids, delete_tag_ids: delete_ids} = attrs
+      ) do
     # we'll ignore errors intentionally here. the return list indicates
     # what objects we created
     message_tags =
       Enum.reduce(
-        attrs[:tags_id],
+        add_ids,
         [],
         fn tag_id, acc ->
           case Tags.create_message_tag(Map.put(attrs, :tag_id, tag_id)) do
@@ -41,6 +45,11 @@ defmodule Glific.Tags.MessageTags do
         end
       )
 
-    %MessageTags{message_tags: message_tags}
+    {number_deleted, _} = Tags.delete_message_tag_by_ids(message_id, delete_ids)
+
+    %MessageTags{
+      number_deleted: number_deleted,
+      message_tags: message_tags
+    }
   end
 end
