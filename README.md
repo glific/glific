@@ -4,6 +4,7 @@
 ![](https://github.com/glific/glific/workflows/Continuous%20Integration/badge.svg)
 [![Code coverage badge](https://img.shields.io/codecov/c/github/glific/glific/master.svg)](https://codecov.io/gh/glific/glific/branch/master)
 [![Glific on hex.pm](https://img.shields.io/hexpm/v/glific.svg)](https://hexdocs.pm/glific/)
+![GitHub issues](https://img.shields.io/github/issues-raw/glific/glific)
 
 ## Packages Needed
 
