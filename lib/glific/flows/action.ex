@@ -1,48 +1,42 @@
-defmodule Glific.Flows.Router do
+defmodule Glific.Flows.Action do
   @moduledoc """
-  The Router object which encapsulates the router in a given node.
+  The Action object which encapsulates one action in a given node.
   """
 
   use Glific.Schema
   import Ecto.Changeset
 
-  alias Glific.Flows{
-    Case,
-    Category,
-    Exit,
-    Node,
-    Wait,
+  alias Glific.Enums.FlowTypeEnum
+  alias Glific.Flows.{
+    Flow,
+    Node
   }
 
   @required_fields [:node_id]
-  @optional_fields []
+  @optional_fields [:text]
 
   @type t() :: %__MODULE__{
     __meta__: Ecto.Schema.Metadata.t(),
     uuid: Ecto.UUID.t() | nil,
 
-    type: String.t() | nil,
+    text: String.t() | nil,
+    type: FlowTypeEnum,
+    quick_replies: [String.t],
 
-    default_category_id: Ecto.UUID.t() | nil
-    default_category: Category.t() | Ecto.Association.NotLoaded.t() | nil,
+    flow_id: Ecto.UUID.t() | nil,
+    flow: Flow.t() | nil,
 
     node_id: Ecto.UUID.t() | nil,
     node: Node.t() | Ecto.Association.NotLoaded.t() | nil,
   }
 
-  schema "routers" do
-    field :type, :string
-    field :operand, :string
-    field :result_name, :string
-
-    has_one :wait, Wait
-    has_one :default_category, Category
-
-    has_many :cases, Case
-    has_many :categories, Category
-    has_many :exits, Exit
+  schema "actions" do
+    field :text :string
+    field :type FlowTypeEnum
+    field :quick_replies, :string
 
     belongs_to :node, Node
+    belongs_to :flow, Flow
   end
 
 
@@ -55,7 +49,7 @@ defmodule Glific.Flows.Router do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:node_id)
-    |> foreign_key_constraint(:destination_node_id)
+    |> foreign_key_constraint(:flow_id)
   end
 
 

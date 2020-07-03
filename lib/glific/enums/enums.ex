@@ -19,6 +19,16 @@ defmodule Glific.Enums do
   iex> Glific.Enums.contact_status_const()
   [:failed, :invalid, :processing, :valid]
 
+  iex> Glific.Enums.flow_case_const()
+  [:has_any_word]
+
+  iex> Glific.Enums.flow_router_const()
+  [:switch]
+
+  iex> Glific.Enums.flow_type_const()
+  [:enter_flow, :send_msg, :set_contact_language, :wait_for_response,
+  :set_contact_field]
+
   iex> Glific.Enums.message_flow_const()
   [:inbound, :outbound]
 
@@ -42,6 +52,15 @@ defmodule Glific.Enums do
   iex> Glific.Enums.ContactStatus.__enum_map__()
   Glific.Enums.contact_status_const()
 
+  iex> Glific.Enums.FlowCase.__enum_map__()
+  Glific.Enums.flow_case_const()
+
+  iex> Glific.Enums.FlowRouter.__enum_map__()
+  Glific.Enums.flow_router_const()
+
+  iex> Glific.Enums.FlowType.__enum_map__()
+  Glific.Enums.flow_type_const()
+
   iex> Glific.Enums.MessageFlow.__enum_map__()
   Glific.Enums.message_flow_const()
 
@@ -64,6 +83,15 @@ defmodule Glific.Enums do
 
   defmacro contact_status_const,
     do: Macro.expand(@contact_status_const, __CALLER__)
+
+  defmacro flow_case_const,
+    do: Macro.expand(@flow_case_const, __CALLER__)
+
+  defmacro flow_router_const,
+    do: Macro.expand(@flow_router_const, __CALLER__)
+
+  defmacro flow_type_const,
+    do: Macro.expand(@flow_type_const, __CALLER__)
 
   defmacro message_flow_const,
     do: Macro.expand(@message_flow_const, __CALLER__)

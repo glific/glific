@@ -19,6 +19,24 @@ defenum(
 )
 
 defenum(
+  Glific.Enums.FlowCase,
+  :flow_case_enum,
+  Glific.Enums.flow_case_const()
+)
+
+defenum(
+  Glific.Enums.FlowRouter,
+  :flow_router_enum,
+  Glific.Enums.flow_router_const()
+)
+
+defenum(
+  Glific.Enums.FlowType,
+  :flow_type_enum,
+  Glific.Enums.flow_type_const()
+)
+
+defenum(
   Glific.Enums.MessageFlow,
   :message_flow_enum,
   Glific.Enums.message_flow_const()
