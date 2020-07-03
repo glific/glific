@@ -170,18 +170,21 @@ defmodule Glific.Contacts do
   Gets or Creates a Contact based on the unique indexes in the table. If there is a match
   it returns the existing contact, else it creates a new one
   """
-  @spec upsert(map()) :: Contact.t()
+  @spec upsert(map()) :: {:ok, Contact.t()}
   def upsert(attrs) do
     # Get the organization
     organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
     # we keep this separate to avoid overwriting the language if already set by a contact
     language = Map.put(%{}, :language_id, attrs[:language_id] || organization.default_language_id)
 
-    Repo.insert!(
-      change_contact(%Contact{}, Map.merge(language, attrs)),
-      on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
-      conflict_target: :phone
-    )
+    contact =
+      Repo.insert!(
+        change_contact(%Contact{}, Map.merge(language, attrs)),
+        on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
+        conflict_target: :phone
+      )
+
+    {:ok, contact}
   end
 
   @doc """

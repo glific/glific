@@ -224,14 +224,31 @@ defmodule Glific.ContactsTest do
 
     test "upsert contacts" do
       org = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
-
       c0 = contact_fixture(@valid_attrs)
 
-      assert Contacts.upsert(%{
-               phone: c0.phone,
-               name: c0.name,
-               language_id: org.default_language_id
-             }).id == c0.id
+      # check if the defualt language is set
+      assert org.default_language_id == c0.language_id
+
+      {:ok, contact} = Contacts.upsert(%{phone: c0.phone, name: c0.name})
+      assert contact.id == c0.id
+    end
+
+    test "ensure that upsert contacts overrides the language id" do
+      c0 = contact_fixture(@valid_attrs)
+      org = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+
+      language =
+        Glific.Settings.list_languages()
+        |> Enum.find(fn ln -> ln.id != org.default_language_id end)
+
+      {:ok, contact} =
+        Contacts.upsert(%{
+          phone: c0.phone,
+          name: c0.name,
+          language_id: language.id
+        })
+
+      assert contact.language_id == language.id
     end
 
     test "ensure that creating contacts with same name/phone give an error" do
