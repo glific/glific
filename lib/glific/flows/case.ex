@@ -53,4 +53,20 @@ defmodule Glific.Flows.Case do
     |> foreign_key_constraint(:router_uuid)
     |> foreign_key_constraint(:category_uuid)
   end
+
+  @doc """
+  Process a json structure from floweditor to the Glific data types
+  """
+  @spec process(map(), map(), Router.t()) :: {Case.t(), map()}
+  def process(json, uuid_map, router) do
+    c = %Case{
+      uuid: json["uuid"],
+      router_uuid: router.uuid,
+      category_uuid: json["category_uuid"],
+      type: json["type"],
+      arguments: json["arguments"]
+    }
+
+    {c, Map.put(uuid_map, c.uuid, :case)}
+  end
 end

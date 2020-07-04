@@ -42,4 +42,31 @@ defmodule Glific.Flows.Flow do
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:language_id)
   end
+
+  @doc """
+  Process a json structure from floweditor to the Glific data types
+  """
+  @spec process(map(), map()) :: {Flow.t(), map()}
+  def process(json, uuid_map) do
+    flow = %Flow{
+      uuid: json["uuid"],
+      language: json["language"],
+      name: json["name"]
+    }
+
+    uuid_map = Map.put(uuid_map, flow.uuid, :flow)
+
+    {nodes, uuid_map} =
+      Enum.reduce(
+        json["nodes"],
+        {[], uuid_map},
+        fn node_json, acc ->
+          {node, uuid_map} = Node.process(node_json, elem(acc, 1), flow)
+          {[node | elem(acc, 0)], uuid_map}
+        end
+      )
+
+    flow = Map.put(flow, :nodes, nodes)
+    {flow, uuid_map}
+  end
 end

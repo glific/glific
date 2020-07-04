@@ -55,4 +55,50 @@ defmodule Glific.Flows.Router do
     |> foreign_key_constraint(:node_uuid)
     |> foreign_key_constraint(:default_category_uuid)
   end
+
+  @doc """
+  Process a json structure from floweditor to the Glific data types
+  """
+  @spec process(map(), map(), Node.t()) :: {Router.t(), map()}
+  def process(json, uuid_map, node) do
+    router = %Router{
+      # A router does not have a uuid, since it is attached to a node (optionally)
+      # uuid: json["uuid"],
+      node_uuid: node.uuid,
+      type: json["type"],
+      operand: json["operand"],
+      result_name: json["result_name"],
+      wait_type: json["wait"]["type"]
+    }
+
+    {categories, uuid_map} =
+      Enum.reduce(
+        json["categories"],
+        {[], uuid_map},
+        fn c, acc ->
+          {category, uuid_map} = Category.process(c, elem(acc, 1), router)
+          {[category | elem(acc, 0)], uuid_map}
+        end
+      )
+
+    router =
+      router
+      |> Map.put(:categories, categories)
+      # we should check that this category does exist and for FK checks etc, before adding to DB
+      # we can only assign this after the category is created
+      |> Map.put(:default_category_uuid, json["default_category_uuid"])
+
+    {cases, uuid_map} =
+      Enum.reduce(
+        json["cases"],
+        {[], uuid_map},
+        fn c, acc ->
+          {case, uuid_map} = Case.process(c, elem(acc, 1), router)
+          {[case | elem(acc, 0)], uuid_map}
+        end
+      )
+
+    Map.put(router, :cases, cases)
+    {router, uuid_map}
+  end
 end

@@ -41,4 +41,18 @@ defmodule Glific.Flows.Exit do
     |> foreign_key_constraint(:node_uuid)
     |> foreign_key_constraint(:destination_node_uuid)
   end
+
+  @doc """
+  Process a json structure from floweditor to the Glific data types
+  """
+  @spec process(map(), map(), Node.t()) :: {Exit.t(), map()}
+  def process(json, uuid_map, node) do
+    exit = %Exit{
+      uuid: json["uuid"],
+      node_uuid: node.uuid,
+      destination_node_uuid: json["destination_uuid"]
+    }
+
+    {exit, Map.put(uuid_map, exit.uuid, :exit)}
+  end
 end

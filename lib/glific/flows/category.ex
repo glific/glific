@@ -46,4 +46,19 @@ defmodule Glific.Flows.Category do
     |> foreign_key_constraint(:router_uuid)
     |> foreign_key_constraint(:exit_uuid)
   end
+
+  @doc """
+  Process a json structure from floweditor to the Glific data types
+  """
+  @spec process(map(), map(), Router.t()) :: {Category.t(), map()}
+  def process(json, uuid_map, router) do
+    category = %Category{
+      uuid: json["uuid"],
+      router_uuid: router.uuid,
+      exit_uuid: json["exit_uuid"],
+      name: json["name"]
+    }
+
+    {category, Map.put(uuid_map, category.uuid, :category)}
+  end
 end

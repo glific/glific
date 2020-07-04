@@ -54,4 +54,31 @@ defmodule Glific.Flows.Action do
     |> foreign_key_constraint(:node_uuid)
     |> foreign_key_constraint(:flow_uuid)
   end
+
+  @doc """
+  Process a json structure from floweditor to the Glific data types
+  """
+  @spec process(map(), map(), Node.t()) :: {Action.t(), map()}
+  def process(%{"type" => type} = json, uuid_map, node) when type == "enter_flow" do
+    action = %Action{
+      uuid: json["uuid"],
+      node_uuid: node.uuid,
+      type: json["type"],
+      enter_flow_uuid: json["flow"]["uuid"]
+    }
+
+    {action, Map.put(uuid_map, action.uuid, :action)}
+  end
+
+  def process(json, uuid_map, node) do
+    action = %Action{
+      uuid: json["uuid"],
+      node_uuid: node.uuid,
+      text: json["text"],
+      type: json["type"],
+      quick_replies: json["quick_replies"]
+    }
+
+    {action, Map.put(uuid_map, action.uuid, :action)}
+  end
 end
