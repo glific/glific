@@ -9,11 +9,13 @@ DB_ROLE=${POSTGRES_ROLE:-postgres}
 DB_HOST=${DATABASE_HOST:-db}
 
 # wait until Postgres is ready
-while ! pg_isready -q -h $DB_HOST -p 5432 -U $DB_ROLE
-do
-  echo "$(date) - waiting for database to start $DB_HOST, $DB_ROLE"
-  sleep 2
-done
+# while ! pg_isready -q -h $DB_HOST -p 5432 -U $DB_ROLE
+# do
+#   echo "$(date) - waiting for database to start $DB_HOST, $DB_ROLE"
+#   sleep 2
+# done
+
+echo "connected "
 
 bin="/app/bin/glific"
 # eval "$bin eval \"Glific.Release.migrate\""
