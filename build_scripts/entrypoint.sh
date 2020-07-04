@@ -16,6 +16,6 @@ do
 done
 
 bin="/app/bin/glific"
-eval "$bin eval \"Glific.Release.migrate\""
+# eval "$bin eval \"Glific.Release.migrate\""
 # start the elixir application
 exec "$bin" "start"
