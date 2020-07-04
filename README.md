@@ -31,6 +31,33 @@ Install the following packages using your favorite package manager. Links are pr
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
+## Install glific-frontend
+
+You cannot do much from the glific-backend unless you are an API developer. To see Glific in its glory, please
+install [Glific Frontend](https://github.com/glific/glific-frontend/)
+
+## Create and link your Gupshup Account
+
+The frontend and backend are great, but you will need an account with a WhatsApp Business Provider to explore the
+application. The currently supported backend is [Gupshup](https://www.gupshup.io/developer/home).
+You will need to do the following:
+
+  * Create a [Gupshup Account](https://www.gupshup.io/developer/home)
+  * Install [ngrok](https://ngrok.com/download)
+  * Start ngrok to proxy port 4000: `$ ngrok http 4000` (do this in a new window))
+    * Remember the URL it assigns you, something like: `https://9f6a7c7822d2.ngrok.io`
+    * Also start the backend server: `mix phx.server` (do this in a new window)
+  * Create a [WhatsApp Messaging App on Gupshup](https://www.gupshup.io/whatsappassistant/#/account-setup)
+  * You can name it `GlificTest` and ensure the `App Type` is `Access API`
+  * Goto the [Settings Page](https://www.gupshup.io/whatsappassistant/#/settings/GlificTest?bt=ACP)
+  * On that page, Search for `Callback URL / Link your Bot`
+  * Enter your callback URL that ngrok gave you, add: `/gupshup` to the end. Something like:
+  `https://9f6a7c7822d2.ngrok.io/gupshup/`
+  * Click `Set`. It should give you a `Callback set successfully` message. If not, check the above steps.
+  * Edit `config/dev.secret.exs` in the backend directory
+  * You will need to enter your API Key, which can be found by clicking on your profile in the top left
+  corner of your gupshup dashboard
+
 ## Documentation
 
   * [Code docs](https://glific.github.io/doc./)
