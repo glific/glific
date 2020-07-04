@@ -67,6 +67,15 @@ defmodule Glific.Flows.Case do
       arguments: json["arguments"]
     }
 
-    {c, Map.put(uuid_map, c.uuid, :case)}
+    {c, Map.put(uuid_map, c.uuid, {:case, c})}
   end
+
+  @doc """
+  Execute a case, given a message.
+  """
+  @spec execute(Case.t, map(), String.t) :: any
+  def execute(%{type: type} = c, _uuid_map, msg) when type == "has_any_word" do
+    Enum.member?(c.arguments, msg)
+  end
+
 end

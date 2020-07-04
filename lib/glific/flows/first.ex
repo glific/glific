@@ -11,8 +11,8 @@ defmodule Glific.Flows.First do
   @doc """
   iex module for us to interact with our actions and events
   """
-  @spec init() :: {Flow.t(), map()}
-  def init do
+  @spec init([String.t]) :: {Flow.t(), map()}
+  def init(message_stream) do
     {flow, uuid_map} =
       File.read!(__DIR__ <> @test_file)
       |> Jason.decode!()
@@ -20,8 +20,8 @@ defmodule Glific.Flows.First do
       |> Map.delete("_ui")
       |> Flow.process(%{})
 
-    # |> IO.inspect()
-
-    {flow, uuid_map}
+    Flow.execute(flow, uuid_map, message_stream)
   end
+
+
 end

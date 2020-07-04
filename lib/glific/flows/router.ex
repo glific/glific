@@ -83,7 +83,7 @@ defmodule Glific.Flows.Router do
 
     router =
       router
-      |> Map.put(:categories, categories)
+      |> Map.put(:categories, Enum.reverse(categories))
       # we should check that this category does exist and for FK checks etc, before adding to DB
       # we can only assign this after the category is created
       |> Map.put(:default_category_uuid, json["default_category_uuid"])
@@ -98,7 +98,35 @@ defmodule Glific.Flows.Router do
         end
       )
 
-    Map.put(router, :cases, cases)
+    router = Map.put(router, :cases, Enum.reverse(cases))
     {router, uuid_map}
   end
+
+  @doc """
+  Execute a router, given a message stream.
+  Consume the message stream as processing occurs
+  """
+  @spec execute(Router.t, map(), [String.t]) :: any
+  def execute(
+    %{type: type, wait_type: wait_type} = router,
+    uuid_map,
+    message_stream) when type == "switch" and wait_type == "msg" do
+
+    [msg | rest] = message_stream
+
+    # go thru the cases and find the first one that succeeds
+    c = Enum.find(
+      router.cases,
+      nil,
+      fn c -> Case.execute(c, uuid_map, msg) end
+    )
+    category_uuid = if is_nil(c),
+      do: router.default_category_uuid,
+    else: c.category_uuid
+
+    # find the category object and send it over
+    {:ok, {:category, category}} = Map.fetch(uuid_map, category_uuid)
+    Category.execute(category, uuid_map, rest)
+  end
+
 end

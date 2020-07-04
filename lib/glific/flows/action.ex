@@ -67,7 +67,7 @@ defmodule Glific.Flows.Action do
       enter_flow_uuid: json["flow"]["uuid"]
     }
 
-    {action, Map.put(uuid_map, action.uuid, :action)}
+    {action, Map.put(uuid_map, action.uuid, {:action, action})}
   end
 
   def process(json, uuid_map, node) do
@@ -79,6 +79,16 @@ defmodule Glific.Flows.Action do
       quick_replies: json["quick_replies"]
     }
 
-    {action, Map.put(uuid_map, action.uuid, :action)}
+    {action, Map.put(uuid_map, action.uuid, {:action, action})}
   end
+
+  @doc """
+  Execute a action, given a message stream.
+  Consume the message stream as processing occurs
+  """
+  @spec execute(Action.t, map(), [String.t]) :: any
+  def execute(%{type: type} = action, _uuid_map, _message_stream) when type == "send_msg",
+    do: IO.puts("Sending message: #{action.text}")
+  def execute(action, _uuid_map, _message_stream),
+    do: IO.puts("We do not handle actions of type: #{action.type} as yet. Feature coming soon to a glific near you")
 end

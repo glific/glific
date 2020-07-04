@@ -59,6 +59,17 @@ defmodule Glific.Flows.Category do
       name: json["name"]
     }
 
-    {category, Map.put(uuid_map, category.uuid, :category)}
+    {category, Map.put(uuid_map, category.uuid, {:category, category})}
   end
+
+  @doc """
+  Execute a category, given a message stream.
+  """
+  @spec execute(Category.t, map(), [String.t]) :: any
+  def execute(category, uuid_map, message_stream) do
+    # transfer control to the exit node
+    {:ok, {:exit, exit}} = Map.fetch(uuid_map, category.exit_uuid)
+    Exit.execute(exit, uuid_map, message_stream)
+  end
+
 end

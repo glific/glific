@@ -53,8 +53,6 @@ defmodule Glific.Flows.Node do
       flow_uuid: flow.uuid
     }
 
-    uuid_map = Map.put(uuid_map, node.uuid, :node)
-
     {actions, uuid_map} =
       Enum.reduce(
         json["actions"],
@@ -65,9 +63,9 @@ defmodule Glific.Flows.Node do
         end
       )
 
-    node = Map.put(node, :actions, actions)
+    node = Map.put(node, :actions, Enum.reverse(actions))
 
-    exits =
+    {exits, uuid_map} =
       Enum.reduce(
         json["exits"],
         {[], uuid_map},
@@ -77,7 +75,7 @@ defmodule Glific.Flows.Node do
         end
       )
 
-    node = Map.put(node, :exits, exits)
+    node = Map.put(node, :exits, Enum.reverse(exits))
 
     {node, uuid_map} =
       if Map.has_key?(json, "router") do
@@ -87,6 +85,23 @@ defmodule Glific.Flows.Node do
         {node, uuid_map}
       end
 
+    uuid_map = Map.put(uuid_map, node.uuid, {:node, node})
     {node, uuid_map}
+  end
+
+  @doc """
+  Execute a node, given a message stream.
+  Consume the message stream as processing occurs
+  """
+  @spec execute(Node.t, map(), [String.t]) :: any
+  def execute(node, uuid_map, message_stream) do
+    # if node has an action, execute the first action
+    cond do
+      ! Enum.empty?(node.actions) ->
+          Action.execute(hd(node.actions), uuid_map, message_stream)
+          Exit.execute(hd(node.exits), uuid_map, message_stream)
+      ! is_nil(node.router) -> Router.execute(node.router, uuid_map, message_stream)
+      true -> IO.puts("ERROR: We are not supposed to land here")
+    end
   end
 end

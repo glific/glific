@@ -54,8 +54,6 @@ defmodule Glific.Flows.Flow do
       name: json["name"]
     }
 
-    uuid_map = Map.put(uuid_map, flow.uuid, :flow)
-
     {nodes, uuid_map} =
       Enum.reduce(
         json["nodes"],
@@ -66,7 +64,21 @@ defmodule Glific.Flows.Flow do
         end
       )
 
-    flow = Map.put(flow, :nodes, nodes)
+    flow = Map.put(flow, :nodes, Enum.reverse(nodes))
+    uuid_map = Map.put(uuid_map, flow.uuid, {:flow, flow})
+
     {flow, uuid_map}
+  end
+
+  @doc """
+  Execute a flow, given a message stream.
+  Consume the message stream as processing occurs
+  """
+  @spec execute(Flow.t, map(), [String.t]) :: any
+  def execute(flow, uuid_map, message_stream) do
+    # this is the easy case, we just need to execute the first
+    # node, and let magic happen
+    first_node = hd(flow.nodes)
+    Node.execute(first_node, uuid_map, message_stream)
   end
 end

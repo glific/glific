@@ -53,6 +53,20 @@ defmodule Glific.Flows.Exit do
       destination_node_uuid: json["destination_uuid"]
     }
 
-    {exit, Map.put(uuid_map, exit.uuid, :exit)}
+    {exit, Map.put(uuid_map, exit.uuid, {:exit, exit})}
   end
+
+  @doc """
+  Execute a exit, given a message stream.
+  """
+  @spec execute(Exit.t, map(), [String.t]) :: any
+  def execute(exit, uuid_map, message_stream) do
+    if is_nil(exit.destination_node_uuid) do
+      IO.puts("And we have reached the end of the help menu")
+    else
+      {:ok, {:node, node}} = Map.fetch(uuid_map, exit.destination_node_uuid)
+      Node.execute(node, uuid_map, message_stream)
+    end
+  end
+
 end
