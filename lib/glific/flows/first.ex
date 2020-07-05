@@ -6,7 +6,11 @@ defmodule Glific.Flows.First do
 
   @test_file "/json/language.json"
 
-  alias Glific.Flows.Flow
+  alias Glific.{
+    Contacts,
+    Flows.Context,
+    Flows.Flow
+  }
 
   @doc """
   iex module for us to interact with our actions and events
@@ -25,5 +29,28 @@ defmodule Glific.Flows.First do
     if Map.has_key?(json, "definition"),
       do: json["definition"],
       else: json
+  end
+
+  @doc """
+  A simple runner function to step the flow through multiple arguments. Should stop
+  when we are either done, or return an error
+  """
+  @spec run([[]]) :: any
+  def run(args) do
+    {flow, uuid_map} = init()
+    contact = Contacts.get_contact!(1)
+    context = Flow.context(flow, uuid_map, contact)
+
+    Enum.reduce_while(
+      args,
+      context,
+      fn arg, context ->
+        case Context.execute(context, arg) do
+          {:ok, context, []} -> {:cont, context}
+          {:error, msg} -> {:halt, msg}
+          {:ok, _context, messages} -> {:halt, messages}
+        end
+      end
+    )
   end
 end

@@ -67,13 +67,13 @@ defmodule Glific.Flows.Exit do
   def execute(exit, context, message_stream) do
     if is_nil(exit.destination_node_uuid) do
       IO.puts("And we have reached the end of the help menu")
-      {:ok, context, []}
+      {:ok, Context.set_node(context, nil), []}
     else
       {:ok, {:node, node}} = Map.fetch(context.uuid_map, exit.destination_node_uuid)
 
       Node.execute(
         node,
-        context.set_node(node),
+        Context.set_node(context, node),
         message_stream
       )
     end

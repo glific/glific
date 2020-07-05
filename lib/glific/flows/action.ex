@@ -103,7 +103,7 @@ defmodule Glific.Flows.Action do
   def execute(%{type: type} = action, context, message_stream)
       when type == "set_contact_language" do
     IO.puts("Setting Contact Language: #{action.text}")
-    context.set_contact_language(action.text)
+    Context.set_contact_language(context, action.text)
     {:ok, context, message_stream}
   end
 

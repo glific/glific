@@ -14,8 +14,7 @@ defmodule Glific.Flows.Context do
     Contacts.Contact,
     Flows.Flow,
     Flows.Node,
-    Repo,
-    Settings.Language
+    Settings
   }
 
   @required_fields [:contact_id, :flow_uuid, :uuid_map]
@@ -24,11 +23,11 @@ defmodule Glific.Flows.Context do
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           uuid: Ecto.UUID.t() | nil,
+          uuid_map: map() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           flow_uuid: Ecto.UUID.t() | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
-          uuid_map: map() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | Ecto.Association.NotLoaded.t() | nil
         }
@@ -62,15 +61,21 @@ defmodule Glific.Flows.Context do
   @spec set_contact_language(Context.t(), String.t()) :: Context.t()
   def set_contact_language(context, language) do
     # get the language id
-    {:ok, language_id} = Repo.fetch_by(Language, %{label: language})
-    {:ok, contact} = Contacts.update_contact(context.contact, %{language_id: language_id})
+    [language | _] = Settings.list_languages(%{label: language})
+    {:ok, contact} = Contacts.update_contact(context.contact, %{language_id: language.id})
     Map.put(context, :contact, contact)
   end
 
   @doc """
   Set the new node for the context
   """
-  @spec set_node(Context.t(), Node.t()) :: Context.t()
+  @spec set_node(Context.t(), Node.t() | nil) :: Context.t()
+  def set_node(context, node) when is_nil(node) do
+    context
+    |> Map.put(:node, nil)
+    |> Map.put(:node_uuid, nil)
+  end
+
   def set_node(context, node) do
     context
     |> Map.put(:node, node)
@@ -84,6 +89,9 @@ defmodule Glific.Flows.Context do
           {:ok, Context.t(), [String.t()]} | {:error, String.t()}
   def execute(context, messages) when messages == [],
     do: {:ok, context, []}
+
+  def execute(%Context{node: node} = _context, _messages) when is_nil(node),
+    do: {:error, "We have finished the flow"}
 
   def execute(context, messages) do
     {:ok, context, messages} = Node.execute(context.node, context, messages)
