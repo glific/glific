@@ -457,18 +457,16 @@ defmodule Glific.Tags do
    Remove a tag from messages
   """
 
-  @spec mark_all_message_as_read(Glific.Contacts.Contact.t()) :: {:ok, list()}
+  @spec mark_all_message_as_read(integer()) :: {:ok, [integer()]}
   def mark_all_message_as_read(contact_id) do
-    query = from mt in MessageTag,
-    join: m in assoc(mt, :message),
-    join: t in assoc(mt, :tag),
-    where: m.contact_id == ^contact_id and t.label == "Unread",
-    select: [mt.message_id]
+    query =
+      from mt in MessageTag,
+        join: m in assoc(mt, :message),
+        join: t in assoc(mt, :tag),
+        where: m.contact_id == ^contact_id and t.label == "Unread",
+        select: [mt.message_id]
 
     {_, deleted_rows} = Repo.delete_all(query)
     {:ok, List.flatten(deleted_rows)}
-
   end
-
-
 end
