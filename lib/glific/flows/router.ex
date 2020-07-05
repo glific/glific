@@ -10,6 +10,7 @@ defmodule Glific.Flows.Router do
   alias Glific.Flows.{
     Case,
     Category,
+    Context,
     Node
   }
 
@@ -106,10 +107,14 @@ defmodule Glific.Flows.Router do
   Execute a router, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Router.t(), map(), [String.t()]) :: any
+  @spec execute(Router.t(), Context.t(), [String.t()]) ::
+          {:ok, Context.t(), [String.t()]} | {:error, String.t()}
+  def execute(_router, context, message_stream) when message_stream == [],
+    do: {:ok, context, []}
+
   def execute(
         %{type: type, wait_type: wait_type} = router,
-        uuid_map,
+        context,
         message_stream
       )
       when type == "switch" and wait_type == "msg" do
@@ -120,7 +125,7 @@ defmodule Glific.Flows.Router do
       Enum.find(
         router.cases,
         nil,
-        fn c -> Case.execute(c, uuid_map, msg) end
+        fn c -> Case.execute(c, context, msg) end
       )
 
     category_uuid =
@@ -129,7 +134,10 @@ defmodule Glific.Flows.Router do
         else: c.category_uuid
 
     # find the category object and send it over
-    {:ok, {:category, category}} = Map.fetch(uuid_map, category_uuid)
-    Category.execute(category, uuid_map, rest)
+    {:ok, {:category, category}} = Map.fetch(context.uuid_map, category_uuid)
+    Category.execute(category, context, rest)
   end
+
+  def execute(_router, _context, _message_stream),
+    do: {:error, "Unimplemented router type and/or wait type"}
 end

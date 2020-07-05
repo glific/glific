@@ -11,6 +11,7 @@ defmodule Glific.Flows.Action do
   alias Glific.Enums.FlowType
 
   alias Glific.Flows.{
+    Context,
     Flow,
     Node
   }
@@ -92,14 +93,20 @@ defmodule Glific.Flows.Action do
   Execute a action, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Action.t(), map(), [String.t()]) :: any
-  def execute(%{type: type} = action, _uuid_map, _message_stream) when type == "send_msg",
-    do: IO.puts("Sending message: #{action.text}, #{action.uuid}")
+  @spec execute(Action.t(), Context.t(), [String.t()]) ::
+          {:ok, Context.t(), [String.t()]} | {:error, String.t()}
+  def execute(%{type: type} = action, context, message_stream) when type == "send_msg" do
+    IO.puts("Sending message: #{action.text}, #{action.uuid}")
+    {:ok, context, message_stream}
+  end
 
-  def execute(%{type: type} = action, _uuid_map, _message_stream)
-      when type == "set_contact_language",
-      do: IO.puts("Setting Contact Language: #{action.text}")
+  def execute(%{type: type} = action, context, message_stream)
+      when type == "set_contact_language" do
+    IO.puts("Setting Contact Language: #{action.text}")
+    context.set_contact_language(action.text)
+    {:ok, context, message_stream}
+  end
 
-  def execute(action, _uuid_map, _message_stream),
-    do: IO.inspect(action)
+  def execute(action, _context, _message_stream),
+    do: {:error, "Unsupported action type #{action.type}"}
 end

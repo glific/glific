@@ -9,6 +9,8 @@ defmodule Glific.Flows.Flow do
   import Ecto.Changeset
 
   alias Glific.{
+    Contacts.Contact,
+    Flows.Context,
     Flows.Node,
     Settings.Language
   }
@@ -71,14 +73,24 @@ defmodule Glific.Flows.Flow do
   end
 
   @doc """
-  Execute a flow, given a message stream.
-  Consume the message stream as processing occurs
+  Build the context so we can execute the flow
   """
-  @spec execute(Flow.t(), map(), [String.t()]) :: any
-  def execute(flow, uuid_map, message_stream) do
-    # this is the easy case, we just need to execute the first
-    # node, and let magic happen
-    first_node = hd(flow.nodes)
-    Node.execute(first_node, uuid_map, message_stream)
+  @spec context(Flow.t(), map(), Contact.t()) :: Context.t() | {:error, String.t()}
+  def context(%Flow{nodes: nodes}, _uuid_map, _contact) when nodes == [],
+    do: {:error, "An empty flow cannot have a context or be executed"}
+
+  def context(flow, uuid_map, contact) do
+    # get the first node
+    node = hd(flow.nodes)
+
+    %Context{
+      contact: contact,
+      contact_id: contact.id,
+      flow: flow,
+      flow_uuid: flow.uuid,
+      uuid_map: uuid_map,
+      node: node,
+      node_uuid: node.uuid
+    }
   end
 end

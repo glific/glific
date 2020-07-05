@@ -11,17 +11,14 @@ defmodule Glific.Flows.First do
   @doc """
   iex module for us to interact with our actions and events
   """
-  @spec init([String.t()]) :: {Flow.t(), map()}
-  def init(message_stream) do
-    {flow, uuid_map} =
-      File.read!(__DIR__ <> @test_file)
-      |> Jason.decode!()
-      |> remove_definition()
-      # lets get rid of stuff we msdon't use
-      |> Map.delete("_ui")
-      |> Flow.process(%{})
-
-    Flow.execute(flow, uuid_map, message_stream)
+  @spec init() :: {Flow.t(), map()}
+  def init do
+    File.read!(__DIR__ <> @test_file)
+    |> Jason.decode!()
+    |> remove_definition()
+    # lets get rid of stuff we msdon't use
+    |> Map.delete("_ui")
+    |> Flow.process(%{})
   end
 
   defp remove_definition(json) do

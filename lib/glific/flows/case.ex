@@ -11,6 +11,7 @@ defmodule Glific.Flows.Case do
 
   alias Glific.Flows.{
     Category,
+    Context,
     Router
   }
 
@@ -72,14 +73,19 @@ defmodule Glific.Flows.Case do
 
   @doc """
   Execute a case, given a message.
+  This is the only execute function which has a different signature, since
+  it just consumes one message at a time and executes it against a predefined function
+  It also returns a boolean, rather than a tuple
   """
-  @spec execute(Case.t(), map(), String.t()) :: any
-  def execute(%{type: type} = c, _uuid_map, msg) when type == "has_any_word",
+  @spec execute(Case.t(), Context.t(), String.t()) :: boolean
+  def execute(%{type: type} = c, _context, msg) when type == "has_any_word",
     do: Enum.member?(c.arguments, msg)
 
-  def execute(%{type: type} = c, _uuid_map, msg) when type == "has_number_eq",
+  def execute(%{type: type} = c, _context, msg) when type == "has_number_eq",
     do: hd(c.arguments) == msg
 
-  def execute(c, _uuid_map, _msg),
-    do: IO.puts("Not processing cases of type #{c.type}")
+  def execute(c, _context, _msg) do
+    IO.puts("Not processing cases of type #{c.type}")
+    false
+  end
 end

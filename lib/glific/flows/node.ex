@@ -9,6 +9,7 @@ defmodule Glific.Flows.Node do
 
   alias Glific.Flows.{
     Action,
+    Context,
     Exit,
     Flow,
     Router
@@ -93,19 +94,21 @@ defmodule Glific.Flows.Node do
   Execute a node, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Node.t(), map(), [String.t()]) :: any
-  def execute(node, uuid_map, message_stream) do
+  @spec execute(Node.t(), Context.t(), [String.t()]) ::
+          {:ok, Context.t(), [String.t()]} | {:error, String.t()}
+  def execute(node, context, message_stream) do
     # if node has an action, execute the first action
     cond do
       !Enum.empty?(node.actions) ->
-        Action.execute(hd(node.actions), uuid_map, message_stream)
-        Exit.execute(hd(node.exits), uuid_map, message_stream)
+        {:ok, context, message_stream} = Action.execute(hd(node.actions), context, message_stream)
+
+        Exit.execute(hd(node.exits), context, message_stream)
 
       !is_nil(node.router) ->
-        Router.execute(node.router, uuid_map, message_stream)
+        Router.execute(node.router, context, message_stream)
 
       true ->
-        IO.puts("ERROR: We are not supposed to land here")
+        {:error, "Unsupported node type"}
     end
   end
 end

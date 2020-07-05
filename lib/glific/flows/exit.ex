@@ -7,7 +7,10 @@ defmodule Glific.Flows.Exit do
   use Glific.Schema
   import Ecto.Changeset
 
-  alias Glific.Flows.Node
+  alias Glific.Flows.{
+    Context,
+    Node
+  }
 
   @required_fields [:node_uuid, :destination_node_uuid]
   @optional_fields []
@@ -59,13 +62,20 @@ defmodule Glific.Flows.Exit do
   @doc """
   Execute a exit, given a message stream.
   """
-  @spec execute(Exit.t(), map(), [String.t()]) :: any
-  def execute(exit, uuid_map, message_stream) do
+  @spec execute(Exit.t(), Context.t(), [String.t()]) ::
+          {:ok, Context.t(), [String.t()]} | {:error, String.t()}
+  def execute(exit, context, message_stream) do
     if is_nil(exit.destination_node_uuid) do
       IO.puts("And we have reached the end of the help menu")
+      {:ok, context, []}
     else
-      {:ok, {:node, node}} = Map.fetch(uuid_map, exit.destination_node_uuid)
-      Node.execute(node, uuid_map, message_stream)
+      {:ok, {:node, node}} = Map.fetch(context.uuid_map, exit.destination_node_uuid)
+
+      Node.execute(
+        node,
+        context.set_node(node),
+        message_stream
+      )
     end
   end
 end

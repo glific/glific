@@ -127,7 +127,7 @@
      {
       "uuid": "1fcfd29b-d6c5-4d09-8901-45c9bdc4f6b1",
       "type": "set_contact_language",
-      "language": "spa"
+      "language": "hindi"
      }
     ],
     "exits": [
@@ -143,7 +143,7 @@
      {
       "uuid": "6c4fc49f-579b-44a0-b273-83445f3ea873",
       "type": "set_contact_language",
-      "language": "eng"
+      "language": "english"
      }
     ],
     "exits": [
@@ -269,10 +269,10 @@
    },
    "languages": [
     {
-     "eng": "English"
+     "english": "English"
     },
     {
-     "spa": "Spanish"
+     "hindi": "Hindi"
     }
    ]
   }
