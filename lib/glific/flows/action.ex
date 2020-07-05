@@ -81,9 +81,9 @@ defmodule Glific.Flows.Action do
     }
 
     action =
-    if action.type == "set_contact_language",
-      do: Map.put(action, :text, json["language"]),
-    else: action
+      if action.type == "set_contact_language",
+        do: Map.put(action, :text, json["language"]),
+        else: action
 
     {action, Map.put(uuid_map, action.uuid, {:action, action})}
   end
@@ -96,8 +96,9 @@ defmodule Glific.Flows.Action do
   def execute(%{type: type} = action, _uuid_map, _message_stream) when type == "send_msg",
     do: IO.puts("Sending message: #{action.text}, #{action.uuid}")
 
-  def execute(%{type: type} = action, _uuid_map, _message_stream) when type == "set_contact_language",
-    do: IO.puts("Setting Contact Language: #{action.text}")
+  def execute(%{type: type} = action, _uuid_map, _message_stream)
+      when type == "set_contact_language",
+      do: IO.puts("Setting Contact Language: #{action.text}")
 
   def execute(action, _uuid_map, _message_stream),
     do: IO.inspect(action)
