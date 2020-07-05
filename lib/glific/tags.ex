@@ -438,7 +438,7 @@ defmodule Glific.Tags do
   end
 
   @doc """
-  Check if we can send a message to the contact
+    Remove a specific tag from contact messages
   """
   @spec remove_tag_from_all_message(Glific.Contacts.Contact.t(), integer()) :: boolean()
   def remove_tag_from_all_message(contact_id, tag_id) do
@@ -452,4 +452,23 @@ defmodule Glific.Tags do
 
     true
   end
+
+  @doc """
+   Remove a tag from messages
+  """
+
+  @spec mark_all_message_as_read(Glific.Contacts.Contact.t()) :: {:ok, list()}
+  def mark_all_message_as_read(contact_id) do
+    query = from mt in MessageTag,
+    join: m in assoc(mt, :message),
+    join: t in assoc(mt, :tag),
+    where: m.contact_id == ^contact_id and t.label == "Unread",
+    select: [mt.message_id]
+
+    {_, deleted_rows} = Repo.delete_all(query)
+    {:ok, List.flatten(deleted_rows)}
+
+  end
+
+
 end

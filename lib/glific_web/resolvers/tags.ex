@@ -107,4 +107,15 @@ defmodule GlificWeb.Resolvers.Tags do
       {:ok, contact_tag}
     end
   end
+
+  @doc false
+  @spec mark_all_message_as_read(Absinthe.Resolution.t(), %{contact_id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def mark_all_message_as_read(_, %{contact_id: contact_id}, _) do
+    with {:ok, untag_messages_id} <- Tags.mark_all_message_as_read(contact_id) do
+       {:ok, untag_messages_id}
+    end
+
+  end
+
 end
