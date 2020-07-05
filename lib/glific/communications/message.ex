@@ -11,8 +11,8 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Processor.Producer,
-    Tags,
-    Repo
+    Repo,
+    Tags
   }
 
   @doc false
