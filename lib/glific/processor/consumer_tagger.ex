@@ -125,7 +125,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @spec add_not_reply_tag(Message.t(), map()) :: Message.t()
   defp add_not_reply_tag(message, state) do
-    Tags.remove_tag_from_all_message(message.contact_id, state.status_map["Not Replied"])
+    Tags.remove_tag_from_all_message(message.contact_id, "Not Replied")
     add_status_tag(message, "Not Replied", state)
   end
 end

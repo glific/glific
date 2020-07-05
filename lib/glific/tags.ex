@@ -440,17 +440,18 @@ defmodule Glific.Tags do
   @doc """
     Remove a specific tag from contact messages
   """
-  @spec remove_tag_from_all_message(Glific.Contacts.Contact.t(), integer()) :: boolean()
-  def remove_tag_from_all_message(contact_id, tag_id) do
-    MessageTag
-    |> where(
-      [mt],
-      mt.message_id in fragment("select id from messages where contact_id = ?", ^contact_id) and
-        mt.tag_id == ^tag_id
-    )
-    |> Repo.delete_all()
+  @spec remove_tag_from_all_message(integer(), String.t()) :: list()
+  def remove_tag_from_all_message(contact_id, tag_label) do
+    query =
+      from mt in MessageTag,
+        join: m in assoc(mt, :message),
+        join: t in assoc(mt, :tag),
+        where: m.contact_id == ^contact_id and t.label == ^tag_label,
+        select: [mt.message_id]
 
-    true
+    {_, deleted_rows} = Repo.delete_all(query)
+
+    List.flatten(deleted_rows)
   end
 
   @doc """
@@ -459,14 +460,7 @@ defmodule Glific.Tags do
 
   @spec mark_all_message_as_read(integer()) :: {:ok, [integer()]}
   def mark_all_message_as_read(contact_id) do
-    query =
-      from mt in MessageTag,
-        join: m in assoc(mt, :message),
-        join: t in assoc(mt, :tag),
-        where: m.contact_id == ^contact_id and t.label == "Unread",
-        select: [mt.message_id]
-
-    {_, deleted_rows} = Repo.delete_all(query)
-    {:ok, List.flatten(deleted_rows)}
+    with untag_message_ids <- remove_tag_from_all_message(contact_id, "Unread"),
+         do: {:ok, untag_message_ids}
   end
 end
