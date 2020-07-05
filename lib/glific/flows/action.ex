@@ -94,7 +94,7 @@ defmodule Glific.Flows.Action do
   """
   @spec execute(Action.t(), map(), [String.t()]) :: any
   def execute(%{type: type} = action, _uuid_map, _message_stream) when type == "send_msg",
-    do: IO.puts("Sending message: #{action.text}")
+    do: IO.puts("Sending message: #{action.text}, #{action.uuid}")
 
   def execute(%{type: type} = action, _uuid_map, _message_stream) when type == "set_contact_language",
     do: IO.puts("Setting Contact Language: #{action.text}")

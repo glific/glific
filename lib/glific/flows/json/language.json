@@ -108,7 +108,7 @@
     "actions": [
      {
       "attachments": [],
-      "text": ":language\n",
+      "text": ":language",
       "type": "send_msg",
       "quick_replies": [],
       "uuid": "b062719d-eab8-4211-97f6-c1d2ca5697ca"
@@ -162,7 +162,7 @@
      "cases": [
       {
        "arguments": [
-        "Hindi, 1"
+        "Hindi", "1"
        ],
        "type": "has_any_word",
        "uuid": "f5089098-5604-4256-8bd4-38848352d64a",
@@ -170,7 +170,7 @@
       },
       {
        "arguments": [
-        "English, 2"
+        "English", "2"
        ],
        "type": "has_any_word",
        "uuid": "f3ec4a61-3471-4750-a37c-dc0f78aedc50",
