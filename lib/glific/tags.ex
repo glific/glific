@@ -453,14 +453,4 @@ defmodule Glific.Tags do
 
     List.flatten(deleted_rows)
   end
-
-  @doc """
-   Remove a tag from messages
-  """
-
-  @spec mark_all_message_as_read(integer()) :: {:ok, [integer()]}
-  def mark_all_message_as_read(contact_id) do
-    with untag_message_ids <- remove_tag_from_all_message(contact_id, "Unread"),
-         do: {:ok, untag_message_ids}
-  end
 end

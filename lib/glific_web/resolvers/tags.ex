@@ -114,8 +114,7 @@ defmodule GlificWeb.Resolvers.Tags do
         }) ::
           {:ok, any} | {:error, any}
   def mark_all_message_as_read(_, %{contact_id: contact_id}, _) do
-    with {:ok, untag_messages_id} <- Tags.mark_all_message_as_read(contact_id) do
-      {:ok, untag_messages_id}
-    end
+    with untag_message_ids <- Tags.remove_tag_from_all_message(contact_id, "Unread"),
+         do: {:ok, untag_message_ids}
   end
 end
