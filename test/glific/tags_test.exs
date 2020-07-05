@@ -316,16 +316,26 @@ defmodule Glific.TagsTest do
 
     test "remove_tag_from_all_message/2 removes teh tag and return the message ids " do
       message_1 = Fixtures.message_fixture()
-      message_2 = Fixtures.message_fixture(%{sender_id: message_1.contact_id, receiver_id: message_1.receiver_id})
-      message_3 = Fixtures.message_fixture(%{sender_id: message_1.contact_id, receiver_id: message_1.receiver_id})
 
-      {:ok, tag } = Repo.fetch_by(Tag, %{label: "Unread"})
+      message_2 =
+        Fixtures.message_fixture(%{
+          sender_id: message_1.contact_id,
+          receiver_id: message_1.receiver_id
+        })
 
-      {:ok, message1_tag} = Tags.create_message_tag(%{message_id: message_1.id, tag_id: tag.id })
-      {:ok, message2_tag} = Tags.create_message_tag(%{message_id: message_2.id, tag_id: tag.id })
-      {:ok, message3_tag} = Tags.create_message_tag(%{message_id: message_3.id, tag_id: tag.id })
+      message_3 =
+        Fixtures.message_fixture(%{
+          sender_id: message_1.contact_id,
+          receiver_id: message_1.receiver_id
+        })
 
-      untag_message_id =  Tags.remove_tag_from_all_message(message_1.contact_id, "Unread")
+      {:ok, tag} = Repo.fetch_by(Tag, %{label: "Unread"})
+
+      {:ok, message1_tag} = Tags.create_message_tag(%{message_id: message_1.id, tag_id: tag.id})
+      {:ok, message2_tag} = Tags.create_message_tag(%{message_id: message_2.id, tag_id: tag.id})
+      {:ok, message3_tag} = Tags.create_message_tag(%{message_id: message_3.id, tag_id: tag.id})
+
+      untag_message_id = Tags.remove_tag_from_all_message(message_1.contact_id, "Unread")
 
       assert message_1.id in untag_message_id
       assert message_2.id in untag_message_id
@@ -334,7 +344,6 @@ defmodule Glific.TagsTest do
       assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message1_tag.id) end
       assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message2_tag.id) end
       assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message3_tag.id) end
-
     end
   end
 end

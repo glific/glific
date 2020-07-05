@@ -106,9 +106,9 @@ defmodule GlificWeb.Schema.TagTypes do
     end
 
     @desc "Remove unread tag from messages and returns a list of message ids"
-    field :mark_all_message_as_read, list_of(:id) do
+    field :mark_contact_messages_as_read, list_of(:id) do
       arg(:contact_id, non_null(:gid))
-      resolve(&Resolvers.Tags.mark_all_message_as_read/3)
+      resolve(&Resolvers.Tags.mark_contact_messages_as_read/3)
     end
   end
 end

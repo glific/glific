@@ -109,11 +109,11 @@ defmodule GlificWeb.Resolvers.Tags do
   end
 
   @doc false
-  @spec mark_all_message_as_read(Absinthe.Resolution.t(), %{contact_id: integer}, %{
+  @spec mark_contact_messages_as_read(Absinthe.Resolution.t(), %{contact_id: integer}, %{
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def mark_all_message_as_read(_, %{contact_id: contact_id}, _) do
+  def mark_contact_messages_as_read(_, %{contact_id: contact_id}, _) do
     with untag_message_ids <- Tags.remove_tag_from_all_message(contact_id, "Unread"),
          do: {:ok, untag_message_ids}
   end
