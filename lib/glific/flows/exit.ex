@@ -59,7 +59,7 @@ defmodule Glific.Flows.Exit do
   @doc """
   Execute a exit, given a message stream.
   """
-  @spec execute(Exit.t, map(), [String.t]) :: any
+  @spec execute(Exit.t(), map(), [String.t()]) :: any
   def execute(exit, uuid_map, message_stream) do
     if is_nil(exit.destination_node_uuid) do
       IO.puts("And we have reached the end of the help menu")
@@ -68,5 +68,4 @@ defmodule Glific.Flows.Exit do
       Node.execute(node, uuid_map, message_stream)
     end
   end
-
 end

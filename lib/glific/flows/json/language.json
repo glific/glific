@@ -34,7 +34,7 @@
      "cases": [
       {
        "arguments": [
-        "hindi,  हिन्दी"
+        "hindi",  "हिन्दी"
        ],
        "type": "has_any_word",
        "uuid": "27ec9287-7506-498c-bced-71498df74d1c",

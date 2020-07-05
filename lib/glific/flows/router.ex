@@ -106,27 +106,30 @@ defmodule Glific.Flows.Router do
   Execute a router, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Router.t, map(), [String.t]) :: any
+  @spec execute(Router.t(), map(), [String.t()]) :: any
   def execute(
-    %{type: type, wait_type: wait_type} = router,
-    uuid_map,
-    message_stream) when type == "switch" and wait_type == "msg" do
-
+        %{type: type, wait_type: wait_type} = router,
+        uuid_map,
+        message_stream
+      )
+      when type == "switch" and wait_type == "msg" do
     [msg | rest] = message_stream
 
     # go thru the cases and find the first one that succeeds
-    c = Enum.find(
-      router.cases,
-      nil,
-      fn c -> Case.execute(c, uuid_map, msg) end
-    )
-    category_uuid = if is_nil(c),
-      do: router.default_category_uuid,
-    else: c.category_uuid
+    c =
+      Enum.find(
+        router.cases,
+        nil,
+        fn c -> Case.execute(c, uuid_map, msg) end
+      )
+
+    category_uuid =
+      if is_nil(c),
+        do: router.default_category_uuid,
+        else: c.category_uuid
 
     # find the category object and send it over
     {:ok, {:category, category}} = Map.fetch(uuid_map, category_uuid)
     Category.execute(category, uuid_map, rest)
   end
-
 end

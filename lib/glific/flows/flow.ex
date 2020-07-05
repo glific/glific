@@ -74,7 +74,7 @@ defmodule Glific.Flows.Flow do
   Execute a flow, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Flow.t, map(), [String.t]) :: any
+  @spec execute(Flow.t(), map(), [String.t()]) :: any
   def execute(flow, uuid_map, message_stream) do
     # this is the easy case, we just need to execute the first
     # node, and let magic happen

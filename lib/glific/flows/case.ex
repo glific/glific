@@ -73,9 +73,13 @@ defmodule Glific.Flows.Case do
   @doc """
   Execute a case, given a message.
   """
-  @spec execute(Case.t, map(), String.t) :: any
-  def execute(%{type: type} = c, _uuid_map, msg) when type == "has_any_word" do
-    Enum.member?(c.arguments, msg)
-  end
+  @spec execute(Case.t(), map(), String.t()) :: any
+  def execute(%{type: type} = c, _uuid_map, msg) when type == "has_any_word",
+    do: Enum.member?(c.arguments, msg)
 
+  def execute(%{type: type} = c, _uuid_map, msg) when type == "has_number_eq",
+    do: hd(c.arguments) == msg
+
+  def execute(c, _uuid_map, _msg),
+    do: IO.puts("Not processing cases of type #{c.type}")
 end
