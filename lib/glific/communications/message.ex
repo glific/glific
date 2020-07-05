@@ -11,6 +11,7 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Processor.Producer,
+    Tags,
     Repo
   }
 
@@ -61,6 +62,8 @@ defmodule Glific.Communications.Message do
       flow: :outbound,
       sent_at: DateTime.truncate(DateTime.utc_now(), :second)
     })
+
+    Tags.remove_tag_from_all_message(message["contact_id"], "Not Replied")
 
     {:ok, message}
   end
