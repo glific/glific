@@ -1,0 +1,3 @@
+mutation markContactMessagesAsRead($contactId : Gid!) {
+  markContactMessagesAsRead(contactId: $contactId)
+}

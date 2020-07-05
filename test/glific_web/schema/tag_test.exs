@@ -2,6 +2,8 @@ defmodule GlificWeb.Schema.TagTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  alias Glific.{Fixtures, Tags.Tag}
+
   setup do
     Glific.SeedsDev.seed_tag()
     :ok
@@ -13,6 +15,12 @@ defmodule GlificWeb.Schema.TagTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/tags/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/tags/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/tags/delete.gql")
+
+  load_gql(
+    :mark_contact_messages_as_read,
+    GlificWeb.Schema,
+    "assets/gql/tags/mark_contact_messages_as_read.gql"
+  )
 
   test "tags field returns list of tags" do
     result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
@@ -214,5 +222,46 @@ defmodule GlificWeb.Schema.TagTest do
 
     message = get_in(query_data, [:data, "deleteTag", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "mark all contact messages as unread" do
+    message_1 = Fixtures.message_fixture()
+
+    message_2 =
+      Fixtures.message_fixture(%{
+        sender_id: message_1.contact_id,
+        receiver_id: message_1.receiver_id
+      })
+
+    message_3 =
+      Fixtures.message_fixture(%{
+        sender_id: message_1.contact_id,
+        receiver_id: message_1.receiver_id
+      })
+
+    {:ok, tag} = Glific.Repo.fetch_by(Tag, %{label: "Unread"})
+
+    message1_tag = Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
+    message2_tag = Fixtures.message_tag_fixture(%{message_id: message_2.id, tag_id: tag.id})
+    message3_tag = Fixtures.message_tag_fixture(%{message_id: message_3.id, tag_id: tag.id})
+
+    result =
+      query_gql_by(:mark_contact_messages_as_read,
+        variables: %{"contactId" => Integer.to_string(message_1.contact_id)}
+      )
+
+    assert {:ok, query_data} = result
+
+    untag_message_id = get_in(query_data, [:data, "markContactMessagesAsRead"])
+
+    assert untag_message_id != nil
+
+    assert Integer.to_string(message_1.id) in untag_message_id
+    assert Integer.to_string(message_2.id) in untag_message_id
+    assert Integer.to_string(message_3.id) in untag_message_id
+
+    assert_raise Ecto.NoResultsError, fn -> Glific.Tags.get_message_tag!(message1_tag.id) end
+    assert_raise Ecto.NoResultsError, fn -> Glific.Tags.get_message_tag!(message2_tag.id) end
+    assert_raise Ecto.NoResultsError, fn -> Glific.Tags.get_message_tag!(message3_tag.id) end
   end
 end
