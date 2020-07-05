@@ -11,7 +11,8 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Processor.Producer,
-    Repo
+    Repo,
+    Tags
   }
 
   @doc false
@@ -61,6 +62,8 @@ defmodule Glific.Communications.Message do
       flow: :outbound,
       sent_at: DateTime.truncate(DateTime.utc_now(), :second)
     })
+
+    Tags.remove_tag_from_all_message(message["contact_id"], "Not Replied")
 
     {:ok, message}
   end
@@ -141,6 +144,7 @@ defmodule Glific.Communications.Message do
     |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
+    |> Producer.add()
 
     {:ok}
   end

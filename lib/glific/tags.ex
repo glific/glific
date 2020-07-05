@@ -436,4 +436,21 @@ defmodule Glific.Tags do
   def change_contact_tag(%ContactTag{} = contact_tag, attrs \\ %{}) do
     ContactTag.changeset(contact_tag, attrs)
   end
+
+  @doc """
+    Remove a specific tag from contact messages
+  """
+  @spec remove_tag_from_all_message(integer(), String.t()) :: list()
+  def remove_tag_from_all_message(contact_id, tag_label) do
+    query =
+      from mt in MessageTag,
+        join: m in assoc(mt, :message),
+        join: t in assoc(mt, :tag),
+        where: m.contact_id == ^contact_id and t.label == ^tag_label,
+        select: [mt.message_id]
+
+    {_, deleted_rows} = Repo.delete_all(query)
+
+    List.flatten(deleted_rows)
+  end
 end
