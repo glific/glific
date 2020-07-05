@@ -329,6 +329,48 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#tagresult">TagResult</a> | An error object or empty
 
+
+
+
+
+
+
+## Remove unread tag from messages
+
+```graphql
+mutation markContactMessagesAsRead($contactId : Gid!) {
+  markContactMessagesAsRead(contactId: $contactId)
+}
+
+{
+  "contactId": "26"
+}
+```
+
+> The above query returns effected messages ids:
+
+```json
+{
+  "data": {
+    "markContactMessagesAsRead": [
+      "2", "10"
+    ]
+  }
+}
+```
+
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+contactId | <a href="#gid">Gid</a>! | required ||
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#list">List</a> | An error object or empty
+
 ## Tag Objects
 
 ### Tag
