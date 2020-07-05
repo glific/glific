@@ -141,6 +141,7 @@ defmodule Glific.Communications.Message do
     |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
+    |> Producer.add()
 
     {:ok}
   end

@@ -15,6 +15,7 @@ defmodule Glific.Processor.ConsumerTagger do
     Taggers,
     Taggers.Numeric,
     Taggers.Status,
+    Tags,
     Tags.Tag
   }
 
@@ -84,6 +85,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
     message
     |> add_status_tag("Unread", state)
+    |> add_not_reply_tag(state)
     |> new_contact_tagger(state)
     |> numeric_tagger(body, state)
     |> keyword_tagger(body, state)
@@ -120,4 +122,10 @@ defmodule Glific.Processor.ConsumerTagger do
   @spec add_status_tag(Message.t(), String.t(), map()) :: Message.t()
   defp add_status_tag(message, status, state),
     do: Helper.add_tag(message, state.status_map[status])
+
+  @spec add_not_reply_tag(Message.t(), map()) :: Message.t()
+  defp add_not_reply_tag(message, state) do
+    Tags.remove_tag_from_all_message(message.contact_id, state.status_map["Not Replied"])
+    add_status_tag(message, "Not Replied", state)
+  end
 end

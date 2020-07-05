@@ -436,4 +436,20 @@ defmodule Glific.Tags do
   def change_contact_tag(%ContactTag{} = contact_tag, attrs \\ %{}) do
     ContactTag.changeset(contact_tag, attrs)
   end
+
+  @doc """
+  Check if we can send a message to the contact
+  """
+  @spec remove_tag_from_all_message(Glific.Contacts.Contact.t(), integer()) :: boolean()
+  def remove_tag_from_all_message(contact_id, tag_id) do
+    MessageTag
+    |> where(
+      [mt],
+      mt.message_id in fragment("select id from messages where contact_id = ?", ^contact_id) and
+        mt.tag_id == ^tag_id
+    )
+    |> Repo.delete_all()
+
+    true
+  end
 end
