@@ -43,12 +43,12 @@ defmodule Glific.Flows.First do
 
     Enum.reduce_while(
       args,
-      context,
-      fn arg, context ->
+      {:ok, context},
+      fn arg, {:ok, context} ->
         case Context.execute(context, arg) do
-          {:ok, context, []} -> {:cont, context}
-          {:error, msg} -> {:halt, msg}
-          {:ok, _context, messages} -> {:halt, messages}
+          {:ok, context, []} -> {:cont, {:ok, context}}
+          {:error, msg} -> {:halt, {:error, msg}}
+          {:ok, _context, messages} -> {:halt, {:error, messages}}
         end
       end
     )
