@@ -14,6 +14,14 @@ defmodule Glific.Providers.Gupshup.Message do
   @doc false
   @impl Glific.Providers.MessageBehaviour
   @spec send_text(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_text(%{is_hsm: true} = message) do
+    %{type: :text, text: message.body <> "test", isHSM: true}
+    |> send_message(message)
+  end
+
+  @doc false
+  @impl Glific.Providers.MessageBehaviour
+  @spec send_text(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_text(message) do
     %{type: :text, text: message.body}
     |> send_message(message)

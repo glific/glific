@@ -226,8 +226,12 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()}
   def create_and_send_message(attrs) do
-    with {:ok, message} <- create_message(Map.put(attrs, :flow, :outbound)),
-         do: Communications.Message.send_message(message)
+    with {:ok, message} <- create_message(Map.put(attrs, :flow, :outbound)) do
+      # Adding is_hsm to message object
+      message
+      |> Map.put_new(:is_hsm, attrs.is_hsm)
+      |> Communications.Message.send_message
+    end
   end
 
   @doc """
@@ -276,7 +280,8 @@ defmodule Glific.Messages do
       body: hsm_body,
       type: session_template.type,
       sender_id: Communications.Message.organization_contact_id(),
-      receiver_id: receiver_id
+      receiver_id: receiver_id,
+      is_hsm: session_template.is_hsm
     }
 
     create_and_send_message(message_params)
