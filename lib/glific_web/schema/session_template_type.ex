@@ -131,13 +131,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       resolve(&Resolvers.Templates.send_session_message/3)
     end
 
-    field :send_hsm_message, :session_template_result do
-      arg(:id, non_null(:id))
-      arg(:receiver_id, non_null(:id))
-      arg(:parameters, list_of(:string))
-      resolve(&Resolvers.Templates.send_hsm_message/3)
-    end
-
     field :create_template_form_message, :session_template_result do
       arg(:message_id, non_null(:id))
       arg(:input, :message_to_template_input)

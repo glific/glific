@@ -259,6 +259,20 @@ defmodule Glific.Messages do
     create_and_send_message(message_params)
   end
 
+  @spec create_and_send_hsm_session_template(SessionTemplate.t(), integer, []) :: {:ok, Message.t()}
+  def create_and_send_hsm_session_template(template_id, receiver_id, parameters) do
+    {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
+
+    message_params = %{
+      body: session_template.body,
+      type: session_template.type,
+      sender_id: Communications.Message.organization_contact_id(),
+      receiver_id: receiver_id
+    }
+
+    create_and_send_message(message_params)
+  end
+
   @doc false
   @spec create_and_send_message_to_contacts(map(), []) :: {:ok, Message.t()}
   def create_and_send_message_to_contacts(message_params, contact_ids) do
