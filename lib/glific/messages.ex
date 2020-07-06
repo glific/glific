@@ -231,6 +231,32 @@ defmodule Glific.Messages do
   end
 
   @doc """
+  Create and send verifciation message
+  Using session template of shortcode 'verification'
+  """
+  @spec create_and_send_verification_message(String.t(), String.t()) :: {:ok, Message.t()}
+  def create_and_send_verification_message(phone, otp) do
+    # fetch contact by phone number
+    {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
+
+    # fetch session template by shortcode "verification"
+    {:ok, session_template} =
+      Repo.fetch_by(SessionTemplate, %{
+        shortcode: "verification"
+      })
+
+    # create and send verification message with OTP code
+    message_params = %{
+      body: session_template.body <> otp,
+      type: session_template.type,
+      sender_id: Communications.Message.organization_contact_id(),
+      receiver_id: contact.id
+    }
+
+    create_and_send_message(message_params)
+  end
+
+  @doc """
   Send a session template to the specific contact. This is typically used in automation
   """
 

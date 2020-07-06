@@ -47,7 +47,7 @@ config :glific, :pow,
   repo: Glific.Repo
 
 config :passwordless_auth,
-  sms_adapter: Glific.SMSAdapter.Gupshup
+  sms_adapter: Glific.Providers.Gupshup
 
 # Sentry configuration
 
