@@ -130,7 +130,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # The body of the message
       add :body, :text, null: false
 
-      # Options are: text, audio, video, image, contact, location, file, hsm
+      # Options are: text, audio, video, image, contact, location, file
       add :type, :message_type_enum
 
       # Is this a predefined system object?
@@ -144,6 +144,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
       # The message shortcode
       add :shortcode, :string, null: true
+
+      # Field to check hsm message type
+      add :is_hsm, :boolean, default: false
 
       # Number of parameters in hsm message
       add :number_parameters, :integer, null: true
