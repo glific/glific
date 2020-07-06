@@ -128,7 +128,7 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.create_and_send_message_to_contacts/3)
     end
 
-    field :send_hsm_message, :session_template_result do
+    field :send_hsm_message, :message_result do
       arg(:id, non_null(:id))
       arg(:receiver_id, non_null(:id))
       arg(:parameters, list_of(:string))
