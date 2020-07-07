@@ -13,25 +13,17 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_text(Message.t(), true) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_text(message, is_hsm) when is_hsm == true do
-    %{type: :text, text: message.body, isHSM: true}
-    |> send_message(message)
-  end
-
-  @doc false
-  @impl Glific.Providers.MessageBehaviour
-  @spec send_text(Message.t(), false) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_text(message, is_hsm) when is_hsm == false do
-    %{type: :text, text: message.body}
+  @spec send_text(Message.t(), boolean) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_text(message, is_hsm) do
+    %{type: :text, text: message.body, isHSM: is_hsm}
     |> send_message(message)
   end
 
   @doc false
 
   @impl Glific.Providers.MessageBehaviour
-  @spec send_image(Message.t(), false) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_image(message, is_hsm) when is_hsm == false do
+  @spec send_image(Message.t(), boolean) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_image(message, _is_hsm) do
     message_media = message.media
 
     %{
@@ -46,8 +38,8 @@ defmodule Glific.Providers.Gupshup.Message do
   @doc false
 
   @impl Glific.Providers.MessageBehaviour
-  @spec send_audio(Message.t(), false) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_audio(message, is_hsm) when is_hsm == false do
+  @spec send_audio(Message.t(), boolean) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_audio(message, _is_hsm) do
     message_media = message.media
 
     %{
@@ -59,8 +51,8 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_video(Message.t(), false) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_video(message, is_hsm) when is_hsm == false do
+  @spec send_video(Message.t(), boolean) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_video(message, _is_hsm) do
     message_media = message.media
 
     %{
@@ -73,8 +65,8 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_document(Message.t(), false) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_document(message, is_hsm) when is_hsm == false do
+  @spec send_document(Message.t(), boolean) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_document(message, _is_hsm) do
     message_media = message.media
 
     %{
