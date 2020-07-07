@@ -240,6 +240,27 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Check if we can send a hsm message to the contact
+  """
+  @spec can_send_hsm_message_to?(Contact.t()) :: boolean()
+  def can_send_hsm_message_to?(contact) do
+    with true <- contact.status == :valid,
+         true <- contact.provider_status == :valid,
+         true <- contact.optin_time != nil,
+         {:ok, true} <- {:ok, contact.optout_time == nil} do
+      true
+    else
+      {:ok, false} ->
+        with true <- Timex.diff(contact.optout_time, contact.optin_time) < 0 do
+          true
+        end
+
+      false ->
+        false
+    end
+  end
+
+  @doc """
   Get contact's current location
   """
   @spec contact_location(Contact.t()) :: {:ok, Location.t()}
