@@ -359,6 +359,42 @@ Repo.insert!(%SessionTemplate{
   """
 })
 
+Repo.insert!(%SessionTemplate{
+  label: "HSM1",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 0,
+  language_id: en_us.id,
+  body: """
+  I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now. If you’d like to continue this discussion, please reply with ‘yes’
+  """
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM2",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 4,
+  language_id: en_us.id,
+  body: """
+  Please find your {{1}} ticket for {{2}} on {{3}}. Please click on {{4}} to get a printout.
+  """
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM3",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: """
+  Your {{1}} points will expire on {{2}}.
+  """
+})
+
 # Seed saved searches
 {:ok, unread} = Repo.fetch_by(Tag, %{label: "Unread"})
 Repo.insert!(%SavedSearch{

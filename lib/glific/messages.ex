@@ -230,7 +230,7 @@ defmodule Glific.Messages do
       # Adding is_hsm to message object
       message
       |> Map.put_new(:is_hsm, attrs.is_hsm)
-      |> Communications.Message.send_message
+      |> Communications.Message.send_message()
     end
   end
 
