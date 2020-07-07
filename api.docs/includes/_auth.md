@@ -12,7 +12,7 @@ The main API endpoints are listed below
 ```shell
 curl -X POST -d \
   "user[name]='Test User'&user[phone]=911234554321&user[password]=secret1234 \
-  &user[password_confirmation]=secret1234" \
+  &user[password_confirmation]=secret1234&user[otp]=321721" \
   http://YOUR_HOSTNAME_AND_PORT/api/v1/registration
 ```
 
@@ -65,7 +65,7 @@ If you are using axios or other libraries, send the following in the BODY of a P
 > The above query returns JSON structured like this:
 
 ```json
-{"data": {"phone": phone, "otp": otp,
+{"data": {"phone": phone,
           "message": "OTP #{otp} sent successfully to #{phone}"}}
 ```
 
