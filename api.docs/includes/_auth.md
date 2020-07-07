@@ -37,7 +37,8 @@ If you are using axios or other libraries, send the following in the BODY of a P
 ## Create a new user
 
 The typical user registration flow will be something like:
-  * User follows the instructions on [gupshup](https://www.gupshup.io/whatsappassistant/#/settings/GlificTest?bt=ACP
+
+  * User follows the instructions at [gupshup.io](https://www.gupshup.io/whatsappassistant/#/whatsapp-dashboard)
   * User enters: `Name`, `Phone Number` and `Password`
   * After initial validation, the caller will call the `send_otp` request
   * On successful confirmation of the delivery of `send_otp`, the front-end will display an OTP entry screen to the user.
