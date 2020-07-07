@@ -282,6 +282,50 @@ defmodule Glific.ContactsTest do
       assert false == Contacts.can_send_message_to?(contact3)
     end
 
+    test "ensure that contact returns the valid state for sending the hsm message" do
+      contact1 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :invalid
+        })
+
+      contact2 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :valid,
+          optin_time: DateTime.utc_now()
+        })
+
+      contact3 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :valid,
+          optin_time: nil
+        })
+
+      contact4 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :valid,
+          optin_time: Timex.shift(DateTime.utc_now(), seconds: -30),
+          optout_time: DateTime.utc_now()
+        })
+
+      contact5 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :valid,
+          optin_time: DateTime.utc_now(),
+          optout_time: Timex.shift(DateTime.utc_now(), seconds: -30)
+        })
+
+      assert false == Contacts.can_send_hsm_message_to?(contact1)
+      assert true == Contacts.can_send_hsm_message_to?(contact2)
+      assert false == Contacts.can_send_hsm_message_to?(contact3)
+      assert false == Contacts.can_send_hsm_message_to?(contact4)
+      assert true == Contacts.can_send_hsm_message_to?(contact5)
+    end
+
     test "contact_opted_in/2 will setup the contact as valid contact for message" do
       contact = contact_fixture(%{status: :invalid})
 
