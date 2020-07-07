@@ -29,7 +29,7 @@ defmodule Glific.MixProject do
 
       # Lets add meta information on project
       name: "Glific",
-      description: "A open source two way communication platform for the social sector",
+      description: "An open source two way communication platform for the social sector",
       source_url: @github_url,
       homepage_url: @home_url,
       package: [
