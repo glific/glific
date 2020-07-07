@@ -165,7 +165,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "term" => "",
           "shouldSave" => false,
           "saveSearchLabel" => "",
-          "contactOpts" => %{"limit" => 1},
+          "contactOpts" => %{"limit" => Glific.Contacts.count_contacts()},
           "messageOpts" => %{"limit" => 1}
         }
       )

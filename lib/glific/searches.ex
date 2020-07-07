@@ -133,16 +133,16 @@ defmodule Glific.Searches do
   """
   @spec search(map()) :: [Conversation.t()]
   def search(%{term: term, save_search: save_search} = args) do
-    if save_search do
-      create_saved_search(%{label: args.save_search_label, args: args})
-    end
-
     query = from c in Contact, select: c.id
 
     contact_ids =
       query
       |> Full.run(term, args)
       |> Repo.all()
+
+    if save_search do
+      create_saved_search(%{label: args.save_search_label, args: args})
+    end
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Glific.Conversations.list_conversations()
