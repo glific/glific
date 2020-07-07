@@ -30,6 +30,7 @@ defmodule Glific.Search.Full do
         ) AS rank
         FROM search_messages
         WHERE search_messages.document @@ plainto_tsquery(unaccent(?))
+        OR search_messages.phone ILIKE ?
         OR search_messages.name ILIKE ?
         OR ? ILIKE ANY(tag_label)
         OFFSET ?
@@ -39,6 +40,7 @@ defmodule Glific.Search.Full do
         ^unquote(term),
         ^"%#{unquote(term)}%",
         ^"%#{unquote(term)}%",
+        ^"%#{unquote(term)}%",
         ^unquote(args).contact_opts.offset,
         ^unquote(args).contact_opts.limit
       )
@@ -46,7 +48,11 @@ defmodule Glific.Search.Full do
   end
 
   @spec run_helper(Ecto.Query.t(), String.t(), map()) :: Ecto.Query.t()
-  defp run_helper(query, "", _), do: query
+  defp run_helper(query, "", args) do
+    query
+    |> offset(^args.contact_opts.offset)
+    |> limit(^args.contact_opts.limit)
+  end
 
   defp run_helper(query, term, args) do
     from q in query,

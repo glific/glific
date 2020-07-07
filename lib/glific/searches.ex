@@ -136,13 +136,9 @@ defmodule Glific.Searches do
     query = from c in Contact, select: c.id
 
     contact_ids =
-      if term != "" do
-        query
-        |> Full.run(term, args)
-        |> Repo.all()
-      else
-        []
-      end
+      query
+      |> Full.run(term, args)
+      |> Repo.all()
 
     if save_search do
       create_saved_search(%{label: args.save_search_label, args: args})
