@@ -60,11 +60,13 @@ You will need to do the following:
 
 ## Updating your instance
 
+For v0.x releases, we will be resetting the DB and not saving existing state. Run the following commands
+to update your codebase from the glicic repository.
+
   * Ensure you are in the top level directory of the glific api code.
   * Get the latest code from master: `git switch master; git pull`
   * Run the setup command: `mix setup`
 
-For v0.x releases, we will be resetting the DB and not saving existing state. Run the following commands to push from
 ## Documentation
 
   * [Code docs](https://glific.github.io/doc./)
