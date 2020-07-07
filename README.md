@@ -65,6 +65,7 @@ to update your codebase from the glicic repository.
 
   * Ensure you are in the top level directory of the glific api code.
   * Get the latest code from master: `git switch master; git pull`
+  * Ensure you have not modified any files in this directory, by running: `git status`
   * Run the setup command: `mix setup`
 
 ## Documentation
