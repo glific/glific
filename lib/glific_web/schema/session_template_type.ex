@@ -50,6 +50,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Match the shortcode of template"
     field :shortcode, :string
 
+    @desc "Match the hsm template message"
+    field :is_hsm, :boolean
+
     @desc "Match the parent"
     field :parent, :string
 
