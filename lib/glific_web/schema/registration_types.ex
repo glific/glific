@@ -8,7 +8,9 @@ defmodule GlificWeb.Schema.RegistrationTypes do
   alias GlificWeb.Resolvers
 
   input_object :registration_input do
+    field :name, :string
     field :phone, :string
+    field :password, :string
   end
 
   object :registration_mutations do
