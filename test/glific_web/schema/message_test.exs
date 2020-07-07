@@ -241,11 +241,14 @@ defmodule GlificWeb.Schema.MessageTest do
     label = "HSM3"
     {:ok, hsm_template} = Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{label: label})
 
+    parameters = ["param1", "param2"]
+
     result =
       query_gql_by(:send_hsm_message,
         variables: %{
           "id" => hsm_template.id,
-          "receiver_id" => contact.id
+          "receiver_id" => contact.id,
+          "parameters" => parameters
         }
       )
 
