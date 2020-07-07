@@ -58,6 +58,13 @@ You will need to do the following:
   * You will need to enter your API Key, which can be found by clicking on your profile in the top left
   corner of your gupshup dashboard
 
+## Updating your instance
+
+  * Ensure you are in the top level directory of the glific api code.
+  * Get the latest code from master: `git switch master; git pull`
+  * Run the setup command: `mix setup`
+
+For v0.x releases, we will be resetting the DB and not saving existing state. Run the following commands to push from
 ## Documentation
 
   * [Code docs](https://glific.github.io/doc./)

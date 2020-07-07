@@ -116,8 +116,8 @@ defmodule Glific.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup", "cmd npm install --prefix assets"],
-      reset: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      setup: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      reset: ["deps.get", "clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": [
         "ecto.create",
         "ecto.migrate",
