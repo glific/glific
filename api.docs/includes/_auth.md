@@ -7,7 +7,42 @@ include roles and permissions. User management will be done via GraphQL
 
 The main API endpoints are listed below
 
+# Send an OTP request to verify a phone number
+
+The OTP will be sent via WhatsApp and the NGO's Glific Instance. The API will only send
+a message to contacts that have opted into the system. This also prevents the API
+from being abused.
+
+```shell
+curl -X POST -d \
+  "user[phone]=911234554321" \
+  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send_otp
+```
+```javascript
+If you are using axios or other libraries, send the following in the BODY of a POST request
+
+{
+    "user": {
+        "phone": "911234554321"
+    }
+}
+```
+> The above query returns JSON structured like this:
+
+```json
+{"data": {"phone": phone,
+          "message": "OTP #{otp} sent successfully to #{phone}"}}
+```
+
 ## Create a new user
+
+The typical user registration flow will be something like:
+  * User follows the instructions on [gupshup](https://www.gupshup.io/whatsappassistant/#/settings/GlificTest?bt=ACP
+  * User enters: `Name`, `Phone Number` and `Password`
+  * After initial validation, the caller will call the `send_otp` request
+  * On successful confirmation of the delivery of `send_otp`, the front-end will display an OTP entry screen to the user.
+  * On successful entry of the OTP, the front-end will call the `registration` endpoint with the user entered information
+  * The API will return success or failure
 
 ```shell
 curl -X POST -d \
@@ -42,33 +77,7 @@ that looks like the following:
 `Authorization: AUTH_TOKEN`
 
 
-## Send an OTP request to verify a phone number
-
-The OTP will be sent via WhatsApp and the NGO's Glific Instance. The API will only send
-a message to contacts that have opted into the system. This also prevents the API
-from being abused.
-
-```shell
-curl -X POST -d \
-  "user[phone]=911234554321" \
-  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send_otp
-```
-```javascript
-If you are using axios or other libraries, send the following in the BODY of a POST request
-
-{
-    "user": {
-        "phone": "911234554321"
-    }
-}
-```
-> The above query returns JSON structured like this:
-
-```json
-{"data": {"phone": phone,
-          "message": "OTP #{otp} sent successfully to #{phone}"}}
-```
-
+#
 ## Create a new session for an existing user
 
 ```shell
