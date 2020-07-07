@@ -234,9 +234,11 @@ defmodule GlificWeb.Schema.MessageTest do
     assert get_in(query_data, [:data, "createAndSendMessageToContacts", "errors"]) == nil
   end
 
-  test "send hsm message to an optin contact" do
+  test "send hsm message to an opted in contact" do
     name = "Default receiver"
     {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+
+    Glific.Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
 
     label = "HSM3"
     {:ok, hsm_template} = Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{label: label})
