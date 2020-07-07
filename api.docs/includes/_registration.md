@@ -9,8 +9,6 @@ mutation ($input: RegistrationInput!) {
 
 {
   "input": {
-  	"name": "John",
-    "password": "password",
     "phone": "7891236543"
   }
 }
