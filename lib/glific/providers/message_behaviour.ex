@@ -3,7 +3,7 @@ defmodule Glific.Providers.MessageBehaviour do
   The message behaviour which all the providers needs to implement for communication
   """
 
-  @callback send_text(message :: Glific.Messages.Message.t()) ::
+  @callback send_text(message :: Glific.Messages.Message.t(), boolean) ::
               {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
 
   @callback send_image(message :: Glific.Messages.Message.t()) ::
