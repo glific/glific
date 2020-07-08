@@ -383,6 +383,71 @@ Parameter | Type | Default | Description
 <a href="#messageresult">MessageResult</a> | An error object or empty
 
 
+## Create and send Message to multiple Contacts
+
+```graphql
+mutation createAndSendMessageToContacts($input: MessageInput!, $contactIds: [ID]!) {
+  createAndSendMessageToContacts(input: $input, contactIds: $contactIds) {
+    id
+    body
+    receiver{
+      id
+    }
+  }
+}
+
+{
+  "input": {
+    "body": "Test message",
+    "flow": "OUTBOUND",
+    "type": "TEXT",
+    "senderId": 1,
+    "userId": 1
+  },
+  "contactIds": [
+    2,
+    3
+  ]
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createAndSendMessageToContacts": [
+      {
+        "body": "Test message",
+        "id": "61",
+        "receiver": {
+          "id": "3"
+        }
+      },
+      {
+        "body": "Test message",
+        "id": "60",
+        "receiver": {
+          "id": "2"
+        }
+      }
+    ]
+  }
+}
+```
+
+### Query Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#messageinput">MessageInput</a> | required ||
+contactIds | [<a href="#id">ID</a>]! | required ||
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+[<a href="#message">Message</a>] | List of messages
+
+
 ## Send hsm Message
 
 ```graphql

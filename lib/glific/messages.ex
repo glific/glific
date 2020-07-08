@@ -330,14 +330,17 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message_to_contacts(map(), []) :: {:ok, Message.t()}
   def create_and_send_message_to_contacts(message_params, contact_ids) do
-    contact_ids
-    |> Enum.reduce([], fn contact_id, messages ->
-      message_params = Map.put(message_params, :receiver_id, contact_id)
+    messages =
+      contact_ids
+      |> Enum.reduce([], fn contact_id, messages ->
+        message_params = Map.put(message_params, :receiver_id, contact_id)
 
-      with {:ok, message} <- create_and_send_message(message_params) do
-        [message | messages]
-      end
-    end)
+        with {:ok, message} <- create_and_send_message(message_params) do
+          [message | messages]
+        end
+      end)
+
+    {:ok, messages}
   end
 
   @doc """
