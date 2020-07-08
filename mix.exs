@@ -48,7 +48,7 @@ defmodule Glific.MixProject do
   def application do
     [
       mod: {Glific.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :logger_file_backend, :runtime_tools]
     ]
   end
 
@@ -95,7 +95,7 @@ defmodule Glific.MixProject do
       {:hackney, "~> 1.16"},
       {:tesla, "~> 1.3"},
       {:oban, "~> 1.2"},
-      {:faker, "~> 0.13", only: [:dev, :test]},
+      {:faker, "~> 0.13"},
       {:excoveralls, "~> 0.13", only: :test},
       {:cors_plug, "~> 2.0"},
       {:ex_check, ">= 0.0.0", only: [:dev, :test], runtime: false},
@@ -103,8 +103,9 @@ defmodule Glific.MixProject do
       {:wormwood, "~> 0.1"},
       {:gen_stage, "~> 1.0"},
       {:passwordless_auth,
-       git: "https://github.com/glific/passwordless_auth.git", branch: "develop", only: [:dev, :test]},
-      {:timex, "~> 3.0"}
+       git: "https://github.com/glific/passwordless_auth.git", branch: "master"},
+      {:timex, "~> 3.0"},
+      {:logger_file_backend, "~> 0.0.10"}
     ]
   end
 
