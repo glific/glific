@@ -68,14 +68,6 @@ defmodule GlificWeb.Resolvers.Messages do
   end
 
   @doc false
-  @spec send_message(Absinthe.Resolution.t(), %{id: non_neg_integer()}, %{context: map()}) ::
-          {:ok, %{message: Message.t()}}
-  def send_message(_, %{id: id}, _) do
-    with {:ok, message} <- Messages.fetch_and_send_message(%{id: id}),
-         do: {:ok, %{message: message}}
-  end
-
-  @doc false
   @spec create_and_send_message(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, %{message: Message.t()}}
   def create_and_send_message(_, %{input: params}, _) do

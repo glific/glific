@@ -217,13 +217,6 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec fetch_and_send_message(map()) :: {:ok, Message.t()}
-  def fetch_and_send_message(attrs) do
-    with {:ok, message} <- Repo.fetch(Message, attrs),
-         do: Communications.Message.send_message(message)
-  end
-
-  @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()}
   def create_and_send_message(attrs) do
     with {:ok, message} <- create_message(Map.put(attrs, :flow, :outbound)) do
