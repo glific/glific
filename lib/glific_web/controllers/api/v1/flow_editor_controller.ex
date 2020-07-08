@@ -126,7 +126,7 @@ defmodule GlificWeb.API.V1.FlowEditorController do
       results: [
       %{
           uuid: generate_uuid(),
-          name: "revive_issue",
+          name: "sample_template",
           created_on: "2019-04-02T22:14:31.549213Z",
           modified_on: "2019-04-02T22:14:31.569739Z",
 
