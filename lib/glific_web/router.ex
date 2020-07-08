@@ -37,7 +37,6 @@ defmodule GlificWeb.Router do
     post "/session/renew", SessionController, :renew
   end
 
-
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
     pipe_through :api
 
@@ -65,9 +64,11 @@ defmodule GlificWeb.Router do
     get "/flow-editor/templates", FlowEditorController, :templates
     post "/flow-editor/templates", FlowEditorController, :templates
 
+     get "/flow-editor/languages", FlowEditorController, :languages
+    post "/flow-editor/languages", FlowEditorController, :languages
+
+
   end
-
-
 
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
     pipe_through [:api, :api_protected]

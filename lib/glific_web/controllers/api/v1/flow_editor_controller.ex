@@ -10,30 +10,28 @@ defmodule GlificWeb.API.V1.FlowEditorController do
 
   @doc false
   def globals(conn, data) do
-     conn
+    conn
     |> json(%{results: []})
   end
 
-
   def groups(conn, data) do
-     conn
+    conn
     |> json(%{results: []})
   end
 
   def groups_post(conn, params) do
     conn
     |> json(%{
-        uuid: generate_uuid(),
-        query: nil,
-        status: "ready",
-        count: 0,
-        name: params["name"]
+      uuid: generate_uuid(),
+      query: nil,
+      status: "ready",
+      count: 0,
+      name: params["name"]
     })
   end
 
-
   def fields(conn, data) do
-     conn
+    conn
     |> json(%{results: []})
   end
 
@@ -41,30 +39,27 @@ defmodule GlificWeb.API.V1.FlowEditorController do
   def fields_post(conn, params) do
     conn
     |> json(%{
-        key: Slug.slugify(params["label"], separator: "_"),
-        name: params["label"],
-        value_type: "text"
+      key: Slug.slugify(params["label"], separator: "_"),
+      name: params["label"],
+      value_type: "text"
     })
   end
 
-
   def labels(conn, data) do
-     conn
+    conn
     |> json(%{results: []})
   end
 
   def labels_post(conn, params) do
     conn
     |> json(%{
-        uuid: generate_uuid(),
-        name: params["name"],
-        count: 0
+      uuid: generate_uuid(),
+      name: params["name"],
+      count: 0
     })
   end
 
-
   def channels(conn, params) do
-
     channels = %{
       results: [
         %{
@@ -75,7 +70,8 @@ defmodule GlificWeb.API.V1.FlowEditorController do
           roles: ["send", "receive"]
         }
       ]
-    };
+    }
+
     json(conn, channels)
   end
 
@@ -90,12 +86,12 @@ defmodule GlificWeb.API.V1.FlowEditorController do
           created_on: "2019-10-15T20:07:58.529130Z"
         }
       ]
-    };
+    }
+
     json(conn, classifiers)
   end
 
   def ticketers(conn, params) do
-
     ticketers = %{
       results: [
         %{
@@ -105,31 +101,30 @@ defmodule GlificWeb.API.V1.FlowEditorController do
           created_on: "2019-10-15T20:07:58.529130Z"
         }
       ]
-    };
+    }
+
     json(conn, ticketers)
   end
-
 
   def resthooks(conn, params) do
     resthooks = %{
       results: [
-        %{ resthook: "my-first-zap", subscribers: [] },
-        %{ resthook: "my-other-zap", subscribers: [] }
+        %{resthook: "my-first-zap", subscribers: []},
+        %{resthook: "my-other-zap", subscribers: []}
       ]
-    };
+    }
+
     json(conn, resthooks)
   end
-
 
   def templates(conn, params) do
     templates = %{
       results: [
-      %{
+        %{
           uuid: generate_uuid(),
           name: "sample_template",
           created_on: "2019-04-02T22:14:31.549213Z",
           modified_on: "2019-04-02T22:14:31.569739Z",
-
           translations: [
             %{
               language: "eng",
@@ -141,32 +136,44 @@ defmodule GlificWeb.API.V1.FlowEditorController do
                 name: "WhatsApp"
               }
             },
-          %{
-            language: "fra",
-            content: "Bonjour {{1}}, a tu des problems avec {{2}}?",
-            variable_count: 2,
-            status: "pending",
-            channel: %{
-              uuid: "0f661e8b-ea9d-4bd3-9953-d368340acf91",
-              name: "WhatsApp"
+            %{
+              language: "fra",
+              content: "Bonjour {{1}}, a tu des problems avec {{2}}?",
+              variable_count: 2,
+              status: "pending",
+              channel: %{
+                uuid: "0f661e8b-ea9d-4bd3-9953-d368340acf91",
+                name: "WhatsApp"
+              }
             }
-          }
+          ]
+        }
       ]
     }
 
-   ]
-  }
     json(conn, templates)
   end
 
 
+  def languages(conn, params) do
+    languages = %{
+      results: [
+        %{
+            iso: "eng",
+            name: "English"
+          },
+        %{
+            iso: "Hi",
+            name: "Hindi"
+          }
+      ]
+    }
 
-
+    json(conn, languages)
+  end
 
 
   defp generate_uuid() do
     Faker.UUID.v4()
   end
-
-
 end
