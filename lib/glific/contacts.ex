@@ -207,7 +207,14 @@ defmodule Glific.Contacts do
   """
   @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
   def contact_opted_in(phone, utc_time) do
-    upsert(%{phone: phone, optin_time: utc_time, status: :valid, provider_status: :valid})
+    upsert(%{
+      phone: phone,
+      optin_time: utc_time,
+      optout_time: nil,
+      status: :valid,
+      provider_status: :valid
+    })
+
     {:ok}
   end
 
@@ -236,6 +243,18 @@ defmodule Glific.Contacts do
     with true <- contact.status == :valid,
          true <- contact.provider_status == :valid,
          true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24,
+         do: true
+  end
+
+  @doc """
+  Check if we can send a hsm message to the contact
+  """
+  @spec can_send_hsm_message_to?(Contact.t()) :: boolean()
+  def can_send_hsm_message_to?(contact) do
+    with true <- contact.status == :valid,
+         true <- contact.provider_status == :valid,
+         true <- contact.optin_time != nil,
+         true <- contact.optout_time == nil,
          do: true
   end
 

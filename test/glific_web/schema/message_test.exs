@@ -18,6 +18,12 @@ defmodule GlificWeb.Schema.MessageTest do
     "assets/gql/messages/create_and_send_message_to_contacts.gql"
   )
 
+  load_gql(
+    :send_hsm_message,
+    GlificWeb.Schema,
+    "assets/gql/messages/send_hsm_message.gql"
+  )
+
   load_gql(:count, GlificWeb.Schema, "assets/gql/messages/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/messages/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/messages/by_id.gql")
@@ -225,6 +231,34 @@ defmodule GlificWeb.Schema.MessageTest do
       )
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "createAndSendMessageToContacts", "errors"]) == nil
+    messages = get_in(query_data, [:data, "createAndSendMessageToContacts"])
+    assert length(messages) == 2
+    [message | _] = messages
+    assert message["receiver"]["id"] == contact1.id || contact2.id
+  end
+
+  test "send hsm message to an opted in contact" do
+    name = "Default receiver"
+    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+
+    Glific.Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
+
+    label = "HSM2"
+    {:ok, hsm_template} = Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{label: label})
+
+    parameters = ["param1", "param2"]
+
+    result =
+      query_gql_by(:send_hsm_message,
+        variables: %{
+          "id" => hsm_template.id,
+          "receiver_id" => contact.id,
+          "parameters" => parameters
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "sendHsmMessage", "errors"]) == nil
+    assert get_in(query_data, [:data, "sendHsmMessage", "message", "is_hsm"]) == true
   end
 end

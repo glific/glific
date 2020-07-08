@@ -122,7 +122,7 @@ provider = Repo.insert!(%Provider{
   api_end_point: "test"
 })
 
-# Sender Contact for organization
+# seed sender contact for organization
 sender =
   Repo.insert!(%Contact{
     phone: "917834811114",
@@ -131,6 +131,7 @@ sender =
     last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
   })
 
+# seed organizatin
 Repo.insert!(%Organization{
   name: "Glific",
   display_name: "Glific",
@@ -152,6 +153,7 @@ Users.create_user(%{
       roles: ["admin"]
                          })
 
+# seed session templates
 Repo.insert!(%SessionTemplate{
   label: "New Contact",
   body: """
@@ -366,6 +368,174 @@ Repo.insert!(%SessionTemplate{
   is_reserved: true,
   language_id: en_us.id,
   body: "Your verification OTP is: "
+})
+
+# seed hsm templates
+Repo.insert!(%SessionTemplate{
+  label: "HSM1",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 0,
+  language_id: en_us.id,
+  body: "I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now. If you’d like to continue this discussion, please reply with ‘yes’"
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM2",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: "You have received a new update about {{1}}. Please click on {{2}} to know more."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM3",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 3,
+  language_id: en_us.id,
+  body: "Your {{1}} number {{2}} has been {{3}}."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM4",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: "{{1}} is currently unavailable due to {{2}}."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM5",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: "Please provide feedback for {{1}} by clicking on {{2}}."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM6",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 3,
+  language_id: en_us.id,
+  body: "Your {{1}} is pending. Please {{2}} by clicking on {{3}}."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM7",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: "This is to remind you that {{1}} is due by {{2}}."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM8",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: "You have earned {{1}} points at {{2}}."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM9",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: "The status of {{1}} has been updated to {{2}}."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM10",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: "You have redeemed {{1}} points on {{2}}."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM11",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: "Your {{1}} points will expire on {{2}}."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM12",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: "Your {{1}} is due by {{2}}. Please {{3}}."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM13",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: "Your {{1}} is pending. Please {{2}} by clicking on {{3}}."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM14",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 3,
+  language_id: en_us.id,
+  body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}."
+})
+
+# Template for hsm with media
+# Removing new line from end of heredoc
+Repo.insert!(%SessionTemplate{
+  label: "HSM15",
+  type: :document,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: """
+  Hello {{1}},
+
+  Here is your personalized {{2}} welcome kit.\
+  """
+})
+
+# Template for hsm with button
+Repo.insert!(%SessionTemplate{
+  label: "HSM16",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 3,
+  language_id: en_us.id,
+  body: "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{1}}]"
 })
 
 # Seed saved searches
