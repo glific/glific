@@ -41,8 +41,10 @@ defmodule GlificWeb.Router do
     pipe_through :api
 
     get "/flow-editor/globals", FlowEditorController, :globals
+
     get "/flow-editor/groups", FlowEditorController, :groups
     post "/flow-editor/groups", FlowEditorController, :groups_post
+
     get "/flow-editor/fields", FlowEditorController, :fields
     post "/flow-editor/fields", FlowEditorController, :fields_post
 
@@ -76,8 +78,12 @@ defmodule GlificWeb.Router do
     get "/flow-editor/completion", FlowEditorController, :completion
     post "/flow-editor/completion", FlowEditorController, :completion
 
+    get "/flow-editor/activity", FlowEditorController, :activity
+    post "/flow-editor/activity", FlowEditorController, :activity
 
+    get "/flow-editor/flows/*vars", FlowEditorController, :flows
 
+    get "/flow-editor/revisions/*vars", FlowEditorController, :revisions
   end
 
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
