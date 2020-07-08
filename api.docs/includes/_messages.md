@@ -320,6 +320,69 @@ Parameter | Type | Default | Description
 <a href="#messageresult">MessageResult</a> | An error object or empty
 
 
+## Create and send Message
+
+```graphql
+mutation createAndSendMessage($input: MessageInput!) {
+  createAndSendMessage(input: $input) {
+    message {
+      id
+      body
+      receiver {
+        id
+        name
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "body": "Test message",
+    "flow": "OUTBOUND",
+    "type": "TEXT",
+    "senderId": 1,
+    "receiverId": 2,
+    "userId": 1
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createAndSendMessage": {
+      "errors": null,
+      "message": {
+        "body": "Test message",
+        "id": "26",
+        "receiver": {
+          "id": "2",
+          "name": "Default receiver"
+        }
+      }
+    }
+  }
+}
+```
+
+### Query Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#messageinput">MessageInput</a> | required ||
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#messageresult">MessageResult</a> | An error object or empty
+
+
 ## Send hsm Message
 
 ```graphql
@@ -364,7 +427,7 @@ mutation sendHsmMessage($templateId: ID!, $receiverId: ID!, $parameters: [String
 }
 ```
 
-In case of errors, all the above functions return an error object like the below
+> In case of error, above function returns an error object like the below
 
 ```json
 {
