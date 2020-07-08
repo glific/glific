@@ -62,7 +62,8 @@ defmodule GlificWeb.Router do
     get "/flow-editor/resthooks", FlowEditorController, :resthooks
     post "/flow-editor/resthooks", FlowEditorController, :resthooks
 
-
+    get "/flow-editor/templates", FlowEditorController, :templates
+    post "/flow-editor/templates", FlowEditorController, :templates
 
   end
 
