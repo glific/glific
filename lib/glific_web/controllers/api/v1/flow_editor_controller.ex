@@ -94,6 +94,23 @@ defmodule GlificWeb.API.V1.FlowEditorController do
     json(conn, classifiers)
   end
 
+  def ticketers(conn, params) do
+
+    ticketers = %{
+      results: [
+        %{
+          uuid: generate_uuid(),
+          name: "Email",
+          type: "mailgun",
+          created_on: "2019-10-15T20:07:58.529130Z"
+        }
+      ]
+    };
+    json(conn, ticketers)
+  end
+
+
+
 
 
   defp generate_uuid() do
