@@ -58,12 +58,11 @@ defmodule GlificWeb.API.V1.RegistrationController do
   def send_otp(conn, %{"user" => %{"phone" => phone}}) do
     with {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
          true <- Glific.Contacts.can_send_message_to?(contact),
-         {:ok, otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
+         {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
       json(conn, %{
         data: %{
           phone: phone,
-          otp: otp,
-          message: "OTP #{otp} sent successfully to #{phone}"
+          message: "OTP sent successfully to #{phone}"
         }
       })
     else

@@ -31,7 +31,7 @@ If you are using axios or other libraries, send the following in the BODY of a P
 
 ```json
 {"data": {"phone": phone,
-          "message": "OTP #{otp} sent successfully to #{phone}"}}
+          "message": "OTP sent successfully to #{phone}"}}
 ```
 
 ## Create a new user
