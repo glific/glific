@@ -231,7 +231,10 @@ defmodule GlificWeb.Schema.MessageTest do
       )
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "createAndSendMessageToContacts", "errors"]) == nil
+    messages = get_in(query_data, [:data, "createAndSendMessageToContacts"])
+    assert length(messages) == 2
+    [message | _] = messages
+    assert message["receiver"]["id"] == contact1.id || contact2.id
   end
 
   test "send hsm message to an opted in contact" do

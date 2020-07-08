@@ -309,7 +309,7 @@ defmodule Glific.MessagesTest do
 
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint())
 
-      [message1, message2 | _] =
+      {:ok, [message1, message2 | _]} =
         Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
 
       assert_enqueued(worker: Worker)
