@@ -64,8 +64,11 @@ defmodule GlificWeb.Router do
     get "/flow-editor/templates", FlowEditorController, :templates
     post "/flow-editor/templates", FlowEditorController, :templates
 
-     get "/flow-editor/languages", FlowEditorController, :languages
+    get "/flow-editor/languages", FlowEditorController, :languages
     post "/flow-editor/languages", FlowEditorController, :languages
+
+    get "/flow-editor/environment", FlowEditorController, :environment
+    post "/flow-editor/environment", FlowEditorController, :environment
 
 
   end

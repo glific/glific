@@ -173,6 +173,18 @@ defmodule GlificWeb.API.V1.FlowEditorController do
   end
 
 
+  def environment(conn, params) do
+    environment = %{
+      date_format: "YYYY-MM-DD",
+      time_format: "hh:mm",
+      timezone: "Africa/Kigali",
+      languages: ["eng", "spa", "fra"]
+    }
+
+    json(conn, environment)
+  end
+
+
   defp generate_uuid() do
     Faker.UUID.v4()
   end
