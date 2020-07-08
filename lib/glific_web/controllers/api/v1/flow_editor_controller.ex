@@ -110,6 +110,18 @@ defmodule GlificWeb.API.V1.FlowEditorController do
   end
 
 
+  def resthooks(conn, params) do
+    resthooks = %{
+      results: [
+        %{ resthook: "my-first-zap", subscribers: [] },
+        %{ resthook: "my-other-zap", subscribers: [] }
+      ]
+    };
+    json(conn, resthooks)
+  end
+
+
+
 
 
 
