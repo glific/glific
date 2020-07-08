@@ -289,7 +289,8 @@ defmodule Glific.Messages do
   @doc """
   Send a hsm template message to the specific contact.
   """
-  @spec create_and_send_hsm_message(integer, integer, []) :: {:ok, Message.t()}
+  @spec create_and_send_hsm_message(integer, integer, []) ::
+          {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_hsm_message(template_id, receiver_id, parameters) do
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 

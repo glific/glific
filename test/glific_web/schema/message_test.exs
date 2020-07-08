@@ -256,5 +256,6 @@ defmodule GlificWeb.Schema.MessageTest do
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "sendHsmMessage", "errors"]) == nil
+    assert get_in(query_data, [:data, "sendHsmMessage", "message", "is_hsm"]) == true
   end
 end
