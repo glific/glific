@@ -366,9 +366,7 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 0,
   language_id: en_us.id,
-  body: """
-  I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now. If you’d like to continue this discussion, please reply with ‘yes’
-  """
+  body: "I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now. If you’d like to continue this discussion, please reply with ‘yes’"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -376,11 +374,9 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "hsm",
   is_hsm: true,
-  number_parameters: 4,
+  number_parameters: 2,
   language_id: en_us.id,
-  body: """
-  Please find your {{1}} ticket for {{2}} on {{3}}. Please click on {{4}} to get a printout.
-  """
+  body: "You have received a new update about {{1}}. Please click on {{2}} to know more."
 })
 
 Repo.insert!(%SessionTemplate{
@@ -390,9 +386,17 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 2,
   language_id: en_us.id,
-  body: """
-  Your {{1}} points will expire on {{2}}.
-  """
+  body: "Your {{1}} points will expire on {{2}}."
+})
+
+Repo.insert!(%SessionTemplate{
+  label: "HSM4",
+  type: :text,
+  shortcode: "hsm",
+  is_hsm: true,
+  number_parameters: 2,
+  language_id: en_us.id,
+  body: "Please provide feedback for {{1}} by clicking on {{2}}."
 })
 
 Repo.insert!(%SessionTemplate{

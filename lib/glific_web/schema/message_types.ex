@@ -20,6 +20,8 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :flow, :message_flow_enum
     field :provider_message_id, :string
 
+    field :is_hsm, :boolean
+
     field :provider_status, :message_status_enum
 
     # expose the date we processed this message since external clients need it

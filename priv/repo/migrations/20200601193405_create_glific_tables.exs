@@ -239,6 +239,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # Options are: text, audio, video, image, contact, location, file
       add :type, :message_type_enum
 
+      # Field to check hsm message type
+      add :is_hsm, :boolean, default: false
+
       # Options are: inbound, outbound
       add :flow, :message_flow_enum
 

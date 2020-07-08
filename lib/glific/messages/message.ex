@@ -11,6 +11,7 @@ defmodule Glific.Messages.Message do
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           type: String.t() | nil,
+          is_hsm: boolean | nil,
           flow: String.t() | nil,
           status: String.t() | nil,
           provider_status: String.t() | nil,
@@ -36,6 +37,7 @@ defmodule Glific.Messages.Message do
   ]
   @optional_fields [
     :body,
+    :is_hsm,
     :status,
     :provider_status,
     :provider_message_id,
@@ -49,6 +51,8 @@ defmodule Glific.Messages.Message do
     field :flow, MessageFlow
     field :type, MessageType
     field :status, MessageStatus
+
+    field :is_hsm, :boolean
 
     field :provider_message_id, :string
     field :provider_status, MessageStatus
