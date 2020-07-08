@@ -1,0 +1,46 @@
+[
+    {
+        "signature": "abs(number)",
+        "summary": "Returns the absolute value of `number`.",
+        "detail": "",
+
+        "signature": "datetime_add(datetime, offset, unit)",
+        "summary": "Calculates the date value arrived at by adding `offset` number of `unit` to the `datetime`",
+        "detail": "Valid durations are Y for years, M for months, W for weeks, D for days, h for hour,\n m for minutes,s for seconds",
+        "examples": [{
+                "template": "@(datetime_add('2017-01-15', 5, 'D'))",
+                "output": "2017-01-20T00: 00: 00.000000-05: 00"
+            },
+            {
+                "template": "@(datetime_add('2017-01-15 10:45', 30, m))",
+                "output": "2017-01-15T11: 15: 00.000000-05: 00"
+            }
+        ]
+    },
+    {
+        "signature": "datetime_diff(date1, date2, unit)",
+        "summary": "Returns the duration between `date1` and `date2` in the `unit` specified.",
+        "detail": "Valid durations are 'Y' for years, 'M' for months, 'W' for weeks, 'D' for days, 'h' for hour,\n m for minutes, 's' for seconds.",
+        "examples": [{
+                "template": "@(datetime_diff('2017-01-15', '2017-01-17', 'D'))",
+                "output": "2"
+            },
+            {
+                "template": "@(datetime_diff('2017-01-15', '2017-05-15', 'W'))",
+                "output": "17"
+            },
+            {
+                "template": "@(datetime_diff('2017-01-15', '2017-05-15', 'M'))",
+                "output": "4"
+            },
+            {
+                "template": "@(datetime_diff('2017 - 01 - 17 10: 50', '2017 - 01 - 17 12: 30', 'h'))",
+                "output": "1"
+            },
+            {
+                "template": "@(datetime_diff('2017 - 01 - 17', '2015 - 12 - 17', 'Y'))",
+                "output": "-2"
+            }
+        ]
+    }
+]
