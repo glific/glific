@@ -243,7 +243,7 @@ defmodule GlificWeb.Schema.MessageTest do
 
     Glific.Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
 
-    label = "HSM3"
+    label = "HSM2"
     {:ok, hsm_template} = Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{label: label})
 
     parameters = ["param1", "param2"]

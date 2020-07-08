@@ -334,7 +334,7 @@ defmodule Glific.MessagesTest do
 
       Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
 
-      label = "HSM3"
+      label = "HSM2"
       {:ok, hsm_template} = Glific.Repo.fetch_by(Templates.SessionTemplate, %{label: label})
 
       # Incorrect number of parameters should give an error
@@ -364,12 +364,14 @@ defmodule Glific.MessagesTest do
     end
 
     test "prepare hsm template" do
-      body = "Your {{1}} points will expire on {{2}}."
+      body = "You have received a new update about {{1}}. Please click on {{2}} to know more."
       {:ok, hsm_template} = Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{body: body})
-      parameters = ["param1", "param2"]
+      parameters = ["param1", "https://glific.github.io/slate/"]
 
       updated_hsm_template = Messages.prepare_hsm_template(hsm_template, parameters)
-      assert updated_hsm_template.body == "Your param1 points will expire on param2."
+
+      assert updated_hsm_template.body ==
+               "You have received a new update about param1. Please click on https://glific.github.io/slate/ to know more."
     end
   end
 
