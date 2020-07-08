@@ -99,7 +99,7 @@ defmodule Glific.MixProject do
       {:faker, "~> 0.13", only: [:dev, :test]},
       {:excoveralls, "~> 0.13", only: :test},
       {:cors_plug, "~> 2.0"},
-      {:ex_check, ">= 0.0.0", only: [:dev, :test], runtime: false},
+      {:ex_check, ">= 0.12.0", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.8", only: [:dev, :test]},
       {:wormwood, "~> 0.1"},
       {:gen_stage, "~> 1.0"},
