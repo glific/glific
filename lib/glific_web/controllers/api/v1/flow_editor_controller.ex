@@ -204,6 +204,14 @@ defmodule GlificWeb.API.V1.FlowEditorController do
     json(conn, recipients)
   end
 
+  def completion(conn, params) do
+    json(conn, %{})
+  end
+
+
+
+
+
 
   defp generate_uuid() do
     Faker.UUID.v4()
