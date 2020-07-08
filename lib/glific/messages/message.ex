@@ -52,7 +52,7 @@ defmodule Glific.Messages.Message do
     field :type, MessageType
     field :status, MessageStatus
 
-    field :is_hsm, :boolean
+    field :is_hsm, :boolean, default: false
 
     field :provider_message_id, :string
     field :provider_status, MessageStatus

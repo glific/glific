@@ -224,10 +224,10 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message(map(), boolean) :: {:ok, Message.t()}
-  def create_and_send_message(attrs, is_hsm \\ false) do
+  @spec create_and_send_message(map()) :: {:ok, Message.t()}
+  def create_and_send_message(attrs) do
     with {:ok, message} <- create_message(Map.put(attrs, :flow, :outbound)) do
-      Communications.Message.send_message(message, is_hsm)
+      Communications.Message.send_message(message)
     end
   end
 
@@ -310,7 +310,7 @@ defmodule Glific.Messages do
       is_hsm: session_template.is_hsm
     }
 
-    create_and_send_message(message_params, session_template.is_hsm)
+    create_and_send_message(message_params)
   end
 
   @doc false

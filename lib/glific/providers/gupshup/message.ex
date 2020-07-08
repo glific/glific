@@ -13,17 +13,17 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_text(Message.t(), boolean) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_text(message, is_hsm) do
-    %{type: :text, text: message.body, isHSM: is_hsm}
+  @spec send_text(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_text(message) do
+    %{type: :text, text: message.body, isHSM: message.is_hsm}
     |> send_message(message)
   end
 
   @doc false
 
   @impl Glific.Providers.MessageBehaviour
-  @spec send_image(Message.t(), boolean) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_image(message, _is_hsm) do
+  @spec send_image(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_image(message) do
     message_media = message.media
 
     %{
@@ -38,8 +38,8 @@ defmodule Glific.Providers.Gupshup.Message do
   @doc false
 
   @impl Glific.Providers.MessageBehaviour
-  @spec send_audio(Message.t(), boolean) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_audio(message, _is_hsm) do
+  @spec send_audio(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_audio(message) do
     message_media = message.media
 
     %{
@@ -51,8 +51,8 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_video(Message.t(), boolean) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_video(message, _is_hsm) do
+  @spec send_video(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_video(message) do
     message_media = message.media
 
     %{
@@ -65,8 +65,8 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_document(Message.t(), boolean) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_document(message, _is_hsm) do
+  @spec send_document(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_document(message) do
     message_media = message.media
 
     %{

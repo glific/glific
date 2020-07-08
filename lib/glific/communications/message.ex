@@ -32,14 +32,14 @@ defmodule Glific.Communications.Message do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(Message.t(), boolean) :: {:ok, Message.t()} | {:error, String.t()}
-  def send_message(message, is_hsm \\ false) do
+  @spec send_message(Message.t()) :: {:ok, Message.t()} | {:error, String.t()}
+  def send_message(message) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
     # Checking for hsm message, will improve logic later
-    if (is_hsm && Contacts.can_send_hsm_message_to?(message.receiver)) ||
+    if (message.is_hsm && Contacts.can_send_hsm_message_to?(message.receiver)) ||
          Contacts.can_send_message_to?(message.receiver) do
-      apply(Communications.provider(), @type_to_token[message.type], [message, is_hsm])
+      apply(Communications.provider(), @type_to_token[message.type], [message])
       {:ok, Communications.publish_data(message, :sent_message)}
     else
       Messages.update_message(message, %{status: :contact_opt_out, provider_status: nil})
