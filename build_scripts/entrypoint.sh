@@ -8,7 +8,7 @@
 DB_ROLE=${POSTGRES_ROLE:-postgres}
 DB_HOST=${DATABASE_HOST:-db}
 
-wait until Postgres is ready
+# wait until Postgres is ready
 while ! pg_isready -q -h $DB_HOST -p 5432 -U $DB_ROLE
 do
   echo "$(date) - waiting for database to start $DB_HOST, $DB_ROLE"
@@ -18,6 +18,6 @@ done
 echo "connected"
 
 bin="/app/bin/glific"
-# eval "$bin eval \"Glific.Release.migrate\""
+eval "$bin eval \"Glific.Release.migrate\""
 # start the elixir application
 exec "$bin" "start"

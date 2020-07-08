@@ -10,14 +10,15 @@ use Mix.Config
 # which you should run after static files are built and
 # before starting your production server.
 config :glific, GlificWeb.Endpoint,
-  url: [host: "glific.io", port: 443],
-  https: [
-    port: 443,
-    cipher_suite: :strong,
-    keyfile: System.get_env("WORK_IN_PROGRESS_SSL_KEY"),
-    certfile: System.get_env("WORK_IN_PROGRESS_SSL_PATH"),
-    transport_options: [socket_opts: [:inet6]]
-  ]
+  url: [host: System.get_env("BASE_URL"), port: 80]
+  # url: [host: "glific.io", port: 443],
+  # https: [
+  #   port: 443,
+  #   cipher_suite: :strong,
+  #   keyfile: System.get_env("WORK_IN_PROGRESS_SSL_KEY"),
+  #   certfile: System.get_env("WORK_IN_PROGRESS_SSL_PATH"),
+  #   transport_options: [socket_opts: [:inet6]]
+  # ]
   # cache_static_manifest: "priv/static/cache_manifest.json"
 
 # Do not print debug messages in production
