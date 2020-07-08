@@ -94,9 +94,9 @@ defmodule GlificWeb.Resolvers.Messages do
   @doc false
   @spec send_hsm_message(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def send_hsm_message(_, %{id: id, receiver_id: receiver_id, parameters: parameters}, _) do
+  def send_hsm_message(_, %{template_id: id, receiver_id: receiver_id, parameters: parameters}, _) do
     with {:ok, message} <-
-           Messages.create_and_send_hsm_session_template(id, receiver_id, parameters),
+           Messages.create_and_send_hsm_message(id, receiver_id, parameters),
          do: {:ok, %{message: message}}
   end
 

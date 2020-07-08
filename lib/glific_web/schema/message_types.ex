@@ -131,7 +131,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     end
 
     field :send_hsm_message, :message_result do
-      arg(:id, non_null(:id))
+      arg(:template_id, non_null(:id))
       arg(:receiver_id, non_null(:id))
       arg(:parameters, list_of(:string))
       resolve(&Resolvers.Messages.send_hsm_message/3)

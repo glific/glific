@@ -327,6 +327,7 @@ defmodule Glific.ContactsTest do
 
       assert contact.status == :valid
       assert contact.optin_time != nil
+      assert contact.optout_time == nil
     end
 
     test "contact_opted_out/2 will setup the contact as valid contact for message" do
