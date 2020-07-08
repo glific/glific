@@ -20,5 +20,7 @@ secret_key_base = System.get_env("SECRET_KEY_BASE") ||
   You can generate one by calling: mix phx.gen.secret
   """ 
 config :glific, GlificWeb.Endpoint,
+  server: true,
   http: [:inet6, port: 4000],
-  secret_key_base: secret_key_base
+  secret_key_base: secret_key_base,
+  url: [host: System.get_env("BASE_URL"), port: 4000]
