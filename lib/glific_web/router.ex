@@ -50,6 +50,9 @@ defmodule GlificWeb.Router do
     get "/flow-editor/labels", FlowEditorController, :labels
     post "/flow-editor/labels", FlowEditorController, :labels_post
 
+    get "/flow-editor/channels", FlowEditorController, :channels
+    post "/flow-editor/channels", FlowEditorController, :channels
+
 
   end
 

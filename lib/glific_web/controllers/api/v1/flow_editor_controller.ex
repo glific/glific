@@ -63,6 +63,22 @@ defmodule GlificWeb.API.V1.FlowEditorController do
   end
 
 
+  def channels(conn, params) do
+
+    channels = %{
+      results: [
+        %{
+          uuid: generate_uuid(),
+          name: "WhatsApp",
+          address: "+18005234545",
+          schemes: ["whatsapp"],
+          roles: ["send", "receive"]
+        }
+      ]
+    };
+    json(conn, channels)
+  end
+
 
 
   defp generate_uuid() do
