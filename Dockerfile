@@ -6,19 +6,21 @@ WORKDIR /app
 
 # install Hex + Rebar
 RUN mix do local.hex --force, local.rebar --force
+RUN apk add git
 
 # set build ENV
 ENV MIX_ENV=prod
 
 # install mix dependencies
-COPY mix.exs mix.lock ./
-COPY config config
+# COPY mix.exs mix.lock ./
+# COPY config config
+COPY . .
 RUN HEX_HTTP_CONCURRENCY=1 HEX_HTTP_TIMEOUT=120 mix deps.get --only prod
 RUN mix deps.compile
 
 # build project
-COPY priv priv
-COPY lib lib
+# COPY priv priv
+# COPY lib lib
 RUN mix compile
 
 RUN mix release
