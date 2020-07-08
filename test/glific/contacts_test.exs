@@ -289,11 +289,13 @@ defmodule Glific.ContactsTest do
           provider_status: :invalid
         })
 
+      # When contact opts in, optout_time should be set to nil
       contact2 =
         contact_fixture(%{
           phone: Phone.EnUs.phone(),
           provider_status: :valid,
-          optin_time: DateTime.utc_now()
+          optin_time: DateTime.utc_now(),
+          optout_time: nil
         })
 
       contact3 =
@@ -311,19 +313,10 @@ defmodule Glific.ContactsTest do
           optout_time: DateTime.utc_now()
         })
 
-      contact5 =
-        contact_fixture(%{
-          phone: Phone.EnUs.phone(),
-          provider_status: :valid,
-          optin_time: DateTime.utc_now(),
-          optout_time: Timex.shift(DateTime.utc_now(), seconds: -30)
-        })
-
       assert false == Contacts.can_send_hsm_message_to?(contact1)
       assert true == Contacts.can_send_hsm_message_to?(contact2)
       assert false == Contacts.can_send_hsm_message_to?(contact3)
       assert false == Contacts.can_send_hsm_message_to?(contact4)
-      assert true == Contacts.can_send_hsm_message_to?(contact5)
     end
 
     test "contact_opted_in/2 will setup the contact as valid contact for message" do

@@ -207,7 +207,14 @@ defmodule Glific.Contacts do
   """
   @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
   def contact_opted_in(phone, utc_time) do
-    upsert(%{phone: phone, optin_time: utc_time, status: :valid, provider_status: :valid})
+    upsert(%{
+      phone: phone,
+      optin_time: utc_time,
+      optout_time: nil,
+      status: :valid,
+      provider_status: :valid
+    })
+
     {:ok}
   end
 
@@ -247,17 +254,8 @@ defmodule Glific.Contacts do
     with true <- contact.status == :valid,
          true <- contact.provider_status == :valid,
          true <- contact.optin_time != nil,
-         {:ok, true} <- {:ok, contact.optout_time == nil} do
-      true
-    else
-      {:ok, false} ->
-        with true <- Timex.diff(contact.optout_time, contact.optin_time) < 0 do
-          true
-        end
-
-      false ->
-        false
-    end
+         true <- contact.optout_time == nil,
+         do: true
   end
 
   @doc """
