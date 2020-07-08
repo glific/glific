@@ -109,7 +109,8 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
         ELSE
           RAISE INFO 'updating existing record %', new.contact_id;
           UPDATE search_messages
-            SET document = (document || (setweight(to_tsvector(unaccent(coalesce(new.body, ' '))), 'C')))::tsvector;
+            SET document = (document || (setweight(to_tsvector(unaccent(coalesce(new.body, ' '))), 'C')))::tsvector
+            WHERE contact_id = new.contact_id;
         END IF;
       END IF;
       RETURN NEW;

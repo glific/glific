@@ -58,18 +58,29 @@ You will need to do the following:
   * You will need to enter your API Key, which can be found by clicking on your profile in the top left
   corner of your gupshup dashboard
 
+## Updating your instance
+
+For v0.x releases, we will be resetting the DB and not saving existing state. Run the following commands
+to update your codebase from the glicic repository.
+
+  * Ensure you are in the top level directory of the glific api code.
+  * Get the latest code from master: `git switch master; git pull`
+  * Ensure you have not modified any files in this directory, by running: `git status`
+  * Run the setup command: `mix setup`
+
 ## Documentation
 
-  * [Code docs](https://glific.github.io/doc./)
-  * [GraphQL API docs](https://glific.github.io/slate/#introduction)
+  * [GraphQL API docs](https://glific.github.io/slate/)
+  * [Code docs](https://glific.github.io/glific/doc/)
 
 ## Learn more
 
 ### Glific
+  * [Demo Video](https://drive.google.com/file/d/1T8nBKMt1oFndfIHEVlQ38K8lGqjajYaZ/view?usp=sharing)
   * [One Pager](https://docs.google.com/document/d/1XYxNvIYzNyX2Ve99-HrmTC8utyBFaf_Y7NP1dFYxI9Q/edit?usp=sharing)
-  * [Google Drive](https://drive.google.com/drive/folders/1aMQvS8xWRnIEtsIkRgLodhDAM-0hg0v1?usp=sharing)
   * [Product Features](https://docs.google.com/document/d/1uUWmvFkPXJ1xVMr2xaBYJztoItnqxBnfqABz5ad6Zl8/edit?usp=sharing)
   * [Glific Blogs](https://chintugudiya.org/tag/glific/)
+  * [Google Drive](https://drive.google.com/drive/folders/1aMQvS8xWRnIEtsIkRgLodhDAM-0hg0v1?usp=sharing)
 
 ## Chat with us
 
