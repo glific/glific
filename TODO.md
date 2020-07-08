@@ -1,13 +1,10 @@
 # Things coming in the near/far future
 
-* Mnesia and PoW Integration
-* SMS verification of account
 * RapidPro like FlowBuilder functionality
   * [Floweditor git repository](https://github.com/nyaruka/floweditor)
 * [Integrate fasttext.cc for language identification](https://fasttext.cc/docs/en/language-identification.html)
 * Integrate with [ChatBase](https://chatbase.com/documentation/suggested-intents)
 * High throughput testing framework
-* Integrate WhatsApp location
 * More details on a contact from WA Profile
 * Claiming conversations by Groups
 
