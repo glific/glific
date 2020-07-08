@@ -91,7 +91,6 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
       assert json = json_response(conn, 200)
       assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
-      assert String.length(get_in(json, ["data", "otp"])) == 6
     end
 
     test "send otp to invalid contact", %{conn: conn} do
