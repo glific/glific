@@ -293,17 +293,21 @@ defmodule Glific.Messages do
   def create_and_send_hsm_message(template_id, receiver_id, parameters) do
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 
-    updated_template = prepare_hsm_template(session_template, parameters)
+    if session_template.number_parameters == length(parameters) do
+      updated_template = prepare_hsm_template(session_template, parameters)
 
-    message_params = %{
-      body: updated_template.body,
-      type: updated_template.type,
-      sender_id: Communications.Message.organization_contact_id(),
-      receiver_id: receiver_id,
-      is_hsm: updated_template.is_hsm
-    }
+      message_params = %{
+        body: updated_template.body,
+        type: updated_template.type,
+        is_hsm: updated_template.is_hsm,
+        sender_id: Communications.Message.organization_contact_id(),
+        receiver_id: receiver_id
+      }
 
-    create_and_send_message(message_params)
+      create_and_send_message(message_params)
+    else
+      {:error, "You need to provide correct number of parameters for hsm template"}
+    end
   end
 
   @doc false
