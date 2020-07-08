@@ -68,14 +68,6 @@ defmodule GlificWeb.Resolvers.Messages do
   end
 
   @doc false
-  @spec send_message(Absinthe.Resolution.t(), %{id: non_neg_integer()}, %{context: map()}) ::
-          {:ok, %{message: Message.t()}}
-  def send_message(_, %{id: id}, _) do
-    with {:ok, message} <- Messages.fetch_and_send_message(%{id: id}),
-         do: {:ok, %{message: message}}
-  end
-
-  @doc false
   @spec create_and_send_message(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, %{message: Message.t()}}
   def create_and_send_message(_, %{input: params}, _) do
@@ -88,7 +80,16 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def create_and_send_message_to_contacts(_, %{input: message, contact_ids: contact_ids}, _) do
     with {:ok, messages} <- Messages.create_and_send_message_to_contacts(message, contact_ids),
-         do: {:ok, %{messages: messages}}
+         do: {:ok, messages}
+  end
+
+  @doc false
+  @spec send_hsm_message(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def send_hsm_message(_, %{template_id: id, receiver_id: receiver_id, parameters: parameters}, _) do
+    with {:ok, message} <-
+           Messages.create_and_send_hsm_message(id, receiver_id, parameters),
+         do: {:ok, %{message: message}}
   end
 
   # Message Media Resolver which sits between the GraphQL schema and Glific

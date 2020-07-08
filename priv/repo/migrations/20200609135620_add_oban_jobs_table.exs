@@ -1,4 +1,4 @@
-defmodule TwoWay.Repo.Migrations.AddObanJobsTable do
+defmodule Glific.Repo.Migrations.AddObanJobsTable do
   use Ecto.Migration
 
   def change do

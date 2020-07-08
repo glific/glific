@@ -47,7 +47,7 @@ config :glific, :pow,
   repo: Glific.Repo
 
 config :passwordless_auth,
-  sms_adapter: Glific.SMSAdapter.Gupshup
+  sms_adapter: Glific.Providers.Gupshup
 
 # Sentry configuration
 
@@ -63,7 +63,7 @@ config :sentry,
   tags: %{
     env: "dev"
   },
-  included_environments: [:prod, :dev]
+  included_environments: [:prod]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

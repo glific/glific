@@ -320,6 +320,214 @@ Parameter | Type | Default | Description
 <a href="#messageresult">MessageResult</a> | An error object or empty
 
 
+## Create and send Message
+
+```graphql
+mutation createAndSendMessage($input: MessageInput!) {
+  createAndSendMessage(input: $input) {
+    message {
+      id
+      body
+      receiver {
+        id
+        name
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "body": "Test message",
+    "flow": "OUTBOUND",
+    "type": "TEXT",
+    "senderId": 1,
+    "receiverId": 2,
+    "userId": 1
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createAndSendMessage": {
+      "errors": null,
+      "message": {
+        "body": "Test message",
+        "id": "26",
+        "receiver": {
+          "id": "2",
+          "name": "Default receiver"
+        }
+      }
+    }
+  }
+}
+```
+
+### Query Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#messageinput">MessageInput</a> | required ||
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#messageresult">MessageResult</a> | An error object or empty
+
+
+## Create and send Message to multiple Contacts
+
+```graphql
+mutation createAndSendMessageToContacts($input: MessageInput!, $contactIds: [ID]!) {
+  createAndSendMessageToContacts(input: $input, contactIds: $contactIds) {
+    id
+    body
+    receiver{
+      id
+    }
+  }
+}
+
+{
+  "input": {
+    "body": "Test message",
+    "flow": "OUTBOUND",
+    "type": "TEXT",
+    "senderId": 1,
+    "userId": 1
+  },
+  "contactIds": [
+    2,
+    3
+  ]
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createAndSendMessageToContacts": [
+      {
+        "body": "Test message",
+        "id": "61",
+        "receiver": {
+          "id": "3"
+        }
+      },
+      {
+        "body": "Test message",
+        "id": "60",
+        "receiver": {
+          "id": "2"
+        }
+      }
+    ]
+  }
+}
+```
+
+### Query Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#messageinput">MessageInput</a> | required ||
+contactIds | [<a href="#id">ID</a>]! | required ||
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+[<a href="#message">Message</a>] | List of messages
+
+
+## Send hsm Message
+
+```graphql
+mutation sendHsmMessage($templateId: ID!, $receiverId: ID!, $parameters: [String]) {
+  sendHsmMessage(templateId: $templateId, receiverId: $receiverId, parameters: $parameters) {
+    message{
+      id
+      body
+      isHsm
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "templateId": 34,
+  "receiverId": 5,
+  "parameters": [
+    "100",
+    "30 Oct"
+  ]
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "sendHsmMessage": {
+      "errors": null,
+      "message": {
+        "body": "Your 100 points will expire on 30 Oct.",
+        "id": "18",
+        "isHsm": true
+      }
+    }
+  }
+}
+```
+
+> In case of error, above function returns an error object like the below
+
+```json
+{
+  "data": {
+    "sendHsmMessage": null
+  },
+  "errors": [
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 2
+        }
+      ],
+      "message": "You need to provide correct number of parameters for hsm template",
+      "path": [
+        "sendHsmMessage"
+      ]
+    }
+  ]
+}
+```
+
+### Query Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+templateId | <a href="#id">ID</a>! | required ||
+receiverId | <a href="#id">ID</a>! | required ||
+parameters | [<a href="#string">String</a>]! | required ||
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#messageresult">MessageResult</a> | An error object or empty
+
 
 ## Subscription for Sent Message
 

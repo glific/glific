@@ -145,6 +145,12 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # The message shortcode
       add :shortcode, :string, null: true
 
+      # Field to check hsm message type
+      add :is_hsm, :boolean, default: false
+
+      # Number of parameters in hsm message
+      add :number_parameters, :integer, null: true
+
       # Messages are in a specific language
       add :language_id, references(:languages, on_delete: :restrict), null: false
 
@@ -232,6 +238,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
       # Options are: text, audio, video, image, contact, location, file
       add :type, :message_type_enum
+
+      # Field to check hsm message type
+      add :is_hsm, :boolean, default: false
 
       # Options are: inbound, outbound
       add :flow, :message_flow_enum

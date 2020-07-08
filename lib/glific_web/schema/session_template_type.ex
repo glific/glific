@@ -20,6 +20,8 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :body, :string
     field :type, :message_type_enum
     field :shortcode, :string
+    field :is_hsm, :boolean
+    field :number_parameters, :integer
     field :is_reserved, :boolean
     field :is_active, :boolean
     field :is_source, :boolean
@@ -48,6 +50,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Match the shortcode of template"
     field :shortcode, :string
 
+    @desc "Match the hsm template message"
+    field :is_hsm, :boolean
+
     @desc "Match the parent"
     field :parent, :string
 
@@ -72,6 +77,8 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :body, :string
     field :type, :message_type_enum
     field :shortcode, :string
+    field :is_hsm, :boolean
+    field :number_parameters, :integer
     field :is_active, :boolean
     field :is_source, :boolean
     field :language_id, :id

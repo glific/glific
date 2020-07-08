@@ -13,7 +13,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
   def create(conn, %{"user" => user_params}) do
-    _ = """
     %{"phone" => phone, "otp" => otp} = user_params
 
     case PasswordlessAuth.verify_code(phone, otp) do
@@ -30,9 +29,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
           error: %{status: 500, message: "Couldn't create user", errors: [Atom.to_string(error)]}
         })
     end
-    """
-
-    create_user(conn, user_params)
   end
 
   @spec create_user(Conn.t(), map()) :: Conn.t()
@@ -60,14 +56,24 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @doc false
   @spec send_otp(Conn.t(), map()) :: Conn.t()
   def send_otp(conn, %{"user" => %{"phone" => phone}}) do
-    with {:ok, otp} <- PasswordlessAuth.create_and_send_verification_code(phone),
-         do:
-           json(conn, %{
-             data: %{
-               phone: phone,
-               otp: otp,
-               message: "OTP #{otp} sent successfully to #{phone}"
-             }
-           })
+    with {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
+         true <- Glific.Contacts.can_send_message_to?(contact),
+         {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
+      json(conn, %{
+        data: %{
+          phone: phone,
+          message: "OTP sent successfully to #{phone}"
+        }
+      })
+    else
+      {:error, _} ->
+        conn
+        |> put_status(400)
+        |> json(%{error: %{status: 400, message: "Phone number is incorrect"}})
+
+      false ->
+        conn
+        |> json(%{error: %{status: 200, message: "Contact is not opted in yet"}})
+    end
   end
 end

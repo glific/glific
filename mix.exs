@@ -29,7 +29,7 @@ defmodule Glific.MixProject do
 
       # Lets add meta information on project
       name: "Glific",
-      description: "A open source two way communication platform for the social sector",
+      description: "An open source two way communication platform for the social sector",
       source_url: @github_url,
       homepage_url: @home_url,
       package: [
@@ -99,12 +99,11 @@ defmodule Glific.MixProject do
       {:faker, "~> 0.13", only: [:dev, :test]},
       {:excoveralls, "~> 0.13", only: :test},
       {:cors_plug, "~> 2.0"},
-      {:ex_check, ">= 0.0.0", only: [:dev, :test], runtime: false},
+      {:ex_check, ">= 0.12.0", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.8", only: [:dev, :test]},
       {:wormwood, "~> 0.1"},
       {:gen_stage, "~> 1.0"},
-      {:passwordless_auth,
-       git: "https://github.com/glific/passwordless_auth.git", branch: "develop"},
+      {:passwordless_auth, git: "https://github.com/glific/passwordless_auth.git"},
       {:timex, "~> 3.0"}
     ]
   end
@@ -117,8 +116,8 @@ defmodule Glific.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup", "cmd npm install --prefix assets"],
-      reset: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      setup: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      reset: ["deps.get", "clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": [
         "ecto.create",
         "ecto.migrate",

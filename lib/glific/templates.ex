@@ -69,6 +69,9 @@ defmodule Glific.Templates do
       {:shortcode, shortcode}, query ->
         from q in query, where: ilike(q.shortcode, ^"%#{shortcode}%")
 
+      {:is_hsm, is_hsm}, query ->
+        from q in query, where: q.is_hsm == ^is_hsm
+
       {:parent, label}, query ->
         from q in query,
           join: t in assoc(q, :parent),
