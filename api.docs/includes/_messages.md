@@ -320,6 +320,86 @@ Parameter | Type | Default | Description
 <a href="#messageresult">MessageResult</a> | An error object or empty
 
 
+## Send hsm Message
+
+```graphql
+mutation sendHsmMessage($templateId: ID!, $receiverId: ID!, $parameters: [String]) {
+  sendHsmMessage(templateId: $templateId, receiverId: $receiverId, parameters: $parameters) {
+    message{
+      id
+      body
+      isHsm
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "templateId": 34,
+  "receiverId": 5,
+  "parameters": [
+    "100",
+    "30 Oct"
+  ]
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "sendHsmMessage": {
+      "errors": null,
+      "message": {
+        "body": "Your 100 points will expire on 30 Oct.",
+        "id": "18",
+        "isHsm": true
+      }
+    }
+  }
+}
+```
+
+In case of errors, all the above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "sendHsmMessage": null
+  },
+  "errors": [
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 2
+        }
+      ],
+      "message": "You need to provide correct number of parameters for hsm template",
+      "path": [
+        "sendHsmMessage"
+      ]
+    }
+  ]
+}
+```
+
+### Query Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+templateId | <a href="#id">ID</a>! | required ||
+receiverId | <a href="#id">ID</a>! | required ||
+parameters | [<a href="#string">String</a>]! | required ||
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#messageresult">MessageResult</a> | An error object or empty
+
 
 ## Subscription for Sent Message
 
