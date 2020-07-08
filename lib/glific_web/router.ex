@@ -46,6 +46,11 @@ defmodule GlificWeb.Router do
     post "/flow-editor/groups", FlowEditorController, :groups_post
     get "/flow-editor/fields", FlowEditorController, :fields
     post "/flow-editor/fields", FlowEditorController, :fields_post
+
+    get "/flow-editor/labels", FlowEditorController, :labels
+    post "/flow-editor/labels", FlowEditorController, :labels_post
+
+
   end
 
 

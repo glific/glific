@@ -14,10 +14,16 @@ defmodule GlificWeb.API.V1.FlowEditorController do
     |> json(%{results: []})
   end
 
+
+  def groups(conn, data) do
+     conn
+    |> json(%{results: []})
+  end
+
   def groups_post(conn, params) do
     conn
     |> json(%{
-        uuid: "3aa33e3e-a824-4ad3-b24a-36053a9dee71",
+        uuid: generate_uuid(),
         query: nil,
         status: "ready",
         count: 0,
@@ -31,6 +37,7 @@ defmodule GlificWeb.API.V1.FlowEditorController do
     |> json(%{results: []})
   end
 
+  @spec fields_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def fields_post(conn, params) do
     conn
     |> json(%{
@@ -38,6 +45,28 @@ defmodule GlificWeb.API.V1.FlowEditorController do
         name: params["label"],
         value_type: "text"
     })
+  end
+
+
+  def labels(conn, data) do
+     conn
+    |> json(%{results: []})
+  end
+
+  def labels_post(conn, params) do
+    conn
+    |> json(%{
+        uuid: generate_uuid(),
+        name: params["name"],
+        count: 0
+    })
+  end
+
+
+
+
+  defp generate_uuid() do
+    Faker.UUID.v4()
   end
 
 
