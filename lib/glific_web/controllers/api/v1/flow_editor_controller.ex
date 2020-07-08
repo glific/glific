@@ -79,6 +79,21 @@ defmodule GlificWeb.API.V1.FlowEditorController do
     json(conn, channels)
   end
 
+  def classifiers(conn, params) do
+    classifiers = %{
+      results: [
+        %{
+          uuid: generate_uuid(),
+          name: "Travel Agency",
+          type: "wit",
+          intents: ["book flight", "rent car"],
+          created_on: "2019-10-15T20:07:58.529130Z"
+        }
+      ]
+    };
+    json(conn, classifiers)
+  end
+
 
 
   defp generate_uuid() do

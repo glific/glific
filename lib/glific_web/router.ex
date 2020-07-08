@@ -53,6 +53,8 @@ defmodule GlificWeb.Router do
     get "/flow-editor/channels", FlowEditorController, :channels
     post "/flow-editor/channels", FlowEditorController, :channels
 
+    get "/flow-editor/classifiers", FlowEditorController, :classifiers
+    post "/flow-editor/classifiers", FlowEditorController, :classifiers
 
   end
 
