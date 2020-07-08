@@ -252,11 +252,17 @@ defmodule GlificWeb.API.V1.FlowEditorController do
       [] -> json(conn, %{ results: assetList })
       _ -> json(conn, assetContent["1"])
     end
-
-    # respond(callback, { results: assetList });
-    # json(conn, %{ results: assetList })
-    # json(conn, assetContent["1"])
   end
+
+  def functions(conn, _) do
+    functions = File.read!("assets/flows/functions.json")
+    |> Jason.decode!()
+
+    json(conn, functions)
+
+  end
+
+
 
   defp help_flow do
     %{

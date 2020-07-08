@@ -84,6 +84,10 @@ defmodule GlificWeb.Router do
     get "/flow-editor/flows/*vars", FlowEditorController, :flows
 
     get "/flow-editor/revisions/*vars", FlowEditorController, :revisions
+
+    get "/flow-editor/functions", FlowEditorController, :functions
+
+
   end
 
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
