@@ -70,6 +70,9 @@ defmodule GlificWeb.Router do
     get "/flow-editor/environment", FlowEditorController, :environment
     post "/flow-editor/environment", FlowEditorController, :environment
 
+    get "/flow-editor/recipients", FlowEditorController, :recipients
+    post "/flow-editor/recipients", FlowEditorController, :recipients
+
 
   end
 

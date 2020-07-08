@@ -184,6 +184,26 @@ defmodule GlificWeb.API.V1.FlowEditorController do
     json(conn, environment)
   end
 
+  def recipients(conn, params) do
+    recipients = %{
+      results: [
+         %{
+            name: "Cat Fanciers",
+            id: "eae05fb1-3021-4df2-a443-db8356b953fa",
+            type: "group",
+            extra: 212
+          },
+         %{
+            name: "Anne",
+            id: "673fa0f6-dffd-4e7d-bcc1-e5709374354f",
+            type: "contact"
+          }
+      ]
+    }
+
+    json(conn, recipients)
+  end
+
 
   defp generate_uuid() do
     Faker.UUID.v4()
