@@ -40,6 +40,7 @@ defmodule Glific.Contacts do
   def count_contacts(args \\ %{}),
     do: Repo.count_filter(args, Contact, &filter_with/2)
 
+  # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn
@@ -56,6 +57,7 @@ defmodule Glific.Contacts do
         from q in query, where: q.provider_status == ^provider_status
     end)
   end
+  # codebeat:enable[ABC]
 
   @doc """
   Gets a single contact.
