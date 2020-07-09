@@ -64,6 +64,7 @@ defmodule Glific.Tags do
           where: q.language_id == ^language_id
     end)
   end
+
   # codebeat:enable[ABC]
 
   @doc """
