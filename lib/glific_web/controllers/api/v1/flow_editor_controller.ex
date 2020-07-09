@@ -5,8 +5,6 @@ defmodule GlificWeb.API.V1.FlowEditorController do
 
   use GlificWeb, :controller
 
-  alias GlificWeb.ErrorHelpers
-  alias Plug.Conn
 
   @doc false
   def globals(conn, data) do
@@ -246,12 +244,20 @@ defmodule GlificWeb.API.V1.FlowEditorController do
   def revisions(conn, %{"vars" => vars}) do
     user = %{email: "chancerton@nyaruka.com", name: "Chancellor von Frankenbean"}
     assetList = [%{user: user, created_on: "2020-07-08T19:18:43.253Z", id: 1, version: "13.0.0", revision: 1}]
-    assetContent = %{ "1" => %{ definition: help_flow, metadata: %{ issues: [] } }}
+    assetContent = %{ "1" => %{ definition: help_flow(), metadata: %{ issues: [] } }}
 
     case vars do
       [] -> json(conn, %{ results: assetList })
       _ -> json(conn, assetContent["1"])
     end
+  end
+
+  def save_revisions(conn, %{"vars" => _vars}) do
+
+    user = %{email: "chancerton@nyaruka.com", name: "Chancellor von Frankenbean"}
+    asset = %{user: user, created_on: "2020-07-08T19:18:43.253Z", id: 1, version: "13.0.0", revision: 1}
+
+    json(conn, asset)
   end
 
   def functions(conn, _) do
@@ -261,7 +267,6 @@ defmodule GlificWeb.API.V1.FlowEditorController do
     json(conn, functions)
 
   end
-
 
   defp help_flow do
     %{
@@ -549,6 +554,10 @@ defmodule GlificWeb.API.V1.FlowEditorController do
         ]
       }
     }
+  end
+
+  defp inital_flow do
+    %{"name" => "Flow9", "uuid" => "04c74c58-94ff-45d3-9bfa-98611d7214d5", "spec_version" => "13.1.0", "language" => "base", "type" => "messaging", "nodes" => [], "_ui" => %{}, "revision" => 1, "expire_after_minutes" => 10080}
   end
 
   defp generate_uuid() do

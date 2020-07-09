@@ -77,6 +77,8 @@ defmodule GlificWeb.Router do
 
     get "/flow-editor/revisions/*vars", FlowEditorController, :revisions
 
+    post "/flow-editor/revisions/*vars", FlowEditorController, :save_revisions
+
   end
 
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
