@@ -10,7 +10,8 @@ use Mix.Config
 # which you should run after static files are built and
 # before starting your production server.
 config :glific, GlificWeb.Endpoint,
-  url: [host: System.get_env("BASE_URL"), port: 80]
+  # url: [host: System.get_env("BASE_URL"), port: 80]
+  http: [port: 4000]
   # url: [host: "glific.io", port: 443],
   # https: [
   #   port: 443,
@@ -53,7 +54,7 @@ config :logger, level: :info
 # We also recommend setting `force_ssl` in your endpoint, ensuring
 # no data is ever sent via http, always redirecting to https:
 #
-config :glific, GlificWeb.Endpoint, force_ssl: [hsts: true]
+config :glific, GlificWeb.Endpoint, force_ssl: [hsts: false]
 #
 # Check `Plug.SSL` for all available options in `force_ssl`.
 
