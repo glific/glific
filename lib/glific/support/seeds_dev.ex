@@ -4,6 +4,8 @@ defmodule Glific.SeedsDev do
   """
   alias Glific.{
     Contacts.Contact,
+    Flows.Flow,
+    Flows.FlowRevision,
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
@@ -268,6 +270,15 @@ defmodule Glific.SeedsDev do
     })
   end
 
+  def seed_flows do
+    Repo.insert!(%Flow{
+      name: "Help Workflow",
+      version_number: "13.1.0",
+      language_id: 1
+    })
+
+  end
+
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
   split this function up into multiple different ones for test, dev and production
@@ -289,5 +300,7 @@ defmodule Glific.SeedsDev do
     seed_messages()
 
     seed_messages_media()
+
+    # seed_flows()
   end
 end

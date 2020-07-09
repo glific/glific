@@ -16,22 +16,30 @@ defmodule Glific.Flows.Flow do
   }
 
   @required_fields [:name, :language_id]
-  @optional_fields []
+  @optional_fields [:flow_type, :version_number]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           uuid: Ecto.UUID.t() | nil,
           name: String.t() | nil,
+          nodes: Node.t() | Ecto.Association.NotLoaded.t() | nil,
+          version_number: String.t() | nil,
           language_id: non_neg_integer | nil,
-          language: Language.t() | Ecto.Association.NotLoaded.t() | nil
+          language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
         }
 
   schema "flows" do
     field :name, :string
 
+    field :version_number, :string
+
     belongs_to :language, Language
 
     has_many :nodes, Node
+
+    timestamps(type: :utc_datetime)
   end
 
   @doc """
