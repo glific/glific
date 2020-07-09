@@ -253,5 +253,24 @@ defmodule Glific.CommunicationsTest do
       message = Messages.get_message!(message.id)
       assert message.provider_status == :read
     end
+
+    test "send message at a specific time should not send it immediately" do
+      message = message_fixture()
+      scheduled_time = Timex.shift(DateTime.utc_now(), hours: 2)
+      Communications.send_message(message, scheduled_time)
+
+      assert_enqueued(worker: Worker)
+      Oban.drain_queue(:gupshup)
+      message = Messages.get_message!(message.id)
+
+      assert message.status == :enqueued
+      assert message.provider_message_id == nil
+      assert message.sent_at == nil
+      assert message.provider_status == nil
+      assert message.flow == :outbound
+
+      # Verify job scheduled
+      assert_enqueued(worker: Worker, scheduled_at: {scheduled_time, delta: 10})
+    end
   end
 end
