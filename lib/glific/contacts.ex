@@ -20,28 +20,16 @@ defmodule Glific.Contacts do
 
   """
   @spec list_contacts(map()) :: [Contact.t()]
-  def list_contacts(args \\ %{}) do
-    args
-    |> Enum.reduce(Contact, fn
-      {:opts, opts}, query ->
-        query |> opts_with(opts)
-
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.all()
-  end
+  def list_contacts(args \\ %{}),
+    do: Repo.list_filter(args, Contact, &opts_with/2, &filter_with/2)
 
   defp opts_with(query, opts) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->
         query |> order_by([c], {^order, fragment("lower(?)", c.name)})
 
-      {:limit, limit}, query ->
-        query |> limit(^limit)
-
-      {:offset, offset}, query ->
-        query |> offset(^offset)
+      _, query ->
+        query
     end)
   end
 
@@ -49,14 +37,8 @@ defmodule Glific.Contacts do
   Return the count of contacts, using the same filter as list_contacts
   """
   @spec count_contacts(map()) :: integer
-  def count_contacts(args \\ %{}) do
-    args
-    |> Enum.reduce(Contact, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.aggregate(:count)
-  end
+  def count_contacts(args \\ %{}),
+    do: Repo.count_filter(args, Contact, &filter_with/2)
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do

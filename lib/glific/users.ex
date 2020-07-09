@@ -17,28 +17,16 @@ defmodule Glific.Users do
 
   """
   @spec list_users(map()) :: [User.t()]
-  def list_users(args \\ %{}) do
-    args
-    |> Enum.reduce(User, fn
-      {:opts, opts}, query ->
-        query |> opts_with(opts)
-
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.all()
-  end
+  def list_users(args \\ %{}),
+    do: Repo.list_filter(args, User, &opts_with/2, &filter_with/2)
 
   defp opts_with(query, opts) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->
         query |> order_by([c], {^order, fragment("lower(?)", c.name)})
 
-      {:limit, limit}, query ->
-        query |> limit(^limit)
-
-      {:offset, offset}, query ->
-        query |> offset(^offset)
+      _, query ->
+        query
     end)
   end
 
@@ -59,14 +47,8 @@ defmodule Glific.Users do
   Return the count of users, using the same filter as list_users
   """
   @spec count_users(map()) :: integer
-  def count_users(args \\ %{}) do
-    args
-    |> Enum.reduce(User, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.aggregate(:count)
-  end
+  def count_users(args \\ %{}),
+    do: Repo.count_filter(args, User, &filter_with/2)
 
   @doc """
   Gets a single user.

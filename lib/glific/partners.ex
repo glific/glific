@@ -20,30 +20,25 @@ defmodule Glific.Partners do
 
   """
   @spec list_providers(map()) :: [%Provider{}, ...]
-  def list_providers(args \\ %{}) do
-    args
-    |> Enum.reduce(Provider, fn
-      {:order, order}, query ->
-        query |> order_by([p], {^order, fragment("lower(?)", p.name)})
+  def list_providers(args \\ %{}),
+    do: Repo.list_filter(args, Provider, &opts_with/2, &filter_provider_with/2)
 
-      {:filter, filter}, query ->
-        query |> filter_provider_with(filter)
+  defp opts_with(query, opts) do
+    Enum.reduce(opts, query, fn
+      {:order, order}, query ->
+        query |> order_by([o], {^order, fragment("lower(?)", o.name)})
+
+      _, query ->
+        query
     end)
-    |> Repo.all()
   end
 
   @doc """
   Return the count of providers, using the same filter as list_providers
   """
   @spec count_providers(map()) :: integer
-  def count_providers(args \\ %{}) do
-    args
-    |> Enum.reduce(Provider, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.aggregate(:count)
-  end
+  def count_providers(args \\ %{}),
+    do: Repo.count_filter(args, Provider, &filter_provider_with/2)
 
   @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_provider_with(query, filter) do
@@ -155,33 +150,19 @@ defmodule Glific.Partners do
 
   """
   @spec list_organizations(map()) :: [Organization.t()]
-  def list_organizations(args \\ %{}) do
-    args
-    |> Enum.reduce(Organization, fn
-      {:order, order}, query ->
-        query |> order_by([o], {^order, fragment("lower(?)", o.name)})
-
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.all()
-  end
+  def list_organizations(args \\ %{}),
+    do: Repo.list_filter(args, Organization, &opts_with/2, &filter_organization_with/2)
 
   @doc """
   Return the count of organizations, using the same filter as list_organizations
   """
   @spec count_organizations(map()) :: integer
-  def count_organizations(args \\ %{}) do
-    args
-    |> Enum.reduce(Organization, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.aggregate(:count)
-  end
+  def count_organizations(args \\ %{}),
+    do: Repo.count_filter(args, Organization, &filter_organization_with/2)
 
-  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_with(query, filter) do
+  @spec filter_organization_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
+          Ecto.Queryable.t()
+  defp filter_organization_with(query, filter) do
     Enum.reduce(filter, query, fn
       {:name, name}, query ->
         from q in query, where: ilike(q.name, ^"%#{name}%")
