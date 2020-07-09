@@ -11,6 +11,7 @@ defmodule Glific.Flows.Action do
   alias Glific.Enums.FlowType
 
   alias Glific.Flows.{
+    ContactSetting,
     Context,
     Flow,
     Node
@@ -103,7 +104,7 @@ defmodule Glific.Flows.Action do
   def execute(%{type: type} = action, context, message_stream)
       when type == "set_contact_language" do
     IO.puts("Setting Contact Language: #{action.text}")
-    Context.set_contact_language(context, action.text)
+    ContactSetting.set_contact_language(context, action.text)
     {:ok, context, message_stream}
   end
 

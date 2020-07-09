@@ -10,11 +10,9 @@ defmodule Glific.Flows.Context do
   import Ecto.Changeset
 
   alias Glific.{
-    Contacts,
     Contacts.Contact,
     Flows.Flow,
-    Flows.Node,
-    Settings
+    Flows.Node
   }
 
   @required_fields [:contact_id, :flow_uuid, :uuid_map]
@@ -55,31 +53,18 @@ defmodule Glific.Flows.Context do
     |> foreign_key_constraint(:node_uuid)
   end
 
-  @doc """
-  Set the language for a contact
-  """
-  @spec set_contact_language(Context.t(), String.t()) :: Context.t()
-  def set_contact_language(context, language) do
-    # get the language id
-    [language | _] = Settings.list_languages(%{label: language})
-    {:ok, contact} = Contacts.update_contact(context.contact, %{language_id: language.id})
-    Map.put(context, :contact, contact)
-  end
+  @spec get_node_uuid(Node.t() | nil) :: Ecto.UUID.t() | nil
+  defp get_node_uuid(nil), do: nil
+  defp get_node_uuid(node), do: node.uuid
 
   @doc """
   Set the new node for the context
   """
   @spec set_node(Context.t(), Node.t() | nil) :: Context.t()
-  def set_node(context, node) when is_nil(node) do
-    context
-    |> Map.put(:node, nil)
-    |> Map.put(:node_uuid, nil)
-  end
-
   def set_node(context, node) do
     context
     |> Map.put(:node, node)
-    |> Map.put(:node_uuid, node.uuid)
+    |> Map.put(:node_uuid, get_node_uuid(node))
   end
 
   @doc """
