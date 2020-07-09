@@ -270,14 +270,54 @@ defmodule Glific.SeedsDev do
     })
   end
 
-  def seed_flows do
-    Repo.insert!(%Flow{
+  def seed_flows() do
+   [english | _] = Settings.list_languages(%{label: "english"})
+    help_flow = Repo.insert!(%Flow{
       name: "Help Workflow",
       version_number: "13.1.0",
-      language_id: 1
+      uuid: Faker.UUID.v4(),
+      language_id: english.id
+    })
+
+    help_flow_definition = File.read!("assets/flows/help.json")
+    |> Jason.decode!()
+
+    help_flow_definition = Map.merge(help_flow_definition, %{
+      "name" => help_flow.name,
+      "uuid" => help_flow.uuid
+    })
+
+    Repo.insert!(%FlowRevision{
+      definition: help_flow_definition,
+      flow_id: help_flow.id,
+      revision_number: 1
+    })
+
+    [english | _] = Settings.list_languages(%{label: "english"})
+
+    language_flow = Repo.insert!(%Flow{
+      name: "Language Workflow",
+      version_number: "13.1.0",
+      uuid: Faker.UUID.v4(),
+      language_id: english.id
+    })
+
+    language_flow_definition = File.read!("assets/flows/language_2.json")
+    |> Jason.decode!()
+
+    language_flow_definition = Map.merge(language_flow_definition, %{
+      "name" => language_flow.name,
+      "uuid" => language_flow.uuid
+    })
+
+    Repo.insert!(%FlowRevision{
+      definition: language_flow_definition,
+      flow_id: language_flow.id,
+      revision_number: 1
     })
 
   end
+
 
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
@@ -301,6 +341,6 @@ defmodule Glific.SeedsDev do
 
     seed_messages_media()
 
-    # seed_flows()
+    seed_flows()
   end
 end
