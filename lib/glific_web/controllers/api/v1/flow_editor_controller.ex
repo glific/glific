@@ -263,7 +263,6 @@ defmodule GlificWeb.API.V1.FlowEditorController do
   end
 
 
-
   defp help_flow do
     %{
       name: "Favorites",

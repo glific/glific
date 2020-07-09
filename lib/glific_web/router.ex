@@ -52,41 +52,30 @@ defmodule GlificWeb.Router do
     post "/flow-editor/labels", FlowEditorController, :labels_post
 
     get "/flow-editor/channels", FlowEditorController, :channels
-    post "/flow-editor/channels", FlowEditorController, :channels
 
     get "/flow-editor/classifiers", FlowEditorController, :classifiers
-    post "/flow-editor/classifiers", FlowEditorController, :classifiers
 
     get "/flow-editor/ticketers", FlowEditorController, :ticketers
-    post "/flow-editor/ticketers", FlowEditorController, :ticketers
 
     get "/flow-editor/resthooks", FlowEditorController, :resthooks
-    post "/flow-editor/resthooks", FlowEditorController, :resthooks
 
     get "/flow-editor/templates", FlowEditorController, :templates
-    post "/flow-editor/templates", FlowEditorController, :templates
 
     get "/flow-editor/languages", FlowEditorController, :languages
-    post "/flow-editor/languages", FlowEditorController, :languages
 
     get "/flow-editor/environment", FlowEditorController, :environment
-    post "/flow-editor/environment", FlowEditorController, :environment
 
     get "/flow-editor/recipients", FlowEditorController, :recipients
-    post "/flow-editor/recipients", FlowEditorController, :recipients
 
     get "/flow-editor/completion", FlowEditorController, :completion
-    post "/flow-editor/completion", FlowEditorController, :completion
 
     get "/flow-editor/activity", FlowEditorController, :activity
-    post "/flow-editor/activity", FlowEditorController, :activity
+
+    get "/flow-editor/functions", FlowEditorController, :functions
 
     get "/flow-editor/flows/*vars", FlowEditorController, :flows
 
     get "/flow-editor/revisions/*vars", FlowEditorController, :revisions
-
-    get "/flow-editor/functions", FlowEditorController, :functions
-
 
   end
 
