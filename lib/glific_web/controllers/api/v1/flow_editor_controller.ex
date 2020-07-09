@@ -247,10 +247,7 @@ defmodule GlificWeb.API.V1.FlowEditorController do
   def revisions(conn, %{"vars" => vars}) do
     case vars do
       [flow_uuid] -> json(conn, Flows.get_flow_revision_list(flow_uuid))
-      [flow_uuid, revison_number] ->
-        flow = Flows.get_flow_revision(flow_uuid)
-        revision =  List.last(flow.revisions)
-        json(conn, %{ definition: help_flow(), metadata: %{ issues: [] } })
+      [flow_uuid, revison_number] -> json(conn, Flows.get_flow_revision(flow_uuid, revison_number))
     end
   end
 
