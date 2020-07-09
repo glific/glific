@@ -244,18 +244,21 @@ defmodule GlificWeb.API.V1.FlowEditorController do
     json(conn, results)
   end
 
-  def revisions(conn, params) do
-    json(conn, params)
+  def revisions(conn, %{"vars" => vars}) do
+    user = %{email: "chancerton@nyaruka.com", name: "Chancellor von Frankenbean"}
+    assetList = [%{user: user, created_on: "2020-07-08T19:18:43.253Z", id: 1, version: "13.0.0", revision: 1}]
 
-    # user = %{email: "chancerton@nyaruka.com", name: "Chancellor von Frankenbean"}
-    # assetList = [%{user: user, created_on: "2020-07-08T19:18:43.253Z", id: 1, version: "13.0.0", revision: 1}]
-    # json(conn, %{ results: assetList })
+    case vars do
+      [] -> json(conn, %{ results: assetList })
+      _ -> json(conn, %{ definition: help_flow(), metadata: %{ issues: [] } })
+    end
 
     # case vars do
     #   [] -> json(conn, %{ results: assetList })
-    #   _ -> json(conn, %{ definition: help_flow(), metadata: %{ issues: [] } })
-    #   # flow = Flows.get_flow_revision(4)
-    #   # revision =  List.last(flow.revisions)
+    #   [flow_id] ->
+    #     flow = Flows.get_flow_revision(4)
+    #    revision =  List.last(flow.revisions)
+    #   json(conn, %{ definition: help_flow(), metadata: %{ issues: [] } })
     # end
   end
 
