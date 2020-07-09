@@ -57,6 +57,7 @@ defmodule Glific.Contacts do
         from q in query, where: q.provider_status == ^provider_status
     end)
   end
+
   # codebeat:enable[ABC]
 
   @doc """

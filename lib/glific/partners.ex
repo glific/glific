@@ -191,6 +191,7 @@ defmodule Glific.Partners do
           where: ilike(c.label, ^"%#{default_language}%")
     end)
   end
+
   # codebeat:enable[ABC]
 
   @doc ~S"""
