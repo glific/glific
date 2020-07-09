@@ -11,7 +11,7 @@ defmodule Glific.Repo.Migrations.CreateFlowEditorTables do
       add :name, :string, null: false
 
       # The language label in its default locale, e.g: हिंदी
-      add :uuid, :uuid, null: false
+      add :uuid, :string, null: false
 
       add :version_number, :string
 
@@ -24,8 +24,8 @@ defmodule Glific.Repo.Migrations.CreateFlowEditorTables do
   end
 
   def flow_revision do
-    create table(:flow_revision) do
-      add :defination, :map
+    create table(:flow_revisions) do
+      add :definition, :map
       add :flow_id, references(:flows, on_delete: :nothing), null: false
       add :revision_number, :integer
       timestamps(type: :utc_datetime)

@@ -4,6 +4,8 @@ defmodule Glific.SeedsDev do
   """
   alias Glific.{
     Contacts.Contact,
+    Flows.Flow,
+    Flows.FlowRevision,
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
@@ -268,26 +270,43 @@ defmodule Glific.SeedsDev do
     })
   end
 
+  def seed_flow() do
+    flow = Repo.insert!(%Flow{
+      name: "Help Workflow",
+      version_number: "13.1.0",
+      uuid: Faker.UUID.v4()
+    })
+
+    Repo.insert!(%FlowRevision{
+      definition: FlowRevision.default_definition(flow),
+      flow_id: flow.id,
+      revision_number: 1
+    })
+
+  end
+
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
   split this function up into multiple different ones for test, dev and production
   """
   @spec seed :: nil
   def seed do
-    default_provider = seed_providers()
+    # default_provider = seed_providers()
 
-    seed_organizations(default_provider)
+    # seed_organizations(default_provider)
 
-    seed_contacts()
+    # seed_contacts()
 
-    seed_users()
+    # seed_users()
 
-    seed_session_templates()
+    # seed_session_templates()
 
-    seed_tag()
+    # seed_tag()
 
-    seed_messages()
+    # seed_messages()
 
-    seed_messages_media()
+    # seed_messages_media()
+
+    seed_flow()
   end
 end

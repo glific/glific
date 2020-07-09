@@ -2,6 +2,8 @@ defmodule Glific.Flows.Flow do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Glific.Flows.FlowRevision
+
   @required_fields [:name, :version_number]
   @optional_fields [:uuid, :language, :flow_type]
 
@@ -12,6 +14,7 @@ defmodule Glific.Flows.Flow do
           version_number: String.t() | nil,
           language: String.t() | nil,
           flow_type: String.t() | nil,
+          revisions: list() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
     }
@@ -22,6 +25,8 @@ defmodule Glific.Flows.Flow do
     field :version_number, :string
     field :language, :string
     field :flow_type, :string
+
+    has_many :revisions, FlowRevision
     timestamps(type: :utc_datetime)
   end
 

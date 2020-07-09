@@ -5,6 +5,9 @@ defmodule GlificWeb.API.V1.FlowEditorController do
 
   use GlificWeb, :controller
 
+  alias Glific.Flows
+  alias Glific.Flows.Flow
+
 
   @doc false
   def globals(conn, data) do
@@ -244,18 +247,22 @@ defmodule GlificWeb.API.V1.FlowEditorController do
   def revisions(conn, %{"vars" => vars}) do
     user = %{email: "chancerton@nyaruka.com", name: "Chancellor von Frankenbean"}
     assetList = [%{user: user, created_on: "2020-07-08T19:18:43.253Z", id: 1, version: "13.0.0", revision: 1}]
-    assetContent = %{ "1" => %{ definition: help_flow(), metadata: %{ issues: [] } }}
+
 
     case vars do
       [] -> json(conn, %{ results: assetList })
-      _ -> json(conn, assetContent["1"])
+      [flow_id] ->
+        flow = Flows.get_flow_revision(4)
+       revision =  List.last(flow.revisions)
+      json(conn, %{ definition: revision.definition, metadata: %{ issues: [] } })
     end
   end
 
-  def save_revisions(conn, %{"vars" => _vars}) do
+  def save_revisions(conn, params) do
 
     user = %{email: "chancerton@nyaruka.com", name: "Chancellor von Frankenbean"}
     asset = %{user: user, created_on: "2020-07-08T19:18:43.253Z", id: 1, version: "13.0.0", revision: 1}
+    Flows.create_flow_revision(params)
 
     json(conn, asset)
   end

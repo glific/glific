@@ -7,6 +7,7 @@ defmodule Glific.Flows do
   alias Glific.Repo
 
   alias Glific.Flows.Flow
+  alias Glific.Flows.FlowRevision
 
   @doc """
   Returns the list of flows.
@@ -100,5 +101,26 @@ defmodule Glific.Flows do
   """
   def change_flow(%Flow{} = flow, attrs \\ %{}) do
     Flow.changeset(flow, attrs)
+  end
+
+  def get_flow_revision(flow_id) do
+    get_flow!(flow_id)
+    |> Repo.preload(:revisions)
+  end
+
+  def create_flow_revision(definition) do
+    flow_id = 4
+    flow = get_flow!(flow_id) |> Repo.preload(:revisions)
+
+    attrs = %{
+      definition: definition,
+      flow_id: flow_id,
+      revision_number: length(flow.revisions) + 1
+    }
+
+    %FlowRevision{}
+    |> FlowRevision.changeset(attrs)
+    |> Repo.insert()
+
   end
 end
