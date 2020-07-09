@@ -103,18 +103,37 @@ defmodule Glific.Flows do
     Flow.changeset(flow, attrs)
   end
 
-  def get_flow_revision(flow_id) do
-    get_flow!(flow_id)
-    |> Repo.preload(:revisions)
+  def get_flow_revision_list(flow_uuid) do
+    user = %{email: "chancerton@nyaruka.com", name: "Chancellor von Frankenbean"}
+    assetList = [
+      %{
+        user: user,
+        created_on: "2020-07-08T19:18:43.253Z",
+        id: 1,
+        version: "13.0.0",
+        revision: 1
+      }
+    ]
+    assetList
+    %{ results:  assetList}
   end
 
+   def get_flow_revision(flow_uuid) do
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
+    Repo.preload(flow, :revisions)
+  end
+
+
+
   def create_flow_revision(definition) do
-    flow_id = 4
-    flow = get_flow!(flow_id) |> Repo.preload(:revisions)
+    uuid = definition["uuid"]
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: uuid})
+
+    flow =  Repo.preload(flow, :revisions)
 
     attrs = %{
       definition: definition,
-      flow_id: flow_id,
+      flow_id: flow.id,
       revision_number: length(flow.revisions) + 1
     }
 

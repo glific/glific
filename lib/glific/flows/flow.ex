@@ -5,27 +5,31 @@ defmodule Glific.Flows.Flow do
   """
   alias __MODULE__
 
-  use Glific.Schema
+  use Ecto.Schema
   import Ecto.Changeset
 
   alias Glific.{
     Contacts.Contact,
     Flows.Context,
     Flows.Node,
+    Flows.FlowRevision,
     Settings.Language
   }
 
-  @required_fields [:name, :language_id]
+  @required_fields [:name, :language_id, :uuid]
   @optional_fields [:flow_type, :version_number]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
-          uuid: Ecto.UUID.t() | nil,
+          id: non_neg_integer | nil,
           name: String.t() | nil,
-          nodes: Node.t() | Ecto.Association.NotLoaded.t() | nil,
+          uuid: String.t() | nil,
+          flow_type: String.t() | nil,
+          # nodes: Node.t() | Ecto.Association.NotLoaded.t() | nil,
           version_number: String.t() | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          revisions: FlowRevision.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -34,10 +38,13 @@ defmodule Glific.Flows.Flow do
     field :name, :string
 
     field :version_number, :string
-
+    field :flow_type, :string
+    field :uuid, :string
     belongs_to :language, Language
 
     has_many :nodes, Node
+
+    has_many :revisions, FlowRevision
 
     timestamps(type: :utc_datetime)
   end

@@ -245,21 +245,13 @@ defmodule GlificWeb.API.V1.FlowEditorController do
   end
 
   def revisions(conn, %{"vars" => vars}) do
-    user = %{email: "chancerton@nyaruka.com", name: "Chancellor von Frankenbean"}
-    assetList = [%{user: user, created_on: "2020-07-08T19:18:43.253Z", id: 1, version: "13.0.0", revision: 1}]
-
     case vars do
-      [] -> json(conn, %{ results: assetList })
-      _ -> json(conn, %{ definition: help_flow(), metadata: %{ issues: [] } })
+      [flow_uuid] -> json(conn, Flows.get_flow_revision_list(flow_uuid))
+      [flow_uuid, revison_number] ->
+        flow = Flows.get_flow_revision(flow_uuid)
+        revision =  List.last(flow.revisions)
+        json(conn, %{ definition: help_flow(), metadata: %{ issues: [] } })
     end
-
-    # case vars do
-    #   [] -> json(conn, %{ results: assetList })
-    #   [flow_id] ->
-    #     flow = Flows.get_flow_revision(4)
-    #    revision =  List.last(flow.revisions)
-    #   json(conn, %{ definition: help_flow(), metadata: %{ issues: [] } })
-    # end
   end
 
   def save_revisions(conn, params) do
@@ -285,7 +277,7 @@ defmodule GlificWeb.API.V1.FlowEditorController do
       language: "eng",
       type: "message",
       spec_version: "13.1.0",
-      uuid: "a4f64f1b-85bc-477e-b706-de313a022978",
+      uuid: "a788012c-a694-4d9e-842e-07205008c778",
       localization: %{},
       nodes: [
         %{
