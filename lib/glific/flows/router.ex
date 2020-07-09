@@ -4,7 +4,7 @@ defmodule Glific.Flows.Router do
   """
   alias __MODULE__
 
-  use Glific.Schema
+  use Ecto.Schema
   import Ecto.Changeset
 
   alias Glific.Flows.{
@@ -18,8 +18,8 @@ defmodule Glific.Flows.Router do
   @optional_fields [:result_name, :wait_type]
 
   @type t() :: %__MODULE__{
-          __meta__: Ecto.Schema.Metadata.t(),
-          uuid: Ecto.UUID.t() | nil,
+    __meta__: Ecto.Schema.Metadata.t(),
+    uuid: Ecto.UUID.t() | nil,
           type: String.t() | nil,
           wait_type: String.t() | nil,
           default_category_uuid: Ecto.UUID.t() | nil,
@@ -29,20 +29,21 @@ defmodule Glific.Flows.Router do
         }
 
   schema "routers" do
+    field :uuid, Ecto.UUID
     field :type, :string
     field :operand, :string
     field :result_name, :string
     field :wait_type, :string
 
-    has_many :cases, Case
-    has_many :categories, Category
+    has_many :cases, Case, foreign_key: :router_uuid
+    has_many :categories, Category, foreign_key: :router_uuid
 
     belongs_to :default_category, Category,
       foreign_key: :default_category_uuid,
       references: :uuid,
-      primary_key: true
+      primary_key: false
 
-    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: true
+    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: false
   end
 
   @doc """

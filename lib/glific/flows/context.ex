@@ -6,7 +6,7 @@ defmodule Glific.Flows.Context do
   """
   alias __MODULE__
 
-  use Glific.Schema
+  use Ecto.Schema
   import Ecto.Changeset
 
   alias Glific.{
@@ -20,7 +20,6 @@ defmodule Glific.Flows.Context do
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
-          uuid: Ecto.UUID.t() | nil,
           uuid_map: map() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -35,9 +34,9 @@ defmodule Glific.Flows.Context do
 
     belongs_to :contact, Contact
 
-    belongs_to :flow, Flow, foreign_key: :flow_uuid, references: :uuid, primary_key: true
+    belongs_to :flow, Flow, foreign_key: :flow_uuid, references: :uuid, primary_key: false
 
-    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: true
+    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: false
   end
 
   @doc """

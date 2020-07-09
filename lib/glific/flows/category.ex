@@ -4,7 +4,7 @@ defmodule Glific.Flows.Category do
   """
   alias __MODULE__
 
-  use Glific.Schema
+  use Ecto.Schema
   import Ecto.Changeset
 
   alias Glific.Flows.{
@@ -28,12 +28,13 @@ defmodule Glific.Flows.Category do
         }
 
   schema "categories" do
+    field :uuid, Ecto.UUID
     field :name, :string
 
-    has_many :cases, Case
+    has_many :cases, Case, foreign_key: :category_uuid
 
-    belongs_to :router, Router, foreign_key: :router_uuid, references: :uuid, primary_key: true
-    belongs_to :exit, Exit, foreign_key: :exit_uuid, references: :uuid, primary_key: true
+    belongs_to :router, Router, foreign_key: :router_uuid, references: :uuid, primary_key: false
+    belongs_to :exit, Exit, foreign_key: :exit_uuid, references: :uuid, primary_key: false
   end
 
   @doc """

@@ -4,7 +4,7 @@ defmodule Glific.Flows.Exit do
   """
   alias __MODULE__
 
-  use Glific.Schema
+  use Ecto.Schema
   import Ecto.Changeset
 
   alias Glific.Flows.{
@@ -25,12 +25,14 @@ defmodule Glific.Flows.Exit do
         }
 
   schema "exits" do
-    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: true
+    field :uuid, Ecto.UUID
+
+    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: false
 
     belongs_to :destination_node, Node,
       foreign_key: :destination_node_uuid,
       references: :uuid,
-      primary_key: true
+      primary_key: false
   end
 
   @doc """

@@ -5,7 +5,7 @@ defmodule Glific.Flows.Action do
 
   alias __MODULE__
 
-  use Glific.Schema
+  use Ecto.Schema
   import Ecto.Changeset
 
   alias Glific.Enums.FlowType
@@ -33,17 +33,18 @@ defmodule Glific.Flows.Action do
         }
 
   schema "actions" do
+    field :uuid, Ecto.UUID
     field :text, :string
     field :language, :string
     field :type, FlowType
     field :quick_replies, {:array, :string}, default: []
 
-    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: true
+    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: false
 
     belongs_to :enter_flow, Flow,
       foreign_key: :enter_flow_uuid,
       references: :uuid,
-      primary_key: true
+      primary_key: false
   end
 
   @doc """

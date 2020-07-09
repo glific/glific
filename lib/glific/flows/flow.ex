@@ -23,9 +23,9 @@ defmodule Glific.Flows.Flow do
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
-          uuid: String.t() | nil,
+          uuid: Ecto.UUID.t() | nil,
           flow_type: String.t() | nil,
-          # nodes: Node.t() | Ecto.Association.NotLoaded.t() | nil,
+          nodes: Node.t() | Ecto.Association.NotLoaded.t() | nil,
           version_number: String.t() | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -39,10 +39,10 @@ defmodule Glific.Flows.Flow do
 
     field :version_number, :string
     field :flow_type, :string
-    field :uuid, :string
+    field :uuid, Ecto.UUID
     belongs_to :language, Language
 
-    has_many :nodes, Node
+    has_many :nodes, Node, foreign_key: :flow_uuid
 
     has_many :revisions, FlowRevision
 

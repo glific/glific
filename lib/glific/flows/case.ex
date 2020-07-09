@@ -4,7 +4,7 @@ defmodule Glific.Flows.Case do
   """
   alias __MODULE__
 
-  use Glific.Schema
+  use Ecto.Schema
   import Ecto.Changeset
 
   alias Glific.Enums.FlowCase
@@ -30,17 +30,18 @@ defmodule Glific.Flows.Case do
         }
 
   schema "cases" do
+    field :uuid, Ecto.UUID
     field :name, :string
 
     field :type, FlowCase
     field :arguments, {:array, :string}, default: []
 
-    belongs_to :router, Router, foreign_key: :router_uuid, references: :uuid, primary_key: true
+    belongs_to :router, Router, foreign_key: :router_uuid, references: :uuid, primary_key: false
 
     belongs_to :category, Category,
       foreign_key: :category_uuid,
       references: :uuid,
-      primary_key: true
+      primary_key: false
   end
 
   @doc """

@@ -4,7 +4,7 @@ defmodule Glific.Flows.Node do
   """
   alias __MODULE__
 
-  use Glific.Schema
+  use Ecto.Schema
   import Ecto.Changeset
 
   alias Glific.Flows.{
@@ -26,11 +26,13 @@ defmodule Glific.Flows.Node do
         }
 
   schema "nodes" do
-    belongs_to :flow, Flow, foreign_key: :flow_uuid, references: :uuid, primary_key: true
+    field :uuid, Ecto.UUID
 
-    has_many :actions, Action
-    has_many :exits, Exit
-    has_one :router, Router
+    belongs_to :flow, Flow, foreign_key: :flow_uuid, references: :uuid, primary_key: false
+
+    has_many :actions, Action, foreign_key: :node_uuid
+    has_many :exits, Exit, foreign_key: :node_uuid
+    has_one :router, Router, foreign_key: :node_uuid
   end
 
   @doc """
