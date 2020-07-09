@@ -175,6 +175,7 @@ defmodule Glific.Contacts do
     # Get the organization
     organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
     # we keep this separate to avoid overwriting the language if already set by a contact
+    # this will not appear in the set field of the on_conflict: clause below
     language = Map.put(%{}, :language_id, attrs[:language_id] || organization.default_language_id)
 
     contact =

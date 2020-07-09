@@ -21,7 +21,9 @@ defmodule Glific.Contacts.Contact do
     :status,
     :optin_time,
     :optout_time,
-    :last_message_at
+    :last_message_at,
+    :settings,
+    :fields
   ]
 
   @type t() :: %__MODULE__{
@@ -36,6 +38,8 @@ defmodule Glific.Contacts.Contact do
           optin_time: :utc_datetime | nil,
           optout_time: :utc_datetime | nil,
           last_message_at: :utc_datetime | nil,
+          settings: map() | nil,
+          fields: map() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -52,6 +56,9 @@ defmodule Glific.Contacts.Contact do
     field :optin_time, :utc_datetime
     field :optout_time, :utc_datetime
     field :last_message_at, :utc_datetime
+
+    field :settings, :map
+    field :fields, :map
 
     many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
 

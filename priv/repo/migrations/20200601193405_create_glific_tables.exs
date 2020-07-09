@@ -194,9 +194,24 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # contact language for templates and other communications
       add :language_id, references(:languages, on_delete: :restrict), null: false
 
+      # the times when we recorded either an optin or an optout
+      # at some point, we will need to create an events table for this and track all changes
       add :optin_time, :utc_datetime
       add :optout_time, :utc_datetime
+
+      # this is primarily used as a a cache to avoid querying the message table. We need this
+      # to ensure we can send a valid session message to the user (< 24 hour window)
       add :last_message_at, :utc_datetime
+
+      # store the settings of the user as a map (which is a jsonb object in psql)
+      # preferences is one field in the settings (for now). The NGO can use this field to target
+      # the user with messages based on their preferences. The user can select one or
+      # more options from the preferenes list
+      add :settings, :map
+
+      # store the NGO generated fields for the user also as a map
+      # Each user can have multiple fields, we store the name as key
+      add :fields, :map
 
       timestamps(type: :utc_datetime)
     end
