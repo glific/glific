@@ -160,6 +160,7 @@ defmodule Glific.Partners do
   def count_organizations(args \\ %{}),
     do: Repo.count_filter(args, Organization, &filter_organization_with/2)
 
+  # codebeat:disable[ABC]
   @spec filter_organization_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
           Ecto.Queryable.t()
   defp filter_organization_with(query, filter) do
@@ -190,6 +191,7 @@ defmodule Glific.Partners do
           where: ilike(c.label, ^"%#{default_language}%")
     end)
   end
+  # codebeat:enable[ABC]
 
   @doc ~S"""
   Gets a single organization.

@@ -38,6 +38,7 @@ defmodule Glific.Tags do
     end)
   end
 
+  # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn
@@ -63,6 +64,7 @@ defmodule Glific.Tags do
           where: q.language_id == ^language_id
     end)
   end
+  # codebeat:enable[ABC]
 
   @doc """
   Gets a single tag.
