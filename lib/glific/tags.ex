@@ -28,34 +28,9 @@ defmodule Glific.Tags do
   def count_tags(args \\ %{}),
     do: Repo.count_filter(args, Tag, &filter_with/2)
 
-  # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_with(query, filter) do
-    Enum.reduce(filter, query, fn
-      {:label, label}, query ->
-        from q in query, where: ilike(q.label, ^"%#{label}%")
-
-      {:parent, label}, query ->
-        from q in query,
-          join: t in assoc(q, :parent),
-          where: ilike(t.label, ^"%#{label}%")
-
-      {:parent_id, parent_id}, query ->
-        from q in query,
-          where: q.parent_id == ^parent_id
-
-      {:language, language}, query ->
-        from q in query,
-          join: l in assoc(q, :language),
-          where: ilike(l.label, ^"%#{language}%")
-
-      {:language_id, language_id}, query ->
-        from q in query,
-          where: q.language_id == ^language_id
-    end)
-  end
-
-  # codebeat:enable[ABC]
+  defp filter_with(query, filter),
+    do: Repo.filter_with(query, filter)
 
   @doc """
   Gets a single tag.
