@@ -19,7 +19,7 @@ defmodule Glific.Tags do
   """
   @spec list_tags(map()) :: [Tag.t()]
   def list_tags(args \\ %{}),
-    do: Repo.list_filter(args, Tag, &opts_with/2, &filter_with/2)
+    do: Repo.list_filter(args, Tag, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
   Return the count of tags, using the same filter as list_tags
@@ -28,44 +28,9 @@ defmodule Glific.Tags do
   def count_tags(args \\ %{}),
     do: Repo.count_filter(args, Tag, &filter_with/2)
 
-  defp opts_with(query, opts) do
-    Enum.reduce(opts, query, fn
-      {:order, order}, query ->
-        query |> order_by([t], {^order, fragment("lower(?)", t.label)})
-
-      _, query ->
-        query
-    end)
-  end
-
-  # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_with(query, filter) do
-    Enum.reduce(filter, query, fn
-      {:label, label}, query ->
-        from q in query, where: ilike(q.label, ^"%#{label}%")
-
-      {:parent, label}, query ->
-        from q in query,
-          join: t in assoc(q, :parent),
-          where: ilike(t.label, ^"%#{label}%")
-
-      {:parent_id, parent_id}, query ->
-        from q in query,
-          where: q.parent_id == ^parent_id
-
-      {:language, language}, query ->
-        from q in query,
-          join: l in assoc(q, :language),
-          where: ilike(l.label, ^"%#{language}%")
-
-      {:language_id, language_id}, query ->
-        from q in query,
-          where: q.language_id == ^language_id
-    end)
-  end
-
-  # codebeat:enable[ABC]
+  defp filter_with(query, filter),
+    do: Repo.filter_with(query, filter)
 
   @doc """
   Gets a single tag.
