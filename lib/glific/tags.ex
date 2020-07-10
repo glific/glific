@@ -19,7 +19,7 @@ defmodule Glific.Tags do
   """
   @spec list_tags(map()) :: [Tag.t()]
   def list_tags(args \\ %{}),
-    do: Repo.list_filter(args, Tag, &opts_with/2, &filter_with/2)
+    do: Repo.list_filter(args, Tag, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
   Return the count of tags, using the same filter as list_tags
@@ -27,16 +27,6 @@ defmodule Glific.Tags do
   @spec count_tags(map()) :: integer
   def count_tags(args \\ %{}),
     do: Repo.count_filter(args, Tag, &filter_with/2)
-
-  defp opts_with(query, opts) do
-    Enum.reduce(opts, query, fn
-      {:order, order}, query ->
-        query |> order_by([t], {^order, fragment("lower(?)", t.label)})
-
-      _, query ->
-        query
-    end)
-  end
 
   # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()

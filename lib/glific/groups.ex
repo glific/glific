@@ -23,17 +23,7 @@ defmodule Glific.Groups do
   """
   @spec list_groups(map()) :: [Group.t()]
   def list_groups(args \\ %{}),
-    do: Repo.list_filter(args, Group, &opts_with/2, &filter_with/2)
-
-  defp opts_with(query, opts) do
-    Enum.reduce(opts, query, fn
-      {:order, order}, query ->
-        query |> order_by([c], {^order, fragment("lower(?)", c.label)})
-
-      _, query ->
-        query
-    end)
-  end
+    do: Repo.list_filter(args, Group, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
   Return the count of groups, using the same filter as list_groups

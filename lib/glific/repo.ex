@@ -124,6 +124,34 @@ defmodule Glific.Repo do
   def opts_with_nil(_opts, query), do: query
 
   @doc """
+  A funtion which handles the order clause for a data type that has
+  a 'name/body/label' in its schema (which is true for a fair number of Glific's
+  data types)
+  """
+  @spec opts_with_field(Ecto.Queryable.t(), map(), :name | :body | :label) :: Ecto.Queryable.t()
+  def opts_with_field(query, opts, field) do
+    Enum.reduce(opts, query, fn
+      {:order, order}, query ->
+        order_by(query, [o], {^order, fragment("lower(?)", field(o, ^field))})
+
+      _, query ->
+        query
+    end)
+  end
+
+  @doc false
+  @spec opts_with_label(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_label(query, opts), do: opts_with_field(query, opts, :label)
+
+  @doc false
+  @spec opts_with_body(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_body(query, opts), do: opts_with_field(query, opts, :body)
+
+  @doc false
+  @spec opts_with_name(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_name(query, opts), do: opts_with_field(query, opts, :name)
+
+  @doc """
   Need to figure out what this function does. Still learning Dataloader and its magic.
   Seems l
   ike it is not used currently, so commenting it out
