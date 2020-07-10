@@ -125,51 +125,31 @@ defmodule Glific.Repo do
 
   @doc """
   A funtion which handles the order clause for a data type that has
-  a 'label' in its schema (which is true for a fair number of Glific's
+  a 'name/body/label' in its schema (which is true for a fair number of Glific's
   data types)
   """
-  @spec opts_with_label(Ecto.Queryable.t, map()) :: Ecto.Queryable.t
-  def opts_with_label(query, opts) do
+  @spec opts_with_field(Ecto.Queryable.t(), map(), :name | :body | :label) :: Ecto.Queryable.t()
+  def opts_with_field(query, opts, field) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->
-        query |> order_by([o], {^order, fragment("lower(?)", o.label)})
+        order_by(query, [o], {^order, fragment("lower(?)", field(o, ^field))})
 
       _, query ->
         query
     end)
   end
 
-  @doc """
-  A funtion which handles the order clause for a data type that has
-  a 'name' in its schema (which is true for a fair number of Glific's
-  data types)
-  """
-  @spec opts_with_name(Ecto.Queryable.t, map()) :: Ecto.Queryable.t
-  def opts_with_name(query, opts) do
-    Enum.reduce(opts, query, fn
-      {:order, order}, query ->
-        query |> order_by([o], {^order, fragment("lower(?)", o.name)})
+  @doc false
+  @spec opts_with_label(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_label(query, opts), do: opts_with_field(query, opts, :label)
 
-      _, query ->
-        query
-    end)
-  end
+  @doc false
+  @spec opts_with_body(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_body(query, opts), do: opts_with_field(query, opts, :body)
 
-  @doc """
-  A funtion which handles the order clause for a data type that has
-  a 'body' in its schema (which is true for a fair number of Glific's
-  data types)
-  """
-  @spec opts_with_body(Ecto.Queryable.t, map()) :: Ecto.Queryable.t
-  def opts_with_body(query, opts) do
-    Enum.reduce(opts, query, fn
-      {:order, order}, query ->
-        query |> order_by([o], {^order, fragment("lower(?)", o.body)})
-
-      _, query ->
-        query
-    end)
-  end
+  @doc false
+  @spec opts_with_name(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_name(query, opts), do: opts_with_field(query, opts, :name)
 
   @doc """
   Need to figure out what this function does. Still learning Dataloader and its magic.
