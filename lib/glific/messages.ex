@@ -34,6 +34,7 @@ defmodule Glific.Messages do
   def count_messages(args \\ %{}),
     do: Repo.count_filter(args, Message, &filter_with/2)
 
+  # codebeat:disable[ABC, LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn

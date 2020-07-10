@@ -29,41 +29,18 @@ defmodule Glific.Templates do
   def count_session_templates(args \\ %{}),
     do: Repo.count_filter(args, SessionTemplate, &filter_with/2)
 
-  # codebeat:disable[ABC, LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
     Enum.reduce(filter, query, fn
-      {:label, label}, query ->
-        from q in query, where: ilike(q.label, ^"%#{label}%")
-
-      {:body, body}, query ->
-        from q in query, where: ilike(q.body, ^"%#{body}%")
-
-      {:shortcode, shortcode}, query ->
-        from q in query, where: ilike(q.shortcode, ^"%#{shortcode}%")
-
       {:is_hsm, is_hsm}, query ->
         from q in query, where: q.is_hsm == ^is_hsm
 
-      {:parent, label}, query ->
-        from q in query,
-          join: t in assoc(q, :parent),
-          where: ilike(t.label, ^"%#{label}%")
-
-      {:parent_id, parent_id}, query ->
-        from q in query, where: q.parent_id == ^parent_id
-
-      {:language, language}, query ->
-        from q in query,
-          join: l in assoc(q, :language),
-          where: ilike(l.label, ^"%#{language}%")
-
-      {:language_id, language_id}, query ->
-        from q in query, where: q.language_id == ^language_id
+      _, query ->
+        query
     end)
   end
-
-  # codebeat:enable[ABC, LOC]
 
   @doc """
   Gets a single session_template.
