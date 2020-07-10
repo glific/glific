@@ -91,33 +91,25 @@ defmodule Glific.Processor.ConsumerSequence do
     end
   end
 
-  defp process_next(message, tag) do
+  defp process_next(message, tag),
+    do: process_either(message, tag, :next)
+
+  defp process_prev(message, tag),
+    do: process_either(message, tag, :prev)
+
+  defp process_either(message, tag, direction) do
     # we first need to find out the last message we sent and the index
-    value = last_message_sent(message.contact_id)
-    entry = Map.get(@automaton, value)
+    entry = Map.get(@automaton, last_message_sent(message.contact_id))
 
-    if entry != nil,
-      do:
-        Helper.send_session_message_template_with_tag(
-          message,
-          tag,
-          "id: " <> entry.next,
-          @automaton[entry.next][:shortcode]
-        )
-  end
+    if entry != nil do
+      direction_value = if direction == :next, do: entry.next, else: entry.prev
 
-  defp process_prev(message, tag) do
-    # we first need to find out the last message we sent and the index
-    value = last_message_sent(message.contact_id)
-    entry = Map.get(@automaton, value)
-
-    if entry != nil,
-      do:
-        Helper.send_session_message_template_with_tag(
-          message,
-          tag,
-          "id: " <> entry.prev,
-          @automaton[entry.prev][:shortcode]
-        )
+      Helper.send_session_message_template_with_tag(
+        message,
+        tag,
+        "id: " <> direction_value,
+        @automaton[direction_value][:shortcode]
+      )
+    end
   end
 end
