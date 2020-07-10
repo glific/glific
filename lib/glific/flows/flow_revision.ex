@@ -8,8 +8,8 @@ defmodule Glific.Flows.FlowRevision do
 
   alias Glific.Flows.Flow
 
-  @required_fields [:definition, :revision_number, :flow_id]
-  @optional_fields []
+  @required_fields [:definition, :flow_id]
+  @optional_fields [ :revision_number]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
