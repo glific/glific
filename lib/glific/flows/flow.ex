@@ -13,6 +13,7 @@ defmodule Glific.Flows.Flow do
     Flows.Context,
     Flows.FlowRevision,
     Flows.Node,
+    Repo,
     Settings.Language
   }
 

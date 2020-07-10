@@ -9,7 +9,7 @@ defmodule Glific.Flows.First do
     Flows.Context,
     Flows.Flow,
     Flows.FlowRevision,
-    Repo,
+    Repo
   }
 
   import Ecto.Query, warn: false
@@ -17,13 +17,13 @@ defmodule Glific.Flows.First do
   @doc """
   iex module for us to interact with our actions and events
   """
-  @spec init(String.t) :: {Flow.t(), map()}
+  @spec init(String.t()) :: {Flow.t(), map()}
   def init(shortcode) do
     query =
       from fr in FlowRevision,
-      join: f in assoc(fr, :flow),
-      where: fr.revision_number == 0 and fr.flow_id == f.id and f.shortcode == ^shortcode,
-      select: fr.definition
+        join: f in assoc(fr, :flow),
+        where: fr.revision_number == 0 and fr.flow_id == f.id and f.shortcode == ^shortcode,
+        select: fr.definition
 
     query
     |> Repo.one()

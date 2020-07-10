@@ -277,8 +277,8 @@ defmodule Glific.SeedsDev do
 
     help_flow =
       Repo.insert!(%Flow{
-            name: "Help Workflow",
-            shortcode: "help",
+        name: "Help Workflow",
+        shortcode: "help",
         version_number: "13.1.0",
         uuid: Faker.UUID.v4(),
         language_id: english.id
@@ -301,8 +301,8 @@ defmodule Glific.SeedsDev do
 
     language_flow =
       Repo.insert!(%Flow{
-            name: "Language Workflow",
-            shortcode: "language",
+        name: "Language Workflow",
+        shortcode: "language",
         version_number: "13.1.0",
         uuid: Faker.UUID.v4(),
         language_id: english.id
@@ -325,8 +325,8 @@ defmodule Glific.SeedsDev do
 
     preferences_flow =
       Repo.insert!(%Flow{
-            name: "Preferences Workflow",
-            shortcode: "preferences",
+        name: "Preferences Workflow",
+        shortcode: "preferences",
         version_number: "13.1.0",
         uuid: Faker.UUID.v4(),
         language_id: english.id
