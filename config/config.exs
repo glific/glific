@@ -9,10 +9,10 @@ use Mix.Config
 
 config :glific,
   ecto_repos: [Glific.Repo],
-  provider: Glific.Providers.Gupshup,
+  provider: Glific.Providers.Gupshup.Message,
+  provider_worker: Glific.Providers.Gupshup.Worker,
   provider_id: "gupshup-provider-23",
-  provider_limit: 10,
-  message_ancestors_limit: 75
+  provider_limit: 10
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,
@@ -38,9 +38,7 @@ config :glific,
 config :glific, Oban,
   repo: Glific.Repo,
   prune: {:maxlen, 10_000},
-  queues: [default: 10, gupshup: 10, webhook: 10]
-
-# queues: nil
+  queues: [default: 10, gupshup: 10, glifproxy: 10, webhook: 10]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
 
@@ -49,7 +47,23 @@ config :glific, :pow,
   repo: Glific.Repo
 
 config :passwordless_auth,
-  sms_adapter: Glific.SMSAdapter.Gupshup
+  sms_adapter: Glific.Providers.Gupshup
+
+# Sentry configuration
+
+# configure sentry's logger
+config :logger,
+  backends: [:console, Sentry.LoggerBackend]
+
+config :sentry,
+  dsn: "https://4ae43f4bc3c14881aace7956eb4a0b64@o412613.ingest.sentry.io/5290153",
+  environment_name: Mix.env(),
+  enable_source_code_context: true,
+  root_source_code_path: File.cwd!(),
+  tags: %{
+    env: "dev"
+  },
+  included_environments: [:prod]
 
 config :logger, backends: [{LoggerFileBackend, :request_log}],
   format: "$time $metadata[$level] $message\n",

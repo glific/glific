@@ -29,7 +29,7 @@ defmodule Glific.MixProject do
 
       # Lets add meta information on project
       name: "Glific",
-      description: "A open source two way communication platform for the social sector",
+      description: "An open source two way communication platform for the social sector",
       source_url: @github_url,
       homepage_url: @home_url,
       package: [
@@ -75,7 +75,8 @@ defmodule Glific.MixProject do
       {:telemetry_poller, "~> 0.4"},
       {:gettext, "~> 0.18"},
       {:decimal, "~> 1.8"},
-      {:jason, "~> 1.0"},
+      {:jason, "~> 1.2"},
+      {:sentry, "~> 7.2"},
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
       {:pow, "~> 1.0"},
@@ -98,12 +99,11 @@ defmodule Glific.MixProject do
       {:faker, "~> 0.13"},
       {:excoveralls, "~> 0.13", only: :test},
       {:cors_plug, "~> 2.0"},
-      {:ex_check, ">= 0.0.0", only: [:dev, :test], runtime: false},
+      {:ex_check, ">= 0.12.0", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.8", only: [:dev, :test]},
       {:wormwood, "~> 0.1"},
       {:gen_stage, "~> 1.0"},
-      {:passwordless_auth,
-       git: "https://github.com/glific/passwordless_auth.git", branch: "master"},
+      {:passwordless_auth, git: "https://github.com/glific/passwordless_auth.git"},
       {:timex, "~> 3.0"},
       {:logger_file_backend, "~> 0.0.10"}
     ]
@@ -117,12 +117,23 @@ defmodule Glific.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup", "cmd npm install --prefix assets"],
-      reset: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
-      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+      setup: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      reset: ["deps.get", "clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      "ecto.setup": [
+        "ecto.create",
+        "ecto.migrate",
+        "run priv/repo/seeds_prod.exs",
+        "run priv/repo/seeds_dev.exs"
+      ],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       # test: ["ecto.create --quiet", "ecto.migrate", "test"]
-      test: ["ecto.drop", "ecto.create --quiet", "ecto.migrate", "test"]
+      test: [
+        "ecto.drop",
+        "ecto.create --quiet",
+        "ecto.migrate",
+        "run priv/repo/seeds_prod.exs",
+        "test"
+      ]
     ]
   end
 end

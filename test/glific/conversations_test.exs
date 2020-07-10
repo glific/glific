@@ -10,9 +10,10 @@ defmodule Glific.ConversationsTest do
 
   describe "conversation" do
     setup do
-      Glific.Seeds.seed_language()
-      Glific.Seeds.seed_contacts()
-      Glific.Seeds.seed_messages()
+      default_provider = Glific.SeedsDev.seed_providers()
+      Glific.SeedsDev.seed_organizations(default_provider)
+      Glific.SeedsDev.seed_contacts()
+      Glific.SeedsDev.seed_messages()
       :ok
     end
 

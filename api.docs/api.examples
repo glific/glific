@@ -1,0 +1,297 @@
+$ curl -X POST -d "user[phone]=test@example.com&user[password]=secret1234&user[password_confirmation]=secret1234" http://localhost:4000/api/v1/registration
+{"data":{"renewal_token":"RENEW_TOKEN","access_token":"AUTH_TOKEN"}}
+
+$ curl -X POST -d "user[phone]=test@example.com&user[password]=secret1234" http://localhost:4000/api/v1/session
+{"data":{"renewal_token":"RENEW_TOKEN","access_token":"AUTH_TOKEN"}}
+
+$ curl -X DELETE -H "Authorization: AUTH_TOKEN" http://localhost:4000/api/v1/session
+{"data":{}}
+
+$ curl -X POST -H "Authorization: RENEW_TOKEN" http://localhost:4000/api/v1/session/renew
+{"data":{"renewal_token":"RENEW_TOKEN","access_token":"AUTH_TOKEN"}}
+
+query contact($id: ID!) {
+  contact(id: $ID) {
+    contact {
+      id
+      name
+      phone
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+mutation creLanguage($input:LanguageInput!) {
+  createLanguage(input: $input) {
+    language {
+      id
+      label
+      locale
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+query listContacts($filter: ContactFilter, $order: SortOrder) {
+  contacts(filter:$filter, order:$order) {
+    id
+    name
+    phone
+  }
+}
+
+query multipleOps() {
+  tags {
+    id
+    label
+  }
+  contacts {
+    id
+    name
+    phone
+    waId
+  }
+}
+
+query multipleOps() {
+  organizations {
+    id
+    name
+  }
+}
+
+query tag($id:ID!){
+  tag(id: $id) {
+    tag {
+      id
+      label
+      language {
+        id
+        label
+      }
+      isActive
+    }
+    errors {
+      key
+      message
+    }
+
+  }
+}
+
+mutation delTag($id: ID!) {
+  deleteTag(id: $id) {
+    tag {
+      id
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+mutation creTag($input:TagInput!) {
+  createTag(input: $input) {
+    tag {
+      id
+      label
+      language {
+        id
+        label
+      }
+      description
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "id": "4",
+  "input": {
+    "label": "new tag 1234",
+    "languageId": "1"
+  }
+}
+
+mutation createOrganization($input: OrganizationInput!) {
+  createOrganization(input: $input) {
+      organization {
+        id
+      }
+      errors {
+        key
+        message
+      }
+    }
+}
+
+{
+  "input": {
+    "name": "Org",
+    "contact_name": "Jason",
+    "email": "test@gmail.com",
+    "provider": "gupshup",
+    "provider_key": "random",
+    "provider_number": "10101010101"
+  }
+}
+
+
+subscription {
+  sentMessage {
+    id
+    body
+    flow
+    type
+    receiver {
+      id
+      phone
+    }
+    sender {
+      id
+      phone
+    }
+  }
+}
+
+mutation cre_send_message($input: MessageInput!) {
+  createAndSendMessage(input: $input) {
+    message {
+      id
+      body
+      flow
+      type
+      receiver {
+        id
+        phone
+      }
+      sender {
+        id
+        phone
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "body": "Lets see how this goes 1",
+    "flow": "OUTBOUND",
+    "receiverId": "10",
+    "senderId": "1",
+    "type": "TEXT"
+  }
+}
+
+
+query conversations($messageOpts: Opts!, $contactOpts: Opts!, $filter: ConversationsFilter! ) {
+  conversations(messageOpts: $messageOpts, contactOpts: $contactOpts, filter: $filter ) {
+    contact {
+      id
+      name
+    }
+    messages {
+      id
+      body
+    }
+  }
+}
+
+{
+  "messageOpts": {
+    "limit": 100,
+    "offset": 2
+  },
+
+  "contactOpts": {
+    "limit": 20,
+    "offset": 3
+  },
+
+  "filter" : {
+    "excludeTags": ["Unread"]
+  }
+}
+
+# Without any parameters
+query conversations {
+  conversations {
+    contact {
+      id
+      name
+    }
+    messages {
+      id
+      body
+    }
+  }
+}
+
+
+query conversation($messageOpts: Opts!, $contactId: Gid!, $filter: ConversationFilter! ) {
+  conversation(messageOpts: $sc, contactId: $contactId, filter: $filter) {
+    contact {
+      id
+      name
+    }
+    messages {
+      id
+      body
+    }
+
+  }
+}
+
+{
+  "contactId": "2",
+  "filter": {
+    "excludeTags": ["1"]
+  },
+
+  "messageOpts": {
+    "limit": 10,
+    "offset": 1
+  }
+}
+
+mutation createMessageTags($input: MessageTagsInput!) {
+  createMessageTags(input: $input) {
+    messageTags {
+      id
+      message {
+        id
+        body
+      }
+      tag {
+        id
+        label
+      }
+      value
+    }
+  }
+}
+
+{
+  "input": {
+    "messageId": "8",
+    "tagsId": [
+      "7",
+      "8",
+      "345"
+    ]
+  }
+}

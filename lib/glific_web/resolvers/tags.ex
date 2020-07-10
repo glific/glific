@@ -72,6 +72,14 @@ defmodule GlificWeb.Resolvers.Tags do
   end
 
   @doc false
+  @spec update_message_tags(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_message_tags(_, %{input: params}, _) do
+    message_tags = Tags.MessageTags.update_message_tags(params)
+    {:ok, message_tags}
+  end
+
+  @doc false
   @spec delete_message_tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_message_tag(_, %{id: id}, _) do
@@ -98,5 +106,15 @@ defmodule GlificWeb.Resolvers.Tags do
          {:ok, contact_tag} <- Tags.delete_contact_tag(contact_tag) do
       {:ok, contact_tag}
     end
+  end
+
+  @doc false
+  @spec mark_contact_messages_as_read(Absinthe.Resolution.t(), %{contact_id: integer}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def mark_contact_messages_as_read(_, %{contact_id: contact_id}, _) do
+    with untag_message_ids <- Tags.remove_tag_from_all_message(contact_id, "Unread"),
+         do: {:ok, untag_message_ids}
   end
 end

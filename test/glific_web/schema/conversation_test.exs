@@ -7,9 +7,10 @@ defmodule GlificWeb.Schema.ConversationTest do
   alias Glific.Contacts
 
   setup do
-    Glific.Seeds.seed_language()
-    Glific.Seeds.seed_contacts()
-    Glific.Seeds.seed_messages()
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
+    Glific.SeedsDev.seed_contacts()
+    Glific.SeedsDev.seed_messages()
     :ok
   end
 
@@ -17,13 +18,23 @@ defmodule GlificWeb.Schema.ConversationTest do
   load_gql(:by_contact_id, GlificWeb.Schema, "assets/gql/conversations/by_contact_id.gql")
 
   test "conversations always returns a few threads" do
-    {:ok, result} = query_gql_by(:list, variables: %{"nc" => 1, "sc" => 3})
+    {:ok, result} =
+      query_gql_by(:list,
+        variables: %{"contactOpts" => %{"limit" => 1}, "messageOpts" => %{"limit" => 3}}
+      )
+
     assert get_in(result, [:data, "conversations"]) |> length >= 1
 
     contact_id = get_in(result, [:data, "conversations", Access.at(0), "contact", "id"])
 
     {:ok, result} =
-      query_gql_by(:list, variables: %{"nc" => 1, "sc" => 1, "filter" => %{"id" => contact_id}})
+      query_gql_by(:list,
+        variables: %{
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1},
+          "filter" => %{"id" => contact_id}
+        }
+      )
 
     assert get_in(result, [:data, "conversations"]) |> length == 1
   end
@@ -32,7 +43,11 @@ defmodule GlificWeb.Schema.ConversationTest do
     # if we send in an invalid id, we should not see any conversations
     {:ok, result} =
       query_gql_by(:list,
-        variables: %{"nc" => 3, "sc" => 3, "filter" => %{"Gid" => "234567893453"}}
+        variables: %{
+          "contactOpts" => %{"limit" => 3},
+          "messageOpts" => %{"limit" => 3},
+          "filter" => %{"Gid" => "234567893453"}
+        }
       )
 
     assert get_in(result, [:data, "conversations"]) == nil
@@ -44,7 +59,13 @@ defmodule GlificWeb.Schema.ConversationTest do
     cid = Integer.to_string(contact.id)
 
     {:ok, result} =
-      query_gql_by(:list, variables: %{"nc" => 1, "sc" => 1, "filter" => %{"id" => cid}})
+      query_gql_by(:list,
+        variables: %{
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1},
+          "filter" => %{"id" => cid}
+        }
+      )
 
     assert get_in(result, [:data, "conversations"]) |> length == 1
     assert get_in(result, [:data, "conversations", Access.at(0), "contact", "id"]) == cid
@@ -59,7 +80,9 @@ defmodule GlificWeb.Schema.ConversationTest do
     cid = Integer.to_string(contact.id)
 
     {:ok, result} =
-      query_gql_by(:by_contact_id, variables: %{"contact_id" => cid, "sc" => 1, "filter" => %{}})
+      query_gql_by(:by_contact_id,
+        variables: %{"contact_id" => cid, "messageOpts" => %{"limit" => 1}, "filter" => %{}}
+      )
 
     assert get_in(result, [:data, "conversation"]) != nil
     assert get_in(result, [:data, "conversation", "contact", "id"]) == cid
@@ -68,7 +91,11 @@ defmodule GlificWeb.Schema.ConversationTest do
     # if we send in an invalid id, we should get nil
     {:ok, result} =
       query_gql_by(:by_contact_id,
-        variables: %{"contact_id" => "234567893453", "sc" => 3, "filter" => %{}}
+        variables: %{
+          "contact_id" => "234567893453",
+          "messageOpts" => %{"limit" => 3},
+          "filter" => %{}
+        }
       )
 
     assert get_in(result, [:data, "conversation"]) == nil
@@ -84,7 +111,13 @@ defmodule GlificWeb.Schema.ConversationTest do
       |> Enum.map(&Integer.to_string(&1))
 
     {:ok, result} =
-      query_gql_by(:list, variables: %{"nc" => 1, "sc" => 1, "filter" => %{"ids" => contact_ids}})
+      query_gql_by(:list,
+        variables: %{
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1},
+          "filter" => %{"ids" => contact_ids}
+        }
+      )
 
     assert get_in(result, [:data, "conversations"]) |> length == length(contact_ids)
     assert get_in(result, [:data, "conversations", Access.at(0), "contact", "id"]) in contact_ids

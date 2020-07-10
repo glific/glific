@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createSavedSearch($input: SavedSearchInput! ) {
+  createSavedSearch(input: $input) {
+    ...SavedSearchFields
+
+    ...ErrorFields
+  }
+}

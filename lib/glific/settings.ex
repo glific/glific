@@ -34,10 +34,8 @@ defmodule Glific.Settings do
   Return the count of languages, using the same filter as list_languages
   """
   @spec count_languages(map()) :: integer
-  def count_languages(_args \\ %{}) do
-    Language
-    |> Repo.aggregate(:count)
-  end
+  def count_languages(_args \\ %{}),
+    do: Repo.aggregate(Language, :count)
 
   @doc """
   Gets a single language.

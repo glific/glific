@@ -4,21 +4,23 @@ defmodule Glific.Messages.Message do
   import Ecto.Changeset
   alias __MODULE__
 
-  alias Glific.{Contacts.Contact, Messages.MessageMedia, Tags.Tag}
-  alias Glific.Enums.{MessageFlow, MessageStatus, MessageTypes}
+  alias Glific.{Contacts.Contact, Messages.MessageMedia, Tags.Tag, Users.User}
+  alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           type: String.t() | nil,
+          is_hsm: boolean | nil,
           flow: String.t() | nil,
+          status: String.t() | nil,
           provider_status: String.t() | nil,
+          message_number: integer(),
           sender: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           receiver: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          user: User.t() | Ecto.Association.NotLoaded.t() | nil,
           media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
-          parent: Message.t() | Ecto.Association.NotLoaded.t() | nil,
-          ancestors: list() | [],
           body: String.t() | nil,
           provider_message_id: String.t() | nil,
           sent_at: :utc_datetime | nil,
@@ -35,25 +37,33 @@ defmodule Glific.Messages.Message do
   ]
   @optional_fields [
     :body,
+    :is_hsm,
+    :status,
     :provider_status,
     :provider_message_id,
     :media_id,
-    :sent_at
+    :sent_at,
+    :user_id
   ]
 
   schema "messages" do
     field :body, :string
     field :flow, MessageFlow
-    field :type, MessageTypes
+    field :type, MessageType
+    field :status, MessageStatus
+
+    field :is_hsm, :boolean, default: false
+
     field :provider_message_id, :string
     field :provider_status, MessageStatus
-    field :ancestors, {:array, :integer}, default: []
     field :sent_at, :utc_datetime
+    field :message_number, :integer, default: 0
 
     belongs_to :sender, Contact
     belongs_to :receiver, Contact
     belongs_to :contact, Contact
-    belongs_to :parent, Message
+
+    belongs_to :user, User
 
     belongs_to :media, MessageMedia
 
@@ -90,10 +100,7 @@ defmodule Glific.Messages.Message do
     media_id = changeset.changes[:media_id] || message.media_id
 
     cond do
-      type == nil ->
-        changeset
-
-      type == :text ->
+      type in [nil, :text, :location] ->
         changeset
 
       media_id == nil ->

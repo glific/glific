@@ -1,0 +1,3 @@
+query count_users($filter: UserFilter) {
+  countUsers(filter: $filter)
+}

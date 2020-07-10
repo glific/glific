@@ -3,19 +3,20 @@ defmodule GlificWeb.Schema.ContactTagTest do
   use Wormwood.GQLCase
 
   setup do
-    lang = Glific.Seeds.seed_language()
-    Glific.Seeds.seed_tag(lang)
-    Glific.Seeds.seed_contacts()
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
+    Glific.SeedsDev.seed_tag()
+    Glific.SeedsDev.seed_contacts()
     :ok
   end
 
-  load_gql(:create, GlificWeb.Schema, "assets/gql/contact_tags/create.gql")
-  load_gql(:delete, GlificWeb.Schema, "assets/gql/contact_tags/delete.gql")
+  load_gql(:create, GlificWeb.Schema, "assets/gql/contact_tag/create.gql")
+  load_gql(:delete, GlificWeb.Schema, "assets/gql/contact_tag/delete.gql")
 
   test "create a contact tag and test possible scenarios and errors" do
     label = "This is for testing"
     {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
-    name = "Default Sender"
+    name = "Glific Admin"
     {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
 
     result =
@@ -45,7 +46,7 @@ defmodule GlificWeb.Schema.ContactTagTest do
   test "delete a contact tag" do
     label = "This is for testing"
     {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
-    name = "Default Sender"
+    name = "Glific Admin"
     {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
 
     {:ok, query_data} =

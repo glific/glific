@@ -2,11 +2,6 @@ defmodule GlificWeb.Schema.LanguageTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
-  setup do
-    Glific.Seeds.seed_language()
-    :ok
-  end
-
   load_gql(:count, GlificWeb.Schema, "assets/gql/languages/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/languages/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/languages/by_id.gql")
@@ -56,7 +51,6 @@ defmodule GlificWeb.Schema.LanguageTest do
       )
 
     assert {:ok, query_data} = result
-
     language = get_in(query_data, [:data, "createLanguage", "language", "label"])
     assert language == "Klingon"
 
@@ -101,7 +95,7 @@ defmodule GlificWeb.Schema.LanguageTest do
       query_gql_by(:update,
         variables: %{
           "id" => lang.id,
-          "input" => %{"label" => "Hindi", "labelLocale" => "Hindi", "locale" => "hi_IN"}
+          "input" => %{"label" => "Hindi", "labelLocale" => "Hindi", "locale" => "hi"}
         }
       )
 
@@ -112,10 +106,21 @@ defmodule GlificWeb.Schema.LanguageTest do
   end
 
   test "delete a language" do
-    label = "English (United States)"
-    {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
+    # first create a language
+    result =
+      query_gql_by(:create,
+        variables: %{
+          "input" => %{"label" => "Klingon", "labelLocale" => "Klingon", "locale" => "kl_KL"}
+        }
+      )
 
-    result = query_gql_by(:delete, variables: %{"id" => lang.id})
+    assert {:ok, query_data} = result
+    language = get_in(query_data, [:data, "createLanguage", "language", "label"])
+    language_id = get_in(query_data, [:data, "createLanguage", "language", "id"])
+    assert language == "Klingon"
+
+    # now lets delete it
+    result = query_gql_by(:delete, variables: %{"id" => language_id})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "deleteLanguage", "errors"]) == nil
 

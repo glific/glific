@@ -11,7 +11,8 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Processor.Producer,
-    Repo
+    Repo,
+    Tags
   }
 
   @doc false
@@ -31,15 +32,19 @@ defmodule Glific.Communications.Message do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(Message.t()) :: {:ok, Message.t()} | {:error, String.t()}
-  def send_message(message) do
+  @spec send_message(Message.t(), :datetime | nil) :: {:ok, Message.t()} | {:error, String.t()}
+  def send_message(message, send_at \\ nil) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
-    if Contacts.can_send_message_to?(message.receiver) do
-      apply(provider_module(), @type_to_token[message.type], [message])
+    # Checking for hsm message, will improve logic later
+    # If user has been active in last 24 hours, don't check for hsm
+    if Contacts.can_send_message_to?(message.receiver) ||
+         (message.is_hsm && Contacts.can_send_hsm_message_to?(message.receiver)) do
+      apply(Communications.provider(), @type_to_token[message.type], [message, send_at])
       {:ok, Communications.publish_data(message, :sent_message)}
     else
-      {:error, "Can not send the message to the contact."}
+      Messages.update_message(message, %{status: :contact_opt_out, provider_status: nil})
+      {:error, "Cannot send the message to the contact."}
     end
   end
 
@@ -56,9 +61,12 @@ defmodule Glific.Communications.Message do
     |> Messages.update_message(%{
       provider_message_id: body["messageId"],
       provider_status: :enqueued,
+      status: :sent,
       flow: :outbound,
       sent_at: DateTime.truncate(DateTime.utc_now(), :second)
     })
+
+    Tags.remove_tag_from_all_message(message["contact_id"], "Not Replied")
 
     {:ok, message}
   end
@@ -71,7 +79,11 @@ defmodule Glific.Communications.Message do
     message
     |> Poison.encode!()
     |> Poison.decode!(as: %Message{})
-    |> Messages.update_message(%{provider_status: :error, flow: :outbound})
+    |> Messages.update_message(%{
+      provider_status: :error,
+      status: :sent,
+      flow: :outbound
+    })
 
     {:error, response.body}
   end
@@ -91,8 +103,9 @@ defmodule Glific.Communications.Message do
   @spec receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
   def receive_message(message_params, type \\ :text) do
     {:ok, contact} =
-      Contacts.upsert(message_params.sender)
-      |> Contacts.update_contact(%{last_message_at: DateTime.utc_now()})
+      message_params.sender
+      |> Map.put(:last_message_at, DateTime.utc_now())
+      |> Contacts.upsert()
 
     message_params =
       message_params
@@ -100,13 +113,16 @@ defmodule Glific.Communications.Message do
         type: type,
         sender_id: contact.id,
         receiver_id: organization_contact_id(),
-        flow: :inbound
+        flow: :inbound,
+        provider_status: :delivered,
+        status: :delivered
       })
 
     cond do
       type in [:video, :audio, :image, :document] -> receive_media(message_params)
       type == :text -> receive_text(message_params)
       # For location and address messages, will add that when there will be a use case
+      type == :location -> receive_location(message_params)
       true -> {:error, "Message type not supported"}
     end
   end
@@ -131,21 +147,35 @@ defmodule Glific.Communications.Message do
     |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
+    |> Producer.add()
+
+    {:ok}
+  end
+
+  # handler for receiving the location message
+  @spec receive_location(map()) :: {:ok}
+  defp receive_location(message_params) do
+    {:ok, message} = Messages.create_message(message_params)
+
+    message_params
+    |> Map.put(:contact_id, message_params.sender_id)
+    |> Map.put(:message_id, message.id)
+    |> Contacts.create_location()
+
+    message
+    |> Communications.publish_data(:received_message)
 
     {:ok}
   end
 
   @doc false
-  @spec provider_module() :: atom()
-  def provider_module do
-    provider = Communications.effective_provider()
-    String.to_existing_atom(to_string(provider) <> ".Message")
-  end
-
-  @doc false
   @spec organization_contact_id() :: integer()
   def organization_contact_id do
-    {:ok, contact} = Repo.fetch_by(Contact, %{phone: "917834811114"})
+    # Get organization
+    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+
+    # Confirm organization's contact id
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: organization.contact_id})
     contact.id
   end
 end

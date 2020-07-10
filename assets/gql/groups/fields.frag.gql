@@ -1,0 +1,14 @@
+fragment GroupFields on GroupResult {
+  group {
+    id
+    label
+    is_restricted
+  }
+}
+
+fragment ErrorFields on GroupResult {
+  errors {
+    key
+    message
+  }
+}

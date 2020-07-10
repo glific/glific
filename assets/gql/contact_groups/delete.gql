@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteContactGroup($id: ID!) {
+  deleteContactGroup(id: $id) {
+    ...ContactGroupFields
+
+    ...ErrorFields
+  }
+}

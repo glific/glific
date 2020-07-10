@@ -1,0 +1,6 @@
+query contactLocation($id: ID!) {
+  contactLocation(id: $id) {
+    longitude
+    latitude
+  }
+}

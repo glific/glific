@@ -9,7 +9,7 @@ defmodule GlificWeb.APIAuthPlugTest do
 
   setup %{conn: conn} do
     conn = %{conn | secret_key_base: Endpoint.config(:secret_key_base)}
-    user = Repo.insert!(%User{id: 1, phone: "+919820198765"})
+    user = Repo.insert!(%User{phone: "+919820198766"})
 
     {:ok, conn: conn, user: user}
   end

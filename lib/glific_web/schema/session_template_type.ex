@@ -18,8 +18,10 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :id, :id
     field :label, :string
     field :body, :string
-    field :type, :message_types_enum
+    field :type, :message_type_enum
     field :shortcode, :string
+    field :is_hsm, :boolean
+    field :number_parameters, :integer
     field :is_reserved, :boolean
     field :is_active, :boolean
     field :is_source, :boolean
@@ -48,6 +50,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Match the shortcode of template"
     field :shortcode, :string
 
+    @desc "Match the hsm template message"
+    field :is_hsm, :boolean
+
     @desc "Match the parent"
     field :parent, :string
 
@@ -70,8 +75,10 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   input_object :session_template_input do
     field :label, :string
     field :body, :string
-    field :type, :message_types_enum
+    field :type, :message_type_enum
     field :shortcode, :string
+    field :is_hsm, :boolean
+    field :number_parameters, :integer
     field :is_active, :boolean
     field :is_source, :boolean
     field :language_id, :id
@@ -93,7 +100,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Get a list of all session_templates filtered by various criteria"
     field :session_templates, list_of(:session_template) do
       arg(:filter, :session_template_filter)
-      arg(:order, type: :sort_order, default_value: :asc)
+      arg(:opts, :opts)
       resolve(&Resolvers.Templates.session_templates/3)
     end
 

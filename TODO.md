@@ -1,21 +1,12 @@
 # Things coming in the near/far future
 
-* Mnesia and PoW Integration
-* SMS verification of account
-* General structure for actions on events
-  * Structure for actions on matching tags + value
-  * Structure for actions on message type
-* Scheduling message sends for simple workflows (Saajha, LeapForWord, Noora)
-  * Lets call thsi global workflows
 * RapidPro like FlowBuilder functionality
   * [Floweditor git repository](https://github.com/nyaruka/floweditor)
 * [Integrate fasttext.cc for language identification](https://fasttext.cc/docs/en/language-identification.html)
+* Integrate with [ChatBase](https://chatbase.com/documentation/suggested-intents)
 * High throughput testing framework
-* Integrate WhatsApp location
 * More details on a contact from WA Profile
 * Claiming conversations by Groups
-* [Integrate Sentry](https://github.com/getsentry/sentry-elixir_
-* [Integrate CORS](https://hexdocs.pm/cors_plug/readme.html)
 
 ## Other Advanced models we should investigate
 * [EventBus](https://hexdocs.pm/event_bus/readme.html)
@@ -29,3 +20,19 @@
 
 ## Other requests
 * Backup channel to deliver messages SMS
+
+## How to update slate
+
+* Clone the [repository](https://github.com/glific/slate)
+* Symlink the index.html.md and includes directory from the slate source directory to the glific repositry
+* Run ./deploy.sh
+* Check and ensure the [site is updated](https://glific.github.io/slate/#introduction)
+
+## How to update Glific Docs on gh pages
+
+* Run CI and ensure it works. This will generate the documentation
+* git checkout gh-pages
+* If there are changes to be committed:
+* git commit -a -m "Update docs with new version"
+* git push origin gh-pages
+* Check and ensure the [site is updated](https://glific.github.io/glific/doc/)

@@ -9,6 +9,7 @@ defmodule Glific.Partners.Organization do
 
   alias Glific.Contacts.Contact
   alias Glific.Partners.Provider
+  alias Glific.Settings.Language
 
   # define all the required fields for organization
   @required_fields [
@@ -18,11 +19,14 @@ defmodule Glific.Partners.Organization do
     :email,
     :provider_id,
     :provider_key,
-    :provider_number
+    :provider_number,
+    :default_language_id
   ]
 
   # define all the optional fields for organization
-  @optional_fields []
+  @optional_fields [
+    :contact_id
+  ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -37,6 +41,8 @@ defmodule Glific.Partners.Organization do
           provider: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
           provider_key: String.t() | nil,
           provider_number: String.t() | nil,
+          default_language_id: non_neg_integer | nil,
+          default_language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -50,6 +56,7 @@ defmodule Glific.Partners.Organization do
     field :provider_key, :string
     belongs_to :provider, Provider
     belongs_to :contact, Contact
+    belongs_to :default_language, Language
 
     timestamps(type: :utc_datetime)
   end

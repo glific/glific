@@ -6,8 +6,6 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
 
     create_table()
 
-    create_view()
-
     create_functions()
 
     create_triggers()
@@ -17,8 +15,6 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
     drop_extensions()
 
     drop_table()
-
-    drop_view()
 
     drop_functions()
 
@@ -57,25 +53,6 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
     execute("DROP TABLE IF EXISTS search_messages")
   end
 
-  defp create_view() do
-    drop_view()
-
-    # this view partitions messages which can be used to pick last n messages per contact id
-    execute("""
-    CREATE VIEW partitioned_messages AS (
-      SELECT *,
-        row_number() OVER (PARTITION BY contact_id ORDER BY updated_at DESC) AS rank
-      FROM messages
-    );
-    """)
-  end
-
-  defp drop_view do
-    execute("""
-    DROP VIEW IF EXISTS partitioned_messages;
-    """)
-  end
-
   defp create_functions do
     # lets drop all functions to be on the safe side
     drop_functions()
@@ -97,11 +74,10 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
            setweight(to_tsvector(unaccent(coalesce(
              string_agg(messages.body, ' ' order by messages.inserted_at), ' '))), 'C'))
       FROM contacts
-      LEFT JOIN partitioned_messages messages
-        ON (messages.sender_id = contacts.id OR messages.receiver_id = contacts.id)
+      LEFT JOIN messages ON (messages.contact_id = contacts.id)
       LEFT JOIN messages_tags ON messages.id = messages_tags.message_id
       LEFT JOIN tags ON tags.id = messages_tags.tag_id
-      WHERE messages.rank <= N
+      WHERE messages.message_number <= N
       GROUP BY contacts.id;
       RETURN 'search_messages updated with last ' || N || ' messages';
     END;
@@ -133,7 +109,8 @@ defmodule Glific.Repo.Migrations.FullTextSearch do
         ELSE
           RAISE INFO 'updating existing record %', new.contact_id;
           UPDATE search_messages
-            SET document = (document || (setweight(to_tsvector(unaccent(coalesce(new.body, ' '))), 'C')))::tsvector;
+            SET document = (document || (setweight(to_tsvector(unaccent(coalesce(new.body, ' '))), 'C')))::tsvector
+            WHERE contact_id = new.contact_id;
         END IF;
       END IF;
       RETURN NEW;

@@ -1,0 +1,17 @@
+query search($term: String!, $shouldSave: Boolean!, $saveSearchLabel: String!, $contactOpts: Opts!, $messageOpts: Opts!) {
+  search(term: $term, saveSearch: $shouldSave, saveSearchLabel: $saveSearchLabel, contactOpts: $contactOpts, messageOpts: $messageOpts) {
+    contact {
+      id
+      name
+      phone
+    }
+    messages {
+      id
+      body
+      flow
+      type
+    }
+  }
+}
+
+

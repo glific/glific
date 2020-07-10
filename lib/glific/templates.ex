@@ -19,31 +19,27 @@ defmodule Glific.Templates do
 
   """
   @spec list_session_templates(map()) :: [SessionTemplate.t()]
-  def list_session_templates(args \\ %{}) do
-    args
-    |> Enum.reduce(SessionTemplate, fn
+  def list_session_templates(args \\ %{}),
+    do: Repo.list_filter(args, SessionTemplate, &opts_with/2, &filter_with/2)
+
+  defp opts_with(query, opts) do
+    Enum.reduce(opts, query, fn
       {:order, order}, query ->
         query |> order_by([t], {^order, fragment("lower(?)", t.label)})
 
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
+      _, query ->
+        query
     end)
-    |> Repo.all()
   end
 
   @doc """
   Return the count of session_templates, using the same filter as list_session_templates
   """
   @spec count_session_templates(map()) :: integer
-  def count_session_templates(args \\ %{}) do
-    args
-    |> Enum.reduce(SessionTemplate, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.aggregate(:count)
-  end
+  def count_session_templates(args \\ %{}),
+    do: Repo.count_filter(args, SessionTemplate, &filter_with/2)
 
+  # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn
@@ -55,6 +51,9 @@ defmodule Glific.Templates do
 
       {:shortcode, shortcode}, query ->
         from q in query, where: ilike(q.shortcode, ^"%#{shortcode}%")
+
+      {:is_hsm, is_hsm}, query ->
+        from q in query, where: q.is_hsm == ^is_hsm
 
       {:parent, label}, query ->
         from q in query,
@@ -75,6 +74,8 @@ defmodule Glific.Templates do
           where: q.language_id == ^language_id
     end)
   end
+
+  # codebeat:enable[ABC]
 
   @doc """
   Gets a single session_template.

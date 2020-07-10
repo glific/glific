@@ -3,7 +3,7 @@ defmodule GlificWeb.Schema.ProviderTest do
   use Wormwood.GQLCase
 
   setup do
-    Glific.Seeds.seed_providers()
+    Glific.SeedsDev.seed_providers()
     :ok
   end
 

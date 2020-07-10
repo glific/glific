@@ -4,6 +4,8 @@ defmodule GlificWeb.Router do
   """
   use GlificWeb, :router
   @dialyzer {:nowarn_function, __checks__: 0}
+  use Plug.ErrorHandler
+  use Sentry.Plug
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -73,6 +75,7 @@ defmodule GlificWeb.Router do
 
   scope "/", GlificWeb do
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
+    1
   end
 
   # defp debug_response(conn, _) do

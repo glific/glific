@@ -12,51 +12,71 @@ defmodule Glific.Conversations do
 
   alias Glific.{Conversations.Conversation, Messages, Repo}
 
-  @sql_ids """
-      SELECT id, ancestors FROM messages WHERE id IN ( SELECT MAX(id) FROM messages GROUP BY contact_id ) and contact_id = ANY($2) ORDER By updated_at DESC LIMIT $1;
-  """
-
-  @sql_all """
-      SELECT id, ancestors FROM messages WHERE id IN ( SELECT MAX(id) FROM messages GROUP BY contact_id ) ORDER By updated_at DESC LIMIT $1;
-  """
-
   @doc """
   Returns the last M conversations, each conversation not more than N messages
   """
   @spec list_conversations(map()) :: list()
-  def list_conversations(%{number_of_conversations: nc, size_of_conversations: sc} = args),
-    do: Messages.list_conversations(Map.put(args, :ids, get_message_ids(nc, sc, args)))
+  def list_conversations(args) do
+    Messages.list_conversations(
+      Map.put(args, :ids, get_message_ids(args.contact_opts, args.message_opts, args))
+    )
+  end
 
   @doc """
   Returns the filtered conversation by contact id
   """
-  @spec conversation_by_id(map()) :: Conversation.t()
-  def conversation_by_id(%{contact_id: contact_id, size_of_conversations: sc} = args) do
+
+  @spec conversation_by_id(map()) :: Conversation.t() | nil
+  def conversation_by_id(%{contact_id: contact_id} = args) do
     args = put_in(args, [Access.key(:filter, %{}), :id], contact_id)
+    message_opts = args.message_opts
 
     case args
-         |> Map.put(:ids, get_message_ids(1, sc, args))
+         |> Map.put(:ids, get_message_ids(%{limit: 1}, message_opts, args))
          |> Messages.list_conversations() do
       [conversation] -> conversation
       _ -> nil
     end
   end
 
-  @spec get_message_ids(integer(), integer(), map() | nil) :: list()
-  defp get_message_ids(nc, sc, %{filter: %{id: id}}),
-    do: process_results(Repo.query(@sql_ids, [nc, [id]]), sc)
+  @spec get_message_ids(map(), map(), map() | nil) :: list()
+  defp get_message_ids(_contact_opts, message_opts, %{filter: %{id: id}}),
+    do: get_message_ids([id], message_opts)
 
-  defp get_message_ids(nc, sc, %{filter: %{ids: ids}}),
-    do: process_results(Repo.query(@sql_ids, [nc, ids]), sc)
+  defp get_message_ids(_contact_opts, message_opts, %{filter: %{ids: ids}}),
+    do: get_message_ids(ids, message_opts)
 
-  defp get_message_ids(nc, sc, _),
-    do: process_results(Repo.query(@sql_all, [nc]), sc)
+  defp get_message_ids(contact_opts, message_opts, _) do
+    contact_opts
+    |> get_recent_contact_ids()
+    |> get_message_ids(message_opts)
+  end
 
-  @spec process_results({:ok, map()}, integer()) :: list()
-  defp process_results({:ok, results}, sc) do
-    results.rows
-    |> Enum.reduce([], fn [last_message_id | [ancestors]], acc ->
-      acc ++ [last_message_id | Enum.take(ancestors, sc - 1)]
-    end)
+  @spec get_message_ids(list(), map()) :: list()
+  defp get_message_ids(ids, %{limit: message_limit, offset: message_offset}) do
+    query =
+      from m in Messages.Message,
+        where:
+          m.contact_id in ^ids and
+            m.message_number >= ^message_offset and
+            m.message_number < ^(message_limit + message_offset),
+        order_by: [{:desc, :updated_at}],
+        select: m.id
+
+    Repo.all(query)
+  end
+
+  # Get the latest contact ids form messages
+  @spec get_recent_contact_ids(map()) :: list()
+  defp get_recent_contact_ids(contact_opts) do
+    query =
+      from m in Messages.Message,
+        where: m.message_number == 0,
+        order_by: [desc: m.updated_at],
+        offset: ^contact_opts.offset,
+        limit: ^contact_opts.limit,
+        select: m.contact_id
+
+    Repo.all(query)
   end
 end

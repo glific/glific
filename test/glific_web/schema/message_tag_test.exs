@@ -3,15 +3,16 @@ defmodule GlificWeb.Schema.MessageTagTest do
   use Wormwood.GQLCase
 
   setup do
-    lang = Glific.Seeds.seed_language()
-    Glific.Seeds.seed_tag(lang)
-    Glific.Seeds.seed_contacts()
-    Glific.Seeds.seed_messages()
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
+    Glific.SeedsDev.seed_tag()
+    Glific.SeedsDev.seed_contacts()
+    Glific.SeedsDev.seed_messages()
     :ok
   end
 
-  load_gql(:create, GlificWeb.Schema, "assets/gql/message_tags/create.gql")
-  load_gql(:delete, GlificWeb.Schema, "assets/gql/message_tags/delete.gql")
+  load_gql(:create, GlificWeb.Schema, "assets/gql/message_tag/create.gql")
+  load_gql(:delete, GlificWeb.Schema, "assets/gql/message_tag/delete.gql")
 
   test "create a message tag and test possible scenarios and errors" do
     label = "This is for testing"

@@ -23,10 +23,13 @@ defmodule Glific.Enums do
   [:inbound, :outbound]
 
   iex> Glific.Enums.message_status_const()
-  [:sent, :delivered, :enqueued, :error, :read, :received]
+  [:sent, :delivered, :enqueued, :error, :read, :received, :contact_opt_out]
 
-  iex> Glific.Enums.message_types_const()
+  iex> Glific.Enums.message_type_const()
   [:audio, :contact, :document, :hsm, :image, :location, :text, :video]
+
+  iex> Glific.Enums.question_type_const()
+  [:text, :numeric, :date]
 
   iex> Glific.Enums.sort_order_const()
   [:asc, :desc]
@@ -45,8 +48,11 @@ defmodule Glific.Enums do
   iex> Glific.Enums.MessageStatus.__enum_map__()
   Glific.Enums.message_status_const()
 
-  iex> Glific.Enums.MessageTypes.__enum_map__()
-  Glific.Enums.message_types_const()
+  iex> Glific.Enums.MessageType.__enum_map__()
+  Glific.Enums.message_type_const()
+
+  iex> Glific.Enums.QuestionType.__enum_map__()
+  Glific.Enums.question_type_const()
 
   iex> Glific.Enums.SortOrder.__enum_map__()
   Glific.Enums.sort_order_const()
@@ -65,8 +71,11 @@ defmodule Glific.Enums do
   defmacro message_status_const,
     do: Macro.expand(@message_status_const, __CALLER__)
 
-  defmacro message_types_const,
-    do: Macro.expand(@message_types_const, __CALLER__)
+  defmacro message_type_const,
+    do: Macro.expand(@message_type_const, __CALLER__)
+
+  defmacro question_type_const,
+    do: Macro.expand(@question_type_const, __CALLER__)
 
   defmacro sort_order_const,
     do: Macro.expand(@sort_order_const, __CALLER__)

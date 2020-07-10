@@ -1,5 +1,5 @@
 defmodule Glific.TemplatesTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{
     Settings,
@@ -16,9 +16,23 @@ defmodule Glific.TemplatesTest do
       is_reserved: true
     }
     @valid_attrs_1 %{
-      label: "some label 1",
+      label: "Another label",
       body: "some body 1",
       shortcode: "sl1",
+      type: :text,
+      is_active: true,
+      is_reserved: true
+    }
+    @valid_attrs_to_test_order_1 %{
+      label: "aaaa label",
+      body: "some body 2",
+      type: :text,
+      is_active: true,
+      is_reserved: true
+    }
+    @valid_attrs_to_test_order_2 %{
+      label: "zzzz label",
+      body: "some body 2",
       type: :text,
       is_active: true,
       is_reserved: true
@@ -69,21 +83,27 @@ defmodule Glific.TemplatesTest do
     end
 
     test "list_session_templates/0 returns all session_templates" do
-      session_template = session_template_fixture()
-      assert Templates.list_session_templates() == [session_template]
+      templates_count = Repo.aggregate(SessionTemplate, :count)
+
+      _session_template = session_template_fixture()
+      assert length(Templates.list_session_templates()) == templates_count + 1
     end
 
     test "count_session_templates/0 returns count of all session templates" do
+      templates_count = Repo.aggregate(SessionTemplate, :count)
+
       session_template_fixture()
-      assert Templates.count_session_templates() == 1
+      assert Templates.count_session_templates() == templates_count + 1
 
       session_template_fixture(@valid_attrs_1)
-      assert Templates.count_session_templates() == 2
+      assert Templates.count_session_templates() == templates_count + 2
 
-      assert Templates.count_session_templates(%{filter: %{label: "some label 1"}}) == 1
+      assert Templates.count_session_templates(%{filter: %{label: "Another label"}}) == 1
     end
 
     test "list_session_templates/1 with multiple session_templates filteres" do
+      templates_count = Repo.aggregate(SessionTemplate, :count)
+
       _session_template = session_template_fixture(@valid_attrs)
       session_template1 = session_template_fixture(@valid_attrs_1)
 
@@ -103,23 +123,31 @@ defmodule Glific.TemplatesTest do
       assert session_template_list == [session_template1]
 
       session_template_list = Templates.list_session_templates()
-      assert length(session_template_list) == 2
+      assert length(session_template_list) == templates_count + 2
     end
 
     test "list_session_templates/1 with multiple items" do
+      templates_count = Repo.aggregate(SessionTemplate, :count)
+
       session_template_fixture()
       session_template_fixture(@valid_attrs_1)
       session_templates = Templates.list_session_templates()
-      assert length(session_templates) == 2
+      assert length(session_templates) == templates_count + 2
     end
 
     test "list_session_templates/1 with multiple items sorted" do
-      session_template1 = session_template_fixture()
-      session_template2 = session_template_fixture(@valid_attrs_1)
-      session_templates = Templates.list_session_templates(%{order: :asc})
-      assert length(session_templates) == 2
-      [s1, s2] = session_templates
-      assert s1 == session_template1 && s2 == session_template2
+      session_templates_count = Repo.aggregate(SessionTemplate, :count)
+
+      s0 = session_template_fixture(@valid_attrs_to_test_order_1)
+      s1 = session_template_fixture(@valid_attrs_to_test_order_2)
+
+      assert length(Templates.list_session_templates()) == session_templates_count + 2
+
+      [ordered_s0 | _] = Templates.list_session_templates(%{opts: %{order: :asc}})
+      assert s0 == ordered_s0
+
+      [ordered_s1 | _] = Templates.list_session_templates(%{opts: %{order: :desc}})
+      assert s1 == ordered_s1
     end
 
     test "get_session_template!/1 returns the session_template with given id" do

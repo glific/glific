@@ -5,17 +5,18 @@ defmodule Glific.CommunicationsTest do
   alias Faker.Phone
   alias Glific.Messages
 
+  setup do
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
+    :ok
+  end
+
   describe "communications" do
     alias Glific.Communications
 
-    test "fetch default provider" do
-      Application.put_env(:glific, :provider, nil)
-      assert Glific.Providers.Gupshup == Communications.effective_provider()
-    end
-
     test "fetch provider from config" do
-      Application.put_env(:glific, :provider, Glific.Providers.Gupshup)
-      assert Glific.Providers.Gupshup == Communications.effective_provider()
+      Application.put_env(:glific, :provider, Glific.Providers.Gupshup.Message)
+      assert Glific.Providers.Gupshup.Message == Communications.provider()
     end
   end
 
@@ -106,6 +107,30 @@ defmodule Glific.CommunicationsTest do
       assert message.flow == :outbound
     end
 
+    test "send message will remove the Not Replied tag from messages" do
+      message_1 = Glific.Fixtures.message_fixture(%{flow: :inbound})
+
+      message_2 =
+        Glific.Fixtures.message_fixture(%{
+          flow: :outbound,
+          sender_id: message_1.sender_id,
+          receiver_id: message_1.contact_id
+        })
+
+      assert message_2.contact_id == message_1.contact_id
+
+      {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Replied"})
+
+      message1_tag =
+        Glific.Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
+
+      Communications.send_message(message_2)
+      assert_enqueued(worker: Worker)
+      Oban.drain_queue(:gupshup)
+
+      assert_raise Ecto.NoResultsError, fn -> Glific.Tags.get_message_tag!(message1_tag.id) end
+    end
+
     test "if response status code is not 200 handle the error response " do
       Tesla.Mock.mock(fn
         %{method: :post} ->
@@ -180,7 +205,7 @@ defmodule Glific.CommunicationsTest do
       assert message.flow == :outbound
     end
 
-    test "sending message to contact having invalid status will return error" do
+    test "sending message to optout contact will return error" do
       {:ok, receiver} =
         @receiver_attrs
         |> Map.merge(%{status: :invalid, phone: Phone.EnUs.phone()})
@@ -188,6 +213,10 @@ defmodule Glific.CommunicationsTest do
 
       message = message_fixture(%{receiver_id: receiver.id})
       assert {:error, _msg} = Communications.send_message(message)
+
+      message = Messages.get_message!(message.id)
+      assert message.status == :contact_opt_out
+      assert message.provider_status == nil
     end
 
     test "sending message to contact having invalid provider status will return error" do
@@ -223,6 +252,25 @@ defmodule Glific.CommunicationsTest do
       Communications.update_provider_status(message.provider_message_id, :read)
       message = Messages.get_message!(message.id)
       assert message.provider_status == :read
+    end
+
+    test "send message at a specific time should not send it immediately" do
+      message = message_fixture()
+      scheduled_time = Timex.shift(DateTime.utc_now(), hours: 2)
+      Communications.send_message(message, scheduled_time)
+
+      assert_enqueued(worker: Worker)
+      Oban.drain_queue(:gupshup)
+      message = Messages.get_message!(message.id)
+
+      assert message.status == :enqueued
+      assert message.provider_message_id == nil
+      assert message.sent_at == nil
+      assert message.provider_status == nil
+      assert message.flow == :outbound
+
+      # Verify job scheduled
+      assert_enqueued(worker: Worker, scheduled_at: {scheduled_time, delta: 10})
     end
   end
 end

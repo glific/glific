@@ -24,7 +24,11 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.ProviderTypes)
   import_types(__MODULE__.SessionTemplateTypes)
   import_types(__MODULE__.TagTypes)
-  import_types(__MODULE__.RegistrationTypes)
+  import_types(__MODULE__.UserTypes)
+  import_types(__MODULE__.GroupTypes)
+  import_types(__MODULE__.ContactGroupTypes)
+  import_types(__MODULE__.UserGroupTypes)
+  import_types(__MODULE__.SearchTypes)
 
   query do
     import_fields(:contact_queries)
@@ -44,6 +48,12 @@ defmodule GlificWeb.Schema do
     import_fields(:session_template_queries)
 
     import_fields(:tag_queries)
+
+    import_fields(:user_queries)
+
+    import_fields(:group_queries)
+
+    import_fields(:search_queries)
   end
 
   mutation do
@@ -67,7 +77,15 @@ defmodule GlificWeb.Schema do
 
     import_fields(:tag_mutations)
 
-    import_fields(:registration_mutations)
+    import_fields(:user_mutations)
+
+    import_fields(:group_mutations)
+
+    import_fields(:contact_group_mutations)
+
+    import_fields(:user_group_mutations)
+
+    import_fields(:search_mutations)
   end
 
   subscription do
@@ -117,6 +135,6 @@ defmodule GlificWeb.Schema do
   """
   @spec plugins() :: [Absinthe.Plugin.t()]
   def plugins do
-    [Absinthe.Middleware.Dataloader] ++ Absinthe.Plugin.defaults()
+    [Absinthe.Middleware.Dataloader | Absinthe.Plugin.defaults()]
   end
 end

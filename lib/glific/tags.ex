@@ -6,7 +6,7 @@ defmodule Glific.Tags do
   alias Glific.Repo
   alias Glific.Tags.{ContactTag, MessageTag, Tag}
 
-  import Ecto.Query, warn: false
+  import Ecto.Query
 
   @doc """
   Returns the list of tags.
@@ -18,44 +18,27 @@ defmodule Glific.Tags do
 
   """
   @spec list_tags(map()) :: [Tag.t()]
-  def list_tags(args \\ %{}) do
-    args
-    |> Enum.reduce(Tag, fn
-      {:opts, opts}, query ->
-        query |> opts_with(opts)
-
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.all()
-  end
+  def list_tags(args \\ %{}),
+    do: Repo.list_filter(args, Tag, &opts_with/2, &filter_with/2)
 
   @doc """
   Return the count of tags, using the same filter as list_tags
   """
   @spec count_tags(map()) :: integer
-  def count_tags(args \\ %{}) do
-    args
-    |> Enum.reduce(Tag, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.aggregate(:count)
-  end
+  def count_tags(args \\ %{}),
+    do: Repo.count_filter(args, Tag, &filter_with/2)
 
   defp opts_with(query, opts) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->
         query |> order_by([t], {^order, fragment("lower(?)", t.label)})
 
-      {:limit, limit}, query ->
-        query |> limit(^limit)
-
-      {:offset, offset}, query ->
-        query |> offset(^offset)
+      _, query ->
+        query
     end)
   end
 
+  # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn
@@ -81,6 +64,8 @@ defmodule Glific.Tags do
           where: q.language_id == ^language_id
     end)
   end
+
+  # codebeat:enable[ABC]
 
   @doc """
   Gets a single tag.
@@ -244,21 +229,19 @@ defmodule Glific.Tags do
   end
 
   @doc """
-  Creates a message.
+  Creates a message tag
 
   ## Examples
 
-      iex> create_message_tag(%{field: value})
-      {:ok, %Message{}}
+  iex> create_message_tag(%{field: value})
+  {:ok, %Message{}}
 
-      iex> create_message_tag(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
+  iex> create_message_tag(%{field: bad_value})
+  {:error, %Ecto.Changeset{}}
 
   """
   @spec create_message_tag(map()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def create_message_tag(attrs \\ %{}) do
-    # Merge default values if not present in attributes
-    # do an upsert
     %MessageTag{}
     |> MessageTag.changeset(attrs)
     |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])
@@ -299,6 +282,26 @@ defmodule Glific.Tags do
   @spec delete_message_tag(MessageTag.t()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def delete_message_tag(%MessageTag{} = message_tag) do
     Repo.delete(message_tag)
+  end
+
+  @doc """
+  In Join tables we rarely use the table id. We always know the object ids
+  and hence more convenient to delete an entry via its object ids.
+  We will generalize this function and move it to Repo.ex when we get a better
+  handle on how to do so :)
+  """
+  @spec delete_message_tag_by_ids(integer, integer) :: {integer(), nil | [term()]}
+  def delete_message_tag_by_ids(message_id, tag_id) when is_integer(tag_id) do
+    %MessageTag{}
+    |> where([m], m.message_id == ^message_id and m.tag_id == ^tag_id)
+    |> Repo.delete_all()
+  end
+
+  @spec delete_message_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_message_tag_by_ids(message_id, tag_ids) when is_list(tag_ids) do
+    MessageTag
+    |> where([m], m.message_id == ^message_id and m.tag_id in ^tag_ids)
+    |> Repo.delete_all()
   end
 
   @doc """
@@ -417,5 +420,22 @@ defmodule Glific.Tags do
   @spec change_contact_tag(ContactTag.t(), map()) :: Ecto.Changeset.t()
   def change_contact_tag(%ContactTag{} = contact_tag, attrs \\ %{}) do
     ContactTag.changeset(contact_tag, attrs)
+  end
+
+  @doc """
+    Remove a specific tag from contact messages
+  """
+  @spec remove_tag_from_all_message(integer(), String.t()) :: list()
+  def remove_tag_from_all_message(contact_id, tag_label) do
+    query =
+      from mt in MessageTag,
+        join: m in assoc(mt, :message),
+        join: t in assoc(mt, :tag),
+        where: m.contact_id == ^contact_id and t.label == ^tag_label,
+        select: [mt.message_id]
+
+    {_, deleted_rows} = Repo.delete_all(query)
+
+    List.flatten(deleted_rows)
   end
 end

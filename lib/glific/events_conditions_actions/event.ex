@@ -7,9 +7,7 @@ defmodule Glific.EventsConditionsActions.Event do
   the complexity
   """
 
-  alias Glific.{
-    Enums.MessageTypes
-  }
+  alias Glific.Enums.MessageType
 
   alias Glific.EventsConditionsActions.Action.{
     AddTags,
@@ -21,13 +19,13 @@ defmodule Glific.EventsConditionsActions.Event do
     message: %{
       type: :message,
       filters: %{
-        type: MessageTypes,
+        type: MessageType,
         # We will load this dynamically from the DB at init time
         tags: [],
-        parent_type: MessageTypes,
+        parent_type: MessageType,
         # Same deal as tags
         parent_tags: [],
-        ancestors_type: MessageTypes,
+        ancestors_type: MessageType,
         # Same deal as tags
         ancestors_tags: [],
         body: [:has_any, :has_all, :has_phrase, :has_only_phrase],

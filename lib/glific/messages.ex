@@ -24,28 +24,16 @@ defmodule Glific.Messages do
 
   """
   @spec list_messages(map()) :: [Message.t()]
-  def list_messages(args \\ %{}) do
-    args
-    |> Enum.reduce(Message, fn
-      {:opts, opts}, query ->
-        query |> opts_with(opts)
-
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.all()
-  end
+  def list_messages(args \\ %{}),
+    do: Repo.list_filter(args, Message, &opts_with/2, &filter_with/2)
 
   defp opts_with(query, opts) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->
         query |> order_by([m], {^order, fragment("lower(?)", m.body)})
 
-      {:limit, limit}, query ->
-        query |> limit(^limit)
-
-      {:offset, offset}, query ->
-        query |> offset(^offset)
+      _, query ->
+        query
     end)
   end
 
@@ -53,14 +41,8 @@ defmodule Glific.Messages do
   Return the count of messages, using the same filter as list_messages
   """
   @spec count_messages(map()) :: integer
-  def count_messages(args \\ %{}) do
-    args
-    |> Enum.reduce(Message, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.aggregate(:count)
-  end
+  def count_messages(args \\ %{}),
+    do: Repo.count_filter(args, Message, &filter_with/2)
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
@@ -87,6 +69,11 @@ defmodule Glific.Messages do
         from q in query,
           join: c in assoc(q, :contact),
           where: ilike(c.phone, ^"%#{phone}%")
+
+      {:user, user}, query ->
+        from q in query,
+          join: c in assoc(q, :user),
+          where: ilike(c.name, ^"%#{user}%")
 
       {:tags_included, tags_included}, query ->
         message_ids =
@@ -143,7 +130,7 @@ defmodule Glific.Messages do
   @spec create_message(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   def create_message(attrs) do
     attrs =
-      %{flow: :inbound, provider_status: :delivered}
+      %{flow: :inbound, status: :enqueued}
       |> Map.merge(attrs)
       |> put_contact_id()
 
@@ -212,17 +199,39 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec fetch_and_send_message(map()) :: {:ok, Message.t()}
-  def fetch_and_send_message(attrs) do
-    with {:ok, message} <- Repo.fetch(Message, attrs),
-         do: Communications.Message.send_message(message)
-  end
-
-  @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()}
   def create_and_send_message(attrs) do
-    with {:ok, message} <- create_message(Map.put(attrs, :flow, :outbound)),
-         do: Communications.Message.send_message(message)
+    send_at = get_in(attrs, [:send_at])
+
+    with {:ok, message} <- create_message(Map.put(attrs, :flow, :outbound)) do
+      Communications.Message.send_message(message, send_at)
+    end
+  end
+
+  @doc """
+  Create and send verifciation message
+  Using session template of shortcode 'verification'
+  """
+  @spec create_and_send_verification_message(String.t(), String.t()) :: {:ok, Message.t()}
+  def create_and_send_verification_message(phone, otp) do
+    # fetch contact by phone number
+    {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
+
+    # fetch session template by shortcode "verification"
+    {:ok, session_template} =
+      Repo.fetch_by(SessionTemplate, %{
+        shortcode: "verification"
+      })
+
+    # create and send verification message with OTP code
+    message_params = %{
+      body: session_template.body <> otp,
+      type: session_template.type,
+      sender_id: Communications.Message.organization_contact_id(),
+      receiver_id: contact.id
+    }
+
+    create_and_send_message(message_params)
   end
 
   @doc """
@@ -254,17 +263,61 @@ defmodule Glific.Messages do
     create_and_send_message(message_params)
   end
 
+  @doc """
+  Send a hsm template message to the specific contact.
+  """
+  @spec create_and_send_hsm_message(integer, integer, []) ::
+          {:ok, Message.t()} | {:error, String.t()}
+  def create_and_send_hsm_message(template_id, receiver_id, parameters) do
+    {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
+
+    if session_template.number_parameters == length(parameters) do
+      updated_template = prepare_hsm_template(session_template, parameters)
+
+      message_params = %{
+        body: updated_template.body,
+        type: updated_template.type,
+        is_hsm: updated_template.is_hsm,
+        sender_id: Communications.Message.organization_contact_id(),
+        receiver_id: receiver_id
+      }
+
+      create_and_send_message(message_params)
+    else
+      {:error, "You need to provide correct number of parameters for hsm template"}
+    end
+  end
+
+  @doc false
+  @spec prepare_hsm_template(SessionTemplate.t(), []) :: SessionTemplate.t()
+  def prepare_hsm_template(session_template, parameters) do
+    parameters_map =
+      1..session_template.number_parameters
+      |> Enum.zip(parameters)
+
+    updated_body =
+      Enum.reduce(parameters_map, session_template.body, fn {key, value}, body ->
+        String.replace(body, "{{#{key}}}", value)
+      end)
+
+    session_template
+    |> Map.merge(%{body: updated_body})
+  end
+
   @doc false
   @spec create_and_send_message_to_contacts(map(), []) :: {:ok, Message.t()}
   def create_and_send_message_to_contacts(message_params, contact_ids) do
-    contact_ids
-    |> Enum.reduce([], fn contact_id, messages ->
-      message_params = Map.put(message_params, :receiver_id, contact_id)
+    messages =
+      contact_ids
+      |> Enum.reduce([], fn contact_id, messages ->
+        message_params = Map.put(message_params, :receiver_id, contact_id)
 
-      with {:ok, message} <- create_and_send_message(message_params) do
-        [message | messages]
-      end
-    end)
+        with {:ok, message} <- create_and_send_message(message_params) do
+          [message | messages]
+        end
+      end)
+
+    {:ok, messages}
   end
 
   @doc """
@@ -288,25 +341,18 @@ defmodule Glific.Messages do
 
   """
   @spec list_messages_media(map()) :: [MessageMedia.t()]
-  def list_messages_media(args \\ %{}) do
-    args
-    |> Enum.reduce(MessageMedia, fn
-      {:opts, opts}, query ->
-        query |> opts_media_with(opts)
-    end)
-    |> Repo.all()
-  end
+  def list_messages_media(args \\ %{}),
+    do: Repo.list_filter(args, MessageMedia, &opts_media_with/2, &filter_media_with/2)
+
+  defp filter_media_with(query, _), do: query
 
   defp opts_media_with(query, opts) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->
         query |> order_by([m], {^order, fragment("lower(?)", m.caption)})
 
-      {:limit, limit}, query ->
-        query |> limit(^limit)
-
-      {:offset, offset}, query ->
-        query |> offset(^offset)
+      _, query ->
+        query
     end)
   end
 
@@ -314,14 +360,8 @@ defmodule Glific.Messages do
   Return the count of messages, using the same filter as list_messages
   """
   @spec count_messages_media(map()) :: integer
-  def count_messages_media(args \\ %{}) do
-    args
-    |> Enum.reduce(MessageMedia, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.aggregate(:count)
-  end
+  def count_messages_media(args \\ %{}),
+    do: Repo.count_filter(args, MessageMedia, &filter_media_with/2)
 
   @doc """
   Gets a single message media.
@@ -418,17 +458,21 @@ defmodule Glific.Messages do
   @spec list_conversations(map()) :: [Conversation.t()]
   def list_conversations(args) do
     args
-    |> Enum.reduce(Message, fn
-      {:ids, ids}, query ->
-        query |> where([m], m.id in ^ids)
+    |> Enum.reduce(
+      Message,
+      fn
+        {:ids, ids}, query ->
+          query
+          |> where([m], m.id in ^ids)
+          |> order_by([m], desc: m.updated_at)
 
-      {:filter, filter}, query ->
-        query |> conversations_with(filter)
+        {:filter, filter}, query ->
+          query |> conversations_with(filter)
 
-      _, query ->
-        query
-    end)
-    |> order_by([m], asc: m.updated_at)
+        _, query ->
+          query
+      end
+    )
     |> Repo.all()
     |> Repo.preload([:contact, :tags])
     |> make_conversations()
@@ -438,12 +482,36 @@ defmodule Glific.Messages do
   # given all the messages related to multiple contacts, group them
   # by contact id into conversation objects
   @spec make_conversations([Message.t()]) :: [Conversation.t()]
-  defp make_conversations(results) do
+  defp make_conversations(messages) do
     # now format the results,
+    {contact_messages, _processed_contacts, contact_order} =
+      Enum.reduce(
+        messages,
+        {%{}, %{}, []},
+        fn m, acc ->
+          {conversations, processed_contacts, contact_order} = acc
+          conversations = add(m, conversations)
+
+          # We need to do this to maintain the sort order when returning
+          # the results. The first time we see a contact, we add them to
+          # the contact_order and processed map (using a map for faster lookups)
+          if Map.has_key?(processed_contacts, m.contact_id) do
+            {conversations, processed_contacts, contact_order}
+          else
+            {conversations, Map.put(processed_contacts, m.contact_id, true),
+             [m.contact | contact_order]}
+          end
+        end
+      )
+
+    # Since we are doing two reduces, we end up with the right order due to the way lists are
+    # constructed efficiently (add to front)
     Enum.reduce(
-      Enum.reduce(results, %{}, fn x, acc -> add(x, acc) end),
+      contact_order,
       [],
-      fn {contact, messages}, acc -> [Conversation.new(contact, messages) | acc] end
+      fn contact, acc ->
+        [Conversation.new(contact, Enum.reverse(contact_messages[contact])) | acc]
+      end
     )
   end
 
@@ -507,7 +575,7 @@ defmodule Glific.Messages do
       {:exclude_tags, tag_ids}, query ->
         query
         |> join(:left, [m], mt in MessageTag, on: m.id == mt.message_id)
-        |> where([m, mt], mt.tag_id not in ^tag_ids)
+        |> where([m, mt], mt.tag_id not in ^tag_ids or is_nil(mt.tag_id))
     end)
   end
 

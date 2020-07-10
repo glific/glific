@@ -54,6 +54,7 @@ defmodule GlificWeb.Providers.Gupshup.Router do
       post("/file", MessageController, :file)
       post("/audio", MessageController, :audio)
       post("/video", MessageController, :video)
+      post("/location", MessageController, :location)
       post("/*unknown", DefaultController, :unknown)
     end
 

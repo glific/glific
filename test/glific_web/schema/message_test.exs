@@ -1,13 +1,14 @@
 defmodule GlificWeb.Schema.MessageTest do
   alias Glific.Messages.Message
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase
 
   use Wormwood.GQLCase
 
   setup do
-    Glific.Seeds.seed_language()
-    Glific.Seeds.seed_contacts()
-    Glific.Seeds.seed_messages()
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
+    Glific.SeedsDev.seed_contacts()
+    Glific.SeedsDev.seed_messages()
     :ok
   end
 
@@ -15,6 +16,12 @@ defmodule GlificWeb.Schema.MessageTest do
     :create_and_send_message_to_contacts,
     GlificWeb.Schema,
     "assets/gql/messages/create_and_send_message_to_contacts.gql"
+  )
+
+  load_gql(
+    :send_hsm_message,
+    GlificWeb.Schema,
+    "assets/gql/messages/send_hsm_message.gql"
   )
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/messages/count.gql")
@@ -54,6 +61,12 @@ defmodule GlificWeb.Schema.MessageTest do
     assert length(messages) > 0
     [message | _] = messages
     assert get_in(message, ["receiver", "name"]) == "Default receiver"
+
+    result = query_gql_by(:list, variables: %{"filter" => %{"user" => "John"}})
+    assert {:ok, query_data} = result
+
+    messages = get_in(query_data, [:data, "messages"])
+    assert messages == []
   end
 
   test "messages field returns list of messages in desc order" do
@@ -120,8 +133,7 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "create a message and test possible scenarios and errors" do
-    body = "Default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
+    [message | _] = Glific.Messages.list_messages()
 
     result =
       query_gql_by(:create,
@@ -131,8 +143,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "flow" => "OUTBOUND",
             "receiverId" => message.receiver_id,
             "senderId" => message.sender_id,
-            "type" => "TEXT",
-            "providerStatus" => "DELIVERED"
+            "type" => "TEXT"
           }
         }
       )
@@ -147,8 +158,7 @@ defmodule GlificWeb.Schema.MessageTest do
           "input" => %{
             "body" => "Message body",
             "flow" => "OUTBOUND",
-            "type" => "TEXT",
-            "providerStatus" => "DELIVERED"
+            "type" => "TEXT"
           }
         }
       )
@@ -214,14 +224,41 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "type" => "TEXT",
-            "sender_id" => Glific.Communications.Message.organization_contact_id(),
-            "providerStatus" => "DELIVERED"
+            "sender_id" => Glific.Communications.Message.organization_contact_id()
           },
           "contact_ids" => [contact1.id, contact2.id]
         }
       )
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "createAndSendMessageToContacts", "errors"]) == nil
+    messages = get_in(query_data, [:data, "createAndSendMessageToContacts"])
+    assert length(messages) == 2
+    [message | _] = messages
+    assert message["receiver"]["id"] == contact1.id || contact2.id
+  end
+
+  test "send hsm message to an opted in contact" do
+    name = "Default receiver"
+    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+
+    Glific.Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
+
+    label = "HSM2"
+    {:ok, hsm_template} = Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{label: label})
+
+    parameters = ["param1", "param2"]
+
+    result =
+      query_gql_by(:send_hsm_message,
+        variables: %{
+          "id" => hsm_template.id,
+          "receiver_id" => contact.id,
+          "parameters" => parameters
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "sendHsmMessage", "errors"]) == nil
+    assert get_in(query_data, [:data, "sendHsmMessage", "message", "is_hsm"]) == true
   end
 end

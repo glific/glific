@@ -56,14 +56,24 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @doc false
   @spec send_otp(Conn.t(), map()) :: Conn.t()
   def send_otp(conn, %{"user" => %{"phone" => phone}}) do
-    with {:ok, otp} <- PasswordlessAuth.create_and_send_verification_code(phone),
-         do:
-           json(conn, %{
-             data: %{
-               phone: phone,
-               otp: otp,
-               message: "OTP #{otp} sent successfully to #{phone}"
-             }
-           })
+    with {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
+         true <- Glific.Contacts.can_send_message_to?(contact),
+         {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
+      json(conn, %{
+        data: %{
+          phone: phone,
+          message: "OTP sent successfully to #{phone}"
+        }
+      })
+    else
+      {:error, _} ->
+        conn
+        |> put_status(400)
+        |> json(%{error: %{status: 400, message: "Phone number is incorrect"}})
+
+      false ->
+        conn
+        |> json(%{error: %{status: 200, message: "Contact is not opted in yet"}})
+    end
   end
 end

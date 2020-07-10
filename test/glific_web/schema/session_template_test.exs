@@ -1,12 +1,13 @@
 defmodule GlificWeb.Schema.SessionTemplateTest do
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
   setup do
-    lang = Glific.Seeds.seed_language()
-    Glific.Seeds.seed_session_templates(lang)
-    Glific.Seeds.seed_contacts()
-    Glific.Seeds.seed_messages()
+    default_provider = Glific.SeedsDev.seed_providers()
+    Glific.SeedsDev.seed_organizations(default_provider)
+    Glific.SeedsDev.seed_session_templates()
+    Glific.SeedsDev.seed_contacts()
+    Glific.SeedsDev.seed_messages()
     :ok
   end
 
@@ -62,7 +63,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   end
 
   test "session_templates field returns list of session_templates in desc order" do
-    result = query_gql_by(:list, variables: %{"order" => "ASC"})
+    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
@@ -72,12 +73,12 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert get_in(session_template, ["body"]) == "Another Template"
   end
 
-  test "session_templates field returns list of session templates in various filters" do
+  test "session_templates returns list of session templates in various filters" do
     result = query_gql_by(:list, variables: %{"filter" => %{"body" => "Default Template"}})
     assert {:ok, query_data} = result
 
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
-    assert length(session_templates) > 0
+    assert length(session_templates) == 1
 
     [session_template | _] = session_templates
     assert get_in(session_template, ["body"]) == "Default Template"
@@ -107,6 +108,11 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert {:ok, query_data} = result
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
     assert length(session_templates) > 0
+
+    result = query_gql_by(:list, variables: %{"filter" => %{"isHsm" => true}})
+    assert {:ok, query_data} = result
+    session_templates = get_in(query_data, [:data, "sessionTemplates"])
+    assert length(session_templates) >= 3
   end
 
   test "session_template by id returns one session_template or nil" do
