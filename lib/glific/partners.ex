@@ -21,17 +21,7 @@ defmodule Glific.Partners do
   """
   @spec list_providers(map()) :: [%Provider{}, ...]
   def list_providers(args \\ %{}),
-    do: Repo.list_filter(args, Provider, &opts_with/2, &filter_provider_with/2)
-
-  defp opts_with(query, opts) do
-    Enum.reduce(opts, query, fn
-      {:order, order}, query ->
-        query |> order_by([o], {^order, fragment("lower(?)", o.name)})
-
-      _, query ->
-        query
-    end)
-  end
+    do: Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
 
   @doc """
   Return the count of providers, using the same filter as list_providers
