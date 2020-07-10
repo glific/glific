@@ -9,7 +9,7 @@ defmodule Glific.Repo.Migrations.CreateFlowEditorTables do
   def flows do
     create table(:flows) do
       add :name, :string, null: false
-      add :uuid, :string, null: false
+      add :uuid, :uuid, null: false
       add :version_number, :string, default: "13.1.0"
       add :language_id, references(:languages, on_delete: :restrict), null: false
       add :flow_type, :string, default: "message"
