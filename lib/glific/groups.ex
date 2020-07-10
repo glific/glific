@@ -23,22 +23,14 @@ defmodule Glific.Groups do
   """
   @spec list_groups(map()) :: [Group.t()]
   def list_groups(args \\ %{}),
-    do: Repo.list_filter(args, Group, &Repo.opts_with_label/2, &filter_with/2)
+    do: Repo.list_filter(args, Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
   Return the count of groups, using the same filter as list_groups
   """
   @spec count_groups(map()) :: integer
   def count_groups(args \\ %{}),
-    do: Repo.count_filter(args, Group, &filter_with/2)
-
-  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_with(query, filter) do
-    Enum.reduce(filter, query, fn
-      {:label, label}, query ->
-        from q in query, where: ilike(q.label, ^"%#{label}%")
-    end)
-  end
+    do: Repo.count_filter(args, Group, &Repo.filter_with/2)
 
   @doc """
   Gets a single group.
