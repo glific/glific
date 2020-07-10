@@ -295,8 +295,7 @@ defmodule Glific.SeedsDev do
 
     Repo.insert!(%FlowRevision{
       definition: help_flow_definition,
-      flow_id: help_flow.id,
-      revision_number: 1
+      flow_id: help_flow.id
     })
 
     language_flow =
@@ -319,8 +318,7 @@ defmodule Glific.SeedsDev do
 
     Repo.insert!(%FlowRevision{
       definition: language_flow_definition,
-      flow_id: language_flow.id,
-      revision_number: 1
+      flow_id: language_flow.id
     })
 
     preferences_flow =
@@ -343,8 +341,7 @@ defmodule Glific.SeedsDev do
 
     Repo.insert!(%FlowRevision{
       definition: preferences_flow_definition,
-      flow_id: preferences_flow.id,
-      revision_number: 1
+      flow_id: preferences_flow.id
     })
   end
 

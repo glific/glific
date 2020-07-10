@@ -125,13 +125,13 @@ defmodule Glific.Flows do
             created_on: revision.inserted_at,
             id: revision.id,
             version: "13.0.0",
-            revision: revision.revision_number
+            revision: revision.id
           }
           | acc
         ]
       end)
 
-    %{results: asset_list}
+    %{results: Enum.reverse(asset_list)}
   end
 
   @doc """
@@ -152,23 +152,15 @@ defmodule Glific.Flows do
   end
 
   @doc """
-    Save new revision for the flow
+  Save new revision for the flow
   """
   @spec create_flow_revision(map()) :: FlowRevision.t()
   def create_flow_revision(definition) do
     {:ok, flow} = Repo.fetch_by(Flow, %{uuid: definition["uuid"]})
 
-    flow = Repo.preload(flow, :revisions)
-
-    attrs = %{
-      definition: definition,
-      flow_id: flow.id,
-      revision_number: length(flow.revisions) + 1
-    }
-
     {:ok, revision} =
       %FlowRevision{}
-      |> FlowRevision.changeset(attrs)
+      |> FlowRevision.changeset(%{definition: definition, flow_id: flow.id})
       |> Repo.insert()
 
     revision
