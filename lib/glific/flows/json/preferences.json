@@ -12,7 +12,7 @@
     "actions": [
      {
       "attachments": [],
-      "text": "Please set your activity preference:\n1. Poetry\n2. Writing\n3. Story Telling\n4. Videos\n5. Done\n6. Reset",
+      "text": "Please set your activity preference:\n\n1. Poetry\n2. Writing\n3. Story Telling\n4. Videos\n5. Done\n6. Reset",
       "type": "send_msg",
       "quick_replies": [],
       "uuid": "902dcbfb-6e54-435e-a23b-37686dc495e1"
