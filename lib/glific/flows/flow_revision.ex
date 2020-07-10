@@ -1,5 +1,8 @@
 defmodule Glific.Flows.FlowRevision do
-
+  @moduledoc """
+  The flow revision object which encapsulates the complete flow as emitted by
+  by `https://github.com/nyaruka/floweditor`
+  """
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -17,7 +20,7 @@ defmodule Glific.Flows.FlowRevision do
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
-    }
+        }
 
   schema "flow_revisions" do
     field :definition, :map
@@ -26,24 +29,31 @@ defmodule Glific.Flows.FlowRevision do
     timestamps(type: :utc_datetime)
   end
 
-  @doc false
-  def changeset(flow, attrs) do
-  flow
+  @doc """
+  Standard changeset pattern we use for all data types
+  """
+  @spec changeset(FlowRevision.t(), map()) :: Ecto.Changeset.t()
+  def changeset(flow_revision, attrs) do
+    flow_revision
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
   end
 
+  @doc """
+  Default definition when we create a new flow
+  """
+  @spec default_definition(Glific.Flows.Flow.t()) :: map()
   def default_definition(flow) do
-     %{
-       "name" => flow.name,
-       "uuid" => flow.uuid,
-       "spec_version" => "13.1.0",
-       "language" => "base",
-       "type" => "messaging",
-       "nodes" => [],
-       "_ui" => %{},
-       "revision" => 1,
-       "expire_after_minutes" => 10080
-      }
+    %{
+      "name" => flow.name,
+      "uuid" => flow.uuid,
+      "spec_version" => "13.1.0",
+      "language" => "base",
+      "type" => "messaging",
+      "nodes" => [],
+      "_ui" => %{},
+      "revision" => 1,
+      "expire_after_minutes" => 10_080
+    }
   end
 end

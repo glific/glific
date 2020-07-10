@@ -7,18 +7,22 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   alias Glific.Flows
 
-
   @doc false
+  @spec globals(Plug.Conn.t(), map) :: Plug.Conn.t()
   def globals(conn, _params) do
     conn
     |> json(%{results: []})
   end
 
+  @doc false
+  @spec groups(Plug.Conn.t(), map) :: Plug.Conn.t()
   def groups(conn, _params) do
     conn
     |> json(%{results: []})
   end
 
+  @doc false
+  @spec groups_post(Plug.Conn.t(), map) :: Plug.Conn.t()
   def groups_post(conn, params) do
     conn
     |> json(%{
@@ -30,11 +34,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
     })
   end
 
+  @doc false
+  @spec fields(Plug.Conn.t(), map) :: Plug.Conn.t()
   def fields(conn, _params) do
     conn
     |> json(%{results: []})
   end
 
+  @doc false
   @spec fields_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def fields_post(conn, params) do
     conn
@@ -45,12 +52,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
     })
   end
 
+  @doc false
   @spec labels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels(conn, _params) do
     conn
     |> json(%{results: []})
   end
 
+  @doc false
   @spec labels_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels_post(conn, params) do
     conn
@@ -61,6 +70,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     })
   end
 
+  @doc false
   @spec channels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def channels(conn, _params) do
     channels = %{
@@ -78,6 +88,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, channels)
   end
 
+  @doc false
   @spec classifiers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def classifiers(conn, _params) do
     classifiers = %{
@@ -95,6 +106,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, classifiers)
   end
 
+  @doc false
   @spec ticketers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def ticketers(conn, _params) do
     ticketers = %{
@@ -111,7 +123,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, ticketers)
   end
 
-
+  @doc false
   @spec resthooks(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def resthooks(conn, _params) do
     resthooks = %{
@@ -124,6 +136,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, resthooks)
   end
 
+  @doc false
   @spec templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def templates(conn, _params) do
     templates = %{
@@ -162,6 +175,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, templates)
   end
 
+  @doc false
   @spec languages(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def languages(conn, _params) do
     languages = %{
@@ -180,6 +194,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, languages)
   end
 
+  @doc false
   @spec environment(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def environment(conn, _params) do
     environment = %{
@@ -192,6 +207,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, environment)
   end
 
+  @doc false
   @spec recipients(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def recipients(conn, _params) do
     recipients = %{
@@ -213,11 +229,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, recipients)
   end
 
+  @doc false
   @spec completion(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def completion(conn, _params) do
     json(conn, %{})
   end
 
+  @doc false
   @spec activity(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def activity(conn, _params) do
     activity = %{
@@ -228,6 +246,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, activity)
   end
 
+  @doc false
   @spec flows(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def flows(conn, %{"vars" => vars}) do
     results =
@@ -241,7 +260,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
               archived: false,
               labels: [],
               parent_refs: ["order_number", "customer_id"],
-              expires: 10080
+              expires: 10_080
             }
           ]
 
@@ -257,33 +276,49 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, results)
   end
 
+  @doc false
   @spec revisions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def revisions(conn, %{"vars" => vars}) do
     case vars do
-      [flow_uuid] -> json(conn, Flows.get_flow_revision_list(flow_uuid))
-      [flow_uuid, revison_number] -> json(conn, Flows.get_flow_revision(flow_uuid, revison_number))
+      [flow_uuid] ->
+        json(conn, Flows.get_flow_revision_list(flow_uuid))
+
+      [flow_uuid, revison_number] ->
+        json(conn, Flows.get_flow_revision(flow_uuid, revison_number))
     end
   end
 
+  @doc false
   @spec save_revisions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def save_revisions(conn, params) do
-
     user = %{email: "chancerton@nyaruka.com", name: "Chancellor von Frankenbean"}
-    asset = %{user: user, created_on: "2020-07-08T19:18:43.253Z", id: 1, version: "13.0.0", revision: 1}
+
+    asset = %{
+      user: user,
+      created_on: "2020-07-08T19:18:43.253Z",
+      id: 1,
+      version: "13.0.0",
+      revision: 1
+    }
+
     Flows.create_flow_revision(params)
 
     json(conn, asset)
   end
 
+  @doc false
+  @spec functions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def functions(conn, _) do
-    functions = File.read!("assets/flows/functions.json")
-    |> Jason.decode!()
+    functions =
+      File.read!("assets/flows/functions.json")
+      |> Jason.decode!()
 
     json(conn, functions)
-
   end
 
-  defp generate_uuid() do
+  @doc false
+  @spec generate_uuid() :: String.t()
+  defp generate_uuid do
     Faker.UUID.v4()
   end
 end

@@ -18,8 +18,8 @@ defmodule Glific.Flows.Router do
   @optional_fields [:result_name, :wait_type]
 
   @type t() :: %__MODULE__{
-    __meta__: Ecto.Schema.Metadata.t(),
-    uuid: Ecto.UUID.t() | nil,
+          __meta__: Ecto.Schema.Metadata.t(),
+          uuid: Ecto.UUID.t() | nil,
           type: String.t() | nil,
           wait_type: String.t() | nil,
           default_category_uuid: Ecto.UUID.t() | nil,

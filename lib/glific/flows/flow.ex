@@ -11,8 +11,8 @@ defmodule Glific.Flows.Flow do
   alias Glific.{
     Contacts.Contact,
     Flows.Context,
-    Flows.Node,
     Flows.FlowRevision,
+    Flows.Node,
     Settings.Language
   }
 

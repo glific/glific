@@ -18,6 +18,7 @@ defmodule Glific.Flows do
       [%Flow{}, ...]
 
   """
+  @spec list_flows() :: [Flow.t()]
   def list_flows do
     Repo.all(Flow)
   end
@@ -36,6 +37,7 @@ defmodule Glific.Flows do
       ** (Ecto.NoResultsError)
 
   """
+  @spec get_flow!(integer) :: Flow.t()
   def get_flow!(id), do: Repo.get!(Flow, id)
 
   @doc """
@@ -50,6 +52,7 @@ defmodule Glific.Flows do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def create_flow(attrs \\ %{}) do
     %Flow{}
     |> Flow.changeset(attrs)
@@ -68,6 +71,7 @@ defmodule Glific.Flows do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec update_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def update_flow(%Flow{} = flow, attrs) do
     flow
     |> Flow.changeset(attrs)
@@ -86,6 +90,7 @@ defmodule Glific.Flows do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec delete_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def delete_flow(%Flow{} = flow) do
     Repo.delete(flow)
   end
@@ -99,40 +104,64 @@ defmodule Glific.Flows do
       %Ecto.Changeset{data: %Flow{}}
 
   """
+  @spec change_flow(Flow.t(), map()) :: Ecto.Changeset.t()
   def change_flow(%Flow{} = flow, attrs \\ %{}) do
     Flow.changeset(flow, attrs)
   end
 
+  @doc """
+    Get a list of all the revisions based on a flow UUID
+  """
+  @spec get_flow_revision_list(String.t()) :: %{results: list()}
   def get_flow_revision_list(flow_uuid) do
     flow = get_flow_with_revision(flow_uuid)
     user = %{email: "pankaj@glific.com", name: "Pankaj Agrawal"}
 
-    assetList =
+    asset_list =
       Enum.reduce(flow.revisions, [], fn revision, acc ->
-          [ %{ user: user, created_on: revision.inserted_at, id: revision.revision_number, version: "13.0.0", revision: revision.revision_number} | acc]
+        [
+          %{
+            user: user,
+            created_on: revision.inserted_at,
+            id: revision.revision_number,
+            version: "13.0.0",
+            revision: revision.revision_number
+          }
+          | acc
+        ]
       end)
 
-    %{ results:  assetList}
+    %{results: asset_list}
   end
 
+  @doc """
+    Get specific flow revision by number
+  """
+  @spec get_flow_revision(String.t(), String.t()) :: map()
   def get_flow_revision(flow_uuid, revision_number) do
     flow = get_flow_with_revision(flow_uuid)
     {revision_number, ""} = Integer.parse(revision_number)
 
     revision = Enum.at(flow.revisions, revision_number - 1)
-    %{ definition: revision.definition, metadata: %{ issues: [] } }
+    %{definition: revision.definition, metadata: %{issues: []}}
   end
 
-   defp get_flow_with_revision(flow_uuid) do
+  # Preload revisions in a flow.
+  # We still need to do some refactoring on this approch
+  @spec get_flow_with_revision(String.t()) :: Flow.t()
+  defp get_flow_with_revision(flow_uuid) do
     {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
     Repo.preload(flow, :revisions)
   end
 
+  @doc """
+    Save new revision for the flow
+  """
+  @spec create_flow_revision(map()) :: FlowRevision.t()
   def create_flow_revision(definition) do
-    uuid = definition["uuid"]
-    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: uuid})
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: definition["uuid"]})
 
-    flow =  Repo.preload(flow, :revisions)
+    flow = Repo.preload(flow, :revisions)
 
     attrs = %{
       definition: definition,
@@ -143,6 +172,5 @@ defmodule Glific.Flows do
     %FlowRevision{}
     |> FlowRevision.changeset(attrs)
     |> Repo.insert()
-
   end
 end

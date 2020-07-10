@@ -79,7 +79,6 @@ defmodule GlificWeb.Router do
   end
 
   scope "/flow-editor", GlificWeb.Flows do
-
     get "/globals", FlowEditorController, :globals
 
     get "/groups", FlowEditorController, :groups
@@ -118,7 +117,6 @@ defmodule GlificWeb.Router do
     get "/revisions/*vars", FlowEditorController, :revisions
 
     post "/revisions/*vars", FlowEditorController, :save_revisions
-
   end
 
   # defp debug_response(conn, _) do
