@@ -85,6 +85,8 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :receiver_id, :id
     field :user_id, :id
     field :media_id, :id
+
+    field :send_at, :datetime
   end
 
   object :message_queries do
