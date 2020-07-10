@@ -161,6 +161,9 @@ defmodule Glific.Repo do
       {:name, name}, query ->
         from q in query, where: ilike(q.name, ^"%#{name}%")
 
+      {:phone, phone}, query ->
+        from q in query, where: ilike(q.phone, ^"%#{phone}%")
+
       {:label, label}, query ->
         from q in query, where: ilike(q.label, ^"%#{label}%")
 

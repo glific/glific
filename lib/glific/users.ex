@@ -21,17 +21,8 @@ defmodule Glific.Users do
     do: Repo.list_filter(args, User, &Repo.opts_with_name/2, &filter_with/2)
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_with(query, filter) do
-    Enum.reduce(filter, query, fn
-      {:name, name}, query ->
-        from q in query, where: ilike(q.name, ^"%#{name}%")
-
-      {:phone, phone}, query ->
-        from q in query, where: ilike(q.phone, ^"%#{phone}%")
-
-        # filter for roles
-    end)
-  end
+  defp filter_with(query, filter),
+    do: Repo.filter_with(query, filter)
 
   @doc """
   Return the count of users, using the same filter as list_users
