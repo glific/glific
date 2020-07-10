@@ -141,7 +141,7 @@ defmodule Glific.Partners do
   """
   @spec list_organizations(map()) :: [Organization.t()]
   def list_organizations(args \\ %{}),
-    do: Repo.list_filter(args, Organization, &opts_with/2, &filter_organization_with/2)
+    do: Repo.list_filter(args, Organization, &Repo.opts_with_name/2, &filter_organization_with/2)
 
   @doc """
   Return the count of organizations, using the same filter as list_organizations
