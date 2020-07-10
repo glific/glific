@@ -4,7 +4,7 @@ defmodule Glific.Flows.First do
   by nyaruka floweditor
   """
 
-  @test_file "/json/help.json"
+  @test_file "/json/preferences.json"
 
   alias Glific.{
     Contacts,

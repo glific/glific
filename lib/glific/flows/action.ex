@@ -24,6 +24,7 @@ defmodule Glific.Flows.Action do
           __meta__: Ecto.Schema.Metadata.t(),
           uuid: Ecto.UUID.t() | nil,
           text: String.t() | nil,
+          value: String.t() | nil,
           type: FlowType,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
@@ -35,6 +36,7 @@ defmodule Glific.Flows.Action do
   schema "actions" do
     field :uuid, Ecto.UUID
     field :text, :string
+    field :value, :string
     field :language, :string
     field :type, FlowType
     field :quick_replies, {:array, :string}, default: []
@@ -79,6 +81,7 @@ defmodule Glific.Flows.Action do
       uuid: json["uuid"],
       node_uuid: node.uuid,
       text: json["text"],
+      value: json["value"],
       type: json["type"],
       quick_replies: json["quick_replies"]
     }
@@ -103,9 +106,16 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: type} = action, context, message_stream)
-      when type == "set_contact_language" do
+  when type == "set_contact_language" do
     IO.puts("Setting Contact Language: #{action.text}")
     ContactSetting.set_contact_language(context, action.text)
+    {:ok, context, message_stream}
+  end
+
+  def execute(%{type: type} = action, context, message_stream)
+  when type == "set_run_result" do
+    IO.inspect(action)
+    IO.inspect(message_stream)
     {:ok, context, message_stream}
   end
 

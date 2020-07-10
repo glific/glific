@@ -48,7 +48,8 @@ defmodule Glific.Flows.ContactSetting do
   end
 
   @doc """
-  Delete a preference from a contact
+  Delete a preference from a contact. We actually dont really delete it, we just
+  set the value to false, and hence turn it off
   """
   @spec delete_contact_preference(Context.t(), String.t()) :: Context.t()
   def delete_contact_preference(context, preference) do
