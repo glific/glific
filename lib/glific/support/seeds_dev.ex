@@ -308,7 +308,7 @@ defmodule Glific.SeedsDev do
       })
 
     language_flow_definition =
-      File.read!("assets/flows/language_2.json")
+      File.read!("assets/flows/language.json")
       |> Jason.decode!()
 
     language_flow_definition =
@@ -320,6 +320,30 @@ defmodule Glific.SeedsDev do
     Repo.insert!(%FlowRevision{
       definition: language_flow_definition,
       flow_id: language_flow.id,
+      revision_number: 1
+    })
+
+    preferences_flow =
+      Repo.insert!(%Flow{
+        name: "Preferences Workflow",
+        version_number: "13.1.0",
+        uuid: Faker.UUID.v4(),
+        language_id: english.id
+    })
+
+    preferences_flow_definition =
+      File.read!("assets/flows/preferences.json")
+      |> Jason.decode!()
+
+    preferences_flow_definition =
+      Map.merge(preferences_flow_definition, %{
+        "name" => preferences_flow.name,
+        "uuid" => preferences_flow.uuid
+      })
+
+    Repo.insert!(%FlowRevision{
+      definition: preferences_flow_definition,
+      flow_id: preferences_flow.id,
       revision_number: 1
     })
 

@@ -1,0 +1,312 @@
+{
+        "name": "Preferences",
+        "language": "eng",
+        "type": "message",
+        "spec_version": "13.1.0",
+        "uuid": "a4f64f1b-85bc-477e-b706-de313a022979",
+        "localization": {},
+        "nodes": [
+            {
+                "uuid": "d977a2dc-5987-4192-817e-1e3d3774abcb",
+                "actions": [
+                    {
+                        "attachments": [],
+                        "text": "Please set your activity preference:\n                        1. Poetry\n                        2. Writing\n                        3. Story Telling\n                        4. Videos\n                        5. Done\n                        6. Reset",
+                        "type": "send_msg",
+                        "quick_replies": [],
+                        "uuid": "902dcbfb-6e54-435e-a23b-37686dc495e1"
+                    }
+                ],
+                "exits": [
+                    {
+                        "uuid": "7a4feee4-62d7-478c-a36a-649cc9041740",
+                        "destination_uuid": "c5aaefdf-687f-4d8b-93b2-8efbcfdc1ca3"
+                    }
+                ]
+            },
+            {
+                "uuid": "c5aaefdf-687f-4d8b-93b2-8efbcfdc1ca3",
+                "actions": [],
+                "router": {
+                    "type": "switch",
+                    "default_category_uuid": "9d88e613-092d-40ae-8186-a2fe9d2b13df",
+                    "cases": [
+                        {
+                            "arguments": [
+                                "1"
+                            ],
+                            "type": "has_only_phrase",
+                            "uuid": "93d8b8d5-0a5b-47e3-960d-97d3a10b9efe",
+                            "category_uuid": "ef1cc619-89d7-48be-81fc-3959da378112"
+                        },
+                        {
+                            "arguments": [
+                                "2"
+                            ],
+                            "type": "has_only_phrase",
+                            "uuid": "63661235-ff18-44cb-92c6-e13da3703eb8",
+                            "category_uuid": "382c3269-fadf-4fdc-b477-91c4da489705"
+                        },
+                        {
+                            "arguments": [
+                                "3"
+                            ],
+                            "type": "has_only_phrase",
+                            "uuid": "dc747279-7303-44b1-8dce-fa187fa85873",
+                            "category_uuid": "54c93b06-2ca8-4897-b108-e222bc7d88e1"
+                        },
+                        {
+                            "arguments": [
+                                "4"
+                            ],
+                            "type": "has_any_word",
+                            "uuid": "f08eec5d-1ab6-44f8-b35e-92581d02aa74",
+                            "category_uuid": "8f2c8772-34a0-4bc7-9bd4-c84af14b5bb4"
+                        },
+                        {
+                            "arguments": [
+                                "5"
+                            ],
+                            "type": "has_any_word",
+                            "uuid": "f78e5612-5afe-4301-b32c-161e7599b3d1",
+                            "category_uuid": "0595d183-ca02-43f8-b64d-ad5b7e13f06b"
+                        },
+                        {
+                            "arguments": [
+                                "6"
+                            ],
+                            "type": "has_any_word",
+                            "uuid": "045fa16e-1d46-4898-a6f3-2a507bbebc6c",
+                            "category_uuid": "2af50c61-26ac-4039-8a54-395b419748f4"
+                        }
+                    ],
+                    "categories": [
+                        {
+                            "uuid": "ef1cc619-89d7-48be-81fc-3959da378112",
+                            "name": "poetry",
+                            "exit_uuid": "54a66e2a-8cf8-498b-9449-6b0404300e39"
+                        },
+                        {
+                            "uuid": "382c3269-fadf-4fdc-b477-91c4da489705",
+                            "name": "writing",
+                            "exit_uuid": "dd56125c-01b7-4de1-befb-f0c44c132909"
+                        },
+                        {
+                            "uuid": "54c93b06-2ca8-4897-b108-e222bc7d88e1",
+                            "name": "story",
+                            "exit_uuid": "96acc5e7-9ca7-461e-9f74-87b99c0b5d4d"
+                        },
+                        {
+                            "uuid": "8f2c8772-34a0-4bc7-9bd4-c84af14b5bb4",
+                            "name": "video",
+                            "exit_uuid": "792eb527-aebc-4947-8b24-7ac447a7d73d"
+                        },
+                        {
+                            "uuid": "0595d183-ca02-43f8-b64d-ad5b7e13f06b",
+                            "name": "done",
+                            "exit_uuid": "e0115e19-1a94-4ba6-9a03-a5f29088654f"
+                        },
+                        {
+                            "uuid": "2af50c61-26ac-4039-8a54-395b419748f4",
+                            "name": "reset",
+                            "exit_uuid": "66ed3a99-9666-420f-8e50-b6b922e6c7af"
+                        },
+                        {
+                            "uuid": "9d88e613-092d-40ae-8186-a2fe9d2b13df",
+                            "name": "Other",
+                            "exit_uuid": "1bb26071-cb76-41fc-8f81-78fd31394758"
+                        }
+                    ],
+                    "operand": "@input.text",
+                    "wait": {
+                        "type": "msg"
+                    }
+                },
+                "exits": [
+                    {
+                        "uuid": "54a66e2a-8cf8-498b-9449-6b0404300e39",
+                        "destination_uuid": "1cfb74d7-8286-4830-8269-97723f7302e6"
+                    },
+                    {
+                        "uuid": "dd56125c-01b7-4de1-befb-f0c44c132909",
+                        "destination_uuid": "6cbd4d5b-d805-4924-aad9-40906442a959"
+                    },
+                    {
+                        "uuid": "96acc5e7-9ca7-461e-9f74-87b99c0b5d4d",
+                        "destination_uuid": "7253776c-716c-4941-bdb2-748ef5af8463"
+                    },
+                    {
+                        "uuid": "792eb527-aebc-4947-8b24-7ac447a7d73d",
+                        "destination_uuid": "374e649e-04be-431a-941f-a9c965fff2e4"
+                    },
+                    {
+                        "uuid": "e0115e19-1a94-4ba6-9a03-a5f29088654f",
+                        "destination_uuid": null
+                    },
+                    {
+                        "uuid": "66ed3a99-9666-420f-8e50-b6b922e6c7af",
+                        "destination_uuid": "23af6eaf-748d-4ac0-a1ee-be4dd1900b1b"
+                    },
+                    {
+                        "uuid": "1bb26071-cb76-41fc-8f81-78fd31394758",
+                        "destination_uuid": "d977a2dc-5987-4192-817e-1e3d3774abcb"
+                    }
+                ]
+            },
+            {
+                "uuid": "1cfb74d7-8286-4830-8269-97723f7302e6",
+                "actions": [
+                    {
+                        "type": "set_run_result",
+                        "name": "settings.preference",
+                        "value": "poetry",
+                        "category": "",
+                        "uuid": "07b78e22-707e-41c1-bbe8-d7bf3f576351"
+                    }
+                ],
+                "exits": [
+                    {
+                        "uuid": "1509cd6a-0512-443c-bdcf-33d48d627afb",
+                        "destination_uuid": "d977a2dc-5987-4192-817e-1e3d3774abcb"
+                    }
+                ]
+            },
+            {
+                "uuid": "6cbd4d5b-d805-4924-aad9-40906442a959",
+                "actions": [
+                    {
+                        "type": "set_run_result",
+                        "name": "settings.preference",
+                        "value": "writing",
+                        "category": "",
+                        "uuid": "24532eaa-c8df-400a-a593-42b1ff15ccfd"
+                    }
+                ],
+                "exits": [
+                    {
+                        "uuid": "9e851694-284e-4e50-9ad5-6ace4f22a976",
+                        "destination_uuid": "d977a2dc-5987-4192-817e-1e3d3774abcb"
+                    }
+                ]
+            },
+            {
+                "uuid": "7253776c-716c-4941-bdb2-748ef5af8463",
+                "actions": [
+                    {
+                        "type": "set_run_result",
+                        "name": "settings.preference",
+                        "value": "story",
+                        "category": "",
+                        "uuid": "ac0ea9ac-860c-4614-b514-71d5f2bc99ea"
+                    }
+                ],
+                "exits": [
+                    {
+                        "uuid": "19e6c15f-bdbf-4cdf-9edf-969a0305ea85",
+                        "destination_uuid": "d977a2dc-5987-4192-817e-1e3d3774abcb"
+                    }
+                ]
+            },
+            {
+                "uuid": "374e649e-04be-431a-941f-a9c965fff2e4",
+                "actions": [
+                    {
+                        "type": "set_run_result",
+                        "name": "settings.preference",
+                        "value": "video",
+                        "category": "",
+                        "uuid": "435de0e0-d005-47a0-ab82-7d2a6fc711ed"
+                    }
+                ],
+                "exits": [
+                    {
+                        "uuid": "9a6436ea-bdaf-4fe3-a566-859dc3768794",
+                        "destination_uuid": "d977a2dc-5987-4192-817e-1e3d3774abcb"
+                    }
+                ]
+            },
+            {
+                "uuid": "23af6eaf-748d-4ac0-a1ee-be4dd1900b1b",
+                "actions": [
+                    {
+                        "type": "set_run_result",
+                        "name": "settings.preference",
+                        "value": "",
+                        "category": "",
+                        "uuid": "eebaa664-836f-4336-b9e9-f3daaffb61fb"
+                    }
+                ],
+                "exits": [
+                    {
+                        "uuid": "162e6398-5d42-428b-8fab-1dd6e500c547",
+                        "destination_uuid": "d977a2dc-5987-4192-817e-1e3d3774abcb"
+                    }
+                ]
+            }
+        ],
+        "_ui": {
+            "nodes": {
+                "d977a2dc-5987-4192-817e-1e3d3774abcb": {
+                    "position": {
+                        "left": 1000,
+                        "top": 0
+                    },
+                    "type": "execute_actions"
+                },
+                "c5aaefdf-687f-4d8b-93b2-8efbcfdc1ca3": {
+                    "type": "wait_for_response",
+                    "position": {
+                        "left": 460,
+                        "top": 300
+                    },
+                    "config": {
+                        "cases": {}
+                    }
+                },
+                "1cfb74d7-8286-4830-8269-97723f7302e6": {
+                    "position": {
+                        "left": 20,
+                        "top": 480
+                    },
+                    "type": "execute_actions"
+                },
+                "6cbd4d5b-d805-4924-aad9-40906442a959": {
+                    "position": {
+                        "left": 260,
+                        "top": 480
+                    },
+                    "type": "execute_actions"
+                },
+                "7253776c-716c-4941-bdb2-748ef5af8463": {
+                    "position": {
+                        "left": 500,
+                        "top": 480
+                    },
+                    "type": "execute_actions"
+                },
+                "374e649e-04be-431a-941f-a9c965fff2e4": {
+                    "position": {
+                        "left": 720,
+                        "top": 480
+                    },
+                    "type": "execute_actions"
+                },
+                "23af6eaf-748d-4ac0-a1ee-be4dd1900b1b": {
+                    "position": {
+                        "left": 940,
+                        "top": 480
+                    },
+                    "type": "execute_actions"
+                }
+            },
+            "stickies": {},
+            "languages": [
+                {
+                    "eng": "English"
+                },
+                {
+                    "spa": "Spanish"
+                }
+            ]
+        }
+}
