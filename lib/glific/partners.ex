@@ -32,12 +32,14 @@ defmodule Glific.Partners do
 
   @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_provider_with(query, filter) do
-    Enum.reduce(filter, query, fn
-      {:name, name}, query ->
-        from q in query, where: ilike(q.name, ^"%#{name}%")
+    query = Repo.filter_with(query, filter)
 
+    Enum.reduce(filter, query, fn
       {:url, url}, query ->
         from q in query, where: ilike(q.url, ^"%#{url}%")
+
+      _, query ->
+        query
     end)
   end
 
@@ -154,10 +156,9 @@ defmodule Glific.Partners do
   @spec filter_organization_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
           Ecto.Queryable.t()
   defp filter_organization_with(query, filter) do
-    Enum.reduce(filter, query, fn
-      {:name, name}, query ->
-        from q in query, where: ilike(q.name, ^"%#{name}%")
+    query = Repo.filter_with(query, filter)
 
+    Enum.reduce(filter, query, fn
       {:display_name, display_name}, query ->
         from q in query, where: ilike(q.display_name, ^"%#{display_name}%")
 
@@ -179,6 +180,9 @@ defmodule Glific.Partners do
         from q in query,
           join: c in assoc(q, :default_language),
           where: ilike(c.label, ^"%#{default_language}%")
+
+      _, query ->
+        query
     end)
   end
 
