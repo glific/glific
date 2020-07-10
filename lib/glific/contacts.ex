@@ -33,18 +33,17 @@ defmodule Glific.Contacts do
   # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
     Enum.reduce(filter, query, fn
-      {:name, name}, query ->
-        from q in query, where: ilike(q.name, ^"%#{name}%")
-
-      {:phone, phone}, query ->
-        from q in query, where: ilike(q.phone, ^"%#{phone}%")
-
       {:status, status}, query ->
         from q in query, where: q.status == ^status
 
       {:provider_status, provider_status}, query ->
         from q in query, where: q.provider_status == ^provider_status
+
+      _, query ->
+        query
     end)
   end
 
