@@ -19,18 +19,14 @@ defmodule Glific.Tags do
   """
   @spec list_tags(map()) :: [Tag.t()]
   def list_tags(args \\ %{}),
-    do: Repo.list_filter(args, Tag, &Repo.opts_with_label/2, &filter_with/2)
+    do: Repo.list_filter(args, Tag, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
   Return the count of tags, using the same filter as list_tags
   """
   @spec count_tags(map()) :: integer
   def count_tags(args \\ %{}),
-    do: Repo.count_filter(args, Tag, &filter_with/2)
-
-  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_with(query, filter),
-    do: Repo.filter_with(query, filter)
+    do: Repo.count_filter(args, Tag, &Repo.filter_with/2)
 
   @doc """
   Gets a single tag.

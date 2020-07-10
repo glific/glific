@@ -17,25 +17,27 @@ defmodule Glific.Flows.Flow do
   }
 
   @required_fields [:name, :language_id, :uuid]
-  @optional_fields [:flow_type, :version_number]
+  @optional_fields [:flow_type, :version_number, :shortcode]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
+          shortcode: String.t() | nil,
           uuid: Ecto.UUID.t() | nil,
           flow_type: String.t() | nil,
           nodes: [Node.t()] | Ecto.Association.NotLoaded.t() | nil,
           version_number: String.t() | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
-          revisions: FlowRevision.t() | Ecto.Association.NotLoaded.t() | nil,
+          revisions: [FlowRevision.t()] | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
   schema "flows" do
     field :name, :string
+    field :shortcode, :string
 
     field :version_number, :string
     field :flow_type, :string
@@ -48,6 +50,19 @@ defmodule Glific.Flows.Flow do
 
     timestamps(type: :utc_datetime)
   end
+
+  @doc """
+  Return the list of filtered tags
+  """
+  @spec list_flows(map()) :: [Flow.t()]
+  def list_flows(args \\ %{}),
+    do: Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &Repo.filter_with/2)
+
+  @doc """
+  Get a single flow
+  """
+  @spec get_flow!(integer) :: Flow.t()
+  def get_flow!(id), do: Repo.get!(Flow, id)
 
   @doc """
   Standard changeset pattern we use for all data types

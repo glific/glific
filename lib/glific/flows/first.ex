@@ -4,21 +4,29 @@ defmodule Glific.Flows.First do
   by nyaruka floweditor
   """
 
-  @test_file "/json/preferences.json"
-
   alias Glific.{
     Contacts,
     Flows.Context,
-    Flows.Flow
+    Flows.Flow,
+    Flows.FlowRevision,
+    Repo,
   }
+
+  import Ecto.Query, warn: false
 
   @doc """
   iex module for us to interact with our actions and events
   """
-  @spec init() :: {Flow.t(), map()}
-  def init do
-    File.read!(__DIR__ <> @test_file)
-    |> Jason.decode!()
+  @spec init(String.t) :: {Flow.t(), map()}
+  def init(shortcode) do
+    query =
+      from fr in FlowRevision,
+      join: f in assoc(fr, :flow),
+      where: fr.revision_number == 0 and fr.flow_id == f.id and f.shortcode == ^shortcode,
+      select: fr.definition
+
+    query
+    |> Repo.one()
     |> remove_definition()
     # lets get rid of stuff we msdon't use
     |> Map.delete("_ui")
@@ -37,7 +45,7 @@ defmodule Glific.Flows.First do
   """
   @spec run([[]]) :: any
   def run(args) do
-    {flow, uuid_map} = init()
+    {flow, uuid_map} = init("preferences")
     contact = Contacts.get_contact!(1)
     context = Flow.context(flow, uuid_map, contact)
 

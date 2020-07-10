@@ -579,6 +579,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
   def flows do
     create table(:flows) do
       add :name, :string, null: false
+      add :shortcode, :string, null: true
       add :uuid, :uuid, null: false
       add :version_number, :string, default: "13.1.0"
       add :language_id, references(:languages, on_delete: :restrict), null: false
