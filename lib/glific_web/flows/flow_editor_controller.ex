@@ -280,30 +280,16 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec revisions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def revisions(conn, %{"vars" => vars}) do
     case vars do
-      [flow_uuid] ->
-        json(conn, Flows.get_flow_revision_list(flow_uuid))
-
-      [flow_uuid, revison_number] ->
-        json(conn, Flows.get_flow_revision(flow_uuid, revison_number))
+      [flow_uuid] -> json(conn, Flows.get_flow_revision_list(flow_uuid))
+      [flow_uuid, revison_id] -> json(conn, Flows.get_flow_revision(flow_uuid, revison_id))
     end
   end
 
   @doc false
   @spec save_revisions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def save_revisions(conn, params) do
-    user = %{email: "chancerton@nyaruka.com", name: "Chancellor von Frankenbean"}
-
-    asset = %{
-      user: user,
-      created_on: "2020-07-08T19:18:43.253Z",
-      id: 1,
-      version: "13.0.0",
-      revision: 1
-    }
-
-    Flows.create_flow_revision(params)
-
-    json(conn, asset)
+    revision = Flows.create_flow_revision(params)
+    json(conn, %{revision: revision.id })
   end
 
   @doc false

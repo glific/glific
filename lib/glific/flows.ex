@@ -123,7 +123,7 @@ defmodule Glific.Flows do
           %{
             user: user,
             created_on: revision.inserted_at,
-            id: revision.revision_number,
+            id: revision.id,
             version: "13.0.0",
             revision: revision.revision_number
           }
@@ -138,11 +138,8 @@ defmodule Glific.Flows do
     Get specific flow revision by number
   """
   @spec get_flow_revision(String.t(), String.t()) :: map()
-  def get_flow_revision(flow_uuid, revision_number) do
-    flow = get_flow_with_revision(flow_uuid)
-    {revision_number, ""} = Integer.parse(revision_number)
-
-    revision = Enum.at(flow.revisions, revision_number - 1)
+  def get_flow_revision(_flow_uuid, revision_id) do
+    revision = Repo.get!(FlowRevision, revision_id)
     %{definition: revision.definition, metadata: %{issues: []}}
   end
 
@@ -169,8 +166,10 @@ defmodule Glific.Flows do
       revision_number: length(flow.revisions) + 1
     }
 
-    %FlowRevision{}
+    {:ok, revision}  = %FlowRevision{}
     |> FlowRevision.changeset(attrs)
     |> Repo.insert()
+
+    revision
   end
 end
