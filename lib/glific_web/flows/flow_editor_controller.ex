@@ -289,7 +289,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec save_revisions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def save_revisions(conn, params) do
     revision = Flows.create_flow_revision(params)
-    json(conn, %{revision: revision.id })
+    json(conn, %{revision: revision.id})
   end
 
   @doc false

@@ -25,7 +25,7 @@ defmodule Glific.Flows.Flow do
           name: String.t() | nil,
           uuid: Ecto.UUID.t() | nil,
           flow_type: String.t() | nil,
-          nodes: Node.t() | Ecto.Association.NotLoaded.t() | nil,
+          nodes: [Node.t()] | Ecto.Association.NotLoaded.t() | nil,
           version_number: String.t() | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,

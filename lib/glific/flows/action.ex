@@ -115,9 +115,8 @@ defmodule Glific.Flows.Action do
     {:ok, context, message_stream}
   end
 
-
   def execute(%{type: type} = action, context, message_stream)
-  when type == "set_run_result" do
+      when type == "set_run_result" do
     IO.puts("Setting Contact Fields: #{action.name}, #{action.value}")
     {:ok, context, message_stream}
   end

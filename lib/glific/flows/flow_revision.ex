@@ -6,6 +6,7 @@ defmodule Glific.Flows.FlowRevision do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias __MODULE__
   alias Glific.Flows.Flow
 
   @required_fields [:definition, :revision_number, :flow_id]
@@ -42,7 +43,7 @@ defmodule Glific.Flows.FlowRevision do
   @doc """
   Default definition when we create a new flow
   """
-  @spec default_definition(Glific.Flows.Flow.t()) :: map()
+  @spec default_definition(Flow.t()) :: map()
   def default_definition(flow) do
     %{
       "name" => flow.name,

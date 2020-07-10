@@ -166,9 +166,10 @@ defmodule Glific.Flows do
       revision_number: length(flow.revisions) + 1
     }
 
-    {:ok, revision}  = %FlowRevision{}
-    |> FlowRevision.changeset(attrs)
-    |> Repo.insert()
+    {:ok, revision} =
+      %FlowRevision{}
+      |> FlowRevision.changeset(attrs)
+      |> Repo.insert()
 
     revision
   end

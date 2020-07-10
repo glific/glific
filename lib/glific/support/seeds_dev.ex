@@ -271,7 +271,7 @@ defmodule Glific.SeedsDev do
   end
 
   @doc false
-  @spec seed_flows :: {:ok}
+  @spec seed_flows :: nil
   def seed_flows do
     [english | _] = Settings.list_languages(%{label: "english"})
 
@@ -329,7 +329,7 @@ defmodule Glific.SeedsDev do
         version_number: "13.1.0",
         uuid: Faker.UUID.v4(),
         language_id: english.id
-    })
+      })
 
     preferences_flow_definition =
       File.read!("assets/flows/preferences.json")
@@ -346,8 +346,6 @@ defmodule Glific.SeedsDev do
       flow_id: preferences_flow.id,
       revision_number: 1
     })
-
-    {:ok}
   end
 
   @doc """
