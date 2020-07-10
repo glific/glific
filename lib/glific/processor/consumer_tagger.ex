@@ -81,7 +81,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @spec process_message(atom() | Message.t(), map()) :: Message.t()
   defp process_message(message, state) do
-    body = Taggers.string_clean(message.body)
+    body = Glific.string_clean(message.body)
 
     message
     |> add_status_tag("Unread", state)

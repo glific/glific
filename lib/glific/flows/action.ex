@@ -111,13 +111,14 @@ defmodule Glific.Flows.Action do
   def execute(%{type: type} = action, context, message_stream)
       when type == "set_contact_language" do
     IO.puts("Setting Contact Language: #{action.text}")
-    ContactSetting.set_contact_language(context, action.text)
+    context = ContactSetting.set_contact_language(context, action.text)
     {:ok, context, message_stream}
   end
 
-  def execute(%{type: type} = action, context, message_stream)
-      when type == "set_run_result" do
-    IO.puts("Setting Contact Fields: #{action.name}, #{action.value}")
+  def execute(%{type: type, name: name} = action, context, message_stream)
+      when type == "set_run_result" and name == "settings.preference" do
+    IO.puts("Setting Contact Setting Preferences: #{action.value}")
+    context = ContactSetting.set_contact_preference(context, action.value)
     {:ok, context, message_stream}
   end
 

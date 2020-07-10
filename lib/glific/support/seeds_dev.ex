@@ -280,7 +280,7 @@ defmodule Glific.SeedsDev do
         name: "Help Workflow",
         shortcode: "help",
         version_number: "13.1.0",
-        uuid: Faker.UUID.v4(),
+        uuid: "3fa22108-f464-41e5-81d9-d8a298854429",
         language_id: english.id
       })
 
@@ -304,7 +304,7 @@ defmodule Glific.SeedsDev do
         name: "Language Workflow",
         shortcode: "language",
         version_number: "13.1.0",
-        uuid: Faker.UUID.v4(),
+        uuid: "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
         language_id: english.id
       })
 
@@ -328,7 +328,7 @@ defmodule Glific.SeedsDev do
         name: "Preferences Workflow",
         shortcode: "preferences",
         version_number: "13.1.0",
-        uuid: Faker.UUID.v4(),
+        uuid: "63397051-789d-418d-9388-2ef7eb1268bb",
         language_id: english.id
       })
 

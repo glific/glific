@@ -23,6 +23,20 @@ defmodule Glific.Flows.ContactSetting do
   end
 
   @doc """
+  Wrapper function for setting the contact preference, if preference is empty, it
+  indicates to reset the preference
+  """
+  @spec set_contact_preference(Context.t(), String.t()) :: Context.t()
+  def set_contact_preference(context, preference) do
+    # first clean up the preference string
+    preference = Glific.string_clean(preference)
+
+    if preference == "",
+      do: reset_contact_preference(context),
+      else: add_contact_preference(context, preference)
+  end
+
+  @doc """
   Add a preference to a contact. For now, all preferences are stored under the
   settings map, with a sub-map of preferences. We expect to get more clarity on this soon
   """
@@ -30,7 +44,7 @@ defmodule Glific.Flows.ContactSetting do
   def add_contact_preference(context, preference, value \\ true) do
     contact_settings =
       if is_nil(context.contact.settings),
-        do: %{settings: %{}},
+        do: %{preferences: %{}},
         else: context.contact.settings
 
     preferences =
