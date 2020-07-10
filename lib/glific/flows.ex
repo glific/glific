@@ -109,7 +109,7 @@ defmodule Glific.Flows do
 
     assetList =
       Enum.reduce(flow.revisions, [], fn revision, acc ->
-          acc = [ %{ user: user, created_on: revision.inserted_at, id: revision.revision_number, version: "13.0.0", revision: revision.revision_number} | acc]
+          [ %{ user: user, created_on: revision.inserted_at, id: revision.revision_number, version: "13.0.0", revision: revision.revision_number} | acc]
       end)
 
     %{ results:  assetList}

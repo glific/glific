@@ -38,50 +38,6 @@ defmodule GlificWeb.Router do
   end
 
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
-    pipe_through :api
-
-    get "/flow-editor/globals", FlowEditorController, :globals
-
-    get "/flow-editor/groups", FlowEditorController, :groups
-    post "/flow-editor/groups", FlowEditorController, :groups_post
-
-    get "/flow-editor/fields", FlowEditorController, :fields
-    post "/flow-editor/fields", FlowEditorController, :fields_post
-
-    get "/flow-editor/labels", FlowEditorController, :labels
-    post "/flow-editor/labels", FlowEditorController, :labels_post
-
-    get "/flow-editor/channels", FlowEditorController, :channels
-
-    get "/flow-editor/classifiers", FlowEditorController, :classifiers
-
-    get "/flow-editor/ticketers", FlowEditorController, :ticketers
-
-    get "/flow-editor/resthooks", FlowEditorController, :resthooks
-
-    get "/flow-editor/templates", FlowEditorController, :templates
-
-    get "/flow-editor/languages", FlowEditorController, :languages
-
-    get "/flow-editor/environment", FlowEditorController, :environment
-
-    get "/flow-editor/recipients", FlowEditorController, :recipients
-
-    get "/flow-editor/completion", FlowEditorController, :completion
-
-    get "/flow-editor/activity", FlowEditorController, :activity
-
-    get "/flow-editor/functions", FlowEditorController, :functions
-
-    get "/flow-editor/flows/*vars", FlowEditorController, :flows
-
-    get "/flow-editor/revisions/*vars", FlowEditorController, :revisions
-
-    post "/flow-editor/revisions/*vars", FlowEditorController, :save_revisions
-
-  end
-
-  scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
     pipe_through [:api, :api_protected]
 
     # Your protected API endpoints here
@@ -120,6 +76,49 @@ defmodule GlificWeb.Router do
   scope "/", GlificWeb do
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
     1
+  end
+
+  scope "/flow-editor", GlificWeb.Flows do
+
+    get "/globals", FlowEditorController, :globals
+
+    get "/groups", FlowEditorController, :groups
+    post "/groups", FlowEditorController, :groups_post
+
+    get "/fields", FlowEditorController, :fields
+    post "/fields", FlowEditorController, :fields_post
+
+    get "/labels", FlowEditorController, :labels
+    post "/labels", FlowEditorController, :labels_post
+
+    get "/channels", FlowEditorController, :channels
+
+    get "/classifiers", FlowEditorController, :classifiers
+
+    get "/ticketers", FlowEditorController, :ticketers
+
+    get "/resthooks", FlowEditorController, :resthooks
+
+    get "/templates", FlowEditorController, :templates
+
+    get "/languages", FlowEditorController, :languages
+
+    get "/environment", FlowEditorController, :environment
+
+    get "/recipients", FlowEditorController, :recipients
+
+    get "/completion", FlowEditorController, :completion
+
+    get "/activity", FlowEditorController, :activity
+
+    get "/functions", FlowEditorController, :functions
+
+    get "/flows/*vars", FlowEditorController, :flows
+
+    get "/revisions/*vars", FlowEditorController, :revisions
+
+    post "/revisions/*vars", FlowEditorController, :save_revisions
+
   end
 
   # defp debug_response(conn, _) do
