@@ -18,11 +18,12 @@ defmodule Glific.Flows.Action do
   }
 
   @required_fields [:type, :node_uuid]
-  @optional_fields [:text, :quick_replies, :flow_uuid]
+  @optional_fields [:text, :value, :name, :quick_replies, :flow_uuid]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           uuid: Ecto.UUID.t() | nil,
+          name: String.t() | nil,
           text: String.t() | nil,
           value: String.t() | nil,
           type: FlowType,
@@ -35,6 +36,7 @@ defmodule Glific.Flows.Action do
 
   schema "actions" do
     field :uuid, Ecto.UUID
+    field :name, :string
     field :text, :string
     field :value, :string
     field :language, :string
@@ -80,6 +82,7 @@ defmodule Glific.Flows.Action do
     action = %Action{
       uuid: json["uuid"],
       node_uuid: node.uuid,
+      name: json["name"],
       text: json["text"],
       value: json["value"],
       type: json["type"],
@@ -112,8 +115,10 @@ defmodule Glific.Flows.Action do
     {:ok, context, message_stream}
   end
 
-  def execute(%{type: type} = _action, context, message_stream)
-      when type == "set_run_result" do
+
+  def execute(%{type: type} = action, context, message_stream)
+  when type == "set_run_result" do
+    IO.puts("Setting Contact Fields: #{action.name}, #{action.value}")
     {:ok, context, message_stream}
   end
 
