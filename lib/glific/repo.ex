@@ -151,6 +151,48 @@ defmodule Glific.Repo do
   @spec opts_with_name(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   def opts_with_name(query, opts), do: opts_with_field(query, opts, :name)
 
+  # codebeat:disable[ABC, LOC]
+  @doc """
+  Add all the common filters here, rather than in each file
+  """
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  def filter_with(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:name, name}, query ->
+        from q in query, where: ilike(q.name, ^"%#{name}%")
+
+      {:label, label}, query ->
+        from q in query, where: ilike(q.label, ^"%#{label}%")
+
+      {:body, body}, query ->
+        from q in query, where: ilike(q.body, ^"%#{body}%")
+
+      {:shortcode, shortcode}, query ->
+        from q in query, where: ilike(q.shortcode, ^"%#{shortcode}%")
+
+      {:language, language}, query ->
+        from q in query,
+          join: l in assoc(q, :language),
+          where: ilike(l.label, ^"%#{language}%")
+
+      {:language_id, language_id}, query ->
+        from q in query, where: q.language_id == ^language_id
+
+      {:parent, label}, query ->
+        from q in query,
+          join: t in assoc(q, :parent),
+          where: ilike(t.label, ^"%#{label}%")
+
+      {:parent_id, parent_id}, query ->
+        from q in query, where: q.parent_id == ^parent_id
+
+      _, query ->
+        query
+    end)
+  end
+
+  # codebeat:enable[ABC, LOC]
+
   @doc """
   Need to figure out what this function does. Still learning Dataloader and its magic.
   Seems l
