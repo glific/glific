@@ -372,6 +372,49 @@ mutation createAndSendMessage($input: MessageInput!) {
 }
 ```
 
+```graphql
+mutation createAndSendMessage($input: MessageInput!) {
+  createAndSendMessage(input: $input) {
+    message {
+      id
+      body
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "body": "This message should reach at 9:00AM (India)",
+    "flow": "OUTBOUND",
+    "receiverId": 7,
+    "sendAt": "2020-07-10 03:30:00Z",
+    "senderId": 1,
+    "type": "TEXT",
+    "userId": 1
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createAndSendMessage": {
+      "errors": null,
+      "message": {
+        "body": "this message should reach at 8:00AM",
+        "id": "33"
+      }
+    }
+  }
+}
+```
+
 ### Query Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
@@ -883,6 +926,12 @@ Match the tags excluded
 <tr>
 <td colspan="2" valign="top"><strong>media_id</strong></td>
 <td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>send_at</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
 </tr>
 
