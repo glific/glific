@@ -14,6 +14,12 @@ defmodule Glific.MixProject do
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
         ignore_warnings: ".dialyzer_ignore.exs"
       ],
+      releases: [
+        prod: [
+          include_executable_for: [:unix],
+          steps: [:assemble, :tar]
+        ]
+      ],
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
