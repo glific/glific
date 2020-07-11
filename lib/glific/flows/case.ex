@@ -11,7 +11,7 @@ defmodule Glific.Flows.Case do
 
   alias Glific.Flows.{
     Category,
-    Context,
+    FlowContext,
     Router
   }
 
@@ -19,29 +19,27 @@ defmodule Glific.Flows.Case do
   @optional_fields []
 
   @type t() :: %__MODULE__{
-          __meta__: Ecto.Schema.Metadata.t(),
           uuid: Ecto.UUID.t() | nil,
           type: FlowCase | nil,
           arguments: [String.t()],
           category_uuid: Ecto.UUID.t() | nil,
-          category: Category.t() | Ecto.Association.NotLoaded.t() | nil,
+          category: Category.t() | nil,
           router_uuid: Ecto.UUID.t() | nil,
-          router: Router.t() | Ecto.Association.NotLoaded.t() | nil
+          router: Router.t() | nil
         }
 
-  schema "cases" do
+  embedded_schema do
     field :uuid, Ecto.UUID
     field :name, :string
 
     field :type, FlowCase
     field :arguments, {:array, :string}, default: []
 
-    belongs_to :router, Router, foreign_key: :router_uuid, references: :uuid, primary_key: false
+    field :router_uuid, Ecto.UUID
+    embeds_one :router, Router
 
-    belongs_to :category, Category,
-      foreign_key: :category_uuid,
-      references: :uuid,
-      primary_key: false
+    field :category_uuid, Ecto.UUID
+    embeds_one :category, Category
   end
 
   @doc """
@@ -78,7 +76,7 @@ defmodule Glific.Flows.Case do
   it just consumes one message at a time and executes it against a predefined function
   It also returns a boolean, rather than a tuple
   """
-  @spec execute(Case.t(), Context.t(), String.t()) :: boolean
+  @spec execute(Case.t(), FlowContext.t(), String.t()) :: boolean
   def execute(%{type: type} = c, _context, msg) when type == "has_any_word",
     do: Enum.member?(c.arguments, msg)
 

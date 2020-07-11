@@ -3,7 +3,7 @@ defmodule Glific.TaggersNumericTest do
 
   alias Glific.{
     Messages.Message,
-    Taggers.Numeric,
+    Taggers.Numeric
   }
 
   # and some random ordinals, hindi numbers, and emojis

@@ -10,7 +10,7 @@ defmodule Glific.Flows.Router do
   alias Glific.Flows.{
     Case,
     Category,
-    Context,
+    FlowContext,
     Node
   }
 
@@ -18,14 +18,15 @@ defmodule Glific.Flows.Router do
   @optional_fields [:result_name, :wait_type]
 
   @type t() :: %__MODULE__{
-          __meta__: Ecto.Schema.Metadata.t(),
           uuid: Ecto.UUID.t() | nil,
           type: String.t() | nil,
           wait_type: String.t() | nil,
           default_category_uuid: Ecto.UUID.t() | nil,
-          default_category: Category.t() | Ecto.Association.NotLoaded.t() | nil,
+          default_category: Category.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
-          node: Node.t() | Ecto.Association.NotLoaded.t() | nil
+          node: Node.t() | nil,
+          cases: [Case.t()] | nil,
+          categories: [Category.t()] | nil
         }
 
   schema "routers" do
@@ -35,15 +36,14 @@ defmodule Glific.Flows.Router do
     field :result_name, :string
     field :wait_type, :string
 
-    has_many :cases, Case, foreign_key: :router_uuid
-    has_many :categories, Category, foreign_key: :router_uuid
+    field :default_category_uuid, Ecto.UUID
+    embeds_one :default_category, Category
 
-    belongs_to :default_category, Category,
-      foreign_key: :default_category_uuid,
-      references: :uuid,
-      primary_key: false
+    field :node_uuid, Ecto.UUID
+    embeds_one :node, Node
 
-    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: false
+    embeds_many :cases, Case
+    embeds_many :categories, Category
   end
 
   @doc """
@@ -108,8 +108,8 @@ defmodule Glific.Flows.Router do
   Execute a router, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Router.t(), Context.t(), [String.t()]) ::
-          {:ok, Context.t(), [String.t()]} | {:error, String.t()}
+  @spec execute(Router.t(), FlowContext.t(), [String.t()]) ::
+          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(_router, context, message_stream) when message_stream == [],
     do: {:ok, context, []}
 

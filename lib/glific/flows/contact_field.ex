@@ -6,14 +6,14 @@ defmodule Glific.Flows.ContactField do
 
   alias Glific.{
     Contacts,
-    Flows.Context
+    Flows.FlowContext
   }
 
   @doc """
   Add a field {key, value} to a contact. For now, all preferences are stored under the
   settings map, with a sub-map of preferences. We expect to get more clarity on this soon
   """
-  @spec add_contact_field(Context.t(), String.t(), String.t(), String.t()) :: Context.t()
+  @spec add_contact_field(FlowContext.t(), String.t(), String.t(), String.t()) :: FlowContext.t()
   def add_contact_field(context, field, value, type) do
     contact_fields =
       if is_nil(context.contact.fields),
@@ -36,7 +36,7 @@ defmodule Glific.Flows.ContactField do
   @doc """
   Reset the fields for a contact.
   """
-  @spec reset_contact_fields(Context.t()) :: Context.t()
+  @spec reset_contact_fields(FlowContext.t()) :: FlowContext.t()
   def reset_contact_fields(context) do
     {:ok, contact} =
       Contacts.update_contact(

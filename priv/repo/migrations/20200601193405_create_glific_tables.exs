@@ -589,14 +589,29 @@ defmodule Glific.Repo.Migrations.GlificTables do
   end
 
   @doc """
-   Revisions for a flow
+  Revisions for a flow
   """
   def flow_revision do
     create table(:flow_revisions) do
       add :definition, :map
-      add :flow_id, references(:flows, on_delete: :restrict), null: false
+      add :flow_id, references(:flows, on_delete: :delete_all), null: false
       add :revision_number, :integer, default: 0
       timestamps(type: :utc_datetime)
     end
+  end
+
+  @doc """
+  The Context that a contact is in with respect to a flow
+  """
+  def flow_contexts do
+    create table(:flow_contexts) do
+      add :node_uuid, :uuid, null: false
+      add :contact_id, references(:contacts, on_delete: :delete_all), null: false
+      add :flow_id, references(:flows, on_delete: :delete_all), null: false
+
+      add :parent_id, references(:flow_contexts, on_delete: :nilify_all), null: true
+    end
+
+    create unique_index(:flow_contexts, :contact_id)
   end
 end

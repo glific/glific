@@ -1,4 +1,4 @@
-defmodule Glific.Flows.Context do
+defmodule Glific.Flows.FlowContext do
   @moduledoc """
   When we are running a flow, we are running it in the context of a
   contact and/or a conversation (or other Glific data types). Let encapsulate
@@ -26,23 +26,30 @@ defmodule Glific.Flows.Context do
           flow_uuid: Ecto.UUID.t() | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
-          node: Node.t() | Ecto.Association.NotLoaded.t() | nil
+          node: Node.t() | Ecto.Association.NotLoaded.t() | nil,
+          parent_id: non_neg_integer | nil,
+          parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
         }
 
-  schema "contexts" do
-    field :uuid_map, :map
+  schema "flow_contexts" do
+    field :uuid_map, :map, virtual: true
+    field :node_uuid, Ecto.UUID, virtual: true
+    embeds_one :node, Node
 
     belongs_to :contact, Contact
 
     belongs_to :flow, Flow, foreign_key: :flow_uuid, references: :uuid, primary_key: false
+    belongs_to :parent, FlowContext, foreign_key: :parent_id
 
-    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: false
+    timestamps(type: :utc_datetime)
   end
 
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(Context.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(FlowContext.t(), map()) :: Ecto.Changeset.t()
   def changeset(context, attrs) do
     context
     |> cast(attrs, @required_fields ++ @optional_fields)
@@ -59,7 +66,7 @@ defmodule Glific.Flows.Context do
   @doc """
   Set the new node for the context
   """
-  @spec set_node(Context.t(), Node.t() | nil) :: Context.t()
+  @spec set_node(FlowContext.t(), Node.t() | nil) :: FlowContext.t()
   def set_node(context, node) do
     context
     |> Map.put(:node, node)
@@ -69,16 +76,16 @@ defmodule Glific.Flows.Context do
   @doc """
   Execute one (or more) steps in a flow based on the message stream
   """
-  @spec execute(Context.t(), [String.t()]) ::
-          {:ok, Context.t(), [String.t()]} | {:error, String.t()}
+  @spec execute(FlowContext.t(), [String.t()]) ::
+          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(context, messages) when messages == [],
     do: {:ok, context, []}
 
-  def execute(%Context{node: node} = _context, _messages) when is_nil(node),
+  def execute(%FlowContext{node: node} = _context, _messages) when is_nil(node),
     do: {:error, "We have finished the flow"}
 
   def execute(context, messages) do
     {:ok, context, messages} = Node.execute(context.node, context, messages)
-    Context.execute(context, messages)
+    FlowContext.execute(context, messages)
   end
 end

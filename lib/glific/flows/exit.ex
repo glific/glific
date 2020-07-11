@@ -8,7 +8,7 @@ defmodule Glific.Flows.Exit do
   import Ecto.Changeset
 
   alias Glific.Flows.{
-    Context,
+    FlowContext,
     Node
   }
 
@@ -16,23 +16,21 @@ defmodule Glific.Flows.Exit do
   @optional_fields []
 
   @type t() :: %__MODULE__{
-          __meta__: Ecto.Schema.Metadata.t(),
           uuid: Ecto.UUID.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
-          node: Node.t() | Ecto.Association.NotLoaded.t() | nil,
+          node: Node.t() | nil,
           destination_node_uuid: Ecto.UUID.t() | nil,
-          destination_node: Node.t() | Ecto.Association.NotLoaded.t() | nil
+          destination_node: Node.t() | nil
         }
 
-  schema "exits" do
+  embedded_schema do
     field :uuid, Ecto.UUID
 
-    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: false
+    field :node_uuid, Ecto.UUID
+    embeds_one :node, Node
 
-    belongs_to :destination_node, Node,
-      foreign_key: :destination_node_uuid,
-      references: :uuid,
-      primary_key: false
+    field :destination_node_uuid, Ecto.UUID
+    embeds_one :destination_node, Node
   end
 
   @doc """
@@ -64,18 +62,18 @@ defmodule Glific.Flows.Exit do
   @doc """
   Execute a exit, given a message stream.
   """
-  @spec execute(Exit.t(), Context.t(), [String.t()]) ::
-          {:ok, Context.t(), [String.t()]} | {:error, String.t()}
+  @spec execute(Exit.t(), FlowContext.t(), [String.t()]) ::
+          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(exit, context, message_stream) do
     if is_nil(exit.destination_node_uuid) do
       IO.puts("And we have reached the end of the help menu")
-      {:ok, Context.set_node(context, nil), []}
+      {:ok, FlowContext.set_node(context, nil), []}
     else
       {:ok, {:node, node}} = Map.fetch(context.uuid_map, exit.destination_node_uuid)
 
       Node.execute(
         node,
-        Context.set_node(context, node),
+        FlowContext.set_node(context, node),
         message_stream
       )
     end

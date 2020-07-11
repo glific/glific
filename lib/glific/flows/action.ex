@@ -12,8 +12,8 @@ defmodule Glific.Flows.Action do
 
   alias Glific.Flows.{
     ContactSetting,
-    Context,
     Flow,
+    FlowContext,
     Node
   }
 
@@ -21,7 +21,6 @@ defmodule Glific.Flows.Action do
   @optional_fields [:text, :value, :name, :quick_replies, :flow_uuid]
 
   @type t() :: %__MODULE__{
-          __meta__: Ecto.Schema.Metadata.t(),
           uuid: Ecto.UUID.t() | nil,
           name: String.t() | nil,
           text: String.t() | nil,
@@ -29,12 +28,12 @@ defmodule Glific.Flows.Action do
           type: FlowType,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
-          enter_flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          enter_flow: Flow.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
-          node: Node.t() | Ecto.Association.NotLoaded.t() | nil
+          node: Node.t() | nil
         }
 
-  schema "actions" do
+  embedded_schema do
     field :uuid, Ecto.UUID
     field :name, :string
     field :text, :string
@@ -43,12 +42,11 @@ defmodule Glific.Flows.Action do
     field :type, FlowType
     field :quick_replies, {:array, :string}, default: []
 
-    belongs_to :node, Node, foreign_key: :node_uuid, references: :uuid, primary_key: false
+    field :node_uuid, Ecto.UUID
+    embeds_one :node, Node
 
-    belongs_to :enter_flow, Flow,
-      foreign_key: :enter_flow_uuid,
-      references: :uuid,
-      primary_key: false
+    field :enter_flow_uuid, Ecto.UUID
+    embeds_one :enter_flow, Flow
   end
 
   @doc """
@@ -101,8 +99,8 @@ defmodule Glific.Flows.Action do
   Execute a action, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Action.t(), Context.t(), [String.t()]) ::
-          {:ok, Context.t(), [String.t()]} | {:error, String.t()}
+  @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
+          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(%{type: type} = action, context, message_stream) when type == "send_msg" do
     IO.puts("Sending message: #{action.text}, #{action.uuid}")
     {:ok, context, message_stream}

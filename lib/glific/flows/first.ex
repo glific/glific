@@ -6,8 +6,8 @@ defmodule Glific.Flows.First do
 
   alias Glific.{
     Contacts,
-    Flows.Context,
     Flows.Flow,
+    Flows.FlowContext,
     Flows.FlowRevision,
     Repo
   }
@@ -53,7 +53,7 @@ defmodule Glific.Flows.First do
       args,
       {:ok, context},
       fn arg, {:ok, context} ->
-        case Context.execute(context, arg) do
+        case FlowContext.execute(context, arg) do
           {:ok, context, []} -> {:cont, {:ok, context}}
           {:error, msg} -> {:halt, {:error, msg}}
           {:ok, _context, messages} -> {:halt, {:error, messages}}

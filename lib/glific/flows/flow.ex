@@ -10,7 +10,7 @@ defmodule Glific.Flows.Flow do
 
   alias Glific.{
     Contacts.Contact,
-    Flows.Context,
+    Flows.FlowContext,
     Flows.FlowRevision,
     Flows.Node,
     Repo,
@@ -106,7 +106,7 @@ defmodule Glific.Flows.Flow do
   @doc """
   Build the context so we can execute the flow
   """
-  @spec context(Flow.t(), map(), Contact.t()) :: Context.t() | {:error, String.t()}
+  @spec context(Flow.t(), map(), Contact.t()) :: FlowContext.t() | {:error, String.t()}
   def context(%Flow{nodes: nodes}, _uuid_map, _contact) when nodes == [],
     do: {:error, "An empty flow cannot have a context or be executed"}
 
@@ -114,7 +114,7 @@ defmodule Glific.Flows.Flow do
     # get the first node
     node = hd(flow.nodes)
 
-    %Context{
+    %FlowContext{
       contact: contact,
       contact_id: contact.id,
       flow: flow,

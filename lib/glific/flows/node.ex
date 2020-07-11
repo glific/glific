@@ -9,9 +9,9 @@ defmodule Glific.Flows.Node do
 
   alias Glific.Flows.{
     Action,
-    Context,
     Exit,
     Flow,
+    FlowContext,
     Router
   }
 
@@ -19,20 +19,23 @@ defmodule Glific.Flows.Node do
   @optional_fields []
 
   @type t() :: %__MODULE__{
-          __meta__: Ecto.Schema.Metadata.t(),
           uuid: Ecto.UUID.t() | nil,
           flow_uuid: Ecto.UUID.t() | nil,
-          flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil
+          flow: Flow.t() | nil,
+          actions: [Action.t()] | [],
+          exits: [Exit.t()] | [],
+          router: Router.t() | nil
         }
 
-  schema "nodes" do
+  embedded_schema do
     field :uuid, Ecto.UUID
 
-    belongs_to :flow, Flow, foreign_key: :flow_uuid, references: :uuid, primary_key: false
+    field :flow_uuid, Ecto.UUID
+    embeds_one :flow, Flow
 
-    has_many :actions, Action, foreign_key: :node_uuid
-    has_many :exits, Exit, foreign_key: :node_uuid
-    has_one :router, Router, foreign_key: :node_uuid
+    embeds_many :actions, Action
+    embeds_many :exits, Exit
+    embeds_one :router, Router
   end
 
   @doc """
@@ -96,8 +99,8 @@ defmodule Glific.Flows.Node do
   Execute a node, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Node.t(), Context.t(), [String.t()]) ::
-          {:ok, Context.t(), [String.t()]} | {:error, String.t()}
+  @spec execute(Node.t(), FlowContext.t(), [String.t()]) ::
+          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(node, context, message_stream) do
     # if node has an action, execute the first action
     cond do

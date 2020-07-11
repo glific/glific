@@ -9,8 +9,8 @@ defmodule Glific.Flows.Category do
 
   alias Glific.Flows.{
     Case,
-    Context,
     Exit,
+    FlowContext,
     Router
   }
 
@@ -18,23 +18,26 @@ defmodule Glific.Flows.Category do
   @optional_fields []
 
   @type t() :: %__MODULE__{
-          __meta__: Ecto.Schema.Metadata.t(),
           uuid: Ecto.UUID.t() | nil,
           name: String.t() | nil,
+          cases: [Case.t()] | [],
           exit_uuid: Ecto.UUID.t() | nil,
-          exit: Exit.t() | Ecto.Association.NotLoaded.t() | nil,
+          exit: Exit.t() | nil,
           router_uuid: Ecto.UUID.t() | nil,
-          router: Router.t() | Ecto.Association.NotLoaded.t() | nil
+          router: Router.t() | nil
         }
 
-  schema "categories" do
+  embedded_schema do
     field :uuid, Ecto.UUID
     field :name, :string
 
-    has_many :cases, Case, foreign_key: :category_uuid
+    embeds_many :cases, Case
 
-    belongs_to :router, Router, foreign_key: :router_uuid, references: :uuid, primary_key: false
-    belongs_to :exit, Exit, foreign_key: :exit_uuid, references: :uuid, primary_key: false
+    field :router_uuid, Ecto.UUID
+    embeds_one :router, Router
+
+    field :exit_uuid, Ecto.UUID
+    embeds_one :exit, Exit
   end
 
   @doc """
@@ -67,8 +70,8 @@ defmodule Glific.Flows.Category do
   @doc """
   Execute a category, given a message stream.
   """
-  @spec execute(Category.t(), Context.t(), [String.t()]) ::
-          {:ok, Context.t(), [String.t()]} | {:error, String.t()}
+  @spec execute(Category.t(), FlowContext.t(), [String.t()]) ::
+          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(category, context, message_stream) do
     # transfer control to the exit node
     {:ok, {:exit, exit}} = Map.fetch(context.uuid_map, category.exit_uuid)
