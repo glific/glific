@@ -10,8 +10,8 @@ use Mix.Config
 # which you should run after static files are built and
 # before starting your production server.
 config :glific, GlificWeb.Endpoint,
-  url: [host: System.get_env("BASE_URL"), port: 4000],
-  http: [port: 4000]
+  # url: [host: System.get_env("BASE_URL"), port: 4000],
+  # http: [port: 4000]
   # url: [host: "glific.io", port: 443],
   # https: [
   #   port: 443,
