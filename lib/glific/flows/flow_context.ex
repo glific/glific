@@ -12,36 +12,42 @@ defmodule Glific.Flows.FlowContext do
   alias Glific.{
     Contacts.Contact,
     Flows.Flow,
-    Flows.Node
+    Flows.Node,
+    Repo
   }
 
-  @required_fields [:contact_id, :flow_uuid, :uuid_map]
-  @optional_fields [:node_uuid]
+  @required_fields [:contact_id, :flow_id, :uuid_map, :flow_map, :node_map]
+  @optional_fields [:node_uuid, :parent_id]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           uuid_map: map() | nil,
+          flow_map: map() | nil,
+          node_map: map() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
-          flow_uuid: Ecto.UUID.t() | nil,
+          flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
-          node_uuid: Ecto.UUID.t() | nil,
-          node: Node.t() | Ecto.Association.NotLoaded.t() | nil,
           parent_id: non_neg_integer | nil,
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
+          node_uuid: Ecto.UUID.t() | nil,
+          node: Node.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
   schema "flow_contexts" do
     field :uuid_map, :map, virtual: true
-    field :node_uuid, Ecto.UUID, virtual: true
-    embeds_one :node, Node
+    field :flow_map, :map, virtual: true
+    field :node_map, :map, virtual: true
+
+    field :node_uuid, Ecto.UUID
 
     belongs_to :contact, Contact
-
-    belongs_to :flow, Flow, foreign_key: :flow_uuid, references: :uuid, primary_key: false
+    belongs_to :flow, Flow
     belongs_to :parent, FlowContext, foreign_key: :parent_id
+
+    embeds_one :node, Node
 
     timestamps(type: :utc_datetime)
   end
@@ -55,8 +61,8 @@ defmodule Glific.Flows.FlowContext do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:contact_id)
-    |> foreign_key_constraint(:flow_uuid)
-    |> foreign_key_constraint(:node_uuid)
+    |> foreign_key_constraint(:flow_id)
+    |> foreign_key_constraint(:parent_id)
   end
 
   @spec get_node_uuid(Node.t() | nil) :: Ecto.UUID.t() | nil
@@ -70,6 +76,7 @@ defmodule Glific.Flows.FlowContext do
   def set_node(context, node) do
     context
     |> Map.put(:node, node)
+    |> Map.put(:node_map, node)
     |> Map.put(:node_uuid, get_node_uuid(node))
   end
 
@@ -85,7 +92,24 @@ defmodule Glific.Flows.FlowContext do
     do: {:error, "We have finished the flow"}
 
   def execute(context, messages) do
+    # stash the old_context to update db
+    old_context = context
     {:ok, context, messages} = Node.execute(context.node, context, messages)
-    FlowContext.execute(context, messages)
+
+    # we've modified the context, lets update it
+    result =
+      old_context
+      |> FlowContext.changeset(%{node_uuid: context.node_uuid})
+      |> Repo.update()
+
+    case result do
+      # we are ignoring the context here, since we want the new context
+      # but are sending the old context to the DB for an update
+      {:ok, _} ->
+        FlowContext.execute(context, messages)
+
+      error ->
+        error
+    end
   end
 end

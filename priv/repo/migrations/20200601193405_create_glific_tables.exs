@@ -49,7 +49,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
     flows()
 
-    flow_revision()
+    flow_revisions()
+
+    flow_contexts()
   end
 
   @doc """
@@ -591,11 +593,12 @@ defmodule Glific.Repo.Migrations.GlificTables do
   @doc """
   Revisions for a flow
   """
-  def flow_revision do
+  def flow_revisions do
     create table(:flow_revisions) do
       add :definition, :map
       add :flow_id, references(:flows, on_delete: :delete_all), null: false
       add :revision_number, :integer, default: 0
+
       timestamps(type: :utc_datetime)
     end
   end
@@ -605,11 +608,13 @@ defmodule Glific.Repo.Migrations.GlificTables do
   """
   def flow_contexts do
     create table(:flow_contexts) do
-      add :node_uuid, :uuid, null: false
+      add :node_uuid, :uuid, null: true
       add :contact_id, references(:contacts, on_delete: :delete_all), null: false
       add :flow_id, references(:flows, on_delete: :delete_all), null: false
 
       add :parent_id, references(:flow_contexts, on_delete: :nilify_all), null: true
+
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:flow_contexts, :contact_id)

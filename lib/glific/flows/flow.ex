@@ -27,7 +27,7 @@ defmodule Glific.Flows.Flow do
           shortcode: String.t() | nil,
           uuid: Ecto.UUID.t() | nil,
           flow_type: String.t() | nil,
-          nodes: [Node.t()] | Ecto.Association.NotLoaded.t() | nil,
+          nodes: [Node.t()] | nil,
           version_number: String.t() | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -43,11 +43,14 @@ defmodule Glific.Flows.Flow do
     field :version_number, :string
     field :flow_type, :string
     field :uuid, Ecto.UUID
+
+    field :uuid_map, :map, virtual: true
+
     belongs_to :language, Language
 
-    has_many :nodes, Node, foreign_key: :flow_uuid
-
     has_many :revisions, FlowRevision
+
+    embeds_many :nodes, Node
 
     timestamps(type: :utc_datetime)
   end
@@ -79,9 +82,10 @@ defmodule Glific.Flows.Flow do
   @doc """
   Process a json structure from floweditor to the Glific data types
   """
-  @spec process(map(), map()) :: {Flow.t(), map()}
-  def process(json, uuid_map) do
+  @spec process(map(), integer) :: Flow.t()
+  def process(json, flow_id) do
     flow = %Flow{
+      id: flow_id,
       uuid: json["uuid"],
       language: json["language"],
       name: json["name"]
@@ -90,7 +94,7 @@ defmodule Glific.Flows.Flow do
     {nodes, uuid_map} =
       Enum.reduce(
         json["nodes"],
-        {[], uuid_map},
+        {[], %{}},
         fn node_json, acc ->
           {node, uuid_map} = Node.process(node_json, elem(acc, 1), flow)
           {[node | elem(acc, 0)], uuid_map}
@@ -99,29 +103,39 @@ defmodule Glific.Flows.Flow do
 
     flow = Map.put(flow, :nodes, Enum.reverse(nodes))
     uuid_map = Map.put(uuid_map, flow.uuid, {:flow, flow})
-
-    {flow, uuid_map}
+    Map.put(flow, :uuid_map, uuid_map)
   end
 
   @doc """
   Build the context so we can execute the flow
   """
-  @spec context(Flow.t(), map(), Contact.t()) :: FlowContext.t() | {:error, String.t()}
-  def context(%Flow{nodes: nodes}, _uuid_map, _contact) when nodes == [],
+  @spec context(Flow.t(), Contact.t()) :: {:ok, FlowContext.t()} | {:error, String.t()}
+  def context(%Flow{nodes: nodes}, _contact) when nodes == [],
     do: {:error, "An empty flow cannot have a context or be executed"}
 
-  def context(flow, uuid_map, contact) do
+  def context(flow, contact) do
     # get the first node
     node = hd(flow.nodes)
 
-    %FlowContext{
+    attrs = %{
       contact: contact,
       contact_id: contact.id,
-      flow: flow,
-      flow_uuid: flow.uuid,
-      uuid_map: uuid_map,
-      node: node,
-      node_uuid: node.uuid
+      flow_id: flow.id,
+      flow_map: flow,
+      node_map: node,
+      uuid_map: flow.uuid_map,
+      node_uuid: node.uuid,
+      node: node
     }
+
+    result =
+      %FlowContext{}
+      |> FlowContext.changeset(attrs)
+      |> Repo.insert()
+
+    case result do
+      {:ok, context} -> Repo.preload(context, :contact)
+      error -> error
+    end
   end
 end
