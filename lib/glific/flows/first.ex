@@ -7,7 +7,7 @@ defmodule Glific.Flows.First do
   alias Glific.{
     Contacts,
     Flows.Flow,
-    Flows.FlowContext,
+    Flows.FlowContext
   }
 
   import Ecto.Query, warn: false

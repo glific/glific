@@ -83,7 +83,7 @@ defmodule Glific.Flows.Flow do
   @doc """
   Process a json structure from floweditor to the Glific data types
   """
-  @spec process(map(), Flow.t) :: Flow.t
+  @spec process(map(), Flow.t()) :: Flow.t()
   def process(json, flow) do
     {nodes, uuid_map} =
       Enum.reduce(
@@ -127,7 +127,9 @@ defmodule Glific.Flows.Flow do
       |> Repo.insert()
 
     case result do
-      {:ok, context} -> Repo.preload(context, :contact)
+      {:ok, context} ->
+        Repo.preload(context, :contact)
+
       error ->
         IO.inspect(error)
         error
@@ -140,8 +142,8 @@ defmodule Glific.Flows.Flow do
   defp get_latest_definition(flow_id) do
     query =
       from fr in FlowRevision,
-      where: fr.revision_number == 0 and fr.flow_id == ^flow_id,
-      select: fr.definition
+        where: fr.revision_number == 0 and fr.flow_id == ^flow_id,
+        select: fr.definition
 
     Repo.one(query)
   end
@@ -151,7 +153,11 @@ defmodule Glific.Flows.Flow do
   defp clean_definition(json),
     do: elem(Map.pop(json, "definition", json), 0) |> Map.delete("_ui")
 
-  @spec load_flow(String.t) :: Flow.t()
+  @doc """
+  Load the latest revision for a specific flow and setup for
+  flow execution
+  """
+  @spec load_flow(String.t()) :: Flow.t()
   def load_flow(shortcode) do
     {:ok, flow} = Repo.fetch_by(Flow, %{shortcode: shortcode})
 
