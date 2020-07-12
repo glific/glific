@@ -16,13 +16,12 @@ defmodule Glific.Flows.FlowContext do
     Repo
   }
 
-  @required_fields [:contact_id, :flow_id, :uuid_map, :flow_map, :node_map]
+  @required_fields [:contact_id, :flow_id, :uuid_map, :node_map]
   @optional_fields [:node_uuid, :parent_id]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           uuid_map: map() | nil,
-          flow_map: map() | nil,
           node_map: map() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -38,7 +37,6 @@ defmodule Glific.Flows.FlowContext do
 
   schema "flow_contexts" do
     field :uuid_map, :map, virtual: true
-    field :flow_map, :map, virtual: true
     field :node_map, :map, virtual: true
 
     field :node_uuid, Ecto.UUID

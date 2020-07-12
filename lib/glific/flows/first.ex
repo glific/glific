@@ -8,35 +8,9 @@ defmodule Glific.Flows.First do
     Contacts,
     Flows.Flow,
     Flows.FlowContext,
-    Flows.FlowRevision,
-    Repo
   }
 
   import Ecto.Query, warn: false
-
-  @doc """
-  iex module for us to interact with our actions and events
-  """
-  @spec init(String.t()) :: Flow.t()
-  def init(shortcode) do
-    query =
-      from fr in FlowRevision,
-        join: f in assoc(fr, :flow),
-        where: fr.revision_number == 0 and fr.flow_id == f.id and f.shortcode == ^shortcode,
-        select: [fr.flow_id, fr.definition]
-
-    [flow_id, description] = Repo.one(query)
-
-    description
-    |> remove_definition()
-    # lets get rid of stuff we msdon't use
-    |> Map.delete("_ui")
-    |> Flow.process(flow_id)
-  end
-
-  # in some cases floweditor wraps the json under a "definition" key
-  defp remove_definition(json),
-    do: elem(Map.pop(json, "definition", json), 0)
 
   @doc """
   A simple runner function to step the flow through multiple arguments. Should stop
@@ -45,9 +19,9 @@ defmodule Glific.Flows.First do
   @spec run :: map()
   def run do
     %{
-      1 => Flow.context(init("help"), Contacts.get_contact!(1)),
-      2 => Flow.context(init("language"), Contacts.get_contact!(2)),
-      3 => Flow.context(init("preferences"), Contacts.get_contact!(3))
+      1 => Flow.context(Flow.load_flow("help"), Contacts.get_contact!(1)),
+      2 => Flow.context(Flow.load_flow("language"), Contacts.get_contact!(2)),
+      3 => Flow.context(Flow.load_flow("preferences"), Contacts.get_contact!(3))
     }
   end
 

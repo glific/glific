@@ -7,6 +7,7 @@ defmodule Glific.Flows.Flow do
 
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Contacts.Contact,
@@ -18,7 +19,7 @@ defmodule Glific.Flows.Flow do
   }
 
   @required_fields [:name, :language_id, :uuid]
-  @optional_fields [:flow_type, :version_number, :shortcode]
+  @optional_fields [:flow_type, :version_number, :shortcode, :uuid_map, :nodes]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -26,6 +27,7 @@ defmodule Glific.Flows.Flow do
           name: String.t() | nil,
           shortcode: String.t() | nil,
           uuid: Ecto.UUID.t() | nil,
+          uuid_map: map() | nil,
           flow_type: String.t() | nil,
           nodes: [Node.t()] | nil,
           version_number: String.t() | nil,
@@ -45,12 +47,11 @@ defmodule Glific.Flows.Flow do
     field :uuid, Ecto.UUID
 
     field :uuid_map, :map, virtual: true
+    field :nodes, :map, virtual: true
 
     belongs_to :language, Language
 
     has_many :revisions, FlowRevision
-
-    embeds_many :nodes, Node
 
     timestamps(type: :utc_datetime)
   end
@@ -82,15 +83,8 @@ defmodule Glific.Flows.Flow do
   @doc """
   Process a json structure from floweditor to the Glific data types
   """
-  @spec process(map(), integer) :: Flow.t()
-  def process(json, flow_id) do
-    flow = %Flow{
-      id: flow_id,
-      uuid: json["uuid"],
-      language: json["language"],
-      name: json["name"]
-    }
-
+  @spec process(map(), Flow.t) :: Flow.t
+  def process(json, flow) do
     {nodes, uuid_map} =
       Enum.reduce(
         json["nodes"],
@@ -101,9 +95,9 @@ defmodule Glific.Flows.Flow do
         end
       )
 
-    flow = Map.put(flow, :nodes, Enum.reverse(nodes))
-    uuid_map = Map.put(uuid_map, flow.uuid, {:flow, flow})
-    Map.put(flow, :uuid_map, uuid_map)
+    flow
+    |> Map.put(:uuid_map, uuid_map)
+    |> Map.put(:nodes, Enum.reverse(nodes))
   end
 
   @doc """
@@ -121,7 +115,6 @@ defmodule Glific.Flows.Flow do
       contact: contact,
       contact_id: contact.id,
       flow_id: flow.id,
-      flow_map: flow,
       node_map: node,
       uuid_map: flow.uuid_map,
       node_uuid: node.uuid,
@@ -135,7 +128,38 @@ defmodule Glific.Flows.Flow do
 
     case result do
       {:ok, context} -> Repo.preload(context, :contact)
-      error -> error
+      error ->
+        IO.inspect(error)
+        error
     end
+  end
+
+  # load the latest revision, specifically json definition from the
+  # flow_revision table
+  @spec get_latest_definition(integer) :: map()
+  defp get_latest_definition(flow_id) do
+    query =
+      from fr in FlowRevision,
+      where: fr.revision_number == 0 and fr.flow_id == ^flow_id,
+      select: fr.definition
+
+    Repo.one(query)
+  end
+
+  # in some cases floweditor wraps the json under a "definition" key
+  @spec clean_definition(map()) :: map()
+  defp clean_definition(json),
+    do: elem(Map.pop(json, "definition", json), 0) |> Map.delete("_ui")
+
+  @spec load_flow(String.t) :: Flow.t()
+  def load_flow(shortcode) do
+    {:ok, flow} = Repo.fetch_by(Flow, %{shortcode: shortcode})
+
+    flow.id
+    |> get_latest_definition()
+    # lets get rid of stuff we don't use, specfically the definition and
+    # UI layout of the flow
+    |> clean_definition()
+    |> process(flow)
   end
 end
