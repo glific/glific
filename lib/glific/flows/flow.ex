@@ -115,25 +115,19 @@ defmodule Glific.Flows.Flow do
       contact: contact,
       contact_id: contact.id,
       flow_id: flow.id,
-      node_map: node,
       uuid_map: flow.uuid_map,
       node_uuid: node.uuid,
-      node: node
     }
 
-    result =
+
+    {:ok, context} =
       %FlowContext{}
       |> FlowContext.changeset(attrs)
       |> Repo.insert()
 
-    case result do
-      {:ok, context} ->
-        Repo.preload(context, :contact)
-
-      error ->
-        IO.inspect(error)
-        error
-    end
+    context
+    |> Repo.preload(:contact)
+    |> Map.put(:node, node)
   end
 
   # load the latest revision, specifically json definition from the

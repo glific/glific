@@ -32,9 +32,7 @@ defmodule Glific.Flows.First do
           {:ok, map()} | {:error, String.t()} | {:halt, [String.t()]}
   def one_message(state, contact_id, msg) do
     # if contact does not exist in state, we should return error
-    context =
-      state[contact_id]
-      |> Map.put(:node, state[contact_id].node_map)
+    context = state[contact_id]
 
     case FlowContext.execute(context, [msg]) do
       {:ok, context, []} -> {:ok, Map.put(state, contact_id, context)}
