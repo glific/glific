@@ -36,8 +36,7 @@ defmodule GlificWeb.APIAuthPlug do
       store_config(config)
       |> Keyword.put(:ttl, :timer.minutes(90))
 
-    token_expiry_time =
-      DateTime.utc_now() |> DateTime.add(store_config[:ttl], :millisecond)
+    token_expiry_time = DateTime.utc_now() |> DateTime.add(store_config[:ttl], :millisecond)
 
     access_token = Pow.UUID.generate()
     renewal_token = Pow.UUID.generate()
