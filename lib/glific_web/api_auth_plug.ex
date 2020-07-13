@@ -34,7 +34,7 @@ defmodule GlificWeb.APIAuthPlug do
     # Setting token expiry time to 90 minutes
     store_config =
       store_config(config)
-      |> Keyword.put(:ttl, :timer.seconds(10))
+      |> Keyword.put(:ttl, :timer.minutes(90))
 
     token_expiry_time =
       DateTime.utc_now() |> DateTime.add(store_config[:ttl], :millisecond)

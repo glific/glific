@@ -15,8 +15,7 @@ defmodule GlificWeb.API.V1.SessionController do
     |> Pow.Plug.authenticate_user(user_params)
     |> case do
       {:ok, conn} ->
-        put_resp_cookie(conn, "my-cookie", %{user_id: "user"}, sign: true)
-        |> json(%{
+        json(conn, %{
           data: %{
             access_token: conn.private[:api_access_token],
             token_expiry_time: conn.private[:api_token_expiry_time],
