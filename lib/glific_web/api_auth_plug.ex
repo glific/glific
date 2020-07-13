@@ -128,7 +128,7 @@ defmodule GlificWeb.APIAuthPlug do
     do: Plug.verify_token(conn, signing_salt(), token, config)
 
   defp store_config(config) do
-    backend = Config.get(config, :cache_store_backend, Pow.Store.Backend.EtsCache)
+    backend = Config.get(config, :cache_store_backend, Pow.Store.Backend.MnesiaCache)
 
     [backend: backend]
   end
