@@ -27,10 +27,10 @@ defmodule Glific.Application do
       # Add Glific Processing pipeline (seems a bit deep and convoluted, will need to revisit)
       Glific.Processor.Producer,
       Glific.Processor.ConsumerTagger,
-      Glific.Processor.ConsumerFlow
+      Glific.Processor.ConsumerFlow,
       # Glific.Processor.ConsumerAutomation,
-      # Glific.Processor.ConsumerLanguage,
-      # Glific.Processor.ConsumerHelp,
+      Glific.Processor.ConsumerLanguage,
+      # Glific.Processor.ConsumerHelp
       # Glific.Processor.ConsumerNewContact,
       # Glific.Processor.ConsumerNumeric,
       # Glific.Processor.ConsumerOptout,

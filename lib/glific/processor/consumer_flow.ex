@@ -51,7 +51,11 @@ defmodule Glific.Processor.ConsumerFlow do
       Flow.load_flow("preference")
     }
 
-    flows = %{
+    flows =
+    if is_nil(help),
+      do: %{},
+      else:
+    %{
       help.id => help,
       language.id => language,
       preference.id => preference
@@ -74,15 +78,13 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec process_message(atom() | Message.t(), map()) :: Message.t()
 
   defp process_message(message, state) do
-    contact_id = message.contact_id
-
-    case FlowContext.active_context(contact_id) do
+    case FlowContext.active_context(message.contact_id) do
       nil ->
         message
 
       context ->
         context
-        |> FlowContext.load_context(state.flows[context.flow_id], message.contact)
+        |> FlowContext.load_context(state.flows[context.flow_id])
         |> FlowContext.step_forward(message.body)
 
         # we can potentially save the {contact_id, context} map here, to avoid
