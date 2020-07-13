@@ -20,7 +20,7 @@ defmodule Glific.Flows.FlowContext do
   @required_fields [:contact_id, :flow_id, :uuid_map]
   @optional_fields [:node_uuid, :parent_id]
 
-  @type t() :: %__MODULE__{
+  @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           uuid_map: map() | nil,
           contact_id: non_neg_integer | nil,
@@ -59,6 +59,16 @@ defmodule Glific.Flows.FlowContext do
     |> foreign_key_constraint(:contact_id)
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:parent_id)
+  end
+
+  @doc """
+  Create a FlowContext
+  """
+  @spec create_flow_context(map()) :: {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
+  def create_flow_context(attrs \\ %{}) do
+    %FlowContext{}
+    |> FlowContext.changeset(attrs)
+    |> Repo.insert()
   end
 
   @spec get_node_uuid(Node.t() | nil) :: Ecto.UUID.t() | nil
@@ -103,6 +113,30 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Start a new context, if there is an existing context, blow it away
+  """
+  @spec init_context(Flow.t(), non_neg_integer) :: FlowContext.t()
+  def init_context(flow, contact_id) do
+    query =
+      from fc in FlowContext,
+        where: fc.contact_id == ^contact_id
+
+    # dont care about the return, since it would have deleted
+    # either 0 or 1 entries
+    Repo.delete_all(query)
+
+    {:ok, context} = create_flow_context(%{
+      contact_id: contact_id,
+      flow_id: flow.id,
+      uuid_map: flow.uuid_map
+                                         })
+
+    context
+    |> Repo.preload(:contact)
+    |> load_context(flow)
+  end
+
+  @doc """
   Check if there is an active context (i.e. with a non null, node_uuid for this contact)
   """
   @spec active_context(non_neg_integer) :: FlowContext.t() | nil
@@ -112,18 +146,18 @@ defmodule Glific.Flows.FlowContext do
         where: fc.contact_id == ^contact_id and not is_nil(fc.node_uuid)
 
     Repo.one(query)
+    |> Repo.preload(:contact)
   end
 
   @doc """
   Load the context object, given a flow object and a contact. At some point,
   we'll get the genserver to cache this
   """
-  @spec load_context(FlowContext.t(), Flow.t(), Contact.t()) :: FlowContext.t()
-  def load_context(context, flow, contact) do
+  @spec load_context(FlowContext.t(), Flow.t()) :: FlowContext.t()
+  def load_context(context, flow) do
     {:ok, {:node, node}} = Map.fetch(flow.uuid_map, context.node_uuid)
 
     context
-    |> Map.put(:contact, contact)
     |> Map.put(:uuid_map, flow.uuid_map)
     |> Map.put(:node, node)
   end

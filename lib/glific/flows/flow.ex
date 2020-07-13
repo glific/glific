@@ -161,4 +161,14 @@ defmodule Glific.Flows.Flow do
     |> get_latest_definition()
     |> process(flow)
   end
+
+  @doc """
+  Start a flow, given a shortcode and a contact_id
+  """
+  @spec start_flow(String.t(), non_neg_integer) :: FlowContext.t()
+  def start_flow(shortcode, contact_id) do
+    flow = load_flow(shortcode)
+
+    FlowContext.init_context(flow, contact_id)
+  end
 end
