@@ -47,3 +47,6 @@ npm-debug.log
 
 .vscode/
 .vscode
+
+# don't commit mnesia files
+/Mnesia.nonode@nohost

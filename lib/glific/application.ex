@@ -16,6 +16,9 @@ defmodule Glific.Application do
       # Start the Endpoint (http/https)
       GlificWeb.Endpoint,
 
+      {Pow.Store.Backend.MnesiaCache, extra_db_nodes: Node.list()},
+      Pow.Store.Backend.MnesiaCache.Unsplit,
+
       # Add Oban to process jobs
       {Oban, oban_config()},
 
