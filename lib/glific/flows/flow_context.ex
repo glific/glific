@@ -90,9 +90,6 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec execute(FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def execute(context, messages) when messages == [],
-    do: {:ok, context, []}
-
   def execute(%FlowContext{node: node} = _context, _messages) when is_nil(node),
     do: {:error, "We have finished the flow"}
 
@@ -115,25 +112,28 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Start a new context, if there is an existing context, blow it away
   """
-  @spec init_context(Flow.t(), non_neg_integer) :: FlowContext.t()
-  def init_context(flow, contact_id) do
+  @spec init_context(Flow.t(), Contact.t()) :: FlowContext.t()
+  def init_context(flow, contact) do
     query =
       from fc in FlowContext,
-        where: fc.contact_id == ^contact_id
+        where: fc.contact_id == ^contact.id
 
     # dont care about the return, since it would have deleted
     # either 0 or 1 entries
     Repo.delete_all(query)
 
-    {:ok, context} = create_flow_context(%{
-      contact_id: contact_id,
-      flow_id: flow.id,
-      uuid_map: flow.uuid_map
-                                         })
+    {:ok, context} =
+      create_flow_context(%{
+        contact_id: contact.id,
+        contact: contact,
+        flow_id: flow.id,
+        uuid_map: flow.uuid_map
+      })
 
     context
-    |> Repo.preload(:contact)
     |> load_context(flow)
+    # lets do the first steps and start executing it till we need a message
+    |> execute([])
   end
 
   @doc """

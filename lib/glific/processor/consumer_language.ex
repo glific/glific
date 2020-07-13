@@ -6,18 +6,23 @@ defmodule Glific.Processor.ConsumerLanguage do
 
   use GenStage
 
-  import Ecto.Query
+  # import Ecto.Query
 
   alias Glific.{
-    Contacts.Contact,
-    Messages,
+    Flows.Flow,
     Messages.Message,
-    Processor.Helper,
-    Repo,
-    Settings,
-    Tags.MessageTag,
-    Tags.Tag
+    Processor.Helper
   }
+
+  # alias Glific.{
+  #   Contacts.Contact,
+  #   Messages,
+  #   Messages.Message,
+  #   Repo,
+  #   Settings,
+  #   Tags.MessageTag,
+  #   Tags.Tag
+  # }
 
   @doc false
   @spec start_link([]) :: GenServer.on_start()
@@ -39,27 +44,28 @@ defmodule Glific.Processor.ConsumerLanguage do
   Process the language tag. Send a confirmation to the sender and set the contact fields
   """
   @spec process_tag(Message.t(), Tag.t()) :: any
-  def process_tag(message, tag) do
-    {:ok, message_tag} = Repo.fetch_by(MessageTag, %{message_id: message.id, tag_id: tag.id})
-    [language | _] = Settings.list_languages(%{label: message_tag.value})
+  def process_tag(message, _tag) do
+    Flow.start_flow("language", message.contact)
+    # {:ok, message_tag} = Repo.fetch_by(MessageTag, %{message_id: message.id, tag_id: tag.id})
+    # [language | _] = Settings.list_languages(%{label: message_tag.value})
 
-    # We need to update sender id and set their language to this language
-    query = from(c in Contact, where: c.id == ^message.sender_id)
+    # # We need to update sender id and set their language to this language
+    # query = from(c in Contact, where: c.id == ^message.sender_id)
 
-    Repo.update_all(query,
-      set: [language_id: language.id, updated_at: DateTime.utc_now()]
-    )
+    # Repo.update_all(query,
+    #   set: [language_id: language.id, updated_at: DateTime.utc_now()]
+    # )
 
-    session_template = Helper.get_session_message_template("language", language.id)
+    # session_template = Helper.get_session_message_template("language", language.id)
 
-    {:ok, message} =
-      "language"
-      |> Helper.get_session_message_template(language.id)
-      |> Map.put(
-        :body,
-        EEx.eval_string(session_template.body, language: language.label_locale)
-      )
-      |> Messages.create_and_send_session_template(message.sender_id)
+    # {:ok, message} =
+    #   "language"
+    #   |> Helper.get_session_message_template(language.id)
+    #   |> Map.put(
+    #     :body,
+    #     EEx.eval_string(session_template.body, language: language.label_locale)
+    #   )
+    #   |> Messages.create_and_send_session_template(message.sender_id)
 
     message
   end

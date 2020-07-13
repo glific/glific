@@ -51,7 +51,11 @@ defmodule Glific.Processor.ConsumerFlow do
       Flow.load_flow("preference")
     }
 
-    flows = %{
+    flows =
+    if is_nil(help),
+      do: %{},
+      else:
+    %{
       help.id => help,
       language.id => language,
       preference.id => preference

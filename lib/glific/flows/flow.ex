@@ -21,7 +21,7 @@ defmodule Glific.Flows.Flow do
   @required_fields [:name, :language_id, :uuid]
   @optional_fields [:flow_type, :version_number, :shortcode, :uuid_map, :nodes]
 
-  @type t() :: %__MODULE__{
+  @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
@@ -155,22 +155,24 @@ defmodule Glific.Flows.Flow do
   Load the latest revision for a specific flow and setup for
   flow execution
   """
-  @spec load_flow(String.t()) :: Flow.t()
+  @spec load_flow(String.t()) :: Flow.t() | nil
   def load_flow(shortcode) do
     with {:ok, flow} <- Repo.fetch_by(Flow, %{shortcode: shortcode}) do
       flow.id
       |> get_latest_definition()
       |> process(flow)
+    else
+      _ -> nil
     end
   end
 
   @doc """
   Start a flow, given a shortcode and a contact_id
   """
-  @spec start_flow(String.t(), non_neg_integer) :: FlowContext.t()
-  def start_flow(shortcode, contact_id) do
+  @spec start_flow(String.t(), Contact.t()) :: FlowContext.t()
+  def start_flow(shortcode, contact) do
     flow = load_flow(shortcode)
 
-    FlowContext.init_context(flow, contact_id)
+    FlowContext.init_context(flow, contact)
   end
 end
