@@ -73,7 +73,7 @@ If you are using axios or other libraries, send the following in the BODY of a P
 {
     "data": {
         "access_token": "AUTH_TOKEN",
-        "access_token_expiry_time": "2020-07-13T16:22:53.678465Z",
+        "token_expiry_time": "2020-07-13T16:22:53.678465Z",
         "renewal_token": "RENEW_TOKEN"
     }
 }
@@ -110,7 +110,7 @@ If you are using axios or other libraries, send the following in the BODY of a P
   {
     "data": {
           "access_token": "AUTH_TOKEN",
-          "access_token_expiry_time": "2020-07-13T16:22:53.678465Z",
+          "token_expiry_time": "2020-07-13T16:22:53.678465Z",
           "renewal_token": "RENEW_TOKEN"
       }
   }
@@ -131,7 +131,7 @@ curl -X POST -H "Authorization: RENEW_TOKEN" \
   {
     "data": {
           "access_token": "AUTH_TOKEN",
-          "access_token_expiry_time": "2020-07-13T16:22:53.678465Z",
+          "token_expiry_time": "2020-07-13T16:22:53.678465Z",
           "renewal_token": "RENEW_TOKEN"
       }
   }
