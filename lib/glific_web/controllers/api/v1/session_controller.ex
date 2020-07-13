@@ -48,6 +48,7 @@ defmodule GlificWeb.API.V1.SessionController do
         json(conn, %{
           data: %{
             access_token: conn.private[:api_access_token],
+            access_token_expiry_time: conn.private[:api_access_token_expiry_time],
             renewal_token: conn.private[:api_renewal_token]
           }
         })
