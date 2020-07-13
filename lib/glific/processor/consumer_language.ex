@@ -11,7 +11,9 @@ defmodule Glific.Processor.ConsumerLanguage do
   alias Glific.{
     Flows.Flow,
     Messages.Message,
-    Processor.Helper
+    Processor.Helper,
+    Repo,
+    Tags.Tag
   }
 
   # alias Glific.{
@@ -45,6 +47,7 @@ defmodule Glific.Processor.ConsumerLanguage do
   """
   @spec process_tag(Message.t(), Tag.t()) :: any
   def process_tag(message, _tag) do
+    message = Repo.preload(message, :contact)
     Flow.start_flow("language", message.contact)
     # {:ok, message_tag} = Repo.fetch_by(MessageTag, %{message_id: message.id, tag_id: tag.id})
     # [language | _] = Settings.list_languages(%{label: message_tag.value})

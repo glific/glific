@@ -4,8 +4,6 @@ defmodule Glific.SeedsDev do
   """
   alias Glific.{
     Contacts.Contact,
-    Flows.Flow,
-    Flows.FlowRevision,
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
@@ -270,84 +268,6 @@ defmodule Glific.SeedsDev do
     })
   end
 
-  @doc false
-  @spec seed_flows :: nil
-  def seed_flows do
-    [english | _] = Settings.list_languages(%{label: "english"})
-
-    help_flow =
-      Repo.insert!(%Flow{
-        name: "Help Workflow",
-        shortcode: "help",
-        version_number: "13.1.0",
-        uuid: "3fa22108-f464-41e5-81d9-d8a298854429",
-        language_id: english.id
-      })
-
-    help_flow_definition =
-      File.read!("assets/flows/help.json")
-      |> Jason.decode!()
-
-    help_flow_definition =
-      Map.merge(help_flow_definition, %{
-        "name" => help_flow.name,
-        "uuid" => help_flow.uuid
-      })
-
-    Repo.insert!(%FlowRevision{
-      definition: help_flow_definition,
-      flow_id: help_flow.id
-    })
-
-    language_flow =
-      Repo.insert!(%Flow{
-        name: "Language Workflow",
-        shortcode: "language",
-        version_number: "13.1.0",
-        uuid: "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
-        language_id: english.id
-      })
-
-    language_flow_definition =
-      File.read!("assets/flows/language.json")
-      |> Jason.decode!()
-
-    language_flow_definition =
-      Map.merge(language_flow_definition, %{
-        "name" => language_flow.name,
-        "uuid" => language_flow.uuid
-      })
-
-    Repo.insert!(%FlowRevision{
-      definition: language_flow_definition,
-      flow_id: language_flow.id
-    })
-
-    preferences_flow =
-      Repo.insert!(%Flow{
-        name: "Preferences Workflow",
-        shortcode: "preference",
-        version_number: "13.1.0",
-        uuid: "63397051-789d-418d-9388-2ef7eb1268bb",
-        language_id: english.id
-      })
-
-    preferences_flow_definition =
-      File.read!("assets/flows/preferences.json")
-      |> Jason.decode!()
-
-    preferences_flow_definition =
-      Map.merge(preferences_flow_definition, %{
-        "name" => preferences_flow.name,
-        "uuid" => preferences_flow.uuid
-      })
-
-    Repo.insert!(%FlowRevision{
-      definition: preferences_flow_definition,
-      flow_id: preferences_flow.id
-    })
-  end
-
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
   split this function up into multiple different ones for test, dev and production
@@ -369,7 +289,5 @@ defmodule Glific.SeedsDev do
     seed_messages()
 
     seed_messages_media()
-
-    seed_flows()
   end
 end

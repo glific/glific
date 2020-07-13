@@ -157,19 +157,22 @@ defmodule Glific.Flows.Flow do
   """
   @spec load_flow(String.t()) :: Flow.t() | nil
   def load_flow(shortcode) do
-    with {:ok, flow} <- Repo.fetch_by(Flow, %{shortcode: shortcode}) do
-      flow.id
-      |> get_latest_definition()
-      |> process(flow)
-    else
-      _ -> nil
+    case Repo.fetch_by(Flow, %{shortcode: shortcode}) do
+      {:ok, flow} ->
+        flow.id
+        |> get_latest_definition()
+        |> process(flow)
+
+      _ ->
+        nil
     end
   end
 
   @doc """
   Start a flow, given a shortcode and a contact_id
   """
-  @spec start_flow(String.t(), Contact.t()) :: FlowContext.t()
+  @spec start_flow(String.t(), Contact.t()) ::
+          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def start_flow(shortcode, contact) do
     flow = load_flow(shortcode)
 

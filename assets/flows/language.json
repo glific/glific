@@ -59,7 +59,7 @@
        "arguments": [
         "2"
        ],
-       "type": "has_any_word",
+       "type": "has_number_eq",
        "uuid": "ff24f0a8-8f2b-442f-abdb-3f5b57be2b24",
        "category_uuid": "b01c1f92-c370-4788-b494-2f4708cb1f12"
       }

@@ -52,14 +52,13 @@ defmodule Glific.Processor.ConsumerFlow do
     }
 
     flows =
-    if is_nil(help),
-      do: %{},
-      else:
-    %{
-      help.id => help,
-      language.id => language,
-      preference.id => preference
-    }
+      if is_nil(help),
+        do: %{},
+        else: %{
+          help.id => help,
+          language.id => language,
+          preference.id => preference
+        }
 
     state
     |> Map.put(:flow_help, help)

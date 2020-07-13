@@ -12,6 +12,8 @@
 
 alias Glific.{
   Contacts.Contact,
+  Flows.Flow,
+  Flows.FlowRevision,
   Partners.Organization,
   Partners.Provider,
   Repo,
@@ -19,12 +21,18 @@ alias Glific.{
   Settings.Language,
   Tags.Tag,
   Templates.SessionTemplate,
-  Users,
+  Users
 }
 
 # seed languages
 hi = Repo.insert!(%Language{label: "Hindi", label_locale: "हिंदी", locale: "hi"})
-en_us = Repo.insert!(%Language{label: "English (United States)", label_locale: "English", locale: "en_US"})
+
+en_us =
+  Repo.insert!(%Language{
+    label: "English (United States)",
+    label_locale: "English",
+    locale: "en_US"
+  })
 
 # seed tags
 message_tags_mt = Repo.insert!(%Tag{label: "Messages", language: en_us})
@@ -116,11 +124,12 @@ tag_entries =
 Repo.insert_all(Tag, tag_entries)
 
 # seed provider
-provider = Repo.insert!(%Provider{
-  name: "gupshup",
-  url: "test_url_1",
-  api_end_point: "test"
-})
+provider =
+  Repo.insert!(%Provider{
+    name: "gupshup",
+    url: "test_url_1",
+    api_end_point: "test"
+  })
 
 # seed sender contact for organization
 sender =
@@ -145,13 +154,14 @@ Repo.insert!(%Organization{
 })
 
 password = "secret1234"
+
 Users.create_user(%{
-      name: "Glific Admin",
-      phone: "917834811114",
-      password: password,
-      confirm_password: password,
-      roles: ["admin"]
-                         })
+  name: "Glific Admin",
+  phone: "917834811114",
+  password: password,
+  confirm_password: password,
+  roles: ["admin"]
+})
 
 # seed session templates
 Repo.insert!(%SessionTemplate{
@@ -378,7 +388,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 0,
   language_id: en_us.id,
-  body: "I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now. If you’d like to continue this discussion, please reply with ‘yes’"
+  body:
+    "I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now. If you’d like to continue this discussion, please reply with ‘yes’"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -535,11 +546,13 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 3,
   language_id: en_us.id,
-  body: "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{1}}]"
+  body:
+    "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{1}}]"
 })
 
 # Seed saved searches
 {:ok, unread} = Repo.fetch_by(Tag, %{label: "Unread"})
+
 Repo.insert!(%SavedSearch{
   label: "All unread conversations",
   args: %{includeTags: [to_string(unread.id)]},
@@ -547,13 +560,87 @@ Repo.insert!(%SavedSearch{
 })
 
 {:ok, not_replied} = Repo.fetch_by(Tag, %{label: "Not Replied"})
+
 Repo.insert!(%SavedSearch{
   label: "Conversations read but not replied",
   args: %{includeTags: [to_string(not_replied.id)]}
 })
 
 {:ok, optout} = Repo.fetch_by(Tag, %{label: "Optout"})
+
 Repo.insert!(%SavedSearch{
   label: "Conversations where the contact has opted out",
   args: %{includeTags: [to_string(optout.id)]}
+})
+
+help_flow =
+  Repo.insert!(%Flow{
+    name: "Help Workflow",
+    shortcode: "help",
+    version_number: "13.1.0",
+    uuid: "3fa22108-f464-41e5-81d9-d8a298854429",
+    language_id: en_us.id
+  })
+
+help_flow_definition =
+  File.read!("assets/flows/help.json")
+  |> Jason.decode!()
+
+help_flow_definition =
+  Map.merge(help_flow_definition, %{
+    "name" => help_flow.name,
+    "uuid" => help_flow.uuid
+  })
+
+Repo.insert!(%FlowRevision{
+  definition: help_flow_definition,
+  flow_id: help_flow.id
+})
+
+language_flow =
+  Repo.insert!(%Flow{
+    name: "Language Workflow",
+    shortcode: "language",
+    version_number: "13.1.0",
+    uuid: "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
+    language_id: en_us.id
+  })
+
+language_flow_definition =
+  File.read!("assets/flows/language.json")
+  |> Jason.decode!()
+
+language_flow_definition =
+  Map.merge(language_flow_definition, %{
+    "name" => language_flow.name,
+    "uuid" => language_flow.uuid
+  })
+
+Repo.insert!(%FlowRevision{
+  definition: language_flow_definition,
+  flow_id: language_flow.id
+})
+
+preferences_flow =
+  Repo.insert!(%Flow{
+    name: "Preferences Workflow",
+    shortcode: "preference",
+    version_number: "13.1.0",
+    uuid: "63397051-789d-418d-9388-2ef7eb1268bb",
+    language_id: en_us.id
+  })
+
+preferences_flow_definition =
+  File.read!("assets/flows/preferences.json")
+  |> Jason.decode!()
+
+preferences_flow_definition =
+  Map.merge(preferences_flow_definition, %{
+    "name" => preferences_flow.name,
+    "uuid" => preferences_flow.uuid
+  })
+
+Repo.insert!(%FlowRevision{
+  definition: preferences_flow_definition,
+  flow_id: preferences_flow.id
 })

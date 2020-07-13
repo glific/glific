@@ -28,13 +28,13 @@ defmodule Glific.Application do
       Glific.Processor.Producer,
       Glific.Processor.ConsumerTagger,
       Glific.Processor.ConsumerFlow,
-      # Glific.Processor.ConsumerAutomation,
+      Glific.Processor.ConsumerAutomation,
       Glific.Processor.ConsumerLanguage,
-      # Glific.Processor.ConsumerHelp
-      # Glific.Processor.ConsumerNewContact,
-      # Glific.Processor.ConsumerNumeric,
-      # Glific.Processor.ConsumerOptout,
-      # Glific.Processor.ConsumerSequence
+      Glific.Processor.ConsumerHelp,
+      Glific.Processor.ConsumerNewContact,
+      Glific.Processor.ConsumerNumeric,
+      Glific.Processor.ConsumerOptout,
+      Glific.Processor.ConsumerSequence
     ]
 
     children =

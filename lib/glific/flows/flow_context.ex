@@ -112,7 +112,8 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Start a new context, if there is an existing context, blow it away
   """
-  @spec init_context(Flow.t(), Contact.t()) :: FlowContext.t()
+  @spec init_context(Flow.t(), Contact.t()) ::
+          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def init_context(flow, contact) do
     query =
       from fc in FlowContext,
@@ -122,10 +123,14 @@ defmodule Glific.Flows.FlowContext do
     # either 0 or 1 entries
     Repo.delete_all(query)
 
+    node = hd(flow.nodes)
+
     {:ok, context} =
       create_flow_context(%{
         contact_id: contact.id,
         contact: contact,
+        node_uuid: node.uuid,
+        node: node,
         flow_id: flow.id,
         uuid_map: flow.uuid_map
       })
