@@ -37,7 +37,6 @@ defmodule Glific.Flows.First do
     case FlowContext.execute(context, [msg]) do
       {:ok, context, []} -> {:ok, Map.put(state, contact_id, context)}
       {:error, error} -> {:error, error}
-      {:ok, _context, messages} -> {:halt, messages}
     end
   end
 end

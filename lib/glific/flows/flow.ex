@@ -116,9 +116,8 @@ defmodule Glific.Flows.Flow do
       contact_id: contact.id,
       flow_id: flow.id,
       uuid_map: flow.uuid_map,
-      node_uuid: node.uuid,
+      node_uuid: node.uuid
     }
-
 
     {:ok, context} =
       %FlowContext{}
@@ -130,8 +129,13 @@ defmodule Glific.Flows.Flow do
     |> Map.put(:node, node)
   end
 
+  # in some cases floweditor wraps the json under a "definition" key
+  @spec clean_definition(map()) :: map()
+  defp clean_definition(json),
+    do: elem(Map.pop(json, "definition", json), 0) |> Map.delete("_ui")
+
   # load the latest revision, specifically json definition from the
-  # flow_revision table
+  # flow_revision table. We return the clean definition back
   @spec get_latest_definition(integer) :: map()
   defp get_latest_definition(flow_id) do
     query =
@@ -140,12 +144,10 @@ defmodule Glific.Flows.Flow do
         select: fr.definition
 
     Repo.one(query)
+    # lets get rid of stuff we don't use, specfically the definition and
+    # UI layout of the flow
+    |> clean_definition()
   end
-
-  # in some cases floweditor wraps the json under a "definition" key
-  @spec clean_definition(map()) :: map()
-  defp clean_definition(json),
-    do: elem(Map.pop(json, "definition", json), 0) |> Map.delete("_ui")
 
   @doc """
   Load the latest revision for a specific flow and setup for
@@ -157,9 +159,6 @@ defmodule Glific.Flows.Flow do
 
     flow.id
     |> get_latest_definition()
-    # lets get rid of stuff we don't use, specfically the definition and
-    # UI layout of the flow
-    |> clean_definition()
     |> process(flow)
   end
 end

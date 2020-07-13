@@ -8,6 +8,7 @@ defmodule Glific.Flows.FlowContext do
 
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Contacts.Contact,
@@ -36,14 +37,13 @@ defmodule Glific.Flows.FlowContext do
 
   schema "flow_contexts" do
     field :uuid_map, :map, virtual: true
+    field :node, :map, virtual: true
 
     field :node_uuid, Ecto.UUID
 
     belongs_to :contact, Contact
     belongs_to :flow, Flow
     belongs_to :parent, FlowContext, foreign_key: :parent_id
-
-    embeds_one :node, Node
 
     timestamps(type: :utc_datetime)
   end
@@ -92,19 +92,50 @@ defmodule Glific.Flows.FlowContext do
     {:ok, context, messages} = Node.execute(context.node, context, messages)
 
     # we've modified the context, lets update it
-    result =
+    # we are ignoring the new context here, since we want to update
+    # the old context with the values of the new context (ecto design)
+    {:ok, _} =
       old_context
       |> FlowContext.changeset(%{node_uuid: context.node_uuid})
       |> Repo.update()
 
-    case result do
-      # we are ignoring the context here, since we want the new context
-      # but are sending the old context to the DB for an update
-      {:ok, _} ->
-        FlowContext.execute(context, messages)
+    {:ok, context, messages}
+  end
 
-      error ->
-        error
+  @doc """
+  Check if there is an active context (i.e. with a non null, node_uuid for this contact)
+  """
+  @spec active_context(non_neg_integer) :: FlowContext.t() | nil
+  def active_context(contact_id) do
+    query =
+      from fc in FlowContext,
+        where: fc.contact_id == ^contact_id and not is_nil(fc.node_uuid)
+
+    Repo.one(query)
+  end
+
+  @doc """
+  Load the context object, given a flow object and a contact. At some point,
+  we'll get the genserver to cache this
+  """
+  @spec load_context(FlowContext.t(), Flow.t(), Contact.t()) :: FlowContext.t()
+  def load_context(context, flow, contact) do
+    {:ok, {:node, node}} = Map.fetch(flow.uuid_map, context.node_uuid)
+
+    context
+    |> Map.put(:contact, contact)
+    |> Map.put(:uuid_map, flow.uuid_map)
+    |> Map.put(:node, node)
+  end
+
+  @doc """
+  Given an input string, consume the input and advance the state of the context
+  """
+  @spec step_forward(FlowContext.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
+  def step_forward(context, body) do
+    case FlowContext.execute(context, [body]) do
+      {:ok, context, []} -> {:ok, context}
+      {:error, error} -> {:error, error}
     end
   end
 end

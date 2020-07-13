@@ -326,7 +326,7 @@ defmodule Glific.SeedsDev do
     preferences_flow =
       Repo.insert!(%Flow{
         name: "Preferences Workflow",
-        shortcode: "preferences",
+        shortcode: "preference",
         version_number: "13.1.0",
         uuid: "63397051-789d-418d-9388-2ef7eb1268bb",
         language_id: english.id
