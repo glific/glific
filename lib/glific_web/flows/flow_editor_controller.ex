@@ -98,8 +98,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
           uuid: generate_uuid(),
           name: "Travel Agency",
           type: "wit",
-          intents: ["book flight", "rent car"],
-          created_on: "2019-10-15T20:07:58.529130Z"
+          intents: [],
+          created_on: DateTime.utc_now()
         }
       ]
     }
