@@ -92,18 +92,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec classifiers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def classifiers(conn, _params) do
-    classifiers = %{
-      results: [
-        %{
-          uuid: generate_uuid(),
-          name: "Travel Agency",
-          type: "wit",
-          intents: [],
-          created_on: DateTime.utc_now()
-        }
-      ]
-    }
-
+    classifiers = %{results: []}
     json(conn, classifiers)
   end
 
@@ -116,7 +105,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
           uuid: generate_uuid(),
           name: "Email",
           type: "mailgun",
-          created_on: "2019-10-15T20:07:58.529130Z"
+          created_on: DateTime.utc_now()
         }
       ]
     }
@@ -127,13 +116,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec resthooks(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def resthooks(conn, _params) do
-    resthooks = %{
-      results: [
-        %{resthook: "my-first-zap", subscribers: []},
-        %{resthook: "my-other-zap", subscribers: []}
-      ]
-    }
-
+    resthooks = %{results: []}
     json(conn, resthooks)
   end
 
@@ -145,8 +128,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
         %{
           uuid: generate_uuid(),
           name: "sample_template",
-          created_on: "2019-04-02T22:14:31.549213Z",
-          modified_on: "2019-04-02T22:14:31.569739Z",
+          created_on: DateTime.utc_now(),
+          modified_on: DateTime.utc_now(),
           translations: [
             %{
               language: "eng",
@@ -179,20 +162,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec languages(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def languages(conn, _params) do
-    languages = %{
-      results: [
-        %{
-          iso: "eng",
-          name: "English"
-        },
-        %{
-          iso: "Hi",
-          name: "Hindi"
-        }
-      ]
-    }
+    results =
+      Glific.Settings.list_languages()
+      |> Enum.reduce([], fn language, acc ->
+        [%{iso: language.locale, name: language.label} | acc]
+      end)
 
-    json(conn, languages)
+    json(conn, %{results: results})
   end
 
   @doc false
