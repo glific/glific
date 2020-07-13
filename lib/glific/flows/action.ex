@@ -11,6 +11,7 @@ defmodule Glific.Flows.Action do
   alias Glific.Enums.FlowType
 
   alias Glific.Flows.{
+    ContactAction,
     ContactSetting,
     Flow,
     FlowContext,
@@ -102,19 +103,24 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(%{type: type} = action, context, message_stream) when type == "send_msg" do
-    IO.puts("Sending message: #{action.text}, #{action.uuid}")
+    ContactAction.send_message(context, action.text)
     {:ok, context, message_stream}
   end
 
   def execute(%{type: type} = action, context, message_stream)
       when type == "set_contact_language" do
-    IO.puts("Setting Contact Language: #{action.text}")
     context = ContactSetting.set_contact_language(context, action.text)
     {:ok, context, message_stream}
   end
 
+  def execute(%{type: type, name: name} = _action, context, message_stream)
+      when type == "set_run_result" and name == "settings_optout" do
+    context = ContactAction.optout(context)
+    {:ok, context, message_stream}
+  end
+
   def execute(%{type: type, name: name} = action, context, message_stream)
-      when type == "set_run_result" and name == "settings.preference" do
+      when type == "set_run_result" and name == "settings_preference" do
     IO.puts("Setting Contact Setting Preferences: #{action.value}")
     context = ContactSetting.set_contact_preference(context, action.value)
     {:ok, context, message_stream}

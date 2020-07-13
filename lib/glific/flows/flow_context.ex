@@ -127,8 +127,7 @@ defmodule Glific.Flows.FlowContext do
 
     {:ok, context} =
       create_flow_context(%{
-        contact_id: contact.id,
-        contact: contact,
+            contact_id: contact.id,
         node_uuid: node.uuid,
         node: node,
         flow_id: flow.id,
@@ -137,6 +136,7 @@ defmodule Glific.Flows.FlowContext do
 
     context
     |> load_context(flow)
+    |> Repo.preload(:contact)
     # lets do the first steps and start executing it till we need a message
     |> execute([])
   end
@@ -150,8 +150,7 @@ defmodule Glific.Flows.FlowContext do
       from fc in FlowContext,
         where: fc.contact_id == ^contact_id and not is_nil(fc.node_uuid)
 
-    Repo.one(query)
-    |> Repo.preload(:contact)
+    Repo.one(query) |> Repo.preload(:contact)
   end
 
   @doc """

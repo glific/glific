@@ -187,7 +187,8 @@ defmodule Glific.Contacts do
       optin_time: utc_time,
       optout_time: nil,
       status: :valid,
-      provider_status: :valid
+      provider_status: :valid,
+      updated_at: DateTime.utc_now()
     })
 
     {:ok}
