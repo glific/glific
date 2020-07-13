@@ -40,6 +40,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json = json_response(conn, 200)
       assert json["data"]["access_token"]
       assert json["data"]["renewal_token"]
+      assert json["data"]["token_expiry_time"]
     end
 
     test "with wrong otp", %{conn: conn} do

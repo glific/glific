@@ -69,7 +69,13 @@ If you are using axios or other libraries, send the following in the BODY of a P
 > The above query returns JSON structured like this:
 
 ```json
-{"data":{"renewal_token":"RENEW_TOKEN","access_token":"AUTH_TOKEN"}}
+{
+    "data": {
+        "access_token": "AUTH_TOKEN",
+        "token_expiry_time": "2020-07-13T16:22:53.678465Z",
+        "renewal_token": "RENEW_TOKEN"
+    }
+}
 ```
 
 Glific expects for the auth token to be included in all API requests to the server in a header
@@ -99,7 +105,15 @@ If you are using axios or other libraries, send the following in the BODY of a P
 > The above query returns JSON structured like this:
 
 ```json
-{"data":{"renewal_token":"RENEW_TOKEN","access_token":"AUTH_TOKEN"}}
+{"data":
+  {
+    "data": {
+          "access_token": "AUTH_TOKEN",
+          "token_expiry_time": "2020-07-13T16:22:53.678465Z",
+          "renewal_token": "RENEW_TOKEN"
+      }
+  }
+}
 ```
 
 ## Renew an existing session
@@ -112,7 +126,15 @@ curl -X POST -H "Authorization: RENEW_TOKEN" \
 > The above query returns JSON structured like this:
 
 ```json
-{"data":{"renewal_token":"RENEW_TOKEN","access_token":"AUTH_TOKEN"}}
+{"data":
+  {
+    "data": {
+          "access_token": "AUTH_TOKEN",
+          "token_expiry_time": "2020-07-13T16:22:53.678465Z",
+          "renewal_token": "RENEW_TOKEN"
+      }
+  }
+}
 ```
 ## Delete an existing session
 
