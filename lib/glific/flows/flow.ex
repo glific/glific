@@ -134,10 +134,12 @@ defmodule Glific.Flows.Flow do
   defp clean_definition(json),
     do: elem(Map.pop(json, "definition", json), 0) |> Map.delete("_ui")
 
-  # load the latest revision, specifically json definition from the
-  # flow_revision table. We return the clean definition back
+  @doc """
+  load the latest revision, specifically json definition from the
+  flow_revision table. We return the clean definition back
+  """
   @spec get_latest_definition(integer) :: map()
-  defp get_latest_definition(flow_id) do
+  def get_latest_definition(flow_id) do
     query =
       from fr in FlowRevision,
         where: fr.revision_number == 0 and fr.flow_id == ^flow_id,
@@ -155,10 +157,10 @@ defmodule Glific.Flows.Flow do
   """
   @spec load_flow(String.t()) :: Flow.t()
   def load_flow(shortcode) do
-    {:ok, flow} = Repo.fetch_by(Flow, %{shortcode: shortcode})
-
-    flow.id
-    |> get_latest_definition()
-    |> process(flow)
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{shortcode: shortcode}) do
+      flow.id
+      |> get_latest_definition()
+      |> process(flow)
+    end
   end
 end

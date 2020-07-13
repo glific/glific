@@ -89,7 +89,5 @@ defmodule Glific.Processor.ConsumerFlow do
         # hitting the DB again. We'll do this after we get this working
         message
     end
-
-
   end
 end
