@@ -60,10 +60,9 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       invalid_params = %{
         "user" => %{
-          "phone" => receiver.phone,
+          "phone" => "incorrect_phone",
           "name" => receiver.name,
           "password" => @password,
-          "password_confirmation" => "",
           "otp" => otp
         }
       }
@@ -71,9 +70,9 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       conn = post(conn, Routes.api_v1_registration_path(conn, :create, invalid_params))
 
       assert json = json_response(conn, 500)
+
       assert json["error"]["message"] == "Couldn't create user"
       assert json["error"]["status"] == 500
-      assert json["error"]["errors"]["password_confirmation"] == ["does not match confirmation"]
       # assert json["error"]["errors"]["phone"] == ["has invalid format"]
     end
   end
