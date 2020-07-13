@@ -33,8 +33,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @spec create_user(Conn.t(), map()) :: Conn.t()
   defp create_user(conn, user_params) do
+    user_params_with_password_confirmation =
+      user_params
+      |> Map.merge(%{"password_confirmation" => user_params["password"]})
+
     conn
-    |> Pow.Plug.create_user(user_params)
+    |> Pow.Plug.create_user(user_params_with_password_confirmation)
     |> case do
       {:ok, _user, conn} ->
         json(conn, %{

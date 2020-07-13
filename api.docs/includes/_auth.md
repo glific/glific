@@ -61,7 +61,6 @@ If you are using axios or other libraries, send the following in the BODY of a P
         "name": "Test User",
         "phone": "911234554321",
         "password": "secret1234",
-        "password_confirmation": "secret1234",
         "otp": "321721"
     }
 }
