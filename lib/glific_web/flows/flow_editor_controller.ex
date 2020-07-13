@@ -6,6 +6,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   use GlificWeb, :controller
 
   alias Glific.Flows
+  alias Glific.Flows.Flow
 
   @doc false
   @spec globals(Plug.Conn.t(), map) :: Plug.Conn.t()
@@ -97,8 +98,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
           uuid: generate_uuid(),
           name: "Travel Agency",
           type: "wit",
-          intents: ["book flight", "rent car"],
-          created_on: "2019-10-15T20:07:58.529130Z"
+          intents: [],
+          created_on: DateTime.utc_now()
         }
       ]
     }
@@ -252,28 +253,28 @@ defmodule GlificWeb.Flows.FlowEditorController do
     results =
       case vars do
         [] ->
-          [
-            %{
-              uuid: "9ecc8e84-6b83-442b-a04a-8094d5de997b",
-              name: "Customer Service",
-              type: "message",
-              archived: false,
-              labels: [],
-              parent_refs: ["order_number", "customer_id"],
-              expires: 10_080
-            }
-          ]
+          Flows.list_flows()
+          |> Enum.reduce([], fn flow, acc ->
+            [
+              %{
+                uuid: flow.uuid,
+                name: flow.name,
+                type: flow.flow_type,
+                archived: false,
+                labels: [],
+                expires: 10_080,
+                parent_refs: []
+              }
+              | acc
+            ]
+          end)
 
-        [_uuid] ->
-          %{
-            name: "Customer Service",
-            type: "message",
-            uuid: "9ecc8e84-6b83-442b-a04a-8094d5de997b",
-            nodes: []
-          }
+        [flow_uuid] ->
+          with {:ok, flow} <- Glific.Repo.fetch_by(Flow, %{uuid: flow_uuid}),
+               do: Flow.get_latest_definition(flow.id)
       end
 
-    json(conn, results)
+    json(conn, %{results: results})
   end
 
   @doc false
