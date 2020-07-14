@@ -3,7 +3,7 @@
 ## Get All Flows
 
 ```graphql
-query providers {
+query flows {
   flows {
     id
     uuid
