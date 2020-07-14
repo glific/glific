@@ -34,7 +34,7 @@ defmodule Glific.Processor.ConsumerNumeric do
 
   @doc false
   def init(opts) do
-    Helper.init(opts, "Numeric")
+    Helper.init(opts, "Numeric NO")
   end
 
   @doc false

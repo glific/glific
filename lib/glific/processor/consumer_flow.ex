@@ -49,7 +49,7 @@ defmodule Glific.Processor.ConsumerFlow do
       Flow.load_flow("help"),
       Flow.load_flow("language"),
       Flow.load_flow("preference"),
-      Flow.load_flow("new_contact"),
+      Flow.load_flow("new_contact")
     }
 
     flows =
@@ -58,7 +58,8 @@ defmodule Glific.Processor.ConsumerFlow do
         else: %{
           help.id => help,
           language.id => language,
-          preference.id => preference
+          preference.id => preference,
+          new_contact.id => new_contact
         }
 
     state
