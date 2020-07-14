@@ -54,9 +54,23 @@ defmodule Glific.Flows do
   """
   @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def create_flow(attrs \\ %{}) do
-    %Flow{}
-    |> Flow.changeset(attrs)
-    |> Repo.insert()
+    attrs =
+      attrs
+      |> Map.merge(%{uuid: Ecto.UUID.generate()})
+
+    with {:ok, flow} <-
+           %Flow{}
+           |> Flow.changeset(attrs)
+           |> Repo.insert() do
+      # create empty flow revision
+      definition = FlowRevision.default_definition(flow)
+
+      %FlowRevision{}
+      |> FlowRevision.changeset(%{definition: definition, flow_id: flow.id})
+      |> Repo.insert()
+
+      {:ok, flow}
+    end
   end
 
   @doc """
