@@ -52,7 +52,21 @@ defmodule GlificWeb.Schema.FlowTest do
     language_id = flow.language_id
 
     name = "Flow Test Name"
+    shortcode = "test shortcode"
 
+    result =
+      query_gql_by(:create,
+        variables: %{
+          "input" => %{"name" => name, "languageId" => language_id, "shortcode" => shortcode}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    flow_name = get_in(query_data, [:data, "createFlow", "flow", "name"])
+    assert flow_name == name
+
+    # create message without required atributes
     result =
       query_gql_by(:create,
         variables: %{"input" => %{"name" => name, "languageId" => language_id}}
@@ -60,8 +74,8 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert {:ok, query_data} = result
 
-    flow_name = get_in(query_data, [:data, "createFlow", "flow", "name"])
-    assert flow_name == name
+    assert "can't be blank" =
+             get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
   end
 
   test "update a flow and test possible scenarios and errors" do

@@ -20,8 +20,8 @@ defmodule Glific.Flows.Flow do
 
   alias Glific.Enums.FlowType
 
-  @required_fields [:name, :language_id, :uuid]
-  @optional_fields [:flow_type, :version_number, :shortcode, :uuid_map, :nodes]
+  @required_fields [:name, :language_id, :uuid, :shortcode]
+  @optional_fields [:flow_type, :version_number, :uuid_map, :nodes]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),

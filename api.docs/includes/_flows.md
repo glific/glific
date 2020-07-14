@@ -6,6 +6,7 @@
 query providers {
   flows {
     id
+    uuid
     name
     shortcode
     versionNumber
@@ -24,23 +25,25 @@ query providers {
   "data": {
     "flows": [
       {
-        "flowType": "message",
+        "flowType": "MESSAGE",
         "id": "1",
         "language": {
           "label": "English (United States)"
         },
         "name": "Help Workflow",
         "shortcode": "help",
+        "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
         "versionNumber": "13.1.0"
       },
       {
-        "flowType": "message",
+        "flowType": "MESSAGE",
         "id": "2",
         "language": {
           "label": "English (United States)"
         },
         "name": "Language Workflow",
         "shortcode": "language",
+        "uuid": "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
         "versionNumber": "13.1.0"
       }
     ]
@@ -325,6 +328,11 @@ Type | Description
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>shortcode</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>uuid</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
