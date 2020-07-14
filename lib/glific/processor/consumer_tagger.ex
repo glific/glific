@@ -9,6 +9,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   alias Glific.{
     Communications,
+    Flows.Flow,
     Messages.Message,
     Processor.Helper,
     Repo,
@@ -84,6 +85,7 @@ defmodule Glific.Processor.ConsumerTagger do
     body = Glific.string_clean(message.body)
 
     message
+    |> start_flows(body)
     |> add_status_tag("Unread", state)
     |> add_not_reply_tag(state)
     |> new_contact_tagger(state)
@@ -92,6 +94,15 @@ defmodule Glific.Processor.ConsumerTagger do
     |> Repo.preload(:tags)
     |> Communications.publish_data(:created_message_tag)
   end
+
+  @spec start_flows(atom() | Message.t(), String.t()) :: Message.t()
+  defp start_flows(message, body) when body in ["help", "language", "setting"] do
+    message = Repo.preload(message, :contact)
+    Flow.start_flow(body, message.contact)
+    message
+  end
+
+  defp start_flows(message, _body), do: message
 
   @spec numeric_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()
   defp numeric_tagger(message, body, state) do

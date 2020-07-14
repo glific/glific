@@ -35,7 +35,7 @@ defmodule Glific.Processor.ConsumerSequence do
 
   @doc false
   def init(opts) do
-    Helper.init(opts, "Sequence")
+    Helper.init(opts, "Sequence NO")
   end
 
   @doc false

@@ -20,7 +20,7 @@ defmodule Glific.Processor.ConsumerHelp do
 
   @doc false
   def init(opts) do
-    Helper.init(opts, "Help")
+    Helper.init(opts, "Help NO")
   end
 
   @doc false

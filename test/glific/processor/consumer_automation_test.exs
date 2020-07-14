@@ -137,6 +137,7 @@ defmodule Glific.Processor.ConsumerAutomationTest do
     :ok
   end
 
+  @tag :pending
   test "should behave like consumer" do
     original_count = Repo.aggregate(Message, :count)
 
@@ -162,14 +163,14 @@ defmodule Glific.Processor.ConsumerAutomationTest do
 
     # IO.inspect(Repo.query("select id, body from messages"))
     # Lets add checks here to make sure that we have both hindi and english language messages sent
-    # l =
-    #   Messages.list_messages(%{
-    #     filter: %{
-    #       body: "हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें\nTo receive messages in English, type English"
-    #     }
-    #   })
+    l =
+      Messages.list_messages(%{
+        filter: %{
+          body: "हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें\nTo receive messages in English, type English"
+        }
+      })
 
-    # assert length(l) == 3
+    assert length(l) == 3
 
     # Lets add checks here to make sure that we have both new contact tags recorded
     l =

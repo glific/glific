@@ -22,7 +22,7 @@ defmodule Glific.Processor.ConsumerOptout do
 
   @doc false
   def init(opts) do
-    Helper.init(opts, "Optout")
+    Helper.init(opts, "Optout NO")
   end
 
   @doc false

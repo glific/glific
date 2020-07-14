@@ -11,6 +11,7 @@ config :glific,
   ecto_repos: [Glific.Repo],
   provider: Glific.Providers.Gupshup.Message,
   provider_worker: Glific.Providers.Gupshup.Worker,
+  # provider_worker: Glific.Providers.Glifproxy.Worker,
   provider_id: "gupshup-provider-23",
   provider_limit: 10
 

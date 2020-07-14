@@ -127,7 +127,7 @@ defmodule Glific.Flows.FlowContext do
 
     {:ok, context} =
       create_flow_context(%{
-            contact_id: contact.id,
+        contact_id: contact.id,
         node_uuid: node.uuid,
         node: node,
         flow_id: flow.id,
