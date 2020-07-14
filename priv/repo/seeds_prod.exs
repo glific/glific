@@ -623,12 +623,12 @@ Repo.insert!(%FlowRevision{
 
 preferences_flow =
   Repo.insert!(%Flow{
-    name: "Preferences Workflow",
-    shortcode: "preference",
-    version_number: "13.1.0",
-    uuid: "63397051-789d-418d-9388-2ef7eb1268bb",
-    language_id: en_us.id
-  })
+        name: "Preferences Workflow",
+        shortcode: "preference",
+        version_number: "13.1.0",
+        uuid: "63397051-789d-418d-9388-2ef7eb1268bb",
+        language_id: en_us.id
+               })
 
 preferences_flow_definition =
   File.read!("assets/flows/preferences.json")
@@ -636,11 +636,36 @@ preferences_flow_definition =
 
 preferences_flow_definition =
   Map.merge(preferences_flow_definition, %{
-    "name" => preferences_flow.name,
-    "uuid" => preferences_flow.uuid
-  })
+        "name" => preferences_flow.name,
+        "uuid" => preferences_flow.uuid
+            })
 
 Repo.insert!(%FlowRevision{
-  definition: preferences_flow_definition,
-  flow_id: preferences_flow.id
-})
+      definition: preferences_flow_definition,
+      flow_id: preferences_flow.id
+             })
+
+
+new_contact_flow =
+  Repo.insert!(%Flow{
+        name: "New_Contact Workflow",
+        shortcode: "new_contact",
+        version_number: "13.1.0",
+        uuid: "973a24ea-dd2e-4d19-a427-83b0620161b0",
+        language_id: en_us.id
+               })
+
+new_contact_flow_definition =
+  File.read!("assets/flows/new_contact.json")
+  |> Jason.decode!()
+
+new_contact_flow_definition =
+  Map.merge(new_contact_flow_definition, %{
+        "name" => new_contact_flow.name,
+        "uuid" => new_contact_flow.uuid
+            })
+
+Repo.insert!(%FlowRevision{
+      definition: new_contact_flow_definition,
+      flow_id: new_contact_flow.id
+             })

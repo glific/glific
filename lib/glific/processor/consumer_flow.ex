@@ -45,10 +45,11 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   defp reload(state) do
-    {help, language, preference} = {
+    {help, language, preference, new_contact} = {
       Flow.load_flow("help"),
       Flow.load_flow("language"),
-      Flow.load_flow("preference")
+      Flow.load_flow("preference"),
+      Flow.load_flow("new_contact"),
     }
 
     flows =

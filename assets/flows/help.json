@@ -1,7 +1,7 @@
 {
   "nodes" : [
     {
-      "uuid" : "3fa22108-f464-41e5-81d9-d8a298854429",
+      "uuid" : "3ea030e9-41c4-4c6c-8880-68bc2828d67b",
       "actions" : [
         {
           "type" : "send_msg",
