@@ -167,11 +167,8 @@ Users.create_user(%{
 Repo.insert!(%SessionTemplate{
   label: "New Contact",
   body: """
-  Welcome to Glific.
-
-  What language do you want to receive messages in?
-  हिंदी के लिए 1 दबाएँहिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
-  Type English to receive messages in English
+  Welcome to Glific. Glific helps facilitate two way conversations. We are here to help.
+  Before we start, can you please answer a few questions to set you up on our system.
   """,
   type: :text,
   shortcode: "new contact",
@@ -291,84 +288,21 @@ Repo.insert!(%SessionTemplate{
   language_id: hi.id
 })
 
-for label <- ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight"] do
-  Repo.insert!(%SessionTemplate{
-    label: label,
-    type: :text,
-    shortcode: String.downcase(label),
-    is_reserved: false,
-    language_id: hi.id,
-    body: """
-    इस संदेश की सामग्री संख्यात्मक मूल्य का प्रतिनिधित्व करने के लिए विशिष्ट होगी: #{label}.
-    जंगली जाओ !, अपनी बात करो। मैं सिर्फ एक स्क्रिप्ट हूं
-    """
-  })
-
-  Repo.insert!(%SessionTemplate{
-    label: label,
-    type: :text,
-    shortcode: String.downcase(label),
-    is_reserved: false,
-    language_id: en_us.id,
-    body: """
-    Contents of this message will be specific to the numeric value representing: #{label}.
-    Go wild!, Do your own thing. I am just a script
-    """
-  })
-end
-
 Repo.insert!(%SessionTemplate{
-  label: "Start of Sequence",
-  type: :text,
-  shortcode: "start",
-  is_reserved: false,
-  language_id: hi.id,
+  label: "Preferences",
   body: """
-  This is the start of a pre-determined sequence.
-  """
-})
-
-Repo.insert!(%SessionTemplate{
-  label: "Start of Sequence",
+  What type of activity do you prefer
+  1. Poetry
+  2. Writing
+  3. Story
+  4. Video
+  5. Done
+  6. Reset my preferences
+  """,
   type: :text,
-  shortcode: "start",
-  is_reserved: false,
-  language_id: en_us.id,
-  body: """
-  This is the start of a pre-determined sequence
-  """
-})
-
-Repo.insert!(%SessionTemplate{
-  label: "Menu",
-  type: :text,
-  shortcode: "menu",
-  is_reserved: false,
-  language_id: hi.id,
-  body: """
-  Type one of the below:
-
-  next - next item in sequence
-  prev - prev item in sequence
-  start - start (or restart) the sequence
-  menu - show this menu
-  """
-})
-
-Repo.insert!(%SessionTemplate{
-  label: "Menu",
-  type: :text,
-  shortcode: "menu",
-  is_reserved: false,
-  language_id: en_us.id,
-  body: """
-  Type one of the below:
-
-  next - next item in sequence
-  prev - prev item in sequence
-  start - start (or restart) the sequence
-  menu - show this menu
-  """
+  shortcode: "preference",
+  is_reserved: true,
+  language_id: en_us.id
 })
 
 Repo.insert!(%SessionTemplate{
@@ -623,37 +557,36 @@ Repo.insert!(%FlowRevision{
 
 preferences_flow =
   Repo.insert!(%Flow{
-        name: "Preferences Workflow",
-        shortcode: "preference",
-        version_number: "13.1.0",
-        uuid: "63397051-789d-418d-9388-2ef7eb1268bb",
-        language_id: en_us.id
-               })
+    name: "Preferences Workflow",
+    shortcode: "preference",
+    version_number: "13.1.0",
+    uuid: "63397051-789d-418d-9388-2ef7eb1268bb",
+    language_id: en_us.id
+  })
 
 preferences_flow_definition =
-  File.read!("assets/flows/preferences.json")
+  File.read!("assets/flows/preference.json")
   |> Jason.decode!()
 
 preferences_flow_definition =
   Map.merge(preferences_flow_definition, %{
-        "name" => preferences_flow.name,
-        "uuid" => preferences_flow.uuid
-            })
+    "name" => preferences_flow.name,
+    "uuid" => preferences_flow.uuid
+  })
 
 Repo.insert!(%FlowRevision{
-      definition: preferences_flow_definition,
-      flow_id: preferences_flow.id
-             })
-
+  definition: preferences_flow_definition,
+  flow_id: preferences_flow.id
+})
 
 new_contact_flow =
   Repo.insert!(%Flow{
-        name: "New_Contact Workflow",
-        shortcode: "new_contact",
-        version_number: "13.1.0",
-        uuid: "973a24ea-dd2e-4d19-a427-83b0620161b0",
-        language_id: en_us.id
-               })
+    name: "New_Contact Workflow",
+    shortcode: "new contact",
+    version_number: "13.1.0",
+    uuid: "973a24ea-dd2e-4d19-a427-83b0620161b0",
+    language_id: en_us.id
+  })
 
 new_contact_flow_definition =
   File.read!("assets/flows/new_contact.json")
@@ -661,11 +594,11 @@ new_contact_flow_definition =
 
 new_contact_flow_definition =
   Map.merge(new_contact_flow_definition, %{
-        "name" => new_contact_flow.name,
-        "uuid" => new_contact_flow.uuid
-            })
+    "name" => new_contact_flow.name,
+    "uuid" => new_contact_flow.uuid
+  })
 
 Repo.insert!(%FlowRevision{
-      definition: new_contact_flow_definition,
-      flow_id: new_contact_flow.id
-             })
+  definition: new_contact_flow_definition,
+  flow_id: new_contact_flow.id
+})

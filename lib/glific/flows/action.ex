@@ -109,6 +109,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: type} = action, context, message_stream)
       when type == "set_contact_language" do
+    IO.puts("Setting contact preference: #{action.value}")
     context = ContactSetting.set_contact_language(context, action.text)
     {:ok, context, message_stream}
   end
@@ -121,8 +122,17 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: type, name: name} = action, context, message_stream)
       when type == "set_run_result" and name == "settings_preference" do
-    IO.puts("Setting Contact Setting Preferences: #{action.value}")
+    IO.puts("Setting contact preference: #{action.value}")
     context = ContactSetting.set_contact_preference(context, action.value)
+    {:ok, context, message_stream}
+  end
+
+  def execute(%{type: type} = action, context, message_stream)
+      when type == "enter_flow" do
+    # we create a new context and set the parent id to the exisiting context
+    # and start that flow
+    Flow.start_sub_flow(context, action.enter_flow_uuid)
+
     {:ok, context, message_stream}
   end
 

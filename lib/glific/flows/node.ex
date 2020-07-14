@@ -100,13 +100,21 @@ defmodule Glific.Flows.Node do
   Consume the message stream as processing occurs
   """
   @spec execute(Node.t(), FlowContext.t(), [String.t()]) ::
-          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
+          {:ok | :wait, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(node, context, message_stream) do
     # if node has an action, execute the first action
     cond do
+      # if both are non-empty, it means that we have a sub-flow option going on
+      # thats out understanding for now
+      !Enum.empty?(node.actions) && !is_nil(node.router) ->
+        # need a better way to figure out if we should handle router or action
+        # this is a hack for now
+        if message_stream != [] and hd(message_stream) in ["completed", "expired"],
+          do: Router.execute(node.router, context, message_stream),
+          else: Action.execute(hd(node.actions), context, message_stream)
+
       !Enum.empty?(node.actions) ->
         {:ok, context, message_stream} = Action.execute(hd(node.actions), context, message_stream)
-
         Exit.execute(hd(node.exits), context, message_stream)
 
       !is_nil(node.router) ->

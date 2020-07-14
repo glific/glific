@@ -617,6 +617,6 @@ defmodule Glific.Repo.Migrations.GlificTables do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:flow_contexts, :contact_id)
+    create unique_index(:flow_contexts, [:contact_id, :parent_id])
   end
 end

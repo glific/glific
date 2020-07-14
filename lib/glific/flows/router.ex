@@ -114,11 +114,11 @@ defmodule Glific.Flows.Router do
     do: {:ok, context, []}
 
   def execute(
-        %{type: type, wait_type: wait_type} = router,
+        %{type: type} = router,
         context,
         message_stream
       )
-      when type == "switch" and wait_type == "msg" do
+      when type == "switch" do
     [msg | rest] = message_stream
 
     # go thru the cases and find the first one that succeeds

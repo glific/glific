@@ -20,7 +20,7 @@ defmodule Glific.Processor.ConsumerNewContact do
 
   @doc false
   def init(opts) do
-    Helper.init(opts, "New Contact")
+    Helper.init(opts, "New Contact NO")
   end
 
   @doc false
