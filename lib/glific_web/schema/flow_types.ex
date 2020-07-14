@@ -19,7 +19,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :name, :string
     field :shortcode, :string
     field :version_number, :string
-    field :flow_type, :string
+    field :flow_type, :flow_type_enum
 
     field :language, :language do
       resolve(dataloader(Repo))

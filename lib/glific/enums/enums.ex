@@ -27,7 +27,7 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.flow_type_const()
   [:enter_flow, :send_msg, :set_contact_language, :wait_for_response,
-  :set_contact_field]
+  :set_contact_field, :message]
 
   iex> Glific.Enums.message_flow_const()
   [:inbound, :outbound]
