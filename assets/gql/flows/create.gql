@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createFlow($input:FlowInput!) {
+  createFlow(input: $input) {
+    ...FlowFields
+
+    ...ErrorFields
+  }
+}
