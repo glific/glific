@@ -123,40 +123,35 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def templates(conn, _params) do
-    templates = %{
-      results: [
-        %{
-          uuid: generate_uuid(),
-          name: "sample_template",
-          created_on: DateTime.utc_now(),
-          modified_on: DateTime.utc_now(),
-          translations: [
-            %{
-              language: "eng",
-              content: "Hi {{1}}, are you still experiencing problems with {{2}}?",
-              variable_count: 2,
-              status: "approved",
-              channel: %{
-                uuid: "0f661e8b-ea9d-4bd3-9953-d368340acf91",
-                name: "WhatsApp"
-              }
-            },
-            %{
-              language: "fra",
-              content: "Bonjour {{1}}, a tu des problems avec {{2}}?",
-              variable_count: 2,
-              status: "pending",
-              channel: %{
-                uuid: "0f661e8b-ea9d-4bd3-9953-d368340acf91",
-                name: "WhatsApp"
-              }
-            }
-          ]
-        }
-      ]
-    }
 
-    json(conn, templates)
+    results = Glific.Templates.list_session_templates()
+    |> Enum.reduce([], fn template, acc
+      ->
+        template = Glific.Repo.preload(template, :language)
+        language = template.language
+
+        [
+          %{
+            uuid: generate_uuid(),
+            name: template.label,
+            created_on: template.inserted_at,
+            modified_on: template.updated_at,
+            translations: [
+              %{
+                language: language.locale,
+                content: template.body,
+                variable_count: template.number_parameters,
+                status: "approved",
+                channel: %{
+                      uuid: "0f661e8b-ea9d-4bd3-9953-d368340acf91",
+                      name: "WhatsApp"
+                }
+              }
+            ]
+          } | acc]
+      end)
+
+    json(conn, %{results: results})
   end
 
   @doc false
