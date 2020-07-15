@@ -47,12 +47,12 @@ defmodule GlificWeb.Schema.UserTest do
     assert {:ok, query_data} = result
 
     users = get_in(query_data, [:data, "users"])
-    assert length(users) == 1
+    assert length(users) <= 2
   end
 
   test "count returns the number of users" do
     {:ok, query_data} = query_gql_by(:count)
-    assert get_in(query_data, [:data, "countUsers"]) == 2
+    assert get_in(query_data, [:data, "countUsers"]) == 3
 
     {:ok, query_data} =
       query_gql_by(:count,
