@@ -83,7 +83,7 @@ defmodule Glific.Flows.Case do
   def execute(%{type: type} = c, _context, msg) when type == "has_number_eq",
     do: hd(c.arguments) == msg
 
-  def execute(%{type: type} = c, _context, msg) when type == "has_only_phrase",
+  def execute(%{type: type} = c, _context, msg) when type == "has_only_phrase" or type == "has_only_text",
     do: hd(c.arguments) == msg
 
   def execute(c, _context, _msg) do

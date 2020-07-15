@@ -238,7 +238,7 @@ Repo.insert!(%SessionTemplate{
 Repo.insert!(%SessionTemplate{
   label: "Language",
   body: """
-  Is <%= language %> your preferred language?
+  Is <%= contact.language %> your preferred language?
 
   Do you want to change the language you want to receive messages in?
 
@@ -255,7 +255,7 @@ Repo.insert!(%SessionTemplate{
 Repo.insert!(%SessionTemplate{
   label: "Language",
   body: """
-  क्या आपकी पसंदीदा भाषा <%= language %> है?
+  क्या आपकी पसंदीदा भाषा <%= contact.language %> है?
 
   आप जिस भाषा में संदेश प्राप्त करना चाहते हैं उसे बदल सकते हैं।
 
