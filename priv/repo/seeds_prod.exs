@@ -173,7 +173,8 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "new contact",
   is_reserved: true,
-  language_id: en_us.id
+  language_id: en_us.id,
+  uuid: "5d7346d5-347c-4eca-b422-f05b07c41820"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -188,7 +189,8 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "new contact",
   is_reserved: true,
-  language_id: hi.id
+  language_id: hi.id,
+  uuid: "38c74fcc-f586-4aef-a367-70a7c4c72a1d"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -197,7 +199,8 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "bye",
   is_reserved: true,
-  language_id: en_us.id
+  language_id: en_us.id,
+  uuid: "bb190315-ce63-4e9a-88de-2e7da691f118"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -212,7 +215,8 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "help",
   is_reserved: true,
-  language_id: en_us.id
+  language_id: en_us.id,
+  uuid: "2f1c9eee-cb81-4624-8d18-9b21ff0bb2e6"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -227,7 +231,8 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "help",
   is_reserved: true,
-  language_id: hi.id
+  language_id: hi.id,
+  uuid: "ea83bdcd-a940-49c2-b9cb-1194f75fffd9"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -243,7 +248,8 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "language",
   is_reserved: true,
-  language_id: en_us.id
+  language_id: en_us.id,
+  uuid: "942cb24b-5c78-4c7f-a3f9-1b4d1ba63118"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -259,7 +265,8 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "language",
   is_reserved: true,
-  language_id: hi.id
+  language_id: hi.id,
+  uuid: "af0caab8-796d-4591-bd7f-7aed57e1ce81"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -272,7 +279,8 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "optout",
   is_reserved: true,
-  language_id: en_us.id
+  language_id: en_us.id,
+  uuid: "754eebd8-67b6-4fdc-bf0a-a81a0bf16f8c"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -285,7 +293,8 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "optout",
   is_reserved: true,
-  language_id: hi.id
+  language_id: hi.id,
+  uuid: "d36c2204-fc6f-4301-b3ef-a3aedfd10215"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -302,7 +311,8 @@ Repo.insert!(%SessionTemplate{
   type: :text,
   shortcode: "preference",
   is_reserved: true,
-  language_id: en_us.id
+  language_id: en_us.id,
+  uuid: "a9834b33-583d-471b-aa50-bdf0a4c8c34b"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -311,7 +321,8 @@ Repo.insert!(%SessionTemplate{
   shortcode: "verification",
   is_reserved: true,
   language_id: en_us.id,
-  body: "Your verification OTP is: "
+  body: "Your verification OTP is: ",
+  uuid: "51277490-bddf-4a7b-b65c-ceb40561a864"
 })
 
 # seed hsm templates
@@ -323,7 +334,9 @@ Repo.insert!(%SessionTemplate{
   number_parameters: 0,
   language_id: en_us.id,
   body:
-    "I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now. If you’d like to continue this discussion, please reply with ‘yes’"
+    "I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now. If you’d like to continue this discussion, please reply with ‘yes’",
+
+  uuid: "9381b1b9-1b9b-45a6-81f4-f91306959619"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -333,7 +346,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 2,
   language_id: en_us.id,
-  body: "You have received a new update about {{1}}. Please click on {{2}} to know more."
+  body: "You have received a new update about {{1}}. Please click on {{2}} to know more.",
+  uuid: "8f614010-a48e-4d97-88cd-3a577471f60c"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -343,7 +357,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 3,
   language_id: en_us.id,
-  body: "Your {{1}} number {{2}} has been {{3}}."
+  body: "Your {{1}} number {{2}} has been {{3}}.",
+  uuid: "c39f98e7-9b32-4554-a5b2-2bcc9a297053"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -353,7 +368,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 2,
   language_id: en_us.id,
-  body: "{{1}} is currently unavailable due to {{2}}."
+  body: "{{1}} is currently unavailable due to {{2}}.",
+  uuid: "70ddb61b-ee8d-400e-8190-0c9df4642774"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -363,7 +379,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 2,
   language_id: en_us.id,
-  body: "Please provide feedback for {{1}} by clicking on {{2}}."
+  body: "Please provide feedback for {{1}} by clicking on {{2}}.",
+  uuid: "fe9cad7b-2324-4526-a810-2ccf03b1cbd1"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -373,7 +390,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 3,
   language_id: en_us.id,
-  body: "Your {{1}} is pending. Please {{2}} by clicking on {{3}}."
+  body: "Your {{1}} is pending. Please {{2}} by clicking on {{3}}.",
+  uuid: "bb498fb8-e37d-4d4f-bc8a-b97d1a02e60d"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -383,7 +401,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 2,
   language_id: en_us.id,
-  body: "This is to remind you that {{1}} is due by {{2}}."
+  body: "This is to remind you that {{1}} is due by {{2}}.",
+  uuid: "b5f0d185-999f-411a-97bd-2f0876e5b831"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -393,7 +412,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 2,
   language_id: en_us.id,
-  body: "You have earned {{1}} points at {{2}}."
+  body: "You have earned {{1}} points at {{2}}.",
+  uuid: "72b380e8-add3-4981-a454-287d349763b2"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -403,7 +423,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 2,
   language_id: en_us.id,
-  body: "The status of {{1}} has been updated to {{2}}."
+  body: "The status of {{1}} has been updated to {{2}}.",
+  uuid: "f8bded9a-7f4b-46b9-b009-3efc6bd67904"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -413,7 +434,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 2,
   language_id: en_us.id,
-  body: "You have redeemed {{1}} points on {{2}}."
+  body: "You have redeemed {{1}} points on {{2}}.",
+  uuid: "0c863528-427c-4345-8bb1-2c4ec29506ea"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -423,7 +445,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 2,
   language_id: en_us.id,
-  body: "Your {{1}} points will expire on {{2}}."
+  body: "Your {{1}} points will expire on {{2}}.",
+  uuid: "8ac4ecda-851e-4f1f-aa29-ca5366bf7a2a"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -433,7 +456,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 2,
   language_id: en_us.id,
-  body: "Your {{1}} is due by {{2}}. Please {{3}}."
+  body: "Your {{1}} is due by {{2}}. Please {{3}}.",
+  uuid: "6c194aa2-f77f-4f9a-8a83-1a63e39c49e2"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -443,7 +467,8 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 2,
   language_id: en_us.id,
-  body: "Your {{1}} is pending. Please {{2}} by clicking on {{3}}."
+  body: "Your {{1}} is pending. Please {{2}} by clicking on {{3}}.",
+  uuid: "a2a643d6-c805-4ccd-896e-c74c7da2e08e"
 })
 
 Repo.insert!(%SessionTemplate{
@@ -453,7 +478,9 @@ Repo.insert!(%SessionTemplate{
   is_hsm: true,
   number_parameters: 3,
   language_id: en_us.id,
-  body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}."
+  body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+
+  uuid: "e55f2c10-541c-470b-a5ff-9249ae82bc95"
 })
 
 # Template for hsm with media
@@ -469,7 +496,8 @@ Repo.insert!(%SessionTemplate{
   Hello {{1}},
 
   Here is your personalized {{2}} welcome kit.\
-  """
+  """,
+  uuid: "e89b3d89-c7c0-4c87-bf04-f70c51ade5a5"
 })
 
 # Template for hsm with button
@@ -481,7 +509,9 @@ Repo.insert!(%SessionTemplate{
   number_parameters: 3,
   language_id: en_us.id,
   body:
-    "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{1}}]"
+    "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{1}}]",
+
+  uuid: "ae35ef89-ea4b-4b04-979d-04e7538f52dc"
 })
 
 # Seed saved searches
