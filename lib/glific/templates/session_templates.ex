@@ -14,6 +14,7 @@ defmodule Glific.Templates.SessionTemplate do
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
+          uuid: Ecto.UUID.t() | nil,
           label: String.t() | nil,
           body: String.t() | nil,
           type: String.t() | nil,
@@ -47,10 +48,12 @@ defmodule Glific.Templates.SessionTemplate do
     :is_source,
     :message_media_id,
     :parent_id,
-    :is_hsm
+    :is_hsm,
+    :uuid
   ]
 
   schema "session_templates" do
+    field :uuid, Ecto.UUID, autogenerate: true
     field :label, :string
     field :body, :string
     field :type, MessageType

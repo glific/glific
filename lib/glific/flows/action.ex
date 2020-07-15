@@ -15,11 +15,12 @@ defmodule Glific.Flows.Action do
     ContactSetting,
     Flow,
     FlowContext,
-    Node
+    Node,
+    Templating
   }
 
   @required_fields [:type, :node_uuid]
-  @optional_fields [:text, :value, :name, :quick_replies, :flow_uuid]
+  @optional_fields [:text, :value, :name, :quick_replies, :flow_uuid, :templating]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -31,7 +32,8 @@ defmodule Glific.Flows.Action do
           enter_flow_uuid: Ecto.UUID.t() | nil,
           enter_flow: Flow.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
-          node: Node.t() | nil
+          node: Node.t() | nil,
+          templating: Templating.t() | nil
         }
 
   embedded_schema do
@@ -45,6 +47,8 @@ defmodule Glific.Flows.Action do
 
     field :node_uuid, Ecto.UUID
     embeds_one :node, Node
+
+    embeds_one :templating, Templating
 
     field :enter_flow_uuid, Ecto.UUID
     embeds_one :enter_flow, Flow
@@ -88,6 +92,10 @@ defmodule Glific.Flows.Action do
       quick_replies: json["quick_replies"]
     }
 
+    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
+
+    action = Map.put(action, :templating, templating)
+
     action =
       if action.type == "set_contact_language",
         do: Map.put(action, :text, json["language"]),
@@ -103,7 +111,7 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(%{type: type} = action, context, message_stream) when type == "send_msg" do
-    ContactAction.send_message(context, action.text)
+    ContactAction.send_message(context, action)
     {:ok, context, message_stream}
   end
 

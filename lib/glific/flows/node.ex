@@ -105,7 +105,7 @@ defmodule Glific.Flows.Node do
     # if node has an action, execute the first action
     cond do
       # if both are non-empty, it means that we have a sub-flow option going on
-      # thats out understanding for now
+      # thats our understanding for now
       !Enum.empty?(node.actions) && !is_nil(node.router) ->
         # need a better way to figure out if we should handle router or action
         # this is a hack for now

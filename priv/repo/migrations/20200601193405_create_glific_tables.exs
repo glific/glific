@@ -130,6 +130,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
   """
   def session_templates do
     create table(:session_templates) do
+      # The template uuid, primarly needed for flow editor
+      add :uuid, :uuid, null: false
+
       # The message label
       add :label, :string, null: false
 
