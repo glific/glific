@@ -120,7 +120,7 @@ defmodule Glific.Flows.FlowContext do
     # the old context with the values of the new context (ecto design)
     {:ok, _} =
       old_context
-      |> FlowContext.changeset(%{node_uuid: old_context.node_uuid})
+      |> FlowContext.changeset(%{node_uuid: context.node_uuid})
       |> Repo.update()
 
     {:ok, context, messages}

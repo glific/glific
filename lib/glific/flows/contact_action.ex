@@ -6,8 +6,8 @@ defmodule Glific.Flows.ContactAction do
 
   alias Glific.{
     Contacts,
-    Flows.FlowContext,
     Flows.Action,
+    Flows.FlowContext,
     Messages,
     Processor.Helper
   }
