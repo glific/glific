@@ -63,11 +63,12 @@ defmodule Glific.Flows.Exit do
   Execute a exit, given a message stream.
   """
   @spec execute(Exit.t(), FlowContext.t(), [String.t()]) ::
-          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
+          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
   def execute(exit, context, message_stream) do
     if is_nil(exit.destination_node_uuid) do
-      IO.puts("And we have reached the end of the help menu")
-      {:ok, FlowContext.set_node(context, nil), []}
+      IO.puts("And we have reached the end of the current workflow")
+      FlowContext.reset_context(context)
+      {:ok, nil, []}
     else
       {:ok, {:node, node}} = Map.fetch(context.uuid_map, exit.destination_node_uuid)
 

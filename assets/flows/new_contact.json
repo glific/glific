@@ -1,7 +1,7 @@
 {
   "type" : "message",
   "language" : "eng",
-  "name" : "New_Contact Workflow",
+  "name" : "New Contact Workflow",
   "vars" : [
     "973a24ea-dd2e-4d19-a427-83b0620161b0"
   ],
@@ -60,7 +60,7 @@
       ],
       "actions" : [
         {
-          "text" : "new_contact",
+          "text" : "new contact",
           "attachments" : [
 
           ],

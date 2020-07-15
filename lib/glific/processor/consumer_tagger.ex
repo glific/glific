@@ -84,6 +84,9 @@ defmodule Glific.Processor.ConsumerTagger do
   defp process_message(message, state) do
     body = Glific.string_clean(message.body)
 
+    # hack for now, while we are testing enter flow
+    body = if body == "newcontact", do: "new contact", else: body
+
     message
     |> start_flows(body)
     |> add_status_tag("Unread", state)
@@ -96,7 +99,8 @@ defmodule Glific.Processor.ConsumerTagger do
   end
 
   @spec start_flows(atom() | Message.t(), String.t()) :: Message.t()
-  defp start_flows(message, body) when body in ["help", "language", "setting"] do
+  defp start_flows(message, body)
+       when body in ["help", "language", "preference", "new contact"] do
     message = Repo.preload(message, :contact)
     Flow.start_flow(body, message.contact)
     message
@@ -125,6 +129,8 @@ defmodule Glific.Processor.ConsumerTagger do
     if Status.is_new_contact(message.sender_id) do
       message
       |> add_status_tag("New Contact", state)
+
+      start_flows(message, "new contact")
     end
 
     message

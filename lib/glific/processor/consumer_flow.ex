@@ -46,10 +46,10 @@ defmodule Glific.Processor.ConsumerFlow do
 
   defp reload(state) do
     {help, language, preference, new_contact} = {
-      Flow.load_flow("help"),
-      Flow.load_flow("language"),
-      Flow.load_flow("preference"),
-      Flow.load_flow("new_contact")
+      Flow.load_flow(%{shortcode: "help"}),
+      Flow.load_flow(%{shortcode: "language"}),
+      Flow.load_flow(%{shortcode: "preference"}),
+      Flow.load_flow(%{shortcode: "new contact"})
     }
 
     flows =
