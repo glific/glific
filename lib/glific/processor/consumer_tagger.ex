@@ -10,6 +10,7 @@ defmodule Glific.Processor.ConsumerTagger do
   alias Glific.{
     Communications,
     Flows.Flow,
+    Flows.FlowContext,
     Messages.Message,
     Processor.Helper,
     Repo,
@@ -37,18 +38,23 @@ defmodule Glific.Processor.ConsumerTagger do
       %{
         producer: opts[:producer],
         numeric_map: Numeric.get_numeric_map(),
-        numeric_tag_id: 0
+        numeric_tag_id: 0,
+        flows: %{}
       }
       |> reload
+      |> reload_flows
 
-    {:producer_consumer, state,
-     dispatcher: GenStage.BroadcastDispatcher,
-     subscribe_to: [
-       {state.producer,
-        selector: fn %{type: type} -> type == :text end,
-        min_demand: @min_demand,
-        max_demand: @max_demand}
-     ]}
+    {
+      :producer_consumer,
+      state,
+      # dispatcher: GenStage.BroadcastDispatcher,
+      subscribe_to: [
+        {state.producer,
+         selector: fn %{type: type} -> type == :text end,
+         min_demand: @min_demand,
+         max_demand: @max_demand}
+      ]
+    }
   end
 
   defp reload(%{numeric_tag_id: numeric_tag_id} = state) when numeric_tag_id == 0 do
@@ -64,20 +70,42 @@ defmodule Glific.Processor.ConsumerTagger do
 
   defp reload(state), do: state
 
+  defp reload_flows(%{flows: flow} = state) when flow == %{} do
+    {help, language, preference, new_contact} = {
+      Flow.load_flow(%{shortcode: "help"}),
+      Flow.load_flow(%{shortcode: "language"}),
+      Flow.load_flow(%{shortcode: "preference"}),
+      Flow.load_flow(%{shortcode: "new contact"})
+    }
+
+    flows =
+      if is_nil(help),
+        do: %{},
+        else: %{
+              help.id => help,
+              help.uuid => help,
+              "help" => help,
+              language.id => language,
+              language.uuid => language,
+              "language" => language,
+              preference.id => preference,
+              preference.uuid => preference,
+              "preference" => preference,
+              new_contact.id => new_contact,
+              new_contact.uuid => new_contact,
+              "new contact" => new_contact,
+        }
+
+    Map.put(state, :flows, flows)
+  end
+
+  defp reload_flows(state), do: state
+
   @doc false
   def handle_events(messages, _from, state) do
-    events =
-      messages
-      |> Enum.map(&process_message(&1, state))
-      |> Enum.reduce([], fn m, acc ->
-        Enum.reduce(
-          m.tags,
-          acc,
-          fn t, acc -> [[m, t] | acc] end
-        )
-      end)
+    _ = Enum.map(messages, &process_message(&1, state))
 
-    {:noreply, events, state}
+    {:noreply, [], state}
   end
 
   @spec process_message(atom() | Message.t(), map()) :: Message.t()
@@ -88,7 +116,6 @@ defmodule Glific.Processor.ConsumerTagger do
     body = if body == "newcontact", do: "new contact", else: body
 
     message
-    |> start_flows(body)
     |> add_status_tag("Unread", state)
     |> add_not_reply_tag(state)
     |> new_contact_tagger(state)
@@ -96,17 +123,33 @@ defmodule Glific.Processor.ConsumerTagger do
     |> keyword_tagger(body, state)
     |> Repo.preload(:tags)
     |> Communications.publish_data(:created_message_tag)
+    |> check_flows(body, state)
   end
 
-  @spec start_flows(atom() | Message.t(), String.t()) :: Message.t()
-  defp start_flows(message, body)
+  @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
+  defp check_flows(message, body, state)
        when body in ["help", "language", "preference", "new contact"] do
     message = Repo.preload(message, :contact)
-    Flow.start_flow(body, message.contact)
+
+    FlowContext.init_context(Map.get(state.flows, body), message.contact)
     message
   end
 
-  defp start_flows(message, _body), do: message
+  defp check_flows(message, _body, state) do
+    case FlowContext.active_context(message.contact_id) do
+      nil ->
+        message
+
+      context ->
+        context
+        |> FlowContext.load_context(state.flows[context.flow_id])
+        |> FlowContext.step_forward(message.body)
+
+        # we can potentially save the {contact_id, context} map here, to avoid
+        # hitting the DB again. We'll do this after we get this working
+        message
+    end
+  end
 
   @spec numeric_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()
   defp numeric_tagger(message, body, state) do
@@ -129,8 +172,7 @@ defmodule Glific.Processor.ConsumerTagger do
     if Status.is_new_contact(message.sender_id) do
       message
       |> add_status_tag("New Contact", state)
-
-      start_flows(message, "new contact")
+      |> check_flows("new contact", state)
     end
 
     message
