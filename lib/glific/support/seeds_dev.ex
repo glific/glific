@@ -35,6 +35,8 @@ defmodule Glific.SeedsDev do
     [english | _] = Settings.list_languages(%{label: "english"})
 
     contacts = [
+      %{phone: "919876543210", name: "NGO Admin", language_id: english.id},
+      %{phone: "919820112345", name: "NGO Basic User 1", language_id: english.id},
       %{phone: "917834811231", name: "Default receiver", language_id: hindi.id},
       %{
         name: "Adelle Cavin",
@@ -251,6 +253,14 @@ defmodule Glific.SeedsDev do
       password: password,
       confirm_password: password,
       roles: ["basic"]
+    })
+
+    Users.create_user(%{
+      name: "NGO Admin",
+      phone: "919876543210",
+      password: password,
+      confirm_password: password,
+      roles: ["admin"]
     })
   end
 
