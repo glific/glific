@@ -36,7 +36,6 @@ defmodule Glific.Flows.ContactAction do
   to the contact
   """
   def send_message(context, %Action{templating: templating}) do
-    IO.inspect(templating.template.shortcode, label: "SHORTCODE")
     send_session_message_template(context, templating.template.shortcode)
     context
   end

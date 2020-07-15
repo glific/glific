@@ -71,12 +71,13 @@ defmodule Glific.Processor.ConsumerTagger do
   defp reload(state), do: state
 
   defp reload_flows(%{flows: flow} = state) when flow == %{} do
-    {help, language, preference, new_contact} = {
+    {help, language, new_contact, preference, registration} = {
       Flow.load_flow(%{shortcode: "help"}),
       Flow.load_flow(%{shortcode: "language"}),
+      Flow.load_flow(%{shortcode: "new contact"}),
       Flow.load_flow(%{shortcode: "preference"}),
-      Flow.load_flow(%{shortcode: "new contact"})
-    }
+      Flow.load_flow(%{shortcode: "registration"}),
+   }
 
     flows =
       if is_nil(help),
@@ -88,12 +89,15 @@ defmodule Glific.Processor.ConsumerTagger do
           language.id => language,
           language.uuid => language,
           "language" => language,
+          new_contact.id => new_contact,
+          new_contact.uuid => new_contact,
+          "new contact" => new_contact,
           preference.id => preference,
           preference.uuid => preference,
           "preference" => preference,
-          new_contact.id => new_contact,
-          new_contact.uuid => new_contact,
-          "new contact" => new_contact
+          registration.id => registration,
+          registration.uuid => registration,
+          "registration" => registration,
         }
 
     Map.put(state, :flows, flows)
@@ -128,7 +132,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
   defp check_flows(message, body, state)
-       when body in ["help", "language", "preference", "new contact"] do
+  when body in ["help", "language", "new contact", "preference", "registration"] do
     message = Repo.preload(message, :contact)
 
     FlowContext.init_context(Map.get(state.flows, body), message.contact)
