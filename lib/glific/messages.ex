@@ -193,7 +193,6 @@ defmodule Glific.Messages do
   @spec create_and_send_message(map()) :: {:ok, Message.t()}
   def create_and_send_message(attrs) do
     send_at = get_in(attrs, [:send_at])
-
     {:ok, message} =
       %{
         sender_id: Communications.Message.organization_contact_id(),
