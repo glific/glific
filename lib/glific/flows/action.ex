@@ -111,7 +111,7 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(%{type: type} = action, context, message_stream) when type == "send_msg" do
-            IO.puts("Sending session message: #{action.text}")
+    IO.puts("Sending session message: #{action.text}")
     ContactAction.send_message(context, action)
     {:ok, context, message_stream}
   end

@@ -198,9 +198,9 @@ defmodule Glific.Messages do
       %{
         sender_id: Communications.Message.organization_contact_id(),
         flow: :outbound
-       }
-       |> Map.merge(attrs)
-       |> create_message()
+      }
+      |> Map.merge(attrs)
+      |> create_message()
 
     Communications.Message.send_message(message, send_at)
   end

@@ -4,8 +4,6 @@ defmodule Glific.SeedsDev do
   """
   alias Glific.{
     Contacts.Contact,
-    Flows.Flow,
-    Flows.FlowRevision,
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
@@ -272,44 +270,6 @@ defmodule Glific.SeedsDev do
     })
   end
 
-  @doc false
-  @spec seed_flows :: nil
-  def seed_flows do
-    [en_us | _] = Settings.list_languages(%{label: "english"})
-
-    Repo.insert!(%Flow{
-      name: "Test Workflow",
-      shortcode: "test",
-      version_number: "13.1.0",
-      uuid: "defda715-c520-499d-851e-4428be87def6",
-      language_id: en_us.id
-    })
-
-    registration_flow =
-      Repo.insert!(%Flow{
-        name: "Registration Workflow",
-        shortcode: "registration",
-        version_number: "13.1.0",
-        uuid: "5e086708-37b2-4b20-80c2-bdc0f213c3c6",
-        language_id: en_us.id
-      })
-
-    registration_flow_definition =
-      File.read!("assets/flows/registration.json")
-      |> Jason.decode!()
-
-    registration_flow_definition =
-      Map.merge(registration_flow_definition, %{
-        "name" => registration_flow.name,
-        "uuid" => registration_flow.uuid
-      })
-
-    Repo.insert!(%FlowRevision{
-      definition: registration_flow_definition,
-      flow_id: registration_flow.id
-    })
-  end
-
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
   split this function up into multiple different ones for test, dev and production
@@ -331,7 +291,5 @@ defmodule Glific.SeedsDev do
     seed_messages()
 
     seed_messages_media()
-
-    seed_flows()
   end
 end
