@@ -283,7 +283,7 @@ defmodule Glific.SeedsDev do
       language_id: en_us.id
     })
 
-    slamout_registration_flow =
+    registration_flow =
       Repo.insert!(%Flow{
         name: "Registration Workflow",
         shortcode: "registration",
@@ -292,19 +292,19 @@ defmodule Glific.SeedsDev do
         language_id: en_us.id
       })
 
-    slamout_registration_flow_definition =
+    registration_flow_definition =
       File.read!("assets/flows/registration.json")
       |> Jason.decode!()
 
-    slamout_registration_flow_definition =
-      Map.merge(slamout_registration_flow_definition, %{
-        "name" => slamout_registration_flow.name,
-        "uuid" => slamout_registration_flow.uuid
+    registration_flow_definition =
+      Map.merge(registration_flow_definition, %{
+        "name" => registration_flow.name,
+        "uuid" => registration_flow.uuid
       })
 
     Repo.insert!(%FlowRevision{
-      definition: slamout_registration_flow_definition,
-      flow_id: slamout_registration_flow.id
+      definition: registration_flow_definition,
+      flow_id: registration_flow.id
     })
   end
 
