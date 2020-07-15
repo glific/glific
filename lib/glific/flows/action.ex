@@ -8,7 +8,7 @@ defmodule Glific.Flows.Action do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.Enums.FlowType
+  alias Glific.Enums.FlowActionType
 
   alias Glific.Flows.{
     ContactAction,
@@ -26,7 +26,7 @@ defmodule Glific.Flows.Action do
           name: String.t() | nil,
           text: String.t() | nil,
           value: String.t() | nil,
-          type: FlowType,
+          type: FlowActionType,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
           enter_flow: Flow.t() | nil,
@@ -40,7 +40,7 @@ defmodule Glific.Flows.Action do
     field :text, :string
     field :value, :string
     field :language, :string
-    field :type, FlowType
+    field :type, FlowActionType
     field :quick_replies, {:array, :string}, default: []
 
     field :node_uuid, Ecto.UUID

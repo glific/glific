@@ -6,7 +6,7 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     ContactStatus,
     FlowCase,
     FlowRouter,
-    FlowType,
+    FlowActionType,
     MessageFlow,
     MessageType,
     MessageStatus,
@@ -19,7 +19,7 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     ContactStatus.create_type()
     FlowCase.create_type()
     FlowRouter.create_type()
-    FlowType.create_type()
+    FlowActionType.create_type()
     MessageFlow.create_type()
     MessageType.create_type()
     MessageStatus.create_type()
@@ -32,7 +32,7 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     ContactStatus.drop_type()
     FlowCase.drop_type()
     FlowRouter.drop_type()
-    FlowType.drop_type()
+    FlowActionType.drop_type()
     MessageFlow.drop_type()
     MessageStatus.drop_type()
     MessageType.drop_type()

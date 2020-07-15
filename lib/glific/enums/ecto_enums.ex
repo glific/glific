@@ -31,9 +31,9 @@ defenum(
 )
 
 defenum(
-  Glific.Enums.FlowType,
-  :flow_type_enum,
-  Glific.Enums.flow_type_const()
+  Glific.Enums.FlowActionType,
+  :flow_action_type_enum,
+  Glific.Enums.flow_action_type_const()
 )
 
 defenum(

@@ -82,18 +82,18 @@ defmodule Glific.Processor.ConsumerTagger do
       if is_nil(help),
         do: %{},
         else: %{
-              help.id => help,
-              help.uuid => help,
-              "help" => help,
-              language.id => language,
-              language.uuid => language,
-              "language" => language,
-              preference.id => preference,
-              preference.uuid => preference,
-              "preference" => preference,
-              new_contact.id => new_contact,
-              new_contact.uuid => new_contact,
-              "new contact" => new_contact,
+          help.id => help,
+          help.uuid => help,
+          "help" => help,
+          language.id => language,
+          language.uuid => language,
+          "language" => language,
+          preference.id => preference,
+          preference.uuid => preference,
+          "preference" => preference,
+          new_contact.id => new_contact,
+          new_contact.uuid => new_contact,
+          "new contact" => new_contact
         }
 
     Map.put(state, :flows, flows)
