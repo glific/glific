@@ -141,7 +141,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
                 content: template.body,
                 variable_count: template.number_parameters,
                 status: "approved",
-                channel: %{ uuid: "", name: "WhatsApp"}
+                channel: %{uuid: "", name: "WhatsApp"}
               }
             ]
           }

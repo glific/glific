@@ -18,8 +18,10 @@ defmodule Glific.Flows.Flow do
     Settings.Language
   }
 
-  @required_fields [:name, :language_id, :uuid]
-  @optional_fields [:flow_type, :version_number, :shortcode, :uuid_map, :nodes]
+  alias Glific.Enums.FlowType
+
+  @required_fields [:name, :language_id, :uuid, :shortcode]
+  @optional_fields [:flow_type, :version_number, :uuid_map, :nodes]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -43,7 +45,7 @@ defmodule Glific.Flows.Flow do
     field :shortcode, :string
 
     field :version_number, :string
-    field :flow_type, :string
+    field :flow_type, FlowType
     field :uuid, Ecto.UUID
 
     field :uuid_map, :map, virtual: true
@@ -55,7 +57,6 @@ defmodule Glific.Flows.Flow do
 
     timestamps(type: :utc_datetime)
   end
-
 
   @doc """
   Standard changeset pattern we use for all data types
@@ -141,11 +142,14 @@ defmodule Glific.Flows.Flow do
 
   @doc """
   Load the latest revision for a specific flow and setup for
-  flow execution
+  flow execution.
+
+  The args can be a specific filter. For now, the calling function
+  either sends a shortcode map or a flow_uuid map
   """
-  @spec load_flow(String.t()) :: Flow.t() | nil
-  def load_flow(shortcode) do
-    case Repo.fetch_by(Flow, %{shortcode: shortcode}) do
+  @spec load_flow(map()) :: Flow.t() | nil
+  def load_flow(args) do
+    case Repo.fetch_by(Flow, args) do
       {:ok, flow} ->
         flow.id
         |> get_latest_definition()
@@ -162,7 +166,19 @@ defmodule Glific.Flows.Flow do
   @spec start_flow(String.t(), Contact.t()) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def start_flow(shortcode, contact) do
-    flow = load_flow(shortcode)
+    flow = load_flow(%{shortcode: shortcode})
     FlowContext.init_context(flow, contact)
+  end
+
+  @doc """
+  Create a subflow of an existing flow
+  """
+  @spec start_sub_flow(FlowContext.t(), Ecto.UUID.t()) ::
+          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
+  def start_sub_flow(context, uuid) do
+    # we might want to put the current one under some sort of pause status
+    flow = load_flow(%{uuid: uuid})
+
+    FlowContext.init_context(flow, context.contact, context.id)
   end
 end

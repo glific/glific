@@ -44,18 +44,18 @@ defmodule Glific.Flows.ContactSetting do
   def add_contact_preference(context, preference, value \\ true) do
     contact_settings =
       if is_nil(context.contact.settings),
-        do: %{preferences: %{}},
+        do: %{"preferences" => %{}},
         else: context.contact.settings
 
     preferences =
       contact_settings
-      |> Map.get(:preferences, %{})
+      |> Map.get("preferences", %{})
       |> Map.put(preference, value)
 
     {:ok, contact} =
       Contacts.update_contact(
         context.contact,
-        %{settings: Map.put(contact_settings, :preferences, preferences)}
+        %{settings: Map.put(contact_settings, "preferences", preferences)}
       )
 
     Map.put(context, :contact, contact)
@@ -81,7 +81,7 @@ defmodule Glific.Flows.ContactSetting do
   def get_contact_preferences(contact: %FlowContext{contact: %Contact{settings: setting}}),
     do:
       Enum.reduce(
-        Map.get(setting, :preferences, %{}),
+        Map.get(setting, "preferences", %{}),
         [],
         fn {k, v}, acc -> if v, do: [k | acc], else: acc end
       )
@@ -94,7 +94,7 @@ defmodule Glific.Flows.ContactSetting do
     {:ok, contact} =
       Contacts.update_contact(
         context.contact,
-        %{settings: %{preferences: %{}}}
+        %{settings: %{"preferences" => %{}}}
       )
 
     Map.put(context, :contact, contact)

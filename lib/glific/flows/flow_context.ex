@@ -71,19 +71,36 @@ defmodule Glific.Flows.FlowContext do
     |> Repo.insert()
   end
 
-  @spec get_node_uuid(Node.t() | nil) :: Ecto.UUID.t() | nil
-  defp get_node_uuid(nil), do: nil
-  defp get_node_uuid(node), do: node.uuid
+  @doc """
+  Resets the context and sends control back to the parent context
+  if one exists
+  """
+  @spec reset_context(FlowContext.t()) :: FlowContext.t() | nil
+  def reset_context(context) do
+    # we first delete this entry
+    {:ok, _} = Repo.delete(context)
+
+    # check if context has a parent_id, if so, we need to
+    # load that context and keep going
+    if context.parent_id do
+      # we load the parent context, and resume it with a message of "Completed"
+      parent = active_context(context.contact_id)
+
+      parent
+      |> load_context(Flow.load_flow(%{id: parent.flow_id}))
+      |> step_forward("completed")
+    end
+  end
 
   @doc """
   Set the new node for the context
   """
-  @spec set_node(FlowContext.t(), Node.t() | nil) :: FlowContext.t()
-  def set_node(context, node) do
-    context
-    |> Map.put(:node, node)
-    |> Map.put(:node_uuid, get_node_uuid(node))
-  end
+  @spec set_node(FlowContext.t(), Node.t()) :: FlowContext.t()
+  def set_node(context, node),
+    do:
+      context
+      |> Map.put(:node, node)
+      |> Map.put(:node_uuid, node.uuid)
 
   @doc """
   Execute one (or more) steps in a flow based on the message stream
@@ -112,22 +129,26 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Start a new context, if there is an existing context, blow it away
   """
-  @spec init_context(Flow.t(), Contact.t()) ::
+  @spec init_context(Flow.t(), Contact.t(), non_neg_integer | nil) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def init_context(flow, contact) do
-    query =
-      from fc in FlowContext,
-        where: fc.contact_id == ^contact.id
+  def init_context(flow, contact, parent_id \\ nil) do
+    # delete previous context only if we are not starting a sub flow
+    if is_nil(parent_id) do
+      query =
+        from fc in FlowContext,
+          where: fc.contact_id == ^contact.id
 
-    # dont care about the return, since it would have deleted
-    # either 0 or 1 entries
-    Repo.delete_all(query)
+      # dont care about the return, since it would have deleted
+      # either 0 or 1 entries
+      Repo.delete_all(query)
+    end
 
     node = hd(flow.nodes)
 
     {:ok, context} =
       create_flow_context(%{
         contact_id: contact.id,
+        parent_id: parent_id,
         node_uuid: node.uuid,
         node: node,
         flow_id: flow.id,
@@ -146,9 +167,14 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec active_context(non_neg_integer) :: FlowContext.t() | nil
   def active_context(contact_id) do
+    # need to fix this instead of assuming the highest id is the most
+    # active context (or is that a wrong assumption). Mayve a context number? like
+    # we do for other tables
     query =
       from fc in FlowContext,
-        where: fc.contact_id == ^contact_id and not is_nil(fc.node_uuid)
+        where: fc.contact_id == ^contact_id and not is_nil(fc.node_uuid),
+        order_by: [desc: fc.id],
+        limit: 1
 
     Repo.one(query) |> Repo.preload(:contact)
   end

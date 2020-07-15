@@ -16,7 +16,7 @@
       "uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb",
       "actions" : [
         {
-          "text" : "preferences",
+          "text" : "preference",
           "type" : "send_msg",
           "attachments" : [
 

@@ -4,6 +4,7 @@ defmodule Glific.SeedsDev do
   """
   alias Glific.{
     Contacts.Contact,
+    Flows.Flow,
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
@@ -265,6 +266,20 @@ defmodule Glific.SeedsDev do
     Repo.insert!(%Group{
       label: "Restricted Group",
       is_restricted: true
+    })
+  end
+
+  @doc false
+  @spec seed_flows :: {Group.t()}
+  def seed_flows do
+    [en_us | _] = Settings.list_languages(%{label: "english"})
+
+    Repo.insert!(%Flow{
+      name: "Test Workflow",
+      shortcode: "test",
+      version_number: "13.1.0",
+      uuid: "defda715-c520-499d-851e-4428be87def6",
+      language_id: en_us.id
     })
   end
 
