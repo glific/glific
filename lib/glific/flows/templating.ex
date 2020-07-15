@@ -44,8 +44,9 @@ defmodule Glific.Flows.Templating do
   Process a json structure from floweditor to the Glific data types
   """
   def process(json, uuid_map) do
-    IO.inspect(json)
-    {:ok, template} = Glific.Repo.fetch_by(SessionTemplate, %{shortcode: String.downcase(json["template"]["name"]), language_id: 2})
+
+    {:ok, template} =
+      Glific.Repo.fetch_by(SessionTemplate, %{uuid: String.downcase(json["template"]["uuid"])})
 
     templating = %Templating{
       uuid: json["template"]["uuid"],

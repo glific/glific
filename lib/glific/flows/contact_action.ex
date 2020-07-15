@@ -26,7 +26,7 @@ defmodule Glific.Flows.ContactAction do
   """
   @spec send_message(FlowContext.t(), Action.t()) :: FlowContext.t()
   def send_message(context, %Action{templating: templating, text: text})
-  when is_nil(templating) do
+      when is_nil(templating) do
     Messages.create_and_send_message(%{body: text, type: :text, receiver_id: context.contact_id})
     context
   end
