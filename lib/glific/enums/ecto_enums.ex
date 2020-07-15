@@ -37,6 +37,12 @@ defenum(
 )
 
 defenum(
+  Glific.Enums.FlowType,
+  :flow_type_enum,
+  Glific.Enums.flow_type_const()
+)
+
+defenum(
   Glific.Enums.MessageFlow,
   :message_flow_enum,
   Glific.Enums.message_flow_const()

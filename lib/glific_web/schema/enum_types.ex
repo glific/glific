@@ -21,8 +21,11 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "The Flow Router enum"
   enum(:flow_router_enum, values: Glific.Enums.flow_router_const())
 
-  @desc "The Flow Type enum"
+  @desc "The Flow action Type enum"
   enum(:flow_action_type_enum, values: Glific.Enums.flow_action_type_const())
+
+  @desc "The Flow Type enum"
+  enum(:flow_type_enum, values: Glific.Enums.flow_type_const())
 
   @desc "The Message Flow enum"
   enum(:message_flow_enum, values: Glific.Enums.message_flow_const())

@@ -23,8 +23,7 @@ defmodule Glific.Enums.Constants do
         :send_msg,
         :set_contact_language,
         :wait_for_response,
-        :set_contact_field,
-        :message
+        :set_contact_field
       ]
 
       @flow_type_const [:message]

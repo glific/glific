@@ -18,7 +18,7 @@ defmodule Glific.Flows.Flow do
     Settings.Language
   }
 
-  alias Glific.Enums.FlowActionType
+  alias Glific.Enums.FlowType
 
   @required_fields [:name, :language_id, :uuid, :shortcode]
   @optional_fields [:flow_type, :version_number, :uuid_map, :nodes]
@@ -45,7 +45,7 @@ defmodule Glific.Flows.Flow do
     field :shortcode, :string
 
     field :version_number, :string
-    field :flow_type, FlowActionType
+    field :flow_type, FlowType
     field :uuid, Ecto.UUID
 
     field :uuid_map, :map, virtual: true
