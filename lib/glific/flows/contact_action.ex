@@ -6,6 +6,7 @@ defmodule Glific.Flows.ContactAction do
 
   alias Glific.{
     Contacts,
+    Flows.Action,
     Flows.FlowContext,
     Messages,
     Processor.Helper
@@ -21,12 +22,22 @@ defmodule Glific.Flows.ContactAction do
   end
 
   @doc """
+  If the template is not define for the message send text messages
+  """
+  @spec send_message(FlowContext.t(), Action.t()) :: FlowContext.t()
+  def send_message(context, %Action{templating: templating, text: text})
+  when is_nil(templating) do
+    Messages.create_and_send_message(%{body: text, type: :text, receiver_id: context.contact_id})
+    context
+  end
+
+  @doc """
   Given a shortcode and a context, send the right session template message
   to the contact
   """
-  @spec send_message(FlowContext.t(), String.t()) :: FlowContext.t()
-  def send_message(context, shortcode) do
-    send_session_message_template(context, shortcode)
+  def send_message(context, %Action{templating: templating}) do
+    IO.inspect(templating.template.shortcode, label: "SHORTCODE")
+    send_session_message_template(context, templating.template.shortcode)
     context
   end
 
