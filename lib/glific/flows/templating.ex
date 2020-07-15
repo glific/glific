@@ -37,15 +37,15 @@ defmodule Glific.Flows.Templating do
   @doc """
   Process a json structure from floweditor to the Glific data types
   """
-
+  @spec process(map(), map()) :: {Templating.t(), map()}
   def process(json, uuid_map) when is_nil(json), do: {json, uuid_map}
 
   @doc """
   Process a json structure from floweditor to the Glific data types
   """
-  @spec process(map(), map()) :: {Templating.t(), map()}
   def process(json, uuid_map) do
-    {:ok, template} = Glific.Repo.fetch_by(SessionTemplate, %{uuid: json["template"]["uuid"]})
+    IO.inspect(json)
+    {:ok, template} = Glific.Repo.fetch_by(SessionTemplate, %{shortcode: String.downcase(json["template"]["name"]), language_id: 2})
 
     templating = %Templating{
       uuid: json["template"]["uuid"],

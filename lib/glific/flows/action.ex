@@ -111,6 +111,8 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(%{type: type} = action, context, message_stream) when type == "send_msg" do
+            IO.puts("Sending session message: #{action.text}")
+            IO.inspect(action)
     ContactAction.send_message(context, action)
     {:ok, context, message_stream}
   end
@@ -124,6 +126,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: type, name: name} = _action, context, message_stream)
       when type == "set_run_result" and name == "settings_optout" do
+    IO.puts("Setting contact optout")
     context = ContactAction.optout(context)
     {:ok, context, message_stream}
   end
@@ -139,6 +142,7 @@ defmodule Glific.Flows.Action do
       when type == "enter_flow" do
     # we create a new context and set the parent id to the exisiting context
     # and start that flow
+    IO.puts("entering a new sub flow: #{action.enter_flow_uuid}")
     Flow.start_sub_flow(context, action.enter_flow_uuid)
 
     {:ok, context, message_stream}

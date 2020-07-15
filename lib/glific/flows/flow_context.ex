@@ -92,15 +92,24 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
+  @spec update_node_uuid(FlowContext.t(), Ecto.UUID.t()) :: FlowContext.t()
+  defp update_node_uuid(context, node_uuid) do
+    {:ok, context} =
+      context
+      |> FlowContext.changeset(%{node_uuid: node_uuid})
+      |> Repo.update()
+
+    context
+  end
+
   @doc """
   Set the new node for the context
   """
   @spec set_node(FlowContext.t(), Node.t()) :: FlowContext.t()
-  def set_node(context, node),
-    do:
-      context
-      |> Map.put(:node, node)
-      |> Map.put(:node_uuid, node.uuid)
+  def set_node(context, node) do
+    update_node_uuid(context, node.uuid)
+    |> Map.put(:node, node)
+  end
 
   @doc """
   Execute one (or more) steps in a flow based on the message stream
@@ -111,19 +120,7 @@ defmodule Glific.Flows.FlowContext do
     do: {:error, "We have finished the flow"}
 
   def execute(context, messages) do
-    # stash the old_context to update db
-    old_context = context
-    {:ok, context, messages} = Node.execute(context.node, context, messages)
-
-    # we've modified the context, lets update it
-    # we are ignoring the new context here, since we want to update
-    # the old context with the values of the new context (ecto design)
-    {:ok, _} =
-      old_context
-      |> FlowContext.changeset(%{node_uuid: context.node_uuid})
-      |> Repo.update()
-
-    {:ok, context, messages}
+    Node.execute(context.node, context, messages)
   end
 
   @doc """
