@@ -5,6 +5,7 @@ defmodule Glific.SeedsDev do
   alias Glific.{
     Contacts.Contact,
     Flows.Flow,
+    Flows.FlowRevision,
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
@@ -270,7 +271,7 @@ defmodule Glific.SeedsDev do
   end
 
   @doc false
-  @spec seed_flows :: {Group.t()}
+  @spec seed_flows :: nil
   def seed_flows do
     [en_us | _] = Settings.list_languages(%{label: "english"})
 
@@ -280,6 +281,30 @@ defmodule Glific.SeedsDev do
       version_number: "13.1.0",
       uuid: "defda715-c520-499d-851e-4428be87def6",
       language_id: en_us.id
+    })
+
+    slamout_registration_flow =
+      Repo.insert!(%Flow{
+        name: "Registration Workflow",
+        shortcode: "registration",
+        version_number: "13.1.0",
+        uuid: "5e086708-37b2-4b20-80c2-bdc0f213c3c6",
+        language_id: en_us.id
+      })
+
+    slamout_registration_flow_definition =
+      File.read!("assets/flows/registration.json")
+      |> Jason.decode!()
+
+    slamout_registration_flow_definition =
+      Map.merge(slamout_registration_flow_definition, %{
+        "name" => slamout_registration_flow.name,
+        "uuid" => slamout_registration_flow.uuid
+      })
+
+    Repo.insert!(%FlowRevision{
+      definition: slamout_registration_flow_definition,
+      flow_id: slamout_registration_flow.id
     })
   end
 
@@ -304,5 +329,7 @@ defmodule Glific.SeedsDev do
     seed_messages()
 
     seed_messages_media()
+
+    seed_flows()
   end
 end
