@@ -228,7 +228,8 @@ defmodule Glific.SeedsDev do
         label: "Default Template Label",
         body: "Default Template",
         type: :text,
-        language_id: en_us.id
+        language_id: en_us.id,
+        uuid: "92bc663f-ac05-45d5-aa13-4dae06165ae4"
       })
 
     Repo.insert!(%SessionTemplate{
@@ -236,7 +237,8 @@ defmodule Glific.SeedsDev do
       body: "Another Template",
       type: :text,
       language_id: en_us.id,
-      parent_id: session_template_parent.id
+      parent_id: session_template_parent.id,
+      uuid: "53008c3d-e619-4ec6-80cd-b9b2c89386dc"
     })
 
     nil
