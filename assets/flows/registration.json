@@ -1,388 +1,343 @@
 {
-    "_ui": {
-      "nodes": {
-        "02416a97-5301-4a8b-bab2-3b7f3b31346c": {
-          "position": {
-            "left": 180,
-            "top": 860
-          },
-          "type": "execute_actions"
+  "spec_version" : "13.1.0",
+  "nodes" : [
+    {
+      "uuid" : "40b4bb5f-d464-4c23-b097-9b3b003f5a3a",
+      "actions" : [
+        {
+          "type" : "send_msg",
+          "uuid" : "e0171377-de7e-42ed-adbf-7c46da94a51c",
+          "attachments" : [
+
+          ],
+          "quick_replies" : [
+
+          ],
+          "text" : "Tell us your full name"
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "6fef56db-8b9d-4879-9a14-392c5b92eb51",
+          "destination_uuid" : "05a0959b-16c1-43f3-946e-08bd24cfd7f2"
+        }
+      ]
+    },
+    {
+      "exits" : [
+        {
+          "uuid" : "e084393a-ce63-48e8-a4a9-714cf6e46825",
+          "destination_uuid" : "79c37c50-5349-4be6-a23b-484746c9f928"
+        }
+      ],
+      "uuid" : "05a0959b-16c1-43f3-946e-08bd24cfd7f2",
+      "actions" : [
+
+      ],
+      "router" : {
+        "wait" : {
+          "type" : "msg"
         },
-        "05a0959b-16c1-43f3-946e-08bd24cfd7f2": {
-          "config": {
-            "cases": {}
-          },
-          "position": {
-            "left": 560,
-            "top": 120
-          },
-          "type": "wait_for_response"
+        "default_category_uuid" : "8a939724-1a35-4453-864f-7467617e1655",
+        "cases" : [
+
+        ],
+        "type" : "switch",
+        "operand" : "@input.text",
+        "categories" : [
+          {
+            "exit_uuid" : "e084393a-ce63-48e8-a4a9-714cf6e46825",
+            "uuid" : "8a939724-1a35-4453-864f-7467617e1655",
+            "name" : "All Responses"
+          }
+        ],
+        "result_name" : "name"
+      }
+    },
+    {
+      "uuid" : "79c37c50-5349-4be6-a23b-484746c9f928",
+      "actions" : [
+        {
+          "uuid" : "4afb1d8b-0d99-4c45-ac00-b32c1ec7f4a9",
+          "type" : "set_run_result",
+          "value" : "name",
+          "category" : "settings_fields",
+          "name" : "name"
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : "73d66f08-a5e4-4147-a5ad-55a73833e804",
+          "uuid" : "828d13bd-3eca-4306-8cad-d489f1eb0154"
+        }
+      ]
+    },
+    {
+      "uuid" : "73d66f08-a5e4-4147-a5ad-55a73833e804",
+      "actions" : [
+        {
+          "quick_replies" : [
+
+          ],
+          "uuid" : "818ddbd1-b7c6-4a7f-9b21-94d3280e5a78",
+          "attachments" : [
+
+          ],
+          "text" : "Welcome <%= contact.name %>. Tell us how old you are\nType 1 if you are less than 10 years\nType 2 if you are 11 years to 14 years of age\nType 3 if you are 15 to 18 years\nType 4 if you are 19 or above ",
+          "type" : "send_msg"
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "ec52ba14-35ce-4c9a-be49-680df179327d",
+          "destination_uuid" : "45b34faf-c649-4355-a9f2-d50e63972073"
+        }
+      ]
+    },
+    {
+      "uuid" : "45b34faf-c649-4355-a9f2-d50e63972073",
+      "exits" : [
+        {
+          "uuid" : "fcc898d9-c870-4cbe-a2a9-849d60ad61b6",
+          "destination_uuid" : "02416a97-5301-4a8b-bab2-3b7f3b31346c"
         },
-        "2cda3ddf-14df-47c7-a1e5-b8d957d6b2c4": {
-          "position": {
-            "left": 620,
-            "top": 860
-          },
-          "type": "execute_actions"
+        {
+          "uuid" : "390d8c46-1200-4d13-9f10-b338585c6389",
+          "destination_uuid" : "02416a97-5301-4a8b-bab2-3b7f3b31346c"
         },
-        "40b4bb5f-d464-4c23-b097-9b3b003f5a3a": {
-          "position": {
-            "left": 560,
-            "top": 20
-          },
-          "type": "execute_actions"
+        {
+          "uuid" : "5ac49013-37d8-4073-926c-bd62642c6016",
+          "destination_uuid" : "02416a97-5301-4a8b-bab2-3b7f3b31346c"
         },
-        "45b34faf-c649-4355-a9f2-d50e63972073": {
-          "config": {
-            "cases": {}
-          },
-          "position": {
-            "left": 480,
-            "top": 640
-          },
-          "type": "wait_for_response"
+        {
+          "uuid" : "2d95c17b-a7a4-477e-98bd-19f433dc7616",
+          "destination_uuid" : "02416a97-5301-4a8b-bab2-3b7f3b31346c"
         },
-        "538abada-192c-43a6-9b0e-e749ca281c2b": {
-          "position": {
-            "left": 400,
-            "top": 860
-          },
-          "type": "execute_actions"
+        {
+          "uuid" : "c4697946-1999-4b19-9595-fdc1259cde9a",
+          "destination_uuid" : "bdd2a976-e8c3-4440-b7b4-187d2ac8cf81"
+        }
+      ],
+      "router" : {
+        "operand" : "@input.text",
+        "wait" : {
+          "type" : "msg"
         },
-        "73d66f08-a5e4-4147-a5ad-55a73833e804": {
-          "position": {
-            "left": 560,
-            "top": 380
+        "default_category_uuid" : "906571b4-50d1-4d70-baa1-4fda01accd2e",
+        "type" : "switch",
+        "cases" : [
+          {
+            "arguments" : [
+              "1"
+            ],
+            "uuid" : "cfb9e055-c48f-4d82-b831-013c6ef6f47e",
+            "category_uuid" : "a9c3e251-c1ea-4cd0-946e-4ede4e2ea073",
+            "type" : "has_number_eq"
           },
-          "type": "execute_actions"
-        },
-        "79c37c50-5349-4be6-a23b-484746c9f928": {
-          "position": {
-            "left": 560,
-            "top": 260
+          {
+            "type" : "has_number_eq",
+            "arguments" : [
+              "2"
+            ],
+            "uuid" : "16b93cbf-58af-451a-a1b5-28d9bd41cba8",
+            "category_uuid" : "667f7135-ba8d-4527-b9cd-0b37bd058893"
           },
-          "type": "execute_actions"
-        },
-        "bdd2a976-e8c3-4440-b7b4-187d2ac8cf81": {
-          "position": {
-            "left": 1040,
-            "top": 640
+          {
+            "type" : "has_number_eq",
+            "arguments" : [
+              "3"
+            ],
+            "uuid" : "f38b3b3c-519e-4f9e-97e0-a3f787ec2efb",
+            "category_uuid" : "e2d5b1fa-f614-4870-9146-bbce1e29a9ce"
           },
-          "type": "execute_actions"
-        },
-        "ce55c518-df76-4889-99f3-8c02d85bcbe0": {
-          "position": {
-            "left": 1040,
-            "top": 1000
+          {
+            "type" : "has_number_eq",
+            "arguments" : [
+              "4"
+            ],
+            "uuid" : "9cc29f40-e27e-49a5-8a47-212a1a8df5f4",
+            "category_uuid" : "c63942b1-3b99-46ed-819b-92f4049912ac"
+          }
+        ],
+        "categories" : [
+          {
+            "exit_uuid" : "fcc898d9-c870-4cbe-a2a9-849d60ad61b6",
+            "uuid" : "a9c3e251-c1ea-4cd0-946e-4ede4e2ea073",
+            "name" : "less than 10"
           },
-          "type": "execute_actions"
-        },
-        "dbbcd917-1d0e-4c9d-87cd-23cbd5764bf1": {
-          "position": {
-            "left": 860,
-            "top": 860
+          {
+            "exit_uuid" : "390d8c46-1200-4d13-9f10-b338585c6389",
+            "uuid" : "667f7135-ba8d-4527-b9cd-0b37bd058893",
+            "name" : "11-14"
           },
-          "type": "execute_actions"
+          {
+            "exit_uuid" : "5ac49013-37d8-4073-926c-bd62642c6016",
+            "uuid" : "e2d5b1fa-f614-4870-9146-bbce1e29a9ce",
+            "name" : "15-18"
+          },
+          {
+            "exit_uuid" : "2d95c17b-a7a4-477e-98bd-19f433dc7616",
+            "uuid" : "c63942b1-3b99-46ed-819b-92f4049912ac",
+            "name" : "19 or above"
+          },
+          {
+            "exit_uuid" : "c4697946-1999-4b19-9595-fdc1259cde9a",
+            "uuid" : "906571b4-50d1-4d70-baa1-4fda01accd2e",
+            "name" : "Other"
+          }
+        ],
+        "result_name" : "age_group"
+      },
+      "actions" : [
+
+      ]
+    },
+    {
+      "uuid" : "bdd2a976-e8c3-4440-b7b4-187d2ac8cf81",
+      "actions" : [
+        {
+          "uuid" : "0cde79fb-bff8-4ed2-ac99-135ea3403dbb",
+          "text" : "Sorry, I didn't understand that, please answer with a number 1-4.",
+          "type" : "send_msg",
+          "attachments" : [
+
+          ],
+          "quick_replies" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : "45b34faf-c649-4355-a9f2-d50e63972073",
+          "uuid" : "098cb240-c34c-4f87-95b2-9412cda7ca87"
+        }
+      ]
+    },
+    {
+      "uuid" : "02416a97-5301-4a8b-bab2-3b7f3b31346c",
+      "actions" : [
+        {
+          "name" : "age_group",
+          "uuid" : "6d87ba6c-12f2-4ac1-8321-2803b2314978",
+          "value" : "age_group",
+          "type" : "set_run_result",
+          "category" : "settings_fields"
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "5905a59e-c9f6-46de-be0a-60df7e689ae0",
+          "destination_uuid" : "ce55c518-df76-4889-99f3-8c02d85bcbe0"
+        }
+      ]
+    },
+    {
+      "uuid" : "ce55c518-df76-4889-99f3-8c02d85bcbe0",
+      "actions" : [
+        {
+          "uuid" : "e46cc6ef-d037-4569-8fbe-64b4767c7734",
+          "text" : "Thank you for signing up with us.",
+          "type" : "send_msg",
+          "attachments" : [
+
+          ],
+          "all_urns" : false,
+          "quick_replies" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "7942ad13-0eae-473b-ace4-f5e65fb17f33",
+          "destination_uuid" : null
+        }
+      ]
+    }
+  ],
+  "name" : "Registration Workflow",
+  "expire_after_minutes" : 10080,
+  "vars" : [
+    "5e086708-37b2-4b20-80c2-bdc0f213c3c6"
+  ],
+  "type" : "messaging",
+  "uuid" : "5e086708-37b2-4b20-80c2-bdc0f213c3c6",
+  "_ui" : {
+    "nodes" : {
+      "ce55c518-df76-4889-99f3-8c02d85bcbe0" : {
+        "type" : "execute_actions",
+        "position" : {
+          "top" : 1100,
+          "left" : 540
         }
       },
-      "stickies": {}
-    },
-    "expire_after_minutes": 10080,
-    "language": "base",
-    "localization": {},
-    "name": "Registration Workflow",
-    "nodes": [
-      {
-        "actions": [
-          {
-            "attachments": [],
-            "quick_replies": [],
-            "text": "Tell us your full name",
-            "type": "send_msg",
-            "uuid": "e0171377-de7e-42ed-adbf-7c46da94a51c"
-          }
-        ],
-        "exits": [
-          {
-            "destination_uuid": "05a0959b-16c1-43f3-946e-08bd24cfd7f2",
-            "uuid": "6fef56db-8b9d-4879-9a14-392c5b92eb51"
-          }
-        ],
-        "uuid": "40b4bb5f-d464-4c23-b097-9b3b003f5a3a"
-      },
-      {
-        "actions": [],
-        "exits": [
-          {
-            "destination_uuid": "79c37c50-5349-4be6-a23b-484746c9f928",
-            "uuid": "e084393a-ce63-48e8-a4a9-714cf6e46825"
-          }
-        ],
-        "router": {
-          "cases": [],
-          "categories": [
-            {
-              "exit_uuid": "e084393a-ce63-48e8-a4a9-714cf6e46825",
-              "name": "All Responses",
-              "uuid": "8a939724-1a35-4453-864f-7467617e1655"
-            }
-          ],
-          "default_category_uuid": "8a939724-1a35-4453-864f-7467617e1655",
-          "operand": "@input.text",
-          "result_name": "name",
-          "type": "switch",
-          "wait": {
-            "type": "msg"
-          }
+      "40b4bb5f-d464-4c23-b097-9b3b003f5a3a" : {
+        "position" : {
+          "left" : 560,
+          "top" : 20
         },
-        "uuid": "05a0959b-16c1-43f3-946e-08bd24cfd7f2"
+        "type" : "execute_actions"
       },
-      {
-        "actions": [
-          {
-            "category": "settings_fields",
-            "name": "name",
-            "type": "set_run_result",
-            "uuid": "4afb1d8b-0d99-4c45-ac00-b32c1ec7f4a9",
-            "value": "contact.name"
-          }
-        ],
-        "exits": [
-          {
-            "destination_uuid": "73d66f08-a5e4-4147-a5ad-55a73833e804",
-            "uuid": "828d13bd-3eca-4306-8cad-d489f1eb0154"
-          }
-        ],
-        "uuid": "79c37c50-5349-4be6-a23b-484746c9f928"
-      },
-      {
-        "actions": [
-          {
-            "attachments": [],
-            "quick_replies": [],
-            "text": "Welcome [Tanurina Datta]. Tell us how old you are\nType 1 if you are less than 10 years\nType 2 if you are 11 years to 14 years of age\nType 3 if you are 15 to 18 years\nType 4 if you are 19 or above ",
-            "type": "send_msg",
-            "uuid": "818ddbd1-b7c6-4a7f-9b21-94d3280e5a78"
-          }
-        ],
-        "exits": [
-          {
-            "destination_uuid": "45b34faf-c649-4355-a9f2-d50e63972073",
-            "uuid": "ec52ba14-35ce-4c9a-be49-680df179327d"
-          }
-        ],
-        "uuid": "73d66f08-a5e4-4147-a5ad-55a73833e804"
-      },
-      {
-        "actions": [],
-        "exits": [
-          {
-            "destination_uuid": "02416a97-5301-4a8b-bab2-3b7f3b31346c",
-            "uuid": "fcc898d9-c870-4cbe-a2a9-849d60ad61b6"
-          },
-          {
-            "destination_uuid": "538abada-192c-43a6-9b0e-e749ca281c2b",
-            "uuid": "390d8c46-1200-4d13-9f10-b338585c6389"
-          },
-          {
-            "destination_uuid": "2cda3ddf-14df-47c7-a1e5-b8d957d6b2c4",
-            "uuid": "5ac49013-37d8-4073-926c-bd62642c6016"
-          },
-          {
-            "destination_uuid": "dbbcd917-1d0e-4c9d-87cd-23cbd5764bf1",
-            "uuid": "2d95c17b-a7a4-477e-98bd-19f433dc7616"
-          },
-          {
-            "destination_uuid": "bdd2a976-e8c3-4440-b7b4-187d2ac8cf81",
-            "uuid": "c4697946-1999-4b19-9595-fdc1259cde9a"
-          }
-        ],
-        "router": {
-          "cases": [
-            {
-              "arguments": [
-                "1"
-              ],
-              "category_uuid": "a9c3e251-c1ea-4cd0-946e-4ede4e2ea073",
-              "type": "has_number_eq",
-              "uuid": "cfb9e055-c48f-4d82-b831-013c6ef6f47e"
-            },
-            {
-              "arguments": [
-                "2"
-              ],
-              "category_uuid": "667f7135-ba8d-4527-b9cd-0b37bd058893",
-              "type": "has_number_eq",
-              "uuid": "16b93cbf-58af-451a-a1b5-28d9bd41cba8"
-            },
-            {
-              "arguments": [
-                "3"
-              ],
-              "category_uuid": "e2d5b1fa-f614-4870-9146-bbce1e29a9ce",
-              "type": "has_number_eq",
-              "uuid": "f38b3b3c-519e-4f9e-97e0-a3f787ec2efb"
-            },
-            {
-              "arguments": [
-                "4"
-              ],
-              "category_uuid": "c63942b1-3b99-46ed-819b-92f4049912ac",
-              "type": "has_number_eq",
-              "uuid": "9cc29f40-e27e-49a5-8a47-212a1a8df5f4"
-            }
-          ],
-          "categories": [
-            {
-              "exit_uuid": "fcc898d9-c870-4cbe-a2a9-849d60ad61b6",
-              "name": "less than 10",
-              "uuid": "a9c3e251-c1ea-4cd0-946e-4ede4e2ea073"
-            },
-            {
-              "exit_uuid": "390d8c46-1200-4d13-9f10-b338585c6389",
-              "name": "11-14",
-              "uuid": "667f7135-ba8d-4527-b9cd-0b37bd058893"
-            },
-            {
-              "exit_uuid": "5ac49013-37d8-4073-926c-bd62642c6016",
-              "name": "15-18",
-              "uuid": "e2d5b1fa-f614-4870-9146-bbce1e29a9ce"
-            },
-            {
-              "exit_uuid": "2d95c17b-a7a4-477e-98bd-19f433dc7616",
-              "name": "19 or above",
-              "uuid": "c63942b1-3b99-46ed-819b-92f4049912ac"
-            },
-            {
-              "exit_uuid": "c4697946-1999-4b19-9595-fdc1259cde9a",
-              "name": "Other",
-              "uuid": "906571b4-50d1-4d70-baa1-4fda01accd2e"
-            }
-          ],
-          "default_category_uuid": "906571b4-50d1-4d70-baa1-4fda01accd2e",
-          "operand": "@input.text",
-          "result_name": "age_group",
-          "type": "switch",
-          "wait": {
-            "type": "msg"
-          }
+      "45b34faf-c649-4355-a9f2-d50e63972073" : {
+        "position" : {
+          "top" : 680,
+          "left" : 480
         },
-        "uuid": "45b34faf-c649-4355-a9f2-d50e63972073"
+        "type" : "wait_for_response",
+        "config" : {
+          "cases" : {
+
+          }
+        }
       },
-      {
-        "actions": [
-          {
-            "attachments": [],
-            "quick_replies": [],
-            "text": "Sorry, I didn't understand that, please answer with a number 1-4.",
-            "type": "send_msg",
-            "uuid": "0cde79fb-bff8-4ed2-ac99-135ea3403dbb"
+      "05a0959b-16c1-43f3-946e-08bd24cfd7f2" : {
+        "position" : {
+          "top" : 120,
+          "left" : 560
+        },
+        "type" : "wait_for_response",
+        "config" : {
+          "cases" : {
+
           }
-        ],
-        "exits": [
-          {
-            "destination_uuid": "45b34faf-c649-4355-a9f2-d50e63972073",
-            "uuid": "098cb240-c34c-4f87-95b2-9412cda7ca87"
-          }
-        ],
-        "uuid": "bdd2a976-e8c3-4440-b7b4-187d2ac8cf81"
+        }
       },
-      {
-        "actions": [
-          {
-            "category": "",
-            "name": "age_group",
-            "type": "set_run_result",
-            "uuid": "6d87ba6c-12f2-4ac1-8321-2803b2314978",
-            "value": "contact.age_group"
-          }
-        ],
-        "exits": [
-          {
-            "destination_uuid": "ce55c518-df76-4889-99f3-8c02d85bcbe0",
-            "uuid": "5905a59e-c9f6-46de-be0a-60df7e689ae0"
-          }
-        ],
-        "uuid": "02416a97-5301-4a8b-bab2-3b7f3b31346c"
+      "79c37c50-5349-4be6-a23b-484746c9f928" : {
+        "position" : {
+          "left" : 560,
+          "top" : 260
+        },
+        "type" : "execute_actions"
       },
-      {
-        "actions": [
-          {
-            "category": "",
-            "name": "age_group",
-            "type": "set_run_result",
-            "uuid": "b0f90d7d-1ed1-4d69-9a25-3ec6f097cffa",
-            "value": "contact.age_group"
-          }
-        ],
-        "exits": [
-          {
-            "destination_uuid": "ce55c518-df76-4889-99f3-8c02d85bcbe0",
-            "uuid": "8d73f399-b669-4167-9cd1-37ec09b1a2ba"
-          }
-        ],
-        "uuid": "538abada-192c-43a6-9b0e-e749ca281c2b"
+      "bdd2a976-e8c3-4440-b7b4-187d2ac8cf81" : {
+        "position" : {
+          "left" : 1060,
+          "top" : 840
+        },
+        "type" : "execute_actions"
       },
-      {
-        "actions": [
-          {
-            "category": "",
-            "name": "age_group",
-            "type": "set_run_result",
-            "uuid": "6eb658bb-fe98-4010-a1fd-027b3cb4d3f6",
-            "value": "contact.age_group"
-          }
-        ],
-        "exits": [
-          {
-            "destination_uuid": "ce55c518-df76-4889-99f3-8c02d85bcbe0",
-            "uuid": "88979cf6-274d-4ca9-a84c-a8e40f37b1bc"
-          }
-        ],
-        "uuid": "2cda3ddf-14df-47c7-a1e5-b8d957d6b2c4"
+      "02416a97-5301-4a8b-bab2-3b7f3b31346c" : {
+        "position" : {
+          "left" : 540,
+          "top" : 900
+        },
+        "type" : "execute_actions"
       },
-      {
-        "actions": [
-          {
-            "category": "",
-            "name": "age_group",
-            "type": "set_run_result",
-            "uuid": "cb1739b4-a5e8-4d92-b8d6-9b0219923489",
-            "value": "contact.age_group"
-          }
-        ],
-        "exits": [
-          {
-            "destination_uuid": "ce55c518-df76-4889-99f3-8c02d85bcbe0",
-            "uuid": "5a35dfa0-5bce-46de-b52c-d036748bd86f"
-          }
-        ],
-        "uuid": "dbbcd917-1d0e-4c9d-87cd-23cbd5764bf1"
-      },
-      {
-        "actions": [
-          {
-            "all_urns": false,
-            "attachments": [],
-            "quick_replies": [],
-            "text": "Thank you for signing up with us.",
-            "type": "send_msg",
-            "uuid": "e46cc6ef-d037-4569-8fbe-64b4767c7734"
-          }
-        ],
-        "exits": [
-          {
-            "destination_uuid": null,
-            "uuid": "7942ad13-0eae-473b-ace4-f5e65fb17f33"
-          }
-        ],
-        "uuid": "ce55c518-df76-4889-99f3-8c02d85bcbe0"
+      "73d66f08-a5e4-4147-a5ad-55a73833e804" : {
+        "position" : {
+          "top" : 380,
+          "left" : 560
+        },
+        "type" : "execute_actions"
       }
-    ],
-    "spec_version": "13.1.0",
-    "type": "messaging",
-    "uuid": "5e086708-37b2-4b20-80c2-bdc0f213c3c6",
-    "vars": [
-      "5e086708-37b2-4b20-80c2-bdc0f213c3c6"
-    ]
-  }
+    },
+    "stickies" : {
+
+    }
+  },
+  "localization" : {
+
+  },
+  "language" : "base"
+}
