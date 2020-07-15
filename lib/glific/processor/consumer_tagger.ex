@@ -97,7 +97,7 @@ defmodule Glific.Processor.ConsumerTagger do
           "preference" => preference,
           registration.id => registration,
           registration.uuid => registration,
-          "registration" => registration,
+          "registration" => registration
         }
 
     Map.put(state, :flows, flows)

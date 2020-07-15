@@ -5,7 +5,6 @@ defmodule GlificWeb.Schema.FlowTest do
   alias Glific.{Flows.Flow}
 
   setup do
-    Glific.SeedsDev.seed_flows()
     :ok
   end
 
