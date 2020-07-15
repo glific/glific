@@ -123,16 +123,15 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def templates(conn, _params) do
-
-    results = Glific.Templates.list_session_templates()
-    |> Enum.reduce([], fn template, acc
-      ->
+    results =
+      Glific.Templates.list_session_templates()
+      |> Enum.reduce([], fn template, acc ->
         template = Glific.Repo.preload(template, :language)
         language = template.language
 
         [
           %{
-            uuid: generate_uuid(),
+            uuid: template.id,
             name: template.label,
             created_on: template.inserted_at,
             modified_on: template.updated_at,
@@ -142,13 +141,12 @@ defmodule GlificWeb.Flows.FlowEditorController do
                 content: template.body,
                 variable_count: template.number_parameters,
                 status: "approved",
-                channel: %{
-                      uuid: "0f661e8b-ea9d-4bd3-9953-d368340acf91",
-                      name: "WhatsApp"
-                }
+                channel: %{ uuid: "", name: "WhatsApp"}
               }
             ]
-          } | acc]
+          }
+          | acc
+        ]
       end)
 
     json(conn, %{results: results})

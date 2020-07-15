@@ -19,9 +19,8 @@ defmodule Glific.Flows do
 
   """
   @spec list_flows() :: [Flow.t()]
-  def list_flows do
-    Repo.all(Flow)
-  end
+  def list_flows(args \\ %{}),
+    do: Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &Repo.filter_with/2)
 
   @doc """
   Gets a single flow.

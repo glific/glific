@@ -56,18 +56,6 @@ defmodule Glific.Flows.Flow do
     timestamps(type: :utc_datetime)
   end
 
-  @doc """
-  Return the list of filtered tags
-  """
-  @spec list_flows(map()) :: [Flow.t()]
-  def list_flows(args \\ %{}),
-    do: Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &Repo.filter_with/2)
-
-  @doc """
-  Get a single flow
-  """
-  @spec get_flow!(integer) :: Flow.t()
-  def get_flow!(id), do: Repo.get!(Flow, id)
 
   @doc """
   Standard changeset pattern we use for all data types
@@ -175,7 +163,6 @@ defmodule Glific.Flows.Flow do
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def start_flow(shortcode, contact) do
     flow = load_flow(shortcode)
-
     FlowContext.init_context(flow, contact)
   end
 end
