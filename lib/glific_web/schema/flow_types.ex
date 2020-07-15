@@ -16,7 +16,7 @@ defmodule GlificWeb.Schema.FlowTypes do
 
   object :flow do
     field :id, :id
-    field :uuid, :string
+    field :uuid, :uuid4
     field :name, :string
     field :shortcode, :string
     field :version_number, :string
