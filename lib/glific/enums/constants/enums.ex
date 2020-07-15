@@ -27,7 +27,7 @@ defmodule Glific.Enums.Constants do
         :message
       ]
 
-      @flow_type_const [:message ]
+      @flow_type_const [:message]
 
       # the direction of the messages: inbound: provider to glific, outbound: glific to provider
       @message_flow_const [:inbound, :outbound]
