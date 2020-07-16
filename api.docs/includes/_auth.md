@@ -9,7 +9,7 @@ The main API endpoints are listed below
 
 # Send a request to validate a phone number
 
-It would respond with error message if phone number is invalid
+It would respond with error message if a user with phone number already exists
 
 ```shell
 curl -X POST -d \
