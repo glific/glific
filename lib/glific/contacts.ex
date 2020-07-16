@@ -184,6 +184,7 @@ defmodule Glific.Contacts do
     upsert(%{
       phone: phone,
       optin_time: utc_time,
+      last_message_at: utc_time,
       optout_time: nil,
       status: :valid,
       provider_status: :valid
