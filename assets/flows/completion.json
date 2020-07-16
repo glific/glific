@@ -7,7 +7,7 @@
                 "key": "{key}",
                 "help": "{key} for the contact",
                 "type": "any"
-            }
+            } 
         },
         {
             "name": "results",
@@ -54,7 +54,8 @@
         },
         {
             "name": "contact",
-            "properties": [{
+            "properties": [
+                {
                     "key": "__default__",
                     "help": "the name or URN",
                     "type": "text"
@@ -356,7 +357,8 @@
             ]
         }
     ],
-    "root": [{
+    "root": [
+        {
             "key": "contact",
             "help": "the contact",
             "type": "contact"
@@ -407,7 +409,8 @@
             "type": "trigger"
         }
     ],
-    "root_no_session": [{
+    "root_no_session": [
+        {
             "key": "contact",
             "help": "the contact",
             "type": "contact"

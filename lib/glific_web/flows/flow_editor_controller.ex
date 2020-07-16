@@ -39,7 +39,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec fields(Plug.Conn.t(), map) :: Plug.Conn.t()
   def fields(conn, _params) do
     conn
-    |> json(%{results: []})
+    |> json(%{results: [%{key: "custom_field", name: "Custom field", value_type: "text"}]})
   end
 
   @doc false
@@ -56,13 +56,20 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec labels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels(conn, _params) do
+    # We might need to add a UUID for tags also.
+    results =
+      Glific.Tags.list_tags()
+      |> Enum.reduce([], fn tag, acc
+        -> [ %{ uuid: tag.id, name: tag.label} | acc]
+      end)
     conn
-    |> json(%{results: []})
+    |> json(%{results: results})
   end
 
   @doc false
   @spec labels_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels_post(conn, params) do
+    # We are not allowing to create new lables for now.
     conn
     |> json(%{
       uuid: generate_uuid(),
