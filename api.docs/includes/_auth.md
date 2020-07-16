@@ -30,7 +30,7 @@ If you are using axios or other libraries, send the following in the BODY of a P
 ```json
 {
     "data": {
-        "is_valid": "false",
+        "is_valid": false,
         "message": "Phone number already exists"
     }
 }
