@@ -283,6 +283,6 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec generate_uuid() :: String.t()
   defp generate_uuid do
-    Faker.UUID.v4()
+    Ecto.UUID.generate()
   end
 end
