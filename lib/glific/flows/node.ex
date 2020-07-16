@@ -114,7 +114,14 @@ defmodule Glific.Flows.Node do
           else: Action.execute(hd(node.actions), context, message_stream)
 
       !Enum.empty?(node.actions) ->
-        {:ok, context, message_stream} = Action.execute(hd(node.actions), context, message_stream)
+        # we need to execute all the actions (nodes can have multiple actions)
+                _ = Enum.map(
+          node.actions,
+          fn action ->
+            {:ok, _context, _message_stream} = Action.execute(action, context, message_stream)
+          end
+        )
+
         Exit.execute(hd(node.exits), context, message_stream)
 
       !is_nil(node.router) ->

@@ -20,6 +20,7 @@ defmodule Glific.Flows.Router do
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
           type: String.t() | nil,
+          result_name: String.t() | nil,
           wait_type: String.t() | nil,
           default_category_uuid: Ecto.UUID.t() | nil,
           default_category: Category.t() | nil,
@@ -121,8 +122,14 @@ defmodule Glific.Flows.Router do
       when type == "switch" do
     [msg | rest] = message_stream
 
+    context =
+      if is_nil(router.result_name),
+        # if there is a result name, store it in the context table first
+      do: context,
+      else: FlowContext.update_results(context, router.result_name, msg)
+
     # go thru the cases and find the first one that succeeds
-    c =
+        c =
       Enum.find(
         router.cases,
         nil,

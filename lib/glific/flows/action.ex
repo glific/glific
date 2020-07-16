@@ -118,8 +118,15 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: type} = action, context, message_stream)
       when type == "set_contact_language" do
-    IO.puts("Setting contact preference: #{action.value}")
+    IO.puts("Setting contact language: #{action.value}")
     context = ContactSetting.set_contact_language(context, action.text)
+    {:ok, context, message_stream}
+  end
+
+  def execute(%{type: type} = action, context, message_stream)
+      when type == "set_contact_name" do
+    IO.puts("Setting contact name: #{action.value}")
+    context = ContactSetting.set_contact_name(context, action.value)
     {:ok, context, message_stream}
   end
 
@@ -148,5 +155,9 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(action, _context, _message_stream),
-    do: {:error, "Unsupported action type #{action.type}"}
+    do:
+      (
+        # IO.inspect(action, label: "ACTION")
+        {:error, "Unsupported action type #{action.type}"}
+      )
 end

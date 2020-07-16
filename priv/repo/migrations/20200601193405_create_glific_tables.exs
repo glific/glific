@@ -615,6 +615,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :contact_id, references(:contacts, on_delete: :delete_all), null: false
       add :flow_id, references(:flows, on_delete: :delete_all), null: false
 
+      add :results, :map
+
       add :parent_id, references(:flow_contexts, on_delete: :nilify_all), null: true
 
       timestamps(type: :utc_datetime)

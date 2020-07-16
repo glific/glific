@@ -651,7 +651,7 @@ registration_flow =
                })
 
 registration_flow_definition =
-  File.read!("assets/flows/registration.json")
+  File.read!("assets/flows/newreg.json")
   |> Jason.decode!()
 
 registration_flow_definition =

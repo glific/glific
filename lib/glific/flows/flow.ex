@@ -113,9 +113,12 @@ defmodule Glific.Flows.Flow do
       |> FlowContext.changeset(attrs)
       |> Repo.insert()
 
+    context =
     context
     |> Repo.preload(:contact)
     |> Map.put(:node, node)
+
+    {:ok, context}
   end
 
   # in some cases floweditor wraps the json under a "definition" key

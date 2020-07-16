@@ -83,6 +83,21 @@ defmodule Glific.Flows.Case do
   def execute(%{type: type} = c, _context, msg) when type == "has_number_eq",
     do: hd(c.arguments) == msg
 
+  def execute(%{type: type} = c, _context, msg) when type == "has_number_between" do
+    [low, high] = c.arguments
+
+    # convert all 3 parameters to number
+    [low, high, msg] = Enum.map([low, high, msg], &Glific.parse_maybe_integer/1)
+
+    # ensure no errors
+    if Enum.all?([low, high, msg], &(&1 != :error)) do
+      [low, high, msg] = Enum.map([low, high, msg], &elem(&1, 1))
+      msg >= low && msg <= high
+    else
+      false
+    end
+  end
+
   def execute(%{type: type} = c, _context, msg)
       when type == "has_only_phrase" or type == "has_only_text",
       do: hd(c.arguments) == msg

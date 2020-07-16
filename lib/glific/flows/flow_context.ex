@@ -18,11 +18,12 @@ defmodule Glific.Flows.FlowContext do
   }
 
   @required_fields [:contact_id, :flow_id, :uuid_map]
-  @optional_fields [:node_uuid, :parent_id]
+  @optional_fields [:node_uuid, :parent_id, :results]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           uuid_map: map() | nil,
+          results: map(),
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           flow_id: non_neg_integer | nil,
@@ -38,6 +39,8 @@ defmodule Glific.Flows.FlowContext do
   schema "flow_contexts" do
     field :uuid_map, :map, virtual: true
     field :node, :map, virtual: true
+
+    field :results, :map, defaukt: %{}
 
     field :node_uuid, Ecto.UUID
 
@@ -92,11 +95,34 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
+  @doc """
+  Update the node_uuid, typically used to advance the context state
+  """
   @spec update_node_uuid(FlowContext.t(), Ecto.UUID.t()) :: FlowContext.t()
-  defp update_node_uuid(context, node_uuid) do
+  def update_node_uuid(context, node_uuid) do
     {:ok, context} =
       context
       |> FlowContext.changeset(%{node_uuid: node_uuid})
+      |> Repo.update()
+
+    context
+  end
+
+  @doc """
+  Update the contact results state as we step through the flow
+  """
+  @spec update_results(FlowContext.t(), String.t(), String.t()) :: FlowContext.t()
+  def update_results(context, key, value) do
+    results =
+      if is_nil(context.results),
+        do: %{},
+        else: context.results
+
+    results = Map.put(results, key, value)
+
+    {:ok, context} =
+      context
+      |> FlowContext.changeset(%{results: results})
       |> Repo.update()
 
     context
@@ -148,6 +174,7 @@ defmodule Glific.Flows.FlowContext do
         parent_id: parent_id,
         node_uuid: node.uuid,
         node: node,
+        results: %{},
         flow_id: flow.id,
         uuid_map: flow.uuid_map
       })

@@ -23,6 +23,15 @@ defmodule Glific.Flows.ContactSetting do
   end
 
   @doc """
+  Set the name for a contact
+  """
+  @spec set_contact_name(FlowContext.t(), String.t()) :: FlowContext.t()
+  def set_contact_name(context, name) do
+    {:ok, contact} = Contacts.update_contact(context.contact, %{name: name})
+    Map.put(context, :contact, contact)
+  end
+
+  @doc """
   Wrapper function for setting the contact preference, if preference is empty, it
   indicates to reset the preference
   """
