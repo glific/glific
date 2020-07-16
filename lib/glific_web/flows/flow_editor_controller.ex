@@ -41,10 +41,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
     conn
     |> json(%{results:
       [
-        %{key: "contact_name", name: "Contact Name", value_type: "text"},
-        %{key: "contact_age", name: "Contact Age", value_type: "text"},
-        %{key: "contact_gender", name: "Contact Gender", value_type: "text"},
-        %{key: "contact_dob", name: "Contact Date of Birth", value_type: "text"},
+        %{key: "name", name: "Name", value_type: "text"},
+        %{key: "age_group", name: "Age Group", value_type: "text"},
+        %{key: "gender", name: "Gender", value_type: "text"},
+        %{key: "dob", name: "Date of Birth", value_type: "text"},
         %{key: "settings", name: "Settings", value_type: "text"},
       ]
     })
