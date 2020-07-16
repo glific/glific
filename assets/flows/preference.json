@@ -1,194 +1,240 @@
 {
-  "_ui": {
-    "nodes": {
-      "1cfb74d7-8286-4830-8269-97723f7302e6": {
-        "type": "execute_actions",
-        "position": {
-          "top": 480,
-          "left": 20
-        }
-      },
-      "23af6eaf-748d-4ac0-a1ee-be4dd1900b1b": {
-        "type": "execute_actions",
-        "position": {
-          "top": 380,
-          "left": 440
-        }
-      },
-      "c5aaefdf-687f-4d8b-93b2-8efbcfdc1ca3": {
-        "type": "wait_for_response",
-        "config": {
-          "cases": {}
+  "type" : "message",
+  "spec_version" : "13.1.0",
+  "uuid" : "63397051-789d-418d-9388-2ef7eb1268bb",
+  "vars" : [
+    "63397051-789d-418d-9388-2ef7eb1268bb"
+  ],
+  "_ui" : {
+    "nodes" : {
+      "c5aaefdf-687f-4d8b-93b2-8efbcfdc1ca3" : {
+        "position" : {
+          "left" : 220,
+          "top" : 220
         },
-        "position": {
-          "top": 220,
-          "left": 220
-        }
+        "config" : {
+          "cases" : {
+
+          }
+        },
+        "type" : "wait_for_response"
       },
-      "d977a2dc-5987-4192-817e-1e3d3774abcb": {
-        "type": "execute_actions",
-        "position": {
-          "top": 0,
-          "left": 960
-        }
+      "d977a2dc-5987-4192-817e-1e3d3774abcb" : {
+        "position" : {
+          "left" : 960,
+          "top" : 0
+        },
+        "type" : "execute_actions"
+      },
+      "1cfb74d7-8286-4830-8269-97723f7302e6" : {
+        "position" : {
+          "top" : 480,
+          "left" : 20
+        },
+        "type" : "execute_actions"
       }
     },
-    "stickies": {},
-    "languages": [{
-      "eng": "English"
-    }, {
-      "spa": "Spanish"
-    }]
+    "languages" : [
+      {
+        "eng" : "English"
+      },
+      {
+        "spa" : "Spanish"
+      }
+    ],
+    "stickies" : {
+
+    }
   },
-  "name": "Preferences Workflow",
-  "type": "message",
-  "uuid": "63397051-789d-418d-9388-2ef7eb1268bb",
-  "vars": ["63397051-789d-418d-9388-2ef7eb1268bb"],
-  "nodes": [{
-    "uuid": "d977a2dc-5987-4192-817e-1e3d3774abcb",
-    "exits": [{
-      "uuid": "7a4feee4-62d7-478c-a36a-649cc9041740",
-      "destination_uuid": "c5aaefdf-687f-4d8b-93b2-8efbcfdc1ca3"
-    }],
-    "actions": [{
-      "text": "preference",
-      "type": "send_msg",
-      "uuid": "902dcbfb-6e54-435e-a23b-37686dc495e1",
-      "templating": {
-        "uuid": "9d288d66-71e1-463e-9256-53dcd65f4cc4",
-        "template": {
-          "name": "Preferences",
-          "uuid": "a9834b33-583d-471b-aa50-bdf0a4c8c34b"
-        },
-        "variables": []
-      },
-      "attachments": [],
-      "quick_replies": []
-    }]
-  }, {
-    "uuid": "c5aaefdf-687f-4d8b-93b2-8efbcfdc1ca3",
-    "exits": [{
-      "uuid": "54a66e2a-8cf8-498b-9449-6b0404300e39",
-      "destination_uuid": "1cfb74d7-8286-4830-8269-97723f7302e6"
-    }, {
-      "uuid": "dd56125c-01b7-4de1-befb-f0c44c132909",
-      "destination_uuid": "1cfb74d7-8286-4830-8269-97723f7302e6"
-    }, {
-      "uuid": "96acc5e7-9ca7-461e-9f74-87b99c0b5d4d",
-      "destination_uuid": "1cfb74d7-8286-4830-8269-97723f7302e6"
-    }, {
-      "uuid": "792eb527-aebc-4947-8b24-7ac447a7d73d",
-      "destination_uuid": "1cfb74d7-8286-4830-8269-97723f7302e6"
-    }, {
-      "uuid": "e0115e19-1a94-4ba6-9a03-a5f29088654f",
-      "destination_uuid": null
-    }, {
-      "uuid": "66ed3a99-9666-420f-8e50-b6b922e6c7af",
-      "destination_uuid": "23af6eaf-748d-4ac0-a1ee-be4dd1900b1b"
-    }, {
-      "uuid": "1bb26071-cb76-41fc-8f81-78fd31394758",
-      "destination_uuid": "d977a2dc-5987-4192-817e-1e3d3774abcb"
-    }],
-    "router": {
-      "type": "switch",
-      "wait": {
-        "type": "msg"
-      },
-      "cases": [{
-        "type": "has_only_phrase",
-        "uuid": "93d8b8d5-0a5b-47e3-960d-97d3a10b9efe",
-        "arguments": ["1"],
-        "category_uuid": "ef1cc619-89d7-48be-81fc-3959da378112"
-      }, {
-        "type": "has_only_phrase",
-        "uuid": "63661235-ff18-44cb-92c6-e13da3703eb8",
-        "arguments": ["2"],
-        "category_uuid": "382c3269-fadf-4fdc-b477-91c4da489705"
-      }, {
-        "type": "has_only_phrase",
-        "uuid": "dc747279-7303-44b1-8dce-fa187fa85873",
-        "arguments": ["3"],
-        "category_uuid": "54c93b06-2ca8-4897-b108-e222bc7d88e1"
-      }, {
-        "type": "has_any_word",
-        "uuid": "f08eec5d-1ab6-44f8-b35e-92581d02aa74",
-        "arguments": ["4"],
-        "category_uuid": "8f2c8772-34a0-4bc7-9bd4-c84af14b5bb4"
-      }, {
-        "type": "has_any_word",
-        "uuid": "f78e5612-5afe-4301-b32c-161e7599b3d1",
-        "arguments": ["5"],
-        "category_uuid": "0595d183-ca02-43f8-b64d-ad5b7e13f06b"
-      }, {
-        "type": "has_any_word",
-        "uuid": "045fa16e-1d46-4898-a6f3-2a507bbebc6c",
-        "arguments": ["6"],
-        "category_uuid": "2af50c61-26ac-4039-8a54-395b419748f4"
-      }],
-      "operand": "@input.text",
-      "categories": [{
-        "name": "poetry",
-        "uuid": "ef1cc619-89d7-48be-81fc-3959da378112",
-        "exit_uuid": "54a66e2a-8cf8-498b-9449-6b0404300e39"
-      }, {
-        "name": "writing",
-        "uuid": "382c3269-fadf-4fdc-b477-91c4da489705",
-        "exit_uuid": "dd56125c-01b7-4de1-befb-f0c44c132909"
-      }, {
-        "name": "story",
-        "uuid": "54c93b06-2ca8-4897-b108-e222bc7d88e1",
-        "exit_uuid": "96acc5e7-9ca7-461e-9f74-87b99c0b5d4d"
-      }, {
-        "name": "video",
-        "uuid": "8f2c8772-34a0-4bc7-9bd4-c84af14b5bb4",
-        "exit_uuid": "792eb527-aebc-4947-8b24-7ac447a7d73d"
-      }, {
-        "name": "done",
-        "uuid": "0595d183-ca02-43f8-b64d-ad5b7e13f06b",
-        "exit_uuid": "e0115e19-1a94-4ba6-9a03-a5f29088654f"
-      }, {
-        "name": "reset",
-        "uuid": "2af50c61-26ac-4039-8a54-395b419748f4",
-        "exit_uuid": "66ed3a99-9666-420f-8e50-b6b922e6c7af"
-      }, {
-        "name": "Other",
-        "uuid": "9d88e613-092d-40ae-8186-a2fe9d2b13df",
-        "exit_uuid": "1bb26071-cb76-41fc-8f81-78fd31394758"
-      }],
-      "result_name": "preference",
-      "default_category_uuid": "9d88e613-092d-40ae-8186-a2fe9d2b13df"
+  "localization" : {
+
+  },
+  "nodes" : [
+    {
+      "uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb",
+      "exits" : [
+        {
+          "uuid" : "7a4feee4-62d7-478c-a36a-649cc9041740",
+          "destination_uuid" : "c5aaefdf-687f-4d8b-93b2-8efbcfdc1ca3"
+        }
+      ],
+      "actions" : [
+        {
+          "templating" : {
+            "uuid" : "9d288d66-71e1-463e-9256-53dcd65f4cc4",
+            "variables" : [
+
+            ],
+            "template" : {
+              "name" : "Preferences",
+              "uuid" : "a9834b33-583d-471b-aa50-bdf0a4c8c34b"
+            }
+          },
+          "uuid" : "902dcbfb-6e54-435e-a23b-37686dc495e1",
+          "text" : "preference",
+          "type" : "send_msg",
+          "quick_replies" : [
+
+          ],
+          "attachments" : [
+
+          ]
+        }
+      ]
     },
-    "actions": []
-  }, {
-    "uuid": "23af6eaf-748d-4ac0-a1ee-be4dd1900b1b",
-    "exits": [{
-      "uuid": "162e6398-5d42-428b-8fab-1dd6e500c547",
-      "destination_uuid": "d977a2dc-5987-4192-817e-1e3d3774abcb"
-    }],
-    "actions": [{
-      "name": "settings_preference",
-      "type": "set_run_result",
-      "uuid": "eebaa664-836f-4336-b9e9-f3daaffb61fb",
-      "value": "",
-      "category": ""
-    }]
-  }, {
-    "uuid": "1cfb74d7-8286-4830-8269-97723f7302e6",
-    "exits": [{
-      "uuid": "1509cd6a-0512-443c-bdcf-33d48d627afb",
-      "destination_uuid": "d977a2dc-5987-4192-817e-1e3d3774abcb"
-    }],
-    "actions": [{
-      "type": "set_contact_field",
-      "uuid": "3aa56e1d-19ca-41af-a3cc-16fcf20c62e6",
-      "field": {
-        "key": "settings",
-        "name": "settings"
+    {
+      "router" : {
+        "default_category_uuid" : "9d88e613-092d-40ae-8186-a2fe9d2b13df",
+        "result_name" : "preference",
+        "operand" : "@input.text",
+        "type" : "switch",
+        "wait" : {
+          "type" : "msg"
+        },
+        "categories" : [
+          {
+            "uuid" : "ef1cc619-89d7-48be-81fc-3959da378112",
+            "exit_uuid" : "54a66e2a-8cf8-498b-9449-6b0404300e39",
+            "name" : "poetry"
+          },
+          {
+            "uuid" : "382c3269-fadf-4fdc-b477-91c4da489705",
+            "exit_uuid" : "dd56125c-01b7-4de1-befb-f0c44c132909",
+            "name" : "writing"
+          },
+          {
+            "uuid" : "54c93b06-2ca8-4897-b108-e222bc7d88e1",
+            "exit_uuid" : "96acc5e7-9ca7-461e-9f74-87b99c0b5d4d",
+            "name" : "story"
+          },
+          {
+            "uuid" : "8f2c8772-34a0-4bc7-9bd4-c84af14b5bb4",
+            "exit_uuid" : "792eb527-aebc-4947-8b24-7ac447a7d73d",
+            "name" : "video"
+          },
+          {
+            "uuid" : "0595d183-ca02-43f8-b64d-ad5b7e13f06b",
+            "exit_uuid" : "e0115e19-1a94-4ba6-9a03-a5f29088654f",
+            "name" : "done"
+          },
+          {
+            "uuid" : "2af50c61-26ac-4039-8a54-395b419748f4",
+            "exit_uuid" : "66ed3a99-9666-420f-8e50-b6b922e6c7af",
+            "name" : "reset"
+          },
+          {
+            "uuid" : "9d88e613-092d-40ae-8186-a2fe9d2b13df",
+            "exit_uuid" : "1bb26071-cb76-41fc-8f81-78fd31394758",
+            "name" : "Other"
+          }
+        ],
+        "cases" : [
+          {
+            "type" : "has_only_phrase",
+            "arguments" : [
+              "1"
+            ],
+            "category_uuid" : "ef1cc619-89d7-48be-81fc-3959da378112",
+            "uuid" : "93d8b8d5-0a5b-47e3-960d-97d3a10b9efe"
+          },
+          {
+            "type" : "has_only_phrase",
+            "arguments" : [
+              "2"
+            ],
+            "category_uuid" : "382c3269-fadf-4fdc-b477-91c4da489705",
+            "uuid" : "63661235-ff18-44cb-92c6-e13da3703eb8"
+          },
+          {
+            "type" : "has_only_phrase",
+            "arguments" : [
+              "3"
+            ],
+            "category_uuid" : "54c93b06-2ca8-4897-b108-e222bc7d88e1",
+            "uuid" : "dc747279-7303-44b1-8dce-fa187fa85873"
+          },
+          {
+            "type" : "has_any_word",
+            "arguments" : [
+              "4"
+            ],
+            "category_uuid" : "8f2c8772-34a0-4bc7-9bd4-c84af14b5bb4",
+            "uuid" : "f08eec5d-1ab6-44f8-b35e-92581d02aa74"
+          },
+          {
+            "type" : "has_any_word",
+            "arguments" : [
+              "5"
+            ],
+            "category_uuid" : "0595d183-ca02-43f8-b64d-ad5b7e13f06b",
+            "uuid" : "f78e5612-5afe-4301-b32c-161e7599b3d1"
+          },
+          {
+            "type" : "has_any_word",
+            "arguments" : [
+              "6"
+            ],
+            "category_uuid" : "2af50c61-26ac-4039-8a54-395b419748f4",
+            "uuid" : "045fa16e-1d46-4898-a6f3-2a507bbebc6c"
+          }
+        ]
       },
-      "value": "@results.preference.category"
-    }]
-  }],
-  "language": "eng",
-  "localization": {},
-  "spec_version": "13.1.0"
+      "actions" : [
+
+      ],
+      "exits" : [
+        {
+          "uuid" : "54a66e2a-8cf8-498b-9449-6b0404300e39",
+          "destination_uuid" : "1cfb74d7-8286-4830-8269-97723f7302e6"
+        },
+        {
+          "uuid" : "dd56125c-01b7-4de1-befb-f0c44c132909",
+          "destination_uuid" : "1cfb74d7-8286-4830-8269-97723f7302e6"
+        },
+        {
+          "uuid" : "96acc5e7-9ca7-461e-9f74-87b99c0b5d4d",
+          "destination_uuid" : "1cfb74d7-8286-4830-8269-97723f7302e6"
+        },
+        {
+          "uuid" : "792eb527-aebc-4947-8b24-7ac447a7d73d",
+          "destination_uuid" : "1cfb74d7-8286-4830-8269-97723f7302e6"
+        },
+        {
+          "uuid" : "e0115e19-1a94-4ba6-9a03-a5f29088654f",
+          "destination_uuid" : null
+        },
+        {
+          "uuid" : "66ed3a99-9666-420f-8e50-b6b922e6c7af",
+          "destination_uuid" : "1cfb74d7-8286-4830-8269-97723f7302e6"
+        },
+        {
+          "uuid" : "1bb26071-cb76-41fc-8f81-78fd31394758",
+          "destination_uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb"
+        }
+      ],
+      "uuid" : "c5aaefdf-687f-4d8b-93b2-8efbcfdc1ca3"
+    },
+    {
+      "uuid" : "1cfb74d7-8286-4830-8269-97723f7302e6",
+      "exits" : [
+        {
+          "uuid" : "1509cd6a-0512-443c-bdcf-33d48d627afb",
+          "destination_uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb"
+        }
+      ],
+      "actions" : [
+        {
+          "uuid" : "3aa56e1d-19ca-41af-a3cc-16fcf20c62e6",
+          "value" : "@results.preference.category",
+          "type" : "set_contact_field",
+          "field" : {
+            "key" : "settings",
+            "name" : "settings"
+          }
+        }
+      ]
+    }
+  ],
+  "language" : "eng",
+  "name" : "Preferences Workflow"
 }
