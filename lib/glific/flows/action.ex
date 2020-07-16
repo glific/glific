@@ -12,6 +12,7 @@ defmodule Glific.Flows.Action do
 
   alias Glific.Flows.{
     ContactAction,
+    ContactField,
     ContactSetting,
     Flow,
     FlowContext,
@@ -28,6 +29,7 @@ defmodule Glific.Flows.Action do
           text: String.t() | nil,
           value: String.t() | nil,
           type: FlowActionType,
+          field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
           enter_flow: Flow.t() | nil,
@@ -41,6 +43,7 @@ defmodule Glific.Flows.Action do
     field :name, :string
     field :text, :string
     field :value, :string
+    field :field, :map
     field :language, :string
     field :type, FlowActionType
     field :quick_replies, {:array, :string}, default: []
@@ -97,6 +100,11 @@ defmodule Glific.Flows.Action do
     action = Map.put(action, :templating, templating)
 
     action =
+      if Map.has_key?(json, "field"),
+        do: Map.put(action, :field, %{name: json["field"]["name"], key: json["field"]["key"]}),
+        else: action
+
+    action =
       if action.type == "set_contact_language",
         do: Map.put(action, :text, json["language"]),
         else: action
@@ -130,10 +138,16 @@ defmodule Glific.Flows.Action do
     {:ok, context, message_stream}
   end
 
-  def execute(%{type: type, name: name} = _action, context, message_stream)
-      when type == "set_run_result" and name == "settings_optout" do
-    IO.puts("Setting contact optout")
-    context = ContactAction.optout(context)
+  def execute(%{type: type} = action, context, message_stream)
+      when type == "set_contact_field" do
+    name = action.field.key
+    value = FlowContext.get_result_value(context, action.value)
+
+    context =
+      if name == "settings",
+        do: ContactSetting.set_contact_preference(context, value),
+        else: ContactField.add_contact_field(context, name, value, "string")
+
     {:ok, context, message_stream}
   end
 
@@ -155,6 +169,6 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(action, _context, _message_stream),
-    # IO.inspect(action, label: "ACTION")
+    # IO.inspect(action, label: "ACTION");
     do: {:error, "Unsupported action type #{action.type}"}
 end

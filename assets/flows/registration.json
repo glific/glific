@@ -118,7 +118,7 @@
         "key": "name",
         "name": "Name"
       },
-      "value": "@results.contact_name.value"
+      "value": "@results.contact_name.input"
     }]
   }, {
     "uuid": "73d66f08-a5e4-4147-a5ad-55a73833e804",

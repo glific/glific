@@ -39,13 +39,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec fields(Plug.Conn.t(), map) :: Plug.Conn.t()
   def fields(conn, _params) do
     conn
-    |> json(%{results:
-      [
+    |> json(%{
+      results: [
         %{key: "name", name: "Name", value_type: "text"},
         %{key: "age_group", name: "Age Group", value_type: "text"},
         %{key: "gender", name: "Gender", value_type: "text"},
         %{key: "dob", name: "Date of Birth", value_type: "text"},
-        %{key: "settings", name: "Settings", value_type: "text"},
+        %{key: "settings", name: "Settings", value_type: "text"}
       ]
     })
   end
@@ -67,9 +67,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
     # We might need to add a UUID for tags also.
     results =
       Glific.Tags.list_tags()
-      |> Enum.reduce([], fn tag, acc
-        -> [ %{ uuid: tag.id, name: tag.label} | acc]
+      |> Enum.reduce([], fn tag, acc ->
+        [%{uuid: tag.id, name: tag.label} | acc]
       end)
+
     conn
     |> json(%{results: results})
   end
@@ -217,7 +218,6 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec completion(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def completion(conn, _params) do
-
     # instead of reading a file we can call it directly from Assests.
     # We will come back on that when we have more clearity of the use cases
 
