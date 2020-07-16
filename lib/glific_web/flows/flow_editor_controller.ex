@@ -202,7 +202,15 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec completion(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def completion(conn, _params) do
-    json(conn, %{})
+
+    # instead of reading a file we can call it directly from Assests.
+    # We will come back on that when we have more clearity of the use cases
+
+    completion =
+      File.read!("assets/flows/completion.json")
+      |> Jason.decode!()
+
+    json(conn, completion)
   end
 
   @doc false
