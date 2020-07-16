@@ -68,6 +68,9 @@ tags = [
   %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
   %{label: "Unread", language_id: en_us.id, parent_id: message_tags_mt.id},
 
+  # Status of outbound Message
+  %{label: "Not Responded", language_id: en_us.id, parent_id: message_tags_mt.id},
+
   # Languages
   %{
     label: "Language",
