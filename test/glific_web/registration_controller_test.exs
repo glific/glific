@@ -113,9 +113,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "validate phone", %{conn: conn} do
+      {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+
       valid_params = %{
         "user" => %{
-          "phone" => "911234567890"
+          "phone" => receiver.phone
         }
       }
 

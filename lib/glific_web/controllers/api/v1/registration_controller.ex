@@ -78,7 +78,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
       false ->
         conn
-        |> json(%{error: %{status: 200, message: "Contact is not opted in yet"}})
+        |> json(%{
+          error: %{status: 200, message: "User needs to initiate conversation to receive an OTP"}
+        })
     end
   end
 
@@ -86,12 +88,29 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @spec validate_phone(Conn.t(), map()) :: Conn.t()
   def validate_phone(conn, %{"user" => %{"phone" => phone}}) do
     # we can put more validations for phone number here
-    case Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}) do
-      {:error, _} ->
+    with {:error, _user} <- Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}),
+         {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
+         true <- Glific.Contacts.can_send_message_to?(contact) do
+      json(conn, %{
+        data: %{
+          is_valid: true,
+          message: "Phone number is successfully validated"
+        }
+      })
+    else
+      {:error, "Resource not found"} ->
         json(conn, %{
           data: %{
-            is_valid: true,
-            message: "Phone number is successfully validated"
+            is_valid: false,
+            message: "Phone number is incorrect"
+          }
+        })
+
+      false ->
+        json(conn, %{
+          data: %{
+            is_valid: false,
+            message: "User needs to initiate conversation to receive an OTP"
           }
         })
 
