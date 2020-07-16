@@ -245,7 +245,7 @@ defmodule Glific.SeedsDev do
   @doc false
   @spec seed_users :: Users.User.t()
   def seed_users do
-    password = "secret1234"
+    password = "12345678"
 
     Users.create_user(%{
       name: "NGO Basic User 1",
@@ -253,6 +253,14 @@ defmodule Glific.SeedsDev do
       password: password,
       confirm_password: password,
       roles: ["basic"]
+    })
+
+    Users.create_user(%{
+      name: "NGO Admin",
+      phone: "919876543210",
+      password: password,
+      confirm_password: password,
+      roles: ["admin"]
     })
   end
 
