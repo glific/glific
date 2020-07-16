@@ -7,6 +7,35 @@ include roles and permissions. User management will be done via GraphQL
 
 The main API endpoints are listed below
 
+# Send a request to validate a phone number
+
+It would respond with error message if phone number is invalid
+
+```shell
+curl -X POST -d \
+  "user[phone]=911234554321" \
+  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/validate_phone
+```
+```javascript
+If you are using axios or other libraries, send the following in the BODY of a POST request
+
+{
+    "user": {
+        "phone": "911234554321"
+    }
+}
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+    "data": {
+        "is_valid": "false",
+        "message": "Phone number already exists"
+    }
+}
+```
+
 # Send an OTP request to verify a phone number
 
 The OTP will be sent via WhatsApp and the NGO's Glific Instance. The API will only send

@@ -81,4 +81,27 @@ defmodule GlificWeb.API.V1.RegistrationController do
         |> json(%{error: %{status: 200, message: "Contact is not opted in yet"}})
     end
   end
+
+  @doc false
+  @spec validate_phone(Conn.t(), map()) :: Conn.t()
+  def validate_phone(conn, %{"user" => %{"phone" => phone}}) do
+    # we can put more validations for phone number here
+    case Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}) do
+      {:error, _} ->
+        json(conn, %{
+          data: %{
+            is_valid: true,
+            message: "Phone number is successfully validated"
+          }
+        })
+
+      {:ok, _} ->
+        json(conn, %{
+          data: %{
+            is_valid: false,
+            message: "Phone number already exists"
+          }
+        })
+    end
+  end
 end
