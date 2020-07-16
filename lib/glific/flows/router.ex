@@ -125,11 +125,11 @@ defmodule Glific.Flows.Router do
     context =
       if is_nil(router.result_name),
         # if there is a result name, store it in the context table first
-      do: context,
-      else: FlowContext.update_results(context, router.result_name, msg)
+        do: context,
+        else: FlowContext.update_results(context, router.result_name, msg)
 
     # go thru the cases and find the first one that succeeds
-        c =
+    c =
       Enum.find(
         router.cases,
         nil,

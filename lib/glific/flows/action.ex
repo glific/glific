@@ -155,9 +155,6 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(action, _context, _message_stream),
-    do:
-      (
-        # IO.inspect(action, label: "ACTION")
-        {:error, "Unsupported action type #{action.type}"}
-      )
+    # IO.inspect(action, label: "ACTION")
+    do: {:error, "Unsupported action type #{action.type}"}
 end

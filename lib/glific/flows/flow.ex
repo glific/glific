@@ -114,9 +114,9 @@ defmodule Glific.Flows.Flow do
       |> Repo.insert()
 
     context =
-    context
-    |> Repo.preload(:contact)
-    |> Map.put(:node, node)
+      context
+      |> Repo.preload(:contact)
+      |> Map.put(:node, node)
 
     {:ok, context}
   end

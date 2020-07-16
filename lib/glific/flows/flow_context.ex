@@ -23,7 +23,7 @@ defmodule Glific.Flows.FlowContext do
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           uuid_map: map() | nil,
-          results: map(),
+          results: map() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           flow_id: non_neg_integer | nil,
@@ -40,7 +40,7 @@ defmodule Glific.Flows.FlowContext do
     field :uuid_map, :map, virtual: true
     field :node, :map, virtual: true
 
-    field :results, :map, defaukt: %{}
+    field :results, :map, default: %{}
 
     field :node_uuid, Ecto.UUID
 
