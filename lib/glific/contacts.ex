@@ -201,6 +201,7 @@ defmodule Glific.Contacts do
     upsert(%{
       phone: phone,
       optout_time: utc_time,
+      optin_time: nil,
       status: :invalid,
       provider_status: :invalid,
       updated_at: DateTime.utc_now()
@@ -226,10 +227,8 @@ defmodule Glific.Contacts do
   """
   @spec can_send_hsm_message_to?(Contact.t()) :: boolean()
   def can_send_hsm_message_to?(contact) do
-    with true <- contact.status == :valid,
-         true <- contact.provider_status == :valid,
+    with [contact.status, contact.provider_status] == [:valid, :valid]
          true <- contact.optin_time != nil,
-         true <- contact.optout_time == nil,
          do: true
   end
 
