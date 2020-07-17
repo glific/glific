@@ -222,6 +222,18 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Check if contact has opted in
+  """
+  @spec is_opted_in?(Contact.t()) :: boolean()
+  def is_opted_in?(contact) do
+    with true <- contact.status == :valid,
+         true <- contact.provider_status == :valid,
+         true <- contact.optin_time != nil,
+         true <- contact.optout_time == nil,
+         do: true
+  end
+
+  @doc """
   Check if we can send a hsm message to the contact
   """
   @spec can_send_hsm_message_to?(Contact.t()) :: boolean()

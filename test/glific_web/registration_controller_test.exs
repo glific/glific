@@ -81,6 +81,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   describe "send_otp/2" do
     test "send otp", %{conn: conn} do
       {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+      Glific.Contacts.update_contact(receiver, %{optin_time: DateTime.utc_now()})
 
       valid_params = %{
         "user" => %{
@@ -114,6 +115,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "validate phone", %{conn: conn} do
       {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+      Glific.Contacts.update_contact(receiver, %{optin_time: DateTime.utc_now()})
 
       valid_params = %{
         "user" => %{

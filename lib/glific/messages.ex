@@ -206,23 +206,24 @@ defmodule Glific.Messages do
   @spec create_and_send_verification_message(String.t(), String.t()) :: {:ok, Message.t()}
   def create_and_send_verification_message(phone, otp) do
     # fetch contact by phone number
-    {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
+    {:ok, contact} = Glific.Repo.fetch_by(Contact, %{phone: phone})
 
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
-      Repo.fetch_by(SessionTemplate, %{
-        shortcode: "verification"
+      Glific.Repo.fetch_by(SessionTemplate, %{
+        shortcode: "verification",
+        is_hsm: true
       })
 
-    # create and send verification message with OTP code
-    message_params = %{
-      body: session_template.body <> otp,
-      type: session_template.type,
-      sender_id: Communications.Message.organization_contact_id(),
-      receiver_id: contact.id
-    }
+    ttl_in_minutes = Application.get_env(:passwordless_auth, :verification_code_ttl) |> div(60)
 
-    create_and_send_message(message_params)
+    parameters = [
+      "Registration",
+      otp,
+      "#{ttl_in_minutes} minutes"
+    ]
+
+    create_and_send_hsm_message(session_template.id, contact.id, parameters)
   end
 
   @doc """
@@ -257,7 +258,7 @@ defmodule Glific.Messages do
   @doc """
   Send a hsm template message to the specific contact.
   """
-  @spec create_and_send_hsm_message(integer, integer, []) ::
+  @spec create_and_send_hsm_message(integer, integer, [String.t()]) ::
           {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_hsm_message(template_id, receiver_id, parameters) do
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
@@ -280,7 +281,7 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec prepare_hsm_template(SessionTemplate.t(), []) :: SessionTemplate.t()
+  @spec prepare_hsm_template(SessionTemplate.t(), [String.t()]) :: SessionTemplate.t()
   def prepare_hsm_template(session_template, parameters) do
     parameters_map =
       1..session_template.number_parameters

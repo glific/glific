@@ -62,7 +62,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @spec send_otp(Conn.t(), map()) :: Conn.t()
   def send_otp(conn, %{"user" => %{"phone" => phone}}) do
     with {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
-         true <- Glific.Contacts.can_send_message_to?(contact),
+         true <- Glific.Contacts.is_opted_in?(contact),
          {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
       json(conn, %{
         data: %{
@@ -79,7 +79,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
       false ->
         conn
         |> json(%{
-          error: %{status: 200, message: "User needs to initiate conversation to receive an OTP"}
+          error: %{status: 200, message: "Contact is not opted in yet"}
         })
     end
   end
@@ -90,7 +90,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
     # we can put more validations for phone number here
     with {:error, _user} <- Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}),
          {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
-         true <- Glific.Contacts.can_send_message_to?(contact) do
+         true <- Glific.Contacts.is_opted_in?(contact) do
       json(conn, %{
         data: %{
           is_valid: true,
@@ -110,7 +110,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
         json(conn, %{
           data: %{
             is_valid: false,
-            message: "User needs to initiate conversation to receive an OTP"
+            message: "Contact is not opted in yet"
           }
         })
 
