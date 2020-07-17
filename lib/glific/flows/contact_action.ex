@@ -28,9 +28,9 @@ defmodule Glific.Flows.ContactAction do
 
     contact_vars =
       contact.fields
-      |> Enum.reduce(%{}, fn {field, map}, acc -> Map.put(acc, field, map["value"]) end)
+      |> Enum.reduce(%{"fields" => %{}}, fn {field, map}, acc -> put_in(acc, ["fields", field], map["value"]) end)
 
-    message_vars = %{"contact" => %{"fields" => contact_vars}}
+    message_vars = %{"contact" => contact_vars}
     body = Glific.Flows.NaiveParser.parse(text, message_vars)
     Messages.create_and_send_message(%{body: body, type: :text, receiver_id: context.contact_id})
     context
