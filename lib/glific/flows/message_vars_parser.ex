@@ -8,7 +8,6 @@ defmodule Glific.Flows.MessageVarParser do
   @doc """
   parse the message with variables
   """
-
   @spec parse(String.t(), map()) :: String.t() | nil
   def parse(input, binding) do
     do_parse(input, binding, {nil, ""})
