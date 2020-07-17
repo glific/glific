@@ -62,7 +62,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @spec send_otp(Conn.t(), map()) :: Conn.t()
   def send_otp(conn, %{"user" => %{"phone" => phone}}) do
     with {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
-         true <- Glific.Contacts.is_opted_in?(contact),
+         true <- Glific.Contacts.can_send_hsm_message_to?(contact),
          {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
       json(conn, %{
         data: %{
@@ -90,7 +90,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
     # we can put more validations for phone number here
     with {:error, _user} <- Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}),
          {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
-         true <- Glific.Contacts.is_opted_in?(contact) do
+         true <- Glific.Contacts.can_send_hsm_message_to?(contact) do
       json(conn, %{
         data: %{
           is_valid: true,
