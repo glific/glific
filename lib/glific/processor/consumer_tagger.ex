@@ -92,6 +92,7 @@ defmodule Glific.Processor.ConsumerTagger do
           new_contact.id => new_contact,
           new_contact.uuid => new_contact,
           "new contact" => new_contact,
+          "newcontact" => new_contact,
           preference.id => preference,
           preference.uuid => preference,
           "preference" => preference,
@@ -116,43 +117,46 @@ defmodule Glific.Processor.ConsumerTagger do
   defp process_message(message, state) do
     body = Glific.string_clean(message.body)
 
-    # hack for now, while we are testing enter flow
-    body = if body == "newcontact", do: "new contact", else: body
-
     message
     |> add_status_tag("Unread", state)
     |> add_not_reply_tag(state)
-    |> new_contact_tagger(state)
     |> numeric_tagger(body, state)
     |> keyword_tagger(body, state)
+    # we do this before, so it will not pick up the potential flow
+    # started by new conatct tagger
+    |> check_flows(body, state)
+    |> new_contact_tagger(state)
     |> Repo.preload(:tags)
     |> Communications.publish_data(:created_message_tag)
-    |> check_flows(body, state)
   end
 
   @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
   defp check_flows(message, body, state)
-       when body in ["help", "language", "new contact", "preference", "registration"] do
+       when body in [
+              "help",
+              "language",
+              "preference",
+              "new contact",
+              "newcontact",
+              "registration"
+            ] do
     message = Repo.preload(message, :contact)
-
     FlowContext.init_context(Map.get(state.flows, body), message.contact)
     message
   end
 
   defp check_flows(message, _body, state) do
-    case FlowContext.active_context(message.contact_id) do
-      nil ->
-        message
+    context = FlowContext.active_context(message.contact_id)
 
-      context ->
+    if context,
+      do:
         context
         |> FlowContext.load_context(state.flows[context.flow_id])
         |> FlowContext.step_forward(message.body)
 
-        # we can potentially save the {contact_id, context} map here, to avoid
-        # hitting the DB again. We'll do this after we get this working
-        message
-    end
+    # we can potentially save the {contact_id, context} map here in the flow state,
+    # to avoid hitting the DB again. We'll do this after we get this working
+    message
   end
 
   @spec numeric_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()

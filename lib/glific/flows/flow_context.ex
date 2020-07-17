@@ -111,14 +111,14 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Update the contact results state as we step through the flow
   """
-  @spec update_results(FlowContext.t(), String.t(), String.t()) :: FlowContext.t()
-  def update_results(context, key, value) do
+  @spec update_results(FlowContext.t(), String.t(), String.t(), String.t()) :: FlowContext.t()
+  def update_results(context, key, input, category) do
     results =
       if is_nil(context.results),
         do: %{},
         else: context.results
 
-    results = Map.put(results, key, value)
+    results = Map.put(results, key, %{"input" => input, "category" => category})
 
     {:ok, context} =
       context
@@ -224,6 +224,19 @@ defmodule Glific.Flows.FlowContext do
     case FlowContext.execute(context, [body]) do
       {:ok, context, []} -> {:ok, context}
       {:error, error} -> {:error, error}
+    end
+  end
+
+  @doc """
+  Retrieve the value from a results string
+  """
+  @spec get_result_value(FlowContext.t(), String.t()) :: String.t() | nil
+  def get_result_value(context, value) do
+    if String.starts_with?(value, "@results.") do
+      parts = String.slice(value, 8..-1) |> String.split(".", trim: true)
+      get_in(context.results, parts)
+    else
+      nil
     end
   end
 end

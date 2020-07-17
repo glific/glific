@@ -50,7 +50,13 @@ defmodule Glific.Flows.ContactSetting do
   settings map, with a sub-map of preferences. We expect to get more clarity on this soon
   """
   @spec add_contact_preference(FlowContext.t(), String.t(), boolean()) :: FlowContext.t()
-  def add_contact_preference(context, preference, value \\ true) do
+  def add_contact_preference(context, preference, value \\ true)
+
+  # reset the contact preference when explicitly asked to do so
+  def add_contact_preference(context, preference, _value) when preference == "reset",
+    do: reset_contact_preference(context)
+
+  def add_contact_preference(context, preference, value) do
     contact_settings =
       if is_nil(context.contact.settings),
         do: %{"preferences" => %{}},
