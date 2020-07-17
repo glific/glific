@@ -58,7 +58,7 @@ defmodule Glific.Contacts.Contact do
     field :last_message_at, :utc_datetime
 
     field :settings, :map
-    field :fields, :map
+    field :fields, :map, default: %{}
 
     many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
 

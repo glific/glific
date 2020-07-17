@@ -19,7 +19,8 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone",
       status: :valid,
-      provider_status: :invalid
+      provider_status: :invalid,
+      fileds: %{}
     }
     @valid_attrs_1 %{
       name: "some name 1",
@@ -27,7 +28,8 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 1",
       status: :invalid,
-      provider_status: :invalid
+      provider_status: :invalid,
+      fileds: %{}
     }
     @valid_attrs_2 %{
       name: "some name 2",
@@ -35,7 +37,8 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 2",
       status: :valid,
-      provider_status: :valid
+      provider_status: :valid,
+      fileds: %{}
     }
     @valid_attrs_3 %{
       name: "some name 3",
@@ -43,7 +46,8 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 3",
       status: :invalid,
-      provider_status: :valid
+      provider_status: :valid,
+      fileds: %{}
     }
     @valid_attrs_to_test_order_1 %{
       name: "aaaa name",
@@ -51,7 +55,8 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 4",
       status: :valid,
-      provider_status: :invalid
+      provider_status: :invalid,
+      fileds: %{}
     }
     @valid_attrs_to_test_order_2 %{
       name: "zzzz name",
@@ -59,7 +64,8 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 5",
       status: :valid,
-      provider_status: :invalid
+      provider_status: :invalid,
+      fileds: %{}
     }
     @update_attrs %{
       name: "some updated name",
@@ -67,7 +73,8 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2011-05-18 15:01:01Z],
       phone: "some updated phone",
       status: :invalid,
-      provider_status: :invalid
+      provider_status: :invalid,
+      fileds: %{}
     }
     @invalid_attrs %{
       name: nil,
@@ -75,7 +82,8 @@ defmodule Glific.ContactsTest do
       optout_time: nil,
       phone: nil,
       status: nil,
-      provider_status: nil
+      provider_status: nil,
+      fileds: %{}
     }
 
     def contact_fixture(attrs \\ %{}) do
