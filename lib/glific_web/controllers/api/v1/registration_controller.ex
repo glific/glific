@@ -88,39 +88,22 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @spec validate_phone(Conn.t(), map()) :: Conn.t()
   def validate_phone(conn, %{"user" => %{"phone" => phone}}) do
     # we can put more validations for phone number here
-    with {:error, _user} <- Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}),
-         {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
-         true <- Glific.Contacts.can_send_hsm_message_to?(contact) do
-      json(conn, %{
-        data: %{
-          is_valid: true,
-          message: "Phone number is successfully validated"
-        }
-      })
-    else
-      {:error, "Resource not found"} ->
-        json(conn, %{
-          data: %{
-            is_valid: false,
-            message: "Phone number is incorrect"
-          }
-        })
+    response_data =
+      with {:error, _user} <- Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}),
+           {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
+           true <- Glific.Contacts.can_send_hsm_message_to?(contact) do
+        %{is_valid: true, message: "Phone number is successfully validated"}
+      else
+        {:error, "Resource not found"} ->
+          %{is_valid: false, message: "Phone number is incorrect"}
 
-      false ->
-        json(conn, %{
-          data: %{
-            is_valid: false,
-            message: "Contact is not opted in yet"
-          }
-        })
+        false ->
+          %{is_valid: false, message: "Contact is not opted in yet"}
 
-      {:ok, _} ->
-        json(conn, %{
-          data: %{
-            is_valid: false,
-            message: "Phone number already exists"
-          }
-        })
-    end
+        {:ok, _} ->
+          %{is_valid: false, message: "Phone number already exists"}
+      end
+
+    json(conn, %{data: response_data})
   end
 end
