@@ -29,15 +29,7 @@ defmodule Glific.Flows.ContactAction do
       when is_nil(templating) do
     # Since we are saving the data after loding the flow
     # so we have to fetch the latest contact fields
-    contact = Glific.Contacts.get_contact!(context.contact_id)
-
-    contact_fields =
-      contact.fields
-      |> Enum.reduce(%{"fields" => %{}}, fn {field, map}, acc ->
-        put_in(acc, ["fields", field], map["value"])
-      end)
-
-    message_vars = %{"contact" => contact_fields}
+    message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     body = MessageVarParser.parse(text, message_vars)
     Messages.create_and_send_message(%{body: body, type: :text, receiver_id: context.contact_id})
     context
@@ -62,5 +54,18 @@ defmodule Glific.Flows.ContactAction do
     # We need to update the contact with optout_time and status
     Contacts.contact_opted_out(context.contact.phone, DateTime.utc_now())
     context
+  end
+
+  @spec get_contact_field_map(integer) :: map()
+  defp get_contact_field_map(contact_id) do
+    contact =
+      Glific.Contacts.get_contact!(contact_id)
+      |> Glific.Repo.preload([:language])
+
+    contact.fields
+    |> Enum.reduce(%{"fields" => %{}}, fn {field, map}, acc ->
+      put_in(acc, ["fields", field], map["value"])
+    end)
+    |> put_in(["fields", :language], contact.language)
   end
 end

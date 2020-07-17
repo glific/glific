@@ -3,41 +3,25 @@ defmodule Glific.Flows.MessageVarParser do
   substitute the contact fileds and result sets in the messages
   """
 
-  @varname [".", "_" | Enum.map(?a..?z, &<<&1>>)]
-
   @doc """
   parse the message with variables
   """
   @spec parse(String.t(), map()) :: String.t() | nil
   def parse(input, binding) do
-    do_parse(input, binding, {nil, ""})
-  end
-
-  @spec do_parse(String.t(), map(), {String.t() | nil, String.t()}) :: String.t()
-  defp do_parse("", binding, {var, result}) do
-    result <> bound(var, binding)
-  end
-
-  defp do_parse("@" <> rest, binding, {nil, result}) do
-    do_parse(rest, binding, {"", result})
-  end
-
-  defp do_parse(<<c::binary-size(1), rest::binary>>, binding, {nil, result}) do
-    do_parse(rest, binding, {nil, result <> c})
-  end
-
-  defp do_parse(<<c::binary-size(1), rest::binary>>, binding, {var, result}) when c in @varname do
-    do_parse(rest, binding, {var <> c, result})
-  end
-
-  defp do_parse(<<c::binary-size(1), rest::binary>>, binding, {var, result}) do
-    do_parse(rest, binding, {nil, result <> bound(var, binding) <> c})
+    String.replace(input, ~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
+    |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, binding))
   end
 
   @spec bound(String.t(), map()) :: String.t()
   defp bound(nil, _binding), do: ""
 
-  defp bound(var, binding) do
+  # We need to figure out a way to replace these kind of variables
+  defp bound("@contact.language", binding) do
+    language = get_in(binding, ["contact", "fields", :language])
+    language.label
+  end
+
+  defp bound(<<_::binary-size(1), var::binary>>, binding) do
     substitution = get_in(binding, String.split(var, "."))
     if substitution == nil, do: "@#{var}", else: substitution
   end
