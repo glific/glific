@@ -26,12 +26,12 @@ defmodule Glific.Flows.ContactAction do
   def send_message(context, %Action{templating: templating, text: text}) when is_nil(templating) do
     contact = Glific.Contacts.get_contact!(context.contact_id)
 
-    contact_vars =
+    contact_fields =
       contact.fields
       |> Enum.reduce(%{"fields" => %{}}, fn {field, map}, acc -> put_in(acc, ["fields", field], map["value"]) end)
 
-    message_vars = %{"contact" => contact_vars}
-    body = Glific.Flows.NaiveParser.parse(text, message_vars)
+    message_vars = %{"contact" => contact_fields}
+    body = Glific.Flows.ParseMessageVars.parse(text, message_vars)
     Messages.create_and_send_message(%{body: body, type: :text, receiver_id: context.contact_id})
     context
   end
@@ -58,8 +58,9 @@ defmodule Glific.Flows.ContactAction do
   end
 end
 
+# Will move this to different file soon
 
-defmodule Glific.Flows.NaiveParser do
+defmodule Glific.Flows.ParseMessageVars do
   @varname [".", "_" | Enum.map(?a..?z, &<<&1>>)]
   def parse(input, binding) do
     do_parse(input, binding, {nil, ""})
