@@ -92,12 +92,6 @@ defmodule Glific.Flows.ParseMessageVars do
 
   defp bound(var, binding) do
     substitution = get_in(binding, String.split(var, "."))
-    IO.inspect("var")
-    IO.inspect(var)
-
-    IO.inspect("binding")
-    IO.inspect(binding)
-
     if substitution == nil, do: "@#{var}", else: substitution
   end
 end
