@@ -227,7 +227,8 @@ defmodule Glific.Contacts do
   """
   @spec can_send_hsm_message_to?(Contact.t()) :: boolean()
   def can_send_hsm_message_to?(contact) do
-    with [:valid, :valid] <- [contact.status, contact.provider_status],
+    with true <- contact.status == :valid,
+         true <- contact.provider_status == :valid,
          true <- contact.optin_time != nil,
          do: true
   end
