@@ -163,7 +163,7 @@ defmodule Glific.Providers.Gupshup.Message do
   def create(request) do
     %{to: phone, code: otp} = request
 
-    Glific.Messages.create_and_send_verification_message(phone, otp)
+    Glific.Messages.create_and_send_otp_verification_message(phone, otp)
 
     {:ok, otp}
   end

@@ -495,7 +495,7 @@ Repo.insert!(%SessionTemplate{
 Repo.insert!(%SessionTemplate{
   label: "HSM14",
   type: :text,
-  shortcode: "verification",
+  shortcode: "otp_verification",
   is_hsm: true,
   number_parameters: 3,
   language_id: en_us.id,
