@@ -226,8 +226,7 @@ defmodule Glific.Contacts do
   """
   @spec is_opted_in?(Contact.t()) :: boolean()
   def is_opted_in?(contact) do
-    with true <- contact.status == :valid,
-         true <- contact.provider_status == :valid,
+    with [:valid, :valid] <- [contact.status, contact.provider_status],
          true <- contact.optin_time != nil,
          true <- contact.optout_time == nil,
          do: true
