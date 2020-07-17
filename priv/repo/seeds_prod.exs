@@ -181,10 +181,6 @@ Repo.insert!(%SessionTemplate{
   label: "New Contact",
   body: """
   ग्लिफ़िक में आपका स्वागत है
-
-  आप किस भाषा में संदेश प्राप्त करना चाहते हैं?
-  हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
-  Type English to receive messages in English
   """,
   type: :text,
   shortcode: "new contact",
@@ -238,12 +234,12 @@ Repo.insert!(%SessionTemplate{
 Repo.insert!(%SessionTemplate{
   label: "Language",
   body: """
-  Is <%= contact.language %> your preferred language?
+  Your language is currently set at @contact.language
 
   Do you want to change the language you want to receive messages in?
 
-  हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
-  To receive messages in English, type English
+  हिंदी में संदेश प्राप्त करने के लिए 1 टाइप करें
+  To continue to receive messages in English, type 2
   """,
   type: :text,
   shortcode: "language",
@@ -255,12 +251,12 @@ Repo.insert!(%SessionTemplate{
 Repo.insert!(%SessionTemplate{
   label: "Language",
   body: """
-  क्या आपकी पसंदीदा भाषा <%= contact.language %> है?
+  आपकी भाषा वर्तमान में सेट हैा @contact.language
 
-  आप जिस भाषा में संदेश प्राप्त करना चाहते हैं उसे बदल सकते हैं।
+  आप जिस भाषा में संदेश प्राप्त करना चाहते हैं उसे बदल सकते हैं।क्या आप उस भाषा को बदलना चाहते हैं जिसमें आप संदेश प्राप्त करना चाहते हैं?
 
-  हिंदी में संदेश प्राप्त करने के लिए हिंदी टाइप करें
-  To receive messages in English, type English
+  हिंदी में संदेश प्राप्त करने के लिए 1 टाइप करें
+  To receive messages in English, type 2
   """,
   type: :text,
   shortcode: "language",
