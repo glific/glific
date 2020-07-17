@@ -14,9 +14,7 @@ defmodule Glific.Flows.ContactAction do
 
   defp send_session_message_template(context, shortcode) do
     language_id = context.contact.language_id
-
     session_template = Helper.get_session_message_template(shortcode, language_id)
-
     {:ok, _message} =
       Messages.create_and_send_session_template(session_template, context.contact_id)
   end
@@ -25,9 +23,16 @@ defmodule Glific.Flows.ContactAction do
   If the template is not define for the message send text messages
   """
   @spec send_message(FlowContext.t(), Action.t()) :: FlowContext.t()
-  def send_message(context, %Action{templating: templating, text: text})
-      when is_nil(templating) do
-    Messages.create_and_send_message(%{body: text, type: :text, receiver_id: context.contact_id})
+  def send_message(context, %Action{templating: templating, text: text}) when is_nil(templating) do
+    contact = Glific.Contacts.get_contact!(context.contact_id)
+
+    contact_vars =
+      contact.fields
+      |> Enum.reduce(%{}, fn {field, map}, acc -> Map.put(acc, field, map["value"]) end)
+
+    message_vars = %{"contact" => %{"fields" => contact_vars}}
+    body = Glific.Flows.NaiveParser.parse(text, message_vars)
+    Messages.create_and_send_message(%{body: body, type: :text, receiver_id: context.contact_id})
     context
   end
 
@@ -50,5 +55,48 @@ defmodule Glific.Flows.ContactAction do
     # We need to update the contact with optout_time and status
     Contacts.contact_opted_out(context.contact.phone, DateTime.utc_now())
     context
+  end
+end
+
+
+defmodule Glific.Flows.NaiveParser do
+  @varname [".", "_" | Enum.map(?a..?z, &<<&1>>)]
+  def parse(input, binding) do
+    do_parse(input, binding, {nil, ""})
+  end
+
+  defp do_parse("", binding, {var, result}) do
+    result <> bound(var, binding)
+  end
+
+  defp do_parse("@" <> rest, binding, {nil, result}) do
+    do_parse(rest, binding, {"", result})
+  end
+
+  defp do_parse(<<c::binary-size(1), rest::binary>>, binding, {nil, result}) do
+    do_parse(rest, binding, {nil, result <> c})
+  end
+
+
+  defp do_parse(<<c::binary-size(1), rest::binary>>, binding, {var, result}) when c in @varname do
+    do_parse(rest, binding, {var <> c, result})
+  end
+
+  defp do_parse(<<c::binary-size(1), rest::binary>>, binding, {var, result}) do
+    do_parse(rest, binding, {nil, result <> bound(var, binding) <> c})
+  end
+
+
+  defp bound(nil, _binding), do: ""
+
+  defp bound(var, binding) do
+    substitution = get_in(binding, String.split(var, "."))
+    IO.inspect("var")
+    IO.inspect(var)
+
+    IO.inspect("binding")
+    IO.inspect(binding)
+
+    if substitution == nil, do: "@#{var}", else: substitution
   end
 end

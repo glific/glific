@@ -220,7 +220,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
       # store the NGO generated fields for the user also as a map
       # Each user can have multiple fields, we store the name as key
-      add :fields, :map
+      add :fields, :map, default: %{}
 
       timestamps(type: :utc_datetime)
     end
