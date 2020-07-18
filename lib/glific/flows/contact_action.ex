@@ -13,7 +13,7 @@ defmodule Glific.Flows.ContactAction do
     Processor.Helper
   }
 
-  defp send_session_message_template(context, shortcode) do
+  defp send_session_message_template(context, shortcode, _vars \\ []) do
     language_id = context.contact.language_id
     session_template = Helper.get_session_message_template(shortcode, language_id)
 
@@ -40,7 +40,13 @@ defmodule Glific.Flows.ContactAction do
   to the contact
   """
   def send_message(context, %Action{templating: templating}) do
-    send_session_message_template(context, templating.template.shortcode)
+    message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
+    vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
+    session_template = Messages.parse_template_vars(templating.template, vars)
+
+    {:ok, _message} =
+      Messages.create_and_send_session_template(session_template, context.contact_id)
+
     context
   end
 
