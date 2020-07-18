@@ -11,7 +11,7 @@
         {
           "templating" : {
             "variables" : [
-
+              "@contact.language"
             ],
             "uuid" : "c4420c6f-e971-4eb1-82a4-8503f28d3dac",
             "template" : {
