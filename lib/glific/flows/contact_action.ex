@@ -13,7 +13,7 @@ defmodule Glific.Flows.ContactAction do
     Processor.Helper
   }
 
-  defp send_session_message_template(context, shortcode, _vars \\ []) do
+  defp send_session_message_template(context, shortcode) do
     language_id = context.contact.language_id
     session_template = Helper.get_session_message_template(shortcode, language_id)
 
