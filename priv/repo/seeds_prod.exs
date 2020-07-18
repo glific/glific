@@ -629,14 +629,6 @@ Repo.insert!(%FlowRevision{
   flow_id: new_contact_flow.id
 })
 
-Repo.insert!(%Flow{
-      name: "Test Workflow",
-      shortcode: "test",
-      version_number: "13.1.0",
-      uuid: "defda715-c520-499d-851e-4428be87def6",
-      language_id: en_us.id
-             })
-
 registration_flow =
   Repo.insert!(%Flow{
         name: "Registration Workflow",
