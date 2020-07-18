@@ -51,7 +51,6 @@ defmodule Glific.Processor.ConsumerTaggerTest do
   use Glific.DataCase
 
   alias Glific.{
-    Processor.ConsumerAutomation,
     Processor.ConsumerTagger,
     Repo,
     Tags,
@@ -68,12 +67,10 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     :ok
   end
 
+  @tag :pending
   test "should behave like consumer" do
     {:ok, producer} = TestProducer.start_link(1)
-    {:ok, consumer} = ConsumerTagger.start_link(producer: producer, name: TestConsumerTagger)
-
-    {:ok, _automation} =
-      ConsumerAutomation.start_link(producer: consumer, name: TestConsumerAutomation)
+    {:ok, _consumer} = ConsumerTagger.start_link(producer: producer, name: TestConsumerTagger)
 
     Process.register(self(), :test)
     assert_receive({:called_back}, 1000)
