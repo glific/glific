@@ -298,7 +298,7 @@ defmodule Glific.SeedsDev do
         name: "Timed Workflow",
         shortcode: "registration_timed",
         version_number: "13.1.0",
-        uuid: "5e086708-37b2-4b20-80c2-bdc0f213c3c6",
+        uuid: "5e086708-37b2-4b20-80c2-bdc0f213c3c9",
         language_id: en_us.id
       })
 
