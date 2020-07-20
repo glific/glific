@@ -5,6 +5,7 @@ defmodule Glific.Flows.ContactSettingTest do
     Flows.ContactSetting,
     Flows.FlowContext,
     Contacts,
+    Contacts.Contact,
     Settings
   }
 
@@ -24,9 +25,10 @@ defmodule Glific.Flows.ContactSettingTest do
     # preload contact
     flow_context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
 
-    updated_flow_context = ContactSetting.set_contact_language(flow_context, language_label)
+    ContactSetting.set_contact_language(flow_context, language_label)
 
-    assert updated_flow_context.contact.language_id == language.id
+    {:ok, updated_contact} = Repo.fetch_by(Contact, %{id: contact.id})
+    assert updated_contact.language_id == language.id
 
     # ensure that sending incorrect language label, raises an error
     language_label = "Incorrect label"
@@ -40,9 +42,10 @@ defmodule Glific.Flows.ContactSettingTest do
     flow_context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
 
     updated_name = "Default updated name"
-    updated_flow_context = ContactSetting.set_contact_name(flow_context, updated_name)
+    ContactSetting.set_contact_name(flow_context, updated_name)
 
-    assert updated_flow_context.contact.name == updated_name
+    {:ok, updated_contact} = Repo.fetch_by(Contact, %{id: contact.id})
+    assert updated_contact.name == updated_name
   end
 
   test "add contact preference" do
@@ -55,19 +58,22 @@ defmodule Glific.Flows.ContactSettingTest do
     value = true
     updated_flow_context = ContactSetting.add_contact_preference(flow_context, preference, value)
 
-    assert updated_flow_context.contact.settings["preferences"] == %{preference => value}
+    {:ok, updated_contact} = Repo.fetch_by(Contact, %{id: contact.id})
+    assert updated_contact.settings["preferences"] == %{preference => value}
 
     # default value of a preference should be set as true
     preference_2 = "test_preference_2"
     updated_flow_context = ContactSetting.add_contact_preference(updated_flow_context, preference_2)
 
-    assert updated_flow_context.contact.settings["preferences"][preference] == true
+    {:ok, updated_contact} = Repo.fetch_by(Contact, %{id: contact.id})
+    assert updated_contact.settings["preferences"][preference] == true
 
     # reset the contact preference when explicitly asked to do so
     preference = "reset"
-    updated_flow_context = ContactSetting.add_contact_preference(updated_flow_context, preference)
+    ContactSetting.add_contact_preference(updated_flow_context, preference)
 
-    assert updated_flow_context.contact.settings["preferences"] == %{}
+    {:ok, updated_contact} = Repo.fetch_by(Contact, %{id: contact.id})
+    assert updated_contact.settings["preferences"] == %{}
   end
 
   test "delete contact preference" do
@@ -81,9 +87,10 @@ defmodule Glific.Flows.ContactSettingTest do
     updated_flow_context = ContactSetting.add_contact_preference(flow_context, preference, value)
 
     # set a preference to false
-    updated_flow_context = ContactSetting.delete_contact_preference(updated_flow_context, preference)
+    ContactSetting.delete_contact_preference(updated_flow_context, preference)
 
-    assert updated_flow_context.contact.settings["preferences"][preference] == false
+    {:ok, updated_contact} = Repo.fetch_by(Contact, %{id: contact.id})
+    assert updated_contact.settings["preferences"][preference] == false
   end
 
   test "reset contact preference" do
@@ -97,9 +104,10 @@ defmodule Glific.Flows.ContactSettingTest do
     updated_flow_context = ContactSetting.add_contact_preference(flow_context, preference, value)
 
     # reset contact prefrence should remove all preferences
-    updated_flow_context = ContactSetting.reset_contact_preference(updated_flow_context)
+    ContactSetting.reset_contact_preference(updated_flow_context)
 
-    assert updated_flow_context.contact.settings["preferences"] == %{}
+    {:ok, updated_contact} = Repo.fetch_by(Contact, %{id: contact.id})
+    assert updated_contact.settings["preferences"] == %{}
   end
 
   test "set contact preference" do
@@ -112,14 +120,16 @@ defmodule Glific.Flows.ContactSettingTest do
     preference = Glific.string_clean(preference)
     updated_flow_context = ContactSetting.set_contact_preference(flow_context, preference)
 
-    assert updated_flow_context.contact.settings["preferences"] == %{preference => true}
+    {:ok, updated_contact} = Repo.fetch_by(Contact, %{id: contact.id})
+    assert updated_contact.settings["preferences"] == %{preference => true}
 
     # reset the contact preference when preference is empty
     # To fix: understand requirement and check if nil should also work here
     preference = ""
-    updated_flow_context = ContactSetting.set_contact_preference(updated_flow_context, preference)
+    ContactSetting.set_contact_preference(updated_flow_context, preference)
 
-    assert updated_flow_context.contact.settings["preferences"] == %{}
+    {:ok, updated_contact} = Repo.fetch_by(Contact, %{id: contact.id})
+    assert updated_contact.settings["preferences"] == %{}
   end
 
   test "get contact preference" do
