@@ -13,8 +13,8 @@ defmodule Glific.Flows.Flow do
     Contacts.Contact,
     Flows.FlowContext,
     Flows.FlowRevision,
-    Flows.Node,
     Flows.Localization,
+    Flows.Node,
     Repo,
     Settings.Language
   }
