@@ -123,7 +123,7 @@ defmodule Glific.Flows do
   end
 
   @doc """
-    Get a list of all the revisions based on a flow UUID
+  Get a list of all the revisions based on a flow UUID
   """
   @spec get_flow_revision_list(String.t()) :: %{results: list()}
   def get_flow_revision_list(flow_uuid) do
@@ -200,5 +200,26 @@ defmodule Glific.Flows do
     if result == [],
       do: true,
       else: raise(ArgumentError, message: "Missing required fields: #{result}")
+  end
+
+  @doc """
+  A generic json traversal and building the structure for a specific flow schema
+  which is an array of objects in the json file. Used for Node/Actions, Node/Exits,
+  Router/Cases, and Router/Categories
+  """
+  @spec build_flow_objects(map(), map(), (map(), map(), any -> {any, map()}), any) ::
+          {any, map()}
+  def build_flow_objects(json, uuid_map, process_fn, object \\ nil) do
+    {objects, uuid_map} =
+      Enum.reduce(
+        json,
+        {[], uuid_map},
+        fn object_json, acc ->
+          {object, uuid_map} = process_fn.(object_json, elem(acc, 1), object)
+          {[object | elem(acc, 0)], uuid_map}
+        end
+      )
+
+    {Enum.reverse(objects), uuid_map}
   end
 end
