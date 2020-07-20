@@ -5,15 +5,14 @@ defmodule Glific.Flows.Exit do
   alias __MODULE__
 
   use Ecto.Schema
-  import Ecto.Changeset
 
-  alias Glific.Flows.{
-    FlowContext,
-    Node
+  alias Glific.{
+    Flows,
+    Flows.FlowContext,
+    Flows.Node
   }
 
-  @required_fields [:node_uuid, :destination_node_uuid]
-  @optional_fields []
+  @required_fields [:uuid, :destination_uuid]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -34,22 +33,12 @@ defmodule Glific.Flows.Exit do
   end
 
   @doc """
-  Standard changeset pattern we use for all data types
-  """
-  @spec changeset(Exit.t(), map()) :: Ecto.Changeset.t()
-  def changeset(exit, attrs) do
-    exit
-    |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_required(@required_fields)
-    |> foreign_key_constraint(:node_uuid)
-    |> foreign_key_constraint(:destination_node_uuid)
-  end
-
-  @doc """
   Process a json structure from floweditor to the Glific data types
   """
   @spec process(map(), map(), Node.t()) :: {Exit.t(), map()}
   def process(json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields)
+
     exit = %Exit{
       uuid: json["uuid"],
       node_uuid: node.uuid,
