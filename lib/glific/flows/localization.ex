@@ -22,9 +22,9 @@ defmodule Glific.Flows.Localization do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(Exit.t(), map()) :: Ecto.Changeset.t()
-  def changeset(exit, attrs) do
-    exit
+  @spec changeset(Localization.t(), map()) :: Ecto.Changeset.t()
+  def changeset(localization, attrs) do
+    localization
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
   end

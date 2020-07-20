@@ -1,5 +1,5 @@
 defmodule Glific.PartnersTest do
-  alias Faker.{Name, Phone}
+  alias Faker.{Person, Phone}
   use Glific.DataCase, async: true
   alias Glific.Partners
 
@@ -187,7 +187,7 @@ defmodule Glific.PartnersTest do
     def contact_fixture do
       {:ok, contact} =
         Glific.Contacts.create_contact(%{
-          name: Name.name(),
+          name: Person.name(),
           phone: Phone.EnUs.phone()
         })
 
@@ -196,7 +196,7 @@ defmodule Glific.PartnersTest do
 
     def organization_fixture(attrs \\ %{}) do
       default_language = default_language_fixture(attrs)
-      provider = provider_fixture(%{name: Faker.Name.name()})
+      provider = provider_fixture(%{name: Person.name()})
 
       {:ok, organization} =
         attrs

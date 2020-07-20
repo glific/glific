@@ -32,6 +32,8 @@ defmodule Glific.Flows.Flow do
           uuid: Ecto.UUID.t() | nil,
           uuid_map: map() | nil,
           flow_type: String.t() | nil,
+          definition: map() | nil,
+          localization: Localization.t() | nil,
           nodes: [Node.t()] | nil,
           version_number: String.t() | nil,
           language_id: non_neg_integer | nil,
@@ -51,6 +53,7 @@ defmodule Glific.Flows.Flow do
 
     field :uuid_map, :map, virtual: true
     field :nodes, :map, virtual: true
+    field :localization, :map, virtual: true
 
     # we use this to store the latest definition for this flow
     field :definition, :map, virtual: true
@@ -184,7 +187,7 @@ defmodule Glific.Flows.Flow do
   Helper function for various genstage processes to set state
   by loading all active flows from the database and loading flows on demand
   """
-  @spec load_flows(non_neg_integer, map()) :: map()
+  @spec load_flows(non_neg_integer | nil, map()) :: map()
   def load_flows(flow_id \\ nil, state) do
     query =
       from f in Flow,
@@ -202,7 +205,7 @@ defmodule Glific.Flows.Flow do
       # first get and clean the flow definition
       flows =
         f.definition
-        |> clean_definition
+        |> clean_definition()
         |> process(f)
 
       # next, update state with all the flows
