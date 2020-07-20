@@ -322,6 +322,10 @@ defmodule Glific.Messages do
 
   @doc false
   @spec parse_template_vars(SessionTemplate.t(), [String.t()]) :: SessionTemplate.t()
+  def parse_template_vars(%{number_parameters: np} = session_template, _parameters)
+      when is_nil(np) or np <= 0,
+      do: session_template
+
   def parse_template_vars(session_template, parameters) do
     parameters_map =
       1..session_template.number_parameters

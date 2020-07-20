@@ -67,7 +67,6 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     :ok
   end
 
-  @tag :pending
   test "should behave like consumer" do
     {:ok, producer} = TestProducer.start_link(1)
     {:ok, _consumer} = ConsumerTagger.start_link(producer: producer, name: TestConsumerTagger)
