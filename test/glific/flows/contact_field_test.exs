@@ -39,8 +39,8 @@ defmodule Glific.Flows.ContactFieldTest do
     field = "test field"
     value = "test value"
     type = "string"
-    ContactField.add_contact_field(context, field, value, type)
-    ContactField.reset_contact_fields(context)
+    context = ContactField.add_contact_field(context, field, value, type)
+    _ = ContactField.reset_contact_fields(context)
 
     {:ok, updated_contact} = Repo.fetch_by(Contacts.Contact, %{id: contact.id})
     assert updated_contact.fields == %{}
