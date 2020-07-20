@@ -10,8 +10,7 @@ defmodule Glific.Flows.Category do
     Flows,
     Flows.Case,
     Flows.Exit,
-    Flows.FlowContext,
-    Flows.Router
+    Flows.FlowContext
   }
 
   @required_fields [:name, :uuid, :exit_uuid]
@@ -21,9 +20,7 @@ defmodule Glific.Flows.Category do
           name: String.t() | nil,
           cases: [Case.t()] | [],
           exit_uuid: Ecto.UUID.t() | nil,
-          exit: Exit.t() | nil,
-          router_uuid: Ecto.UUID.t() | nil,
-          router: Router.t() | nil
+          exit: Exit.t() | nil
         }
 
   embedded_schema do
@@ -32,9 +29,6 @@ defmodule Glific.Flows.Category do
 
     embeds_many :cases, Case
 
-    field :router_uuid, Ecto.UUID
-    embeds_one :router, Router
-
     field :exit_uuid, Ecto.UUID
     embeds_one :exit, Exit
   end
@@ -42,13 +36,12 @@ defmodule Glific.Flows.Category do
   @doc """
   Process a json structure from floweditor to the Glific data types
   """
-  @spec process(map(), map(), Router.t()) :: {Category.t(), map()}
-  def process(json, uuid_map, router) do
+  @spec process(map(), map()) :: {Category.t(), map()}
+  def process(json, uuid_map) do
     Flows.check_required_fields(json, @required_fields)
 
     category = %Category{
       uuid: json["uuid"],
-      router_uuid: router.uuid,
       exit_uuid: json["exit_uuid"],
       name: json["name"]
     }

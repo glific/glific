@@ -3,8 +3,8 @@ defmodule Glific.Flows.ActionTest do
 
   alias Glific.Flows.{
     Action,
+    Node,
     Templating,
-    Node
   }
 
   test "process extracts the right values from json for enter_flow action" do
@@ -20,7 +20,7 @@ defmodule Glific.Flows.ActionTest do
     assert uuid_map[action.uuid] == {:action, action}
 
     # ensure that not sending either of the required fields, raises an error
-    json = %{"uuid" => "UUID 1", "type" => "enter_flow",}
+    json = %{"uuid" => "UUID 1", "type" => "enter_flow"}
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
 
     json = %{"uuid" => "UUID 1", "flow" => %{"uuid" => "UUID 2"}}

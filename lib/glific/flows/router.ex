@@ -5,7 +5,8 @@ defmodule Glific.Flows.Router do
   alias __MODULE__
 
   use Ecto.Schema
-  import Ecto.Changeset
+
+  alias Glific.Flows
 
   alias Glific.Flows.{
     Case,
@@ -14,11 +15,9 @@ defmodule Glific.Flows.Router do
     Node
   }
 
-  @required_fields [:type, :operand, :default_category_uuid, :node_uuid]
-  @optional_fields [:result_name, :wait_type]
+  @required_fields [:type, :operand, :default_category_uuid, :cases, :categories]
 
   @type t() :: %__MODULE__{
-          uuid: Ecto.UUID.t() | nil,
           type: String.t() | nil,
           result_name: String.t() | nil,
           wait_type: String.t() | nil,
@@ -31,7 +30,6 @@ defmodule Glific.Flows.Router do
         }
 
   schema "routers" do
-    field :uuid, Ecto.UUID
     field :type, :string
     field :operand, :string
     field :result_name, :string
@@ -48,25 +46,13 @@ defmodule Glific.Flows.Router do
   end
 
   @doc """
-  Standard changeset pattern we use for all data types
-  """
-  @spec changeset(Router.t(), map()) :: Ecto.Changeset.t()
-  def changeset(router, attrs) do
-    router
-    |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_required(@required_fields)
-    |> foreign_key_constraint(:node_uuid)
-    |> foreign_key_constraint(:default_category_uuid)
-  end
-
-  @doc """
   Process a json structure from floweditor to the Glific data types
   """
   @spec process(map(), map(), Node.t()) :: {Router.t(), map()}
   def process(json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields)
+
     router = %Router{
-      # A router does not have a uuid, since it is attached to a node (optionally)
-      # uuid: json["uuid"],
       node_uuid: node.uuid,
       type: json["type"],
       operand: json["operand"],
@@ -79,16 +65,18 @@ defmodule Glific.Flows.Router do
         json["categories"],
         {[], uuid_map},
         fn c, acc ->
-          {category, uuid_map} = Category.process(c, elem(acc, 1), router)
+          {category, uuid_map} = Category.process(c, elem(acc, 1))
           {[category | elem(acc, 0)], uuid_map}
         end
       )
 
+    # Check that the default_category_uuid exists, if not raise an error
+    if !Map.has_key?(uuid_map, json["default_category_uuid"]),
+      do: raise(ArgumentError, message: "Default Category ID does not exist for Router")
+
     router =
       router
       |> Map.put(:categories, Enum.reverse(categories))
-      # we should check that this category does exist and for FK checks etc, before adding to DB
-      # we can only assign this after the category is created
       |> Map.put(:default_category_uuid, json["default_category_uuid"])
 
     {cases, uuid_map} =
@@ -96,7 +84,7 @@ defmodule Glific.Flows.Router do
         json["cases"],
         {[], uuid_map},
         fn c, acc ->
-          {case, uuid_map} = Case.process(c, elem(acc, 1), router)
+          {case, uuid_map} = Case.process(c, elem(acc, 1))
           {[case | elem(acc, 0)], uuid_map}
         end
       )

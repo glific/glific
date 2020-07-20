@@ -9,7 +9,7 @@ defmodule Glific.Flows.Action do
 
   alias Glific.{
     Enums.FlowActionType,
-    Flows,
+    Flows
   }
 
   alias Glific.Flows.{
@@ -63,13 +63,15 @@ defmodule Glific.Flows.Action do
 
   @spec process(map(), map(), Node.t(), map()) :: {Action.t(), map()}
   defp process(json, uuid_map, node, attrs) do
-    action = Map.merge(
-      %Action{
-        uuid: json["uuid"],
-        node_uuid: node.uuid,
-        type: json["type"],
-      },
-      attrs)
+    action =
+      Map.merge(
+        %Action{
+          uuid: json["uuid"],
+          node_uuid: node.uuid,
+          type: json["type"]
+        },
+        attrs
+      )
 
     {action, Map.put(uuid_map, action.uuid, {:action, action})}
   end
@@ -90,14 +92,14 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => type} = json, uuid_map, node) when type == "set_contact_field" do
     Flows.check_required_fields(json, @required_fields_set_contact)
-    process(json, uuid_map, node,
-      %{value: json["value"],
-        field: %{
-          name: json["field"]["name"],
-          key: json["field"]["key"]
-        }
+
+    process(json, uuid_map, node, %{
+      value: json["value"],
+      field: %{
+        name: json["field"]["name"],
+        key: json["field"]["key"]
       }
-    )
+    })
   end
 
   def process(json, uuid_map, node) do

@@ -5,27 +5,25 @@ defmodule Glific.Flows.Case do
   alias __MODULE__
 
   use Ecto.Schema
-  import Ecto.Changeset
 
-  alias Glific.Enums.FlowCase
+  alias Glific.{
+    Enums.FlowCase,
+    Flows
+  }
 
   alias Glific.Flows.{
     Category,
-    FlowContext,
-    Router
+    FlowContext
   }
 
-  @required_fields [:type, :arguments, :category_uuid, :router_uuid]
-  @optional_fields []
+  @required_fields [:uuid, :type, :arguments, :category_uuid]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
           type: FlowCase | nil,
           arguments: [String.t()],
           category_uuid: Ecto.UUID.t() | nil,
-          category: Category.t() | nil,
-          router_uuid: Ecto.UUID.t() | nil,
-          router: Router.t() | nil
+          category: Category.t() | nil
         }
 
   embedded_schema do
@@ -35,33 +33,23 @@ defmodule Glific.Flows.Case do
     field :type, FlowCase
     field :arguments, {:array, :string}, default: []
 
-    field :router_uuid, Ecto.UUID
-    embeds_one :router, Router
-
     field :category_uuid, Ecto.UUID
     embeds_one :category, Category
   end
 
   @doc """
-  Standard changeset pattern we use for all data types
-  """
-  @spec changeset(Case.t(), map()) :: Ecto.Changeset.t()
-  def changeset(case, attrs) do
-    case
-    |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_required(@required_fields)
-    |> foreign_key_constraint(:router_uuid)
-    |> foreign_key_constraint(:category_uuid)
-  end
-
-  @doc """
   Process a json structure from floweditor to the Glific data types
   """
-  @spec process(map(), map(), Router.t()) :: {Case.t(), map()}
-  def process(json, uuid_map, router) do
+  @spec process(map(), map()) :: {Case.t(), map()}
+  def process(json, uuid_map) do
+    Flows.check_required_fields(json, @required_fields)
+
+    # Check that the category_uuid exists, if not raise an error
+    if !Map.has_key?(uuid_map, json["category_uuid"]),
+      do: raise(ArgumentError, message: "Category ID does not exist for Case: #{json["uuid"]}")
+
     c = %Case{
       uuid: json["uuid"],
-      router_uuid: router.uuid,
       category_uuid: json["category_uuid"],
       type: json["type"],
       arguments: json["arguments"]
