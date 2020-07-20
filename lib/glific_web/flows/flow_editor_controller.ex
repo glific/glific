@@ -38,56 +38,60 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec fields(Plug.Conn.t(), map) :: Plug.Conn.t()
   def fields(conn, _params) do
-    conn
-    |> json(%{
-      results: [
-        %{key: "name", name: "Name", value_type: "text"},
-        %{key: "age_group", name: "Age Group", value_type: "text"},
-        %{key: "gender", name: "Gender", value_type: "text"},
-        %{key: "dob", name: "Date of Birth", value_type: "text"},
-        %{key: "settings", name: "Settings", value_type: "text"}
-      ]
-    })
+    fileds = [
+      %{key: "name", name: "Name", value_type: "text"},
+      %{key: "age_group", name: "Age Group", value_type: "text"},
+      %{key: "gender", name: "Gender", value_type: "text"},
+      %{key: "dob", name: "Date of Birth", value_type: "text"},
+      %{key: "settings", name: "Settings", value_type: "text"}
+    ]
+
+    json(conn, %{results: fileds})
   end
 
-  @doc false
+  @doc """
+    Add Contact fields into the database. The response should be a map with 3 keys
+    % { Key: Field name, name: Field display name value_type: type of the value}
+
+    We are not supporting this for now. We will add that in future
+  """
+
   @spec fields_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
-  def fields_post(conn, params) do
+  def fields_post(conn, _params) do
     conn
-    |> json(%{
-      key: Slug.slugify(params["label"], separator: "_"),
-      name: params["label"],
-      value_type: "text"
-    })
+    |> json(%{})
   end
 
-  @doc false
+  @doc """
+    Get all the tags so that user can apply them on incoming message.
+    We are not supporting this for now. To enable It should return a list of map having
+    uuid and name as keys
+    [%{uuid: tag.uuid, name: tag.label}]
+
+    We are not supporting them for now. We will come back to this in near future
+
+  """
   @spec labels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels(conn, _params) do
-    # We might need to add a UUID for tags also.
-    results =
-      Glific.Tags.list_tags()
-      |> Enum.reduce([], fn tag, acc ->
-        [%{uuid: tag.id, name: tag.label} | acc]
-      end)
-
-    conn
-    |> json(%{results: results})
+    json(conn, %{results: []})
   end
 
-  @doc false
+  @doc """
+    Store a lable (new tag) in the system. The return response should be a map of 3 keys.
+    [%{uuid: tag.uuid, name: params["name"], count}]
+
+    We are not supporting them for now. We will come back to this in near future
+
+  """
   @spec labels_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
-  def labels_post(conn, params) do
-    # We are not allowing to create new lables for now.
-    conn
-    |> json(%{
-      uuid: generate_uuid(),
-      name: params["name"],
-      count: 0
-    })
+  def labels_post(conn, _params) do
+    json(conn, %{})
   end
 
-  @doc false
+  @doc """
+    A list of all the communication channels. For Glific it's just WhatsApp.
+    We are not supporting them for now. We will come back to this in near future
+  """
   @spec channels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def channels(conn, _params) do
     channels = %{
@@ -95,7 +99,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
         %{
           uuid: generate_uuid(),
           name: "WhatsApp",
-          address: "+18005234545",
+          address: "",
           schemes: ["whatsapp"],
           roles: ["send", "receive"]
         }
@@ -105,31 +109,30 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, channels)
   end
 
-  @doc false
+  @doc """
+    A list of all the communication channels. For Glific it's just WhatsApp.
+    We are not supporting them for now. We will come back to this in near future
+  """
   @spec classifiers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def classifiers(conn, _params) do
     classifiers = %{results: []}
     json(conn, classifiers)
   end
 
-  @doc false
+  @doc """
+    We are not sure how to use this but this endpoint is required for flow editor.
+    Will come back to this in future.
+  """
   @spec ticketers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def ticketers(conn, _params) do
-    ticketers = %{
-      results: [
-        %{
-          uuid: generate_uuid(),
-          name: "Email",
-          type: "mailgun",
-          created_on: DateTime.utc_now()
-        }
-      ]
-    }
-
+    ticketers = %{results: []}
     json(conn, ticketers)
   end
 
-  @doc false
+  @doc """
+    We are not using this for now but this is required for flow editor config.
+  """
+
   @spec resthooks(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def resthooks(conn, _params) do
     resthooks = %{results: []}
