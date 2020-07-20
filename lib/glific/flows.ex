@@ -184,18 +184,21 @@ defmodule Glific.Flows do
   """
   @spec check_required_fields(map(), [atom()]) :: boolean()
   def check_required_fields(json, required) do
-    result = Enum.reduce(
-      required,
-      [],
-      fn field, acc ->
-        field = to_string(field)
-        if Map.has_key?(json, field),
-          do: acc,
-          else: [field | acc]
-        end)
+    result =
+      Enum.reduce(
+        required,
+        [],
+        fn field, acc ->
+          field = to_string(field)
+
+          if Map.has_key?(json, field),
+            do: acc,
+            else: [field | acc]
+        end
+      )
 
     if result == [],
       do: true,
-    else: raise ArgumentError, message: "Missing required fields: #{result}"
+      else: raise(ArgumentError, message: "Missing required fields: #{result}")
   end
 end

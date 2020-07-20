@@ -36,5 +36,4 @@ defmodule Glific.Flows.ExitTest do
     json = %{}
     assert_raise ArgumentError, fn -> Exit.process(json, %{}, node) end
   end
-
 end

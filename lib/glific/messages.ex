@@ -321,8 +321,8 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec prepare_hsm_template(SessionTemplate.t(), [String.t()]) :: SessionTemplate.t()
-  def prepare_hsm_template(session_template, parameters) do
+  @spec parse_template_vars(SessionTemplate.t(), [String.t()]) :: SessionTemplate.t()
+  def parse_template_vars(session_template, parameters) do
     parameters_map =
       1..session_template.number_parameters
       |> Enum.zip(parameters)
