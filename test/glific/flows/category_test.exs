@@ -3,7 +3,7 @@ defmodule Glific.Flows.CategoryTest do
 
   alias Glific.Flows.{
     Category,
-    Router,
+    Router
   }
 
   test "process extracts the right values from json" do
@@ -19,7 +19,7 @@ defmodule Glific.Flows.CategoryTest do
     assert uuid_map[category.uuid] == {:category, category}
 
     # ensure that not sending the required fields, raises an error
-    json = %{"uuid" => "UUID 1", "exit_uuid" => "UUID 2", }
+    json = %{"uuid" => "UUID 1", "exit_uuid" => "UUID 2"}
     assert_raise ArgumentError, fn -> Category.process(json, %{}, router) end
 
     json = %{"exit_uuid" => "UUID 2", "name" => "Default Category"}
@@ -28,5 +28,4 @@ defmodule Glific.Flows.CategoryTest do
     json = %{}
     assert_raise ArgumentError, fn -> Category.process(json, %{}, router) end
   end
-
 end

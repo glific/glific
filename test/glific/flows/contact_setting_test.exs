@@ -2,10 +2,10 @@ defmodule Glific.Flows.ContactSettingTest do
   use Glific.DataCase, async: true
 
   alias Glific.{
-    Flows.ContactSetting,
-    Flows.FlowContext,
     Contacts,
     Contacts.Contact,
+    Flows.ContactSetting,
+    Flows.FlowContext,
     Settings
   }
 
@@ -32,7 +32,10 @@ defmodule Glific.Flows.ContactSettingTest do
 
     # ensure that sending incorrect language label, raises an error
     language_label = "Incorrect label"
-    assert_raise MatchError, fn -> ContactSetting.set_contact_language(flow_context, language_label) end
+
+    assert_raise MatchError, fn ->
+      ContactSetting.set_contact_language(flow_context, language_label)
+    end
   end
 
   test "set contact name" do
@@ -63,7 +66,9 @@ defmodule Glific.Flows.ContactSettingTest do
 
     # default value of a preference should be set as true
     preference_2 = "test_preference_2"
-    updated_flow_context = ContactSetting.add_contact_preference(updated_flow_context, preference_2)
+
+    updated_flow_context =
+      ContactSetting.add_contact_preference(updated_flow_context, preference_2)
 
     {:ok, updated_contact} = Repo.fetch_by(Contact, %{id: contact.id})
     assert updated_contact.settings["preferences"][preference] == true
@@ -154,7 +159,9 @@ defmodule Glific.Flows.ContactSettingTest do
 
     # get list of preferences
     preference_2 = "test_preference_2"
-    updated_flow_context = ContactSetting.add_contact_preference(updated_flow_context, preference_2)
+
+    updated_flow_context =
+      ContactSetting.add_contact_preference(updated_flow_context, preference_2)
 
     updated_preferences = ContactSetting.get_contact_preferences(updated_flow_context)
 
