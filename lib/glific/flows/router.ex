@@ -130,5 +130,5 @@ defmodule Glific.Flows.Router do
   end
 
   def execute(_router, _context, _message_stream),
-    do: {:error, "Unimplemented router type and/or wait type"}
+    do: raise(UndefinedFunctionError, message: "Unimplemented router type and/or wait type")
 end

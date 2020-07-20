@@ -20,25 +20,25 @@ defmodule Glific.Flows.Localization do
   """
   @spec process(map()) :: Localization.t()
   def process(json) do
-    value =
-      json
-      |> Enum.reduce(
-        %{},
-        fn {language, translations}, acc ->
-          Map.put(
-            acc,
-            language,
-            Enum.reduce(
-              translations,
-              %{},
-              fn {uuid, values}, acc ->
-                Map.put(acc, uuid, hd(Map.get(values, "text")))
-              end
+    %Localization{
+      localizations:
+        json
+        |> Enum.reduce(
+          %{},
+          fn {language, translations}, acc ->
+            Map.put(
+              acc,
+              language,
+              Enum.reduce(
+                translations,
+                %{},
+                fn {uuid, values}, acc ->
+                  Map.put(acc, uuid, hd(values["text"]))
+                end
+              )
             )
-          )
-        end
-      )
-
-    %Localization{localizations: value}
+          end
+        )
+    }
   end
 end

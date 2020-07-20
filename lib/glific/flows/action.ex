@@ -124,14 +124,12 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(%{type: type} = action, context, message_stream) when type == "send_msg" do
-    IO.puts("Sending session message: #{action.text}")
     ContactAction.send_message(context, action)
     {:ok, context, message_stream}
   end
 
   def execute(%{type: type} = action, context, message_stream)
       when type == "set_contact_language" do
-    IO.puts("Setting contact language: #{action.value}")
     context = ContactSetting.set_contact_language(context, action.text)
     {:ok, context, message_stream}
   end
@@ -156,24 +154,12 @@ defmodule Glific.Flows.Action do
     {:ok, context, message_stream}
   end
 
-  def execute(%{type: type, name: name} = action, context, message_stream)
-      when type == "set_run_result" and name == "settings_preference" do
-    IO.puts("Setting contact preference: #{action.value}")
-    context = ContactSetting.set_contact_preference(context, action.value)
-    {:ok, context, message_stream}
-  end
-
   def execute(%{type: type} = action, context, message_stream)
       when type == "enter_flow" do
-    # we create a new context and set the parent id to the exisiting context
-    # and start that flow
-    IO.puts("entering a new sub flow: #{action.enter_flow_uuid}")
     Flow.start_sub_flow(context, action.enter_flow_uuid)
-
     {:ok, context, message_stream}
   end
 
   def execute(action, _context, _message_stream),
-    # IO.inspect(action, label: "ACTION");
-    do: {:error, "Unsupported action type #{action.type}"}
+    do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
 end

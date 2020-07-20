@@ -5,12 +5,13 @@ defmodule Glific.Flows.Templating do
   alias __MODULE__
 
   use Ecto.Schema
-  import Ecto.Changeset
 
-  alias Glific.Templates.SessionTemplate
+  alias Glific.{
+    Flows,
+    Templates.SessionTemplate
+  }
 
-  @required_fields [:uuid, :template]
-  @optional_fields [:name]
+  @required_fields [:template]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -27,22 +28,14 @@ defmodule Glific.Flows.Templating do
   end
 
   @doc """
-  Standard changeset pattern we use for all data types
-  """
-  @spec changeset(Templating.t(), map()) :: Ecto.Changeset.t()
-  def changeset(case, attrs) do
-    case
-    |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_required(@required_fields)
-  end
-
-  @doc """
   Process a json structure from floweditor to the Glific data types
   """
   @spec process(map(), map()) :: {Templating.t(), map()}
   def process(json, uuid_map) when is_nil(json), do: {json, uuid_map}
 
   def process(json, uuid_map) do
+    Flows.check_required_fields(json, @required_fields)
+
     {:ok, template} =
       Glific.Repo.fetch_by(SessionTemplate, %{uuid: String.downcase(json["template"]["uuid"])})
 
