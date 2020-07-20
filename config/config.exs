@@ -48,7 +48,15 @@ config :glific, :pow,
   repo: Glific.Repo
 
 config :passwordless_auth,
-  sms_adapter: Glific.Providers.Gupshup
+  sms_adapter: Glific.Providers.Gupshup,
+  # seconds; optional (defaults to 30 if not provided)
+  garbage_collector_frequency: 30,
+  # optional (defaults to 5 if not provided)
+  num_attempts_before_timeout: 5,
+  # seconds; optional (defaults to 60 if not provided)
+  rate_limit_timeout_length: 60,
+  # seconds, optional (defaults to 300 if not provided)
+  verification_code_ttl: 300
 
 # Sentry configuration
 

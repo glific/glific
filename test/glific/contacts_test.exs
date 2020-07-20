@@ -317,7 +317,7 @@ defmodule Glific.ContactsTest do
         contact_fixture(%{
           phone: Phone.EnUs.phone(),
           provider_status: :valid,
-          optin_time: Timex.shift(DateTime.utc_now(), seconds: -30),
+          optin_time: nil,
           optout_time: DateTime.utc_now()
         })
 
