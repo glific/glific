@@ -26,16 +26,8 @@ defmodule Glific.Application do
     ]
 
     glific_children = [
-      # Add Glific Processing pipeline (seems a bit deep and convoluted, will need to revisit)
       Glific.Processor.Producer,
-      Glific.Processor.ConsumerTagger,
-      Glific.Processor.ConsumerAutomation,
-      Glific.Processor.ConsumerLanguage,
-      Glific.Processor.ConsumerHelp,
-      Glific.Processor.ConsumerNewContact,
-      Glific.Processor.ConsumerNumeric,
-      Glific.Processor.ConsumerOptout,
-      Glific.Processor.ConsumerSequence
+      Glific.Processor.ConsumerTagger
     ]
 
     children =

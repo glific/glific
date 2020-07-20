@@ -303,7 +303,7 @@ defmodule Glific.Messages do
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 
     if session_template.number_parameters == length(parameters) do
-      updated_template = prepare_hsm_template(session_template, parameters)
+      updated_template = parse_template_vars(session_template, parameters)
 
       message_params = %{
         body: updated_template.body,
@@ -320,8 +320,15 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec prepare_hsm_template(SessionTemplate.t(), []) :: SessionTemplate.t()
-  def prepare_hsm_template(session_template, parameters) do
+  @spec parse_template_vars(SessionTemplate.t(), []) :: SessionTemplate.t()
+  def parse_template_vars(
+        %SessionTemplate{number_parameters: nil} = session_template,
+        _parameters
+      ),
+      do: session_template
+
+  @doc false
+  def parse_template_vars(session_template, parameters) do
     parameters_map =
       1..session_template.number_parameters
       |> Enum.zip(parameters)

@@ -13,6 +13,7 @@ defmodule Glific.Flows.Flow do
     Contacts.Contact,
     Flows.FlowContext,
     Flows.FlowRevision,
+    Flows.Localization,
     Flows.Node,
     Repo,
     Settings.Language
@@ -31,6 +32,8 @@ defmodule Glific.Flows.Flow do
           uuid: Ecto.UUID.t() | nil,
           uuid_map: map() | nil,
           flow_type: String.t() | nil,
+          definition: map() | nil,
+          localization: Localization.t() | nil,
           nodes: [Node.t()] | nil,
           version_number: String.t() | nil,
           language_id: non_neg_integer | nil,
@@ -50,6 +53,10 @@ defmodule Glific.Flows.Flow do
 
     field :uuid_map, :map, virtual: true
     field :nodes, :map, virtual: true
+    field :localization, :map, virtual: true
+
+    # we use this to store the latest definition for this flow
+    field :definition, :map, virtual: true
 
     belongs_to :language, Language
 
@@ -86,6 +93,7 @@ defmodule Glific.Flows.Flow do
 
     flow
     |> Map.put(:uuid_map, uuid_map)
+    |> Map.put(:localization, Localization.process(json["localization"]))
     |> Map.put(:nodes, Enum.reverse(nodes))
   end
 
@@ -164,16 +172,6 @@ defmodule Glific.Flows.Flow do
   end
 
   @doc """
-  Start a flow, given a shortcode and a contact_id
-  """
-  @spec start_flow(String.t(), Contact.t()) ::
-          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def start_flow(shortcode, contact) do
-    flow = load_flow(%{shortcode: shortcode})
-    FlowContext.init_context(flow, contact)
-  end
-
-  @doc """
   Create a subflow of an existing flow
   """
   @spec start_sub_flow(FlowContext.t(), Ecto.UUID.t()) ::
@@ -183,5 +181,38 @@ defmodule Glific.Flows.Flow do
     flow = load_flow(%{uuid: uuid})
 
     FlowContext.init_context(flow, context.contact, context.id)
+  end
+
+  @doc """
+  Helper function for various genstage processes to set state
+  by loading all active flows from the database and loading flows on demand
+  """
+  @spec load_flows(non_neg_integer | nil, map()) :: map()
+  def load_flows(flow_id \\ nil, state) do
+    query =
+      from f in Flow,
+        join: fr in assoc(f, :revisions),
+        where: fr.flow_id == f.id and fr.revision_number == 0,
+        select: %Flow{id: f.id, uuid: f.uuid, shortcode: f.shortcode, definition: fr.definition}
+
+    query =
+      if is_nil(flow_id),
+        do: query,
+        else: query |> where([f, _fr], f.id == ^flow_id)
+
+    Repo.all(query)
+    |> Enum.reduce(state, fn f, state ->
+      # first get and clean the flow definition
+      flows =
+        f.definition
+        |> clean_definition()
+        |> process(f)
+
+      # next, update state with all the flows
+      state
+      |> Map.put(f.id, flows)
+      |> Map.put(f.uuid, flows)
+      |> Map.put(f.shortcode, flows)
+    end)
   end
 end

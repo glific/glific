@@ -1,0 +1,182 @@
+{
+  "uuid" : "63397051-789d-418d-9388-2ef7eb1268bb",
+  "name" : "Preferences Workflow",
+  "type" : "message",
+  "vars" : [
+    "63397051-789d-418d-9388-2ef7eb1268bb"
+  ],
+  "spec_version" : "13.1.0",
+  "nodes" : [
+    {
+      "uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb",
+      "exits" : [
+        {
+          "uuid" : "7a4feee4-62d7-478c-a36a-649cc9041740",
+          "destination_uuid" : "aba5eeec-a4e5-4d83-82ca-fd7fdd162d80"
+        }
+      ],
+      "actions" : [
+        {
+          "templating" : {
+            "template" : {
+              "name" : "Preferences",
+              "uuid" : "a9834b33-583d-471b-aa50-bdf0a4c8c34b"
+            },
+            "uuid" : "9d288d66-71e1-463e-9256-53dcd65f4cc4",
+            "variables" : [
+
+            ]
+          },
+          "quick_replies" : [
+
+          ],
+          "text" : "preference",
+          "attachments" : [
+
+          ],
+          "type" : "send_msg",
+          "uuid" : "902dcbfb-6e54-435e-a23b-37686dc495e1"
+        }
+      ]
+    },
+    {
+      "actions" : [
+
+      ],
+      "uuid" : "aba5eeec-a4e5-4d83-82ca-fd7fdd162d80",
+      "router" : {
+        "wait" : {
+          "type" : "msg",
+          "timeout" : {
+            "seconds" : 60,
+            "category_uuid" : "79e6f007-c9cf-4209-a26a-baf388ae273e"
+          }
+        },
+        "cases" : [
+
+        ],
+        "operand" : "@input.text",
+        "categories" : [
+          {
+            "uuid" : "1377d1ee-5917-438f-96b9-f62cfe0071ae",
+            "name" : "All Responses",
+            "exit_uuid" : "b67ab1a7-fb8d-4571-ba35-e2a859b96d8d"
+          },
+          {
+            "uuid" : "79e6f007-c9cf-4209-a26a-baf388ae273e",
+            "name" : "No Response",
+            "exit_uuid" : "6053fd42-b6ee-4ef2-8f8b-c76a85a1710c"
+          }
+        ],
+        "type" : "switch",
+        "default_category_uuid" : "1377d1ee-5917-438f-96b9-f62cfe0071ae"
+      },
+      "exits" : [
+        {
+          "uuid" : "b67ab1a7-fb8d-4571-ba35-e2a859b96d8d",
+          "destination_uuid" : "77eb45aa-67e9-47f7-a3f5-7cab3884f2f0"
+        },
+        {
+          "uuid" : "6053fd42-b6ee-4ef2-8f8b-c76a85a1710c",
+          "destination_uuid" : "55d23746-42bd-482e-b2ec-4f456ffddee7"
+        }
+      ]
+    },
+    {
+      "uuid" : "77eb45aa-67e9-47f7-a3f5-7cab3884f2f0",
+      "exits" : [
+        {
+          "uuid" : "d7be2c07-2337-4c62-9f1e-7e58b1f58a4d",
+          "destination_uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb"
+        }
+      ],
+      "actions" : [
+        {
+          "quick_replies" : [
+
+          ],
+          "uuid" : "e9c5aa43-7d6a-4188-9092-4f2b2657bf96",
+          "attachments" : [
+
+          ],
+          "text" : "Patience please",
+          "type" : "send_msg"
+        }
+      ]
+    },
+    {
+      "uuid" : "55d23746-42bd-482e-b2ec-4f456ffddee7",
+      "exits" : [
+        {
+          "destination_uuid" : null,
+          "uuid" : "2bf494c9-4da2-4e12-8aae-a843a5f68d19"
+        }
+      ],
+      "actions" : [
+        {
+          "quick_replies" : [
+
+          ],
+          "uuid" : "d4b5f1b7-b822-4fa0-abda-0da138e5de29",
+          "attachments" : [
+
+          ],
+          "text" : "TImer went off\n",
+          "type" : "send_msg"
+        }
+      ]
+    }
+  ],
+  "language" : "eng",
+  "_ui" : {
+    "languages" : [
+      {
+        "eng" : "English"
+      },
+      {
+        "spa" : "Spanish"
+      }
+    ],
+    "nodes" : {
+      "55d23746-42bd-482e-b2ec-4f456ffddee7" : {
+        "position" : {
+          "top" : 380,
+          "left" : 960
+        },
+        "type" : "execute_actions"
+      },
+      "77eb45aa-67e9-47f7-a3f5-7cab3884f2f0" : {
+        "position" : {
+          "top" : 380,
+          "left" : 700
+        },
+        "type" : "execute_actions"
+      },
+      "aba5eeec-a4e5-4d83-82ca-fd7fdd162d80" : {
+        "position" : {
+          "top" : 200,
+          "left" : 860
+        },
+        "config" : {
+          "cases" : {
+
+          }
+        },
+        "type" : "wait_for_response"
+      },
+      "d977a2dc-5987-4192-817e-1e3d3774abcb" : {
+        "position" : {
+          "top" : 0,
+          "left" : 960
+        },
+        "type" : "execute_actions"
+      }
+    },
+    "stickies" : {
+
+    }
+  },
+  "localization" : {
+
+  }
+}

@@ -8,13 +8,13 @@ defmodule Glific.Flows.ContactAction do
     Contacts,
     Flows.Action,
     Flows.FlowContext,
+    Flows.MessageVarParser,
     Messages,
     Processor.Helper
   }
 
   defp send_session_message_template(context, shortcode) do
     language_id = context.contact.language_id
-
     session_template = Helper.get_session_message_template(shortcode, language_id)
 
     {:ok, _message} =
@@ -27,7 +27,11 @@ defmodule Glific.Flows.ContactAction do
   @spec send_message(FlowContext.t(), Action.t()) :: FlowContext.t()
   def send_message(context, %Action{templating: templating, text: text})
       when is_nil(templating) do
-    Messages.create_and_send_message(%{body: text, type: :text, receiver_id: context.contact_id})
+    # Since we are saving the data after loding the flow
+    # so we have to fetch the latest contact fields
+    message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
+    body = MessageVarParser.parse(text, message_vars)
+    Messages.create_and_send_message(%{body: body, type: :text, receiver_id: context.contact_id})
     context
   end
 
@@ -36,7 +40,13 @@ defmodule Glific.Flows.ContactAction do
   to the contact
   """
   def send_message(context, %Action{templating: templating}) do
-    send_session_message_template(context, templating.template.shortcode)
+    message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
+    vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
+    session_template = Messages.parse_template_vars(templating.template, vars)
+
+    {:ok, _message} =
+      Messages.create_and_send_session_template(session_template, context.contact_id)
+
     context
   end
 
@@ -50,5 +60,18 @@ defmodule Glific.Flows.ContactAction do
     # We need to update the contact with optout_time and status
     Contacts.contact_opted_out(context.contact.phone, DateTime.utc_now())
     context
+  end
+
+  @spec get_contact_field_map(integer) :: map()
+  defp get_contact_field_map(contact_id) do
+    contact =
+      Glific.Contacts.get_contact!(contact_id)
+      |> Glific.Repo.preload([:language])
+
+    contact.fields
+    |> Enum.reduce(%{"fields" => %{}}, fn {field, map}, acc ->
+      put_in(acc, ["fields", field], map["value"])
+    end)
+    |> put_in(["fields", :language], contact.language)
   end
 end

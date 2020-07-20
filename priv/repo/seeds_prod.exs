@@ -237,7 +237,7 @@ Repo.insert!(%SessionTemplate{
 Repo.insert!(%SessionTemplate{
   label: "Language",
   body: """
-  Your language is currently set at @contact.language
+  Your language is currently set at {{1}}
 
   Do you want to change the language you want to receive messages in?
 
@@ -248,13 +248,14 @@ Repo.insert!(%SessionTemplate{
   shortcode: "language",
   is_reserved: true,
   language_id: en_us.id,
-  uuid: "942cb24b-5c78-4c7f-a3f9-1b4d1ba63118"
+  uuid: "942cb24b-5c78-4c7f-a3f9-1b4d1ba63118",
+  number_parameters: 1
 })
 
 Repo.insert!(%SessionTemplate{
   label: "Language",
   body: """
-  आपकी भाषा वर्तमान में सेट हैा @contact.language
+  आपकी भाषा वर्तमान में सेट हैा {{1}}
 
   आप जिस भाषा में संदेश प्राप्त करना चाहते हैं उसे बदल सकते हैं।क्या आप उस भाषा को बदलना चाहते हैं जिसमें आप संदेश प्राप्त करना चाहते हैं?
 
@@ -265,7 +266,8 @@ Repo.insert!(%SessionTemplate{
   shortcode: "language",
   is_reserved: true,
   language_id: hi.id,
-  uuid: "af0caab8-796d-4591-bd7f-7aed57e1ce81"
+  uuid: "af0caab8-796d-4591-bd7f-7aed57e1ce81",
+  number_parameters: 1
 })
 
 Repo.insert!(%SessionTemplate{
@@ -631,14 +633,6 @@ Repo.insert!(%FlowRevision{
   definition: new_contact_flow_definition,
   flow_id: new_contact_flow.id
 })
-
-Repo.insert!(%Flow{
-      name: "Test Workflow",
-      shortcode: "test",
-      version_number: "13.1.0",
-      uuid: "defda715-c520-499d-851e-4428be87def6",
-      language_id: en_us.id
-             })
 
 registration_flow =
   Repo.insert!(%Flow{
