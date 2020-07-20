@@ -6,10 +6,6 @@ defmodule Glific.Flows.Localization do
   alias __MODULE__
 
   use Ecto.Schema
-  import Ecto.Changeset
-
-  @required_fields []
-  @optional_fields [:localizations]
 
   @type t() :: %__MODULE__{
           localizations: map() | nil
@@ -20,39 +16,29 @@ defmodule Glific.Flows.Localization do
   end
 
   @doc """
-  Standard changeset pattern we use for all data types
-  """
-  @spec changeset(Localization.t(), map()) :: Ecto.Changeset.t()
-  def changeset(localization, attrs) do
-    localization
-    |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_required(@required_fields)
-  end
-
-  @doc """
   Process a json structure from floweditor to the Glific data types
   """
   @spec process(map()) :: Localization.t()
   def process(json) do
-    %Localization{
-      localizations:
-        json
-        |> Enum.reduce(
-          %{},
-          fn {language, translations}, acc ->
-            Map.put(
-              acc,
-              language,
-              Enum.reduce(
-                %{},
-                translations,
-                fn {uuid, values}, acc ->
-                  Map.put(acc, uuid, hd(values["text"]))
-                end
-              )
+    value =
+      json
+      |> Enum.reduce(
+        %{},
+        fn {language, translations}, acc ->
+          Map.put(
+            acc,
+            language,
+            Enum.reduce(
+              translations,
+              %{},
+              fn {uuid, values}, acc ->
+                Map.put(acc, uuid, hd(Map.get(values, "text")))
+              end
             )
-          end
-        )
-    }
+          )
+        end
+      )
+
+    %Localization{localizations: value}
   end
 end
