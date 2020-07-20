@@ -1,7 +1,12 @@
 defmodule Glific.Flows.CategoryTest do
   use Glific.DataCase, async: true
 
-  alias Glific.Flows.Category
+  alias Glific.Flows.{
+    Category,
+    Exit,
+    FlowContext,
+    Node,
+  }
 
   test "process extracts the right values from json" do
     json = %{"uuid" => "UUID 1", "exit_uuid" => "UUID 2", "name" => "Default Category"}
@@ -22,5 +27,27 @@ defmodule Glific.Flows.CategoryTest do
 
     json = %{}
     assert_raise ArgumentError, fn -> Category.process(json, %{}) end
+  end
+
+  test "test category execute with exit node with null destination" do
+    node = %Node{uuid: "Test UUID"}
+    json = %{"uuid" => "Exit UUID", "destination_uuid" => nil}
+    {_exit, uuid_map} = Exit.process(json, %{}, node)
+
+    json = %{"uuid" => "Cat UUID", "exit_uuid" => "Exit UUID", "name" => "Default Category"}
+    {category, uuid_map} = Category.process(json, uuid_map)
+
+    # create a simple flow context
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+            contact_id: 1,
+            flow_id: 1,
+            uuid_map: uuid_map,
+                                      })
+
+    result = Category.execute(category, context, [])
+    assert elem(result, 0) == :ok
+    assert elem(result, 1) == nil
+    assert elem(result, 2) == []
   end
 end
