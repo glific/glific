@@ -5,17 +5,16 @@ defmodule Glific.Flows.Category do
   alias __MODULE__
 
   use Ecto.Schema
-  import Ecto.Changeset
 
-  alias Glific.Flows.{
-    Case,
-    Exit,
-    FlowContext,
-    Router
+  alias Glific.{
+    Flows,
+    Flows.Case,
+    Flows.Exit,
+    Flows.FlowContext,
+    Flows.Router
   }
 
-  @required_fields [:name, :exit_uuid, :router_uuid]
-  @optional_fields []
+  @required_fields [:name, :uuid, :exit_uuid]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -41,22 +40,12 @@ defmodule Glific.Flows.Category do
   end
 
   @doc """
-  Standard changeset pattern we use for all data types
-  """
-  @spec changeset(Category.t(), map()) :: Ecto.Changeset.t()
-  def changeset(category, attrs) do
-    category
-    |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_required(@required_fields)
-    |> foreign_key_constraint(:router_uuid)
-    |> foreign_key_constraint(:exit_uuid)
-  end
-
-  @doc """
   Process a json structure from floweditor to the Glific data types
   """
   @spec process(map(), map(), Router.t()) :: {Category.t(), map()}
   def process(json, uuid_map, router) do
+    Flows.check_required_fields(json, @required_fields)
+
     category = %Category{
       uuid: json["uuid"],
       router_uuid: router.uuid,
