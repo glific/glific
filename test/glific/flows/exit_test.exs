@@ -3,6 +3,7 @@ defmodule Glific.Flows.ExitTest do
 
   alias Glific.Flows.{
     Exit,
+    FlowContext,
     Node
   }
 
@@ -35,5 +36,49 @@ defmodule Glific.Flows.ExitTest do
 
     json = %{}
     assert_raise ArgumentError, fn -> Exit.process(json, %{}, node) end
+  end
+
+  test "execute when the destination node is nil" do
+    node = %Node{uuid: "Test UUID"}
+    json = %{"uuid" => "UUID 1", "destination_uuid" => nil}
+
+    # create a simple flow context
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: 1,
+        flow_id: 1,
+        uuid_map: %{}
+      })
+
+    {exit, _uuid_map} = Exit.process(json, %{}, node)
+    {:ok, result, messages} = Exit.execute(exit, context, ["will this disappear"])
+
+    assert is_nil(result)
+    assert messages == []
+    assert_raise Ecto.NoResultsError, fn -> Repo.get!(FlowContext, context.id) end
+  end
+
+  # lets set up a node where the execute fails. A lot easier for us to test that
+  # exit works as normal and sends it to the right place
+  test "execute when the destination node is valid " do
+    node_uuid = Ecto.UUID.generate()
+    node = %Node{uuid: node_uuid, actions: [], router: nil}
+    json = %{"uuid" => "UUID 1", "destination_uuid" => node_uuid}
+    uuid_map = %{node_uuid => {:node, node}}
+
+    {exit, uuid_map} = Exit.process(json, uuid_map, node)
+
+    # create a simple flow context
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: 1,
+        flow_id: 1,
+        uuid_map: uuid_map
+      })
+
+    result = Exit.execute(exit, context, ["will this disappear"])
+
+    assert elem(result, 0) == :error
+    assert elem(result, 1) == "Unsupported node type"
   end
 end

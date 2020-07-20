@@ -55,7 +55,6 @@ defmodule Glific.Flows.Exit do
           {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
   def execute(exit, context, message_stream) do
     if is_nil(exit.destination_node_uuid) do
-      IO.puts("And we have reached the end of the current workflow")
       FlowContext.reset_context(context)
       {:ok, nil, []}
     else
