@@ -33,6 +33,7 @@ defmodule GlificWeb.Router do
 
     resources "/registration", RegistrationController, singleton: true, only: [:create]
     post "/registration/send_otp", RegistrationController, :send_otp
+    post "/registration/validate_phone", RegistrationController, :validate_phone
     resources "/session", SessionController, singleton: true, only: [:create, :delete]
     post "/session/renew", SessionController, :renew
   end

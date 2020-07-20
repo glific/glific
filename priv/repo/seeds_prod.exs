@@ -316,16 +316,6 @@ Repo.insert!(%SessionTemplate{
   uuid: "a9834b33-583d-471b-aa50-bdf0a4c8c34b"
 })
 
-Repo.insert!(%SessionTemplate{
-  label: "Verification OTP",
-  type: :text,
-  shortcode: "verification",
-  is_reserved: true,
-  language_id: en_us.id,
-  body: "Your verification OTP is: ",
-  uuid: "51277490-bddf-4a7b-b65c-ceb40561a864"
-})
-
 # seed hsm templates
 Repo.insert!(%SessionTemplate{
   label: "HSM1",
@@ -475,7 +465,7 @@ Repo.insert!(%SessionTemplate{
 Repo.insert!(%SessionTemplate{
   label: "HSM14",
   type: :text,
-  shortcode: "hsm",
+  shortcode: "otp_verification",
   is_hsm: true,
   number_parameters: 3,
   language_id: en_us.id,
