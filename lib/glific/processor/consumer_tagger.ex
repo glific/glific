@@ -45,7 +45,7 @@ defmodule Glific.Processor.ConsumerTagger do
       |> reload_flows
 
     {
-      :producer_consumer,
+      :consumer,
       state,
       # dispatcher: GenStage.BroadcastDispatcher,
       subscribe_to: [
