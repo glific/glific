@@ -128,7 +128,7 @@ defmodule Glific.Flows do
   @spec get_flow_revision_list(String.t()) :: %{results: list()}
   def get_flow_revision_list(flow_uuid) do
     flow = get_flow_with_revision(flow_uuid)
-    user = %{email: "pankaj@glific.com", name: "Pankaj Agrawal"}
+    user = %{email: "user@glific.com", name: "Glific User"}
 
     asset_list =
       Enum.reduce(flow.revisions, [], fn revision, acc ->

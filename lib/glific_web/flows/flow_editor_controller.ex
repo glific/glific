@@ -186,44 +186,23 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec environment(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def environment(conn, _params) do
-    environment = %{
-      date_format: "YYYY-MM-DD",
-      time_format: "hh:mm",
-      timezone: "Africa/Kigali",
-      languages: ["eng", "spa", "fra"]
-    }
-
+    environment = %{}
     json(conn, environment)
   end
 
   @doc false
   @spec recipients(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def recipients(conn, _params) do
-    recipients = %{
-      results: [
-        %{
-          name: "Cat Fanciers",
-          id: "eae05fb1-3021-4df2-a443-db8356b953fa",
-          type: "group",
-          extra: 212
-        },
-        %{
-          name: "Anne",
-          id: "673fa0f6-dffd-4e7d-bcc1-e5709374354f",
-          type: "contact"
-        }
-      ]
-    }
-
+    recipients = %{results: []}
     json(conn, recipients)
   end
 
-  @doc false
+  @doc """
+    instead of reading a file we can call it directly from Assests.
+    We will come back on that when we have more clearity of the use cases
+  """
   @spec completion(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def completion(conn, _params) do
-    # instead of reading a file we can call it directly from Assests.
-    # We will come back on that when we have more clearity of the use cases
-
     completion =
       File.read!("assets/flows/completion.json")
       |> Jason.decode!()
@@ -231,7 +210,9 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, completion)
   end
 
-  @doc false
+  @doc """
+    This is used to checking if the connection between frontend and backend is established or not.
+  """
   @spec activity(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def activity(conn, _params) do
     activity = %{
@@ -242,7 +223,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, activity)
   end
 
-  @doc false
+  @doc """
+    Let's get all the flows or a latest flow revision
+  """
+
   @spec flows(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def flows(conn, %{"vars" => vars}) do
     results =
@@ -272,7 +256,9 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, %{results: results})
   end
 
-  @doc false
+  @doc """
+    Get all or a specific revision for a flow
+  """
   @spec revisions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def revisions(conn, %{"vars" => vars}) do
     case vars do
@@ -281,14 +267,18 @@ defmodule GlificWeb.Flows.FlowEditorController do
     end
   end
 
-  @doc false
+  @doc """
+    Save a revision for a flow and get the revision id
+  """
   @spec save_revisions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def save_revisions(conn, params) do
     revision = Flows.create_flow_revision(params)
     json(conn, %{revision: revision.id})
   end
 
-  @doc false
+  @doc """
+    all the supported funcations we provide
+  """
   @spec functions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def functions(conn, _) do
     functions =
