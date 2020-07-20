@@ -61,13 +61,10 @@ defmodule Glific.Flows.Router do
     }
 
     {categories, uuid_map} =
-      Enum.reduce(
+      Flows.build_flow_objects(
         json["categories"],
-        {[], uuid_map},
-        fn c, acc ->
-          {category, uuid_map} = Category.process(c, elem(acc, 1))
-          {[category | elem(acc, 0)], uuid_map}
-        end
+        uuid_map,
+        &Category.process/3
       )
 
     # Check that the default_category_uuid exists, if not raise an error
@@ -76,20 +73,17 @@ defmodule Glific.Flows.Router do
 
     router =
       router
-      |> Map.put(:categories, Enum.reverse(categories))
+      |> Map.put(:categories, categories)
       |> Map.put(:default_category_uuid, json["default_category_uuid"])
 
     {cases, uuid_map} =
-      Enum.reduce(
+      Flows.build_flow_objects(
         json["cases"],
-        {[], uuid_map},
-        fn c, acc ->
-          {case, uuid_map} = Case.process(c, elem(acc, 1))
-          {[case | elem(acc, 0)], uuid_map}
-        end
+        uuid_map,
+        &Case.process/3
       )
 
-    router = Map.put(router, :cases, Enum.reverse(cases))
+    router = Map.put(router, :cases, cases)
     {router, uuid_map}
   end
 

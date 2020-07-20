@@ -4,7 +4,7 @@ defmodule Glific.Flows.ActionTest do
   alias Glific.Flows.{
     Action,
     Node,
-    Templating,
+    Templating
   }
 
   test "process extracts the right values from json for enter_flow action" do

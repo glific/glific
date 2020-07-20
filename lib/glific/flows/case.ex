@@ -40,8 +40,8 @@ defmodule Glific.Flows.Case do
   @doc """
   Process a json structure from floweditor to the Glific data types
   """
-  @spec process(map(), map()) :: {Case.t(), map()}
-  def process(json, uuid_map) do
+  @spec process(map(), map(), any) :: {Case.t(), map()}
+  def process(json, uuid_map, _object \\ nil) do
     Flows.check_required_fields(json, @required_fields)
 
     # Check that the category_uuid exists, if not raise an error

@@ -36,8 +36,8 @@ defmodule Glific.Flows.Category do
   @doc """
   Process a json structure from floweditor to the Glific data types
   """
-  @spec process(map(), map()) :: {Category.t(), map()}
-  def process(json, uuid_map) do
+  @spec process(map(), map(), any) :: {Category.t(), map()}
+  def process(json, uuid_map, _object \\ nil) do
     Flows.check_required_fields(json, @required_fields)
 
     category = %Category{

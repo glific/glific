@@ -5,7 +5,8 @@ defmodule Glific.Flows.Node do
   alias __MODULE__
 
   use Ecto.Schema
-  import Ecto.Changeset
+
+  alias Glific.Flows
 
   alias Glific.Flows.{
     Action,
@@ -15,8 +16,7 @@ defmodule Glific.Flows.Node do
     Router
   }
 
-  @required_fields [:flow_uuid]
-  @optional_fields []
+  @required_fields [:uuid, :actions, :exits]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -39,49 +39,36 @@ defmodule Glific.Flows.Node do
   end
 
   @doc """
-  Standard changeset pattern we use for all data types
-  """
-  @spec changeset(Node.t(), map()) :: Ecto.Changeset.t()
-  def changeset(node, attrs) do
-    node
-    |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_required(@required_fields)
-    |> foreign_key_constraint(:flow_uuid)
-  end
-
-  @doc """
   Process a json structure from floweditor to the Glific data types
   """
   @spec process(map(), map(), Flow.t()) :: {Node.t(), map()}
   def process(json, uuid_map, flow) do
+    Flows.check_required_fields(json, @required_fields)
+
     node = %Node{
       uuid: json["uuid"],
       flow_uuid: flow.uuid
     }
 
     {actions, uuid_map} =
-      Enum.reduce(
+      Flows.build_flow_objects(
         json["actions"],
-        {[], uuid_map},
-        fn action_json, acc ->
-          {action, uuid_map} = Action.process(action_json, elem(acc, 1), node)
-          {[action | elem(acc, 0)], uuid_map}
-        end
+        uuid_map,
+        &Action.process/3,
+        node
       )
 
-    node = Map.put(node, :actions, Enum.reverse(actions))
+    node = Map.put(node, :actions, actions)
 
     {exits, uuid_map} =
-      Enum.reduce(
+      Flows.build_flow_objects(
         json["exits"],
-        {[], uuid_map},
-        fn exit_json, acc ->
-          {exit, uuid_map} = Exit.process(exit_json, elem(acc, 1), node)
-          {[exit | elem(acc, 0)], uuid_map}
-        end
+        uuid_map,
+        &Exit.process/3,
+        node
       )
 
-    node = Map.put(node, :exits, Enum.reverse(exits))
+    node = Map.put(node, :exits, exits)
 
     {node, uuid_map} =
       if Map.has_key?(json, "router") do
