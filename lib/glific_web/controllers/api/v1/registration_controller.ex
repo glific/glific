@@ -62,7 +62,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @spec send_otp(Conn.t(), map()) :: Conn.t()
   def send_otp(conn, %{"user" => %{"phone" => phone}}) do
     with {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
-         true <- Glific.Contacts.can_send_message_to?(contact),
+         true <- Glific.Contacts.can_send_hsm_message_to?(contact),
          {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
       json(conn, %{
         data: %{
@@ -78,7 +78,32 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
       false ->
         conn
-        |> json(%{error: %{status: 200, message: "Contact is not opted in yet"}})
+        |> json(%{
+          error: %{status: 200, message: "Contact is not opted in yet"}
+        })
     end
+  end
+
+  @doc false
+  @spec validate_phone(Conn.t(), map()) :: Conn.t()
+  def validate_phone(conn, %{"user" => %{"phone" => phone}}) do
+    # we can put more validations for phone number here
+    response_data =
+      with {:error, _user} <- Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}),
+           {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
+           true <- Glific.Contacts.can_send_hsm_message_to?(contact) do
+        %{is_valid: true, message: "Phone number is successfully validated"}
+      else
+        {:error, "Resource not found"} ->
+          %{is_valid: false, message: "Phone number is incorrect"}
+
+        false ->
+          %{is_valid: false, message: "Contact is not opted in yet"}
+
+        {:ok, _} ->
+          %{is_valid: false, message: "Phone number already exists"}
+      end
+
+    json(conn, %{data: response_data})
   end
 end
