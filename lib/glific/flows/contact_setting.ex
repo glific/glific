@@ -37,9 +37,6 @@ defmodule Glific.Flows.ContactSetting do
   """
   @spec set_contact_preference(FlowContext.t(), String.t()) :: FlowContext.t()
   def set_contact_preference(context, preference) do
-    # first clean up the preference string
-    preference = Glific.string_clean(preference)
-
     if preference == "",
       do: reset_contact_preference(context),
       else: add_contact_preference(context, preference)
@@ -57,6 +54,9 @@ defmodule Glific.Flows.ContactSetting do
     do: reset_contact_preference(context)
 
   def add_contact_preference(context, preference, value) do
+    # first clean up the preference string
+    preference = Glific.string_clean(preference)
+
     contact_settings =
       if is_nil(context.contact.settings),
         do: %{"preferences" => %{}},
