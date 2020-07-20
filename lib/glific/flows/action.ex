@@ -6,9 +6,11 @@ defmodule Glific.Flows.Action do
   alias __MODULE__
 
   use Ecto.Schema
-  import Ecto.Changeset
 
-  alias Glific.Enums.FlowActionType
+  alias Glific.{
+    Enums.FlowActionType,
+    Flows,
+  }
 
   alias Glific.Flows.{
     ContactAction,
@@ -20,8 +22,10 @@ defmodule Glific.Flows.Action do
     Templating
   }
 
-  @required_fields [:type, :node_uuid]
-  @optional_fields [:text, :value, :name, :quick_replies, :flow_uuid, :templating]
+  @required_fields_enter_flow [:uuid, :type, :flow]
+  @required_fields_language [:uuid, :type, :language]
+  @required_fields_set_contact [:uuid, :type, :value, :field]
+  @required_fields [:uuid, :type, :text]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -57,16 +61,17 @@ defmodule Glific.Flows.Action do
     embeds_one :enter_flow, Flow
   end
 
-  @doc """
-  Standard changeset pattern we use for all data types
-  """
-  @spec changeset(Action.t(), map()) :: Ecto.Changeset.t()
-  def changeset(action, attrs) do
-    action
-    |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_required(@required_fields)
-    |> foreign_key_constraint(:node_uuid)
-    |> foreign_key_constraint(:flow_uuid)
+  @spec process(map(), map(), Node.t(), map()) :: {Action.t(), map()}
+  defp process(json, uuid_map, node, attrs) do
+    action = Map.merge(
+      %Action{
+        uuid: json["uuid"],
+        node_uuid: node.uuid,
+        type: json["type"],
+      },
+      attrs)
+
+    {action, Map.put(uuid_map, action.uuid, {:action, action})}
   end
 
   @doc """
@@ -74,42 +79,40 @@ defmodule Glific.Flows.Action do
   """
   @spec process(map(), map(), Node.t()) :: {Action.t(), map()}
   def process(%{"type" => type} = json, uuid_map, node) when type == "enter_flow" do
-    action = %Action{
-      uuid: json["uuid"],
-      node_uuid: node.uuid,
-      type: json["type"],
-      enter_flow_uuid: json["flow"]["uuid"]
-    }
+    Flows.check_required_fields(json, @required_fields_enter_flow)
+    process(json, uuid_map, node, %{enter_flow_uuid: json["flow"]["uuid"]})
+  end
 
-    {action, Map.put(uuid_map, action.uuid, {:action, action})}
+  def process(%{"type" => type} = json, uuid_map, node) when type == "set_contact_language" do
+    Flows.check_required_fields(json, @required_fields_language)
+    process(json, uuid_map, node, %{text: json["language"]})
+  end
+
+  def process(%{"type" => type} = json, uuid_map, node) when type == "set_contact_field" do
+    Flows.check_required_fields(json, @required_fields_set_contact)
+    process(json, uuid_map, node,
+      %{value: json["value"],
+        field: %{
+          name: json["field"]["name"],
+          key: json["field"]["key"]
+        }
+      }
+    )
   end
 
   def process(json, uuid_map, node) do
-    action = %Action{
-      uuid: json["uuid"],
-      node_uuid: node.uuid,
+    Flows.check_required_fields(json, @required_fields)
+
+    attrs = %{
       name: json["name"],
       text: json["text"],
-      value: json["value"],
-      type: json["type"],
       quick_replies: json["quick_replies"]
     }
 
     {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
+    attrs = Map.put(attrs, :templating, templating)
 
-    action = Map.put(action, :templating, templating)
-
-    action =
-      if Map.has_key?(json, "field"),
-        do: Map.put(action, :field, %{name: json["field"]["name"], key: json["field"]["key"]}),
-        else: action
-
-    action =
-      if action.type == "set_contact_language",
-        do: Map.put(action, :text, json["language"]),
-        else: action
-
-    {action, Map.put(uuid_map, action.uuid, {:action, action})}
+    process(json, uuid_map, node, attrs)
   end
 
   @doc """
