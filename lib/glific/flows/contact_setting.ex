@@ -93,7 +93,7 @@ defmodule Glific.Flows.ContactSetting do
       when is_nil(setting),
       do: []
 
-  def get_contact_preferences(contact: %FlowContext{contact: %Contact{settings: setting}}),
+  def get_contact_preferences(%FlowContext{contact: %Contact{settings: setting}}),
     do:
       Enum.reduce(
         Map.get(setting, "preferences", %{}),
