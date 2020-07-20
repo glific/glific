@@ -5,7 +5,8 @@ defmodule Glific.Flows.ContactActionTest do
     Contacts,
     Flows.Action,
     Flows.ContactAction,
-    Flows.FlowContext
+    Flows.FlowContext,
+    Flows.Templating
   }
 
   setup do
@@ -34,7 +35,9 @@ defmodule Glific.Flows.ContactActionTest do
     # preload contact
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
 
-    ContactAction.send_message(context, %Action{text: "This is test message"})
+    action = %Action{text: "This is test message"}
+
+    ContactAction.send_message(context, action)
 
     message =
       Glific.Messages.Message
@@ -43,5 +46,34 @@ defmodule Glific.Flows.ContactActionTest do
       |> Repo.one()
 
     assert message.body == "This is test message"
+  end
+
+  test "send message template" do
+    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+
+    # preload contact
+    context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
+
+    [template | _] =
+      Glific.Templates.list_session_templates(%{
+        filter: %{shortcode: "hsm", label: "HSM3", is_hsm: true}
+      })
+
+    templating = %Templating{
+      template: template
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action)
+
+    message =
+      Glific.Messages.Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    # To fix: use template parameters to check
+    assert message.body == template.body
   end
 end
