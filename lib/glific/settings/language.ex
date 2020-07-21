@@ -29,7 +29,7 @@ defmodule Glific.Settings.Language do
     field :locale, :string
     field :description, :string
 
-    field :is_active, :boolean, default: false
+    field :is_active, :boolean, default: true
 
     timestamps(type: :utc_datetime)
   end
