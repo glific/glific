@@ -7,8 +7,8 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "0.1.0",
-      elixir: "~> 1.7",
+      version: "0.2.0",
+      elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
@@ -111,7 +111,8 @@ defmodule Glific.MixProject do
       {:gen_stage, "~> 1.0"},
       {:passwordless_auth, git: "https://github.com/glific/passwordless_auth.git"},
       {:timex, "~> 3.0"},
-      {:slugify, "~> 1.3"}
+      {:slugify, "~> 1.3"},
+      {:cachex, "~> 3.2"}
     ]
   end
 

@@ -612,6 +612,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
   def flow_contexts do
     create table(:flow_contexts) do
       add :node_uuid, :uuid, null: true
+      add :flow_uuid, :uuid, null: false
       add :contact_id, references(:contacts, on_delete: :delete_all), null: false
       add :flow_id, references(:flows, on_delete: :delete_all), null: false
 
