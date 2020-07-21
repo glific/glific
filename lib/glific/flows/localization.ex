@@ -7,7 +7,11 @@ defmodule Glific.Flows.Localization do
 
   use Ecto.Schema
 
-  alias Glific.Settings
+  alias Glific.{
+    Flows.Action,
+    Flows.FlowContext,
+    Settings
+  }
 
   @type t() :: %__MODULE__{
           localizations: map() | nil
@@ -51,5 +55,25 @@ defmodule Glific.Flows.Localization do
           end
         )
     }
+  end
+
+  @doc """
+  Given a language id and an action uuid, return the translation if
+  one exists, else return the original text
+  """
+  @spec get_translation(FlowContext.t(), Action.t()) :: String.t()
+  def get_translation(context, action) do
+    language_id = context.contact.language_id
+
+    localization =
+      if Ecto.assoc_loaded?(context.flow) and
+           Ecto.assoc_loaded?(context.flow.localization),
+         do: context.flow.localization.localizations,
+         else: %{}
+
+    if Map.has_key?(localization, language_id) and
+         Map.has_key?(Map.get(localization, language_id), action.uuid),
+       do: Map.get(Map.get(localization, language_id), action.uuid),
+       else: action.text
   end
 end

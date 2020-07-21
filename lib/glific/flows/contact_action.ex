@@ -8,6 +8,7 @@ defmodule Glific.Flows.ContactAction do
     Contacts,
     Flows.Action,
     Flows.FlowContext,
+    Flows.Localization,
     Flows.MessageVarParser,
     Messages,
     Processor.Helper
@@ -25,8 +26,11 @@ defmodule Glific.Flows.ContactAction do
   If the template is not define for the message send text messages
   """
   @spec send_message(FlowContext.t(), Action.t()) :: FlowContext.t()
-  def send_message(context, %Action{templating: templating, text: text})
+  def send_message(context, %Action{templating: templating, text: _text} = action)
       when is_nil(templating) do
+    # get the test translation if needed
+    text = Localization.get_translation(context, action)
+
     # Since we are saving the data after loading the flow
     # so we have to fetch the latest contact fields
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}

@@ -102,11 +102,13 @@ defmodule Glific.Flows.Node do
 
       !Enum.empty?(node.actions) ->
         # we need to execute all the actions (nodes can have multiple actions)
-        _ =
-          Enum.map(
+        {:ok, context, message_stream} =
+          Enum.reduce(
             node.actions,
-            fn action ->
-              {:ok, _context, _message_stream} = Action.execute(action, context, message_stream)
+            {:ok, context, message_stream},
+            fn action, acc ->
+              {:ok, context, message_stream} = acc
+              Action.execute(action, context, message_stream)
             end
           )
 
