@@ -59,12 +59,11 @@ defmodule Glific.Flows do
            %Flow{}
            |> Flow.changeset(attrs)
            |> Repo.insert() do
-      # Create a defult revision to get started
-      definition = FlowRevision.default_definition(flow)
-
-      %FlowRevision{}
-      |> FlowRevision.changeset(%{definition: definition, flow_id: flow.id})
-      |> Repo.insert()
+      {:ok, _} =
+        FlowRevision.create_flow_revision(%{
+          definition: FlowRevision.default_definition(flow),
+          flow_id: flow.id
+        })
 
       {:ok, flow}
     end
@@ -126,21 +125,26 @@ defmodule Glific.Flows do
   @spec get_flow_revision_list(String.t()) :: %{results: list()}
   def get_flow_revision_list(flow_uuid) do
     flow = get_flow_with_revision(flow_uuid)
+    # We should fix this to get the logged in user
     user = %{email: "user@glific.com", name: "Glific User"}
 
     asset_list =
-      Enum.reduce(flow.revisions, [], fn revision, acc ->
-        [
-          %{
-            user: user,
-            created_on: revision.inserted_at,
-            id: revision.id,
-            version: "13.0.0",
-            revision: revision.id
-          }
-          | acc
-        ]
-      end)
+      Enum.reduce(
+        flow.revisions,
+        [],
+        fn revision, acc ->
+          [
+            %{
+              user: user,
+              created_on: revision.inserted_at,
+              id: revision.id,
+              version: "13.0.0",
+              revision: revision.id
+            }
+            | acc
+          ]
+        end
+      )
 
     %{results: Enum.reverse(asset_list)}
   end
@@ -177,6 +181,9 @@ defmodule Glific.Flows do
     revision
   end
 
+  defp check_field(json, field, acc),
+    do: if(Map.has_key?(json, field), do: acc, else: [field | acc])
+
   @doc """
   Check the required fields for all flow objects. If missing, raise an exception
   """
@@ -187,11 +194,7 @@ defmodule Glific.Flows do
         required,
         [],
         fn field, acc ->
-          field = to_string(field)
-
-          if Map.has_key?(json, field),
-            do: acc,
-            else: [field | acc]
+          check_field(json, to_string(field), acc)
         end
       )
 
