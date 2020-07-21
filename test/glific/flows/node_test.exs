@@ -136,4 +136,57 @@ defmodule Glific.Flows.NodeTest do
 
     assert updated_contact.language_id == language.id
   end
+
+  test "execute a node having router without cases should fail" do
+    flow = %Flow{uuid: "Flow UUID 1"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "actions" => [
+        %{
+          "uuid" => "UUID Act 1",
+          "type" => "set_contact_language",
+          "language" => "English (United States)"
+        }
+      ],
+      "exits" => [
+        %{"uuid" => "UUID Exit 1", "destination_uuid" => nil}
+      ],
+      "router" => %{
+        "operand" => "@input.text",
+        "type" => "switch",
+        "default_category_uuid" => "Default Cat UUID",
+        "result_name" => "Language",
+        "categories" => [
+          %{
+            "uuid" => "Default Cat UUID",
+            "exit_uuid" => nil,
+            "name" => "Default Category"
+          }
+        ],
+        "cases" => []
+      }
+    }
+
+    {node, uuid_map} = Node.process(json, %{}, flow)
+
+    # create a simple flow context
+    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        flow_id: 1,
+        uuid_map: uuid_map
+      })
+
+    context = Repo.preload(context, :contact)
+
+    message_stream = ["completed"]
+
+    # execute node
+    assert_raise MatchError, fn ->
+      {:ok, nil, []} = Node.execute(node, context, message_stream)
+    end
+  end
 end
