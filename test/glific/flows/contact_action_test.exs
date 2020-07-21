@@ -60,7 +60,8 @@ defmodule Glific.Flows.ContactActionTest do
       })
 
     templating = %Templating{
-      template: template
+      template: template,
+      variables: ["var_1", "var_2", "var_3"]
     }
 
     action = %Action{templating: templating}
@@ -73,7 +74,6 @@ defmodule Glific.Flows.ContactActionTest do
       |> Ecto.Query.last()
       |> Repo.one()
 
-    # To fix: use template parameters to check
-    assert message.body == template.body
+    assert message.body == "Your var_1 number var_2 has been var_3."
   end
 end

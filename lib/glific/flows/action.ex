@@ -136,7 +136,6 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: type} = action, context, message_stream)
       when type == "set_contact_name" do
-    IO.puts("Setting contact name: #{action.value}")
     context = ContactSetting.set_contact_name(context, action.value)
     {:ok, context, message_stream}
   end

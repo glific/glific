@@ -1,3 +1,7 @@
 priv/repo/migrations/20200601193405_create_glific_tables.exs
 lib/glific/support/**
+lib/glific/groups/contact_group.ex
+lib/glific/groups/user_group.ex
+lib/glific/tags/contact_tag.ex
+lib/glific/tags/message_tag.ex
 assets/**
