@@ -7,7 +7,11 @@ defmodule Glific.Flows.FlowRevision do
   import Ecto.Changeset
 
   alias __MODULE__
-  alias Glific.Flows.Flow
+
+  alias Glific.{
+    Flows.Flow,
+    Repo
+  }
 
   @required_fields [:definition, :flow_id]
   @optional_fields [:revision_number]
@@ -56,5 +60,13 @@ defmodule Glific.Flows.FlowRevision do
       "revision" => 1,
       "expire_after_minutes" => 10_080
     }
+  end
+
+  @doc false
+  @spec create_flow_revision(map()) :: {:ok, FlowRevision.t()} | {:error, Ecto.Changeset.t()}
+  def create_flow_revision(attrs \\ %{}) do
+    %FlowRevision{}
+    |> FlowRevision.changeset(attrs)
+    |> Repo.insert()
   end
 end
