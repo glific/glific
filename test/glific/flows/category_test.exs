@@ -5,7 +5,7 @@ defmodule Glific.Flows.CategoryTest do
     Category,
     Exit,
     FlowContext,
-    Node,
+    Node
   }
 
   test "process extracts the right values from json" do
@@ -40,10 +40,10 @@ defmodule Glific.Flows.CategoryTest do
     # create a simple flow context
     {:ok, context} =
       FlowContext.create_flow_context(%{
-            contact_id: 1,
-            flow_id: 1,
-            uuid_map: uuid_map,
-                                      })
+        contact_id: 1,
+        flow_id: 1,
+        uuid_map: uuid_map
+      })
 
     result = Category.execute(category, context, [])
     assert elem(result, 0) == :ok

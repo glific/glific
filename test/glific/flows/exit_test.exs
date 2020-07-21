@@ -45,10 +45,10 @@ defmodule Glific.Flows.ExitTest do
     # create a simple flow context
     {:ok, context} =
       FlowContext.create_flow_context(%{
-            contact_id: 1,
-            flow_id: 1,
-            uuid_map: %{}
-                                      })
+        contact_id: 1,
+        flow_id: 1,
+        uuid_map: %{}
+      })
 
     {exit, _uuid_map} = Exit.process(json, %{}, node)
     {:ok, result, messages} = Exit.execute(exit, context, ["will this disappear"])
