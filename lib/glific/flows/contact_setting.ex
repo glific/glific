@@ -35,9 +35,9 @@ defmodule Glific.Flows.ContactSetting do
   Wrapper function for setting the contact preference, if preference is empty, it
   indicates to reset the preference
   """
-  @spec set_contact_preference(FlowContext.t(), String.t()) :: FlowContext.t()
+  @spec set_contact_preference(FlowContext.t(), String.t() | nil) :: FlowContext.t()
   def set_contact_preference(context, preference) do
-    if preference == "",
+    if preference == "" or is_nil(preference),
       do: reset_contact_preference(context),
       else: add_contact_preference(context, preference)
   end

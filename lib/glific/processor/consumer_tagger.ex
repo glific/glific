@@ -125,7 +125,7 @@ defmodule Glific.Processor.ConsumerTagger do
     if context,
       do:
         context
-        |> FlowContext.load_context(state.flows[context.flow_id])
+        |> FlowContext.load_context(state.flows[context.flow_uuid])
         |> FlowContext.step_forward(message.body)
 
     # we can potentially save the {contact_id, context} map here in the flow state,
