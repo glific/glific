@@ -194,13 +194,53 @@ defmodule Glific.Messages do
   def create_and_send_message(attrs) do
     send_at = get_in(attrs, [:send_at])
 
-    with {:ok, message} <- create_message(Map.put(attrs, :flow, :outbound)) do
-      Communications.Message.send_message(message, send_at)
-    end
+    {:ok, message} =
+      %{
+        sender_id: Communications.Message.organization_contact_id(),
+        flow: :outbound
+      }
+      |> Map.merge(attrs)
+      |> create_message()
+
+    update_outbound_message_tags_of_contact(message)
+
+    Communications.Message.send_message(message, send_at)
+  end
+
+  @spec update_outbound_message_tags_of_contact(Message.t()) :: :ok
+  defp update_outbound_message_tags_of_contact(message) do
+    # Add "Not Responded" tag to message
+    {:ok, tag} = Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Responded"})
+
+    {:ok, _} =
+      Glific.Tags.create_message_tag(%{
+        message_id: message.id,
+        tag_id: tag.id
+      })
+
+    # Remove not responded tag from last outbound message if any
+    # don't remove tag if message is not yet delivered
+    with last_outbound_message when last_outbound_message != nil <-
+           Message
+           |> where([m], m.id != ^message.id)
+           |> where([m], m.receiver_id == ^message.receiver_id)
+           |> where([m], m.flow == "outbound")
+           |> where([m], m.status == "sent")
+           |> Ecto.Query.last()
+           |> Repo.one(),
+         message_tag when message_tag != nil <-
+           Glific.Tags.MessageTag
+           |> where([m], m.tag_id == ^tag.id)
+           |> where([m], m.message_id == ^last_outbound_message.id)
+           |> Ecto.Query.last()
+           |> Repo.one(),
+         do: Glific.Tags.delete_message_tag(message_tag)
+
+    :ok
   end
 
   @doc """
-  Create and send verifciation message
+  Create and send verification message
   Using session template of shortcode 'verification'
   """
   @spec create_and_send_otp_verification_message(String.t(), String.t()) :: {:ok, Message.t()}
@@ -264,7 +304,7 @@ defmodule Glific.Messages do
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 
     if session_template.number_parameters == length(parameters) do
-      updated_template = prepare_hsm_template(session_template, parameters)
+      updated_template = parse_template_vars(session_template, parameters)
 
       message_params = %{
         body: updated_template.body,
@@ -281,8 +321,12 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec prepare_hsm_template(SessionTemplate.t(), [String.t()]) :: SessionTemplate.t()
-  def prepare_hsm_template(session_template, parameters) do
+  @spec parse_template_vars(SessionTemplate.t(), [String.t()]) :: SessionTemplate.t()
+  def parse_template_vars(%{number_parameters: np} = session_template, _parameters)
+      when is_nil(np) or np <= 0,
+      do: session_template
+
+  def parse_template_vars(session_template, parameters) do
     parameters_map =
       1..session_template.number_parameters
       |> Enum.zip(parameters)

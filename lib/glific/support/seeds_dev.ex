@@ -4,6 +4,8 @@ defmodule Glific.SeedsDev do
   """
   alias Glific.{
     Contacts.Contact,
+    Flows.Flow,
+    Flows.FlowRevision,
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
@@ -31,30 +33,30 @@ defmodule Glific.SeedsDev do
   @doc false
   @spec seed_contacts :: {integer(), nil}
   def seed_contacts do
-    [hindi | _] = Settings.list_languages(%{label: "hindi"})
-    [english | _] = Settings.list_languages(%{label: "english"})
+    [hi_in | _] = Settings.list_languages(%{label: "hindi"})
+    [en_us | _] = Settings.list_languages(%{label: "english"})
 
     contacts = [
-      %{phone: "917834811231", name: "Default receiver", language_id: hindi.id},
+      %{phone: "917834811231", name: "Default receiver", language_id: hi_in.id},
       %{
         name: "Adelle Cavin",
         phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-        language_id: hindi.id
+        language_id: hi_in.id
       },
       %{
         name: "Margarita Quinteros",
         phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-        language_id: hindi.id
+        language_id: hi_in.id
       },
       %{
         name: "Chrissy Cron",
         phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-        language_id: english.id
+        language_id: en_us.id
       },
       %{
         name: "Hailey Wardlaw",
         phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-        language_id: english.id
+        language_id: en_us.id
       }
     ]
 
@@ -226,7 +228,8 @@ defmodule Glific.SeedsDev do
         label: "Default Template Label",
         body: "Default Template",
         type: :text,
-        language_id: en_us.id
+        language_id: en_us.id,
+        uuid: "92bc663f-ac05-45d5-aa13-4dae06165ae4"
       })
 
     Repo.insert!(%SessionTemplate{
@@ -234,7 +237,8 @@ defmodule Glific.SeedsDev do
       body: "Another Template",
       type: :text,
       language_id: en_us.id,
-      parent_id: session_template_parent.id
+      parent_id: session_template_parent.id,
+      uuid: "53008c3d-e619-4ec6-80cd-b9b2c89386dc"
     })
 
     nil
@@ -276,6 +280,44 @@ defmodule Glific.SeedsDev do
     })
   end
 
+  @doc false
+  @spec seed_flows :: nil
+  def seed_flows do
+    [en_us | _] = Settings.list_languages(%{label: "english"})
+
+    Repo.insert!(%Flow{
+      name: "Test Workflow",
+      shortcode: "test",
+      version_number: "13.1.0",
+      uuid: "defda715-c520-499d-851e-4428be87def6",
+      language_id: en_us.id
+    })
+
+    timed_flow =
+      Repo.insert!(%Flow{
+        name: "Timed Workflow",
+        shortcode: "registration_timed",
+        version_number: "13.1.0",
+        uuid: "8390ded3-06c3-4df4-b428-064666f085c7",
+        language_id: en_us.id
+      })
+
+    timed_flow_definition =
+      File.read!("assets/flows/timed.json")
+      |> Jason.decode!()
+
+    timed_flow_definition =
+      Map.merge(timed_flow_definition, %{
+        "name" => timed_flow.name,
+        "uuid" => timed_flow.uuid
+      })
+
+    Repo.insert!(%FlowRevision{
+      definition: timed_flow_definition,
+      flow_id: timed_flow.id
+    })
+  end
+
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
   split this function up into multiple different ones for test, dev and production
@@ -297,5 +339,7 @@ defmodule Glific.SeedsDev do
     seed_messages()
 
     seed_messages_media()
+
+    seed_flows()
   end
 end

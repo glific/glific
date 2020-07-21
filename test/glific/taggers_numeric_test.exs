@@ -3,7 +3,6 @@ defmodule Glific.TaggersNumericTest do
 
   alias Glific.{
     Messages.Message,
-    Taggers,
     Taggers.Numeric
   }
 
@@ -54,7 +53,7 @@ defmodule Glific.TaggersNumericTest do
   test "taggers string clean does a good jonb of cleaning string, but leaves unicode and hindi intact" do
     Enum.map(
       @checker,
-      fn {_, v} -> assert Taggers.string_clean(v) == String.downcase(v) end
+      fn {_, v} -> assert Glific.string_clean(v) == String.downcase(v) end
     )
   end
 

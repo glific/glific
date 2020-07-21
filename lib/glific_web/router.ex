@@ -79,6 +79,47 @@ defmodule GlificWeb.Router do
     1
   end
 
+  scope "/flow-editor", GlificWeb.Flows do
+    get "/globals", FlowEditorController, :globals
+
+    get "/groups", FlowEditorController, :groups
+    post "/groups", FlowEditorController, :groups_post
+
+    get "/fields", FlowEditorController, :fields
+    post "/fields", FlowEditorController, :fields_post
+
+    get "/labels", FlowEditorController, :labels
+    post "/labels", FlowEditorController, :labels_post
+
+    get "/channels", FlowEditorController, :channels
+
+    get "/classifiers", FlowEditorController, :classifiers
+
+    get "/ticketers", FlowEditorController, :ticketers
+
+    get "/resthooks", FlowEditorController, :resthooks
+
+    get "/templates", FlowEditorController, :templates
+
+    get "/languages", FlowEditorController, :languages
+
+    get "/environment", FlowEditorController, :environment
+
+    get "/recipients", FlowEditorController, :recipients
+
+    get "/completion", FlowEditorController, :completion
+
+    get "/activity", FlowEditorController, :activity
+
+    get "/functions", FlowEditorController, :functions
+
+    get "/flows/*vars", FlowEditorController, :flows
+
+    get "/revisions/*vars", FlowEditorController, :revisions
+
+    post "/revisions/*vars", FlowEditorController, :save_revisions
+  end
+
   # defp debug_response(conn, _) do
   #  Plug.Conn.register_before_send(conn, fn conn ->
   #    conn.resp_body |> IO.puts()

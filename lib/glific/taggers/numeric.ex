@@ -8,10 +8,7 @@ defmodule Glific.Taggers.Numeric do
     Cardinal Hindi Numbers
   """
 
-  alias Glific.{
-    Messages.Message,
-    Taggers
-  }
+  alias Glific.Messages.Message
 
   # Our initial map which stores the mappings we love and adore
   @numeric_map %{
@@ -111,7 +108,7 @@ defmodule Glific.Taggers.Numeric do
   @spec tag_message(Message.t(), %{String.t() => integer}) :: {:ok, String.t()} | :error
   def tag_message(message, numeric_map) do
     message.body
-    |> Taggers.string_clean()
+    |> Glific.string_clean()
     |> tag_body(numeric_map)
   end
 

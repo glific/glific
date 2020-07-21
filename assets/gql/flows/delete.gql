@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteFlow($id: ID!) {
+  deleteFlow(id: $id) {
+    ...FlowFields
+
+    ...ErrorFields
+  }
+}

@@ -72,4 +72,33 @@ defmodule GlificWeb.Schema.GenericTypes do
   defp decode_json(_) do
     :error
   end
+
+  # Enable Ecto UUID scalar for grapql
+
+  scalar :uuid4, name: "UUID4" do
+    description("""
+    The `UUID4` scalar type represents UUID4 compliant string data, represented as UTF-8
+    character sequences. The UUID4 type is most often used to represent unique
+    human-readable ID strings.
+    """)
+
+    serialize(&encode_uuid4/1)
+    parse(&decode_uuid4/1)
+  end
+
+  @spec decode_uuid4(Absinthe.Blueprint.Input.String.t()) :: {:ok, term()} | :error
+  @spec decode_uuid4(Absinthe.Blueprint.Input.Null.t()) :: {:ok, nil}
+  defp decode_uuid4(%Absinthe.Blueprint.Input.String{value: value}) do
+    Ecto.UUID.cast(value)
+  end
+
+  defp decode_uuid4(%Absinthe.Blueprint.Input.Null{}) do
+    {:ok, nil}
+  end
+
+  defp decode_uuid4(_) do
+    :error
+  end
+
+  defp encode_uuid4(value), do: value
 end

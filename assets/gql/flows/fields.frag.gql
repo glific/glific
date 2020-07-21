@@ -1,0 +1,15 @@
+fragment FlowFields on FlowResult {
+  flow {
+    id
+    name
+    shortcode
+    flow_type
+  }
+}
+
+fragment ErrorFields on FlowResult {
+  errors {
+    key
+    message
+  }
+}

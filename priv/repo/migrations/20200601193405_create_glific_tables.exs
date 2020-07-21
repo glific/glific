@@ -46,6 +46,12 @@ defmodule Glific.Repo.Migrations.GlificTables do
     questions_answers()
 
     locations()
+
+    flows()
+
+    flow_revisions()
+
+    flow_contexts()
   end
 
   @doc """
@@ -124,6 +130,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
   """
   def session_templates do
     create table(:session_templates) do
+      # The template uuid, primarly needed for flow editor
+      add :uuid, :uuid, null: false
+
       # The message label
       add :label, :string, null: false
 
@@ -194,9 +203,24 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # contact language for templates and other communications
       add :language_id, references(:languages, on_delete: :restrict), null: false
 
+      # the times when we recorded either an optin or an optout
+      # at some point, we will need to create an events table for this and track all changes
       add :optin_time, :utc_datetime
       add :optout_time, :utc_datetime
+
+      # this is primarily used as a a cache to avoid querying the message table. We need this
+      # to ensure we can send a valid session message to the user (< 24 hour window)
       add :last_message_at, :utc_datetime
+
+      # store the settings of the user as a map (which is a jsonb object in psql)
+      # preferences is one field in the settings (for now). The NGO can use this field to target
+      # the user with messages based on their preferences. The user can select one or
+      # more options from the preferenes list
+      add :settings, :map
+
+      # store the NGO generated fields for the user also as a map
+      # Each user can have multiple fields, we store the name as key
+      add :fields, :map, default: %{}
 
       timestamps(type: :utc_datetime)
     end
@@ -552,5 +576,52 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
       timestamps(type: :utc_datetime)
     end
+  end
+
+  @doc """
+  Organization flow storage
+  """
+  def flows do
+    create table(:flows) do
+      add :name, :string, null: false
+      add :shortcode, :string, null: false
+      add :uuid, :uuid, null: false
+      add :version_number, :string, default: "13.1.0"
+      add :language_id, references(:languages, on_delete: :restrict), null: false
+      add :flow_type, :flow_type_enum, null: false, default: "message"
+      timestamps(type: :utc_datetime)
+    end
+  end
+
+  @doc """
+  Revisions for a flow
+  """
+  def flow_revisions do
+    create table(:flow_revisions) do
+      add :definition, :map
+      add :flow_id, references(:flows, on_delete: :delete_all), null: false
+      add :revision_number, :integer, default: 0
+
+      timestamps(type: :utc_datetime)
+    end
+  end
+
+  @doc """
+  The Context that a contact is in with respect to a flow
+  """
+  def flow_contexts do
+    create table(:flow_contexts) do
+      add :node_uuid, :uuid, null: true
+      add :contact_id, references(:contacts, on_delete: :delete_all), null: false
+      add :flow_id, references(:flows, on_delete: :delete_all), null: false
+
+      add :results, :map, default: %{}
+
+      add :parent_id, references(:flow_contexts, on_delete: :nilify_all), null: true
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:flow_contexts, [:contact_id, :parent_id])
   end
 end
