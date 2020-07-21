@@ -71,37 +71,11 @@ defmodule Glific.Processor.ConsumerTagger do
   defp reload(state), do: state
 
   defp reload_flows(%{flows: flow} = state) when flow == %{} do
-    {help, language, new_contact, preference, registration} = {
-      Flow.load_flow(%{shortcode: "help"}),
-      Flow.load_flow(%{shortcode: "language"}),
-      Flow.load_flow(%{shortcode: "new contact"}),
-      Flow.load_flow(%{shortcode: "preference"}),
-      Flow.load_flow(%{shortcode: "registration"})
-    }
-
-    flows =
-      if is_nil(help),
-        do: %{},
-        else: %{
-          help.id => help,
-          help.uuid => help,
-          "help" => help,
-          language.id => language,
-          language.uuid => language,
-          "language" => language,
-          new_contact.id => new_contact,
-          new_contact.uuid => new_contact,
-          "new contact" => new_contact,
-          "newcontact" => new_contact,
-          preference.id => preference,
-          preference.uuid => preference,
-          "preference" => preference,
-          registration.id => registration,
-          registration.uuid => registration,
-          "registration" => registration
-        }
-
-    Map.put(state, :flows, flows)
+    Map.put(
+      state,
+      :flows,
+      Flow.get_and_cache_flows()
+    )
   end
 
   defp reload_flows(state), do: state

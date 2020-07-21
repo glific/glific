@@ -12,6 +12,7 @@ defmodule Glific.Flows.FlowContextTest do
   @valid_attrs %{
     contact_id: 1,
     flow_id: 1,
+    flow_uuid: Ecto.UUID.generate(),
     uuid_map: %{},
     node_uuid: Ecto.UUID.generate()
   }
@@ -31,6 +32,7 @@ defmodule Glific.Flows.FlowContextTest do
       FlowContext.create_flow_context(%{
         contact_id: 1,
         flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
         uuid_map: %{}
       })
 
@@ -52,6 +54,7 @@ defmodule Glific.Flows.FlowContextTest do
       FlowContext.create_flow_context(%{
         contact_id: 1,
         flow_id: 1,
+        flow_uuid: json["flow"]["uuid"],
         uuid_map: uuid_map
       })
 
@@ -87,7 +90,7 @@ defmodule Glific.Flows.FlowContextTest do
 
   test "init_context/3 will initaite a flow context" do
     [flow | _tail] = Glific.Flows.list_flows()
-    flow = Flow.load_flow(%{shortcode: flow.shortcode})
+    flow = Flow.get_and_cache_flows(%{shortcode: flow.shortcode}) |> Map.get(flow.uuid)
     [contact | _tail] = Glific.Contacts.list_contacts()
     {:ok, flow_context, _} = FlowContext.init_context(flow, contact)
     assert flow_context.id != nil
@@ -98,9 +101,9 @@ defmodule Glific.Flows.FlowContextTest do
     assert {:error, _message} = FlowContext.execute(flow_context, [])
   end
 
-  test "execute an context should return ok touple" do
+  test "execute an context should return ok tuple" do
     [flow | _tail] = Glific.Flows.list_flows()
-    flow = Flow.load_flow(%{shortcode: flow.shortcode})
+    flow = Flow.get_and_cache_flows(%{shortcode: flow.shortcode}) |> Map.get(flow.uuid)
     [contact | _tail] = Glific.Contacts.list_contacts()
     {:ok, flow_context, _} = FlowContext.init_context(flow, contact)
     assert {:ok, _, _} = FlowContext.execute(flow_context, ["Test"])
@@ -113,7 +116,7 @@ defmodule Glific.Flows.FlowContextTest do
   end
 
   test "load_context/2 will load all the nodes and actions in memory for the context" do
-    flow = Flow.load_flow(%{shortcode: "help"})
+    flow = Flow.get_and_cache_flows(%{shortcode: "help"}) |> Map.get("help")
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
     flow_context = FlowContext.load_context(flow_context, flow)
@@ -121,7 +124,7 @@ defmodule Glific.Flows.FlowContextTest do
   end
 
   test "step_forward/2 will set the context to next node " do
-    flow = Flow.load_flow(%{shortcode: "help"})
+    flow = Flow.get_and_cache_flows(%{shortcode: "help"}) |> Map.get("help")
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
     flow_context = FlowContext.load_context(flow_context, flow)

@@ -42,6 +42,7 @@ defmodule Glific.Flows.CategoryTest do
       FlowContext.create_flow_context(%{
         contact_id: 1,
         flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
         uuid_map: uuid_map
       })
 

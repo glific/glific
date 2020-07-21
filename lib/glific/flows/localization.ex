@@ -36,6 +36,7 @@ defmodule Glific.Flows.Localization do
   @spec process(map()) :: Localization.t()
   def process(json) do
     language_map = Settings.locale_id_map()
+
     %Localization{
       localizations:
         json
@@ -43,6 +44,7 @@ defmodule Glific.Flows.Localization do
           %{},
           fn {language, translations}, acc ->
             translated = process_translation(translations)
+
             acc
             |> Map.put(language, translated)
             |> Map.put(language_map[language], translated)

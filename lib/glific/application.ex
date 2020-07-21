@@ -22,7 +22,13 @@ defmodule Glific.Application do
       {Oban, oban_config()},
 
       # Add Absinthe's subscription
-      {Absinthe.Subscription, GlificWeb.Endpoint}
+      {Absinthe.Subscription, GlificWeb.Endpoint},
+
+      # Add Cachex
+      %{
+        id: :flows_cache_id,
+        start: {Cachex, :start_link, [:flows_cache, []]}
+      }
     ]
 
     glific_children = [

@@ -152,67 +152,91 @@ defmodule Glific.Flows.Flow do
   end
 
   @doc """
-  Load the latest revision for a specific flow and setup for
-  flow execution.
-
-  The args can be a specific filter. For now, the calling function
-  either sends a shortcode map or a flow_uuid map
-  """
-  @spec load_flow(map()) :: Flow.t() | nil
-  def load_flow(args) do
-    case Repo.fetch_by(Flow, args) do
-      {:ok, flow} ->
-        flow.id
-        |> get_latest_definition()
-        |> process(flow)
-
-      _ ->
-        nil
-    end
-  end
-
-  @doc """
   Create a subflow of an existing flow
   """
   @spec start_sub_flow(FlowContext.t(), Ecto.UUID.t()) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def start_sub_flow(context, uuid) do
     # we might want to put the current one under some sort of pause status
-    flow = load_flow(%{uuid: uuid})
+    flow = get_flow(uuid)
 
     FlowContext.init_context(flow, context.contact, context.id)
+  end
+
+  @doc """
+  Return a flow for a specific uuid. Cache is not present in cache
+  """
+  @spec get_flow(Ecto.UUID.t()) :: map()
+  def get_flow(uuid) do
+    {:ok, flow} = Cachex.get(:flows_cache, uuid)
+
+    if is_nil(flow) do
+      flows = get_and_cache_flows(%{uuid: uuid})
+      Map.get(flows, uuid)
+    else
+      flow
+    end
   end
 
   @doc """
   Helper function for various genstage processes to set state
   by loading all active flows from the database and loading flows on demand
   """
-  @spec load_flows(non_neg_integer | nil, map()) :: map()
-  def load_flows(flow_id \\ nil, state) do
+  @spec get_and_cache_flows(map()) :: map()
+  def get_and_cache_flows(args \\ %{}) do
     query =
       from f in Flow,
         join: fr in assoc(f, :revisions),
         where: fr.flow_id == f.id and fr.revision_number == 0,
         select: %Flow{id: f.id, uuid: f.uuid, shortcode: f.shortcode, definition: fr.definition}
 
-    query =
-      if is_nil(flow_id),
-        do: query,
-        else: query |> where([f, _fr], f.id == ^flow_id)
+    query
+    |> args_clause(args)
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn f, acc -> one_flow(f, acc) end)
+    |> cachex_flows()
+  end
 
-    Repo.all(query)
-    |> Enum.reduce(state, fn f, state ->
-      # first get and clean the flow definition
-      flows =
-        f.definition
-        |> clean_definition()
-        |> process(f)
+  # add the appropriate where clause as needed
+  @spec args_clause(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp args_clause(query, %{id: id}),
+    do: query |> where([f, _fr], f.id == ^id)
 
-      # next, update state with all the flows
-      state
-      |> Map.put(f.id, flows)
-      |> Map.put(f.uuid, flows)
-      |> Map.put(f.shortcode, flows)
-    end)
+  defp args_clause(query, %{uuid: uuid}),
+    do: query |> where([f, _fr], f.uuid == ^uuid)
+
+  defp args_clause(query, %{shortcode: shortcode}),
+    do: query |> where([f, _fr], f.shortcode == ^shortcode)
+
+  defp args_clause(query, _args), do: query
+
+  # process one specific flow, given flow and flow_revision data
+  @spec one_flow(Flow.t(), map()) :: map()
+  defp one_flow(f, acc) do
+    # first get and clean the flow definition
+    flow =
+      f.definition
+      |> clean_definition()
+      |> process(f)
+
+    # add to map the flow with different keys
+    acc
+    |> Map.put(f.uuid, flow)
+    |> Map.put(f.shortcode, flow)
+  end
+
+  @doc """
+  Store all the flows in cachex :flows_cache. At some point, we will just use this dynamically
+  """
+  @spec cachex_flows(map()) :: map()
+  def cachex_flows(flows) do
+    Enum.each(
+      flows,
+      fn {key, flow} ->
+        {:ok, true} = Cachex.put(:flows_cache, key, flow)
+      end
+    )
+
+    flows
   end
 end

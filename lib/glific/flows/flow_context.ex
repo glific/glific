@@ -17,7 +17,7 @@ defmodule Glific.Flows.FlowContext do
     Repo
   }
 
-  @required_fields [:contact_id, :flow_id, :uuid_map]
+  @required_fields [:contact_id, :flow_id, :flow_uuid, :uuid_map]
   @optional_fields [:node_uuid, :parent_id, :results]
 
   @type t :: %__MODULE__{
@@ -27,6 +27,7 @@ defmodule Glific.Flows.FlowContext do
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           flow_id: non_neg_integer | nil,
+          flow_uuid: Ecto.UUID.t() | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           parent_id: non_neg_integer | nil,
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -43,6 +44,7 @@ defmodule Glific.Flows.FlowContext do
     field :results, :map, default: %{}
 
     field :node_uuid, Ecto.UUID
+    field :flow_uuid, Ecto.UUID
 
     belongs_to :contact, Contact
     belongs_to :flow, Flow
@@ -90,7 +92,7 @@ defmodule Glific.Flows.FlowContext do
       parent = active_context(context.contact_id)
 
       parent
-      |> load_context(Flow.load_flow(%{id: parent.flow_id}))
+      |> load_context(Flow.get_flow(parent.flow_uuid))
       |> step_forward("completed")
     end
   end
@@ -173,9 +175,11 @@ defmodule Glific.Flows.FlowContext do
         contact_id: contact.id,
         parent_id: parent_id,
         node_uuid: node.uuid,
+        flow_uuid: flow.uuid,
         node: node,
         results: %{},
         flow_id: flow.id,
+        flow: flow,
         uuid_map: flow.uuid_map
       })
 
@@ -212,6 +216,7 @@ defmodule Glific.Flows.FlowContext do
     {:ok, {:node, node}} = Map.fetch(flow.uuid_map, context.node_uuid)
 
     context
+    |> Map.put(:flow, flow)
     |> Map.put(:uuid_map, flow.uuid_map)
     |> Map.put(:node, node)
   end

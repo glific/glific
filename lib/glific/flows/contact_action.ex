@@ -27,7 +27,7 @@ defmodule Glific.Flows.ContactAction do
   @spec send_message(FlowContext.t(), Action.t()) :: FlowContext.t()
   def send_message(context, %Action{templating: templating, text: text})
       when is_nil(templating) do
-    # Since we are saving the data after loding the flow
+    # Since we are saving the data after loading the flow
     # so we have to fetch the latest contact fields
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     body = MessageVarParser.parse(text, message_vars)
