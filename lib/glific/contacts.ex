@@ -213,15 +213,13 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Check if we can send a message to user
+  Check if we can send a message to the contact
   """
 
   @spec can_send_message_to?(Contact.t()) :: boolean()
   def can_send_message_to?(contact), do: can_send_message_to?(contact, false)
 
-  @doc """
-  Check if we can send a hsm message to the contact
-  """
+  @doc false
   @spec can_send_message_to?(Contact.t(), boolean()) :: boolean()
   def can_send_message_to?(contact, is_hsm) when is_hsm == true do
     with :valid <- contact.status,
