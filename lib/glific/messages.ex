@@ -191,32 +191,37 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message(map()) :: {:ok, Message.t()}
+  @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
 
-    is_valid =
-      case attrs[:is_hsm] do
-        true -> Contacts.can_send_hsm_message_to?(contact)
-        _ -> Contacts.can_send_message_to?(contact)
-      end
-
-    if is_valid do
-      send_at = get_in(attrs, [:send_at])
-
-      {:ok, message} =
-        %{
-          sender_id: Communications.Message.organization_contact_id(),
-          flow: :outbound
-        }
-        |> Map.merge(attrs)
-        |> create_message()
-
-      update_outbound_message_tags_of_contact(message)
-      Communications.Message.send_message(message, send_at)
-    else
-      {:error, "Cannot send the message to the contact."}
+    case attrs[:is_hsm] do
+      true -> Contacts.can_send_hsm_message_to?(contact)
+      _ -> Contacts.can_send_message_to?(contact)
     end
+    |> create_and_send_message(attrs)
+  end
+
+  @doc false
+  @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()}
+  defp create_and_send_message(is_valid_contact, attrs) when is_valid_contact == true do
+    send_at = get_in(attrs, [:send_at])
+
+    {:ok, message} =
+      %{
+        sender_id: Communications.Message.organization_contact_id(),
+        flow: :outbound
+      }
+      |> Map.merge(attrs)
+      |> create_message()
+
+    update_outbound_message_tags_of_contact(message)
+    Communications.Message.send_message(message, send_at)
+  end
+
+  @doc false
+  defp create_and_send_message(_, _) do
+    {:error, "Cannot send the message to the contact."}
   end
 
   @spec update_outbound_message_tags_of_contact(Message.t()) :: :ok
