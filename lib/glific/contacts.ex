@@ -213,14 +213,20 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Check if we can send a message to the contact
+  Check if we can send a message to user
   """
-  @spec can_send_message_to?(Contact.t()) :: boolean()
 
-  def can_send_message_to?(contact) do
+  @spec can_send_message_to?(Contact.t()) :: boolean()
+  def can_send_message_to?(contact), do: can_send_message_to?(contact, false)
+
+  @doc """
+  Check if we can send a hsm message to the contact
+  """
+  @spec can_send_message_to?(Contact.t(), boolean()) :: boolean()
+  def can_send_message_to?(contact, is_hsm) when is_hsm == true do
     with :valid <- contact.status,
          :valid <- contact.provider_status,
-         true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24 do
+         true <- contact.optin_time != nil do
       true
     else
       _ -> false
@@ -228,13 +234,12 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Check if we can send a hsm message to the contact
+  Check if we can send a session message to the contact
   """
-  @spec can_send_hsm_message_to?(Contact.t()) :: boolean()
-  def can_send_hsm_message_to?(contact) do
+  def can_send_message_to?(contact, _is_hsm) do
     with :valid <- contact.status,
          :valid <- contact.provider_status,
-         true <- contact.optin_time != nil do
+         true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24 do
       true
     else
       _ -> false

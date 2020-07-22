@@ -36,10 +36,7 @@ defmodule Glific.Communications.Message do
   def send_message(message, send_at \\ nil) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
-    # Checking for hsm message, will improve logic later
-    # If user has been active in last 24 hours, don't check for hsm
-    if Contacts.can_send_message_to?(message.receiver) ||
-         (message.is_hsm && Contacts.can_send_hsm_message_to?(message.receiver)) do
+    if Contacts.can_send_message_to?(message.receiver, message.is_hsm) do
       apply(Communications.provider(), @type_to_token[message.type], [message, send_at])
       {:ok, Communications.publish_data(message, :sent_message)}
     else

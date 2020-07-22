@@ -195,10 +195,7 @@ defmodule Glific.Messages do
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
 
-    case attrs[:is_hsm] do
-      true -> Contacts.can_send_hsm_message_to?(contact)
-      _ -> Contacts.can_send_message_to?(contact)
-    end
+    Contacts.can_send_message_to?(contact, attrs[:is_hsm])
     |> create_and_send_message(attrs)
   end
 
