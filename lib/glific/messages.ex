@@ -6,6 +6,7 @@ defmodule Glific.Messages do
 
   alias Glific.{
     Communications,
+    Contacts,
     Contacts.Contact,
     Conversations.Conversation,
     Messages.Message,
@@ -190,8 +191,17 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message(map()) :: {:ok, Message.t()}
+  @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_message(attrs) do
+    contact = Glific.Contacts.get_contact!(attrs.receiver_id)
+
+    Contacts.can_send_message_to?(contact, attrs[:is_hsm])
+    |> create_and_send_message(attrs)
+  end
+
+  @doc false
+  @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()}
+  defp create_and_send_message(is_valid_contact, attrs) when is_valid_contact == true do
     send_at = get_in(attrs, [:send_at])
 
     {:ok, message} =
@@ -203,8 +213,12 @@ defmodule Glific.Messages do
       |> create_message()
 
     update_outbound_message_tags_of_contact(message)
-
     Communications.Message.send_message(message, send_at)
+  end
+
+  @doc false
+  defp create_and_send_message(_, _) do
+    {:error, "Cannot send the message to the contact."}
   end
 
   @spec update_outbound_message_tags_of_contact(Message.t()) :: :ok

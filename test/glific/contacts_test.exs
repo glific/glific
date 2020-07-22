@@ -321,10 +321,10 @@ defmodule Glific.ContactsTest do
           optout_time: DateTime.utc_now()
         })
 
-      assert false == Contacts.can_send_hsm_message_to?(contact1)
-      assert true == Contacts.can_send_hsm_message_to?(contact2)
-      assert false == Contacts.can_send_hsm_message_to?(contact3)
-      assert false == Contacts.can_send_hsm_message_to?(contact4)
+      assert false == Contacts.can_send_message_to?(contact1, true)
+      assert true == Contacts.can_send_message_to?(contact2, true)
+      assert false == Contacts.can_send_message_to?(contact3, true)
+      assert false == Contacts.can_send_message_to?(contact4, true)
     end
 
     test "contact_opted_in/2 will setup the contact as valid contact for message" do

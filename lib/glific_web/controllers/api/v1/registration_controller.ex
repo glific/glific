@@ -62,7 +62,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @spec send_otp(Conn.t(), map()) :: Conn.t()
   def send_otp(conn, %{"user" => %{"phone" => phone}}) do
     with {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
-         true <- Glific.Contacts.can_send_hsm_message_to?(contact),
+         true <- Glific.Contacts.can_send_message_to?(contact, true),
          {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
       json(conn, %{
         data: %{
@@ -91,7 +91,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
     response_data =
       with {:error, _user} <- Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}),
            {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
-           true <- Glific.Contacts.can_send_hsm_message_to?(contact) do
+           true <- Glific.Contacts.can_send_message_to?(contact, true) do
         %{is_valid: true, message: "Phone number is successfully validated"}
       else
         {:error, "Resource not found"} ->
