@@ -73,7 +73,6 @@ defmodule Glific.Taggers.TaggerHelper do
 
   @spec tag_outbound_message(Message.t()) :: :ok
   def tag_outbound_message(message) do
-
     # Add "Not Responded" tag to message
     {:ok, tag} = Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Responded"})
 
@@ -103,5 +102,4 @@ defmodule Glific.Taggers.TaggerHelper do
 
     :ok
   end
-
 end

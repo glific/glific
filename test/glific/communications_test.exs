@@ -257,7 +257,9 @@ defmodule Glific.CommunicationsTest do
     test "send message at a specific time should not send it immediately" do
       message = message_fixture()
       scheduled_time = Timex.shift(DateTime.utc_now(), hours: 2)
-      Communications.send_message(message, scheduled_time)
+      message = message |> Map.merge(%{send_at: scheduled_time})
+
+      Communications.send_message(message)
 
       assert_enqueued(worker: Worker)
       Oban.drain_queue(:gupshup)
