@@ -30,8 +30,8 @@ defmodule Glific.Taggers.TaggerHelper do
   def tag_outbound_message(message) do
     message = Glific.Messages.get_message!(message["id"])
 
-    Tags.remove_tag_from_all_message(message.contact_id, "Not Responded")
-    add_tag(message, "Not Responded")
+    message
+    |> add_not_responded_tag()
 
     {:ok, message}
   end
@@ -63,5 +63,12 @@ defmodule Glific.Taggers.TaggerHelper do
   @spec remove_not_responded_tag(Message.t()) :: Message.t()
   defp remove_not_responded_tag(message) do
     Tags.remove_tag_from_all_message(message.contact_id, "Not Responded")
+    message
+  end
+
+  @spec add_not_responded_tag(Message.t()) :: Message.t()
+  defp add_not_responded_tag(message) do
+    Tags.remove_tag_from_all_message(message.contact_id, "Not Responded")
+    add_tag(message, "Not Responded")
   end
 end
