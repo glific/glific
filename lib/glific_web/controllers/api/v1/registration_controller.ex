@@ -73,9 +73,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @doc false
   @spec send_registration_otp(Conn.t(), map()) :: Conn.t()
   def send_registration_otp(conn, %{"user" => %{"phone" => phone}}) do
-    with {:error, _user} <- Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}),
-         {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
-         true <- Glific.Contacts.can_send_message_to?(contact, true),
+    with true <- can_send_otp_to_phone?(phone),
          {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
       conn
       |> json(%{
@@ -89,5 +87,13 @@ defmodule GlificWeb.API.V1.RegistrationController do
           error: %{message: "Cannot send the registration otp to #{phone}"}
         })
     end
+  end
+
+  @doc false
+  @spec can_send_otp_to_phone?(String.t()) :: boolean
+  defp can_send_otp_to_phone?(phone) do
+    with {:error, _user} <- Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}),
+         {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
+         do: Glific.Contacts.can_send_message_to?(contact, true)
   end
 end
