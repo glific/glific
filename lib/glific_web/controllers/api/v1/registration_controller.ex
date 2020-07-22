@@ -41,18 +41,15 @@ defmodule GlificWeb.API.V1.RegistrationController do
     |> Pow.Plug.create_user(user_params_with_password_confirmation)
     |> case do
       {:ok, user, conn} ->
-        with {:ok, contact} <-
-               Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: user.phone}),
-             {:ok, tag} <- Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Staff"}),
-             {:ok, _} <- Glific.Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id}) do
-          json(conn, %{
-            data: %{
-              access_token: conn.private[:api_access_token],
-              token_expiry_time: conn.private[:api_token_expiry_time],
-              renewal_token: conn.private[:api_renewal_token]
-            }
-          })
-        end
+        {:ok, _} = add_staff_tag_to_user_contact(user)
+
+        json(conn, %{
+          data: %{
+            access_token: conn.private[:api_access_token],
+            token_expiry_time: conn.private[:api_token_expiry_time],
+            renewal_token: conn.private[:api_renewal_token]
+          }
+        })
 
       {:error, changeset, conn} ->
         errors = Changeset.traverse_errors(changeset, &ErrorHelpers.translate_error/1)
@@ -61,6 +58,16 @@ defmodule GlificWeb.API.V1.RegistrationController do
         |> put_status(500)
         |> json(%{error: %{status: 500, message: "Couldn't create user", errors: errors}})
     end
+  end
+
+  @doc false
+  @spec add_staff_tag_to_user_contact(Glific.Users.User.t()) :: {:ok, String.t()}
+  defp add_staff_tag_to_user_contact(user) do
+    with {:ok, contact} <-
+           Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: user.phone}),
+         {:ok, tag} <- Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Staff"}),
+         {:ok, _} <- Glific.Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id}),
+         do: {:ok, "Staff tag added to the user contatct"}
   end
 
   @doc false
