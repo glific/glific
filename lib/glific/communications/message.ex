@@ -69,6 +69,8 @@ defmodule Glific.Communications.Message do
 
     Tags.remove_tag_from_all_message(message["contact_id"], "Not Replied")
 
+    Taggers.TaggerHelper.tag_outbound_message(message)
+
     {:ok, message}
   end
 
