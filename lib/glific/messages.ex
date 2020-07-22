@@ -192,8 +192,6 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()}
   def create_and_send_message(attrs) do
-    send_at = get_in(attrs, [:send_at])
-
     {:ok, message} =
       %{
         sender_id: Communications.Message.organization_contact_id(),
@@ -202,7 +200,7 @@ defmodule Glific.Messages do
       |> Map.merge(attrs)
       |> create_message()
 
-    Communications.Message.send_message(message, send_at)
+    Communications.Message.send_message(message)
   end
 
   @doc """
