@@ -13,7 +13,7 @@ defmodule Glific.Taggers.TaggerHelper do
   }
 
   @doc """
-  Helper function to add tags to inbound message
+  Helper function to update tags of inbound message
   """
   @spec tag_inbound_message({:ok, Message.t()}) :: {:ok, Message.t()}
   def tag_inbound_message({:ok, message}) do
@@ -25,6 +25,9 @@ defmodule Glific.Taggers.TaggerHelper do
     {:ok, message}
   end
 
+  @doc """
+  Helper function to update tags of outbound message
+  """
   @spec tag_outbound_message(Message.t()) :: :ok
   def tag_outbound_message(message) do
     Tags.remove_tag_from_all_message(message.contact_id, "Not Responded")
