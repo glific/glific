@@ -620,6 +620,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
       add :parent_id, references(:flow_contexts, on_delete: :nilify_all), null: true
 
+      add :wakeup_at, :utc_datetime, null: true, default: nil
+      add :completed_at, :utc_datetime, null: true, default: nil
+
       timestamps(type: :utc_datetime)
     end
 

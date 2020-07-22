@@ -8,7 +8,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     max_attempts: 1,
     priority: 0
 
-  alias Glific.Communications.Message, as: Communications
+  alias Glific.Communications, as: Communications
   alias Glific.Providers.Gupshup.ApiClient
 
   @rate_name Application.fetch_env!(:glific, :provider_id)
@@ -44,13 +44,13 @@ defmodule Glific.Providers.Gupshup.Worker do
   @spec success_response(%Tesla.Env{:status => 200}, Glific.Messages.Message.t()) ::
           {:ok, Glific.Messages.Message.t()}
   defp success_response(response, message) do
-    Communications.handle_success_response(response, message)
+    Communications.Message.handle_success_response(response, message)
   end
 
   @doc false
   @spec error_response(Tesla.Env.t(), Glific.Messages.Message.t()) :: {:error, String.t()}
   defp error_response(response, message) do
-    Communications.handle_error_response(response, message)
+    Communications.Message.handle_error_response(response, message)
   end
 
   @doc """

@@ -61,10 +61,10 @@ defmodule Glific.Flows.FlowContextTest do
     FlowContext.reset_context(context_2)
   end
 
-  test "update_node_uuid/2 will update the UUID for the current context node" do
+  test "update_flow_context/2 will update the UUID for the current context node" do
     flow_context = flow_context_fixture()
     uuid = Ecto.UUID.generate()
-    flow_context_2 = FlowContext.update_node_uuid(flow_context, uuid)
+    {:ok, flow_context_2} = FlowContext.update_flow_context(flow_context, %{node_uuid: uuid})
     assert flow_context_2.node_uuid == uuid
   end
 

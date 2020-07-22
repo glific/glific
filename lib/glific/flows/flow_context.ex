@@ -18,7 +18,7 @@ defmodule Glific.Flows.FlowContext do
   }
 
   @required_fields [:contact_id, :flow_id, :flow_uuid, :uuid_map]
-  @optional_fields [:node_uuid, :parent_id, :results]
+  @optional_fields [:node_uuid, :parent_id, :results, :wakeup_at, :completed_at]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -33,6 +33,8 @@ defmodule Glific.Flows.FlowContext do
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
+          wakeup_at: :utc_datetime | nil,
+          completed_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -45,6 +47,9 @@ defmodule Glific.Flows.FlowContext do
 
     field :node_uuid, Ecto.UUID
     field :flow_uuid, Ecto.UUID
+
+    field :wakeup_at, :utc_datetime, default: nil
+    field :completed_at, :utc_datetime, default: nil
 
     belongs_to :contact, Contact
     belongs_to :flow, Flow
@@ -76,14 +81,23 @@ defmodule Glific.Flows.FlowContext do
     |> Repo.insert()
   end
 
+  @doc false
+  @spec update_flow_context(FlowContext.t(), map()) ::
+          {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
+  def update_flow_context(context, attrs) do
+    context
+    |> FlowContext.changeset(attrs)
+    |> Repo.update()
+  end
+
   @doc """
   Resets the context and sends control back to the parent context
   if one exists
   """
   @spec reset_context(FlowContext.t()) :: FlowContext.t() | nil
   def reset_context(context) do
-    # we first delete this entry
-    {:ok, _} = Repo.delete(context)
+    # we first update this entry with the completed at time
+    {:ok, context} = FlowContext.update_flow_context(context, %{completed_at: DateTime.utc_now()})
 
     # check if context has a parent_id, if so, we need to
     # load that context and keep going
@@ -95,19 +109,6 @@ defmodule Glific.Flows.FlowContext do
       |> load_context(Flow.get_flow(parent.flow_uuid))
       |> step_forward("completed")
     end
-  end
-
-  @doc """
-  Update the node_uuid, typically used to advance the context state
-  """
-  @spec update_node_uuid(FlowContext.t(), Ecto.UUID.t()) :: FlowContext.t()
-  def update_node_uuid(context, node_uuid) do
-    {:ok, context} =
-      context
-      |> FlowContext.changeset(%{node_uuid: node_uuid})
-      |> Repo.update()
-
-    context
   end
 
   @doc """
@@ -135,8 +136,8 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec set_node(FlowContext.t(), Node.t()) :: FlowContext.t()
   def set_node(context, node) do
-    update_node_uuid(context, node.uuid)
-    |> Map.put(:node, node)
+    {:ok, context} = update_flow_context(context, %{node_uuid: node.uuid})
+    %{context | node: node}
   end
 
   @doc """
@@ -196,11 +197,14 @@ defmodule Glific.Flows.FlowContext do
   @spec active_context(non_neg_integer) :: FlowContext.t() | nil
   def active_context(contact_id) do
     # need to fix this instead of assuming the highest id is the most
-    # active context (or is that a wrong assumption). Mayve a context number? like
+    # active context (or is that a wrong assumption). Maybe a context number? like
     # we do for other tables
     query =
       from fc in FlowContext,
-        where: fc.contact_id == ^contact_id and not is_nil(fc.node_uuid),
+        where:
+          fc.contact_id == ^contact_id and
+            not is_nil(fc.node_uuid) and
+            is_nil(fc.completed_at),
         order_by: [desc: fc.id],
         limit: 1
 
