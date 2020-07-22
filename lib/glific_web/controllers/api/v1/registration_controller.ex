@@ -59,51 +59,22 @@ defmodule GlificWeb.API.V1.RegistrationController do
   end
 
   @doc false
-  @spec send_otp(Conn.t(), map()) :: Conn.t()
-  def send_otp(conn, %{"user" => %{"phone" => phone}}) do
-    with {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
+  @spec send_registration_otp(Conn.t(), map()) :: Conn.t()
+  def send_registration_otp(conn, %{"user" => %{"phone" => phone}}) do
+    with {:error, _user} <- Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}),
+         {:ok, contact}  <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
          true <- Glific.Contacts.can_send_message_to?(contact, true),
          {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
-      json(conn, %{
-        data: %{
-          phone: phone,
-          message: "OTP sent successfully to #{phone}"
-        }
-      })
+          conn
+          |> json(%{
+              data: %{ phone: phone, message: "OTP sent successfully to #{phone}"}
+            })
     else
-      {:error, _} ->
-        conn
+      _ -> conn
         |> put_status(400)
-        |> json(%{error: %{status: 400, message: "Phone number is incorrect"}})
-
-      false ->
-        conn
         |> json(%{
-          error: %{status: 200, message: "Contact is not opted in yet"}
-        })
+              error: %{message: "Cannot send the registration otp to #{phone}"}
+            })
     end
-  end
-
-  @doc false
-  @spec validate_phone(Conn.t(), map()) :: Conn.t()
-  def validate_phone(conn, %{"user" => %{"phone" => phone}}) do
-    # we can put more validations for phone number here
-    response_data =
-      with {:error, _user} <- Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}),
-           {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
-           true <- Glific.Contacts.can_send_message_to?(contact, true) do
-        %{is_valid: true, message: "Phone number is successfully validated"}
-      else
-        {:error, "Resource not found"} ->
-          %{is_valid: false, message: "Phone number is incorrect"}
-
-        false ->
-          %{is_valid: false, message: "Contact is not opted in yet"}
-
-        {:ok, _} ->
-          %{is_valid: false, message: "Phone number already exists"}
-      end
-
-    json(conn, %{data: response_data})
   end
 end
