@@ -120,15 +120,23 @@ defmodule Glific.CommunicationsTest do
       assert message_2.contact_id == message_1.contact_id
 
       {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Replied"})
+      {:ok, unread_tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Unread"})
 
       message1_tag =
         Glific.Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
+
+      message_unread_tag =
+        Glific.Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: unread_tag.id})
 
       Communications.send_message(message_2)
       assert_enqueued(worker: Worker)
       Oban.drain_queue(:gupshup)
 
       assert_raise Ecto.NoResultsError, fn -> Glific.Tags.get_message_tag!(message1_tag.id) end
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Glific.Tags.get_message_tag!(message_unread_tag.id)
+      end
     end
 
     test "if response status code is not 200 handle the error response " do

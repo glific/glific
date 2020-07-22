@@ -387,12 +387,17 @@ defmodule Glific.Tags do
     Remove a specific tag from contact messages
   """
   @spec remove_tag_from_all_message(integer(), String.t()) :: list()
-  def remove_tag_from_all_message(contact_id, tag_label) do
+  def remove_tag_from_all_message(contact_id, tag_label) when is_binary(tag_label) do
+    remove_tag_from_all_message(contact_id, [tag_label])
+  end
+
+  @spec remove_tag_from_all_message(integer(), [String.t()]) :: list()
+  def remove_tag_from_all_message(contact_id, tag_label_list) do
     query =
       from mt in MessageTag,
         join: m in assoc(mt, :message),
         join: t in assoc(mt, :tag),
-        where: m.contact_id == ^contact_id and t.label == ^tag_label,
+        where: m.contact_id == ^contact_id and t.label in ^tag_label_list,
         select: [mt.message_id]
 
     {_, deleted_rows} = Repo.delete_all(query)
