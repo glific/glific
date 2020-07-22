@@ -3,8 +3,6 @@ defmodule Glific.Taggers.TaggerHelper do
   Helper functions for tagging incoming messages
   """
 
-  import Ecto.Query
-
   alias Glific.{
     Messages.Message,
     Repo,
@@ -28,10 +26,14 @@ defmodule Glific.Taggers.TaggerHelper do
   @doc """
   Helper function to update tags of outbound message
   """
-  @spec tag_outbound_message(Message.t()) :: :ok
+  @spec tag_outbound_message(map()) :: {:ok, Message.t()}
   def tag_outbound_message(message) do
+    message = Glific.Messages.get_message!(message["id"])
+
     Tags.remove_tag_from_all_message(message.contact_id, "Not Responded")
     add_tag(message, "Not Responded")
+
+    {:ok, message}
   end
 
   @spec add_tag(Message.t(), String.t()) :: Message.t()
