@@ -78,69 +78,43 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
   end
 
-  describe "send_otp/2" do
+  describe "send_registration_otp/2" do
     test "send otp", %{conn: conn} do
       {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
-      Glific.Contacts.update_contact(receiver, %{optin_time: DateTime.utc_now()})
+      Glific.Contacts.contact_opted_in(receiver.phone, DateTime.utc_now())
 
-      valid_params = %{
-        "user" => %{
-          "phone" => receiver.phone
-        }
-      }
+      valid_params = %{ "user" => %{ "phone" => receiver.phone}}
 
-      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, valid_params))
       assert json = json_response(conn, 200)
       assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
     end
 
     test "send otp to invalid contact", %{conn: conn} do
-      invalid_params = %{
-        "user" => %{
-          "phone" => "invalid contact"
-        }
-      }
-
-      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
+      phone = "invalid contact"
+      invalid_params = %{"user" => %{ "phone" => phone}}
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
       assert json = json_response(conn, 400)
-      assert get_in(json, ["error", "message"]) == "Phone number is incorrect"
-    end
-  end
-
-  describe "validate_phone/2" do
-    setup do
-      Glific.SeedsDev.seed_users()
-      :ok
+      assert get_in(json, ["error", "message"]) == "Cannot send the registration otp to #{phone}"
     end
 
-    test "validate phone", %{conn: conn} do
+    test "send otp to existing user will return an error", %{conn: conn} do
+      [user | _] = Glific.Users.list_users
+      phone = user.phone
+      invalid_params = %{"user" => %{ "phone" => phone}}
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
+      assert json = json_response(conn, 400)
+      assert get_in(json, ["error", "message"]) == "Cannot send the registration otp to #{phone}"
+    end
+
+    test "send otp to optout contact will return an error", %{conn: conn} do
       {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
-      Glific.Contacts.update_contact(receiver, %{optin_time: DateTime.utc_now()})
-
-      valid_params = %{
-        "user" => %{
-          "phone" => receiver.phone
-        }
-      }
-
-      conn = post(conn, Routes.api_v1_registration_path(conn, :validate_phone, valid_params))
-      assert json = json_response(conn, 200)
-      assert get_in(json, ["data", "is_valid"]) == true
+      Glific.Contacts.contact_opted_out(receiver.phone, DateTime.utc_now())
+      invalid_params = %{"user" => %{ "phone" => receiver.phone}}
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
+      assert json = json_response(conn, 400)
+      assert get_in(json, ["error", "message"]) == "Cannot send the registration otp to #{receiver.phone}"
     end
 
-    test "validate phone of already existing user", %{conn: conn} do
-      {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: "NGO Basic User 1"})
-
-      invalid_params = %{
-        "user" => %{
-          "phone" => user.phone
-        }
-      }
-
-      conn = post(conn, Routes.api_v1_registration_path(conn, :validate_phone, invalid_params))
-      assert json = json_response(conn, 200)
-      assert get_in(json, ["data", "is_valid"]) == false
-      assert get_in(json, ["data", "message"]) == "Phone number already exists"
-    end
   end
 end
