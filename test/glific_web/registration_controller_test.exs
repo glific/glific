@@ -41,6 +41,16 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json["data"]["access_token"]
       assert json["data"]["renewal_token"]
       assert json["data"]["token_expiry_time"]
+
+      # We will tag the user as a contact tag
+      {:ok, staff_tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Staff"})
+      {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: receiver.phone})
+
+      assert {:ok, _contact_tag} =
+               Glific.Repo.fetch_by(Glific.Tags.ContactTag, %{
+                 contact_id: contact.id,
+                 tag_id: staff_tag.id
+               })
     end
 
     test "with wrong otp", %{conn: conn} do
@@ -83,26 +93,34 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
       Glific.Contacts.contact_opted_in(receiver.phone, DateTime.utc_now())
 
-      valid_params = %{ "user" => %{ "phone" => receiver.phone}}
+      valid_params = %{"user" => %{"phone" => receiver.phone}}
 
-      conn = post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, valid_params))
+      conn =
+        post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, valid_params))
+
       assert json = json_response(conn, 200)
       assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
     end
 
     test "send otp to invalid contact", %{conn: conn} do
       phone = "invalid contact"
-      invalid_params = %{"user" => %{ "phone" => phone}}
-      conn = post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
+      invalid_params = %{"user" => %{"phone" => phone}}
+
+      conn =
+        post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
+
       assert json = json_response(conn, 400)
       assert get_in(json, ["error", "message"]) == "Cannot send the registration otp to #{phone}"
     end
 
     test "send otp to existing user will return an error", %{conn: conn} do
-      [user | _] = Glific.Users.list_users
+      [user | _] = Glific.Users.list_users()
       phone = user.phone
-      invalid_params = %{"user" => %{ "phone" => phone}}
-      conn = post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
+      invalid_params = %{"user" => %{"phone" => phone}}
+
+      conn =
+        post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
+
       assert json = json_response(conn, 400)
       assert get_in(json, ["error", "message"]) == "Cannot send the registration otp to #{phone}"
     end
@@ -110,11 +128,15 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     test "send otp to optout contact will return an error", %{conn: conn} do
       {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
       Glific.Contacts.contact_opted_out(receiver.phone, DateTime.utc_now())
-      invalid_params = %{"user" => %{ "phone" => receiver.phone}}
-      conn = post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
-      assert json = json_response(conn, 400)
-      assert get_in(json, ["error", "message"]) == "Cannot send the registration otp to #{receiver.phone}"
-    end
+      invalid_params = %{"user" => %{"phone" => receiver.phone}}
 
+      conn =
+        post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
+
+      assert json = json_response(conn, 400)
+
+      assert get_in(json, ["error", "message"]) ==
+               "Cannot send the registration otp to #{receiver.phone}"
+    end
   end
 end

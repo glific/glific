@@ -40,14 +40,19 @@ defmodule GlificWeb.API.V1.RegistrationController do
     conn
     |> Pow.Plug.create_user(user_params_with_password_confirmation)
     |> case do
-      {:ok, _user, conn} ->
-        json(conn, %{
-          data: %{
-            access_token: conn.private[:api_access_token],
-            token_expiry_time: conn.private[:api_token_expiry_time],
-            renewal_token: conn.private[:api_renewal_token]
-          }
-        })
+      {:ok, user, conn} ->
+        with {:ok, contact} <-
+               Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: user.phone}),
+             {:ok, tag} <- Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Staff"}),
+             {:ok, _} <- Glific.Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id}) do
+          json(conn, %{
+            data: %{
+              access_token: conn.private[:api_access_token],
+              token_expiry_time: conn.private[:api_token_expiry_time],
+              renewal_token: conn.private[:api_renewal_token]
+            }
+          })
+        end
 
       {:error, changeset, conn} ->
         errors = Changeset.traverse_errors(changeset, &ErrorHelpers.translate_error/1)
@@ -62,19 +67,20 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @spec send_registration_otp(Conn.t(), map()) :: Conn.t()
   def send_registration_otp(conn, %{"user" => %{"phone" => phone}}) do
     with {:error, _user} <- Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone}),
-         {:ok, contact}  <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
+         {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
          true <- Glific.Contacts.can_send_message_to?(contact, true),
          {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
-          conn
-          |> json(%{
-              data: %{ phone: phone, message: "OTP sent successfully to #{phone}"}
-            })
+      conn
+      |> json(%{
+        data: %{phone: phone, message: "OTP sent successfully to #{phone}"}
+      })
     else
-      _ -> conn
+      _ ->
+        conn
         |> put_status(400)
         |> json(%{
-              error: %{message: "Cannot send the registration otp to #{phone}"}
-            })
+          error: %{message: "Cannot send the registration otp to #{phone}"}
+        })
     end
   end
 end
