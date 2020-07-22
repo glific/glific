@@ -32,8 +32,7 @@ defmodule GlificWeb.Router do
     pipe_through :api
 
     resources "/registration", RegistrationController, singleton: true, only: [:create]
-    post "/registration/send_otp", RegistrationController, :send_otp
-    post "/registration/validate_phone", RegistrationController, :validate_phone
+    post "/registration/send-registration-otp", RegistrationController, :send_registration_otp
     resources "/session", SessionController, singleton: true, only: [:create, :delete]
     post "/session/renew", SessionController, :renew
   end
