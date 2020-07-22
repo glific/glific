@@ -56,9 +56,9 @@ defmodule Glific.Providers.Glifproxy.Worker do
 
     new_payload = generate_payload(new_destination, name, message)
 
-    # lets sleep for 500 milli-seconds before posting, to avoid race
+    # lets sleep for 1 seconds before posting, to avoid race
     # conditions with flows et al
-    :timer.sleep(500)
+    :timer.sleep(1000)
 
     ApiClient.post("/gupshup", new_payload)
     |> handle_response(message)

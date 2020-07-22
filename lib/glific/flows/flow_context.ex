@@ -158,15 +158,14 @@ defmodule Glific.Flows.FlowContext do
   @spec init_context(Flow.t(), Contact.t(), non_neg_integer | nil) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def init_context(flow, contact, parent_id \\ nil) do
-    # delete previous context only if we are not starting a sub flow
+    # set previous context only if we are not starting a sub flow
     if is_nil(parent_id) do
-      query =
-        from fc in FlowContext,
-          where: fc.contact_id == ^contact.id
+      now = DateTime.utc_now()
 
-      # dont care about the return, since it would have deleted
-      # either 0 or 1 entries
-      Repo.delete_all(query)
+      FlowContext
+      |> where([fc], fc.contact_id == ^contact.id)
+      |> where([fc], is_nil(fc.completed_at))
+      |> Repo.update_all(set: [completed_at: now, updated_at: now])
     end
 
     node = hd(flow.nodes)
@@ -189,6 +188,17 @@ defmodule Glific.Flows.FlowContext do
     |> Repo.preload(:contact)
     # lets do the first steps and start executing it till we need a message
     |> execute([])
+  end
+
+  @spec wakeup() :: [FlowContext.t()]
+  @doc """
+  Find all the contexts which need to be woken up and processed
+  """
+  def wakeup do
+    FlowContext
+    |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
+    |> where([fc], is_nil(fc.completed_at))
+    |> Repo.all()
   end
 
   @doc """
@@ -220,6 +230,7 @@ defmodule Glific.Flows.FlowContext do
     {:ok, {:node, node}} = Map.fetch(flow.uuid_map, context.node_uuid)
 
     context
+    |> Repo.preload(:contact)
     |> Map.put(:flow, flow)
     |> Map.put(:uuid_map, flow.uuid_map)
     |> Map.put(:node, node)

@@ -57,7 +57,7 @@ defmodule Glific.Flows.ExitTest do
     assert is_nil(result)
     assert messages == []
     context = Repo.get!(FlowContext, context.id)
-    assert ! is_nil(context.completed_at)
+    assert !is_nil(context.completed_at)
   end
 
   # lets set up a node where the execute fails. A lot easier for us to test that

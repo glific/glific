@@ -115,18 +115,7 @@ defmodule Glific.Flows.Router do
       when type == "switch" do
     [msg | rest] = message_stream
 
-    # go thru the cases and find the first one that succeeds
-    c =
-      Enum.find(
-        router.cases,
-        nil,
-        fn c -> Case.execute(c, context, msg) end
-      )
-
-    category_uuid =
-      if is_nil(c),
-        do: router.default_category_uuid,
-        else: c.category_uuid
+    category_uuid = find_category(router, context, msg)
 
     # find the category object and send it over
     {:ok, {:category, category}} = Map.fetch(context.uuid_map, category_uuid)
@@ -142,4 +131,28 @@ defmodule Glific.Flows.Router do
 
   def execute(_router, _context, _message_stream),
     do: raise(UndefinedFunctionError, message: "Unimplemented router type and/or wait type")
+
+  @spec find_category(Router.t(), FlowContext.t(), String.t()) :: Ecto.UUID.t()
+  defp find_category(router, _context, "No Response" = msg) do
+    # Find the category with name == "No Response"
+    category = Enum.find(router.categories, fn c -> c.name == msg end)
+
+    if is_nil(category),
+      do: raise(MatchError, message: "Did not find a no response category"),
+      else: category.uuid
+  end
+
+  defp find_category(router, context, msg) do
+    # go thru the cases and find the first one that succeeds
+    c =
+      Enum.find(
+        router.cases,
+        nil,
+        fn c -> Case.execute(c, context, msg) end
+      )
+
+    if is_nil(c),
+      do: router.default_category_uuid,
+      else: c.category_uuid
+  end
 end
