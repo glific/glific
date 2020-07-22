@@ -12,7 +12,8 @@ defmodule Glific.Flows.Router do
     Case,
     Category,
     FlowContext,
-    Node
+    Node,
+    Wait
   }
 
   @required_fields [:type, :operand, :default_category_uuid, :cases, :categories]
@@ -20,10 +21,10 @@ defmodule Glific.Flows.Router do
   @type t() :: %__MODULE__{
           type: String.t() | nil,
           result_name: String.t() | nil,
-          wait_type: String.t() | nil,
           default_category_uuid: Ecto.UUID.t() | nil,
           default_category: Category.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
+          wait: Wait.t() | nil,
           node: Node.t() | nil,
           cases: [Case.t()] | nil,
           categories: [Category.t()] | nil
@@ -37,6 +38,8 @@ defmodule Glific.Flows.Router do
 
     field :default_category_uuid, Ecto.UUID
     embeds_one :default_category, Category
+
+    embeds_one :wait, Wait
 
     field :node_uuid, Ecto.UUID
     embeds_one :node, Node
@@ -56,8 +59,7 @@ defmodule Glific.Flows.Router do
       node_uuid: node.uuid,
       type: json["type"],
       operand: json["operand"],
-      result_name: json["result_name"],
-      wait_type: json["wait"]["type"]
+      result_name: json["result_name"]
     }
 
     {categories, uuid_map} =
@@ -71,11 +73,6 @@ defmodule Glific.Flows.Router do
     if !Map.has_key?(uuid_map, json["default_category_uuid"]),
       do: raise(ArgumentError, message: "Default Category ID does not exist for Router")
 
-    router =
-      router
-      |> Map.put(:categories, categories)
-      |> Map.put(:default_category_uuid, json["default_category_uuid"])
-
     {cases, uuid_map} =
       Flows.build_flow_objects(
         json["cases"],
@@ -83,8 +80,19 @@ defmodule Glific.Flows.Router do
         &Case.process/3
       )
 
-    router = Map.put(router, :cases, cases)
-    {router, uuid_map}
+    {wait, uuid_map} =
+      if Map.has_key?(json, "wait"),
+        do: Wait.process(json["wait"], uuid_map, router),
+        else: {nil, uuid_map}
+
+    {
+      router
+      |> Map.put(:categories, categories)
+      |> Map.put(:default_category_uuid, json["default_category_uuid"])
+      |> Map.put(:cases, cases)
+      |> Map.put(:wait, wait),
+      uuid_map
+    }
   end
 
   @doc """
@@ -93,8 +101,11 @@ defmodule Glific.Flows.Router do
   """
   @spec execute(Router.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def execute(_router, context, message_stream) when message_stream == [],
-    do: {:ok, context, []}
+  def execute(nil, context, message_stream),
+    do: {:ok, context, message_stream}
+
+  def execute(router, context, []),
+    do: Wait.execute(router.wait, context, [])
 
   def execute(
         %{type: type} = router,
@@ -104,18 +115,7 @@ defmodule Glific.Flows.Router do
       when type == "switch" do
     [msg | rest] = message_stream
 
-    # go thru the cases and find the first one that succeeds
-    c =
-      Enum.find(
-        router.cases,
-        nil,
-        fn c -> Case.execute(c, context, msg) end
-      )
-
-    category_uuid =
-      if is_nil(c),
-        do: router.default_category_uuid,
-        else: c.category_uuid
+    category_uuid = find_category(router, context, msg)
 
     # find the category object and send it over
     {:ok, {:category, category}} = Map.fetch(context.uuid_map, category_uuid)
@@ -131,4 +131,28 @@ defmodule Glific.Flows.Router do
 
   def execute(_router, _context, _message_stream),
     do: raise(UndefinedFunctionError, message: "Unimplemented router type and/or wait type")
+
+  @spec find_category(Router.t(), FlowContext.t(), String.t()) :: Ecto.UUID.t()
+  defp find_category(router, _context, "No Response" = msg) do
+    # Find the category with name == "No Response"
+    category = Enum.find(router.categories, fn c -> c.name == msg end)
+
+    if is_nil(category),
+      do: raise(MatchError, message: "Did not find a no response category"),
+      else: category.uuid
+  end
+
+  defp find_category(router, context, msg) do
+    # go thru the cases and find the first one that succeeds
+    c =
+      Enum.find(
+        router.cases,
+        nil,
+        fn c -> Case.execute(c, context, msg) end
+      )
+
+    if is_nil(c),
+      do: router.default_category_uuid,
+      else: c.category_uuid
+  end
 end

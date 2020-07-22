@@ -296,7 +296,7 @@ defmodule Glific.SeedsDev do
     timed_flow =
       Repo.insert!(%Flow{
         name: "Timed Workflow",
-        shortcode: "registration_timed",
+        shortcode: "timed",
         version_number: "13.1.0",
         uuid: "8390ded3-06c3-4df4-b428-064666f085c7",
         language_id: en_us.id
