@@ -194,6 +194,7 @@ defmodule Glific.Messages do
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
+    attrs = Map.put(attrs, :receiver, contact)
 
     Contacts.can_send_message_to?(contact, attrs[:is_hsm])
     |> create_and_send_message(attrs)
@@ -212,8 +213,10 @@ defmodule Glific.Messages do
       |> Map.merge(attrs)
       |> create_message()
 
-    update_outbound_message_tags_of_contact(message)
-    Communications.Message.send_message(message, send_at)
+    message
+    |> Map.put(:receiver, attrs[:receiver])
+    |> update_outbound_message_tags_of_contact()
+    |> Communications.Message.send_message(send_at)
   end
 
   @doc false
@@ -221,7 +224,7 @@ defmodule Glific.Messages do
     {:error, "Cannot send the message to the contact."}
   end
 
-  @spec update_outbound_message_tags_of_contact(Message.t()) :: :ok
+  @spec update_outbound_message_tags_of_contact(Message.t()) :: Message.t()
   defp update_outbound_message_tags_of_contact(message) do
     # Add "Not Responded" tag to message
     {:ok, tag} = Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Responded"})
@@ -250,7 +253,7 @@ defmodule Glific.Messages do
            |> Repo.one(),
          do: Glific.Tags.delete_message_tag(message_tag)
 
-    :ok
+    message
   end
 
   @doc """
