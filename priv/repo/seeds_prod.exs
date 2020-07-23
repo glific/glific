@@ -511,10 +511,10 @@ Repo.insert!(%SessionTemplate{
 Repo.insert!(%SavedSearch{
   label: "All unread conversations",
   args: %{
-    includeTags: [to_string(unread.id)],
+    filter: %{includeTags: [to_string(unread.id)]},
     contactOpts: %{limit: 10},
     messageOpts: %{limit: 5},
-    term: "search_term"
+    term: ""
   },
   is_reserved: true
 })
@@ -524,10 +524,10 @@ Repo.insert!(%SavedSearch{
 Repo.insert!(%SavedSearch{
   label: "Conversations read but not replied",
   args: %{
-    includeTags: [to_string(not_replied.id)],
+    filter: %{includeTags: [to_string(not_replied.id)]},
     contactOpts: %{limit: 10},
     messageOpts: %{limit: 5},
-    term: "search_term"
+    term: ""
   },
 })
 
@@ -536,10 +536,10 @@ Repo.insert!(%SavedSearch{
 Repo.insert!(%SavedSearch{
   label: "Conversations read but not responded",
   args: %{
-    includeTags: [to_string(not_responded.id)],
+    filter: %{includeTags: [to_string(not_responded.id)]},
     contactOpts: %{limit: 10},
     messageOpts: %{limit: 5},
-    term: "search_term"
+    term: ""
   },
 })
 
@@ -548,10 +548,10 @@ Repo.insert!(%SavedSearch{
 Repo.insert!(%SavedSearch{
   label: "Conversations where the contact has opted out",
   args: %{
-    includeTags: [to_string(optout.id)],
+    filter: %{includeTags: [to_string(optout.id)]},
     contactOpts: %{limit: 10},
     messageOpts: %{limit: 5},
-    term: "search_term"
+    term: ""
   },
 })
 

@@ -2,11 +2,23 @@ defmodule GlificWeb.Schema.SearchTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Contacts,
+    Contacts.Contact,
+    Messages,
+    Repo,
+    Searches,
+    Searches.SavedSearch,
+    SeedsDev,
+    Tags.MessageTags,
+    Tags.Tag
+  }
+
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_messages()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_messages()
     :ok
   end
 
@@ -27,7 +39,7 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   test "savedSearch id returns one saved search or nil" do
-    [saved_search | _tail] = Glific.Searches.list_saved_searches()
+    [saved_search | _tail] = Searches.list_saved_searches()
 
     result = query_gql_by(:by_id, variables: %{"id" => saved_search.id})
     assert {:ok, query_data} = result
@@ -68,7 +80,7 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   test "update a saved search and test possible scenarios and errors" do
-    [saved_search, saved_search2 | _tail] = Glific.Searches.list_saved_searches()
+    [saved_search, saved_search2 | _tail] = Searches.list_saved_searches()
 
     result =
       query_gql_by(:update,
@@ -95,7 +107,7 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   test "delete a saved search" do
-    [saved_search | _tail] = Glific.Searches.list_saved_searches()
+    [saved_search | _tail] = Searches.list_saved_searches()
 
     result = query_gql_by(:delete, variables: %{"id" => saved_search.id})
     assert {:ok, query_data} = result
@@ -109,7 +121,7 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   test "search for conversations" do
-    {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
     receiver_id = to_string(receiver.id)
 
@@ -165,13 +177,13 @@ defmodule GlificWeb.Schema.SearchTest do
           "term" => "",
           "shouldSave" => false,
           "saveSearchLabel" => "",
-          "contactOpts" => %{"limit" => Glific.Contacts.count_contacts()},
+          "contactOpts" => %{"limit" => Contacts.count_contacts()},
           "messageOpts" => %{"limit" => 1}
         }
       )
 
     assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "search"])) == Glific.Contacts.count_contacts()
+    assert length(get_in(query_data, [:data, "search"])) == Contacts.count_contacts()
   end
 
   test "save search will save the arguments" do
@@ -188,16 +200,16 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    assert {:ok, saved_search} =
-             Glific.Repo.fetch_by(Glific.Searches.SavedSearch, %{label: "Save with Search"})
+    assert {:ok, saved_search} = Repo.fetch_by(SavedSearch, %{label: "Save with Search"})
   end
 
   test "search for not replied tagged messages in conversations" do
-    {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Glific Admin"})
-    {:ok, sender} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
-    {:ok, not_replied_tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Replied"})
+    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
+    {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+    {:ok, not_replied_tag} = Repo.fetch_by(Tag, %{label: "Not Replied"})
 
-    {:ok, saved_search} = Glific.Repo.fetch_by(Glific.Searches.SavedSearch, %{label: "Conversations read but not replied"})
+    {:ok, saved_search} =
+      Repo.fetch_by(SavedSearch, %{label: "Conversations read but not replied"})
 
     {:ok, message} =
       %{
@@ -206,9 +218,10 @@ defmodule GlificWeb.Schema.SearchTest do
         type: :text,
         sender_id: sender.id,
         receiver_id: receiver.id
-      } |> Glific.Messages.create_message()
+      }
+      |> Messages.create_message()
 
-    Glific.Tags.MessageTags.update_message_tags(%{
+    MessageTags.update_message_tags(%{
       message_id: message.id,
       add_tag_ids: [not_replied_tag.id],
       delete_tag_ids: []
@@ -221,7 +234,8 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == to_string(sender.id)
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
+             to_string(sender.id)
 
     tags = get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "tags"])
 

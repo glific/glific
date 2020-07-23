@@ -1,5 +1,7 @@
-query search($term: String!, $shouldSave: Boolean, $saveSearchLabel: String, $contactOpts: Opts!, $messageOpts: Opts!) {
-  search(term: $term, saveSearch: $shouldSave, saveSearchLabel: $saveSearchLabel, contactOpts: $contactOpts, messageOpts: $messageOpts) {
+query search($term: String!, $shouldSave: Boolean, $saveSearchLabel: String,
+  $contactOpts: Opts!, $messageOpts: Opts!, $filter: SearchFilter) {
+  search(term: $term, saveSearch: $shouldSave, saveSearchLabel: $saveSearchLabel,
+    contactOpts: $contactOpts, messageOpts: $messageOpts, filter: $filter) {
     contact {
       id
       name
@@ -16,5 +18,3 @@ query search($term: String!, $shouldSave: Boolean, $saveSearchLabel: String, $co
     }
   }
 }
-
-
