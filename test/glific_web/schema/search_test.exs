@@ -271,8 +271,6 @@ defmodule GlificWeb.Schema.SearchTest do
         variables: saved_search.args
       )
 
-      IO.inspect result
-
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
