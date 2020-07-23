@@ -1,18 +1,24 @@
 defmodule Glific.MixProject do
   use Mix.Project
 
-  @github_url "https://github.com/glific/"
-  @home_url "https://github.com/glific/"
+  @github_url "https://github.com/glific/glific/"
+  @home_url "https://glific.io"
 
   def project do
     [
       app: :glific,
-      version: "0.1.0",
-      elixir: "~> 1.7",
+      version: "0.2.0",
+      elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
         ignore_warnings: ".dialyzer_ignore.exs"
+      ],
+      releases: [
+        prod: [
+          include_executable_for: [:unix],
+          steps: [:assemble, :tar]
+        ]
       ],
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
@@ -48,7 +54,7 @@ defmodule Glific.MixProject do
   def application do
     [
       mod: {Glific.Application, []},
-      extra_applications: [:logger, :logger_file_backend, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :mnesia]
     ]
   end
 
@@ -105,7 +111,12 @@ defmodule Glific.MixProject do
       {:gen_stage, "~> 1.0"},
       {:passwordless_auth, git: "https://github.com/glific/passwordless_auth.git"},
       {:timex, "~> 3.0"},
+<<<<<<< HEAD
       {:logger_file_backend, "~> 0.0.10"}
+=======
+      {:slugify, "~> 1.3"},
+      {:cachex, "~> 3.2"}
+>>>>>>> 449a1f8c1ce218ed2dd74f106de9609084a59073
     ]
   end
 

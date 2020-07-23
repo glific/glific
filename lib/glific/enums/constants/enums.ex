@@ -13,6 +13,21 @@ defmodule Glific.Enums.Constants do
       # the status determines if we can send a message to the contact
       @contact_status_const [:failed, :invalid, :processing, :valid]
 
+      # the enums for the flow engine
+      @flow_case_const [:has_any_word]
+
+      @flow_router_const [:switch]
+
+      @flow_action_type_const [
+        :enter_flow,
+        :send_msg,
+        :set_contact_language,
+        :wait_for_response,
+        :set_contact_field
+      ]
+
+      @flow_type_const [:message]
+
       # the direction of the messages: inbound: provider to glific, outbound: glific to provider
       @message_flow_const [:inbound, :outbound]
 

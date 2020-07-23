@@ -31,7 +31,13 @@ defmodule GlificWeb.APIAuthPlug do
   @impl true
   @spec create(Conn.t(), map(), Config.t()) :: {Conn.t(), map()}
   def create(conn, user, config) do
-    store_config = store_config(config)
+    # Setting token expiry time to 90 minutes
+    store_config =
+      store_config(config)
+      |> Keyword.put(:ttl, :timer.minutes(90))
+
+    token_expiry_time = DateTime.utc_now() |> DateTime.add(store_config[:ttl], :millisecond)
+
     access_token = Pow.UUID.generate()
     renewal_token = Pow.UUID.generate()
 
@@ -39,6 +45,7 @@ defmodule GlificWeb.APIAuthPlug do
       conn
       |> Conn.put_private(:api_access_token, sign_token(conn, access_token, config))
       |> Conn.put_private(:api_renewal_token, sign_token(conn, renewal_token, config))
+      |> Conn.put_private(:api_token_expiry_time, token_expiry_time)
 
     CredentialsCache.put(store_config, access_token, {user, [renewal_token: renewal_token]})
 
@@ -120,7 +127,7 @@ defmodule GlificWeb.APIAuthPlug do
     do: Plug.verify_token(conn, signing_salt(), token, config)
 
   defp store_config(config) do
-    backend = Config.get(config, :cache_store_backend, Pow.Store.Backend.EtsCache)
+    backend = Config.get(config, :cache_store_backend, Pow.Store.Backend.MnesiaCache)
 
     [backend: backend]
   end

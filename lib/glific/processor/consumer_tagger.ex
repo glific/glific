@@ -9,6 +9,8 @@ defmodule Glific.Processor.ConsumerTagger do
 
   alias Glific.{
     Communications,
+    Flows.Flow,
+    Flows.FlowContext,
     Messages.Message,
     Processor.Helper,
     Repo,
@@ -21,6 +23,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @min_demand 0
   @max_demand 1
+  @wakeup_timeout_ms 1 * 60 * 1000
 
   @doc false
   @spec start_link([]) :: GenServer.on_start()
@@ -36,18 +39,26 @@ defmodule Glific.Processor.ConsumerTagger do
       %{
         producer: opts[:producer],
         numeric_map: Numeric.get_numeric_map(),
-        numeric_tag_id: 0
+        numeric_tag_id: 0,
+        flows: %{}
       }
       |> reload
+      |> reload_flows
 
-    {:producer_consumer, state,
-     dispatcher: GenStage.BroadcastDispatcher,
-     subscribe_to: [
-       {state.producer,
-        selector: fn %{type: type} -> type == :text end,
-        min_demand: @min_demand,
-        max_demand: @max_demand}
-     ]}
+    # process the wakeup queue every 1 minute
+    Process.send_after(self(), :wakeup_timeout, @wakeup_timeout_ms)
+
+    {
+      :consumer,
+      state,
+      # dispatcher: GenStage.BroadcastDispatcher,
+      subscribe_to: [
+        {state.producer,
+         selector: fn %{type: type} -> type == :text end,
+         min_demand: @min_demand,
+         max_demand: @max_demand}
+      ]
+    }
   end
 
   defp reload(%{numeric_tag_id: numeric_tag_id} = state) when numeric_tag_id == 0 do
@@ -63,34 +74,67 @@ defmodule Glific.Processor.ConsumerTagger do
 
   defp reload(state), do: state
 
+  defp reload_flows(%{flows: flow} = state) when flow == %{} do
+    Map.put(
+      state,
+      :flows,
+      Flow.get_and_cache_flows()
+    )
+  end
+
+  defp reload_flows(state), do: state
+
   @doc false
   def handle_events(messages, _from, state) do
-    events =
-      messages
-      |> Enum.map(&process_message(&1, state))
-      |> Enum.reduce([], fn m, acc ->
-        Enum.reduce(
-          m.tags,
-          acc,
-          fn t, acc -> [[m, t] | acc] end
-        )
-      end)
+    _ = Enum.map(messages, &process_message(&1, state))
 
-    {:noreply, events, state}
+    {:noreply, [], state}
   end
 
   @spec process_message(atom() | Message.t(), map()) :: Message.t()
   defp process_message(message, state) do
-    body = Taggers.string_clean(message.body)
+    body = Glific.string_clean(message.body)
 
     message
     |> add_status_tag("Unread", state)
     |> add_not_reply_tag(state)
-    |> new_contact_tagger(state)
     |> numeric_tagger(body, state)
     |> keyword_tagger(body, state)
+    # we do this before, so it will not pick up the potential flow
+    # started by new conatct tagger
+    |> check_flows(body, state)
+    |> new_contact_tagger(state)
     |> Repo.preload(:tags)
     |> Communications.publish_data(:created_message_tag)
+  end
+
+  @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
+  defp check_flows(message, body, state)
+       when body in [
+              "help",
+              "language",
+              "preference",
+              "new contact",
+              "registration",
+              "timed"
+            ] do
+    message = Repo.preload(message, :contact)
+    FlowContext.init_context(Map.get(state.flows, body), message.contact)
+    message
+  end
+
+  defp check_flows(message, _body, state) do
+    context = FlowContext.active_context(message.contact_id)
+
+    if context,
+      do:
+        context
+        |> FlowContext.load_context(state.flows[context.flow_uuid])
+        |> FlowContext.step_forward(message.body)
+
+    # we can potentially save the {contact_id, context} map here in the flow state,
+    # to avoid hitting the DB again. We'll do this after we get this working
+    message
   end
 
   @spec numeric_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()
@@ -114,6 +158,7 @@ defmodule Glific.Processor.ConsumerTagger do
     if Status.is_new_contact(message.sender_id) do
       message
       |> add_status_tag("New Contact", state)
+      |> check_flows("new contact", state)
     end
 
     message
@@ -127,5 +172,33 @@ defmodule Glific.Processor.ConsumerTagger do
   defp add_not_reply_tag(message, state) do
     Tags.remove_tag_from_all_message(message.contact_id, "Not Replied")
     add_status_tag(message, "Not Replied", state)
+  end
+
+  @doc """
+  This callback handles the nudges in the system. It processes the jobs and then sets a timer to invoke itself when
+  done
+  """
+  def handle_info(:wakeup_timeout, state) do
+    # check DB and process all flows that need to be woken update_in
+    _ =
+      FlowContext.wakeup()
+      |> Enum.map(fn fc -> wakeup(fc, state) end)
+
+    Process.send_after(self(), :wakeup_timeout, @wakeup_timeout_ms)
+    {:noreply, [], state}
+  end
+
+  # Process one context at a time
+  @spec wakeup(FlowContext.t(), map()) ::
+          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
+  defp wakeup(context, state) do
+    {:ok, context} =
+      context
+      |> FlowContext.load_context(state.flows[context.flow_uuid])
+      |> FlowContext.step_forward("No Response")
+
+    # update the context woken up time
+    {:ok, context} = FlowContext.update_flow_context(context, %{wakeup_at: nil})
+    {:ok, context, []}
   end
 end

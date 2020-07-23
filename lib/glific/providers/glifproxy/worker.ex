@@ -45,32 +45,45 @@ defmodule Glific.Providers.Glifproxy.Worker do
     destination = payload["destination"]
 
     {new_destination, name} =
-      if String.slice(destination, 0, @prefix_len) == @prefix,
-        do:
-          {String.slice(destination, @prefix_len..-1), String.slice(destination, @prefix_len..-1)},
-        else: {@prefix <> destination, "PROXY " <> destination}
+      if String.slice(destination, 0, @prefix_len) == @prefix do
+        # we dont have the name with us, so for now, we just
+        # use the phone as the name
+        name = String.slice(destination, @prefix_len..-1)
+        {name, name}
+      else
+        {@prefix <> destination, "PROXY " <> destination}
+      end
 
-    new_payload = %{
+    new_payload = generate_payload(new_destination, name, message)
+
+    # lets sleep for 1 seconds before posting, to avoid race
+    # conditions with flows et al
+    :timer.sleep(1000)
+
+    ApiClient.post("/gupshup", new_payload)
+    |> handle_response(message)
+  end
+
+  @spec generate_payload(String.t(), String.t(), map()) :: map()
+  defp generate_payload(destination, name, message) do
+    %{
       app: "Glific Proxy App",
       timestamp: DateTime.to_unix(DateTime.utc_now()),
       version: 2,
       type: "message",
       payload: %{
         id: Faker.String.base64(30),
-        source: new_destination,
+        source: destination,
         type: "text",
         payload: %{
           text: message["body"]
         },
         sender: %{
-          phone: new_destination,
+          phone: destination,
           name: name
         }
       }
     }
-
-    ApiClient.post("/gupshup", new_payload)
-    |> handle_response(message)
   end
 
   @doc false

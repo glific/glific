@@ -28,8 +28,8 @@ jobs:
 
     strategy:
       matrix:  # build matrix for the job
-        elixir: [1.10.3]
-        otp: [22.2.8] 
+        elixir: [1.10.4]
+        otp: [23.0.2]
 
     steps:
       - name: Checkout the code
@@ -61,7 +61,7 @@ jobs:
         with:
           path: priv/plts
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
-  
+
       - name: Create PLTs
         if: steps.elixir-plt-cache.outputs.cache-hit != 'true'
         run: |

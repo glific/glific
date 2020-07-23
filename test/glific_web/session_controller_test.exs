@@ -33,6 +33,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
       assert json = json_response(conn, 200)
       assert json["data"]["access_token"]
       assert json["data"]["renewal_token"]
+      assert json["data"]["token_expiry_time"]
     end
 
     test "with invalid params", %{conn: conn} do
@@ -61,6 +62,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
       assert json = json_response(conn, 200)
       assert json["data"]["access_token"]
       assert json["data"]["renewal_token"]
+      assert json["data"]["token_expiry_time"]
     end
 
     test "with invalid authorization header", %{conn: conn} do

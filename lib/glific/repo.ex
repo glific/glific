@@ -124,6 +124,79 @@ defmodule Glific.Repo do
   def opts_with_nil(_opts, query), do: query
 
   @doc """
+  A funtion which handles the order clause for a data type that has
+  a 'name/body/label' in its schema (which is true for a fair number of Glific's
+  data types)
+  """
+  @spec opts_with_field(Ecto.Queryable.t(), map(), :name | :body | :label) :: Ecto.Queryable.t()
+  def opts_with_field(query, opts, field) do
+    Enum.reduce(opts, query, fn
+      {:order, order}, query ->
+        order_by(query, [o], {^order, fragment("lower(?)", field(o, ^field))})
+
+      _, query ->
+        query
+    end)
+  end
+
+  @doc false
+  @spec opts_with_label(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_label(query, opts), do: opts_with_field(query, opts, :label)
+
+  @doc false
+  @spec opts_with_body(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_body(query, opts), do: opts_with_field(query, opts, :body)
+
+  @doc false
+  @spec opts_with_name(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_name(query, opts), do: opts_with_field(query, opts, :name)
+
+  # codebeat:disable[ABC, LOC]
+  @doc """
+  Add all the common filters here, rather than in each file
+  """
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  def filter_with(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:name, name}, query ->
+        from q in query, where: ilike(q.name, ^"%#{name}%")
+
+      {:phone, phone}, query ->
+        from q in query, where: ilike(q.phone, ^"%#{phone}%")
+
+      {:label, label}, query ->
+        from q in query, where: ilike(q.label, ^"%#{label}%")
+
+      {:body, body}, query ->
+        from q in query, where: ilike(q.body, ^"%#{body}%")
+
+      {:shortcode, shortcode}, query ->
+        from q in query, where: ilike(q.shortcode, ^"%#{shortcode}%")
+
+      {:language, language}, query ->
+        from q in query,
+          join: l in assoc(q, :language),
+          where: ilike(l.label, ^"%#{language}%")
+
+      {:language_id, language_id}, query ->
+        from q in query, where: q.language_id == ^language_id
+
+      {:parent, label}, query ->
+        from q in query,
+          join: t in assoc(q, :parent),
+          where: ilike(t.label, ^"%#{label}%")
+
+      {:parent_id, parent_id}, query ->
+        from q in query, where: q.parent_id == ^parent_id
+
+      _, query ->
+        query
+    end)
+  end
+
+  # codebeat:enable[ABC, LOC]
+
+  @doc """
   Need to figure out what this function does. Still learning Dataloader and its magic.
   Seems l
   ike it is not used currently, so commenting it out

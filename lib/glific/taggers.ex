@@ -15,16 +15,4 @@ defmodule Glific.Taggers do
       Welcome
       Spam
   """
-
-  @doc """
-  Lets get rid of all non valid characters. We are assuming any language and hence using unicode syntax
-  and not restricting ourselves to alphanumeric
-  """
-  @spec string_clean(String.t()) :: String.t()
-  def string_clean(str) do
-    str
-    |> String.replace(~r/[\p{P}\p{S}\p{Z}\p{C}]+/u, "")
-    |> String.downcase()
-    |> String.trim()
-  end
 end

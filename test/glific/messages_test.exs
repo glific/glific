@@ -368,7 +368,7 @@ defmodule Glific.MessagesTest do
       {:ok, hsm_template} = Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{body: body})
       parameters = ["param1", "https://glific.github.io/slate/"]
 
-      updated_hsm_template = Messages.prepare_hsm_template(hsm_template, parameters)
+      updated_hsm_template = Messages.parse_template_vars(hsm_template, parameters)
 
       assert updated_hsm_template.body ==
                "You have received a new update about param1. Please click on https://glific.github.io/slate/ to know more."

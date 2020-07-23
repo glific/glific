@@ -6,6 +6,7 @@ defmodule Glific.Messages do
 
   alias Glific.{
     Communications,
+    Contacts,
     Contacts.Contact,
     Conversations.Conversation,
     Messages.Message,
@@ -25,17 +26,7 @@ defmodule Glific.Messages do
   """
   @spec list_messages(map()) :: [Message.t()]
   def list_messages(args \\ %{}),
-    do: Repo.list_filter(args, Message, &opts_with/2, &filter_with/2)
-
-  defp opts_with(query, opts) do
-    Enum.reduce(opts, query, fn
-      {:order, order}, query ->
-        query |> order_by([m], {^order, fragment("lower(?)", m.body)})
-
-      _, query ->
-        query
-    end)
-  end
+    do: Repo.list_filter(args, Message, &Repo.opts_with_body/2, &filter_with/2)
 
   @doc """
   Return the count of messages, using the same filter as list_messages
@@ -44,6 +35,7 @@ defmodule Glific.Messages do
   def count_messages(args \\ %{}),
     do: Repo.count_filter(args, Message, &filter_with/2)
 
+  # codebeat:disable[ABC, LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     Enum.reduce(filter, query, fn
@@ -199,39 +191,93 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message(map()) :: {:ok, Message.t()}
+  @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_message(attrs) do
+    contact = Glific.Contacts.get_contact!(attrs.receiver_id)
+
+    Contacts.can_send_message_to?(contact, attrs[:is_hsm])
+    |> create_and_send_message(attrs)
+  end
+
+  @doc false
+  @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()}
+  defp create_and_send_message(is_valid_contact, attrs) when is_valid_contact == true do
     send_at = get_in(attrs, [:send_at])
 
-    with {:ok, message} <- create_message(Map.put(attrs, :flow, :outbound)) do
-      Communications.Message.send_message(message, send_at)
-    end
+    {:ok, message} =
+      %{
+        sender_id: Communications.Message.organization_contact_id(),
+        flow: :outbound
+      }
+      |> Map.merge(attrs)
+      |> create_message()
+
+    update_outbound_message_tags_of_contact(message)
+    Communications.Message.send_message(message, send_at)
+  end
+
+  @doc false
+  defp create_and_send_message(_, _) do
+    {:error, "Cannot send the message to the contact."}
+  end
+
+  @spec update_outbound_message_tags_of_contact(Message.t()) :: :ok
+  defp update_outbound_message_tags_of_contact(message) do
+    # Add "Not Responded" tag to message
+    {:ok, tag} = Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Responded"})
+
+    {:ok, _} =
+      Glific.Tags.create_message_tag(%{
+        message_id: message.id,
+        tag_id: tag.id
+      })
+
+    # Remove not responded tag from last outbound message if any
+    # don't remove tag if message is not yet delivered
+    with last_outbound_message when last_outbound_message != nil <-
+           Message
+           |> where([m], m.id != ^message.id)
+           |> where([m], m.receiver_id == ^message.receiver_id)
+           |> where([m], m.flow == "outbound")
+           |> where([m], m.status == "sent")
+           |> Ecto.Query.last()
+           |> Repo.one(),
+         message_tag when message_tag != nil <-
+           Glific.Tags.MessageTag
+           |> where([m], m.tag_id == ^tag.id)
+           |> where([m], m.message_id == ^last_outbound_message.id)
+           |> Ecto.Query.last()
+           |> Repo.one(),
+         do: Glific.Tags.delete_message_tag(message_tag)
+
+    :ok
   end
 
   @doc """
-  Create and send verifciation message
+  Create and send verification message
   Using session template of shortcode 'verification'
   """
-  @spec create_and_send_verification_message(String.t(), String.t()) :: {:ok, Message.t()}
-  def create_and_send_verification_message(phone, otp) do
+  @spec create_and_send_otp_verification_message(String.t(), String.t()) :: {:ok, Message.t()}
+  def create_and_send_otp_verification_message(phone, otp) do
     # fetch contact by phone number
-    {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
+    {:ok, contact} = Glific.Repo.fetch_by(Contact, %{phone: phone})
 
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
-      Repo.fetch_by(SessionTemplate, %{
-        shortcode: "verification"
+      Glific.Repo.fetch_by(SessionTemplate, %{
+        shortcode: "otp_verification",
+        is_hsm: true
       })
 
-    # create and send verification message with OTP code
-    message_params = %{
-      body: session_template.body <> otp,
-      type: session_template.type,
-      sender_id: Communications.Message.organization_contact_id(),
-      receiver_id: contact.id
-    }
+    ttl_in_minutes = Application.get_env(:passwordless_auth, :verification_code_ttl) |> div(60)
 
-    create_and_send_message(message_params)
+    parameters = [
+      "Registration",
+      otp,
+      "#{ttl_in_minutes} minutes"
+    ]
+
+    create_and_send_hsm_message(session_template.id, contact.id, parameters)
   end
 
   @doc """
@@ -266,13 +312,13 @@ defmodule Glific.Messages do
   @doc """
   Send a hsm template message to the specific contact.
   """
-  @spec create_and_send_hsm_message(integer, integer, []) ::
+  @spec create_and_send_hsm_message(integer, integer, [String.t()]) ::
           {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_hsm_message(template_id, receiver_id, parameters) do
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 
     if session_template.number_parameters == length(parameters) do
-      updated_template = prepare_hsm_template(session_template, parameters)
+      updated_template = parse_template_vars(session_template, parameters)
 
       message_params = %{
         body: updated_template.body,
@@ -289,8 +335,12 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec prepare_hsm_template(SessionTemplate.t(), []) :: SessionTemplate.t()
-  def prepare_hsm_template(session_template, parameters) do
+  @spec parse_template_vars(SessionTemplate.t(), [String.t()]) :: SessionTemplate.t()
+  def parse_template_vars(%{number_parameters: np} = session_template, _parameters)
+      when is_nil(np) or np <= 0,
+      do: session_template
+
+  def parse_template_vars(session_template, parameters) do
     parameters_map =
       1..session_template.number_parameters
       |> Enum.zip(parameters)

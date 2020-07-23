@@ -4,7 +4,7 @@ defmodule Glific.Fixtures do
   """
   alias Faker.{
     DateTime,
-    Name,
+    Person,
     Phone
   }
 
@@ -19,7 +19,7 @@ defmodule Glific.Fixtures do
   @spec contact_fixture(map()) :: Contacts.Contact.t()
   def contact_fixture(attrs \\ %{}) do
     valid_attrs = %{
-      name: Name.name(),
+      name: Person.name(),
       optin_time: DateTime.backward(1),
       last_message_at: DateTime.backward(0),
       phone: Phone.EnUs.phone(),
