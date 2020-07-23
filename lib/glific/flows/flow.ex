@@ -189,9 +189,10 @@ defmodule Glific.Flows.Flow do
         where: fr.flow_id == f.id and fr.revision_number == 0,
         select: %Flow{id: f.id, uuid: f.uuid, shortcode: f.shortcode, definition: fr.definition}
 
-    flow = query
-    |> args_clause(args)
-    |> Repo.one()
+    flow =
+      query
+      |> args_clause(args)
+      |> Repo.one()
 
     flow.definition
     |> clean_definition()

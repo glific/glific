@@ -119,7 +119,7 @@ defmodule Glific.Processor.ConsumerTagger do
               "timed"
             ] do
     message = Repo.preload(message, :contact)
-    |> FlowContext.init_context(FlowCache.get_flow(%{short_code: body}), message.contact)
+    FlowContext.init_context(Map.get(state.flows, body), message.contact)
     message
   end
 
