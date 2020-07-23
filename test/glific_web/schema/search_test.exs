@@ -191,4 +191,40 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, saved_search} =
              Glific.Repo.fetch_by(Glific.Searches.SavedSearch, %{label: "Save with Search"})
   end
+
+  test "search for not replied tagged messages in conversations" do
+    {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Glific Admin"})
+    {:ok, sender} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+    {:ok, not_replied_tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Replied"})
+
+    {:ok, saved_search} = Glific.Repo.fetch_by(Glific.Searches.SavedSearch, %{label: "Conversations read but not replied"})
+
+    {:ok, message} =
+      %{
+        body: saved_search.args["term"],
+        flow: :inbound,
+        type: :text,
+        sender_id: sender.id,
+        receiver_id: receiver.id
+      } |> Glific.Messages.create_message()
+
+    Glific.Tags.MessageTags.update_message_tags(%{
+      message_id: message.id,
+      add_tag_ids: [not_replied_tag.id],
+      delete_tag_ids: []
+    })
+
+    result =
+      query_gql_by(:search,
+        variables: saved_search.args
+      )
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == to_string(sender.id)
+
+    tags = get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "tags"])
+
+    assert %{"label" => "Not Replied"} in tags
+  end
 end

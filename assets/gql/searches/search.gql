@@ -1,4 +1,4 @@
-query search($term: String!, $shouldSave: Boolean!, $saveSearchLabel: String!, $contactOpts: Opts!, $messageOpts: Opts!) {
+query search($term: String!, $shouldSave: Boolean, $saveSearchLabel: String, $contactOpts: Opts!, $messageOpts: Opts!) {
   search(term: $term, saveSearch: $shouldSave, saveSearchLabel: $saveSearchLabel, contactOpts: $contactOpts, messageOpts: $messageOpts) {
     contact {
       id
@@ -10,6 +10,9 @@ query search($term: String!, $shouldSave: Boolean!, $saveSearchLabel: String!, $
       body
       flow
       type
+      tags {
+        label
+      }
     }
   }
 }
