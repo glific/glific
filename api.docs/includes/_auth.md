@@ -7,7 +7,7 @@ include roles and permissions. User management will be done via GraphQL
 
 The main API endpoints are listed below
 
-# Send an OTP request to verify a phone number
+## Send an OTP request to verify a phone number
 
 The OTP will be sent via WhatsApp and the NGO's Glific Instance. The API will only send
 a message to contacts that have opted into the system. This also prevents the API
@@ -34,6 +34,38 @@ If you are using axios or other libraries, send the following in the BODY of a P
           "message": "OTP sent successfully to #{phone}"}}
 ```
 Or
+
+```json
+{"error": { "message": "Cannot send the otp to #{phone}"}}
+```
+
+## Send an OTP request to verify a phone number of existing user
+
+The OTP will be sent via WhatsApp and the NGO's Glific Instance. The API will only send
+a message to existing user
+
+```shell
+curl -X POST -d \
+  "user[phone]=911234554321&user_exists=true" \
+  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send-registration-otp
+```
+```javascript
+If you are using axios or other libraries, send the following in the BODY of a POST request
+
+{
+    "user": {
+        "phone": "911234554321"
+    },
+    "user_exists": "true"
+}
+```
+> The above query returns JSON structured like this:
+
+```json
+{"data": {"phone": phone,
+          "message": "OTP sent successfully to #{phone}"}}
+```
+> Or
 
 ```json
 {"error": { "message": "Cannot send the otp to #{phone}"}}
