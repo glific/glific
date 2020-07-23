@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.22.2">
+    <meta name="project" content="Glific v0.2.0">
+    <title>GlificWeb.Flows.FlowEditorController — Glific v0.2.0</title>
+    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
+    <script src="dist/sidebar_items-795bbf7816.js"></script>
+      <script src="docs_config.js"></script>
+    <script async src="dist/app-0103364119015b97e56c.js"></script>
+  </head>
+  <body data-type="modules">
+    <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle">
+  <span class="icon-menu" title="Collapse/expand sidebar"></span>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button">
+      <span class="icon-search" aria-hidden="true"></span>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button">
+      <span class="icon-cross" title="Cancel search"></span>
+    </button>
+    <label class="search-label">
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectDetails">
+      <a href="https://github.com/glific/" class="sidebar-projectName">
+Glific      </a>
+      <h2 class="sidebar-projectVersion">
+        v0.2.0
+      </h2>
+    </div>
+  </div>
+
+  <ul class="sidebar-listNav">
+    <li><a id="extras-list" href="#full-list">Pages</a></li>
+
+      <li><a id="modules-list" href="#full-list">Modules</a></li>
+
+  </ul>
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+      <h1>
+        <small class="app-vsn">Glific v0.2.0</small>
+GlificWeb.Flows.FlowEditorController          <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L1" title="View Source" class="view-source" rel="help">
+            <span class="icon-code" aria-hidden="true"></span>
+            <span class="sr-only">View Source</span>
+          </a>
+      </h1>
+
+
+        <section id="moduledoc">
+<p>The Flow Editor Controller</p>        </section>
+
+        <section id="summary" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#summary">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+            Summary
+          </h1>
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#activity/2">activity(conn, params)</a>
+  </div>
+    <div class="summary-synopsis"><p>  This is used to checking if the connection between frontend and backend is established or not.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#channels/2">channels(conn, params)</a>
+  </div>
+    <div class="summary-synopsis"><p>  A list of all the communication channels. For Glific it's just WhatsApp.
+  We are not supporting them for now. We will come back to this in near future</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#classifiers/2">classifiers(conn, params)</a>
+  </div>
+    <div class="summary-synopsis"><p>  A list of all the communication channels. For Glific it's just WhatsApp.
+  We are not supporting them for now. We will come back to this in near future</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#completion/2">completion(conn, params)</a>
+  </div>
+    <div class="summary-synopsis"><p>  instead of reading a file we can call it directly from Assests.
+  We will come back on that when we have more clearity of the use cases</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#fields_post/2">fields_post(conn, params)</a>
+  </div>
+    <div class="summary-synopsis"><p>  Add Contact fields into the database. The response should be a map with 3 keys
+  % { Key: Field name, name: Field display name value_type: type of the value}</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#flows/2">flows(conn, map)</a>
+  </div>
+    <div class="summary-synopsis"><p>  Let's get all the flows or a latest flow revision</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#functions/2">functions(conn, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>  all the supported funcations we provide</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#labels/2">labels(conn, params)</a>
+  </div>
+    <div class="summary-synopsis"><p>  Get all the tags so that user can apply them on incoming message.
+  We are not supporting this for now. To enable It should return a list of map having
+  uuid and name as keys
+  [%{uuid: tag.uuid, name: tag.label}]</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#labels_post/2">labels_post(conn, params)</a>
+  </div>
+    <div class="summary-synopsis"><p>  Store a lable (new tag) in the system. The return response should be a map of 3 keys.
+  [%{uuid: tag.uuid, name: params[&quot;name&quot;], count}]</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#resthooks/2">resthooks(conn, params)</a>
+  </div>
+    <div class="summary-synopsis"><p>  We are not using this for now but this is required for flow editor config.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#revisions/2">revisions(conn, map)</a>
+  </div>
+    <div class="summary-synopsis"><p>  Get all or a specific revision for a flow</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#save_revisions/2">save_revisions(conn, params)</a>
+  </div>
+    <div class="summary-synopsis"><p>  Save a revision for a flow and get the revision id</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#ticketers/2">ticketers(conn, params)</a>
+  </div>
+    <div class="summary-synopsis"><p>  We are not sure how to use this but this endpoint is required for flow editor.
+  Will come back to this in future.</p></div>
+</div>
+  </div>
+        </section>
+
+        <section id="functions" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#functions">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+Functions          </h1>
+          <div class="functions-list">
+<section class="detail" id="activity/2">
+  <div class="detail-header">
+    <a href="#activity/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">activity(conn, params)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L217" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>activity(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  This is used to checking if the connection between frontend and backend is established or not.</p>  </section>
+</section>
+<section class="detail" id="channels/2">
+  <div class="detail-header">
+    <a href="#channels/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">channels(conn, params)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L96" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>channels(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  A list of all the communication channels. For Glific it's just WhatsApp.
+  We are not supporting them for now. We will come back to this in near future</p>  </section>
+</section>
+<section class="detail" id="classifiers/2">
+  <div class="detail-header">
+    <a href="#classifiers/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">classifiers(conn, params)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L117" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>classifiers(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  A list of all the communication channels. For Glific it's just WhatsApp.
+  We are not supporting them for now. We will come back to this in near future</p>  </section>
+</section>
+<section class="detail" id="completion/2">
+  <div class="detail-header">
+    <a href="#completion/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">completion(conn, params)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L205" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>completion(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  instead of reading a file we can call it directly from Assests.
+  We will come back on that when we have more clearity of the use cases</p>  </section>
+</section>
+<section class="detail" id="fields_post/2">
+  <div class="detail-header">
+    <a href="#fields_post/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">fields_post(conn, params)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L60" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>fields_post(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  Add Contact fields into the database. The response should be a map with 3 keys
+  % { Key: Field name, name: Field display name value_type: type of the value}</p><p>  We are not supporting this for now. We will add that in future</p>  </section>
+</section>
+<section class="detail" id="flows/2">
+  <div class="detail-header">
+    <a href="#flows/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">flows(conn, map)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L231" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>flows(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  Let's get all the flows or a latest flow revision</p>  </section>
+</section>
+<section class="detail" id="functions/2">
+  <div class="detail-header">
+    <a href="#functions/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">functions(conn, _)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L283" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>functions(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  all the supported funcations we provide</p>  </section>
+</section>
+<section class="detail" id="labels/2">
+  <div class="detail-header">
+    <a href="#labels/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">labels(conn, params)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L75" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>labels(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  Get all the tags so that user can apply them on incoming message.
+  We are not supporting this for now. To enable It should return a list of map having
+  uuid and name as keys
+  [%{uuid: tag.uuid, name: tag.label}]</p><p>  We are not supporting them for now. We will come back to this in near future</p>  </section>
+</section>
+<section class="detail" id="labels_post/2">
+  <div class="detail-header">
+    <a href="#labels_post/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">labels_post(conn, params)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L87" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>labels_post(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  Store a lable (new tag) in the system. The return response should be a map of 3 keys.
+  [%{uuid: tag.uuid, name: params[&quot;name&quot;], count}]</p><p>  We are not supporting them for now. We will come back to this in near future</p>  </section>
+</section>
+<section class="detail" id="resthooks/2">
+  <div class="detail-header">
+    <a href="#resthooks/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">resthooks(conn, params)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L137" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>resthooks(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  We are not using this for now but this is required for flow editor config.</p>  </section>
+</section>
+<section class="detail" id="revisions/2">
+  <div class="detail-header">
+    <a href="#revisions/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">revisions(conn, map)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L263" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>revisions(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  Get all or a specific revision for a flow</p>  </section>
+</section>
+<section class="detail" id="save_revisions/2">
+  <div class="detail-header">
+    <a href="#save_revisions/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">save_revisions(conn, params)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L274" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>save_revisions(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  Save a revision for a flow and get the revision id</p>  </section>
+</section>
+<section class="detail" id="ticketers/2">
+  <div class="detail-header">
+    <a href="#ticketers/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">ticketers(conn, params)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/flows/flow_editor_controller.ex#L127" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>ticketers(<a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), nil | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">maybe_improper_list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+      </div>
+
+<p>  We are not sure how to use this but this endpoint is required for flow editor.
+  Will come back to this in future.</p>  </section>
+</section>
+          </div>
+        </section>
+      <footer class="footer">
+        <p>
+          <span class="line">
+            Built using
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+          </span>
+          <span class="line">
+            designed by
+            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
+          </span>
+        </p>
+        <p>
+          <button class="line footer-button display-shortcuts-help">
+            Display keyboard shortcuts
+          </button>
+          <button class="line footer-button night-mode-toggle">
+            Toggle night mode
+          </button>
+          <button class="line footer-button display-quick-switch">
+            Go to a HexDocs package
+          </button>
+          <button class="line footer-button tooltips-toggle">
+            <span class="tooltips-option-disable">Disable tooltips</span>
+            <span class="tooltips-option-enable">Enable tooltips</span>
+          </button>
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+  </body>
+</html>
