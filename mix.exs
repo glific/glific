@@ -1,8 +1,8 @@
 defmodule Glific.MixProject do
   use Mix.Project
 
-  @github_url "https://github.com/glific/"
-  @home_url "https://github.com/glific/"
+  @github_url "https://github.com/glific/glific/"
+  @home_url "https://glific.io"
 
   def project do
     [
@@ -133,14 +133,14 @@ defmodule Glific.MixProject do
         "run priv/repo/seeds_dev.exs"
       ],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"]
-      # test: [
-      #   "ecto.drop",
-      #   "ecto.create --quiet",
-      #   "ecto.migrate",
-      #   "run priv/repo/seeds_prod.exs",
-      #   "test"
-      # ]
+      # test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: [
+        "ecto.drop",
+        "ecto.create --quiet",
+        "ecto.migrate",
+        "run priv/repo/seeds_prod.exs",
+        "test"
+      ]
     ]
   end
 end
