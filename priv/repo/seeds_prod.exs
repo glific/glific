@@ -521,6 +521,13 @@ Repo.insert!(%SavedSearch{
   args: %{includeTags: [to_string(not_replied.id)]}
 })
 
+{:ok, not_responded} = Repo.fetch_by(Tag, %{label: "Not Responded"})
+
+Repo.insert!(%SavedSearch{
+  label: "Conversations read but not responded",
+  args: %{includeTags: [to_string(not_responded.id)]}
+})
+
 {:ok, optout} = Repo.fetch_by(Tag, %{label: "Optout"})
 
 Repo.insert!(%SavedSearch{
