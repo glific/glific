@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateFlow($id: ID!, $input: FlowInput!) {
+  updateFlow(id: $id, input: $input) {
+    ...FlowFields
+
+    ...ErrorFields
+  }
+}

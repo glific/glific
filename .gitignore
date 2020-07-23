@@ -44,3 +44,5 @@ npm-debug.log
 
 .vscode/
 .vscode
+
+/Mnesia.nonode@nohost

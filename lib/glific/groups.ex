@@ -22,51 +22,15 @@ defmodule Glific.Groups do
 
   """
   @spec list_groups(map()) :: [Group.t()]
-  def list_groups(args \\ %{}) do
-    args
-    |> Enum.reduce(Group, fn
-      {:opts, opts}, query ->
-        query |> opts_with(opts)
-
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.all()
-  end
-
-  defp opts_with(query, opts) do
-    Enum.reduce(opts, query, fn
-      {:order, order}, query ->
-        query |> order_by([c], {^order, fragment("lower(?)", c.label)})
-
-      {:limit, limit}, query ->
-        query |> limit(^limit)
-
-      {:offset, offset}, query ->
-        query |> offset(^offset)
-    end)
-  end
+  def list_groups(args \\ %{}),
+    do: Repo.list_filter(args, Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
   Return the count of groups, using the same filter as list_groups
   """
   @spec count_groups(map()) :: integer
-  def count_groups(args \\ %{}) do
-    args
-    |> Enum.reduce(Group, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.aggregate(:count)
-  end
-
-  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_with(query, filter) do
-    Enum.reduce(filter, query, fn
-      {:label, label}, query ->
-        from q in query, where: ilike(q.label, ^"%#{label}%")
-    end)
-  end
+  def count_groups(args \\ %{}),
+    do: Repo.count_filter(args, Group, &Repo.filter_with/2)
 
   @doc """
   Gets a single group.

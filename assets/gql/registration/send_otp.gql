@@ -1,3 +1,0 @@
-mutation ($input: RegistrationInput!) {
-  sendOtp (input: $input)
-}

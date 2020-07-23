@@ -18,69 +18,15 @@ defmodule Glific.Tags do
 
   """
   @spec list_tags(map()) :: [Tag.t()]
-  def list_tags(args \\ %{}) do
-    args
-    |> Enum.reduce(Tag, fn
-      {:opts, opts}, query ->
-        query |> opts_with(opts)
-
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.all()
-  end
+  def list_tags(args \\ %{}),
+    do: Repo.list_filter(args, Tag, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
   Return the count of tags, using the same filter as list_tags
   """
   @spec count_tags(map()) :: integer
-  def count_tags(args \\ %{}) do
-    args
-    |> Enum.reduce(Tag, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.aggregate(:count)
-  end
-
-  defp opts_with(query, opts) do
-    Enum.reduce(opts, query, fn
-      {:order, order}, query ->
-        query |> order_by([t], {^order, fragment("lower(?)", t.label)})
-
-      {:limit, limit}, query ->
-        query |> limit(^limit)
-
-      {:offset, offset}, query ->
-        query |> offset(^offset)
-    end)
-  end
-
-  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_with(query, filter) do
-    Enum.reduce(filter, query, fn
-      {:label, label}, query ->
-        from q in query, where: ilike(q.label, ^"%#{label}%")
-
-      {:parent, label}, query ->
-        from q in query,
-          join: t in assoc(q, :parent),
-          where: ilike(t.label, ^"%#{label}%")
-
-      {:parent_id, parent_id}, query ->
-        from q in query,
-          where: q.parent_id == ^parent_id
-
-      {:language, language}, query ->
-        from q in query,
-          join: l in assoc(q, :language),
-          where: ilike(l.label, ^"%#{language}%")
-
-      {:language_id, language_id}, query ->
-        from q in query,
-          where: q.language_id == ^language_id
-    end)
-  end
+  def count_tags(args \\ %{}),
+    do: Repo.count_filter(args, Tag, &Repo.filter_with/2)
 
   @doc """
   Gets a single tag.
@@ -441,12 +387,17 @@ defmodule Glific.Tags do
     Remove a specific tag from contact messages
   """
   @spec remove_tag_from_all_message(integer(), String.t()) :: list()
-  def remove_tag_from_all_message(contact_id, tag_label) do
+  def remove_tag_from_all_message(contact_id, tag_label) when is_binary(tag_label) do
+    remove_tag_from_all_message(contact_id, [tag_label])
+  end
+
+  @spec remove_tag_from_all_message(integer(), [String.t()]) :: list()
+  def remove_tag_from_all_message(contact_id, tag_label_list) do
     query =
       from mt in MessageTag,
         join: m in assoc(mt, :message),
         join: t in assoc(mt, :tag),
-        where: m.contact_id == ^contact_id and t.label == ^tag_label,
+        where: m.contact_id == ^contact_id and t.label in ^tag_label_list,
         select: [mt.message_id]
 
     {_, deleted_rows} = Repo.delete_all(query)

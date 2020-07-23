@@ -24,4 +24,18 @@ defmodule Glific do
       :error -> :error
     end
   end
+
+  @doc """
+  Lets get rid of all non valid characters. We are assuming any language and hence using unicode syntax
+  and not restricting ourselves to alphanumeric
+  """
+  @spec string_clean(String.t() | nil) :: String.t() | nil
+  def string_clean(str) when is_nil(str) or str == "", do: str
+
+  def string_clean(str),
+    do:
+      str
+      |> String.replace(~r/[\p{P}\p{S}\p{Z}\p{C}]+/u, "")
+      |> String.downcase()
+      |> String.trim()
 end

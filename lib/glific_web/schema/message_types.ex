@@ -20,6 +20,8 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :flow, :message_flow_enum
     field :provider_message_id, :string
 
+    field :is_hsm, :boolean
+
     field :provider_status, :message_status_enum
 
     # expose the date we processed this message since external clients need it
@@ -83,6 +85,8 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :receiver_id, :id
     field :user_id, :id
     field :media_id, :id
+
+    field :send_at, :datetime
   end
 
   object :message_queries do
@@ -112,11 +116,6 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.create_message/3)
     end
 
-    field :send_message, :message_result do
-      arg(:id, non_null(:id))
-      resolve(&Resolvers.Messages.send_message/3)
-    end
-
     field :create_and_send_message, :message_result do
       arg(:input, non_null(:message_input))
       resolve(&Resolvers.Messages.create_and_send_message/3)
@@ -126,6 +125,13 @@ defmodule GlificWeb.Schema.MessageTypes do
       arg(:input, non_null(:message_input))
       arg(:contact_ids, non_null(list_of(:id)))
       resolve(&Resolvers.Messages.create_and_send_message_to_contacts/3)
+    end
+
+    field :send_hsm_message, :message_result do
+      arg(:template_id, non_null(:id))
+      arg(:receiver_id, non_null(:id))
+      arg(:parameters, list_of(:string))
+      resolve(&Resolvers.Messages.send_hsm_message/3)
     end
 
     field :update_message, :message_result do

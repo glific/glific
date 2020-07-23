@@ -19,73 +19,26 @@ defmodule Glific.Templates do
 
   """
   @spec list_session_templates(map()) :: [SessionTemplate.t()]
-  def list_session_templates(args \\ %{}) do
-    args
-    |> Enum.reduce(SessionTemplate, fn
-      {:opts, opts}, query ->
-        query |> opts_with(opts)
-
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.all()
-  end
-
-  defp opts_with(query, opts) do
-    Enum.reduce(opts, query, fn
-      {:order, order}, query ->
-        query |> order_by([t], {^order, fragment("lower(?)", t.label)})
-
-      {:limit, limit}, query ->
-        query |> limit(^limit)
-
-      {:offset, offset}, query ->
-        query |> offset(^offset)
-    end)
-  end
+  def list_session_templates(args \\ %{}),
+    do: Repo.list_filter(args, SessionTemplate, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
   Return the count of session_templates, using the same filter as list_session_templates
   """
   @spec count_session_templates(map()) :: integer
-  def count_session_templates(args \\ %{}) do
-    args
-    |> Enum.reduce(SessionTemplate, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.aggregate(:count)
-  end
+  def count_session_templates(args \\ %{}),
+    do: Repo.count_filter(args, SessionTemplate, &filter_with/2)
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
     Enum.reduce(filter, query, fn
-      {:label, label}, query ->
-        from q in query, where: ilike(q.label, ^"%#{label}%")
+      {:is_hsm, is_hsm}, query ->
+        from q in query, where: q.is_hsm == ^is_hsm
 
-      {:body, body}, query ->
-        from q in query, where: ilike(q.body, ^"%#{body}%")
-
-      {:shortcode, shortcode}, query ->
-        from q in query, where: ilike(q.shortcode, ^"%#{shortcode}%")
-
-      {:parent, label}, query ->
-        from q in query,
-          join: t in assoc(q, :parent),
-          where: ilike(t.label, ^"%#{label}%")
-
-      {:parent_id, parent_id}, query ->
-        from q in query,
-          where: q.parent_id == ^parent_id
-
-      {:language, language}, query ->
-        from q in query,
-          join: l in assoc(q, :language),
-          where: ilike(l.label, ^"%#{language}%")
-
-      {:language_id, language_id}, query ->
-        from q in query,
-          where: q.language_id == ^language_id
+      _, query ->
+        query
     end)
   end
 

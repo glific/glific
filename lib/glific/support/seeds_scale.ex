@@ -11,7 +11,7 @@ defmodule Glific.SeedsScale do
 
   alias Faker.{
     Lorem.Shakespeare,
-    Name,
+    Person,
     Phone.EnUs
   }
 
@@ -21,7 +21,7 @@ defmodule Glific.SeedsScale do
     phone = EnUs.phone()
 
     %{
-      name: Name.name(),
+      name: Person.name(),
       phone: phone,
       provider_status: "valid",
       optin_time: DateTime.truncate(DateTime.utc_now(), :second),

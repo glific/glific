@@ -20,60 +20,34 @@ defmodule Glific.Contacts do
 
   """
   @spec list_contacts(map()) :: [Contact.t()]
-  def list_contacts(args \\ %{}) do
-    args
-    |> Enum.reduce(Contact, fn
-      {:opts, opts}, query ->
-        query |> opts_with(opts)
-
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.all()
-  end
-
-  defp opts_with(query, opts) do
-    Enum.reduce(opts, query, fn
-      {:order, order}, query ->
-        query |> order_by([c], {^order, fragment("lower(?)", c.name)})
-
-      {:limit, limit}, query ->
-        query |> limit(^limit)
-
-      {:offset, offset}, query ->
-        query |> offset(^offset)
-    end)
-  end
+  def list_contacts(args \\ %{}),
+    do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &filter_with/2)
 
   @doc """
   Return the count of contacts, using the same filter as list_contacts
   """
   @spec count_contacts(map()) :: integer
-  def count_contacts(args \\ %{}) do
-    args
-    |> Enum.reduce(Contact, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.aggregate(:count)
-  end
+  def count_contacts(args \\ %{}),
+    do: Repo.count_filter(args, Contact, &filter_with/2)
 
+  # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
     Enum.reduce(filter, query, fn
-      {:name, name}, query ->
-        from q in query, where: ilike(q.name, ^"%#{name}%")
-
-      {:phone, phone}, query ->
-        from q in query, where: ilike(q.phone, ^"%#{phone}%")
-
       {:status, status}, query ->
         from q in query, where: q.status == ^status
 
       {:provider_status, provider_status}, query ->
         from q in query, where: q.provider_status == ^provider_status
+
+      _, query ->
+        query
     end)
   end
+
+  # codebeat:enable[ABC]
 
   @doc """
   Gets a single contact.
@@ -175,6 +149,7 @@ defmodule Glific.Contacts do
     # Get the organization
     organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
     # we keep this separate to avoid overwriting the language if already set by a contact
+    # this will not appear in the set field of the on_conflict: clause below
     language = Map.put(%{}, :language_id, attrs[:language_id] || organization.default_language_id)
 
     contact =
@@ -207,7 +182,16 @@ defmodule Glific.Contacts do
   """
   @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
   def contact_opted_in(phone, utc_time) do
-    upsert(%{phone: phone, optin_time: utc_time, status: :valid, provider_status: :valid})
+    upsert(%{
+      phone: phone,
+      optin_time: utc_time,
+      last_message_at: utc_time,
+      optout_time: nil,
+      status: :valid,
+      provider_status: :valid,
+      updated_at: DateTime.utc_now()
+    })
+
     {:ok}
   end
 
@@ -219,6 +203,7 @@ defmodule Glific.Contacts do
     upsert(%{
       phone: phone,
       optout_time: utc_time,
+      optin_time: nil,
       status: :invalid,
       provider_status: :invalid,
       updated_at: DateTime.utc_now()
@@ -230,13 +215,33 @@ defmodule Glific.Contacts do
   @doc """
   Check if we can send a message to the contact
   """
-  @spec can_send_message_to?(Contact.t()) :: boolean()
 
-  def can_send_message_to?(contact) do
-    with true <- contact.status == :valid,
-         true <- contact.provider_status == :valid,
-         true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24,
-         do: true
+  @spec can_send_message_to?(Contact.t()) :: boolean()
+  def can_send_message_to?(contact), do: can_send_message_to?(contact, false)
+
+  @doc false
+  @spec can_send_message_to?(Contact.t(), boolean()) :: boolean()
+  def can_send_message_to?(contact, is_hsm) when is_hsm == true do
+    with :valid <- contact.status,
+         :valid <- contact.provider_status,
+         true <- contact.optin_time != nil do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  @doc """
+  Check if we can send a session message to the contact
+  """
+  def can_send_message_to?(contact, _is_hsm) do
+    with :valid <- contact.status,
+         :valid <- contact.provider_status,
+         true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24 do
+      true
+    else
+      _ -> false
+    end
   end
 
   @doc """

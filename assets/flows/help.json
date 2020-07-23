@@ -1,0 +1,289 @@
+{
+  "uuid" : "3fa22108-f464-41e5-81d9-d8a298854429",
+  "type" : "message",
+  "name" : "Help Workflow",
+  "spec_version" : "13.1.0",
+  "localization" : {
+
+  },
+  "language" : "eng",
+  "_ui" : {
+    "languages" : [
+      {
+        "eng" : "English"
+      },
+      {
+        "spa" : "Spanish"
+      }
+    ],
+    "nodes" : {
+      "3ea030e9-41c4-4c6c-8880-68bc2828d67b" : {
+        "position" : {
+          "top" : 0,
+          "left" : 600
+        },
+        "type" : "execute_actions"
+      },
+      "f189f142-6d39-40fa-bf11-95578daeceea" : {
+        "position" : {
+          "left" : 0,
+          "top" : 500
+        },
+        "type" : "execute_actions"
+      },
+      "814c3140-7f99-4b3a-a990-cfc3a00756ff" : {
+        "position" : {
+          "top" : 460,
+          "left" : 800
+        },
+        "type" : "execute_actions"
+      },
+      "6d39df59-4572-4f4c-99b7-f667ea112e03" : {
+        "position" : {
+          "top" : 500,
+          "left" : 440
+        },
+        "type" : "execute_actions"
+      },
+      "85e897d2-49e4-42b7-8574-8dc2aee97121" : {
+        "position" : {
+          "top" : 500,
+          "left" : 220
+        },
+        "type" : "execute_actions"
+      },
+      "6f68083e-2340-449e-9fca-ac57c6835876" : {
+        "position" : {
+          "left" : 120,
+          "top" : 300
+        },
+        "config" : {
+          "cases" : {
+
+          }
+        },
+        "type" : "wait_for_response"
+      }
+    }
+  },
+  "nodes" : [
+    {
+      "exits" : [
+        {
+          "destination_uuid" : "6f68083e-2340-449e-9fca-ac57c6835876",
+          "uuid" : "a8311645-482e-4d35-b300-c92a9b18798b"
+        }
+      ],
+      "uuid" : "3ea030e9-41c4-4c6c-8880-68bc2828d67b",
+      "actions" : [
+        {
+          "text" : "help",
+          "quick_replies" : [
+
+          ],
+          "attachments" : [
+
+          ],
+          "templating" : {
+            "variables" : [
+
+            ],
+            "uuid" : "e3cd317b-6583-4e82-b57e-76cd393c03d3",
+            "template" : {
+              "uuid" : "2f1c9eee-cb81-4624-8d18-9b21ff0bb2e6",
+              "name" : "Help"
+            }
+          },
+          "uuid" : "e319cd39-f764-4680-9199-4cb7da647166",
+          "type" : "send_msg"
+        }
+      ]
+    },
+    {
+      "actions" : [
+
+      ],
+      "uuid" : "6f68083e-2340-449e-9fca-ac57c6835876",
+      "exits" : [
+        {
+          "destination_uuid" : "f189f142-6d39-40fa-bf11-95578daeceea",
+          "uuid" : "744b1082-4d95-40d0-839a-89fc1bb99d30"
+        },
+        {
+          "destination_uuid" : "85e897d2-49e4-42b7-8574-8dc2aee97121",
+          "uuid" : "77cd0e42-6a13-4122-a5fc-84b2e2daa1d4"
+        },
+        {
+          "destination_uuid" : "6d39df59-4572-4f4c-99b7-f667ea112e03",
+          "uuid" : "0caba4c7-0955-41c9-b8dc-6c58112503a0"
+        },
+        {
+          "destination_uuid" : "814c3140-7f99-4b3a-a990-cfc3a00756ff",
+          "uuid" : "1da8bf0a-827f-43d8-8222-a3c79bcace46"
+        },
+        {
+          "destination_uuid" : null,
+          "uuid" : "d11aaf4b-106f-4646-a15d-d18f3a534e38"
+        }
+      ],
+      "router" : {
+        "cases" : [
+          {
+            "uuid" : "0345357f-dbfa-4946-9249-5828b58161a0",
+            "arguments" : [
+              "1"
+            ],
+            "category_uuid" : "de13e275-a05f-41bf-afd8-73e9ed32f3bf",
+            "type" : "has_any_word"
+          },
+          {
+            "uuid" : "bc425dbf-d50c-48cf-81ba-622c06e153b0",
+            "arguments" : [
+              "2"
+            ],
+            "category_uuid" : "d3f0bf85-dac1-4b7d-8084-5c1ad2575f12",
+            "type" : "has_any_word"
+          },
+          {
+            "uuid" : "be6bc73d-6108-405c-9f88-c317c05311ad",
+            "arguments" : [
+              "3"
+            ],
+            "category_uuid" : "243766e5-e353-4d65-b87a-4405dbc24b1d",
+            "type" : "has_any_word"
+          },
+          {
+            "uuid" : "ebacc52f-a9b0-406d-837e-9e5ca1557d17",
+            "arguments" : [
+              "4"
+            ],
+            "category_uuid" : "3ce58365-61f2-4a6c-9b03-1eeccf988952",
+            "type" : "has_any_word"
+          }
+        ],
+        "default_category_uuid" : "65da0a4d-2bcc-42a2-99f5-4c9ed147f8a6",
+        "categories" : [
+          {
+            "name" : "One",
+            "uuid" : "de13e275-a05f-41bf-afd8-73e9ed32f3bf",
+            "exit_uuid" : "744b1082-4d95-40d0-839a-89fc1bb99d30"
+          },
+          {
+            "name" : "Two",
+            "uuid" : "d3f0bf85-dac1-4b7d-8084-5c1ad2575f12",
+            "exit_uuid" : "77cd0e42-6a13-4122-a5fc-84b2e2daa1d4"
+          },
+          {
+            "name" : "Three",
+            "uuid" : "243766e5-e353-4d65-b87a-4405dbc24b1d",
+            "exit_uuid" : "0caba4c7-0955-41c9-b8dc-6c58112503a0"
+          },
+          {
+            "name" : "Four",
+            "uuid" : "3ce58365-61f2-4a6c-9b03-1eeccf988952",
+            "exit_uuid" : "1da8bf0a-827f-43d8-8222-a3c79bcace46"
+          },
+          {
+            "name" : "Other",
+            "uuid" : "65da0a4d-2bcc-42a2-99f5-4c9ed147f8a6",
+            "exit_uuid" : "d11aaf4b-106f-4646-a15d-d18f3a534e38"
+          }
+        ],
+        "operand" : "@input.text",
+        "wait" : {
+          "type" : "msg"
+        },
+        "type" : "switch"
+      }
+    },
+    {
+      "exits" : [
+        {
+          "destination_uuid" : null,
+          "uuid" : "2b8543a5-d75e-4d1f-aba0-6f15fa88d8cb"
+        }
+      ],
+      "uuid" : "814c3140-7f99-4b3a-a990-cfc3a00756ff",
+      "actions" : [
+        {
+          "type" : "set_contact_field",
+          "value" : "optout",
+          "field" : {
+            "key" : "settings",
+            "name" : "Settings"
+          },
+          "uuid" : "4b6e08a1-84a3-4a4f-87ce-2d1f41a3e69b"
+        }
+      ]
+    },
+    {
+      "exits" : [
+        {
+          "uuid" : "d002db23-a51f-4183-81d6-b1e93c5132fb",
+          "destination_uuid" : null
+        }
+      ],
+      "uuid" : "f189f142-6d39-40fa-bf11-95578daeceea",
+      "actions" : [
+        {
+          "type" : "send_msg",
+          "quick_replies" : [
+
+          ],
+          "text" : "Glific is designed specifically for NGOs in the social sector to enable them to interact with their users on a regular basis",
+          "uuid" : "ed7d10f7-6298-4d84-a8d2-7b1f6e91da07",
+          "attachments" : [
+
+          ]
+        }
+      ]
+    },
+    {
+      "exits" : [
+        {
+          "uuid" : "37a545df-825b-4611-a7fe-b17dfb62c430",
+          "destination_uuid" : null
+        }
+      ],
+      "uuid" : "85e897d2-49e4-42b7-8574-8dc2aee97121",
+      "actions" : [
+        {
+          "uuid" : "a970d5d9-2951-48dc-8c66-ee6833c4b21e",
+          "attachments" : [
+
+          ],
+          "quick_replies" : [
+
+          ],
+          "text" : "If you are interested in using Glific, let us know. You can find more information on our website",
+          "type" : "send_msg"
+        }
+      ]
+    },
+    {
+      "exits" : [
+        {
+          "destination_uuid" : null,
+          "uuid" : "b913ee73-87d2-495b-8a2d-6e7c40f31fd5"
+        }
+      ],
+      "uuid" : "6d39df59-4572-4f4c-99b7-f667ea112e03",
+      "actions" : [
+        {
+          "uuid" : "10196f43-87f0-4205-aabd-1549aaa7e242",
+          "quick_replies" : [
+
+          ],
+          "type" : "send_msg",
+          "attachments" : [
+
+          ],
+          "text" : "https:\/\/glific.io\/"
+        }
+      ]
+    }
+  ],
+  "vars" : [
+    "3fa22108-f464-41e5-81d9-d8a298854429"
+  ]
+}

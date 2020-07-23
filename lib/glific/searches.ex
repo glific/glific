@@ -23,22 +23,8 @@ defmodule Glific.Searches do
 
   """
   @spec list_saved_searches(map()) :: [SavedSearch.t()]
-  def list_saved_searches(args \\ %{}) do
-    args
-    |> Enum.reduce(SavedSearch, fn
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.all()
-  end
-
-  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_with(query, filter) do
-    Enum.reduce(filter, query, fn
-      {:label, label}, query ->
-        from q in query, where: ilike(q.label, ^"%#{label}%")
-    end)
-  end
+  def list_saved_searches(args \\ %{}),
+    do: Repo.list_filter(args, SavedSearch, &Repo.opts_with_nil/2, &Repo.filter_with/2)
 
   @doc """
   Gets a single search.

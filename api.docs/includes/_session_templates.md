@@ -9,6 +9,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
     body
     label
     shortcode
+    isHsm
     type
     isActive
     isReserved
@@ -48,6 +49,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "body": "Another Template",
         "id": "2",
         "isActive": false,
+        "isHsm": false,
         "isReserved": false,
         "isSource": false,
         "label": "Another Template Label",
@@ -67,6 +69,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "body": "Default Template",
         "id": "1",
         "isActive": false,
+        "isHsm": false,
         "isReserved": false,
         "isSource": false,
         "label": "Default Template Label",
@@ -433,6 +436,16 @@ Type | Description
 <td valign="top"><a href="#messagetypesenum">MessageTypesEnum</a></td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>isHsm</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>number_parameters</strong></td>
+<td valign="top"><a href="#int">Int</a></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
@@ -558,6 +571,19 @@ Match the shortcode of template
 
 </td>
 </tr>
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>is_hsm</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>
+
+Match the hsm template message
+
+</td>
+</tr>
+
 </tbody>
 </table>
 
@@ -585,6 +611,16 @@ Match the shortcode of template
 <tr>
 <td colspan="2" valign="top"><strong>isSource</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isHsm</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>number_parameters</strong></td>
+<td valign="top"><a href="#int">Int</a></td>
 <td></td>
 </tr>
 <tr>

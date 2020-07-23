@@ -7,7 +7,8 @@ defmodule Glific.MessagesTest do
   alias Glific.{
     Contacts,
     Messages,
-    Messages.Message
+    Messages.Message,
+    Templates
   }
 
   alias Glific.Fixtures
@@ -15,6 +16,7 @@ defmodule Glific.MessagesTest do
   setup do
     default_provider = Glific.SeedsDev.seed_providers()
     Glific.SeedsDev.seed_organizations(default_provider)
+    Glific.SeedsDev.seed_contacts()
     :ok
   end
 
@@ -307,7 +309,7 @@ defmodule Glific.MessagesTest do
 
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint())
 
-      [message1, message2 | _] =
+      {:ok, [message1, message2 | _]} =
         Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
 
       assert_enqueued(worker: Worker)
@@ -324,6 +326,52 @@ defmodule Glific.MessagesTest do
       assert message2.provider_status == :enqueued
       assert message2.flow == :outbound
       assert message2.sent_at != nil
+    end
+
+    test "send hsm message incorrect parameters" do
+      name = "Default receiver"
+      {:ok, contact} = Glific.Repo.fetch_by(Contacts.Contact, %{name: name})
+
+      Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
+
+      label = "HSM2"
+      {:ok, hsm_template} = Glific.Repo.fetch_by(Templates.SessionTemplate, %{label: label})
+
+      # Incorrect number of parameters should give an error
+      parameters = ["param1"]
+
+      {:error, error_message} =
+        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+
+      assert error_message == "You need to provide correct number of parameters for hsm template"
+
+      # Correct number of parameters should create and send hsm message
+      parameters = ["param1", "param2"]
+
+      {:ok, message} =
+        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+
+      assert_enqueued(worker: Worker)
+      Oban.drain_queue(:gupshup)
+
+      message = Messages.get_message!(message.id)
+
+      assert message.is_hsm == true
+      assert message.flow == :outbound
+      assert message.provider_message_id != nil
+      assert message.provider_status == :enqueued
+      assert message.sent_at != nil
+    end
+
+    test "prepare hsm template" do
+      body = "You have received a new update about {{1}}. Please click on {{2}} to know more."
+      {:ok, hsm_template} = Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{body: body})
+      parameters = ["param1", "https://glific.github.io/slate/"]
+
+      updated_hsm_template = Messages.parse_template_vars(hsm_template, parameters)
+
+      assert updated_hsm_template.body ==
+               "You have received a new update about param1. Please click on https://glific.github.io/slate/ to know more."
     end
   end
 

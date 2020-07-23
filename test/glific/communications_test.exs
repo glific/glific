@@ -120,15 +120,23 @@ defmodule Glific.CommunicationsTest do
       assert message_2.contact_id == message_1.contact_id
 
       {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Replied"})
+      {:ok, unread_tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Unread"})
 
       message1_tag =
         Glific.Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
+
+      message_unread_tag =
+        Glific.Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: unread_tag.id})
 
       Communications.send_message(message_2)
       assert_enqueued(worker: Worker)
       Oban.drain_queue(:gupshup)
 
       assert_raise Ecto.NoResultsError, fn -> Glific.Tags.get_message_tag!(message1_tag.id) end
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Glific.Tags.get_message_tag!(message_unread_tag.id)
+      end
     end
 
     test "if response status code is not 200 handle the error response " do
@@ -252,6 +260,25 @@ defmodule Glific.CommunicationsTest do
       Communications.update_provider_status(message.provider_message_id, :read)
       message = Messages.get_message!(message.id)
       assert message.provider_status == :read
+    end
+
+    test "send message at a specific time should not send it immediately" do
+      message = message_fixture()
+      scheduled_time = Timex.shift(DateTime.utc_now(), hours: 2)
+      Communications.send_message(message, scheduled_time)
+
+      assert_enqueued(worker: Worker)
+      Oban.drain_queue(:gupshup)
+      message = Messages.get_message!(message.id)
+
+      assert message.status == :enqueued
+      assert message.provider_message_id == nil
+      assert message.sent_at == nil
+      assert message.provider_status == nil
+      assert message.flow == :outbound
+
+      # Verify job scheduled
+      assert_enqueued(worker: Worker, scheduled_at: {scheduled_time, delta: 10})
     end
   end
 end

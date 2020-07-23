@@ -29,7 +29,6 @@ includes:
   - contact_group
   - message_group
   - user_group
-  - registration
   - types
   - scalars
   - enums

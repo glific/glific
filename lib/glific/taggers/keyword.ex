@@ -4,7 +4,6 @@ defmodule Glific.Taggers.Keyword do
   with each tag in the DB and matches it to the input text.
   """
   alias Glific.Messages.Message
-  alias Glific.Taggers
 
   # hardcoding greeting as 5, since this is our testcase
   # need to handle keywords in tags
@@ -17,7 +16,7 @@ defmodule Glific.Taggers.Keyword do
   @spec tag_message(Message.t(), %{String.t() => integer}) :: {:ok, String.t()} | :error
   def tag_message(message, keyword_map) do
     message.body
-    |> Taggers.string_clean()
+    |> Glific.string_clean()
     |> tag_body(keyword_map)
   end
 
