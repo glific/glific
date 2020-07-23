@@ -39,7 +39,7 @@ RUN mkdir /app
 WORKDIR /app
 
 # copy release to app container
-COPY --from=build /app/_build/prod/rel/glific .
+COPY --from=build /app/_build/prod/rel/prod .
 COPY build_scripts/entrypoint.sh .
 RUN chown -R nobody: /app
 USER nobody

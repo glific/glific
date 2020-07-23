@@ -17,7 +17,7 @@ done
 
 echo "connected"
 
-bin="/app/bin/glific"
+bin="/app/bin/prod"
 eval "$bin eval \"Glific.Release.migrate\""
 # start the elixir application
 exec "$bin" "start"
