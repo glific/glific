@@ -1,8 +1,8 @@
 defmodule Glific.MixProject do
   use Mix.Project
 
-  @github_url "https://github.com/glific/"
-  @home_url "https://github.com/glific/"
+  @github_url "https://github.com/glific/glific/"
+  @home_url "https://glific.io"
 
   def project do
     [
