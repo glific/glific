@@ -110,7 +110,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
 
       assert json = json_response(conn, 400)
-      assert get_in(json, ["error", "message"]) == "Cannot send the registration otp to #{phone}"
+      assert get_in(json, ["error", "message"]) == "Cannot send the otp to #{phone}"
     end
 
     test "send otp to existing user will return an error", %{conn: conn} do
@@ -122,7 +122,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
 
       assert json = json_response(conn, 400)
-      assert get_in(json, ["error", "message"]) == "Cannot send the registration otp to #{phone}"
+      assert get_in(json, ["error", "message"]) == "Cannot send the otp to #{phone}"
     end
 
     test "send otp to optout contact will return an error", %{conn: conn} do
@@ -136,7 +136,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json = json_response(conn, 400)
 
       assert get_in(json, ["error", "message"]) ==
-               "Cannot send the registration otp to #{receiver.phone}"
+               "Cannot send the otp to #{receiver.phone}"
     end
   end
 end

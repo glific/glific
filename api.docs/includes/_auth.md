@@ -36,7 +36,7 @@ If you are using axios or other libraries, send the following in the BODY of a P
 Or
 
 ```json
-{"error": { "message": "Cannot send the registration otp to #{phone}"}}
+{"error": { "message": "Cannot send the otp to #{phone}"}}
 ```
 
 ## Create a new user
