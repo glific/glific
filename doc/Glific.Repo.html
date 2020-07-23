@@ -4,11 +4,11 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.1">
-    <meta name="project" content="Glific v0.1.0">
-    <title>Glific.Repo — Glific v0.1.0</title>
+    <meta name="generator" content="ExDoc v0.22.2">
+    <meta name="project" content="Glific v0.2.0">
+    <title>Glific.Repo — Glific v0.2.0</title>
     <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-5899045b6f.js"></script>
+    <script src="dist/sidebar_items-795bbf7816.js"></script>
       <script src="docs_config.js"></script>
     <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
@@ -43,7 +43,7 @@
       <a href="https://github.com/glific/" class="sidebar-projectName">
 Glific      </a>
       <h2 class="sidebar-projectVersion">
-        v0.1.0
+        v0.2.0
       </h2>
     </div>
   </div>
@@ -63,7 +63,7 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.1.0</small>
+        <small class="app-vsn">Glific v0.2.0</small>
 Glific.Repo          <a href="https://github.com/glific/blob/master/lib/glific/repo.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
@@ -124,6 +124,14 @@ not provide.</p>        </section>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#count_filter/3">count_filter(args \\ %{}, object, filter_with_fn)</a>
+  </div>
+    <div class="summary-synopsis"><p>We use this function also  in most list_OBJECT api's, where we process the
+the filter. Centralizing this code at the top level, to make things
+cleaner</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#default_options/1">default_options(operation)</a>
   </div>
     <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/Ecto.Repo.html#c:default_options/1"><code class="inline">Ecto.Repo.default_options/1</code></a>.</p></div>
@@ -163,6 +171,12 @@ not provide.</p>        </section>
     <a href="#fetch_by/3">fetch_by(queryable, clauses, opts \\ [])</a>
   </div>
     <div class="summary-synopsis"><p>Glific version of get_by, which returns a tuple with an :ok | :error as the first element</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#filter_with/2">filter_with(query, filter)</a>
+  </div>
+    <div class="summary-synopsis"><p>Add all the common filters here, rather than in each file</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -238,6 +252,20 @@ not provide.</p>        </section>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#limit_offset/2">limit_offset(query, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Extracts the limit offset field, and adds to query</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#list_filter/4">list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn)</a>
+  </div>
+    <div class="summary-synopsis"><p>We use this function in most list_OBJECT api's, where we process the opts
+and the filter. Centralizing this code at the top level, to make things
+cleaner</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#load/2">load(schema_or_types, data)</a>
   </div>
     <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/Ecto.Repo.html#c:load/2"><code class="inline">Ecto.Repo.load/2</code></a>.</p></div>
@@ -253,6 +281,20 @@ not provide.</p>        </section>
     <a href="#one!/2">one!(queryable, opts \\ [])</a>
   </div>
     <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/Ecto.Repo.html#c:one!/2"><code class="inline">Ecto.Repo.one!/2</code></a>.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#opts_with_field/3">opts_with_field(query, opts, field)</a>
+  </div>
+    <div class="summary-synopsis"><p>A funtion which handles the order clause for a data type that has
+a 'name/body/label' in its schema (which is true for a fair number of Glific's
+data types)</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#opts_with_nil/2">opts_with_nil(opts, query)</a>
+  </div>
+    <div class="summary-synopsis"><p>An empty function for objects that ignore the opts</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -454,6 +496,34 @@ Functions          </h1>
 
 <p>Callback implementation for <a href="https://hexdocs.pm/ecto/Ecto.Repo.html#c:config/0"><code class="inline">Ecto.Repo.config/0</code></a>.</p>  </section>
 </section>
+<section class="detail" id="count_filter/3">
+    <span id="count_filter/2"></span>
+  <div class="detail-header">
+    <a href="#count_filter/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">count_filter(args \\ %{}, object, filter_with_fn)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/repo.ex#L91" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>count_filter(
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(),
+  (<a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>())
+) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+      </div>
+
+<p>We use this function also  in most list_OBJECT api's, where we process the
+the filter. Centralizing this code at the top level, to make things
+cleaner</p>  </section>
+</section>
 <section class="detail" id="default_options/1">
   <div class="detail-header">
     <a href="#default_options/1" class="detail-link" title="Link to this function">
@@ -588,6 +658,28 @@ Functions          </h1>
       </div>
 
 <p>Glific version of get_by, which returns a tuple with an :ok | :error as the first element</p>  </section>
+</section>
+<section class="detail" id="filter_with/2">
+  <div class="detail-header">
+    <a href="#filter_with/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">filter_with(query, filter)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/repo.ex#L159" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>filter_with(<a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}) ::
+  <a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
+      </div>
+
+<p>Add all the common filters here, rather than in each file</p>  </section>
 </section>
 <section class="detail" id="get/3">
     <span id="get/2"></span>
@@ -802,11 +894,61 @@ Functions          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>label_id_map(<a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]) :: %{
-  required(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) => <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()
+  required(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()
 }</pre>
       </div>
 
 <p>Get map of label to ids for easier lookup for various system objects - language, tag</p>  </section>
+</section>
+<section class="detail" id="limit_offset/2">
+  <div class="detail-header">
+    <a href="#limit_offset/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">limit_offset(query, opts)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/repo.ex#L107" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>limit_offset(<a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
+      </div>
+
+<p>Extracts the limit offset field, and adds to query</p>  </section>
+</section>
+<section class="detail" id="list_filter/4">
+    <span id="list_filter/3"></span>
+  <div class="detail-header">
+    <a href="#list_filter/4" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/repo.ex#L64" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>list_filter(
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(),
+  (<a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()),
+  (<a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>())
+) :: [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()]</pre>
+      </div>
+
+<p>We use this function in most list_OBJECT api's, where we process the opts
+and the filter. Centralizing this code at the top level, to make things
+cleaner</p>  </section>
 </section>
 <section class="detail" id="load/2">
   <div class="detail-header">
@@ -860,6 +1002,51 @@ Functions          </h1>
   <section class="docstring">
 
 <p>Callback implementation for <a href="https://hexdocs.pm/ecto/Ecto.Repo.html#c:one!/2"><code class="inline">Ecto.Repo.one!/2</code></a>.</p>  </section>
+</section>
+<section class="detail" id="opts_with_field/3">
+  <div class="detail-header">
+    <a href="#opts_with_field/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">opts_with_field(query, opts, field)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/repo.ex#L132" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>opts_with_field(<a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), :name | :body | :label) ::
+  <a href="https://hexdocs.pm/ecto/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
+      </div>
+
+<p>A funtion which handles the order clause for a data type that has
+a 'name/body/label' in its schema (which is true for a fair number of Glific's
+data types)</p>  </section>
+</section>
+<section class="detail" id="opts_with_nil/2">
+  <div class="detail-header">
+    <a href="#opts_with_nil/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">opts_with_nil(opts, query)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/repo.ex#L124" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>opts_with_nil(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()</pre>
+      </div>
+
+<p>An empty function for objects that ignore the opts</p>  </section>
 </section>
 <section class="detail" id="preload/3">
     <span id="preload/2"></span>
@@ -1121,7 +1308,7 @@ Functions          </h1>
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.1),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
           </span>
           <span class="line">
             designed by

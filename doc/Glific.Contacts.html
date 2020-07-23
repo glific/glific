@@ -4,11 +4,11 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.1">
-    <meta name="project" content="Glific v0.1.0">
-    <title>Glific.Contacts — Glific v0.1.0</title>
+    <meta name="generator" content="ExDoc v0.22.2">
+    <meta name="project" content="Glific v0.2.0">
+    <title>Glific.Contacts — Glific v0.2.0</title>
     <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-5899045b6f.js"></script>
+    <script src="dist/sidebar_items-795bbf7816.js"></script>
       <script src="docs_config.js"></script>
     <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
@@ -43,7 +43,7 @@
       <a href="https://github.com/glific/" class="sidebar-projectName">
 Glific      </a>
       <h2 class="sidebar-projectVersion">
-        v0.1.0
+        v0.2.0
       </h2>
     </div>
   </div>
@@ -63,7 +63,7 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.1.0</small>
+        <small class="app-vsn">Glific v0.2.0</small>
 Glific.Contacts          <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
@@ -91,6 +91,12 @@ Glific.Contacts          <a href="https://github.com/glific/blob/master/lib/glif
     <a href="#can_send_message_to?/1">can_send_message_to?(contact)</a>
   </div>
     <div class="summary-synopsis"><p>Check if we can send a message to the contact</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#can_send_message_to?/2">can_send_message_to?(contact, is_hsm)</a>
+  </div>
+    <div class="summary-synopsis"><p>Check if we can send a session message to the contact</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -189,7 +195,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">can_send_message_to?(contact)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L235" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L220" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -203,6 +209,27 @@ Functions          </h1>
 
 <p>Check if we can send a message to the contact</p>  </section>
 </section>
+<section class="detail" id="can_send_message_to?/2">
+  <div class="detail-header">
+    <a href="#can_send_message_to?/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">can_send_message_to?(contact, is_hsm)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L224" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>can_send_message_to?(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+      </div>
+
+<p>Check if we can send a session message to the contact</p>  </section>
+</section>
 <section class="detail" id="change_contact/2">
     <span id="change_contact/1"></span>
   <div class="detail-header">
@@ -211,7 +238,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">change_contact(contact, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L165" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L139" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -227,8 +254,8 @@ Functions          </h1>
   <a href="#change_contact/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_contact</span><span class="p" data-group-id="2087674144-1">(</span><span class="n">contact</span><span class="p" data-group-id="2087674144-1">)</span><span class="w">
-</span><span class="p" data-group-id="2087674144-2">%</span><span class="nc" data-group-id="2087674144-2">Ecto.Changeset</span><span class="p" data-group-id="2087674144-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2087674144-3">%</span><span class="nc" data-group-id="2087674144-3">Contact</span><span class="p" data-group-id="2087674144-3">{</span><span class="p" data-group-id="2087674144-3">}</span><span class="p" data-group-id="2087674144-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_contact</span><span class="p" data-group-id="7125899635-1">(</span><span class="n">contact</span><span class="p" data-group-id="7125899635-1">)</span><span class="w">
+</span><span class="p" data-group-id="7125899635-2">%</span><span class="nc" data-group-id="7125899635-2">Ecto.Changeset</span><span class="p" data-group-id="7125899635-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7125899635-3">%</span><span class="nc" data-group-id="7125899635-3">Contact</span><span class="p" data-group-id="7125899635-3">{</span><span class="p" data-group-id="7125899635-3">}</span><span class="p" data-group-id="7125899635-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="contact_location/1">
   <div class="detail-header">
@@ -237,7 +264,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">contact_location(contact)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L246" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L251" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -259,7 +286,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">contact_opted_in(phone, utc_time)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L209" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L184" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -280,7 +307,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">contact_opted_out(phone, utc_time)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L218" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L202" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -302,7 +329,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">count_contacts(args \\ %{})</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L52" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L30" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -324,7 +351,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">create_contact(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L108" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L82" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -341,11 +368,11 @@ Functions          </h1>
   <a href="#create_contact/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact</span><span class="p" data-group-id="6218535213-1">(</span><span class="p" data-group-id="6218535213-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="6218535213-2">}</span><span class="p" data-group-id="6218535213-1">)</span><span class="w">
-</span><span class="p" data-group-id="6218535213-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6218535213-4">%</span><span class="nc" data-group-id="6218535213-4">Contact</span><span class="p" data-group-id="6218535213-4">{</span><span class="p" data-group-id="6218535213-4">}</span><span class="p" data-group-id="6218535213-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact</span><span class="p" data-group-id="6238050333-1">(</span><span class="p" data-group-id="6238050333-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="6238050333-2">}</span><span class="p" data-group-id="6238050333-1">)</span><span class="w">
+</span><span class="p" data-group-id="6238050333-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6238050333-4">%</span><span class="nc" data-group-id="6238050333-4">Contact</span><span class="p" data-group-id="6238050333-4">{</span><span class="p" data-group-id="6238050333-4">}</span><span class="p" data-group-id="6238050333-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact</span><span class="p" data-group-id="6218535213-5">(</span><span class="p" data-group-id="6218535213-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6218535213-6">}</span><span class="p" data-group-id="6218535213-5">)</span><span class="w">
-</span><span class="p" data-group-id="6218535213-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6218535213-8">%</span><span class="nc" data-group-id="6218535213-8">Ecto.Changeset</span><span class="p" data-group-id="6218535213-8">{</span><span class="p" data-group-id="6218535213-8">}</span><span class="p" data-group-id="6218535213-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact</span><span class="p" data-group-id="6238050333-5">(</span><span class="p" data-group-id="6238050333-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6238050333-6">}</span><span class="p" data-group-id="6238050333-5">)</span><span class="w">
+</span><span class="p" data-group-id="6238050333-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6238050333-8">%</span><span class="nc" data-group-id="6238050333-8">Ecto.Changeset</span><span class="p" data-group-id="6238050333-8">{</span><span class="p" data-group-id="6238050333-8">}</span><span class="p" data-group-id="6238050333-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="create_location/1">
     <span id="create_location/0"></span>
@@ -355,7 +382,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">create_location(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L267" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L272" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -372,11 +399,11 @@ Functions          </h1>
   <a href="#create_location/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Contacts</span><span class="o">.</span><span class="n">create_location</span><span class="p" data-group-id="9143807648-1">(</span><span class="p" data-group-id="9143807648-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="9143807648-2">}</span><span class="p" data-group-id="9143807648-1">)</span><span class="w">
-</span><span class="p" data-group-id="9143807648-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9143807648-4">%</span><span class="nc" data-group-id="9143807648-4">Glific.Contacts.Location</span><span class="p" data-group-id="9143807648-4">{</span><span class="p" data-group-id="9143807648-4">}</span><span class="p" data-group-id="9143807648-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Contacts</span><span class="o">.</span><span class="n">create_location</span><span class="p" data-group-id="0253538708-1">(</span><span class="p" data-group-id="0253538708-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="0253538708-2">}</span><span class="p" data-group-id="0253538708-1">)</span><span class="w">
+</span><span class="p" data-group-id="0253538708-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0253538708-4">%</span><span class="nc" data-group-id="0253538708-4">Glific.Contacts.Location</span><span class="p" data-group-id="0253538708-4">{</span><span class="p" data-group-id="0253538708-4">}</span><span class="p" data-group-id="0253538708-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Contacts</span><span class="o">.</span><span class="n">create_location</span><span class="p" data-group-id="9143807648-5">(</span><span class="p" data-group-id="9143807648-6">%{</span><span class="ss">bad_field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="9143807648-6">}</span><span class="p" data-group-id="9143807648-5">)</span><span class="w">
-</span><span class="p" data-group-id="9143807648-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9143807648-8">%</span><span class="nc" data-group-id="9143807648-8">Ecto.Changeset</span><span class="p" data-group-id="9143807648-8">{</span><span class="p" data-group-id="9143807648-8">}</span><span class="p" data-group-id="9143807648-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Contacts</span><span class="o">.</span><span class="n">create_location</span><span class="p" data-group-id="0253538708-5">(</span><span class="p" data-group-id="0253538708-6">%{</span><span class="ss">bad_field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0253538708-6">}</span><span class="p" data-group-id="0253538708-5">)</span><span class="w">
+</span><span class="p" data-group-id="0253538708-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0253538708-8">%</span><span class="nc" data-group-id="0253538708-8">Ecto.Changeset</span><span class="p" data-group-id="0253538708-8">{</span><span class="p" data-group-id="0253538708-8">}</span><span class="p" data-group-id="0253538708-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="delete_contact/1">
   <div class="detail-header">
@@ -385,7 +412,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete_contact(contact)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L151" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L125" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -402,11 +429,11 @@ Functions          </h1>
   <a href="#delete_contact/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact</span><span class="p" data-group-id="8246045321-1">(</span><span class="n">contact</span><span class="p" data-group-id="8246045321-1">)</span><span class="w">
-</span><span class="p" data-group-id="8246045321-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8246045321-3">%</span><span class="nc" data-group-id="8246045321-3">Contact</span><span class="p" data-group-id="8246045321-3">{</span><span class="p" data-group-id="8246045321-3">}</span><span class="p" data-group-id="8246045321-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact</span><span class="p" data-group-id="3064020482-1">(</span><span class="n">contact</span><span class="p" data-group-id="3064020482-1">)</span><span class="w">
+</span><span class="p" data-group-id="3064020482-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3064020482-3">%</span><span class="nc" data-group-id="3064020482-3">Contact</span><span class="p" data-group-id="3064020482-3">{</span><span class="p" data-group-id="3064020482-3">}</span><span class="p" data-group-id="3064020482-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact</span><span class="p" data-group-id="8246045321-4">(</span><span class="n">contact</span><span class="p" data-group-id="8246045321-4">)</span><span class="w">
-</span><span class="p" data-group-id="8246045321-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8246045321-6">%</span><span class="nc" data-group-id="8246045321-6">Ecto.Changeset</span><span class="p" data-group-id="8246045321-6">{</span><span class="p" data-group-id="8246045321-6">}</span><span class="p" data-group-id="8246045321-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact</span><span class="p" data-group-id="3064020482-4">(</span><span class="n">contact</span><span class="p" data-group-id="3064020482-4">)</span><span class="w">
+</span><span class="p" data-group-id="3064020482-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3064020482-6">%</span><span class="nc" data-group-id="3064020482-6">Ecto.Changeset</span><span class="p" data-group-id="3064020482-6">{</span><span class="p" data-group-id="3064020482-6">}</span><span class="p" data-group-id="3064020482-5">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_contact!/1">
   <div class="detail-header">
@@ -415,7 +442,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_contact!(id)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L93" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L67" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -431,10 +458,10 @@ Functions          </h1>
   <a href="#get_contact!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="0269347911-1">(</span><span class="mi">123</span><span class="p" data-group-id="0269347911-1">)</span><span class="w">
-</span><span class="p" data-group-id="0269347911-2">%</span><span class="nc" data-group-id="0269347911-2">Contact</span><span class="p" data-group-id="0269347911-2">{</span><span class="p" data-group-id="0269347911-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="3393854180-1">(</span><span class="mi">123</span><span class="p" data-group-id="3393854180-1">)</span><span class="w">
+</span><span class="p" data-group-id="3393854180-2">%</span><span class="nc" data-group-id="3393854180-2">Contact</span><span class="p" data-group-id="3393854180-2">{</span><span class="p" data-group-id="3393854180-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="0269347911-3">(</span><span class="mi">456</span><span class="p" data-group-id="0269347911-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="3393854180-3">(</span><span class="mi">456</span><span class="p" data-group-id="3393854180-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="is_new_contact/1">
@@ -444,7 +471,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">is_new_contact(contact_id)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L195" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L170" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -482,8 +509,8 @@ Functions          </h1>
   <a href="#list_contacts/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_contacts</span><span class="p" data-group-id="6352322195-1">(</span><span class="p" data-group-id="6352322195-1">)</span><span class="w">
-</span><span class="p" data-group-id="6352322195-2">[</span><span class="p" data-group-id="6352322195-3">%</span><span class="nc" data-group-id="6352322195-3">Contact</span><span class="p" data-group-id="6352322195-3">{</span><span class="p" data-group-id="6352322195-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="6352322195-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_contacts</span><span class="p" data-group-id="1554983724-1">(</span><span class="p" data-group-id="1554983724-1">)</span><span class="w">
+</span><span class="p" data-group-id="1554983724-2">[</span><span class="p" data-group-id="1554983724-3">%</span><span class="nc" data-group-id="1554983724-3">Contact</span><span class="p" data-group-id="1554983724-3">{</span><span class="p" data-group-id="1554983724-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="1554983724-2">]</span></code></pre>  </section>
 </section>
 <section class="detail" id="update_contact/2">
   <div class="detail-header">
@@ -492,7 +519,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_contact(contact, attrs)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L132" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L106" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -509,11 +536,11 @@ Functions          </h1>
   <a href="#update_contact/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_contact</span><span class="p" data-group-id="9615174131-1">(</span><span class="n">contact</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9615174131-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="9615174131-2">}</span><span class="p" data-group-id="9615174131-1">)</span><span class="w">
-</span><span class="p" data-group-id="9615174131-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9615174131-4">%</span><span class="nc" data-group-id="9615174131-4">Contact</span><span class="p" data-group-id="9615174131-4">{</span><span class="p" data-group-id="9615174131-4">}</span><span class="p" data-group-id="9615174131-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_contact</span><span class="p" data-group-id="3629958034-1">(</span><span class="n">contact</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3629958034-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="3629958034-2">}</span><span class="p" data-group-id="3629958034-1">)</span><span class="w">
+</span><span class="p" data-group-id="3629958034-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3629958034-4">%</span><span class="nc" data-group-id="3629958034-4">Contact</span><span class="p" data-group-id="3629958034-4">{</span><span class="p" data-group-id="3629958034-4">}</span><span class="p" data-group-id="3629958034-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_contact</span><span class="p" data-group-id="9615174131-5">(</span><span class="n">contact</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9615174131-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="9615174131-6">}</span><span class="p" data-group-id="9615174131-5">)</span><span class="w">
-</span><span class="p" data-group-id="9615174131-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9615174131-8">%</span><span class="nc" data-group-id="9615174131-8">Ecto.Changeset</span><span class="p" data-group-id="9615174131-8">{</span><span class="p" data-group-id="9615174131-8">}</span><span class="p" data-group-id="9615174131-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_contact</span><span class="p" data-group-id="3629958034-5">(</span><span class="n">contact</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3629958034-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3629958034-6">}</span><span class="p" data-group-id="3629958034-5">)</span><span class="w">
+</span><span class="p" data-group-id="3629958034-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3629958034-8">%</span><span class="nc" data-group-id="3629958034-8">Ecto.Changeset</span><span class="p" data-group-id="3629958034-8">{</span><span class="p" data-group-id="3629958034-8">}</span><span class="p" data-group-id="3629958034-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="upsert/1">
   <div class="detail-header">
@@ -522,7 +549,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">upsert(attrs)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L174" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/contacts.ex#L148" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -543,7 +570,7 @@ it returns the existing contact, else it creates a new one</p>  </section>
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.1),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
           </span>
           <span class="line">
             designed by

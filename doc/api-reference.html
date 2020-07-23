@@ -4,11 +4,11 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.1">
-    <meta name="project" content="Glific v0.1.0">
-    <title>API Reference — Glific v0.1.0</title>
+    <meta name="generator" content="ExDoc v0.22.2">
+    <meta name="project" content="Glific v0.2.0">
+    <title>API Reference — Glific v0.2.0</title>
     <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-5899045b6f.js"></script>
+    <script src="dist/sidebar_items-795bbf7816.js"></script>
       <script src="docs_config.js"></script>
     <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
@@ -43,7 +43,7 @@
       <a href="https://github.com/glific/" class="sidebar-projectName">
 Glific      </a>
       <h2 class="sidebar-projectVersion">
-        v0.1.0
+        v0.2.0
       </h2>
     </div>
   </div>
@@ -63,7 +63,7 @@ Glific      </a>
     <div id="content" class="content-inner">
 
 <h1>
-  <small class="app-vsn">Glific v0.1.0</small>
+  <small class="app-vsn">Glific v0.2.0</small>
   API Reference
 </h1>
 
@@ -155,6 +155,26 @@ all enums</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Enums.FlowActionType.html">Glific.Enums.FlowActionType</a>
+  </div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Enums.FlowCase.html">Glific.Enums.FlowCase</a>
+  </div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Enums.FlowRouter.html">Glific.Enums.FlowRouter</a>
+  </div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Enums.FlowType.html">Glific.Enums.FlowType</a>
+  </div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Enums.MessageFlow.html">Glific.Enums.MessageFlow</a>
   </div>
 </div>
@@ -180,24 +200,113 @@ all enums</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.EventsConditionsActions.Action.AddTags.html">Glific.EventsConditionsActions.Action.AddTags</a>
+    <a href="Glific.Flows.html">Glific.Flows</a>
   </div>
-    <div class="summary-synopsis"><p>Lets do all the initial tagging that is in memory and fast in one place. This
-avoids the overhead of splitting things up into too many small chunks.</p></div>
+    <div class="summary-synopsis"><p>The Flows context.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.EventsConditionsActions.Action.NewContact.html">Glific.EventsConditionsActions.Action.NewContact</a>
+    <a href="Glific.Flows.Action.html">Glific.Flows.Action</a>
   </div>
-    <div class="summary-synopsis"><p>Lets treat the new contacts as special and do it only for the first time this contact has been
-tagged as a new contact</p></div>
+    <div class="summary-synopsis"><p>The Action object which encapsulates one action in a given node.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.EventsConditionsActions.Event.html">Glific.EventsConditionsActions.Event</a>
+    <a href="Glific.Flows.Case.html">Glific.Flows.Case</a>
   </div>
-    <div class="summary-synopsis"><p>First stab at representing our rule engine in a programmatic format. We are using the
-<a href="https://en.wikipedia.org/wiki/Event_condition_action">ECA model</a> as defined here.</p></div>
+    <div class="summary-synopsis"><p>The Case object which encapsulates one category in a given node.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.Category.html">Glific.Flows.Category</a>
+  </div>
+    <div class="summary-synopsis"><p>The Category object which encapsulates one category in a given node.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.ContactAction.html">Glific.Flows.ContactAction</a>
+  </div>
+    <div class="summary-synopsis"><p>Since many of the functions, also do a few actions like send a message etc
+centralizing it here</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.ContactField.html">Glific.Flows.ContactField</a>
+  </div>
+    <div class="summary-synopsis"><p>Since many of the functions set/update fields in contact and related tables, lets
+centralize all the code here for now</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.ContactSetting.html">Glific.Flows.ContactSetting</a>
+  </div>
+    <div class="summary-synopsis"><p>Since many of the functions set/update fields in contact and related tables, lets
+centralize all the code here for now</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.Exit.html">Glific.Flows.Exit</a>
+  </div>
+    <div class="summary-synopsis"><p>The Exit object which encapsulates one exit in a given node.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.Flow.html">Glific.Flows.Flow</a>
+  </div>
+    <div class="summary-synopsis"><p>The flow object which encapsulates the complete flow as emitted by
+by <code class="inline">https://github.com/nyaruka/floweditor</code></p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.FlowContext.html">Glific.Flows.FlowContext</a>
+  </div>
+    <div class="summary-synopsis"><p>When we are running a flow, we are running it in the context of a
+contact and/or a conversation (or other Glific data types). Let encapsulate
+this in a module and isolate the flow from the other aspects of Glific</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.FlowRevision.html">Glific.Flows.FlowRevision</a>
+  </div>
+    <div class="summary-synopsis"><p>The flow revision object which encapsulates the complete flow as emitted by
+by <code class="inline">https://github.com/nyaruka/floweditor</code></p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.Localization.html">Glific.Flows.Localization</a>
+  </div>
+    <div class="summary-synopsis"><p>The Localization object which stores all the localizations for all
+languages for a flow</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.MessageVarParser.html">Glific.Flows.MessageVarParser</a>
+  </div>
+    <div class="summary-synopsis"><p>substitute the contact fileds and result sets in the messages</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.Node.html">Glific.Flows.Node</a>
+  </div>
+    <div class="summary-synopsis"><p>The Node object which encapsulates one node in a given flow</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.Router.html">Glific.Flows.Router</a>
+  </div>
+    <div class="summary-synopsis"><p>The Router object which encapsulates the router in a given node.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.Templating.html">Glific.Flows.Templating</a>
+  </div>
+    <div class="summary-synopsis"><p>The Case object which encapsulates one category in a given node.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.Wait.html">Glific.Flows.Wait</a>
+  </div>
+    <div class="summary-synopsis"><p>The Wait object which encapsulates the wait for a router</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -253,53 +362,6 @@ and Provider information.</p></div>
     <a href="Glific.Partners.Provider.html">Glific.Partners.Provider</a>
   </div>
     <div class="summary-synopsis"><p>Provider are the third party Business Service providers who will give a access of WhatsApp API</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Processor.ConsumerAutomation.html">Glific.Processor.ConsumerAutomation</a>
-  </div>
-    <div class="summary-synopsis"><p>Process all messages of type consumer and run them thru a few automations. Our initial
-automation is response to a new contact tag with a welcome message</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Processor.ConsumerHelp.html">Glific.Processor.ConsumerHelp</a>
-  </div>
-    <div class="summary-synopsis"><p>Process all messages of type consumer and run them thru a few automations. Our initial
-automation is response to a new contact tag with a welcome message</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Processor.ConsumerLanguage.html">Glific.Processor.ConsumerLanguage</a>
-  </div>
-    <div class="summary-synopsis"><p>Process all messages of type consumer and run them thru a few automations. Our initial
-automation is response to a new contact tag with a welcome message</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Processor.ConsumerNewContact.html">Glific.Processor.ConsumerNewContact</a>
-  </div>
-    <div class="summary-synopsis"><p>Process all messages of type consumer and run them thru a few automations. Our initial
-automation is response to a new contact tag with a welcome message</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Processor.ConsumerNumeric.html">Glific.Processor.ConsumerNumeric</a>
-  </div>
-    <div class="summary-synopsis"><p>We'll first create the data in the module and as we reason with it, we'll migrate to the database</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Processor.ConsumerOptout.html">Glific.Processor.ConsumerOptout</a>
-  </div>
-    <div class="summary-synopsis"><p>Process all messages of type consumer and run them thru a few automations. Our initial
-automation is response to a new contact tag with a welcome message</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Processor.ConsumerSequence.html">Glific.Processor.ConsumerSequence</a>
-  </div>
-    <div class="summary-synopsis"><p>We'll first create the data in the module and as we reason with it, we'll migrate to the database</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -521,6 +583,12 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="GlificWeb.Flows.FlowEditorController.html">GlificWeb.Flows.FlowEditorController</a>
+  </div>
+    <div class="summary-synopsis"><p>The Flow Editor Controller</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.Gettext.html">GlificWeb.Gettext</a>
   </div>
     <div class="summary-synopsis"><p>A module providing Internationalization with a gettext-based API.</p></div>
@@ -577,6 +645,13 @@ This layer basically stiches together one or more calls to resolve the incoming 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.Flows.html">GlificWeb.Resolvers.Flows</a>
+  </div>
+    <div class="summary-synopsis"><p>Flow Resolver which sits between the GraphQL schema and Glific Flow Context API. This layer basically stiches together
+one or more calls to resolve the incoming queries.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.Resolvers.Groups.html">GlificWeb.Resolvers.Groups</a>
   </div>
     <div class="summary-synopsis"><p>Group Resolver which sits between the GraphQL schema and Glific Group Context API. This layer basically stiches together
@@ -594,13 +669,6 @@ one or more calls to resolve the incoming queries.</p></div>
     <a href="GlificWeb.Resolvers.Partners.html">GlificWeb.Resolvers.Partners</a>
   </div>
     <div class="summary-synopsis"><p>Partners Resolver which sits between the GraphQL schema and Glific Partners Context API. This layer basically stiches together
-one or more calls to resolve the incoming queries.</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Registration.html">GlificWeb.Resolvers.Registration</a>
-  </div>
-    <div class="summary-synopsis"><p>Registration Resolver which sits between the GraphQL schema. This layer basically stiches together
 one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
@@ -691,6 +759,12 @@ atoms in the object definitions within the GraphQL Schema</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="GlificWeb.Schema.FlowTypes.html">GlificWeb.Schema.FlowTypes</a>
+  </div>
+    <div class="summary-synopsis"><p>GraphQL Representation of Flow DataType</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.Schema.GenericTypes.html">GlificWeb.Schema.GenericTypes</a>
   </div>
     <div class="summary-synopsis"><p>GraphQL Representation of common data representations used across different
@@ -754,12 +828,6 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.RegistrationTypes.html">GlificWeb.Schema.RegistrationTypes</a>
-  </div>
-    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Registration</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
     <a href="GlificWeb.Schema.SearchTypes.html">GlificWeb.Schema.SearchTypes</a>
   </div>
     <div class="summary-synopsis"><p>GraphQL Representation of Glific's Search DataType</p></div>
@@ -795,7 +863,7 @@ consumable and displayable to the API user. This version is specifically for que
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.1),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
           </span>
           <span class="line">
             designed by
