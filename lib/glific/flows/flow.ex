@@ -179,6 +179,26 @@ defmodule Glific.Flows.Flow do
   end
 
   @doc """
+  Return a flow for a specific uuid. Cache is not present in cache
+  """
+  @spec get_loaded_flow(map()) :: map()
+  def get_loaded_flow(args) do
+    query =
+      from f in Flow,
+        join: fr in assoc(f, :revisions),
+        where: fr.flow_id == f.id and fr.revision_number == 0,
+        select: %Flow{id: f.id, uuid: f.uuid, shortcode: f.shortcode, definition: fr.definition}
+
+    flow = query
+    |> args_clause(args)
+    |> Repo.one()
+
+    flow.definition
+    |> clean_definition()
+    |> process(flow)
+  end
+
+  @doc """
   Helper function for various genstage processes to set state
   by loading all active flows from the database and loading flows on demand
   """
