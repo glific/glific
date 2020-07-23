@@ -7,10 +7,10 @@
     <meta name="generator" content="ExDoc v0.22.1">
     <meta name="project" content="Glific v0.1.0">
     <title>Glific.Tags — Glific v0.1.0</title>
-    <link rel="stylesheet" href="dist/elixir-e589b8fad3dab6230c65.css" />
-    <script src="dist/sidebar_items-9a3439fc57.js"></script>
+    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
+    <script src="dist/sidebar_items-5899045b6f.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-5c0c23dfec2d63ae33a2.js"></script>
+    <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -142,6 +142,15 @@ Glific.Tags          <a href="https://github.com/glific/blob/master/lib/glific/t
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#delete_message_tag_by_ids/2">delete_message_tag_by_ids(message_id, tag_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>In Join tables we rarely use the table id. We always know the object ids
+and hence more convenient to delete an entry via its object ids.
+We will generalize this function and move it to Repo.ex when we get a better
+handle on how to do so :)</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#delete_tag/1">delete_tag(tag)</a>
   </div>
     <div class="summary-synopsis"><p>Deletes a tag.</p></div>
@@ -187,6 +196,12 @@ Glific.Tags          <a href="https://github.com/glific/blob/master/lib/glific/t
     <a href="#list_tags/1">list_tags(args \\ %{})</a>
   </div>
     <div class="summary-synopsis"><p>Returns the list of tags.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#remove_tag_from_all_message/2">remove_tag_from_all_message(contact_id, tag_label)</a>
+  </div>
+    <div class="summary-synopsis"><p>  Remove a specific tag from contact messages</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -238,7 +253,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">change_contact_tag(contact_tag, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L416" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L436" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -254,8 +269,8 @@ Functions          </h1>
   <a href="#change_contact_tag/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_contact_tag</span><span class="p" data-group-id="8107297677-1">(</span><span class="n">contact_tag</span><span class="p" data-group-id="8107297677-1">)</span><span class="w">
-</span><span class="p" data-group-id="8107297677-2">%</span><span class="nc" data-group-id="8107297677-2">Ecto.Changeset</span><span class="p" data-group-id="8107297677-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8107297677-3">%</span><span class="nc" data-group-id="8107297677-3">ContactTag</span><span class="p" data-group-id="8107297677-3">{</span><span class="p" data-group-id="8107297677-3">}</span><span class="p" data-group-id="8107297677-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_contact_tag</span><span class="p" data-group-id="0081081436-1">(</span><span class="n">contact_tag</span><span class="p" data-group-id="0081081436-1">)</span><span class="w">
+</span><span class="p" data-group-id="0081081436-2">%</span><span class="nc" data-group-id="0081081436-2">Ecto.Changeset</span><span class="p" data-group-id="0081081436-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0081081436-3">%</span><span class="nc" data-group-id="0081081436-3">ContactTag</span><span class="p" data-group-id="0081081436-3">{</span><span class="p" data-group-id="0081081436-3">}</span><span class="p" data-group-id="0081081436-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="change_message_tag/2">
     <span id="change_message_tag/1"></span>
@@ -265,7 +280,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">change_message_tag(message_tag, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L312" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L332" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -281,8 +296,8 @@ Functions          </h1>
   <a href="#change_message_tag/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_message_tag</span><span class="p" data-group-id="6751117679-1">(</span><span class="n">message_tag</span><span class="p" data-group-id="6751117679-1">)</span><span class="w">
-</span><span class="p" data-group-id="6751117679-2">%</span><span class="nc" data-group-id="6751117679-2">Ecto.Changeset</span><span class="p" data-group-id="6751117679-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6751117679-3">%</span><span class="nc" data-group-id="6751117679-3">MessageTag</span><span class="p" data-group-id="6751117679-3">{</span><span class="p" data-group-id="6751117679-3">}</span><span class="p" data-group-id="6751117679-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_message_tag</span><span class="p" data-group-id="6422012049-1">(</span><span class="n">message_tag</span><span class="p" data-group-id="6422012049-1">)</span><span class="w">
+</span><span class="p" data-group-id="6422012049-2">%</span><span class="nc" data-group-id="6422012049-2">Ecto.Changeset</span><span class="p" data-group-id="6422012049-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6422012049-3">%</span><span class="nc" data-group-id="6422012049-3">MessageTag</span><span class="p" data-group-id="6422012049-3">{</span><span class="p" data-group-id="6422012049-3">}</span><span class="p" data-group-id="6422012049-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="change_tag/2">
     <span id="change_tag/1"></span>
@@ -308,8 +323,8 @@ Functions          </h1>
   <a href="#change_tag/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_tag</span><span class="p" data-group-id="5977846482-1">(</span><span class="n">tag</span><span class="p" data-group-id="5977846482-1">)</span><span class="w">
-</span><span class="p" data-group-id="5977846482-2">%</span><span class="nc" data-group-id="5977846482-2">Ecto.Changeset</span><span class="p" data-group-id="5977846482-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5977846482-3">%</span><span class="nc" data-group-id="5977846482-3">Tag</span><span class="p" data-group-id="5977846482-3">{</span><span class="p" data-group-id="5977846482-3">}</span><span class="p" data-group-id="5977846482-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_tag</span><span class="p" data-group-id="2865820432-1">(</span><span class="n">tag</span><span class="p" data-group-id="2865820432-1">)</span><span class="w">
+</span><span class="p" data-group-id="2865820432-2">%</span><span class="nc" data-group-id="2865820432-2">Ecto.Changeset</span><span class="p" data-group-id="2865820432-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2865820432-3">%</span><span class="nc" data-group-id="2865820432-3">Tag</span><span class="p" data-group-id="2865820432-3">{</span><span class="p" data-group-id="2865820432-3">}</span><span class="p" data-group-id="2865820432-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="count_tags/1">
     <span id="count_tags/0"></span>
@@ -341,7 +356,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">create_contact_tag(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L362" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L382" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -358,11 +373,11 @@ Functions          </h1>
   <a href="#create_contact_tag/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_tag</span><span class="p" data-group-id="6170401951-1">(</span><span class="p" data-group-id="6170401951-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="6170401951-2">}</span><span class="p" data-group-id="6170401951-1">)</span><span class="w">
-</span><span class="p" data-group-id="6170401951-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6170401951-4">%</span><span class="nc" data-group-id="6170401951-4">Contact</span><span class="p" data-group-id="6170401951-4">{</span><span class="p" data-group-id="6170401951-4">}</span><span class="p" data-group-id="6170401951-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_tag</span><span class="p" data-group-id="5917291233-1">(</span><span class="p" data-group-id="5917291233-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="5917291233-2">}</span><span class="p" data-group-id="5917291233-1">)</span><span class="w">
+</span><span class="p" data-group-id="5917291233-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5917291233-4">%</span><span class="nc" data-group-id="5917291233-4">Contact</span><span class="p" data-group-id="5917291233-4">{</span><span class="p" data-group-id="5917291233-4">}</span><span class="p" data-group-id="5917291233-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_tag</span><span class="p" data-group-id="6170401951-5">(</span><span class="p" data-group-id="6170401951-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6170401951-6">}</span><span class="p" data-group-id="6170401951-5">)</span><span class="w">
-</span><span class="p" data-group-id="6170401951-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6170401951-8">%</span><span class="nc" data-group-id="6170401951-8">Ecto.Changeset</span><span class="p" data-group-id="6170401951-8">{</span><span class="p" data-group-id="6170401951-8">}</span><span class="p" data-group-id="6170401951-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_tag</span><span class="p" data-group-id="5917291233-5">(</span><span class="p" data-group-id="5917291233-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5917291233-6">}</span><span class="p" data-group-id="5917291233-5">)</span><span class="w">
+</span><span class="p" data-group-id="5917291233-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5917291233-8">%</span><span class="nc" data-group-id="5917291233-8">Ecto.Changeset</span><span class="p" data-group-id="5917291233-8">{</span><span class="p" data-group-id="5917291233-8">}</span><span class="p" data-group-id="5917291233-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="create_message_tag/1">
     <span id="create_message_tag/0"></span>
@@ -417,11 +432,11 @@ Functions          </h1>
   <a href="#create_tag/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_tag</span><span class="p" data-group-id="7886502083-1">(</span><span class="p" data-group-id="7886502083-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="7886502083-2">}</span><span class="p" data-group-id="7886502083-1">)</span><span class="w">
-</span><span class="p" data-group-id="7886502083-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7886502083-4">%</span><span class="nc" data-group-id="7886502083-4">Tag</span><span class="p" data-group-id="7886502083-4">{</span><span class="p" data-group-id="7886502083-4">}</span><span class="p" data-group-id="7886502083-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_tag</span><span class="p" data-group-id="8118748874-1">(</span><span class="p" data-group-id="8118748874-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="8118748874-2">}</span><span class="p" data-group-id="8118748874-1">)</span><span class="w">
+</span><span class="p" data-group-id="8118748874-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8118748874-4">%</span><span class="nc" data-group-id="8118748874-4">Tag</span><span class="p" data-group-id="8118748874-4">{</span><span class="p" data-group-id="8118748874-4">}</span><span class="p" data-group-id="8118748874-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_tag</span><span class="p" data-group-id="7886502083-5">(</span><span class="p" data-group-id="7886502083-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="7886502083-6">}</span><span class="p" data-group-id="7886502083-5">)</span><span class="w">
-</span><span class="p" data-group-id="7886502083-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7886502083-8">%</span><span class="nc" data-group-id="7886502083-8">Ecto.Changeset</span><span class="p" data-group-id="7886502083-8">{</span><span class="p" data-group-id="7886502083-8">}</span><span class="p" data-group-id="7886502083-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_tag</span><span class="p" data-group-id="8118748874-5">(</span><span class="p" data-group-id="8118748874-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="8118748874-6">}</span><span class="p" data-group-id="8118748874-5">)</span><span class="w">
+</span><span class="p" data-group-id="8118748874-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8118748874-8">%</span><span class="nc" data-group-id="8118748874-8">Ecto.Changeset</span><span class="p" data-group-id="8118748874-8">{</span><span class="p" data-group-id="8118748874-8">}</span><span class="p" data-group-id="8118748874-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="delete_contact_tag/1">
   <div class="detail-header">
@@ -430,7 +445,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete_contact_tag(contact_tag)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L402" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L422" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -447,11 +462,11 @@ Functions          </h1>
   <a href="#delete_contact_tag/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact_tag</span><span class="p" data-group-id="0290865384-1">(</span><span class="n">contact_tag</span><span class="p" data-group-id="0290865384-1">)</span><span class="w">
-</span><span class="p" data-group-id="0290865384-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0290865384-3">%</span><span class="nc" data-group-id="0290865384-3">ContactTag</span><span class="p" data-group-id="0290865384-3">{</span><span class="p" data-group-id="0290865384-3">}</span><span class="p" data-group-id="0290865384-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact_tag</span><span class="p" data-group-id="3663417501-1">(</span><span class="n">contact_tag</span><span class="p" data-group-id="3663417501-1">)</span><span class="w">
+</span><span class="p" data-group-id="3663417501-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3663417501-3">%</span><span class="nc" data-group-id="3663417501-3">ContactTag</span><span class="p" data-group-id="3663417501-3">{</span><span class="p" data-group-id="3663417501-3">}</span><span class="p" data-group-id="3663417501-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact_tag</span><span class="p" data-group-id="0290865384-4">(</span><span class="n">contact_tag</span><span class="p" data-group-id="0290865384-4">)</span><span class="w">
-</span><span class="p" data-group-id="0290865384-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0290865384-6">%</span><span class="nc" data-group-id="0290865384-6">Ecto.Changeset</span><span class="p" data-group-id="0290865384-6">{</span><span class="p" data-group-id="0290865384-6">}</span><span class="p" data-group-id="0290865384-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact_tag</span><span class="p" data-group-id="3663417501-4">(</span><span class="n">contact_tag</span><span class="p" data-group-id="3663417501-4">)</span><span class="w">
+</span><span class="p" data-group-id="3663417501-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3663417501-6">%</span><span class="nc" data-group-id="3663417501-6">Ecto.Changeset</span><span class="p" data-group-id="3663417501-6">{</span><span class="p" data-group-id="3663417501-6">}</span><span class="p" data-group-id="3663417501-5">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="delete_message_tag/1">
   <div class="detail-header">
@@ -477,11 +492,36 @@ Functions          </h1>
   <a href="#delete_message_tag/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_tag</span><span class="p" data-group-id="9813549797-1">(</span><span class="n">message_tag</span><span class="p" data-group-id="9813549797-1">)</span><span class="w">
-</span><span class="p" data-group-id="9813549797-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9813549797-3">%</span><span class="nc" data-group-id="9813549797-3">MessageTag</span><span class="p" data-group-id="9813549797-3">{</span><span class="p" data-group-id="9813549797-3">}</span><span class="p" data-group-id="9813549797-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_tag</span><span class="p" data-group-id="1800818634-1">(</span><span class="n">message_tag</span><span class="p" data-group-id="1800818634-1">)</span><span class="w">
+</span><span class="p" data-group-id="1800818634-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1800818634-3">%</span><span class="nc" data-group-id="1800818634-3">MessageTag</span><span class="p" data-group-id="1800818634-3">{</span><span class="p" data-group-id="1800818634-3">}</span><span class="p" data-group-id="1800818634-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_tag</span><span class="p" data-group-id="9813549797-4">(</span><span class="n">message_tag</span><span class="p" data-group-id="9813549797-4">)</span><span class="w">
-</span><span class="p" data-group-id="9813549797-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9813549797-6">%</span><span class="nc" data-group-id="9813549797-6">Ecto.Changeset</span><span class="p" data-group-id="9813549797-6">{</span><span class="p" data-group-id="9813549797-6">}</span><span class="p" data-group-id="9813549797-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_tag</span><span class="p" data-group-id="1800818634-4">(</span><span class="n">message_tag</span><span class="p" data-group-id="1800818634-4">)</span><span class="w">
+</span><span class="p" data-group-id="1800818634-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1800818634-6">%</span><span class="nc" data-group-id="1800818634-6">Ecto.Changeset</span><span class="p" data-group-id="1800818634-6">{</span><span class="p" data-group-id="1800818634-6">}</span><span class="p" data-group-id="1800818634-5">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="delete_message_tag_by_ids/2">
+  <div class="detail-header">
+    <a href="#delete_message_tag_by_ids/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_message_tag_by_ids(message_id, tag_id)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L309" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete_message_tag_by_ids(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), nil | [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()]}</pre>
+          <pre>delete_message_tag_by_ids(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), []) :: {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), nil | [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()]}</pre>
+      </div>
+
+<p>In Join tables we rarely use the table id. We always know the object ids
+and hence more convenient to delete an entry via its object ids.
+We will generalize this function and move it to Repo.ex when we get a better
+handle on how to do so :)</p>  </section>
 </section>
 <section class="detail" id="delete_tag/1">
   <div class="detail-header">
@@ -507,11 +547,11 @@ Functions          </h1>
   <a href="#delete_tag/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_tag</span><span class="p" data-group-id="8690405173-1">(</span><span class="n">tag</span><span class="p" data-group-id="8690405173-1">)</span><span class="w">
-</span><span class="p" data-group-id="8690405173-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8690405173-3">%</span><span class="nc" data-group-id="8690405173-3">Tag</span><span class="p" data-group-id="8690405173-3">{</span><span class="p" data-group-id="8690405173-3">}</span><span class="p" data-group-id="8690405173-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_tag</span><span class="p" data-group-id="5113315280-1">(</span><span class="n">tag</span><span class="p" data-group-id="5113315280-1">)</span><span class="w">
+</span><span class="p" data-group-id="5113315280-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5113315280-3">%</span><span class="nc" data-group-id="5113315280-3">Tag</span><span class="p" data-group-id="5113315280-3">{</span><span class="p" data-group-id="5113315280-3">}</span><span class="p" data-group-id="5113315280-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_tag</span><span class="p" data-group-id="8690405173-4">(</span><span class="n">tag</span><span class="p" data-group-id="8690405173-4">)</span><span class="w">
-</span><span class="p" data-group-id="8690405173-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8690405173-6">%</span><span class="nc" data-group-id="8690405173-6">Ecto.Changeset</span><span class="p" data-group-id="8690405173-6">{</span><span class="p" data-group-id="8690405173-6">}</span><span class="p" data-group-id="8690405173-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_tag</span><span class="p" data-group-id="5113315280-4">(</span><span class="n">tag</span><span class="p" data-group-id="5113315280-4">)</span><span class="w">
+</span><span class="p" data-group-id="5113315280-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5113315280-6">%</span><span class="nc" data-group-id="5113315280-6">Ecto.Changeset</span><span class="p" data-group-id="5113315280-6">{</span><span class="p" data-group-id="5113315280-6">}</span><span class="p" data-group-id="5113315280-5">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_contact_tag!/1">
   <div class="detail-header">
@@ -520,7 +560,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_contact_tag!(id)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L345" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L365" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -536,10 +576,10 @@ Functions          </h1>
   <a href="#get_contact_tag!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_contact_tag!</span><span class="p" data-group-id="6691377372-1">(</span><span class="mi">123</span><span class="p" data-group-id="6691377372-1">)</span><span class="w">
-</span><span class="p" data-group-id="6691377372-2">%</span><span class="nc" data-group-id="6691377372-2">Contact</span><span class="p" data-group-id="6691377372-2">{</span><span class="p" data-group-id="6691377372-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_contact_tag!</span><span class="p" data-group-id="8613053362-1">(</span><span class="mi">123</span><span class="p" data-group-id="8613053362-1">)</span><span class="w">
+</span><span class="p" data-group-id="8613053362-2">%</span><span class="nc" data-group-id="8613053362-2">Contact</span><span class="p" data-group-id="8613053362-2">{</span><span class="p" data-group-id="8613053362-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_contact_tag!</span><span class="p" data-group-id="6691377372-3">(</span><span class="mi">456</span><span class="p" data-group-id="6691377372-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_contact_tag!</span><span class="p" data-group-id="8613053362-3">(</span><span class="mi">456</span><span class="p" data-group-id="8613053362-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_message_tag!/1">
@@ -565,10 +605,10 @@ Functions          </h1>
   <a href="#get_message_tag!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_message_tag!</span><span class="p" data-group-id="4474254136-1">(</span><span class="mi">123</span><span class="p" data-group-id="4474254136-1">)</span><span class="w">
-</span><span class="p" data-group-id="4474254136-2">%</span><span class="nc" data-group-id="4474254136-2">Message</span><span class="p" data-group-id="4474254136-2">{</span><span class="p" data-group-id="4474254136-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_message_tag!</span><span class="p" data-group-id="7793592555-1">(</span><span class="mi">123</span><span class="p" data-group-id="7793592555-1">)</span><span class="w">
+</span><span class="p" data-group-id="7793592555-2">%</span><span class="nc" data-group-id="7793592555-2">Message</span><span class="p" data-group-id="7793592555-2">{</span><span class="p" data-group-id="7793592555-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message_tag!</span><span class="p" data-group-id="4474254136-3">(</span><span class="mi">456</span><span class="p" data-group-id="4474254136-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message_tag!</span><span class="p" data-group-id="7793592555-3">(</span><span class="mi">456</span><span class="p" data-group-id="7793592555-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_tag!/1">
@@ -594,10 +634,10 @@ Functions          </h1>
   <a href="#get_tag!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_tag!</span><span class="p" data-group-id="1604874342-1">(</span><span class="mi">123</span><span class="p" data-group-id="1604874342-1">)</span><span class="w">
-</span><span class="p" data-group-id="1604874342-2">%</span><span class="nc" data-group-id="1604874342-2">Tag</span><span class="p" data-group-id="1604874342-2">{</span><span class="p" data-group-id="1604874342-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_tag!</span><span class="p" data-group-id="5149334362-1">(</span><span class="mi">123</span><span class="p" data-group-id="5149334362-1">)</span><span class="w">
+</span><span class="p" data-group-id="5149334362-2">%</span><span class="nc" data-group-id="5149334362-2">Tag</span><span class="p" data-group-id="5149334362-2">{</span><span class="p" data-group-id="5149334362-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_tag!</span><span class="p" data-group-id="1604874342-3">(</span><span class="mi">456</span><span class="p" data-group-id="1604874342-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_tag!</span><span class="p" data-group-id="5149334362-3">(</span><span class="mi">456</span><span class="p" data-group-id="5149334362-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="keyword_map/0">
@@ -629,7 +669,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">list_contacts_tags(args \\ %{})</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L326" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L346" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -645,8 +685,8 @@ Functions          </h1>
   <a href="#list_contacts_tags/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_contacts_tags</span><span class="p" data-group-id="7167031325-1">(</span><span class="p" data-group-id="7167031325-1">)</span><span class="w">
-</span><span class="p" data-group-id="7167031325-2">[</span><span class="p" data-group-id="7167031325-3">%</span><span class="nc" data-group-id="7167031325-3">ContactTag</span><span class="p" data-group-id="7167031325-3">{</span><span class="p" data-group-id="7167031325-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="7167031325-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_contacts_tags</span><span class="p" data-group-id="4734546303-1">(</span><span class="p" data-group-id="4734546303-1">)</span><span class="w">
+</span><span class="p" data-group-id="4734546303-2">[</span><span class="p" data-group-id="4734546303-3">%</span><span class="nc" data-group-id="4734546303-3">ContactTag</span><span class="p" data-group-id="4734546303-3">{</span><span class="p" data-group-id="4734546303-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="4734546303-2">]</span></code></pre>  </section>
 </section>
 <section class="detail" id="list_messages_tags/1">
     <span id="list_messages_tags/0"></span>
@@ -672,8 +712,8 @@ Functions          </h1>
   <a href="#list_messages_tags/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages_tags</span><span class="p" data-group-id="7572892757-1">(</span><span class="p" data-group-id="7572892757-1">)</span><span class="w">
-</span><span class="p" data-group-id="7572892757-2">[</span><span class="p" data-group-id="7572892757-3">%</span><span class="nc" data-group-id="7572892757-3">MessageTag</span><span class="p" data-group-id="7572892757-3">{</span><span class="p" data-group-id="7572892757-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="7572892757-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages_tags</span><span class="p" data-group-id="2316371499-1">(</span><span class="p" data-group-id="2316371499-1">)</span><span class="w">
+</span><span class="p" data-group-id="2316371499-2">[</span><span class="p" data-group-id="2316371499-3">%</span><span class="nc" data-group-id="2316371499-3">MessageTag</span><span class="p" data-group-id="2316371499-3">{</span><span class="p" data-group-id="2316371499-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="2316371499-2">]</span></code></pre>  </section>
 </section>
 <section class="detail" id="list_tags/1">
     <span id="list_tags/0"></span>
@@ -699,8 +739,29 @@ Functions          </h1>
   <a href="#list_tags/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_tags</span><span class="p" data-group-id="8622646110-1">(</span><span class="p" data-group-id="8622646110-1">)</span><span class="w">
-</span><span class="p" data-group-id="8622646110-2">[</span><span class="p" data-group-id="8622646110-3">%</span><span class="nc" data-group-id="8622646110-3">Tag</span><span class="p" data-group-id="8622646110-3">{</span><span class="p" data-group-id="8622646110-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="8622646110-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_tags</span><span class="p" data-group-id="5359810330-1">(</span><span class="p" data-group-id="5359810330-1">)</span><span class="w">
+</span><span class="p" data-group-id="5359810330-2">[</span><span class="p" data-group-id="5359810330-3">%</span><span class="nc" data-group-id="5359810330-3">Tag</span><span class="p" data-group-id="5359810330-3">{</span><span class="p" data-group-id="5359810330-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="5359810330-2">]</span></code></pre>  </section>
+</section>
+<section class="detail" id="remove_tag_from_all_message/2">
+  <div class="detail-header">
+    <a href="#remove_tag_from_all_message/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">remove_tag_from_all_message(contact_id, tag_label)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L444" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>remove_tag_from_all_message(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()</pre>
+      </div>
+
+<p>  Remove a specific tag from contact messages</p>  </section>
 </section>
 <section class="detail" id="status_map/0">
   <div class="detail-header">
@@ -752,7 +813,7 @@ for all objects soon, and will promote this to Repo</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_contact_tag(contact_tag, attrs)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L383" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/blob/master/lib/glific/tags.ex#L403" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -769,11 +830,11 @@ for all objects soon, and will promote this to Repo</p>  </section>
   <a href="#update_contact_tag/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_contact_tag</span><span class="p" data-group-id="4999689053-1">(</span><span class="n">contact_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4999689053-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="4999689053-2">}</span><span class="p" data-group-id="4999689053-1">)</span><span class="w">
-</span><span class="p" data-group-id="4999689053-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4999689053-4">%</span><span class="nc" data-group-id="4999689053-4">ContactTag</span><span class="p" data-group-id="4999689053-4">{</span><span class="p" data-group-id="4999689053-4">}</span><span class="p" data-group-id="4999689053-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_contact_tag</span><span class="p" data-group-id="6866940047-1">(</span><span class="n">contact_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6866940047-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="6866940047-2">}</span><span class="p" data-group-id="6866940047-1">)</span><span class="w">
+</span><span class="p" data-group-id="6866940047-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6866940047-4">%</span><span class="nc" data-group-id="6866940047-4">ContactTag</span><span class="p" data-group-id="6866940047-4">{</span><span class="p" data-group-id="6866940047-4">}</span><span class="p" data-group-id="6866940047-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_contact_tag</span><span class="p" data-group-id="4999689053-5">(</span><span class="n">contact_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4999689053-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4999689053-6">}</span><span class="p" data-group-id="4999689053-5">)</span><span class="w">
-</span><span class="p" data-group-id="4999689053-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4999689053-8">%</span><span class="nc" data-group-id="4999689053-8">Ecto.Changeset</span><span class="p" data-group-id="4999689053-8">{</span><span class="p" data-group-id="4999689053-8">}</span><span class="p" data-group-id="4999689053-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_contact_tag</span><span class="p" data-group-id="6866940047-5">(</span><span class="n">contact_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6866940047-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6866940047-6">}</span><span class="p" data-group-id="6866940047-5">)</span><span class="w">
+</span><span class="p" data-group-id="6866940047-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6866940047-8">%</span><span class="nc" data-group-id="6866940047-8">Ecto.Changeset</span><span class="p" data-group-id="6866940047-8">{</span><span class="p" data-group-id="6866940047-8">}</span><span class="p" data-group-id="6866940047-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="update_message_tag/2">
   <div class="detail-header">
@@ -799,11 +860,11 @@ for all objects soon, and will promote this to Repo</p>  </section>
   <a href="#update_message_tag/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_message_tag</span><span class="p" data-group-id="2941924849-1">(</span><span class="n">message_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2941924849-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="2941924849-2">}</span><span class="p" data-group-id="2941924849-1">)</span><span class="w">
-</span><span class="p" data-group-id="2941924849-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2941924849-4">%</span><span class="nc" data-group-id="2941924849-4">MessageTag</span><span class="p" data-group-id="2941924849-4">{</span><span class="p" data-group-id="2941924849-4">}</span><span class="p" data-group-id="2941924849-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_message_tag</span><span class="p" data-group-id="3280524170-1">(</span><span class="n">message_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3280524170-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="3280524170-2">}</span><span class="p" data-group-id="3280524170-1">)</span><span class="w">
+</span><span class="p" data-group-id="3280524170-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3280524170-4">%</span><span class="nc" data-group-id="3280524170-4">MessageTag</span><span class="p" data-group-id="3280524170-4">{</span><span class="p" data-group-id="3280524170-4">}</span><span class="p" data-group-id="3280524170-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message_tag</span><span class="p" data-group-id="2941924849-5">(</span><span class="n">message_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2941924849-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2941924849-6">}</span><span class="p" data-group-id="2941924849-5">)</span><span class="w">
-</span><span class="p" data-group-id="2941924849-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2941924849-8">%</span><span class="nc" data-group-id="2941924849-8">Ecto.Changeset</span><span class="p" data-group-id="2941924849-8">{</span><span class="p" data-group-id="2941924849-8">}</span><span class="p" data-group-id="2941924849-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message_tag</span><span class="p" data-group-id="3280524170-5">(</span><span class="n">message_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3280524170-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3280524170-6">}</span><span class="p" data-group-id="3280524170-5">)</span><span class="w">
+</span><span class="p" data-group-id="3280524170-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3280524170-8">%</span><span class="nc" data-group-id="3280524170-8">Ecto.Changeset</span><span class="p" data-group-id="3280524170-8">{</span><span class="p" data-group-id="3280524170-8">}</span><span class="p" data-group-id="3280524170-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="update_tag/2">
   <div class="detail-header">
@@ -829,11 +890,11 @@ for all objects soon, and will promote this to Repo</p>  </section>
   <a href="#update_tag/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_tag</span><span class="p" data-group-id="3305647095-1">(</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3305647095-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="3305647095-2">}</span><span class="p" data-group-id="3305647095-1">)</span><span class="w">
-</span><span class="p" data-group-id="3305647095-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3305647095-4">%</span><span class="nc" data-group-id="3305647095-4">Tag</span><span class="p" data-group-id="3305647095-4">{</span><span class="p" data-group-id="3305647095-4">}</span><span class="p" data-group-id="3305647095-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_tag</span><span class="p" data-group-id="5851172121-1">(</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5851172121-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="5851172121-2">}</span><span class="p" data-group-id="5851172121-1">)</span><span class="w">
+</span><span class="p" data-group-id="5851172121-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5851172121-4">%</span><span class="nc" data-group-id="5851172121-4">Tag</span><span class="p" data-group-id="5851172121-4">{</span><span class="p" data-group-id="5851172121-4">}</span><span class="p" data-group-id="5851172121-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_tag</span><span class="p" data-group-id="3305647095-5">(</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3305647095-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3305647095-6">}</span><span class="p" data-group-id="3305647095-5">)</span><span class="w">
-</span><span class="p" data-group-id="3305647095-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3305647095-8">%</span><span class="nc" data-group-id="3305647095-8">Ecto.Changeset</span><span class="p" data-group-id="3305647095-8">{</span><span class="p" data-group-id="3305647095-8">}</span><span class="p" data-group-id="3305647095-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_tag</span><span class="p" data-group-id="5851172121-5">(</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5851172121-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5851172121-6">}</span><span class="p" data-group-id="5851172121-5">)</span><span class="w">
+</span><span class="p" data-group-id="5851172121-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5851172121-8">%</span><span class="nc" data-group-id="5851172121-8">Ecto.Changeset</span><span class="p" data-group-id="5851172121-8">{</span><span class="p" data-group-id="5851172121-8">}</span><span class="p" data-group-id="5851172121-7">}</span></code></pre>  </section>
 </section>
           </div>
         </section>

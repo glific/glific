@@ -7,10 +7,10 @@
     <meta name="generator" content="ExDoc v0.22.1">
     <meta name="project" content="Glific v0.1.0">
     <title>Glific.Settings — Glific v0.1.0</title>
-    <link rel="stylesheet" href="dist/elixir-e589b8fad3dab6230c65.css" />
-    <script src="dist/sidebar_items-9a3439fc57.js"></script>
+    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
+    <script src="dist/sidebar_items-5899045b6f.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-5c0c23dfec2d63ae33a2.js"></script>
+    <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -170,8 +170,8 @@ Functions          </h1>
   <a href="#change_language/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_language</span><span class="p" data-group-id="9292712711-1">(</span><span class="n">language</span><span class="p" data-group-id="9292712711-1">)</span><span class="w">
-</span><span class="p" data-group-id="9292712711-2">%</span><span class="nc" data-group-id="9292712711-2">Ecto.Changeset</span><span class="p" data-group-id="9292712711-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9292712711-3">%</span><span class="nc" data-group-id="9292712711-3">Language</span><span class="p" data-group-id="9292712711-3">{</span><span class="p" data-group-id="9292712711-3">}</span><span class="p" data-group-id="9292712711-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_language</span><span class="p" data-group-id="7731561404-1">(</span><span class="n">language</span><span class="p" data-group-id="7731561404-1">)</span><span class="w">
+</span><span class="p" data-group-id="7731561404-2">%</span><span class="nc" data-group-id="7731561404-2">Ecto.Changeset</span><span class="p" data-group-id="7731561404-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7731561404-3">%</span><span class="nc" data-group-id="7731561404-3">Language</span><span class="p" data-group-id="7731561404-3">{</span><span class="p" data-group-id="7731561404-3">}</span><span class="p" data-group-id="7731561404-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="count_languages/1">
     <span id="count_languages/0"></span>
@@ -220,11 +220,11 @@ Functions          </h1>
   <a href="#create_language/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_language</span><span class="p" data-group-id="2947408135-1">(</span><span class="p" data-group-id="2947408135-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="2947408135-2">}</span><span class="p" data-group-id="2947408135-1">)</span><span class="w">
-</span><span class="p" data-group-id="2947408135-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2947408135-4">%</span><span class="nc" data-group-id="2947408135-4">Language</span><span class="p" data-group-id="2947408135-4">{</span><span class="p" data-group-id="2947408135-4">}</span><span class="p" data-group-id="2947408135-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_language</span><span class="p" data-group-id="9585371458-1">(</span><span class="p" data-group-id="9585371458-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="9585371458-2">}</span><span class="p" data-group-id="9585371458-1">)</span><span class="w">
+</span><span class="p" data-group-id="9585371458-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9585371458-4">%</span><span class="nc" data-group-id="9585371458-4">Language</span><span class="p" data-group-id="9585371458-4">{</span><span class="p" data-group-id="9585371458-4">}</span><span class="p" data-group-id="9585371458-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_language</span><span class="p" data-group-id="2947408135-5">(</span><span class="p" data-group-id="2947408135-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2947408135-6">}</span><span class="p" data-group-id="2947408135-5">)</span><span class="w">
-</span><span class="p" data-group-id="2947408135-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2947408135-8">%</span><span class="nc" data-group-id="2947408135-8">Ecto.Changeset</span><span class="p" data-group-id="2947408135-8">{</span><span class="p" data-group-id="2947408135-8">}</span><span class="p" data-group-id="2947408135-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_language</span><span class="p" data-group-id="9585371458-5">(</span><span class="p" data-group-id="9585371458-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="9585371458-6">}</span><span class="p" data-group-id="9585371458-5">)</span><span class="w">
+</span><span class="p" data-group-id="9585371458-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9585371458-8">%</span><span class="nc" data-group-id="9585371458-8">Ecto.Changeset</span><span class="p" data-group-id="9585371458-8">{</span><span class="p" data-group-id="9585371458-8">}</span><span class="p" data-group-id="9585371458-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="delete_language/1">
   <div class="detail-header">
@@ -250,11 +250,11 @@ Functions          </h1>
   <a href="#delete_language/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_language</span><span class="p" data-group-id="4779031918-1">(</span><span class="n">language</span><span class="p" data-group-id="4779031918-1">)</span><span class="w">
-</span><span class="p" data-group-id="4779031918-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4779031918-3">%</span><span class="nc" data-group-id="4779031918-3">Language</span><span class="p" data-group-id="4779031918-3">{</span><span class="p" data-group-id="4779031918-3">}</span><span class="p" data-group-id="4779031918-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_language</span><span class="p" data-group-id="7403748191-1">(</span><span class="n">language</span><span class="p" data-group-id="7403748191-1">)</span><span class="w">
+</span><span class="p" data-group-id="7403748191-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7403748191-3">%</span><span class="nc" data-group-id="7403748191-3">Language</span><span class="p" data-group-id="7403748191-3">{</span><span class="p" data-group-id="7403748191-3">}</span><span class="p" data-group-id="7403748191-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_language</span><span class="p" data-group-id="4779031918-4">(</span><span class="n">language</span><span class="p" data-group-id="4779031918-4">)</span><span class="w">
-</span><span class="p" data-group-id="4779031918-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4779031918-6">%</span><span class="nc" data-group-id="4779031918-6">Ecto.Changeset</span><span class="p" data-group-id="4779031918-6">{</span><span class="p" data-group-id="4779031918-6">}</span><span class="p" data-group-id="4779031918-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_language</span><span class="p" data-group-id="7403748191-4">(</span><span class="n">language</span><span class="p" data-group-id="7403748191-4">)</span><span class="w">
+</span><span class="p" data-group-id="7403748191-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7403748191-6">%</span><span class="nc" data-group-id="7403748191-6">Ecto.Changeset</span><span class="p" data-group-id="7403748191-6">{</span><span class="p" data-group-id="7403748191-6">}</span><span class="p" data-group-id="7403748191-5">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_language!/1">
   <div class="detail-header">
@@ -279,10 +279,10 @@ Functions          </h1>
   <a href="#get_language!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_language!</span><span class="p" data-group-id="2613506178-1">(</span><span class="mi">123</span><span class="p" data-group-id="2613506178-1">)</span><span class="w">
-</span><span class="p" data-group-id="2613506178-2">%</span><span class="nc" data-group-id="2613506178-2">Language</span><span class="p" data-group-id="2613506178-2">{</span><span class="p" data-group-id="2613506178-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_language!</span><span class="p" data-group-id="4882794616-1">(</span><span class="mi">123</span><span class="p" data-group-id="4882794616-1">)</span><span class="w">
+</span><span class="p" data-group-id="4882794616-2">%</span><span class="nc" data-group-id="4882794616-2">Language</span><span class="p" data-group-id="4882794616-2">{</span><span class="p" data-group-id="4882794616-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_language!</span><span class="p" data-group-id="2613506178-3">(</span><span class="mi">456</span><span class="p" data-group-id="2613506178-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_language!</span><span class="p" data-group-id="4882794616-3">(</span><span class="mi">456</span><span class="p" data-group-id="4882794616-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="language_upsert/1">
@@ -331,8 +331,8 @@ it returns the existing contact, else it creates a new one</p>  </section>
   <a href="#list_languages/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_languages</span><span class="p" data-group-id="4917261997-1">(</span><span class="p" data-group-id="4917261997-1">)</span><span class="w">
-</span><span class="p" data-group-id="4917261997-2">[</span><span class="p" data-group-id="4917261997-3">%</span><span class="nc" data-group-id="4917261997-3">Language</span><span class="p" data-group-id="4917261997-3">{</span><span class="p" data-group-id="4917261997-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="4917261997-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_languages</span><span class="p" data-group-id="5914977324-1">(</span><span class="p" data-group-id="5914977324-1">)</span><span class="w">
+</span><span class="p" data-group-id="5914977324-2">[</span><span class="p" data-group-id="5914977324-3">%</span><span class="nc" data-group-id="5914977324-3">Language</span><span class="p" data-group-id="5914977324-3">{</span><span class="p" data-group-id="5914977324-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="5914977324-2">]</span></code></pre>  </section>
 </section>
 <section class="detail" id="update_language/2">
   <div class="detail-header">
@@ -358,11 +358,11 @@ it returns the existing contact, else it creates a new one</p>  </section>
   <a href="#update_language/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_language</span><span class="p" data-group-id="5324171895-1">(</span><span class="n">language</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5324171895-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="5324171895-2">}</span><span class="p" data-group-id="5324171895-1">)</span><span class="w">
-</span><span class="p" data-group-id="5324171895-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5324171895-4">%</span><span class="nc" data-group-id="5324171895-4">Language</span><span class="p" data-group-id="5324171895-4">{</span><span class="p" data-group-id="5324171895-4">}</span><span class="p" data-group-id="5324171895-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_language</span><span class="p" data-group-id="7328394663-1">(</span><span class="n">language</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7328394663-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="7328394663-2">}</span><span class="p" data-group-id="7328394663-1">)</span><span class="w">
+</span><span class="p" data-group-id="7328394663-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7328394663-4">%</span><span class="nc" data-group-id="7328394663-4">Language</span><span class="p" data-group-id="7328394663-4">{</span><span class="p" data-group-id="7328394663-4">}</span><span class="p" data-group-id="7328394663-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_language</span><span class="p" data-group-id="5324171895-5">(</span><span class="n">language</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5324171895-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5324171895-6">}</span><span class="p" data-group-id="5324171895-5">)</span><span class="w">
-</span><span class="p" data-group-id="5324171895-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5324171895-8">%</span><span class="nc" data-group-id="5324171895-8">Ecto.Changeset</span><span class="p" data-group-id="5324171895-8">{</span><span class="p" data-group-id="5324171895-8">}</span><span class="p" data-group-id="5324171895-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_language</span><span class="p" data-group-id="7328394663-5">(</span><span class="n">language</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7328394663-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="7328394663-6">}</span><span class="p" data-group-id="7328394663-5">)</span><span class="w">
+</span><span class="p" data-group-id="7328394663-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7328394663-8">%</span><span class="nc" data-group-id="7328394663-8">Ecto.Changeset</span><span class="p" data-group-id="7328394663-8">{</span><span class="p" data-group-id="7328394663-8">}</span><span class="p" data-group-id="7328394663-7">}</span></code></pre>  </section>
 </section>
           </div>
         </section>

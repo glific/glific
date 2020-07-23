@@ -1,4 +1,4 @@
-dist/search_items-46f6b007e1.js
+dist/search_items-89b729b40f.js
 dist/app-5c0c23dfec2d63ae33a2.js
 dist/elixir-e589b8fad3dab6230c65.css
 dist/erlang-9792543de8efae7446f0.css
@@ -6,7 +6,7 @@ dist/html/fonts/icomoon.eot
 dist/html/fonts/icomoon.svg
 dist/html/fonts/icomoon.ttf
 dist/html/fonts/icomoon.woff
-dist/sidebar_items-9a3439fc57.js
+dist/sidebar_items-5899045b6f.js
 api-reference.html
 readme.html
 changelog.html
@@ -17,6 +17,7 @@ Glific.Communications.html
 Glific.Communications.Message.html
 Glific.Contacts.html
 Glific.Contacts.Contact.html
+Glific.Contacts.Location.html
 Glific.Conversations.html
 Glific.Conversations.Conversation.html
 Glific.Enums.html
@@ -56,11 +57,10 @@ Glific.Providers.Gupshup.Message.html
 Glific.Providers.Gupshup.Worker.html
 Glific.Providers.MessageBehaviour.html
 Glific.Repo.html
-Glific.SMSAdapter.Gupshup.Message.html
 Glific.Search.Full.html
 Glific.Searches.html
 Glific.Searches.SavedSearch.html
-Glific.Seeds.html
+Glific.SeedsDev.html
 Glific.SeedsScale.html
 Glific.Settings.html
 Glific.Settings.Language.html

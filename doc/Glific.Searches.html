@@ -7,10 +7,10 @@
     <meta name="generator" content="ExDoc v0.22.1">
     <meta name="project" content="Glific v0.1.0">
     <title>Glific.Searches — Glific v0.1.0</title>
-    <link rel="stylesheet" href="dist/elixir-e589b8fad3dab6230c65.css" />
-    <script src="dist/sidebar_items-9a3439fc57.js"></script>
+    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
+    <script src="dist/sidebar_items-5899045b6f.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-5c0c23dfec2d63ae33a2.js"></script>
+    <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -164,8 +164,8 @@ Functions          </h1>
   <a href="#change_saved_search/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_saved_search</span><span class="p" data-group-id="4707315135-1">(</span><span class="n">search</span><span class="p" data-group-id="4707315135-1">)</span><span class="w">
-</span><span class="p" data-group-id="4707315135-2">%</span><span class="nc" data-group-id="4707315135-2">Ecto.Changeset</span><span class="p" data-group-id="4707315135-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4707315135-3">%</span><span class="nc" data-group-id="4707315135-3">Search</span><span class="p" data-group-id="4707315135-3">{</span><span class="p" data-group-id="4707315135-3">}</span><span class="p" data-group-id="4707315135-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_saved_search</span><span class="p" data-group-id="8318010882-1">(</span><span class="n">search</span><span class="p" data-group-id="8318010882-1">)</span><span class="w">
+</span><span class="p" data-group-id="8318010882-2">%</span><span class="nc" data-group-id="8318010882-2">Ecto.Changeset</span><span class="p" data-group-id="8318010882-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8318010882-3">%</span><span class="nc" data-group-id="8318010882-3">Search</span><span class="p" data-group-id="8318010882-3">{</span><span class="p" data-group-id="8318010882-3">}</span><span class="p" data-group-id="8318010882-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="create_saved_search/1">
   <div class="detail-header">
@@ -191,11 +191,11 @@ Functions          </h1>
   <a href="#create_saved_search/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_saved_search</span><span class="p" data-group-id="0382078870-1">(</span><span class="p" data-group-id="0382078870-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="0382078870-2">}</span><span class="p" data-group-id="0382078870-1">)</span><span class="w">
-</span><span class="p" data-group-id="0382078870-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0382078870-4">%</span><span class="nc" data-group-id="0382078870-4">SavedSearch</span><span class="p" data-group-id="0382078870-4">{</span><span class="p" data-group-id="0382078870-4">}</span><span class="p" data-group-id="0382078870-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_saved_search</span><span class="p" data-group-id="5727455690-1">(</span><span class="p" data-group-id="5727455690-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="5727455690-2">}</span><span class="p" data-group-id="5727455690-1">)</span><span class="w">
+</span><span class="p" data-group-id="5727455690-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5727455690-4">%</span><span class="nc" data-group-id="5727455690-4">SavedSearch</span><span class="p" data-group-id="5727455690-4">{</span><span class="p" data-group-id="5727455690-4">}</span><span class="p" data-group-id="5727455690-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_saved_search</span><span class="p" data-group-id="0382078870-5">(</span><span class="p" data-group-id="0382078870-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0382078870-6">}</span><span class="p" data-group-id="0382078870-5">)</span><span class="w">
-</span><span class="p" data-group-id="0382078870-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0382078870-8">%</span><span class="nc" data-group-id="0382078870-8">Ecto.Changeset</span><span class="p" data-group-id="0382078870-8">{</span><span class="p" data-group-id="0382078870-8">}</span><span class="p" data-group-id="0382078870-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_saved_search</span><span class="p" data-group-id="5727455690-5">(</span><span class="p" data-group-id="5727455690-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5727455690-6">}</span><span class="p" data-group-id="5727455690-5">)</span><span class="w">
+</span><span class="p" data-group-id="5727455690-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5727455690-8">%</span><span class="nc" data-group-id="5727455690-8">Ecto.Changeset</span><span class="p" data-group-id="5727455690-8">{</span><span class="p" data-group-id="5727455690-8">}</span><span class="p" data-group-id="5727455690-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="delete_saved_search/1">
   <div class="detail-header">
@@ -221,11 +221,11 @@ Functions          </h1>
   <a href="#delete_saved_search/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_saved_search</span><span class="p" data-group-id="9902017140-1">(</span><span class="n">search</span><span class="p" data-group-id="9902017140-1">)</span><span class="w">
-</span><span class="p" data-group-id="9902017140-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9902017140-3">%</span><span class="nc" data-group-id="9902017140-3">SavedSearch</span><span class="p" data-group-id="9902017140-3">{</span><span class="p" data-group-id="9902017140-3">}</span><span class="p" data-group-id="9902017140-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_saved_search</span><span class="p" data-group-id="8730843931-1">(</span><span class="n">search</span><span class="p" data-group-id="8730843931-1">)</span><span class="w">
+</span><span class="p" data-group-id="8730843931-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8730843931-3">%</span><span class="nc" data-group-id="8730843931-3">SavedSearch</span><span class="p" data-group-id="8730843931-3">{</span><span class="p" data-group-id="8730843931-3">}</span><span class="p" data-group-id="8730843931-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_saved_search</span><span class="p" data-group-id="9902017140-4">(</span><span class="n">search</span><span class="p" data-group-id="9902017140-4">)</span><span class="w">
-</span><span class="p" data-group-id="9902017140-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9902017140-6">%</span><span class="nc" data-group-id="9902017140-6">Ecto.Changeset</span><span class="p" data-group-id="9902017140-6">{</span><span class="p" data-group-id="9902017140-6">}</span><span class="p" data-group-id="9902017140-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_saved_search</span><span class="p" data-group-id="8730843931-4">(</span><span class="n">search</span><span class="p" data-group-id="8730843931-4">)</span><span class="w">
+</span><span class="p" data-group-id="8730843931-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8730843931-6">%</span><span class="nc" data-group-id="8730843931-6">Ecto.Changeset</span><span class="p" data-group-id="8730843931-6">{</span><span class="p" data-group-id="8730843931-6">}</span><span class="p" data-group-id="8730843931-5">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_saved_search!/1">
   <div class="detail-header">
@@ -250,10 +250,10 @@ Functions          </h1>
   <a href="#get_saved_search!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_saved_search!</span><span class="p" data-group-id="7834059235-1">(</span><span class="mi">123</span><span class="p" data-group-id="7834059235-1">)</span><span class="w">
-</span><span class="p" data-group-id="7834059235-2">%</span><span class="nc" data-group-id="7834059235-2">SavedSearch</span><span class="p" data-group-id="7834059235-2">{</span><span class="p" data-group-id="7834059235-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_saved_search!</span><span class="p" data-group-id="1838662160-1">(</span><span class="mi">123</span><span class="p" data-group-id="1838662160-1">)</span><span class="w">
+</span><span class="p" data-group-id="1838662160-2">%</span><span class="nc" data-group-id="1838662160-2">SavedSearch</span><span class="p" data-group-id="1838662160-2">{</span><span class="p" data-group-id="1838662160-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_saved_search!</span><span class="p" data-group-id="7834059235-3">(</span><span class="mi">456</span><span class="p" data-group-id="7834059235-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_saved_search!</span><span class="p" data-group-id="1838662160-3">(</span><span class="mi">456</span><span class="p" data-group-id="1838662160-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="list_saved_searches/1">
@@ -280,8 +280,8 @@ Functions          </h1>
   <a href="#list_saved_searches/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_saved_searches</span><span class="p" data-group-id="7928194641-1">(</span><span class="p" data-group-id="7928194641-1">)</span><span class="w">
-</span><span class="p" data-group-id="7928194641-2">[</span><span class="p" data-group-id="7928194641-3">%</span><span class="nc" data-group-id="7928194641-3">SavedSearch</span><span class="p" data-group-id="7928194641-3">{</span><span class="p" data-group-id="7928194641-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="7928194641-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_saved_searches</span><span class="p" data-group-id="4098208026-1">(</span><span class="p" data-group-id="4098208026-1">)</span><span class="w">
+</span><span class="p" data-group-id="4098208026-2">[</span><span class="p" data-group-id="4098208026-3">%</span><span class="nc" data-group-id="4098208026-3">SavedSearch</span><span class="p" data-group-id="4098208026-3">{</span><span class="p" data-group-id="4098208026-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="4098208026-2">]</span></code></pre>  </section>
 </section>
 <section class="detail" id="search/1">
   <div class="detail-header">
@@ -328,11 +328,11 @@ Functions          </h1>
   <a href="#update_saved_search/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_saved_search</span><span class="p" data-group-id="5196113633-1">(</span><span class="n">search</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5196113633-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="5196113633-2">}</span><span class="p" data-group-id="5196113633-1">)</span><span class="w">
-</span><span class="p" data-group-id="5196113633-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5196113633-4">%</span><span class="nc" data-group-id="5196113633-4">SavedSearch</span><span class="p" data-group-id="5196113633-4">{</span><span class="p" data-group-id="5196113633-4">}</span><span class="p" data-group-id="5196113633-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_saved_search</span><span class="p" data-group-id="4693497110-1">(</span><span class="n">search</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4693497110-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="4693497110-2">}</span><span class="p" data-group-id="4693497110-1">)</span><span class="w">
+</span><span class="p" data-group-id="4693497110-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4693497110-4">%</span><span class="nc" data-group-id="4693497110-4">SavedSearch</span><span class="p" data-group-id="4693497110-4">{</span><span class="p" data-group-id="4693497110-4">}</span><span class="p" data-group-id="4693497110-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_saved_search</span><span class="p" data-group-id="5196113633-5">(</span><span class="n">search</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5196113633-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5196113633-6">}</span><span class="p" data-group-id="5196113633-5">)</span><span class="w">
-</span><span class="p" data-group-id="5196113633-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5196113633-8">%</span><span class="nc" data-group-id="5196113633-8">Ecto.Changeset</span><span class="p" data-group-id="5196113633-8">{</span><span class="p" data-group-id="5196113633-8">}</span><span class="p" data-group-id="5196113633-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_saved_search</span><span class="p" data-group-id="4693497110-5">(</span><span class="n">search</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4693497110-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4693497110-6">}</span><span class="p" data-group-id="4693497110-5">)</span><span class="w">
+</span><span class="p" data-group-id="4693497110-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4693497110-8">%</span><span class="nc" data-group-id="4693497110-8">Ecto.Changeset</span><span class="p" data-group-id="4693497110-8">{</span><span class="p" data-group-id="4693497110-8">}</span><span class="p" data-group-id="4693497110-7">}</span></code></pre>  </section>
 </section>
           </div>
         </section>

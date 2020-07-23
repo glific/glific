@@ -7,10 +7,10 @@
     <meta name="generator" content="ExDoc v0.22.1">
     <meta name="project" content="Glific v0.1.0">
     <title>GlificWeb.Resolvers.Contacts — Glific v0.1.0</title>
-    <link rel="stylesheet" href="dist/elixir-e589b8fad3dab6230c65.css" />
-    <script src="dist/sidebar_items-9a3439fc57.js"></script>
+    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
+    <script src="dist/sidebar_items-5899045b6f.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-5c0c23dfec2d63ae33a2.js"></script>
+    <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -89,6 +89,12 @@ one or more calls to resolve the incoming queries.</p>        </section>
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#contact_location/3">contact_location(_, map, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Get current location of the contact</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#count_contacts/3">count_contacts(_, args, _)</a>
   </div>
     <div class="summary-synopsis"><p>Get the count of contacts filtered by args</p></div>
@@ -104,6 +110,28 @@ one or more calls to resolve the incoming queries.</p>        </section>
             </a>
 Functions          </h1>
           <div class="functions-list">
+<section class="detail" id="contact_location/3">
+  <div class="detail-header">
+    <a href="#contact_location/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">contact_location(_, map, _)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific_web/resolvers/contacts.ex#L66" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>contact_location(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Get current location of the contact</p>  </section>
+</section>
 <section class="detail" id="count_contacts/3">
   <div class="detail-header">
     <a href="#count_contacts/3" class="detail-link" title="Link to this function">

@@ -7,10 +7,10 @@
     <meta name="generator" content="ExDoc v0.22.1">
     <meta name="project" content="Glific v0.1.0">
     <title>Glific.Search.Full — Glific v0.1.0</title>
-    <link rel="stylesheet" href="dist/elixir-e589b8fad3dab6230c65.css" />
-    <script src="dist/sidebar_items-9a3439fc57.js"></script>
+    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
+    <script src="dist/sidebar_items-5899045b6f.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-5c0c23dfec2d63ae33a2.js"></script>
+    <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -88,12 +88,12 @@ Glific.Search.Full          <a href="https://github.com/glific/blob/master/lib/g
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#matching_contact_ids_and_ranks/1">matching_contact_ids_and_ranks(term)</a>
+    <a href="#matching_contact_ids_and_ranks/2">matching_contact_ids_and_ranks(term, args)</a>
   </div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#run/2">run(query, term)</a>
+    <a href="#run/3">run(query, term, args)</a>
   </div>
     <div class="summary-synopsis"><p>Simple wrapper function which calls a helper function after normalizing
 and sanitizing the input. The two functions combined serve to augment
@@ -110,14 +110,14 @@ the query with the link to the fulltext index</p></div>
             </a>
 Functions          </h1>
           <div class="functions-list">
-<section class="detail" id="matching_contact_ids_and_ranks/1">
+<section class="detail" id="matching_contact_ids_and_ranks/2">
   <div class="detail-header">
-    <a href="#matching_contact_ids_and_ranks/1" class="detail-link" title="Link to this macro">
+    <a href="#matching_contact_ids_and_ranks/2" class="detail-link" title="Link to this macro">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">matching_contact_ids_and_ranks(term)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/searches/full.ex#L21" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">matching_contact_ids_and_ranks(term, args)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/searches/full.ex#L23" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -128,14 +128,14 @@ Functions          </h1>
 
   </section>
 </section>
-<section class="detail" id="run/2">
+<section class="detail" id="run/3">
   <div class="detail-header">
-    <a href="#run/2" class="detail-link" title="Link to this function">
+    <a href="#run/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">run(query, term)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/searches/full.ex#L14" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">run(query, term, args)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/searches/full.ex#L15" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -144,7 +144,7 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>run(<a href="https://hexdocs.pm/ecto/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/ecto/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
+          <pre>run(<a href="https://hexdocs.pm/ecto/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
       </div>
 
 <p>Simple wrapper function which calls a helper function after normalizing

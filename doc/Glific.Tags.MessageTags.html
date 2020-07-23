@@ -7,10 +7,10 @@
     <meta name="generator" content="ExDoc v0.22.1">
     <meta name="project" content="Glific v0.1.0">
     <title>Glific.Tags.MessageTags — Glific v0.1.0</title>
-    <link rel="stylesheet" href="dist/elixir-e589b8fad3dab6230c65.css" />
-    <script src="dist/sidebar_items-9a3439fc57.js"></script>
+    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
+    <script src="dist/sidebar_items-5899045b6f.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-5c0c23dfec2d63ae33a2.js"></script>
+    <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -98,9 +98,9 @@ Glific.Tags.MessageTags          <a href="https://github.com/glific/blob/master/
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#create_message_tags/1">create_message_tags(attrs \\ %{})</a>
+    <a href="#update_message_tags/1">update_message_tags(attrs)</a>
   </div>
-    <div class="summary-synopsis"><p>Creates a list of message tags, each tag attached to the same message</p></div>
+    <div class="summary-synopsis"><p>Creates and/or deletes a list of message tags, each tag attached to the same message</p></div>
 </div>
   </div>
         </section>
@@ -129,7 +129,10 @@ Types          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>t() :: %Glific.Tags.MessageTags{message_tags: [<a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>()]}</pre>
+          <pre>t() :: %Glific.Tags.MessageTags{
+  message_tags: [<a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>()],
+  number_deleted: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
+}</pre>
       </div>
 
   </section>
@@ -144,15 +147,14 @@ Types          </h1>
             </a>
 Functions          </h1>
           <div class="functions-list">
-<section class="detail" id="create_message_tags/1">
-    <span id="create_message_tags/0"></span>
+<section class="detail" id="update_message_tags/1">
   <div class="detail-header">
-    <a href="#create_message_tags/1" class="detail-link" title="Link to this function">
+    <a href="#update_message_tags/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">create_message_tags(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/tags/message_tags.ex#L29" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">update_message_tags(attrs)</h1>
+      <a href="https://github.com/glific/blob/master/lib/glific/tags/message_tags.ex#L31" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -161,10 +163,10 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>create_message_tags(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="#t:t/0">t</a>()</pre>
+          <pre>update_message_tags(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="#t:t/0">t</a>()</pre>
       </div>
 
-<p>Creates a list of message tags, each tag attached to the same message</p>  </section>
+<p>Creates and/or deletes a list of message tags, each tag attached to the same message</p>  </section>
 </section>
           </div>
         </section>
