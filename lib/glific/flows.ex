@@ -223,4 +223,10 @@ defmodule Glific.Flows do
 
     {Enum.reverse(objects), uuid_map}
   end
+
+
+  @spec get_cached_flow(any, any) :: {atom, any}
+  def get_cached_flow(key, args) do
+      Glific.Caches.get_or_update(key, &Flow.get_loaded_flow/1, args)
+  end
 end

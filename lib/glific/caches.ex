@@ -1,4 +1,4 @@
-defmodule Glific.Cache do
+defmodule Glific.Caches do
   @moduledoc """
     Glific Cache management
   """
