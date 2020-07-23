@@ -1,4 +1,4 @@
-FROM elixir:1.9-alpine as build
+FROM elixir:1.10.4-alpine as build
 MAINTAINER opensource@coloredcow.com
 
 RUN mkdir /app
