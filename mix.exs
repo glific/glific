@@ -111,12 +111,8 @@ defmodule Glific.MixProject do
       {:gen_stage, "~> 1.0"},
       {:passwordless_auth, git: "https://github.com/glific/passwordless_auth.git"},
       {:timex, "~> 3.0"},
-<<<<<<< HEAD
-      {:logger_file_backend, "~> 0.0.10"}
-=======
       {:slugify, "~> 1.3"},
       {:cachex, "~> 3.2"}
->>>>>>> 449a1f8c1ce218ed2dd74f106de9609084a59073
     ]
   end
 
