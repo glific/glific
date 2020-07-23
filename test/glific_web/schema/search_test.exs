@@ -241,4 +241,45 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert %{"label" => "Not Replied"} in tags
   end
+
+  test "search for not responded tagged messages in conversations" do
+    {:ok, sender} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
+    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+    {:ok, not_responded_tag} = Repo.fetch_by(Tag, %{label: "Not Responded"})
+
+    {:ok, saved_search} =
+      Repo.fetch_by(SavedSearch, %{label: "Conversations read but not responded"})
+
+    {:ok, message} =
+      %{
+        body: saved_search.args["term"],
+        flow: :outbound,
+        type: :text,
+        sender_id: sender.id,
+        receiver_id: receiver.id
+      }
+      |> Messages.create_message()
+
+    MessageTags.update_message_tags(%{
+      message_id: message.id,
+      add_tag_ids: [not_responded_tag.id],
+      delete_tag_ids: []
+    })
+
+    result =
+      query_gql_by(:search,
+        variables: saved_search.args
+      )
+
+      IO.inspect result
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
+             to_string(receiver.id)
+
+    tags = get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "tags"])
+
+    assert %{"label" => "Not Responded"} in tags
+  end
 end
