@@ -30,7 +30,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert res == "Help Workflow"
 
     [flow | _] = flows
-    assert get_in(flow, ["language", "id"]) > 0
+    assert get_in(flow, ["id"]) > 0
   end
 
   test "flow field id returns one flow or nil" do
@@ -51,17 +51,13 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "create a flow and test possible scenarios and errors" do
-    name = "Test Workflow"
-    {:ok, flow} = Repo.fetch_by(Flow, %{name: name})
-    language_id = flow.language_id
-
     name = "Flow Test Name"
     shortcode = "test shortcode"
 
     result =
       query_gql_by(:create,
         variables: %{
-          "input" => %{"name" => name, "languageId" => language_id, "shortcode" => shortcode}
+          "input" => %{"name" => name, "shortcode" => shortcode}
         }
       )
 
@@ -73,7 +69,7 @@ defmodule GlificWeb.Schema.FlowTest do
     # create message without required atributes
     result =
       query_gql_by(:create,
-        variables: %{"input" => %{"name" => name, "languageId" => language_id}}
+        variables: %{"input" => %{"name" => name}}
       )
 
     assert {:ok, query_data} = result
