@@ -111,7 +111,7 @@ tags = [
   %{label: "Child", language_id: en_us.id, parent_id: message_tags_ct.id},
   %{label: "Parent", language_id: en_us.id, parent_id: message_tags_ct.id},
   %{label: "Participant", language_id: en_us.id, parent_id: message_tags_ct.id},
-  %{label: "User", language_id: en_us.id, parent_id: message_tags_ct.id}
+  %{label: "Staff", language_id: en_us.id, parent_id: message_tags_ct.id}
 ]
 
 inserted_time = DateTime.utc_now() |> DateTime.truncate(:second)

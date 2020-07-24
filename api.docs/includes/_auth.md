@@ -7,35 +7,6 @@ include roles and permissions. User management will be done via GraphQL
 
 The main API endpoints are listed below
 
-# Send a request to validate a phone number
-
-It would respond with error message if a user with phone number already exists
-
-```shell
-curl -X POST -d \
-  "user[phone]=911234554321" \
-  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/validate_phone
-```
-```javascript
-If you are using axios or other libraries, send the following in the BODY of a POST request
-
-{
-    "user": {
-        "phone": "911234554321"
-    }
-}
-```
-> The above query returns JSON structured like this:
-
-```json
-{
-    "data": {
-        "is_valid": false,
-        "message": "Phone number already exists"
-    }
-}
-```
-
 # Send an OTP request to verify a phone number
 
 The OTP will be sent via WhatsApp and the NGO's Glific Instance. The API will only send
@@ -45,7 +16,7 @@ from being abused.
 ```shell
 curl -X POST -d \
   "user[phone]=911234554321" \
-  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send_otp
+  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send-registration-otp
 ```
 ```javascript
 If you are using axios or other libraries, send the following in the BODY of a POST request
@@ -61,6 +32,11 @@ If you are using axios or other libraries, send the following in the BODY of a P
 ```json
 {"data": {"phone": phone,
           "message": "OTP sent successfully to #{phone}"}}
+```
+Or
+
+```json
+{"error": { "message": "Cannot send the registration otp to #{phone}"}}
 ```
 
 ## Create a new user

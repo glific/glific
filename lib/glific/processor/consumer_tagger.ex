@@ -22,6 +22,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @min_demand 0
   @max_demand 1
+  @wakeup_timeout_ms 1 * 60 * 1000
 
   @doc false
   @spec start_link([]) :: GenServer.on_start()
@@ -42,6 +43,9 @@ defmodule Glific.Processor.ConsumerTagger do
       }
       |> reload
       |> reload_flows
+
+    # process the wakeup queue every 1 minute
+    Process.send_after(self(), :wakeup_timeout, @wakeup_timeout_ms)
 
     {
       :consumer,
@@ -108,8 +112,8 @@ defmodule Glific.Processor.ConsumerTagger do
               "language",
               "preference",
               "new contact",
-              "newcontact",
-              "registration"
+              "registration",
+              "timed"
             ] do
     message = Repo.preload(message, :contact)
     FlowContext.init_context(Map.get(state.flows, body), message.contact)
@@ -160,4 +164,32 @@ defmodule Glific.Processor.ConsumerTagger do
   @spec add_status_tag(Message.t(), String.t(), map()) :: Message.t()
   defp add_status_tag(message, status, state),
     do: Helper.add_tag(message, state.status_map[status])
+
+  @doc """
+  This callback handles the nudges in the system. It processes the jobs and then sets a timer to invoke itself when
+  done
+  """
+  def handle_info(:wakeup_timeout, state) do
+    # check DB and process all flows that need to be woken update_in
+    _ =
+      FlowContext.wakeup()
+      |> Enum.map(fn fc -> wakeup(fc, state) end)
+
+    Process.send_after(self(), :wakeup_timeout, @wakeup_timeout_ms)
+    {:noreply, [], state}
+  end
+
+  # Process one context at a time
+  @spec wakeup(FlowContext.t(), map()) ::
+          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
+  defp wakeup(context, state) do
+    {:ok, context} =
+      context
+      |> FlowContext.load_context(state.flows[context.flow_uuid])
+      |> FlowContext.step_forward("No Response")
+
+    # update the context woken up time
+    {:ok, context} = FlowContext.update_flow_context(context, %{wakeup_at: nil})
+    {:ok, context, []}
+  end
 end
