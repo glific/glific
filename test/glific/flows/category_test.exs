@@ -47,8 +47,6 @@ defmodule Glific.Flows.CategoryTest do
       })
 
     result = Category.execute(category, context, [])
-    assert elem(result, 0) == :ok
-    assert elem(result, 1) == nil
-    assert elem(result, 2) == []
+    assert result == {:ok, nil, []}
   end
 end
