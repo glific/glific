@@ -72,8 +72,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @doc false
   @spec send_otp(Conn.t(), map()) :: Conn.t()
-  def send_otp(conn, %{"user" => %{"phone" => phone}} = request_data) do
-    registration = request_data["user"]["registration"]
+  def send_otp(conn, %{"user" => %{"phone" => phone}} = user_params) do
+    registration = user_params["user"]["registration"]
 
     with true <- can_send_otp_to_phone?(phone),
          true <- send_otp_allowed?(phone, registration),
