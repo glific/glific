@@ -12,6 +12,7 @@ defmodule Glific.Communications.Message do
     Messages.Message,
     Processor.Producer,
     Repo,
+    Taggers,
     Tags
   }
 
@@ -32,12 +33,12 @@ defmodule Glific.Communications.Message do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(Message.t(), :datetime | nil) :: {:ok, Message.t()} | {:error, String.t()}
-  def send_message(message, send_at \\ nil) do
+  @spec send_message(Message.t()) :: {:ok, Message.t()} | {:error, String.t()}
+  def send_message(message) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
     if Contacts.can_send_message_to?(message.receiver, message.is_hsm) do
-      apply(Communications.provider(), @type_to_token[message.type], [message, send_at])
+      apply(Communications.provider(), @type_to_token[message.type], [message])
       {:ok, Communications.publish_data(message, :sent_message)}
     else
       Messages.update_message(message, %{status: :contact_opt_out, provider_status: nil})
@@ -64,6 +65,8 @@ defmodule Glific.Communications.Message do
     })
 
     Tags.remove_tag_from_all_message(message["contact_id"], ["Not Replied", "Unread"])
+
+    Taggers.TaggerHelper.tag_outbound_message(message)
 
     {:ok, message}
   end
@@ -104,8 +107,6 @@ defmodule Glific.Communications.Message do
       |> Map.put(:last_message_at, DateTime.utc_now())
       |> Contacts.upsert()
 
-    update_last_outbound_message(contact)
-
     message_params =
       message_params
       |> Map.merge(%{
@@ -126,32 +127,12 @@ defmodule Glific.Communications.Message do
     end
   end
 
-  defp update_last_outbound_message(contact) do
-    # Remove "Not Responded" tag from last outbound message
-    {:ok, tag} = Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Responded"})
-
-    # To fix: don't remove tag if message is not yet delivered
-    with last_outbound_message when last_outbound_message != nil <-
-           Message
-           |> where([m], m.receiver_id == ^contact.id)
-           |> where([m], m.flow == "outbound")
-           |> where([m], m.status == "sent")
-           |> Ecto.Query.last()
-           |> Repo.one(),
-         message_tag when message_tag != nil <-
-           Glific.Tags.MessageTag
-           |> where([m], m.tag_id == ^tag.id)
-           |> where([m], m.message_id == ^last_outbound_message.id)
-           |> Ecto.Query.last()
-           |> Repo.one(),
-         do: Glific.Tags.delete_message_tag(message_tag)
-  end
-
   # handler for receiving the text message
   @spec receive_text(map()) :: {:ok}
   defp receive_text(message_params) do
     message_params
     |> Messages.create_message()
+    |> Taggers.TaggerHelper.tag_inbound_message()
     |> Communications.publish_data(:received_message)
     |> Producer.add()
 
