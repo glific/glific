@@ -83,7 +83,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     tags = [
       # Intent of message
-      %{label: "Compliment", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{
         label: "Good Bye",
         language_id: en_us.id,
@@ -104,7 +103,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       },
 
       # Status of Message
-      %{label: "Critical", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Important", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "New Contact", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Not Replied", language_id: en_us.id, parent_id: message_tags_mt.id},
