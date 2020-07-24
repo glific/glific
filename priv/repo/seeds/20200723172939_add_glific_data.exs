@@ -24,19 +24,21 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def up(_repo) do
     languages = languages()
 
-    tags(languages)
+    gtags(languages)
 
     provider = providers()
 
     admin = contacts(languages)
 
-    organization = organization(admin, provider)
+    organization(admin, provider, languages)
 
     users()
 
     hsm_templates(languages)
 
     saved_searches()
+
+    flows(languages)
   end
 
   def down(_repo) do
@@ -44,7 +46,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     # hence we can get away with truncating in reverse order
     # DO NOT FOLLOW this pattern for any other migrations
     truncates = [
-      "TRUNCATE ;",
+      "TRUNCATE flows;",
+      "TRUNCATE flow_revisions;",
       "TRUNCATE saved_searches;",
       "TRUNCATE session_templates;",
       "TRUNCATE users;",
@@ -54,6 +57,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       "TRUNCATE tags;",
       "TRUNCATE languages;"
     ]
+
+    Enum.each(truncates, fn t -> Repo.query(t) end)
   end
 
   def languages do
@@ -69,8 +74,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     {hi, en_us}
   end
 
-  def tags(languages) do
-    {hi, en_us} = languages
+  def gtags(languages) do
+    {_hi, en_us} = languages
 
     # seed tags
     message_tags_mt = Repo.insert!(%Tag{label: "Messages", is_reserved: true, language: en_us})
@@ -155,7 +160,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       )
 
     # seed multiple tags
-    Repo.insert_all(Tag, tag_entries)
+    Repo.insert_all(Tag, tags)
   end
 
   def providers do
@@ -177,7 +182,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     })
   end
 
-  def organizations(admin, provider, languages) do
+  def organization(admin, provider, languages) do
     {_hi, en_us} = languages
 
     Repo.insert!(%Organization{
@@ -260,12 +265,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     data = [
       {"Help Workflow", "help", "3fa22108-f464-41e5-81d9-d8a298854429", "help.json"},
       {"Language Workflow", "language", "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf", "language.json"},
-      {"Preferences Workflow", "preference", "63397051-789d-418d-9388-2ef7eb1268b",
+      {"Preferences Workflow", "preference", "63397051-789d-418d-9388-2ef7eb1268bb",
        "preference.json"},
       {"New Contact Workflow", "new contact", "973a24ea-dd2e-4d19-a427-83b0620161b0",
-       "new_contact..json"},
+       "new_contact.json"},
       {"Registration Workflow", "registration", "5e086708-37b2-4b20-80c2-bdc0f213c3c6",
-       "registratio.json"}
+       "registration.json"}
     ]
 
     Enum.map(data, fn f -> flow(f, en_us) end)
@@ -276,9 +281,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       Repo.insert!(%Flow{
         name: elem(data, 0),
         shortcode: elem(data, 1),
-        version: "13.1.0",
+        version_number: "13.1.0",
         uuid: elem(data, 2),
-        language: language.id
+        language: language,
       })
 
     definition =
