@@ -37,9 +37,6 @@ defmodule GlificWeb.Schema.FlowTypes do
   input_object :flow_filter do
     @desc "Match the name"
     field :name, :string
-
-    @desc "Match the shortcode"
-    field :shortcode, :string
   end
 
   object :flow_queries do
@@ -79,6 +76,5 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:id, non_null(:id))
       resolve(&Resolvers.Flows.delete_flow/3)
     end
-
   end
 end

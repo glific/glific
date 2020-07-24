@@ -12,6 +12,13 @@ defmodule Glific.FLowsTest do
       version_number: "13.1.0"
     }
 
+    @valid_more_attrs %{
+      name: "Test Flow",
+      shortcode: "test_short_code_2",
+      flow_type: :message,
+      version_number: "13.1.0"
+    }
+
     @invalid_attrs %{
       name: "Test Flow",
       shortcode: "",
@@ -39,6 +46,18 @@ defmodule Glific.FLowsTest do
     test "list_flows/0 returns all flows" do
       flow = flow_fixture()
       assert Enum.filter(Flows.list_flows(), fn fl -> fl.name == flow.name end) == [flow]
+    end
+
+    test "count_flows/0 returns count of all flows" do
+      flow_count = Repo.aggregate(Flow, :count)
+
+      _ = flow_fixture()
+      assert Flows.count_flows() == flow_count + 1
+
+      _ = flow_fixture(@valid_more_attrs)
+      assert Flows.count_flows() == flow_count + 2
+
+      assert Flows.count_flows(%{filter: %{name: "Help Workflow"}}) == 1
     end
 
     test "get_flow!/1 returns the flow with given id" do

@@ -96,6 +96,32 @@ Type | Description
 | ---- | -----------
 <a href="#flowresult">FlowResult</a> | Queried Flow
 
+
+## Count all Flows
+
+```graphql
+query countFlows($filter: FlowFilter) {
+  countFlows(filter: $filter)
+}
+
+{
+  "filter": {
+    "name": "help"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "countFlows": 2
+  }
+}
+```
+
+
 ## Create a Flow
 
 ```graphql
@@ -397,6 +423,27 @@ Type | Description
 <td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
+</tr>
+</tbody>
+</table>
+
+### FlowFilter ###
+
+Filtering options for flows
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td colspan="2" valign="top"><strong>Name</strong></td>
+  <td valign="top"><a href="#string">String</a></td>
+  <td>Match the flow name</td>
 </tr>
 </tbody>
 </table>
