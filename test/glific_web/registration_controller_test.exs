@@ -145,4 +145,73 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
                "Cannot send the otp to #{receiver.phone}"
     end
   end
+
+  describe "reset_password/2" do
+    @new_password "12345678"
+
+    test "with valid params", %{conn: conn} do
+      # create a user for a contact
+      {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+
+      {:ok, user} =
+        %{
+          "phone" => receiver.phone,
+          "name" => receiver.name,
+          "password" => @password,
+          "password_confirmation" => @password
+        }
+        |> Users.create_user()
+
+      # reset password of user
+      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(user.phone)
+
+      valid_params = %{
+        "user" => %{
+          "phone" => user.phone,
+          "password" => @new_password,
+          "otp" => otp
+        }
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :reset_password, valid_params))
+
+      assert json = json_response(conn, 200)
+    end
+
+    test "with wrong otp", %{conn: conn} do
+      {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+
+      invalid_params = %{
+        "user" => %{
+          "phone" => receiver.phone,
+          "password" => @new_password,
+          "otp" => "incorrect otp"
+        }
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :reset_password, invalid_params))
+
+      assert json = json_response(conn, 500)
+      assert json["error"]["status"] == 500
+    end
+
+    test "with incorrect phone number", %{conn: conn} do
+      {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+
+      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(receiver.phone)
+
+      invalid_params = %{
+        "user" => %{
+          "phone" => "incorrect_phone",
+          "password" => @new_password,
+          "otp" => otp
+        }
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :create, invalid_params))
+
+      assert json = json_response(conn, 500)
+      assert json["error"]["status"] == 500
+    end
+  end
 end
