@@ -5,15 +5,16 @@ defmodule Glific.ConversationsTest do
   alias Glific.{
     Contacts,
     Conversations.Conversation,
-    Messages
+    Messages,
+    Seeds.SeedsDev
   }
 
   describe "conversation" do
     setup do
-      default_provider = Glific.SeedsDev.seed_providers()
-      Glific.SeedsDev.seed_organizations(default_provider)
-      Glific.SeedsDev.seed_contacts()
-      Glific.SeedsDev.seed_messages()
+      default_provider = SeedsDev.seed_providers()
+      SeedsDev.seed_organizations(default_provider)
+      SeedsDev.seed_contacts()
+      SeedsDev.seed_messages()
       :ok
     end
 

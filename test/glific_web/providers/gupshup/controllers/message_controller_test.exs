@@ -1,7 +1,12 @@
 defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   use GlificWeb.ConnCase
 
-  alias Glific.Messages.Message
+  alias Glific.{
+    Contacts.Location,
+    Messages.Message,
+    Repo,
+    Seeds.SeedsDev
+  }
 
   @message_request_params %{
     "app" => "GlifMock App",
@@ -24,11 +29,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   }
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_tag()
-    Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_messages()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_tag()
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_messages()
     :ok
   end
 
@@ -58,8 +63,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       conn = post(conn, "/gupshup", setup_config.message_params)
       json_response(conn, 200)
       provider_message_id = get_in(setup_config.message_params, ["payload", "id"])
-      {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
-      message = Glific.Repo.preload(message, [:receiver, :sender, :media])
+      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      message = Repo.preload(message, [:receiver, :sender, :media])
 
       # Provider message id should be updated
       assert message.provider_status == :delivered
@@ -96,8 +101,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       json_response(conn, 200)
 
       provider_message_id = get_in(setup_config.message_params, ["payload", "id"])
-      {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
-      message = Glific.Repo.preload(message, [:sender, :media])
+      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      message = Repo.preload(message, [:sender, :media])
 
       # Provider message id should be updated
       assert message.provider_status == :delivered
@@ -125,8 +130,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
       provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
-      message = Glific.Repo.preload(message, [:media, :sender])
+      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      message = Repo.preload(message, [:media, :sender])
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -146,8 +151,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
       provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
-      message = Glific.Repo.preload(message, [:media, :sender])
+      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      message = Repo.preload(message, [:media, :sender])
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -166,8 +171,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
       provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
-      message = Glific.Repo.preload(message, [:media, :sender])
+      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      message = Repo.preload(message, [:media, :sender])
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -202,10 +207,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
       provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Glific.Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
-      message = Glific.Repo.preload(message, [:media, :sender])
+      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      message = Repo.preload(message, [:media, :sender])
 
-      {:ok, location} = Glific.Repo.fetch_by(Glific.Contacts.Location, %{message_id: message.id})
+      {:ok, location} = Repo.fetch_by(Location, %{message_id: message.id})
 
       # test location fields
       assert location.longitude == setup_config.location_payload["longitude"]

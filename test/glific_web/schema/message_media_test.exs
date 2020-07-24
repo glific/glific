@@ -1,10 +1,15 @@
 defmodule GlificWeb.Schema.MessageMediaTest do
-  alias Glific.Messages.MessageMedia
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Messages.MessageMedia,
+    Repo,
+    Seeds.SeedsDev
+  }
+
   setup do
-    Glific.SeedsDev.seed_messages_media()
+    SeedsDev.seed_messages_media()
     :ok
   end
 
@@ -48,7 +53,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
 
   test "message media id returns one message media or nil" do
     caption = "default caption"
-    {:ok, message_media} = Glific.Repo.fetch_by(MessageMedia, %{caption: caption})
+    {:ok, message_media} = Repo.fetch_by(MessageMedia, %{caption: caption})
 
     result = query_gql_by(:by_id, variables: %{"id" => message_media.id})
     assert {:ok, query_data} = result
@@ -104,7 +109,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
   # @tag :pending
   test "update a message media and test possible scenarios and errors" do
     caption = "default caption"
-    {:ok, message_media} = Glific.Repo.fetch_by(MessageMedia, %{caption: caption})
+    {:ok, message_media} = Repo.fetch_by(MessageMedia, %{caption: caption})
 
     result =
       query_gql_by(:update,
@@ -131,7 +136,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
 
   test "delete a message media" do
     caption = "default caption"
-    {:ok, message_media} = Glific.Repo.fetch_by(MessageMedia, %{caption: caption})
+    {:ok, message_media} = Repo.fetch_by(MessageMedia, %{caption: caption})
 
     result = query_gql_by(:delete, variables: %{"id" => message_media.id})
     assert {:ok, query_data} = result

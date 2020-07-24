@@ -23,6 +23,7 @@ defmodule Glific.Messages.Message do
           media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
           body: String.t() | nil,
           provider_message_id: String.t() | nil,
+          send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -42,6 +43,7 @@ defmodule Glific.Messages.Message do
     :provider_status,
     :provider_message_id,
     :media_id,
+    :send_at,
     :sent_at,
     :user_id
   ]
@@ -56,6 +58,7 @@ defmodule Glific.Messages.Message do
 
     field :provider_message_id, :string
     field :provider_status, MessageStatus
+    field :send_at, :utc_datetime
     field :sent_at, :utc_datetime
     field :message_number, :integer, default: 0
 

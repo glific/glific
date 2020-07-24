@@ -2,6 +2,7 @@ defmodule Glific.SettingsTest do
   use Glific.DataCase
 
   alias Glific.{
+    Seeds.SeedsDev,
     Settings,
     Settings.Language
   }
@@ -97,7 +98,7 @@ defmodule Glific.SettingsTest do
 
     test "deleting a language with tags associated, should result in an error" do
       [hi_in | _] = Settings.list_languages(%{label: "hindi"})
-      Glific.SeedsDev.seed_tag()
+      SeedsDev.seed_tag()
 
       assert {:error, %Ecto.Changeset{}} = Settings.delete_language(hi_in)
     end

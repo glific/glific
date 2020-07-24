@@ -4,13 +4,15 @@ defmodule Glific.Flows.ContactFieldTest do
   alias Glific.{
     Contacts,
     Flows.ContactField,
-    Flows.FlowContext
+    Flows.FlowContext,
+    Repo,
+    Seeds.SeedsDev
   }
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
     :ok
   end
 

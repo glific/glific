@@ -326,7 +326,6 @@ Repo.insert!(%SessionTemplate{
   language_id: en_us.id,
   body:
     "I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now. If you’d like to continue this discussion, please reply with ‘yes’",
-
   uuid: "9381b1b9-1b9b-45a6-81f4-f91306959619"
 })
 
@@ -470,7 +469,6 @@ Repo.insert!(%SessionTemplate{
   number_parameters: 3,
   language_id: en_us.id,
   body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
-
   uuid: "e55f2c10-541c-470b-a5ff-9249ae82bc95"
 })
 
@@ -501,7 +499,6 @@ Repo.insert!(%SessionTemplate{
   language_id: en_us.id,
   body:
     "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{1}}]",
-
   uuid: "ae35ef89-ea4b-4b04-979d-04e7538f52dc"
 })
 
@@ -510,7 +507,12 @@ Repo.insert!(%SessionTemplate{
 
 Repo.insert!(%SavedSearch{
   label: "All unread conversations",
-  args: %{includeTags: [to_string(unread.id)]},
+  args: %{
+    filter: %{includeTags: [to_string(unread.id)]},
+    contactOpts: %{limit: 10},
+    messageOpts: %{limit: 5},
+    term: ""
+  },
   is_reserved: true
 })
 
@@ -518,14 +520,36 @@ Repo.insert!(%SavedSearch{
 
 Repo.insert!(%SavedSearch{
   label: "Conversations read but not replied",
-  args: %{includeTags: [to_string(not_replied.id)]}
+  args: %{
+    filter: %{includeTags: [to_string(not_replied.id)]},
+    contactOpts: %{limit: 10},
+    messageOpts: %{limit: 5},
+    term: ""
+  }
+})
+
+{:ok, not_responded} = Repo.fetch_by(Tag, %{label: "Not Responded"})
+
+Repo.insert!(%SavedSearch{
+  label: "Conversations read but not responded",
+  args: %{
+    filter: %{includeTags: [to_string(not_responded.id)]},
+    contactOpts: %{limit: 10},
+    messageOpts: %{limit: 5},
+    term: ""
+  }
 })
 
 {:ok, optout} = Repo.fetch_by(Tag, %{label: "Optout"})
 
 Repo.insert!(%SavedSearch{
   label: "Conversations where the contact has opted out",
-  args: %{includeTags: [to_string(optout.id)]}
+  args: %{
+    filter: %{includeTags: [to_string(optout.id)]},
+    contactOpts: %{limit: 10},
+    messageOpts: %{limit: 5},
+    term: ""
+  }
 })
 
 help_flow =
@@ -533,8 +557,7 @@ help_flow =
     name: "Help Workflow",
     shortcode: "help",
     version_number: "13.1.0",
-    uuid: "3fa22108-f464-41e5-81d9-d8a298854429",
-    language_id: en_us.id
+    uuid: "3fa22108-f464-41e5-81d9-d8a298854429"
   })
 
 help_flow_definition =
@@ -557,8 +580,7 @@ language_flow =
     name: "Language Workflow",
     shortcode: "language",
     version_number: "13.1.0",
-    uuid: "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
-    language_id: en_us.id
+    uuid: "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"
   })
 
 language_flow_definition =
@@ -581,8 +603,7 @@ preferences_flow =
     name: "Preferences Workflow",
     shortcode: "preference",
     version_number: "13.1.0",
-    uuid: "63397051-789d-418d-9388-2ef7eb1268bb",
-    language_id: en_us.id
+    uuid: "63397051-789d-418d-9388-2ef7eb1268bb"
   })
 
 preferences_flow_definition =
@@ -605,8 +626,7 @@ new_contact_flow =
     name: "New_Contact Workflow",
     shortcode: "new contact",
     version_number: "13.1.0",
-    uuid: "973a24ea-dd2e-4d19-a427-83b0620161b0",
-    language_id: en_us.id
+    uuid: "973a24ea-dd2e-4d19-a427-83b0620161b0"
   })
 
 new_contact_flow_definition =
@@ -626,12 +646,11 @@ Repo.insert!(%FlowRevision{
 
 registration_flow =
   Repo.insert!(%Flow{
-        name: "Registration Workflow",
-        shortcode: "registration",
-        version_number: "13.1.0",
-        uuid: "5e086708-37b2-4b20-80c2-bdc0f213c3c6",
-        language_id: en_us.id
-               })
+    name: "Registration Workflow",
+    shortcode: "registration",
+    version_number: "13.1.0",
+    uuid: "5e086708-37b2-4b20-80c2-bdc0f213c3c6"
+  })
 
 registration_flow_definition =
   File.read!("assets/flows/registration.json")
@@ -639,11 +658,11 @@ registration_flow_definition =
 
 registration_flow_definition =
   Map.merge(registration_flow_definition, %{
-        "name" => registration_flow.name,
-        "uuid" => registration_flow.uuid
-            })
+    "name" => registration_flow.name,
+    "uuid" => registration_flow.uuid
+  })
 
 Repo.insert!(%FlowRevision{
-      definition: registration_flow_definition,
-      flow_id: registration_flow.id
-             })
+  definition: registration_flow_definition,
+  flow_id: registration_flow.id
+})

@@ -37,14 +37,6 @@ defmodule Glific.Repo.Migrations.GlificTables do
 
     saved_searches()
 
-    questions()
-
-    question_sets()
-
-    questions_question_sets()
-
-    questions_answers()
-
     locations()
 
     flows()
@@ -300,6 +292,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # message media ids
       add :media_id, references(:messages_media, on_delete: :delete_all), null: true
 
+      # timestamp when message is scheduled to be sent
+      add :send_at, :utc_datetime, null: true
+
       # timestamp when message will be sent from queue worker
       add :sent_at, :utc_datetime
 
@@ -459,105 +454,6 @@ defmodule Glific.Repo.Migrations.GlificTables do
   end
 
   @doc """
-  The question table. Since all questions are of the same type, we wont
-  split it for now. At some point i assume we will
-  """
-  def questions do
-    create table(:questions) do
-      # question label
-      add :label, :string, null: false
-
-      # question text is linked to a session template
-      # via a shortcode since it can be in multiple languages
-      add :shortcode, :string, null: false
-
-      # only 3 types allowed for now: text, numeric and date
-      add :type, :question_type_enum, null: false
-
-      # should we clean punctuation and eliminate multiple spaces
-      # this will also downcase the string
-      add :clean_answer, :boolean, default: true
-
-      # should we remove all spaces and punctuations
-      add :strip_answer, :boolean, default: false
-
-      # should we validate the answer
-      add :validate_answer, :boolean, default: false
-
-      # since we are dealing with multiple languages, we need to allow multiple answers
-      # in some cases, multiple answers might be totally fine
-      add :valid_answers, {:array, :string}
-
-      # number of times we re-ask the question if we dont understand the answer
-      add :number_retries, :integer, default: 2
-
-      # the shortcode of the message we need to send the user in case of an error
-      add :shortcode_error, :string
-
-      # we might also want to store this response in a different entity
-      # this callback will do the needful, including transforming the answer
-      # we call this for valid answers only
-      add :callback, :string
-
-      timestamps(type: :utc_datetime)
-    end
-  end
-
-  @doc """
-  The Question Set Table. All questions belong to a question set. A question can belong to one
-  or more question sets. This allows us to ask questions from a question set in specific contexts
-  """
-  def question_sets do
-    create table(:question_sets) do
-      # question set label
-      # there will be at least one global question set
-      # for questions like language, maybe optout?
-      add :label, :string, null: false
-
-      # number of questions that have to be answered correctly
-      # for this to be considered a pass
-      # a 0 basically indicates not to validate
-      add :number_questions_right, :integer, default: 0
-
-      timestamps(type: :utc_datetime)
-    end
-  end
-
-  @doc """
-  The join table between questions and question sets
-  """
-  def questions_question_sets do
-    create table(:questions_question_sets) do
-      add :question_id, references(:questions, on_delete: :delete_all), null: false
-      add :question_sets_id, references(:question_sets, on_delete: :delete_all), null: false
-    end
-  end
-
-  @doc """
-  The Answer Storage. We store all the answers in a table. We expect the NGO to
-  download and process these answers as they come in. This acts as a temporary storage
-  for a brief period of time (weeks?)
-  """
-  def questions_answers do
-    create table(:questions_answers) do
-      # who has answered this questions?
-      add :contact_id, references(:contacts, on_delete: :delete_all), null: false
-
-      # reference to the incoming message
-      add :message_id, references(:messages, on_delete: :delete_all), null: false
-
-      add :question_id, references(:questions, on_delete: :delete_all), null: false
-      add :question_sets_id, references(:question_sets, on_delete: :delete_all), null: false
-
-      # for now all answers are stored as string
-      # at some point, we might split it based on question type
-      add :answer, :string, null: false
-
-      timestamps(type: :utc_datetime)
-    end
-  end
-
-  @doc """
   Contact's current location storage.
   """
   def locations do
@@ -587,7 +483,6 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :shortcode, :string, null: false
       add :uuid, :uuid, null: false
       add :version_number, :string, default: "13.1.0"
-      add :language_id, references(:languages, on_delete: :restrict), null: false
       add :flow_type, :flow_type_enum, null: false, default: "message"
       timestamps(type: :utc_datetime)
     end

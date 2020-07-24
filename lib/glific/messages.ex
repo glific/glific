@@ -203,8 +203,6 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()}
   defp create_and_send_message(is_valid_contact, attrs) when is_valid_contact == true do
-    send_at = get_in(attrs, [:send_at])
-
     {:ok, message} =
       %{
         sender_id: Communications.Message.organization_contact_id(),
@@ -213,47 +211,12 @@ defmodule Glific.Messages do
       |> Map.merge(attrs)
       |> create_message()
 
-    message
-    |> Map.put(:receiver, attrs[:receiver])
-    |> update_outbound_message_tags_of_contact()
-    |> Communications.Message.send_message(send_at)
+    Communications.Message.send_message(message)
   end
 
   @doc false
   defp create_and_send_message(_, _) do
     {:error, "Cannot send the message to the contact."}
-  end
-
-  @spec update_outbound_message_tags_of_contact(Message.t()) :: Message.t()
-  defp update_outbound_message_tags_of_contact(message) do
-    # Add "Not Responded" tag to message
-    {:ok, tag} = Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Responded"})
-
-    {:ok, _} =
-      Glific.Tags.create_message_tag(%{
-        message_id: message.id,
-        tag_id: tag.id
-      })
-
-    # Remove not responded tag from last outbound message if any
-    # don't remove tag if message is not yet delivered
-    with last_outbound_message when last_outbound_message != nil <-
-           Message
-           |> where([m], m.id != ^message.id)
-           |> where([m], m.receiver_id == ^message.receiver_id)
-           |> where([m], m.flow == "outbound")
-           |> where([m], m.status == "sent")
-           |> Ecto.Query.last()
-           |> Repo.one(),
-         message_tag when message_tag != nil <-
-           Glific.Tags.MessageTag
-           |> where([m], m.tag_id == ^tag.id)
-           |> where([m], m.message_id == ^last_outbound_message.id)
-           |> Ecto.Query.last()
-           |> Repo.one(),
-         do: Glific.Tags.delete_message_tag(message_tag)
-
-    message
   end
 
   @doc """
@@ -570,7 +533,14 @@ defmodule Glific.Messages do
 
   # for all input contact ids that do not have messages attached to them
   # return a conversation data type with empty messages
+  # we dont add empty conversations when we have either include or exclude tags set
   @spec add_empty_conversations([Conversation.t()], map()) :: [Conversation.t()]
+  defp add_empty_conversations(results, %{filter: %{include_tags: _tags}}),
+    do: results
+
+  defp add_empty_conversations(results, %{filter: %{exclude_tags: _tags}}),
+    do: results
+
   defp add_empty_conversations(results, %{filter: %{id: id}}),
     do: add_empty_conversation(results, [id])
 

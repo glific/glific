@@ -6,17 +6,20 @@ defmodule Glific.MessagesTest do
 
   alias Glific.{
     Contacts,
+    Fixtures,
     Messages,
     Messages.Message,
-    Templates
+    Messages.MessageMedia,
+    Repo,
+    Seeds.SeedsDev,
+    Tags.Tag,
+    Templates.SessionTemplate
   }
 
-  alias Glific.Fixtures
-
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
     :ok
   end
 
@@ -162,7 +165,7 @@ defmodule Glific.MessagesTest do
 
       # Check if tag id is wrong, no message should be fetched
       [last_tag_id] =
-        Glific.Tags.Tag
+        Tag
         |> order_by([t], desc: t.id)
         |> limit(1)
         |> select([t], t.id)
@@ -247,12 +250,12 @@ defmodule Glific.MessagesTest do
         receiver_id: message1.receiver_id
       })
 
-      {:ok, message6} = Glific.Repo.fetch_by(Message, %{body: "message 6"})
-      {:ok, message5} = Glific.Repo.fetch_by(Message, %{body: "message 5"})
-      {:ok, message4} = Glific.Repo.fetch_by(Message, %{body: "message 4"})
-      {:ok, message3} = Glific.Repo.fetch_by(Message, %{body: "message 3"})
-      {:ok, message2} = Glific.Repo.fetch_by(Message, %{body: "message 2"})
-      {:ok, message1} = Glific.Repo.fetch_by(Message, %{body: "message 1"})
+      {:ok, message6} = Repo.fetch_by(Message, %{body: "message 6"})
+      {:ok, message5} = Repo.fetch_by(Message, %{body: "message 5"})
+      {:ok, message4} = Repo.fetch_by(Message, %{body: "message 4"})
+      {:ok, message3} = Repo.fetch_by(Message, %{body: "message 3"})
+      {:ok, message2} = Repo.fetch_by(Message, %{body: "message 2"})
+      {:ok, message1} = Repo.fetch_by(Message, %{body: "message 1"})
 
       assert message6.message_number == 0
       assert message5.message_number == 1
@@ -330,12 +333,12 @@ defmodule Glific.MessagesTest do
 
     test "send hsm message incorrect parameters" do
       name = "Default receiver"
-      {:ok, contact} = Glific.Repo.fetch_by(Contacts.Contact, %{name: name})
+      {:ok, contact} = Repo.fetch_by(Contacts.Contact, %{name: name})
 
       Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
 
       label = "HSM2"
-      {:ok, hsm_template} = Glific.Repo.fetch_by(Templates.SessionTemplate, %{label: label})
+      {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{label: label})
 
       # Incorrect number of parameters should give an error
       parameters = ["param1"]
@@ -365,7 +368,7 @@ defmodule Glific.MessagesTest do
 
     test "prepare hsm template" do
       body = "You have received a new update about {{1}}. Please click on {{2}} to know more."
-      {:ok, hsm_template} = Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{body: body})
+      {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{body: body})
       parameters = ["param1", "https://glific.github.io/slate/"]
 
       updated_hsm_template = Messages.parse_template_vars(hsm_template, parameters)
@@ -376,8 +379,6 @@ defmodule Glific.MessagesTest do
   end
 
   describe "message_media" do
-    alias Glific.Messages.MessageMedia
-
     @valid_attrs %{
       caption: "some caption",
       source_url: "some source_url",
