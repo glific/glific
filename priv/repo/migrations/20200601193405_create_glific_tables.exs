@@ -292,6 +292,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # message media ids
       add :media_id, references(:messages_media, on_delete: :delete_all), null: true
 
+      # timestamp when message is scheduled to be sent
+      add :send_at, :utc_datetime, null: true
+
       # timestamp when message will be sent from queue worker
       add :sent_at, :utc_datetime
 

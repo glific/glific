@@ -507,7 +507,12 @@ Repo.insert!(%SessionTemplate{
 
 Repo.insert!(%SavedSearch{
   label: "All unread conversations",
-  args: %{includeTags: [to_string(unread.id)]},
+  args: %{
+    filter: %{includeTags: [to_string(unread.id)]},
+    contactOpts: %{limit: 10},
+    messageOpts: %{limit: 5},
+    term: ""
+  },
   is_reserved: true
 })
 
@@ -515,14 +520,36 @@ Repo.insert!(%SavedSearch{
 
 Repo.insert!(%SavedSearch{
   label: "Conversations read but not replied",
-  args: %{includeTags: [to_string(not_replied.id)]}
+  args: %{
+    filter: %{includeTags: [to_string(not_replied.id)]},
+    contactOpts: %{limit: 10},
+    messageOpts: %{limit: 5},
+    term: ""
+  },
+})
+
+{:ok, not_responded} = Repo.fetch_by(Tag, %{label: "Not Responded"})
+
+Repo.insert!(%SavedSearch{
+  label: "Conversations read but not responded",
+  args: %{
+    filter: %{includeTags: [to_string(not_responded.id)]},
+    contactOpts: %{limit: 10},
+    messageOpts: %{limit: 5},
+    term: ""
+  },
 })
 
 {:ok, optout} = Repo.fetch_by(Tag, %{label: "Optout"})
 
 Repo.insert!(%SavedSearch{
   label: "Conversations where the contact has opted out",
-  args: %{includeTags: [to_string(optout.id)]}
+  args: %{
+    filter: %{includeTags: [to_string(optout.id)]},
+    contactOpts: %{limit: 10},
+    messageOpts: %{limit: 5},
+    term: ""
+  },
 })
 
 help_flow =

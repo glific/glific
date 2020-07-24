@@ -28,6 +28,8 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :inserted_at, :datetime
     field :updated_at, :datetime
 
+    field :send_at, :datetime
+
     field :sender, :contact do
       resolve(dataloader(Repo))
     end
