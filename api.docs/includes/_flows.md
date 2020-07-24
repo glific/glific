@@ -11,9 +11,6 @@ query flows {
     shortcode
     versionNumber
     flowType
-    language{
-      label
-    }
   }
 }
 ```
@@ -27,9 +24,6 @@ query flows {
       {
         "flowType": "MESSAGE",
         "id": "1",
-        "language": {
-          "label": "English (United States)"
-        },
         "name": "Help Workflow",
         "shortcode": "help",
         "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
@@ -38,9 +32,6 @@ query flows {
       {
         "flowType": "MESSAGE",
         "id": "2",
-        "language": {
-          "label": "English (United States)"
-        },
         "name": "Language Workflow",
         "shortcode": "language",
         "uuid": "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
@@ -131,10 +122,6 @@ mutation ($input: FlowInput!) {
       id
       name
       shortcode
-      language {
-        id
-        label
-      }
     }
     errors {
       key
@@ -146,8 +133,7 @@ mutation ($input: FlowInput!) {
 {
   "input": {
     "name": "test workflow",
-    "shortcode": "test",
-    "languageId": 1
+    "shortcode": "test"
   }
 }
 ```
@@ -161,12 +147,7 @@ mutation ($input: FlowInput!) {
       "errors": null,
       "flow": {
         "id": "12",
-        "language": {
-          "id": "1",
-          "label": "Hindi"
-        },
-        "name": "test workflow",
-        "shortcode": "test"
+        "name": "test workflow"
       }
     }
   }
@@ -181,7 +162,7 @@ In case of errors, above functions return an error object like the below
     "createFlow": {
       "errors": [
         {
-          "key": "language_id",
+          "key": "shortcode",
           "message": "can't be blank"
         }
       ],
@@ -343,11 +324,6 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>language</strong></td>
-<td valign="top"><a href="#language">Language</a></td>
-<td></td>
-</tr>
-<tr>
 <td colspan="2" valign="top"><strong>name</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
@@ -412,11 +388,6 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>name</strong></td>
 <td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>language</strong></td>
-<td valign="top"><a href="#language">Language</a></td>
 <td></td>
 </tr>
 <tr>

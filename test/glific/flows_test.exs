@@ -1,10 +1,9 @@
 defmodule Glific.FLowsTest do
   use Glific.DataCase
 
-  alias Glific.{Flows, Flows.Flow, Settings.Language}
+  alias Glific.{Flows, Flows.Flow}
 
   describe "flows" do
-    # language id needs to be added dynamically for all the below actions
     @valid_attrs %{
       name: "Test Flow",
       shortcode: "test_short_code",
@@ -32,11 +31,8 @@ defmodule Glific.FLowsTest do
     }
 
     def flow_fixture(attrs \\ %{}) do
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
-
       {:ok, flow} =
         attrs
-        |> Map.put(:language_id, language.id)
         |> Enum.into(@valid_attrs)
         |> Flows.create_flow()
 
@@ -66,13 +62,10 @@ defmodule Glific.FLowsTest do
     end
 
     test "create_flow/1 with valid data creates a flow" do
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
-      attrs = Map.merge(@valid_attrs, %{language_id: language.id})
-      assert {:ok, %Flow{} = flow} = Flows.create_flow(attrs)
+      assert {:ok, %Flow{} = flow} = Flows.create_flow(@valid_attrs)
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
       assert flow.shortcode == @valid_attrs.shortcode
-      assert flow.language_id == language.id
     end
 
     test "create_flow/1 with invalid data returns error changeset" do
@@ -80,9 +73,7 @@ defmodule Glific.FLowsTest do
     end
 
     test "create_flow/1 will have a default revision" do
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
-      attrs = Map.merge(@valid_attrs, %{language_id: language.id})
-      assert {:ok, %Flow{} = flow} = Flows.create_flow(attrs)
+      assert {:ok, %Flow{} = flow} = Flows.create_flow(@valid_attrs)
       flow = Glific.Repo.preload(flow, [:revisions])
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
@@ -92,11 +83,8 @@ defmodule Glific.FLowsTest do
 
     test "update_flow/2 with valid data updates the flow" do
       flow = flow_fixture()
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
-      attrs = Map.merge(@update_attrs, %{language_id: language.id})
-      assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, attrs)
+      assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, @update_attrs)
       assert flow.name == @update_attrs.name
-      assert flow.language_id == language.id
     end
 
     test "update_flow/2 with invalid data returns error changeset" do

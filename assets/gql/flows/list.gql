@@ -5,8 +5,5 @@ query {
     shortcode
     versionNumber
     flowType
-    language{
-      label
-    }
   }
 }

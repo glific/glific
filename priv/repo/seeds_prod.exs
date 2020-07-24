@@ -560,8 +560,7 @@ help_flow =
     name: "Help Workflow",
     shortcode: "help",
     version_number: "13.1.0",
-    uuid: "3fa22108-f464-41e5-81d9-d8a298854429",
-    language_id: en_us.id
+    uuid: "3fa22108-f464-41e5-81d9-d8a298854429"
   })
 
 help_flow_definition =
@@ -584,8 +583,7 @@ language_flow =
     name: "Language Workflow",
     shortcode: "language",
     version_number: "13.1.0",
-    uuid: "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
-    language_id: en_us.id
+    uuid: "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"
   })
 
 language_flow_definition =
@@ -608,8 +606,7 @@ preferences_flow =
     name: "Preferences Workflow",
     shortcode: "preference",
     version_number: "13.1.0",
-    uuid: "63397051-789d-418d-9388-2ef7eb1268bb",
-    language_id: en_us.id
+    uuid: "63397051-789d-418d-9388-2ef7eb1268bb"
   })
 
 preferences_flow_definition =
@@ -632,8 +629,7 @@ new_contact_flow =
     name: "New_Contact Workflow",
     shortcode: "new contact",
     version_number: "13.1.0",
-    uuid: "973a24ea-dd2e-4d19-a427-83b0620161b0",
-    language_id: en_us.id
+    uuid: "973a24ea-dd2e-4d19-a427-83b0620161b0"
   })
 
 new_contact_flow_definition =
@@ -656,8 +652,7 @@ registration_flow =
         name: "Registration Workflow",
         shortcode: "registration",
         version_number: "13.1.0",
-        uuid: "5e086708-37b2-4b20-80c2-bdc0f213c3c6",
-        language_id: en_us.id
+        uuid: "5e086708-37b2-4b20-80c2-bdc0f213c3c6"
                })
 
 registration_flow_definition =

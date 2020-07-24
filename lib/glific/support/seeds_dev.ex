@@ -283,15 +283,12 @@ defmodule Glific.SeedsDev do
   @doc false
   @spec seed_flows :: nil
   def seed_flows do
-    [en_us | _] = Settings.list_languages(%{label: "english"})
-
     test_flow =
       Repo.insert!(%Flow{
         name: "Test Workflow",
         shortcode: "test",
         version_number: "13.1.0",
-        uuid: "defda715-c520-499d-851e-4428be87def6",
-        language_id: en_us.id
+        uuid: "defda715-c520-499d-851e-4428be87def6"
       })
 
     Repo.insert!(%FlowRevision{
@@ -304,8 +301,7 @@ defmodule Glific.SeedsDev do
         name: "Timed Workflow",
         shortcode: "timed",
         version_number: "13.1.0",
-        uuid: "8390ded3-06c3-4df4-b428-064666f085c7",
-        language_id: en_us.id
+        uuid: "8390ded3-06c3-4df4-b428-064666f085c7"
       })
 
     timed_flow_definition =

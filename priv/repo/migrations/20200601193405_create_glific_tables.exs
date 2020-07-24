@@ -590,7 +590,6 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :shortcode, :string, null: false
       add :uuid, :uuid, null: false
       add :version_number, :string, default: "13.1.0"
-      add :language_id, references(:languages, on_delete: :restrict), null: false
       add :flow_type, :flow_type_enum, null: false, default: "message"
       timestamps(type: :utc_datetime)
     end
