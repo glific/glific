@@ -6,13 +6,16 @@ defmodule Glific.Flows.ContactActionTest do
     Flows.Action,
     Flows.ContactAction,
     Flows.FlowContext,
-    Flows.Templating
+    Flows.Templating,
+    Messages.Message,
+    Seeds.SeedsDev,
+    Templates
   }
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
     :ok
   end
 
@@ -40,7 +43,7 @@ defmodule Glific.Flows.ContactActionTest do
     ContactAction.send_message(context, action)
 
     message =
-      Glific.Messages.Message
+      Message
       |> where([m], m.contact_id == ^contact.id)
       |> Ecto.Query.last()
       |> Repo.one()
@@ -55,7 +58,7 @@ defmodule Glific.Flows.ContactActionTest do
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
 
     [template | _] =
-      Glific.Templates.list_session_templates(%{
+      Templates.list_session_templates(%{
         filter: %{shortcode: "hsm", label: "HSM3", is_hsm: true}
       })
 
@@ -69,7 +72,7 @@ defmodule Glific.Flows.ContactActionTest do
     ContactAction.send_message(context, action)
 
     message =
-      Glific.Messages.Message
+      Message
       |> where([m], m.contact_id == ^contact.id)
       |> Ecto.Query.last()
       |> Repo.one()

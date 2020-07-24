@@ -2,10 +2,14 @@ defmodule GlificWeb.Schema.FlowTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
-  alias Glific.{Flows.Flow}
+  alias Glific.{
+    Flows.Flow,
+    Repo,
+    Seeds.SeedsDev
+  }
 
   setup do
-    Glific.SeedsDev.seed_flows()
+    SeedsDev.seed_flows()
     :ok
   end
 
@@ -31,7 +35,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
   test "flow field id returns one flow or nil" do
     name = "Test Workflow"
-    {:ok, flow} = Glific.Repo.fetch_by(Glific.Flows.Flow, %{name: name})
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: name})
 
     result = query_gql_by(:by_id, variables: %{"id" => flow.id})
     assert {:ok, query_data} = result
@@ -48,7 +52,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
   test "create a flow and test possible scenarios and errors" do
     name = "Test Workflow"
-    {:ok, flow} = Glific.Repo.fetch_by(Flow, %{name: name})
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: name})
     language_id = flow.language_id
 
     name = "Flow Test Name"
@@ -79,7 +83,7 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "update a flow and test possible scenarios and errors" do
-    {:ok, flow} = Glific.Repo.fetch_by(Flow, %{name: "Test Workflow"})
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
 
     name = "Flow Test Name"
     shortcode = "Test shortcode"
@@ -99,7 +103,7 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "delete a flow" do
-    {:ok, flow} = Glific.Repo.fetch_by(Flow, %{name: "Test Workflow"})
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
 
     result = query_gql_by(:delete, variables: %{"id" => flow.id})
     assert {:ok, query_data} = result

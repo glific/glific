@@ -2,12 +2,19 @@ defmodule GlificWeb.Schema.MessageTagTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Messages.Message,
+    Repo,
+    Seeds.SeedsDev,
+    Tags.Tag
+  }
+
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_tag()
-    Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_messages()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_tag()
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_messages()
     :ok
   end
 
@@ -16,9 +23,9 @@ defmodule GlificWeb.Schema.MessageTagTest do
 
   test "create a message tag and test possible scenarios and errors" do
     label = "This is for testing"
-    {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
     body = "Default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body})
 
     result =
       query_gql_by(:create,
@@ -47,9 +54,9 @@ defmodule GlificWeb.Schema.MessageTagTest do
 
   test "delete a message tag" do
     label = "This is for testing"
-    {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
     body = "Default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body})
 
     {:ok, query_data} =
       query_gql_by(:create,

@@ -1,12 +1,22 @@
 defmodule GlificWeb.API.V1.RegistrationControllerTest do
   use GlificWeb.ConnCase
 
+  alias Glific.{
+    Contacts,
+    Contacts.Contact,
+    Repo,
+    Seeds.SeedsDev,
+    Tags.ContactTag,
+    Tags.Tag,
+    Users
+  }
+
   @password "secret1234"
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
     :ok
   end
 
@@ -21,7 +31,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     }
 
     test "with valid params", %{conn: conn} do
-      {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
       {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(receiver.phone)
 
@@ -43,11 +53,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json["data"]["token_expiry_time"]
 
       # We will tag the user as a contact tag
-      {:ok, staff_tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Staff"})
-      {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: receiver.phone})
+      {:ok, staff_tag} = Repo.fetch_by(Tag, %{label: "Staff"})
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: receiver.phone})
 
       assert {:ok, _contact_tag} =
-               Glific.Repo.fetch_by(Glific.Tags.ContactTag, %{
+               Repo.fetch_by(ContactTag, %{
                  contact_id: contact.id,
                  tag_id: staff_tag.id
                })
@@ -65,7 +75,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with invalid params", %{conn: conn} do
-      {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
       {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(receiver.phone)
 
@@ -90,8 +100,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
   describe "send_otp/2" do
     test "send otp", %{conn: conn} do
-      {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
-      Glific.Contacts.contact_opted_in(receiver.phone, DateTime.utc_now())
+      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+      Contacts.contact_opted_in(receiver.phone, DateTime.utc_now())
 
       valid_params = %{"user" => %{"phone" => receiver.phone}}
 
@@ -112,7 +122,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "send otp to existing user will return an error", %{conn: conn} do
-      [user | _] = Glific.Users.list_users()
+      [user | _] = Users.list_users()
       phone = user.phone
       invalid_params = %{"user" => %{"phone" => phone}}
 
@@ -123,8 +133,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "send otp to optout contact will return an error", %{conn: conn} do
-      {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
-      Glific.Contacts.contact_opted_out(receiver.phone, DateTime.utc_now())
+      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+      Contacts.contact_opted_out(receiver.phone, DateTime.utc_now())
       invalid_params = %{"user" => %{"phone" => receiver.phone}}
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))

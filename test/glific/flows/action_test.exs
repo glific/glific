@@ -3,6 +3,7 @@ defmodule Glific.Flows.ActionTest do
 
   alias Glific.{
     Contacts,
+    Seeds.SeedsDev,
     Settings
   }
 
@@ -13,9 +14,9 @@ defmodule Glific.Flows.ActionTest do
   }
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
     :ok
   end
 
