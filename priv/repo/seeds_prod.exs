@@ -525,7 +525,7 @@ Repo.insert!(%SavedSearch{
     contactOpts: %{limit: 10},
     messageOpts: %{limit: 5},
     term: ""
-  },
+  }
 })
 
 {:ok, not_responded} = Repo.fetch_by(Tag, %{label: "Not Responded"})
@@ -537,7 +537,7 @@ Repo.insert!(%SavedSearch{
     contactOpts: %{limit: 10},
     messageOpts: %{limit: 5},
     term: ""
-  },
+  }
 })
 
 {:ok, optout} = Repo.fetch_by(Tag, %{label: "Optout"})
@@ -549,7 +549,7 @@ Repo.insert!(%SavedSearch{
     contactOpts: %{limit: 10},
     messageOpts: %{limit: 5},
     term: ""
-  },
+  }
 })
 
 help_flow =

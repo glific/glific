@@ -270,6 +270,7 @@ defmodule Glific.CommunicationsTest do
 
     test "send message at a specific time should not send it immediately" do
       scheduled_time = Timex.shift(DateTime.utc_now(), hours: 2)
+
       message =
         %{send_at: scheduled_time}
         |> message_fixture()

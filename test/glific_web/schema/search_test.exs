@@ -9,7 +9,7 @@ defmodule GlificWeb.Schema.SearchTest do
     Repo,
     Searches,
     Searches.SavedSearch,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
     Tags.MessageTags,
     Tags.Tag
   }
