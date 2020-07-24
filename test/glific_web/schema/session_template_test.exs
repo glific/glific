@@ -2,12 +2,20 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Contacts.Contact,
+    Messages,
+    Repo,
+    Seeds.SeedsDev,
+    Templates.SessionTemplate
+  }
+
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_session_templates()
-    Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_messages()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_session_templates()
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_messages()
     :ok
   end
 
@@ -118,8 +126,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "session_template by id returns one session_template or nil" do
     body = "Default Template"
 
-    {:ok, session_template} =
-      Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{body: body})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{body: body})
 
     result = query_gql_by(:by_id, variables: %{"id" => session_template.id})
     assert {:ok, query_data} = result
@@ -137,8 +144,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "create a session_template and test possible scenarios and errors" do
     label = "Default Template Label"
 
-    {:ok, session_template} =
-      Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{label: label})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{label: label})
 
     language_id = session_template.language_id
 
@@ -194,8 +200,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "update a session template and test possible scenarios and errors" do
     label = "Default Template Label"
 
-    {:ok, session_template} =
-      Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{label: label})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{label: label})
 
     result =
       query_gql_by(:update,
@@ -225,8 +230,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   end
 
   test "delete an session_template" do
-    {:ok, session_template} =
-      Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{body: "Default Template"})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{body: "Default Template"})
 
     result = query_gql_by(:delete, variables: %{"id" => session_template.id})
     assert {:ok, query_data} = result
@@ -244,11 +248,10 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "send session message" do
     body = "Default Template"
 
-    {:ok, session_template} =
-      Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{body: body})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{body: body})
 
     name = "Adelle Cavin"
-    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
 
     result =
       query_gql_by(:send_session_message,
@@ -262,11 +265,10 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "create a session_template from message" do
     label = "Default Template Label"
 
-    {:ok, session_template} =
-      Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{label: label})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{label: label})
 
     language_id = session_template.language_id
-    [message | _] = Glific.Messages.list_messages()
+    [message | _] = Messages.list_messages()
 
     result =
       query_gql_by(:create_from_message,

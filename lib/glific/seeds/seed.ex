@@ -1,4 +1,4 @@
-defmodule Glific.Seed do
+defmodule Glific.Seeds.Seed do
   @moduledoc """
   First experiments with PhilColumns. Hopefully it will work
   """

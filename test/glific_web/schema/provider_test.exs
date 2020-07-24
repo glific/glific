@@ -2,8 +2,14 @@ defmodule GlificWeb.Schema.ProviderTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Partners.Provider,
+    Repo,
+    Seeds.SeedsDev
+  }
+
   setup do
-    Glific.SeedsDev.seed_providers()
+    SeedsDev.seed_providers()
     :ok
   end
 
@@ -48,7 +54,7 @@ defmodule GlificWeb.Schema.ProviderTest do
 
   test "provider id returns one provider or nil" do
     name = "Default Provider"
-    {:ok, provider} = Glific.Repo.fetch_by(Glific.Partners.Provider, %{name: name})
+    {:ok, provider} = Repo.fetch_by(Provider, %{name: name})
 
     result = query_gql_by(:by_id, variables: %{"id" => provider.id})
     assert {:ok, query_data} = result
@@ -97,7 +103,7 @@ defmodule GlificWeb.Schema.ProviderTest do
   end
 
   test "update a provider and test possible scenarios and errors" do
-    {:ok, provider} = Glific.Repo.fetch_by(Glific.Partners.Provider, %{name: "Default Provider"})
+    {:ok, provider} = Repo.fetch_by(Provider, %{name: "Default Provider"})
 
     name = "Provider Test Name"
     url = "Test url"
@@ -142,7 +148,7 @@ defmodule GlificWeb.Schema.ProviderTest do
   end
 
   test "delete a provider" do
-    {:ok, provider} = Glific.Repo.fetch_by(Glific.Partners.Provider, %{name: "Default Provider"})
+    {:ok, provider} = Repo.fetch_by(Provider, %{name: "Default Provider"})
 
     result = query_gql_by(:delete, variables: %{"id" => provider.id})
     assert {:ok, query_data} = result

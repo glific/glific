@@ -283,7 +283,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         shortcode: elem(data, 1),
         version_number: "13.1.0",
         uuid: elem(data, 2),
-        language: language,
+        language: language
       })
 
     definition =

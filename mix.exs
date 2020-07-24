@@ -132,7 +132,7 @@ defmodule Glific.MixProject do
         "ecto.drop",
         "ecto.create",
         "ecto.migrate",
-        "phil_columns.seed",
+        "phil_columns.seed"
       ],
       "ecto.setup": [
         "ecto.create",
