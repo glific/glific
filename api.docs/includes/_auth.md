@@ -16,7 +16,7 @@ from being abused.
 ```shell
 curl -X POST -d \
   "user[phone]=911234554321" \
-  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send-registration-otp
+  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send-otp
 ```
 ```javascript
 If you are using axios or other libraries, send the following in the BODY of a POST request
@@ -46,17 +46,17 @@ a message to existing user
 
 ```shell
 curl -X POST -d \
-  "user[phone]=911234554321&user_exists=true" \
-  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send-registration-otp
+  "user[phone]=911234554321&user[registration]=false" \
+  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/send-otp
 ```
 ```javascript
 If you are using axios or other libraries, send the following in the BODY of a POST request
 
 {
     "user": {
-        "phone": "911234554321"
-    },
-    "user_exists": "true"
+        "phone": "911234554321",
+        "registration": "false"
+    }
 }
 ```
 > The above query returns JSON structured like this:

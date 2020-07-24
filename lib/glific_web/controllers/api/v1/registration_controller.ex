@@ -71,11 +71,13 @@ defmodule GlificWeb.API.V1.RegistrationController do
   end
 
   @doc false
-  @spec send_registration_otp(Conn.t(), map()) :: Conn.t()
-  def send_registration_otp(conn, %{"user" => %{"phone" => phone}, "user_exists" => user_exists}) do
+  @spec send_otp(Conn.t(), map()) :: Conn.t()
+  def send_otp(conn, %{"user" => %{"phone" => phone}} = request_data) do
+    registration = request_data["user"]["registration"]
+
     with true <- can_send_otp_to_phone?(phone),
-          true <- send_otp_allowed?(phone, user_exists),
-          {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
+         true <- send_otp_allowed?(phone, registration),
+         {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
       json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
     else
       _ ->
@@ -84,20 +86,15 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
-  @doc false
   @spec can_send_otp_to_phone?(String.t()) :: boolean
   defp can_send_otp_to_phone?(phone) do
     with {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
          do: Glific.Contacts.can_send_message_to?(contact, true)
   end
 
-  defp send_otp_allowed?(phone, "true") do
+  @spec send_otp_allowed?(String.t(), String.t()) :: boolean
+  defp send_otp_allowed?(phone, registration) do
     {result, _} = Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone})
-    result == :ok
-  end
-
-  defp send_otp_allowed?(phone, _) do
-    {result, _} = Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone})
-    result == :error
+    (result == :ok && registration == "false") || (result == :error && registration != "false")
   end
 end

@@ -88,7 +88,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
   end
 
-  describe "send_registration_otp/2" do
+  describe "send_otp/2" do
     test "send otp", %{conn: conn} do
       {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
       Glific.Contacts.contact_opted_in(receiver.phone, DateTime.utc_now())
@@ -96,7 +96,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       valid_params = %{"user" => %{"phone" => receiver.phone}}
 
       conn =
-        post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, valid_params))
+        post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
       assert json = json_response(conn, 200)
       assert get_in(json, ["data", "phone"]) == valid_params["user"]["phone"]
@@ -107,7 +107,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       invalid_params = %{"user" => %{"phone" => phone}}
 
       conn =
-        post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
+        post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
       assert json = json_response(conn, 400)
       assert get_in(json, ["error", "message"]) == "Cannot send the otp to #{phone}"
@@ -119,7 +119,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       invalid_params = %{"user" => %{"phone" => phone}}
 
       conn =
-        post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
+        post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
       assert json = json_response(conn, 400)
       assert get_in(json, ["error", "message"]) == "Cannot send the otp to #{phone}"
@@ -131,7 +131,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       invalid_params = %{"user" => %{"phone" => receiver.phone}}
 
       conn =
-        post(conn, Routes.api_v1_registration_path(conn, :send_registration_otp, invalid_params))
+        post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
 
       assert json = json_response(conn, 400)
 
