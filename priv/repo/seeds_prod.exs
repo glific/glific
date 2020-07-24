@@ -326,7 +326,6 @@ Repo.insert!(%SessionTemplate{
   language_id: en_us.id,
   body:
     "I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now. If you’d like to continue this discussion, please reply with ‘yes’",
-
   uuid: "9381b1b9-1b9b-45a6-81f4-f91306959619"
 })
 
@@ -470,7 +469,6 @@ Repo.insert!(%SessionTemplate{
   number_parameters: 3,
   language_id: en_us.id,
   body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
-
   uuid: "e55f2c10-541c-470b-a5ff-9249ae82bc95"
 })
 
@@ -501,7 +499,6 @@ Repo.insert!(%SessionTemplate{
   language_id: en_us.id,
   body:
     "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{1}}]",
-
   uuid: "ae35ef89-ea4b-4b04-979d-04e7538f52dc"
 })
 
@@ -528,7 +525,7 @@ Repo.insert!(%SavedSearch{
     contactOpts: %{limit: 10},
     messageOpts: %{limit: 5},
     term: ""
-  },
+  }
 })
 
 {:ok, not_responded} = Repo.fetch_by(Tag, %{label: "Not Responded"})
@@ -540,7 +537,7 @@ Repo.insert!(%SavedSearch{
     contactOpts: %{limit: 10},
     messageOpts: %{limit: 5},
     term: ""
-  },
+  }
 })
 
 {:ok, optout} = Repo.fetch_by(Tag, %{label: "Optout"})
@@ -552,7 +549,7 @@ Repo.insert!(%SavedSearch{
     contactOpts: %{limit: 10},
     messageOpts: %{limit: 5},
     term: ""
-  },
+  }
 })
 
 help_flow =
@@ -649,11 +646,11 @@ Repo.insert!(%FlowRevision{
 
 registration_flow =
   Repo.insert!(%Flow{
-        name: "Registration Workflow",
-        shortcode: "registration",
-        version_number: "13.1.0",
-        uuid: "5e086708-37b2-4b20-80c2-bdc0f213c3c6"
-               })
+    name: "Registration Workflow",
+    shortcode: "registration",
+    version_number: "13.1.0",
+    uuid: "5e086708-37b2-4b20-80c2-bdc0f213c3c6"
+  })
 
 registration_flow_definition =
   File.read!("assets/flows/registration.json")
@@ -661,11 +658,11 @@ registration_flow_definition =
 
 registration_flow_definition =
   Map.merge(registration_flow_definition, %{
-        "name" => registration_flow.name,
-        "uuid" => registration_flow.uuid
-            })
+    "name" => registration_flow.name,
+    "uuid" => registration_flow.uuid
+  })
 
 Repo.insert!(%FlowRevision{
-      definition: registration_flow_definition,
-      flow_id: registration_flow.id
-             })
+  definition: registration_flow_definition,
+  flow_id: registration_flow.id
+})

@@ -1,7 +1,13 @@
 defmodule GlificWeb.Schema.MessageTest do
   alias Glific.{
+    Communications,
     Contacts,
-    Messages.Message
+    Contacts.Contact,
+    Messages,
+    Messages.Message,
+    Repo,
+    Seeds.SeedsDev,
+    Templates.SessionTemplate
   }
 
   use GlificWeb.ConnCase
@@ -9,10 +15,10 @@ defmodule GlificWeb.Schema.MessageTest do
   use Wormwood.GQLCase
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_messages()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_messages()
     :ok
   end
 
@@ -127,7 +133,7 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "message id returns one message or nil" do
     body = "Default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body})
 
     result = query_gql_by(:by_id, variables: %{"id" => message.id})
     assert {:ok, query_data} = result
@@ -143,7 +149,7 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "create a message and test possible scenarios and errors" do
-    [message | _] = Glific.Messages.list_messages()
+    [message | _] = Messages.list_messages()
 
     result =
       query_gql_by(:create,
@@ -181,7 +187,7 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "update a message and test possible scenarios and errors" do
     body = "Default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body})
 
     result =
       query_gql_by(:update,
@@ -206,7 +212,7 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "delete a message" do
     body = "Default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body})
 
     result = query_gql_by(:delete, variables: %{"id" => message.id})
     assert {:ok, query_data} = result
@@ -222,10 +228,10 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "send message to multiple contacts" do
     name = "Margarita Quinteros"
-    {:ok, contact1} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+    {:ok, contact1} = Repo.fetch_by(Contact, %{name: name})
 
     name = "Adelle Cavin"
-    {:ok, contact2} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+    {:ok, contact2} = Repo.fetch_by(Contact, %{name: name})
 
     result =
       query_gql_by(:create_and_send_message_to_contacts,
@@ -234,7 +240,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "type" => "TEXT",
-            "sender_id" => Glific.Communications.Message.organization_contact_id()
+            "sender_id" => Communications.Message.organization_contact_id()
           },
           "contact_ids" => [contact1.id, contact2.id]
         }
@@ -249,12 +255,12 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "send hsm message to an opted in contact" do
     name = "Default receiver"
-    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
 
-    Glific.Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
+    Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
 
     label = "HSM2"
-    {:ok, hsm_template} = Glific.Repo.fetch_by(Glific.Templates.SessionTemplate, %{label: label})
+    {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{label: label})
 
     parameters = ["param1", "param2"]
 
@@ -273,8 +279,8 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "create and send a message to valid contact" do
-    [contact | _tail] = Glific.Contacts.list_contacts()
-    Glific.Contacts.contact_opted_in(contact.phone, DateTime.utc_now())
+    [contact | _tail] = Contacts.list_contacts()
+    Contacts.contact_opted_in(contact.phone, DateTime.utc_now())
     {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: DateTime.utc_now()})
 
     result =
@@ -284,7 +290,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "receiverId" => contact.id,
-            "senderId" => Glific.Communications.Message.organization_contact_id(),
+            "senderId" => Communications.Message.organization_contact_id(),
             "type" => "TEXT"
           }
         }
@@ -296,8 +302,8 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "create and send a message to in valid contact will not create a message" do
-    [contact | _tail] = Glific.Contacts.list_contacts()
-    Glific.Contacts.contact_opted_out(contact.phone, DateTime.utc_now())
+    [contact | _tail] = Contacts.list_contacts()
+    Contacts.contact_opted_out(contact.phone, DateTime.utc_now())
     message_body = Faker.Lorem.sentence()
 
     result =
@@ -307,14 +313,14 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => message_body,
             "flow" => "OUTBOUND",
             "receiverId" => contact.id,
-            "senderId" => Glific.Communications.Message.organization_contact_id(),
+            "senderId" => Communications.Message.organization_contact_id(),
             "type" => "TEXT"
           }
         }
       )
 
     assert {:error, "Resource not found"} ==
-             Glific.Repo.fetch_by(Message, %{contact_id: contact.id, body: message_body})
+             Repo.fetch_by(Message, %{contact_id: contact.id, body: message_body})
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "createAndSendMessage"]) == nil

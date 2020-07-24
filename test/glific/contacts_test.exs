@@ -2,17 +2,23 @@ defmodule Glific.ContactsTest do
   use Glific.DataCase, async: true
 
   alias Faker.Phone
-  alias Glific.Contacts
+
+  alias Glific.{
+    Contacts,
+    Contacts.Contact,
+    Partners.Organization,
+    Seeds.SeedsDev,
+    Settings,
+    Settings.Language
+  }
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
     :ok
   end
 
   describe "contacts" do
-    alias Glific.Contacts.Contact
-
     @valid_attrs %{
       name: "some name",
       optin_time: ~U[2010-04-17 14:00:00Z],
@@ -126,13 +132,13 @@ defmodule Glific.ContactsTest do
       assert contact.provider_status == :invalid
 
       # Contact should be created with organization's default language
-      {:ok, organization} = Repo.fetch_by(Glific.Partners.Organization, %{name: "Glific"})
+      {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
 
       assert contact.language_id == organization.default_language_id
     end
 
     test "create_contact/1 with language id creates a contact" do
-      {:ok, language} = Repo.fetch_by(Glific.Settings.Language, %{locale: "hi"})
+      {:ok, language} = Repo.fetch_by(Language, %{locale: "hi"})
 
       attrs =
         @valid_attrs
@@ -231,7 +237,7 @@ defmodule Glific.ContactsTest do
     end
 
     test "upsert contacts" do
-      org = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+      org = Organization |> Ecto.Query.first() |> Repo.one()
       c0 = contact_fixture(@valid_attrs)
 
       # check if the defualt language is set
@@ -243,10 +249,10 @@ defmodule Glific.ContactsTest do
 
     test "ensure that upsert contacts overrides the language id" do
       c0 = contact_fixture(@valid_attrs)
-      org = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+      org = Organization |> Ecto.Query.first() |> Repo.one()
 
       language =
-        Glific.Settings.list_languages()
+        Settings.list_languages()
         |> Enum.find(fn ln -> ln.id != org.default_language_id end)
 
       {:ok, contact} =

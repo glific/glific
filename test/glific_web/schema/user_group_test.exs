@@ -2,9 +2,16 @@ defmodule GlificWeb.Schema.UserGroupTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Groups.Group,
+    Repo,
+    Seeds.SeedsDev,
+    Users.User
+  }
+
   setup do
-    Glific.SeedsDev.seed_users()
-    Glific.SeedsDev.seed_groups()
+    SeedsDev.seed_users()
+    SeedsDev.seed_groups()
     :ok
   end
 
@@ -13,9 +20,9 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
   test "create a user group and test possible scenarios and errors" do
     label = "Default Group"
-    {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label})
     name = "NGO Basic User 1"
-    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: name})
+    {:ok, user} = Repo.fetch_by(User, %{name: name})
 
     result =
       query_gql_by(:create,
@@ -43,9 +50,9 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
   test "delete a user group" do
     label = "Default Group"
-    {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label})
     name = "NGO Basic User 1"
-    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: name})
+    {:ok, user} = Repo.fetch_by(User, %{name: name})
 
     {:ok, query_data} =
       query_gql_by(:create,

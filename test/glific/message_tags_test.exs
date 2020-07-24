@@ -1,12 +1,17 @@
 defmodule Glific.MessageTagsTest do
   use Glific.DataCase
 
-  alias Glific.{Fixtures, Tags, Tags.MessageTags}
+  alias Glific.{
+    Fixtures,
+    Seeds.SeedsDev,
+    Tags,
+    Tags.MessageTags
+  }
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_tag()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_tag()
     :ok
   end
 

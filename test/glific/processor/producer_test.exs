@@ -23,16 +23,17 @@ defmodule Glific.Processor.ProducerTest do
 
   alias Glific.{
     Fixtures,
-    Processor.Producer
+    Processor.Producer,
+    Seeds.SeedsDev
   }
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_tag()
-    Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_messages()
-    Glific.SeedsDev.seed_session_templates()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_tag()
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_messages()
+    SeedsDev.seed_session_templates()
     :ok
   end
 

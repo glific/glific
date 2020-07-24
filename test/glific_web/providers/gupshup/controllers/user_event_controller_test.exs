@@ -3,6 +3,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
 
   alias Faker.Phone
 
+  alias Glific.{
+    Contacts.Contact,
+    Repo,
+    Seeds.SeedsDev
+  }
+
   @user_event_request_params %{
     "app" => "TidesTestApi",
     "payload" => %{
@@ -15,10 +21,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
   }
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_messages()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_messages()
     :ok
   end
 
@@ -48,7 +54,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
       phone = get_in(setup_config.message_params, ["payload", "phone"])
       conn = post(conn, "/gupshup", setup_config.message_params)
       json_response(conn, 200)
-      {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone})
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
       assert contact.optin_time != nil
       assert contact.status == :valid
     end
@@ -72,7 +78,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
       phone = get_in(setup_config.message_params, ["payload", "phone"])
       conn = post(conn, "/gupshup", setup_config.message_params)
       json_response(conn, 200)
-      {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone})
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
       assert contact.optout_time != nil
       assert contact.status == :invalid
     end
