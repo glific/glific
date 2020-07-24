@@ -66,6 +66,18 @@ defmodule Glific.Users.User do
     |> Changeset.validate_subset(:roles, @user_roles)
   end
 
+  @doc """
+  Simple changeset for reset password
+  """
+  @spec reset_password_changeset(Ecto.Schema.t() | Changeset.t(), map()) ::
+          Changeset.t()
+  def reset_password_changeset(user_or_changeset, attrs) do
+    user_or_changeset
+    |> Changeset.cast(attrs, [:password])
+    |> Changeset.validate_required([:password])
+    |> password_changeset(attrs, @pow_config)
+  end
+
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),
     do: Pow.Ecto.Schema.normalize_user_id_field_value(value)
 end

@@ -102,4 +102,14 @@ defmodule Glific.Users do
   def delete_user(%User{} = user) do
     Repo.delete(user)
   end
+
+  @doc """
+  Reset user password
+  """
+  @spec reset_user_password(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def reset_user_password(%User{} = user, attrs) do
+    user
+    |> User.reset_password_changeset(attrs)
+    |> Repo.update()
+  end
 end
