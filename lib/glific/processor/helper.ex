@@ -5,11 +5,9 @@ defmodule Glific.Processor.Helper do
   """
 
   alias Glific.{
-    Messages,
     Messages.Message,
     Repo,
     Tags,
-    Tags.Tag,
     Templates.SessionTemplate
   }
 
