@@ -33,6 +33,15 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :language_id, :id
   end
 
+  @desc "Filtering options for flows"
+  input_object :flow_filter do
+    @desc "Match the name"
+    field :name, :string
+
+    @desc "Match the shortcode"
+    field :shortcode, :string
+  end
+
   object :flow_queries do
     @desc "get the details of one flow"
     field :flow, :flow_result do
@@ -42,7 +51,15 @@ defmodule GlificWeb.Schema.FlowTypes do
 
     @desc "Get a list of all flows"
     field :flows, list_of(:flow) do
+      arg(:filter, :flow_filter)
+      arg(:opts, :opts)
       resolve(&Resolvers.Flows.flows/3)
+    end
+
+    @desc "Get a count of all flows filtered by various criteria"
+    field :count_flows, :integer do
+      arg(:filter, :flow_filter)
+      resolve(&Resolvers.Flows.count_flows/3)
     end
   end
 
@@ -62,5 +79,6 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:id, non_null(:id))
       resolve(&Resolvers.Flows.delete_flow/3)
     end
+
   end
 end
