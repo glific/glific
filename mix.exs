@@ -127,6 +127,13 @@ defmodule Glific.MixProject do
     [
       setup: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       reset: ["deps.get", "clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      preset: ["deps.get", "clean", "compile", "pecto.setup", "cmd npm install --prefix assets"],
+      "pecto.setup": [
+        "ecto.drop",
+        "ecto.create",
+        "ecto.migrate",
+        "phil_columns.seed",
+      ],
       "ecto.setup": [
         "ecto.create",
         "ecto.migrate",
