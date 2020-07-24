@@ -38,6 +38,11 @@ defmodule Glific.Flows.Localization do
   Process a json structure from floweditor to the Glific data types
   """
   @spec process(map()) :: Localization.t()
+  def process(json) when is_nil(json) do
+    language_map = Settings.locale_id_map()
+    %Localization{localizations: language_map}
+  end
+
   def process(json) do
     language_map = Settings.locale_id_map()
 
