@@ -3,7 +3,7 @@
 ## Search In conversation
 
 ```graphql
-query search($term: String!, $searchFilter: SearchFilter!, $shouldSave: Boolean!, $saveSearchLabel: String!, $contactOpts: Opts!, $messageOpts: Opts!) {
+query search($term: String!, $searchFilter: SearchFilter!, $shouldSave: Boolean, $saveSearchLabel: String, $contactOpts: Opts!, $messageOpts: Opts!) {
   search(term: $term, filter: $searchFilter, saveSearch: $shouldSave, saveSearchLabel: $saveSearchLabel, contactOpts: $contactOpts, messageOpts: $messageOpts) {
     messages {
       id,
@@ -33,7 +33,7 @@ query search($term: String!, $searchFilter: SearchFilter!, $shouldSave: Boolean!
   "contactOpts": {
     "order": "DESC",
     "limit": 1
-  },
+  }
 }
 ```
 

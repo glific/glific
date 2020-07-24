@@ -372,12 +372,16 @@ mutation createAndSendMessage($input: MessageInput!) {
 }
 ```
 
+## Create and send Scheduled Message
+
 ```graphql
 mutation createAndSendMessage($input: MessageInput!) {
   createAndSendMessage(input: $input) {
     message {
       id
       body
+      insertedAt
+      sendAt
     }
     errors {
       key
@@ -388,10 +392,10 @@ mutation createAndSendMessage($input: MessageInput!) {
 
 {
   "input": {
-    "body": "This message should reach at 9:00AM (India)",
+    "body": "This message should reach at 21:00 (India)",
     "flow": "OUTBOUND",
     "receiverId": 7,
-    "sendAt": "2020-07-10 03:30:00Z",
+    "sendAt": "2020-07-10T03:30:00Z",
     "senderId": 1,
     "type": "TEXT",
     "userId": 1
@@ -407,8 +411,10 @@ mutation createAndSendMessage($input: MessageInput!) {
     "createAndSendMessage": {
       "errors": null,
       "message": {
-        "body": "this message should reach at 8:00AM",
-        "id": "33"
+        "body": "This message should reach at 21:00 (India)",
+        "id": "33",
+        "insertedAt": "2020-07-10T13:50:40Z",
+        "sendAt": "2020-07-10T15:30:00Z"
       }
     }
   }
@@ -737,8 +743,38 @@ Parameter | Type | Default | Description
 </tr>
 
 <tr>
+<td colspan="2" valign="top"><strong>isHsm</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>insertedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>updatedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>sendAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+
+<tr>
 <td colspan="2" valign="top"><strong>Tags</strong></td>
 <td valign="top"><a href="#tags">Tags</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>user</strong></td>
+<td valign="top"><a href="#user">User</a></td>
 <td></td>
 </tr>
 
