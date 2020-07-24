@@ -3,11 +3,12 @@ defmodule Glific.TaggersKeywordTest do
 
   alias Glific.{
     Messages.Message,
+    Seeds.SeedsDev,
     Taggers.Keyword
   }
 
   setup do
-    Glific.SeedsDev.seed_tag()
+    SeedsDev.seed_tag()
     :ok
   end
 

@@ -3,6 +3,8 @@ defmodule Glific.Flows.NodeTest do
 
   alias Glific.{
     Contacts,
+    Messages.Message,
+    Seeds.SeedsDev,
     Settings
   }
 
@@ -13,9 +15,9 @@ defmodule Glific.Flows.NodeTest do
   }
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
     :ok
   end
 
@@ -125,7 +127,7 @@ defmodule Glific.Flows.NodeTest do
 
     # assert actions
     message =
-      Glific.Messages.Message
+      Message
       |> where([m], m.contact_id == ^contact.id)
       |> Ecto.Query.last()
       |> Repo.one()

@@ -4,13 +4,17 @@ defmodule GlificWeb.Schema.ConversationTest do
 
   import Ecto.Query
 
-  alias Glific.Contacts
+  alias Glific.{
+    Contacts,
+    Repo,
+    Seeds.SeedsDev
+  }
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_messages()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_messages()
     :ok
   end
 
@@ -107,7 +111,7 @@ defmodule GlificWeb.Schema.ConversationTest do
 
     contact_ids =
       from(c in Contacts.Contact, select: c.id)
-      |> Glific.Repo.all()
+      |> Repo.all()
       |> Enum.map(&Integer.to_string(&1))
 
     {:ok, result} =

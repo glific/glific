@@ -2,10 +2,16 @@ defmodule GlificWeb.Schema.TagTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.{Fixtures, Tags.Tag}
+  alias Glific.{
+    Fixtures,
+    Repo,
+    Seeds.SeedsDev,
+    Tags,
+    Tags.Tag
+  }
 
   setup do
-    Glific.SeedsDev.seed_tag()
+    SeedsDev.seed_tag()
     :ok
   end
 
@@ -114,7 +120,7 @@ defmodule GlificWeb.Schema.TagTest do
 
   test "tag id returns one tag or nil" do
     label = "This is for testing"
-    {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
 
     result = query_gql_by(:by_id, variables: %{"id" => tag.id})
     assert {:ok, query_data} = result
@@ -131,7 +137,7 @@ defmodule GlificWeb.Schema.TagTest do
 
   test "create a tag and test possible scenarios and errors" do
     label = "This is for testing"
-    {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
     language_id = tag.language_id
 
     result =
@@ -162,7 +168,7 @@ defmodule GlificWeb.Schema.TagTest do
 
   test "update a tag and test possible scenarios and errors" do
     label = "This is for testing"
-    {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
 
     result =
       query_gql_by(:update,
@@ -190,7 +196,7 @@ defmodule GlificWeb.Schema.TagTest do
 
   test "create a tag with keywords" do
     label = "This is for testing"
-    {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
     language_id = tag.language_id
     keywords = ["Hii", "Hello"]
 
@@ -211,7 +217,7 @@ defmodule GlificWeb.Schema.TagTest do
 
   test "delete a tag" do
     label = "This is for testing"
-    {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
 
     result = query_gql_by(:delete, variables: %{"id" => tag.id})
     assert {:ok, query_data} = result
@@ -239,7 +245,7 @@ defmodule GlificWeb.Schema.TagTest do
         receiver_id: message_1.receiver_id
       })
 
-    {:ok, tag} = Glific.Repo.fetch_by(Tag, %{label: "Unread"})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: "Unread"})
 
     message1_tag = Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
     message2_tag = Fixtures.message_tag_fixture(%{message_id: message_2.id, tag_id: tag.id})
@@ -260,8 +266,8 @@ defmodule GlificWeb.Schema.TagTest do
     assert Integer.to_string(message_2.id) in untag_message_id
     assert Integer.to_string(message_3.id) in untag_message_id
 
-    assert_raise Ecto.NoResultsError, fn -> Glific.Tags.get_message_tag!(message1_tag.id) end
-    assert_raise Ecto.NoResultsError, fn -> Glific.Tags.get_message_tag!(message2_tag.id) end
-    assert_raise Ecto.NoResultsError, fn -> Glific.Tags.get_message_tag!(message3_tag.id) end
+    assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message1_tag.id) end
+    assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message2_tag.id) end
+    assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message3_tag.id) end
   end
 end

@@ -1,9 +1,15 @@
 defmodule Glific.GroupsTest do
   use Glific.DataCase
 
-  alias Glific.{Groups, Groups.Group}
-
-  alias Glific.{Groups.ContactGroup, Groups.UserGroup}
+  alias Glific.{
+    Contacts,
+    Groups,
+    Groups.ContactGroup,
+    Groups.Group,
+    Groups.UserGroup,
+    Seeds.SeedsDev,
+    Users
+  }
 
   describe "groups" do
     @valid_attrs %{
@@ -115,14 +121,14 @@ defmodule Glific.GroupsTest do
 
   describe "contacts_groups" do
     setup do
-      default_provider = Glific.SeedsDev.seed_providers()
-      Glific.SeedsDev.seed_organizations(default_provider)
-      Glific.SeedsDev.seed_contacts()
+      default_provider = SeedsDev.seed_providers()
+      SeedsDev.seed_organizations(default_provider)
+      SeedsDev.seed_contacts()
       :ok
     end
 
     def contact_group_fixture do
-      [contact | _] = Glific.Contacts.list_contacts()
+      [contact | _] = Contacts.list_contacts()
 
       valid_attrs = %{
         contact_id: contact.id,
@@ -137,7 +143,7 @@ defmodule Glific.GroupsTest do
     end
 
     test "create_contacts_group/1 with valid data creates a group" do
-      [contact | _] = Glific.Contacts.list_contacts()
+      [contact | _] = Contacts.list_contacts()
       group = group_fixture()
 
       {:ok, contact_group} =
@@ -153,7 +159,7 @@ defmodule Glific.GroupsTest do
     end
 
     test "ensure that creating contact_group with same contact and group give an error" do
-      [contact | _] = Glific.Contacts.list_contacts()
+      [contact | _] = Contacts.list_contacts()
       group = group_fixture()
       Groups.create_contact_group(%{contact_id: contact.id, group_id: group.id})
 
@@ -164,12 +170,12 @@ defmodule Glific.GroupsTest do
 
   describe "users_groups" do
     setup do
-      Glific.SeedsDev.seed_users()
+      SeedsDev.seed_users()
       :ok
     end
 
     def user_group_fixture do
-      [user | _] = Glific.Users.list_users()
+      [user | _] = Users.list_users()
 
       valid_attrs = %{
         user_id: user.id,
@@ -184,7 +190,7 @@ defmodule Glific.GroupsTest do
     end
 
     test "create_users_group/1 with valid data creates a group" do
-      [user | _] = Glific.Users.list_users()
+      [user | _] = Users.list_users()
       group = group_fixture()
       {:ok, user_group} = Groups.create_user_group(%{user_id: user.id, group_id: group.id})
       assert user_group.user_id == user.id
@@ -197,7 +203,7 @@ defmodule Glific.GroupsTest do
     end
 
     test "ensure that creating user_group with same user and group give an error" do
-      [user | _] = Glific.Users.list_users()
+      [user | _] = Users.list_users()
       group = group_fixture()
       Groups.create_user_group(%{user_id: user.id, group_id: group.id})
 
