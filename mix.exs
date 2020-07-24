@@ -109,10 +109,11 @@ defmodule Glific.MixProject do
       {:sobelow, "~> 0.8", only: [:dev, :test]},
       {:wormwood, "~> 0.1"},
       {:gen_stage, "~> 1.0"},
-      {:passwordless_auth, git: "https://github.com/glific/passwordless_auth.git"},
       {:timex, "~> 3.0"},
       {:slugify, "~> 1.3"},
-      {:cachex, "~> 3.2"}
+      {:cachex, "~> 3.2"},
+      {:passwordless_auth, git: "https://github.com/glific/passwordless_auth.git"},
+      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"}
     ]
   end
 
