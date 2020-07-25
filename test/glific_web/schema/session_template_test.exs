@@ -120,7 +120,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     result = query_gql_by(:list, variables: %{"filter" => %{"isHsm" => true}})
     assert {:ok, query_data} = result
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
-    assert length(session_templates) >= 3
+    assert length(session_templates) >= 1
   end
 
   test "session_template by id returns one session_template or nil" do
@@ -274,7 +274,11 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       query_gql_by(:create_from_message,
         variables: %{
           "messageId" => message.id,
-          "input" => %{"label" => "From Message", "languageId" => language_id}
+          "input" => %{
+            "label" => "From Message",
+            "shortcode" => "from",
+            "languageId" => language_id
+          }
         }
       )
 
@@ -287,7 +291,11 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       query_gql_by(:create_from_message,
         variables: %{
           "messageId" => message.id,
-          "input" => %{"label" => "From Message", "languageId" => language_id}
+          "input" => %{
+            "label" => "From Message",
+            "shortcode" => "from",
+            "languageId" => language_id
+          }
         }
       )
 

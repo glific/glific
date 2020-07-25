@@ -13,7 +13,6 @@
 # THIS FILE IS NO LONGER BEING USED. PLEASE DO NOT EDIT
 # WILL BE REMOVED SOON
 
-
 alias Glific.{
   Contacts.Contact,
   Flows.Flow,

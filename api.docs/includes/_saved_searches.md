@@ -26,16 +26,16 @@ query savedSearches($filter: SavedSearchFilters!) {
   "data": {
     "savedSearches": [
       {
-        "id": "18",
-        "label": "All Unread Messages",
-        "shortcode": "Unread",
-        "args": "{filter: {includeTags: [2]}}"
-      },
-      {
-        "id": "19",
-        "label": "All Unread Messages Contacts",
-        "args": "{filter: {includeTags: [2]}}"
-      },
+        "args": "{
+          \"term\":\"\",
+          \"messageOpts\":{\"limit\":5},
+          \"filter\":{\"includeTags\":[\"10\"]},
+          \"contactOpts\":{\"limit\":10}
+        }",
+        "id": "1",
+        "label": "All unread conversations",
+        "shortcode": "Unread"
+      }
     ]
   }
 }
@@ -125,7 +125,7 @@ mutation createSavedSearch($input: SavedSearchInput!) {
         "id": "26",
         "label": "This is a saved search",
         "shortcode": "Save Search",
-        "args": "{"term": "\Save this search\"}",
+        "args": "{\"term\": \"Save this search\"}",
       }
     }
   }
@@ -151,7 +151,6 @@ mutation updateSavedSearch($id: ID!, $input:SavedSearchInput!) {
     savedSearch {
       id
       label
-      args
     }
     errors {
       key
@@ -164,7 +163,6 @@ mutation updateSavedSearch($id: ID!, $input:SavedSearchInput!) {
   "id": "26",
   "input": {
     "label": "This is a updated saved search",
-    "args": "{"term": "\Save this search\"}",
   }
 }```
 
@@ -178,7 +176,6 @@ mutation updateSavedSearch($id: ID!, $input:SavedSearchInput!) {
       "savedSearch": {
         "id": "26",
         "label": "This is a updated saved search",
-        "args": "{"term": "\Save this search\"}"
       }
     }
   }
@@ -337,12 +334,12 @@ Filtering options for savedSearches
 <tr>
 <td colspan="2" valign="top"><strong>label</strong></td>
 <td valign="top"><a href="#string">String</a></td>
-<td> Match the label</td>
+<td>Match the label</td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
-<td> Match the shortcode</td>
+<td>Match the shortcode</td>
 </tr>
 </tbody>
 </table>
@@ -360,6 +357,11 @@ Filtering options for savedSearches
 <tbody>
 <tr>
 <td colspan="2" valign="top"><strong>label</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>

@@ -126,10 +126,9 @@ defmodule Glific.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
-      reset: ["deps.get", "clean", "compile", "ecto.setup", "cmd npm install --prefix assets"],
+      reset: ["deps.get", "clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": [
-        "ecto.drop",
-        "ecto.create",
+        "ecto.create --quiet",
         "ecto.migrate",
         "phil_columns.seed",
         "run priv/repo/seeds_dev.exs"

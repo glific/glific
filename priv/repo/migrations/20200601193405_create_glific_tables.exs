@@ -144,7 +144,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :is_source, :boolean, default: false
 
       # The message shortcode
-      add :shortcode, :string, null: false
+      add :shortcode, :string, null: true
 
       # Field to check hsm message type
       add :is_hsm, :boolean, default: false

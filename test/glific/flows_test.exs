@@ -12,7 +12,7 @@ defmodule Glific.FLowsTest do
     }
 
     @valid_more_attrs %{
-      name: "Test Flow",
+      name: "Test Flow More",
       shortcode: "test_short_code_2",
       flow_type: :message,
       version_number: "13.1.0"

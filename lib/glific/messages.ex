@@ -132,8 +132,12 @@ defmodule Glific.Messages do
   end
 
   @spec put_contact_id(map()) :: map()
-  defp put_contact_id(%{flow: :inbound} = attrs), do: Map.put(attrs, :contact_id, attrs[:sender_id])
-  defp put_contact_id(%{flow: :outbound} = attrs), do: Map.put(attrs, :contact_id, attrs[:receiver_id])
+  defp put_contact_id(%{flow: :inbound} = attrs),
+    do: Map.put(attrs, :contact_id, attrs[:sender_id])
+
+  defp put_contact_id(%{flow: :outbound} = attrs),
+    do: Map.put(attrs, :contact_id, attrs[:receiver_id])
+
   defp put_contact_id(attrs), do: attrs
 
   @doc """
@@ -227,7 +231,7 @@ defmodule Glific.Messages do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
       Glific.Repo.fetch_by(SessionTemplate, %{
-        shortcode: "otp_verification",
+        shortcode: "otp",
         is_hsm: true
       })
 

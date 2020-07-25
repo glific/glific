@@ -128,10 +128,10 @@ defmodule Glific.Searches do
 
     if save_search do
       create_saved_search(%{
-            label: args.save_search_label,
-            shortcode: args.save_search_label,
-            args: args
-                          })
+        label: args.save_search_label,
+        shortcode: args.save_search_label,
+        args: args
+      })
     end
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)

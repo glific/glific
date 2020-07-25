@@ -21,10 +21,12 @@ defmodule GlificWeb.Schema.SearchTypes do
 
   input_object :saved_search_filters do
     field :label, :string
+    field :shortcode, :string
   end
 
   input_object :saved_search_input do
     field :label, :string
+    field :shortcode, :string
     field :args, :json
   end
 

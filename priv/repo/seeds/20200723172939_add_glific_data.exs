@@ -207,7 +207,132 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def hsm_templates(languages) do
-    {_hi, en_us} = languages
+    {hi, en_us} = languages
+
+    Repo.insert!(%SessionTemplate{
+      label: "Help",
+      body: """
+      Thank you for reaching out. Is this what you're looking for-
+      Send 1. to see the menu,
+      Send 2. to know more about Glific,
+      Send 3. to know the benefits of WA for business,
+      Send 4. if you'd like to be onboarded to Glific
+      """,
+      type: :text,
+      shortcode: "help",
+      is_reserved: true,
+      language_id: en_us.id,
+      uuid: "2f1c9eee-cb81-4624-8d18-9b21ff0bb2e6"
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Help",
+      body: """
+      हमे संपर्क करने के लिए धन्यवाद। क्या इसमें कुछ आपकी मदद कर सकता है-
+      मेनू देखने के लिए 1. भेजें,
+      ग्लिफ़िक के बारे में अधिक जानने के लिए 2. भेजें,
+      व्यापार के लिए व्हाट्सएप के लाभों को जानने के लिए 3. भेजें,
+      ग्लिफ़िक का उपयोग करने के लिए 4. भेजें
+      """,
+      type: :text,
+      shortcode: "help",
+      is_reserved: true,
+      language_id: hi.id,
+      uuid: "ea83bdcd-a940-49c2-b9cb-1194f75fffd9"
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "New Contact",
+      body: """
+      Welcome to Glific. Glific helps facilitate two way conversations. We are here to help.
+      Before we start, can you please answer a few questions to set you up on our system.
+      """,
+      type: :text,
+      shortcode: "new contact",
+      is_reserved: true,
+      language_id: en_us.id,
+      uuid: "5d7346d5-347c-4eca-b422-f05b07c41820"
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "New Contact",
+      body: """
+      ग्लिफ़िक में आपका स्वागत है
+      """,
+      type: :text,
+      shortcode: "new contact",
+      is_reserved: true,
+      language_id: hi.id,
+      uuid: "38c74fcc-f586-4aef-a367-70a7c4c72a1d"
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Language",
+      body: """
+      Your language is currently set at {{1}}
+
+      Do you want to change the language you want to receive messages in?
+
+      हिंदी में संदेश प्राप्त करने के लिए 1 टाइप करें
+      To continue to receive messages in English, type 2
+      """,
+      type: :text,
+      shortcode: "language",
+      is_reserved: true,
+      language_id: en_us.id,
+      uuid: "942cb24b-5c78-4c7f-a3f9-1b4d1ba63118",
+      number_parameters: 1
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Language",
+      body: """
+      आपकी भाषा वर्तमान में सेट हैा {{1}}
+
+      आप जिस भाषा में संदेश प्राप्त करना चाहते हैं उसे बदल सकते हैं।क्या आप उस भाषा को बदलना चाहते हैं जिसमें आप संदेश प्राप्त करना चाहते हैं?
+
+      हिंदी में संदेश प्राप्त करने के लिए 1 टाइप करें
+      To receive messages in English, type 2
+      """,
+      type: :text,
+      shortcode: "language",
+      is_reserved: true,
+      language_id: hi.id,
+      uuid: "af0caab8-796d-4591-bd7f-7aed57e1ce81",
+      number_parameters: 1
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Optout",
+      body: """
+      अब आपकी सदस्यता समाप्त हो गई है।
+
+      फिर से संदेश प्राप्त करने के लिए सदस्यता टाइप करें।
+      """,
+      type: :text,
+      shortcode: "optout",
+      is_reserved: true,
+      language_id: hi.id,
+      uuid: "d36c2204-fc6f-4301-b3ef-a3aedfd10215"
+    })
+
+    Repo.insert!(%SessionTemplate{
+      label: "Preferences",
+      body: """
+      What type of activity do you prefer
+      1. Poetry
+      2. Writing
+      3. Story
+      4. Video
+      5. Done
+      6. Reset my preferences
+      """,
+      type: :text,
+      shortcode: "preference",
+      is_reserved: true,
+      language_id: en_us.id,
+      uuid: "a9834b33-583d-471b-aa50-bdf0a4c8c34b"
+    })
 
     Repo.insert!(%SessionTemplate{
       label: "Missed Message Apology",
@@ -236,44 +361,31 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def saved_searches do
-    labels = Repo.label_id_map(Tag, ["Unread", "Not Replied", "Optout"])
+    labels = Repo.label_id_map(Tag, ["Not Replied", "Not Responded", "Optout", "Unread"])
 
-    Repo.insert!(%SavedSearch{
-          label: "All unread conversations",
-          shortcode: "Unread",
-          args: %{
-            filter: %{includeTags: [to_string(labels["Unread"])]},
-            contactOpts: %{limit: 10},
-            messageOpts: %{limit: 5},
-            term: ""
-          },
-          is_reserved: true
-    })
+    data = [
+      {"All unread conversations", "Unread"},
+      {"Conversations read but not replied", "Not Replied"},
+      {"Conversations where the contact has opted out", "Optout"},
+      {"Conversations read but not responded", "Not Responded"}
+    ]
 
-    Repo.insert!(%SavedSearch{
-          label: "Conversations read but not replied",
-          shortcode: "Read Not Replied",
-      args: %{
-        filter: %{includeTags: [to_string(labels["Not Replied"])]},
-        contactOpts: %{limit: 10},
-        messageOpts: %{limit: 5},
-        term: ""
-      },
-      is_reserved: true
-    })
-
-    Repo.insert!(%SavedSearch{
-          label: "Conversations where the contact has opted out",
-          shortcode: "Opted Out",
-      args: %{
-        filter: %{includeTags: [to_string(labels["Optout"])]},
-        contactOpts: %{limit: 10},
-        messageOpts: %{limit: 5},
-        term: ""
-      },
-      is_reserved: true
-    })
+    Enum.each(data, &session_template(&1, labels))
   end
+
+  defp session_template({label, shortcode}, labels),
+    do:
+      Repo.insert!(%SavedSearch{
+        label: label,
+        shortcode: shortcode,
+        args: %{
+          filter: %{includeTags: [to_string(labels[shortcode])]},
+          contactOpts: %{limit: 10},
+          messageOpts: %{limit: 5},
+          term: ""
+        },
+        is_reserved: true
+      })
 
   def flows() do
     data = [
@@ -287,24 +399,24 @@ defmodule Glific.Repo.Seeds.AddGlificData do
        "registration.json"}
     ]
 
-    Enum.map(data, fn f -> flow(f) end)
+    Enum.map(data, &flow(&1))
   end
 
-  defp flow(data) do
+  defp flow({name, shortcode, uuid, file}) do
     f =
       Repo.insert!(%Flow{
-        name: elem(data, 0),
-        shortcode: elem(data, 1),
+        name: name,
+        shortcode: shortcode,
         version_number: "13.1.0",
-        uuid: elem(data, 2),
+        uuid: uuid
       })
 
     definition =
-      File.read!("assets/flows/" <> elem(data, 3))
+      File.read!("assets/flows/" <> file)
       |> Jason.decode!()
       |> Map.merge(%{
         "name" => f.name,
-        "uuid" => f.uuid,
+        "uuid" => f.uuid
       })
 
     Repo.insert(%FlowRevision{
