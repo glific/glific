@@ -189,22 +189,31 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   end
 
   describe "reset_password/2" do
+    @password "secret12345"
     @new_password "12345678"
 
-    test "with valid params", %{conn: conn} do
+    def user_fixture() do
       # create a user for a contact
       {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
+      valid_user_attrs = %{
+        "phone" => receiver.phone,
+        "name" => receiver.name,
+        "password" => @password,
+        "password_confirmation" => @password
+      }
+
       {:ok, user} =
-        %{
-          "phone" => receiver.phone,
-          "name" => receiver.name,
-          "password" => @password,
-          "password_confirmation" => @password
-        }
+        valid_user_attrs
         |> Users.create_user()
 
-      # reset password of user
+      user
+    end
+
+    test "with valid params", %{conn: conn} do
+      user = user_fixture()
+
+      # reset password of a user
       {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(user.phone)
 
       valid_params = %{
@@ -221,11 +230,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with wrong otp", %{conn: conn} do
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+      user = user_fixture()
 
       invalid_params = %{
         "user" => %{
-          "phone" => receiver.phone,
+          "phone" => user.phone,
           "password" => @new_password,
           "otp" => "incorrect otp"
         }
@@ -238,9 +247,9 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with incorrect phone number", %{conn: conn} do
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+      user = user_fixture()
 
-      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(receiver.phone)
+      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(user.phone)
 
       invalid_params = %{
         "user" => %{
@@ -257,17 +266,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with password less than 8 characters", %{conn: conn} do
-      # create a user for a contact
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-
-      {:ok, user} =
-        %{
-          "phone" => receiver.phone,
-          "name" => receiver.name,
-          "password" => @password,
-          "password_confirmation" => @password
-        }
-        |> Users.create_user()
+      user = user_fixture()
 
       # reset password of user
       {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(user.phone)
