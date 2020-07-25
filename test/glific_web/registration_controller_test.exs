@@ -192,7 +192,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     @password "secret12345"
     @new_password "12345678"
 
-    def user_fixture() do
+    def user_fixture do
       # create a user for a contact
       {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
