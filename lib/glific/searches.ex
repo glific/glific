@@ -114,27 +114,60 @@ defmodule Glific.Searches do
     SavedSearch.changeset(search, attrs)
   end
 
+  # common function to build query between count and search
+  @spec search_query(String.t(), map()) :: Ecto.Query.t()
+  defp search_query(term, args),
+    do: Contact |> select([c], c.id) |> Full.run(term, args)
+
   @doc """
   Full text search interface via Postgres
   """
   @spec search(map()) :: [Conversation.t()]
   def search(%{term: term, save_search: save_search} = args) do
-    query = from c in Contact, select: c.id
-
     contact_ids =
-      query
-      |> Full.run(term, args)
+      search_query(term, args)
       |> Repo.all()
 
     if save_search do
       create_saved_search(%{
         label: args.save_search_label,
-        shortcode: args.save_search_label,
+        shortcode: args.save_search_shortcode,
         args: args
       })
     end
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Glific.Conversations.list_conversations()
+  end
+
+  @doc """
+  Get the search count
+  """
+  @spec search_count(map()) :: integer
+  def search_count(%{term: term} = args) do
+    search_query(term, args)
+    |> Repo.aggregate(:count)
+  end
+
+  # Add the term if present to the list of args
+  @spec add_term(map(), String.t() | nil) :: map()
+  defp add_term(args, term) when is_nil(term) or term == "", do: args
+  defp add_term(args, term), do: Map.put(args, :term, term)
+
+  # do search or count based on count flag
+  @spec do_search(map(), boolean) :: [Conversation.t()] | integer
+  defp do_search(args, true), do: search(args)
+  defp do_search(args, false), do: search_count(args)
+
+  @doc """
+  Execute a saved search, if term is sent in, it is added to
+  the saved search. Either return conversations or count
+  """
+  @spec saved_search_execute(map(), boolean) :: [Conversation.t()] | integer
+  def saved_search_execute(%{term: term, id: id}, count \\ false) do
+    get_saved_search!(id)
+    |> Map.get(:args)
+    |> add_term(term)
+    |> do_search(count)
   end
 end

@@ -66,6 +66,27 @@ defmodule GlificWeb.Schema.SearchTypes do
       arg(:filter, :saved_search_filters)
       resolve(&Resolvers.Searches.saved_searches/3)
     end
+
+    field :saved_search_count, :integer do
+      # the id of the saved search
+      arg(:id, non_null(:id))
+
+      # if we want to add a search term
+      arg(:term, :string)
+
+      resolve(&Resolvers.Searches.saved_search_count/3)
+    end
+
+    @desc "Convenience function to run a search for a specific saved search id"
+    field :saved_search_execute, list_of(:conversation) do
+      # the id of the saved search
+      arg(:id, non_null(:id))
+
+      # if we want to add a search term
+      arg(:term, :string)
+
+      resolve(&Resolvers.Searches.saved_search_execute/3)
+    end
   end
 
   object :search_mutations do

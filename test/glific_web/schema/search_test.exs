@@ -139,6 +139,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "term" => "Default",
           "shouldSave" => false,
           "saveSearchLabel" => "",
+          "saveSearchShortcode" => "",
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -155,6 +156,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "term" => "Default receiver",
           "shouldSave" => false,
           "saveSearchLabel" => "",
+          "saveSearchShortcode" => "",
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -169,6 +171,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "term" => "This term is highly unlikely to occur superfragerlicious",
           "shouldSave" => false,
           "saveSearchLabel" => "",
+          "saveSearchShortcode" => "",
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -185,6 +188,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "term" => "",
           "shouldSave" => false,
           "saveSearchLabel" => "",
+          "saveSearchShortcode" => "",
           "contactOpts" => %{"limit" => Contacts.count_contacts()},
           "messageOpts" => %{"limit" => 1}
         }
@@ -201,6 +205,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "term" => "Default",
           "shouldSave" => true,
           "saveSearchLabel" => "Save with Search",
+          "saveSearchShortcode" => "SaveSearch",
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
