@@ -296,8 +296,8 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>Users</strong></td>
-<td valign="top">[<a href="#users">Users</a>]</td>
+<td colspan="2" valign="top"><strong>groups</strong></td>
+<td valign="top">[<a href="#group">Group</a>]</td>
 <td></td>
 </tr>
 </tbody>
