@@ -131,14 +131,10 @@ defmodule Glific.Messages do
     |> Repo.insert()
   end
 
-  # Still need to improve this fucnation
-  defp put_contact_id(attrs) do
-    case attrs.flow do
-      :inbound -> Map.put(attrs, :contact_id, attrs[:sender_id])
-      :outbound -> Map.put(attrs, :contact_id, attrs[:receiver_id])
-      _ -> attrs
-    end
-  end
+  @spec put_contact_id(map()) :: map()
+  defp put_contact_id(%{flow: :inbound} = attrs), do: Map.put(attrs, :contact_id, attrs[:sender_id])
+  defp put_contact_id(%{flow: :outbound} = attrs), do: Map.put(attrs, :contact_id, attrs[:receiver_id])
+  defp put_contact_id(attrs), do: attrs
 
   @doc """
   Updates a message.

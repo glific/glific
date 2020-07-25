@@ -1,5 +1,5 @@
 defmodule Glific.Repo.Seeds.AddGlificData do
-  use Glific.Seed
+  use Glific.Seeds.Seed
 
   envs([:dev, :test, :prod])
 
@@ -38,7 +38,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     saved_searches()
 
-    flows(languages)
+    flows()
   end
 
   def down(_repo) do
@@ -239,27 +239,43 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     labels = Repo.label_id_map(Tag, ["Unread", "Not Replied", "Optout"])
 
     Repo.insert!(%SavedSearch{
-      label: "All unread conversations",
-      args: %{includeTags: [to_string(labels["Unread"])]},
+          label: "All unread conversations",
+          shortcode: "Unread",
+          args: %{
+            filter: %{includeTags: [to_string(labels["Unread"])]},
+            contactOpts: %{limit: 10},
+            messageOpts: %{limit: 5},
+            term: ""
+          },
+          is_reserved: true
+    })
+
+    Repo.insert!(%SavedSearch{
+          label: "Conversations read but not replied",
+          shortcode: "Read Not Replied",
+      args: %{
+        filter: %{includeTags: [to_string(labels["Not Replied"])]},
+        contactOpts: %{limit: 10},
+        messageOpts: %{limit: 5},
+        term: ""
+      },
       is_reserved: true
     })
 
     Repo.insert!(%SavedSearch{
-      label: "Conversations read but not replied",
-      args: %{includeTags: [to_string(labels["Not Replied"])]},
-      is_reserved: true
-    })
-
-    Repo.insert!(%SavedSearch{
-      label: "Conversations where the contact has opted out",
-      args: %{includeTags: [to_string(labels["Optout"])]},
+          label: "Conversations where the contact has opted out",
+          shortcode: "Opted Out",
+      args: %{
+        filter: %{includeTags: [to_string(labels["Optout"])]},
+        contactOpts: %{limit: 10},
+        messageOpts: %{limit: 5},
+        term: ""
+      },
       is_reserved: true
     })
   end
 
-  def flows(languages) do
-    {_hi, en_us} = languages
-
+  def flows() do
     data = [
       {"Help Workflow", "help", "3fa22108-f464-41e5-81d9-d8a298854429", "help.json"},
       {"Language Workflow", "language", "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf", "language.json"},
@@ -271,17 +287,16 @@ defmodule Glific.Repo.Seeds.AddGlificData do
        "registration.json"}
     ]
 
-    Enum.map(data, fn f -> flow(f, en_us) end)
+    Enum.map(data, fn f -> flow(f) end)
   end
 
-  defp flow(data, language) do
+  defp flow(data) do
     f =
       Repo.insert!(%Flow{
         name: elem(data, 0),
         shortcode: elem(data, 1),
         version_number: "13.1.0",
         uuid: elem(data, 2),
-        language: language
       })
 
     definition =
@@ -290,7 +305,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       |> Map.merge(%{
         "name" => f.name,
         "uuid" => f.uuid,
-        "language" => language.label_locale
       })
 
     Repo.insert(%FlowRevision{

@@ -225,7 +225,8 @@ defmodule Glific.Seeds.SeedsDev do
 
     session_template_parent =
       Repo.insert!(%SessionTemplate{
-        label: "Default Template Label",
+            label: "Default Template Label",
+            shortcode: "default template",
         body: "Default Template",
         type: :text,
         language_id: en_us.id,
@@ -234,6 +235,7 @@ defmodule Glific.Seeds.SeedsDev do
 
     Repo.insert!(%SessionTemplate{
       label: "Another Template Label",
+      shortcode: "another template",
       body: "Another Template",
       type: :text,
       language_id: en_us.id,

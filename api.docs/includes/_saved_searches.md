@@ -7,6 +7,7 @@ query savedSearches($filter: SavedSearchFilters!) {
   savedSearches(filter: $filter) {
     id
     label
+    shortcode
     args
   }
 }
@@ -27,12 +28,13 @@ query savedSearches($filter: SavedSearchFilters!) {
       {
         "id": "18",
         "label": "All Unread Messages",
-        "args": "{term: "\All Unread Messages\", IncludeTags: [2]}"
+        "shortcode": "Unread",
+        "args": "{filter: {includeTags: [2]}}"
       },
       {
         "id": "19",
         "label": "All Unread Messages Contacts",
-        "args": "{term: "\All Unread Messages Contacts \", IncludeTags: [2]}"
+        "args": "{filter: {includeTags: [2]}}"
       },
     ]
   }
@@ -93,6 +95,7 @@ mutation createSavedSearch($input: SavedSearchInput!) {
     savedSearch {
       id
       label
+      shortcode
       args
     }
     errors {
@@ -105,6 +108,7 @@ mutation createSavedSearch($input: SavedSearchInput!) {
 {
   "input": {
     "label": "This is a saved search",
+    "shortcode": "Save Search"
     "args": "{"term": "\Save this search\"}"
   }
 }
@@ -120,6 +124,7 @@ mutation createSavedSearch($input: SavedSearchInput!) {
       "savedSearch": {
         "id": "26",
         "label": "This is a saved search",
+        "shortcode": "Save Search",
         "args": "{"term": "\Save this search\"}",
       }
     }
@@ -276,6 +281,11 @@ Parameter | Type | Default | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>shortcode</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>Args</strong></td>
 <td valign="top"><a href="#json">Json</a></td>
 <td></td>
@@ -327,7 +337,12 @@ Filtering options for savedSearches
 <tr>
 <td colspan="2" valign="top"><strong>label</strong></td>
 <td valign="top"><a href="#string">String</a></td>
-<td> Match the label </td>
+<td> Match the label</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>shortcode</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td> Match the shortcode</td>
 </tr>
 </tbody>
 </table>

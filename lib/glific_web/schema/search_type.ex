@@ -15,6 +15,7 @@ defmodule GlificWeb.Schema.SearchTypes do
   object :saved_search do
     field :id, :id
     field :label, :string
+    field :shortcode, :string
     field :args, :json
   end
 
@@ -41,8 +42,9 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :search, list_of(:conversation) do
       arg(:save_search, :boolean, default_value: false)
 
-      @desc "A label for saved search object"
+      @desc "A label and shortcode for saved search object"
       arg(:save_search_label, :string)
+      arg(:save_search_shortcode, :string)
 
       arg(:term, non_null(:string))
       arg(:filter, :search_filter)

@@ -144,7 +144,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :is_source, :boolean, default: false
 
       # The message shortcode
-      add :shortcode, :string, null: true
+      add :shortcode, :string, null: false
 
       # Field to check hsm message type
       add :is_hsm, :boolean, default: false
@@ -165,6 +165,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
     end
 
     create unique_index(:session_templates, [:label, :language_id])
+    create unique_index(:session_templates, [:shortcode, :language_id])
   end
 
   @doc """
@@ -389,7 +390,13 @@ defmodule Glific.Repo.Migrations.GlificTables do
   def saved_searches() do
     create table(:saved_searches) do
       add :label, :string, null: false
+
+      # the search arguments, stored as is in a jsonb blob
       add :args, :map
+
+      # The shortcode to display in UI
+      add :shortcode, :string, null: true
+
       # Is this a predefined system object?
       add :is_reserved, :boolean, default: false
 
@@ -397,6 +404,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
     end
 
     create unique_index(:saved_searches, :label)
+    create unique_index(:saved_searches, :shortcode)
   end
 
   @doc """
@@ -486,6 +494,9 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :flow_type, :flow_type_enum, null: false, default: "message"
       timestamps(type: :utc_datetime)
     end
+
+    create unique_index(:flows, :name)
+    create unique_index(:flows, :shortcode)
   end
 
   @doc """
