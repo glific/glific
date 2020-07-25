@@ -295,6 +295,11 @@ Type | Description
 <td valign="top">[<a href="#string">String</a>]</td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>Users</strong></td>
+<td valign="top">[<a href="#users">Users</a>]</td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
