@@ -59,7 +59,7 @@ defmodule Glific.Flows.ContactActionTest do
 
     [template | _] =
       Templates.list_session_templates(%{
-        filter: %{shortcode: "hsm", label: "HSM3", is_hsm: true}
+        filter: %{shortcode: "otp", is_hsm: true}
       })
 
     templating = %Templating{
@@ -77,6 +77,6 @@ defmodule Glific.Flows.ContactActionTest do
       |> Ecto.Query.last()
       |> Repo.one()
 
-    assert message.body == "Your var_1 number var_2 has been var_3."
+    assert message.body == "Your OTP for var_1 is var_2. This is valid for var_3."
   end
 end

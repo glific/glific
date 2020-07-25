@@ -8,13 +8,14 @@ defmodule Glific.Searches.SavedSearch do
 
   alias __MODULE__
 
-  @required_fields [:label, :args]
+  @required_fields [:label, :shortcode, :args]
   @optional_fields [:is_reserved]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           label: String.t() | nil,
+          shortcode: String.t() | nil,
           args: map() | nil,
           is_reserved: boolean(),
           inserted_at: :utc_datetime | nil,
@@ -24,6 +25,7 @@ defmodule Glific.Searches.SavedSearch do
   schema "saved_searches" do
     field :args, :map
     field :label, :string
+    field :shortcode, :string
     field :is_reserved, :boolean, default: false
     timestamps(type: :utc_datetime)
   end
@@ -37,5 +39,6 @@ defmodule Glific.Searches.SavedSearch do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:label])
+    |> unique_constraint([:shortcode])
   end
 end

@@ -58,7 +58,11 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:create,
         variables: %{
-          "input" => %{"label" => "Test search", "args" => Jason.encode!(%{term: "Default"})}
+          "input" => %{
+            "label" => "Test search",
+            "shortcode" => "test",
+            "args" => Jason.encode!(%{term: "Default"})
+          }
         }
       )
 
@@ -69,7 +73,11 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:create,
         variables: %{
-          "input" => %{"label" => "Test search", "args" => Jason.encode!(%{term: "Default"})}
+          "input" => %{
+            "label" => "Test search",
+            "shortcode" => "test",
+            "args" => Jason.encode!(%{term: "Default"})
+          }
         }
       )
 

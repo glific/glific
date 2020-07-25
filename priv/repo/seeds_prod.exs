@@ -9,6 +9,9 @@
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
+#
+# THIS FILE IS NO LONGER BEING USED. PLEASE DO NOT EDIT
+# WILL BE REMOVED SOON
 
 alias Glific.{
   Contacts.Contact,

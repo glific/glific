@@ -337,8 +337,8 @@ defmodule Glific.MessagesTest do
 
       Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
 
-      label = "HSM2"
-      {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{label: label})
+      shortcode = "otp"
+      {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{shortcode: shortcode})
 
       # Incorrect number of parameters should give an error
       parameters = ["param1"]
@@ -349,7 +349,7 @@ defmodule Glific.MessagesTest do
       assert error_message == "You need to provide correct number of parameters for hsm template"
 
       # Correct number of parameters should create and send hsm message
-      parameters = ["param1", "param2"]
+      parameters = ["param1", "param2", "param3"]
 
       {:ok, message} =
         Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
@@ -367,14 +367,15 @@ defmodule Glific.MessagesTest do
     end
 
     test "prepare hsm template" do
-      body = "You have received a new update about {{1}}. Please click on {{2}} to know more."
-      {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{body: body})
-      parameters = ["param1", "https://glific.github.io/slate/"]
+      shortcode = "otp"
+      {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{shortcode: shortcode})
+
+      parameters = ["param1", "param2", "param3"]
 
       updated_hsm_template = Messages.parse_template_vars(hsm_template, parameters)
 
       assert updated_hsm_template.body ==
-               "You have received a new update about param1. Please click on https://glific.github.io/slate/ to know more."
+               "Your OTP for param1 is param2. This is valid for param3."
     end
   end
 

@@ -131,14 +131,14 @@ defmodule Glific.Messages do
     |> Repo.insert()
   end
 
-  # Still need to improve this fucnation
-  defp put_contact_id(attrs) do
-    case attrs.flow do
-      :inbound -> Map.put(attrs, :contact_id, attrs[:sender_id])
-      :outbound -> Map.put(attrs, :contact_id, attrs[:receiver_id])
-      _ -> attrs
-    end
-  end
+  @spec put_contact_id(map()) :: map()
+  defp put_contact_id(%{flow: :inbound} = attrs),
+    do: Map.put(attrs, :contact_id, attrs[:sender_id])
+
+  defp put_contact_id(%{flow: :outbound} = attrs),
+    do: Map.put(attrs, :contact_id, attrs[:receiver_id])
+
+  defp put_contact_id(attrs), do: attrs
 
   @doc """
   Updates a message.
@@ -194,6 +194,7 @@ defmodule Glific.Messages do
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
+    attrs = Map.put(attrs, :receiver, contact)
 
     Contacts.can_send_message_to?(contact, attrs[:is_hsm])
     |> create_and_send_message(attrs)
@@ -230,7 +231,7 @@ defmodule Glific.Messages do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
       Glific.Repo.fetch_by(SessionTemplate, %{
-        shortcode: "otp_verification",
+        shortcode: "otp",
         is_hsm: true
       })
 

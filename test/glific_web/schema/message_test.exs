@@ -259,10 +259,10 @@ defmodule GlificWeb.Schema.MessageTest do
 
     Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
 
-    label = "HSM2"
+    label = "OTP Message"
     {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{label: label})
 
-    parameters = ["param1", "param2"]
+    parameters = ["param1", "param2", "param3"]
 
     result =
       query_gql_by(:send_hsm_message,
