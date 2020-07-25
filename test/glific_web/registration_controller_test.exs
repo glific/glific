@@ -40,7 +40,6 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           "phone" => receiver.phone,
           "name" => receiver.name,
           "password" => @password,
-          "password_confirmation" => @password,
           "otp" => otp
         }
       }
@@ -61,6 +60,28 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
                  contact_id: contact.id,
                  tag_id: staff_tag.id
                })
+    end
+
+    test "with password less than minimum characters should give error", %{conn: conn} do
+      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+
+      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(receiver.phone)
+
+      valid_params = %{
+        "user" => %{
+          "phone" => receiver.phone,
+          "name" => receiver.name,
+          "password" => "1234567",
+          "otp" => otp
+        }
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :create, valid_params))
+
+      assert json = json_response(conn, 500)
+
+      assert json["error"]["status"] == 500
+      assert json["error"]["errors"] == %{"password" => ["should be at least 8 character(s)"]}
     end
 
     test "with wrong otp", %{conn: conn} do
@@ -144,6 +165,27 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert get_in(json, ["error", "message"]) ==
                "Cannot send the otp to #{receiver.phone}"
     end
+
+    test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do
+      # create a user for a contact
+      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+      Contacts.contact_opted_in(receiver.phone, DateTime.utc_now())
+
+      {:ok, user} =
+        %{
+          "phone" => receiver.phone,
+          "name" => receiver.name,
+          "password" => @password,
+          "password_confirmation" => @password
+        }
+        |> Users.create_user()
+
+      valid_params = %{"user" => %{"phone" => user.phone, "registration" => "false"}}
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
+
+      assert json = json_response(conn, 200)
+    end
   end
 
   describe "reset_password/2" do
@@ -151,7 +193,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "with valid params", %{conn: conn} do
       # create a user for a contact
-      {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
       {:ok, user} =
         %{
@@ -179,7 +221,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with wrong otp", %{conn: conn} do
-      {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
       invalid_params = %{
         "user" => %{
@@ -196,7 +238,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with incorrect phone number", %{conn: conn} do
-      {:ok, receiver} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Default receiver"})
+      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
       {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(receiver.phone)
 
@@ -209,6 +251,36 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       }
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :create, invalid_params))
+
+      assert json = json_response(conn, 500)
+      assert json["error"]["status"] == 500
+    end
+
+    test "with password less than 8 characters", %{conn: conn} do
+      # create a user for a contact
+      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+
+      {:ok, user} =
+        %{
+          "phone" => receiver.phone,
+          "name" => receiver.name,
+          "password" => @password,
+          "password_confirmation" => @password
+        }
+        |> Users.create_user()
+
+      # reset password of user
+      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(user.phone)
+
+      valid_params = %{
+        "user" => %{
+          "phone" => user.phone,
+          "password" => "1234567",
+          "otp" => otp
+        }
+      }
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :reset_password, valid_params))
 
       assert json = json_response(conn, 500)
       assert json["error"]["status"] == 500

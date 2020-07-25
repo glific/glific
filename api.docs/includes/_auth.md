@@ -185,3 +185,30 @@ curl -X DELETE -H "Authorization: AUTH_TOKEN" \
 ```json
 {"data":{}}
 ```
+
+## reset password
+
+The typical forgot password flow will be something like:
+
+  * The caller will call the `send_otp` request with a `Phone Number`
+  * On successful confirmation of the delivery of `send_otp`, the front-end will display new password entry screen
+  * User enters: `OTP`, `Phone Number` and `New Password`
+
+```shell
+curl -X POST -d \
+  "user[phone]=911234554321&user[new_password]=secret1234 \
+  &user[otp]=321721" \
+  http://YOUR_HOSTNAME_AND_PORT/api/v1/registration/reset-password
+```
+
+```javascript
+If you are using axios or other libraries, send the following in the BODY of a POST request
+
+{
+    "user": {
+        "phone": "911234554321",
+        "password": "secret1234",
+        "otp": "321721"
+    }
+}
+```
