@@ -119,34 +119,30 @@ defmodule Glific.Searches do
   defp search_query(term, args),
     do: Contact |> select([c], c.id) |> Full.run(term, args)
 
-  @doc """
-  Full text search interface via Postgres
-  """
-  @spec search(map()) :: [Conversation.t()]
-  def search(%{term: term, save_search: save_search} = args) do
-    contact_ids =
-      search_query(term, args)
-      |> Repo.all()
-
-    if save_search do
+  defp do_save_search(%{save_search: true} = args),
+    do:
       create_saved_search(%{
         label: args.save_search_label,
         shortcode: args.save_search_shortcode,
         args: args
       })
-    end
 
-    put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
-    |> Glific.Conversations.list_conversations()
-  end
+  defp do_save_search(_args), do: nil
 
   @doc """
-  Get the search count
+  Full text search interface via Postgres
   """
-  @spec search_count(map()) :: integer
-  def search_count(%{term: term} = args) do
-    search_query(term, args)
-    |> Repo.aggregate(:count)
+  @spec search(map(), boolean) :: [Conversation.t()] | integer
+  def search(%{term: term} = args, count \\ false) do
+    # save the search if needed
+    do_save_search(args)
+
+    contact_ids =
+      search_query(term, args)
+      |> Repo.all()
+
+    put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
+    |> Glific.Conversations.list_conversations(count)
   end
 
   # Add the term if present to the list of args
@@ -154,20 +150,32 @@ defmodule Glific.Searches do
   defp add_term(args, term) when is_nil(term) or term == "", do: args
   defp add_term(args, term), do: Map.put(args, :term, term)
 
-  # do search or count based on count flag
-  @spec do_search(map(), boolean) :: [Conversation.t()] | integer
-  defp do_search(args, true), do: search(args)
-  defp do_search(args, false), do: search_count(args)
-
   @doc """
   Execute a saved search, if term is sent in, it is added to
   the saved search. Either return conversations or count
   """
   @spec saved_search_execute(map(), boolean) :: [Conversation.t()] | integer
-  def saved_search_execute(%{term: term, id: id}, count \\ false) do
+  def saved_search_execute(%{id: id} = args, count \\ false) do
     get_saved_search!(id)
     |> Map.get(:args)
-    |> add_term(term)
-    |> do_search(count)
+    |> add_term(Map.get(args, :term))
+    |> convert_to_atom()
+    |> search(count)
+  end
+
+  @doc """
+  Given a jsonb string, typically either from the database, or maybe via graphql
+  convert the string keys to atoms
+  """
+  @spec convert_to_atom(map()) :: map()
+  def convert_to_atom(json) do
+    Map.new(
+      json,
+      fn {k, v} ->
+        if k in ["filter", "contact_opts", "message_opts"],
+          do: {String.to_existing_atom(k), convert_to_atom(v)},
+          else: {String.to_existing_atom(k), v}
+      end
+    )
   end
 end
