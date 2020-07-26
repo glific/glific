@@ -467,12 +467,28 @@ defmodule Glific.Messages do
     MessageMedia.changeset(message_media, attrs)
   end
 
+  defp do_list_conversations(query, args, false) do
+    query
+    |> Repo.all()
+    |> Repo.preload([:contact, :tags])
+    |> make_conversations()
+    |> add_empty_conversations(args)
+  end
+
+  defp do_list_conversations(query, _args, true) do
+    query
+    |> select([m], m.contact_id)
+    |> distinct(true)
+    |> exclude(:order_by)
+    |> Repo.aggregate(:count)
+  end
+
   @doc """
   Given a list of message ids builds a conversation list with most recent conversations
   at the beginning of the list
   """
-  @spec list_conversations(map()) :: [Conversation.t()]
-  def list_conversations(args) do
+  @spec list_conversations(map(), boolean) :: [Conversation.t()] | integer
+  def list_conversations(args, count \\ false) do
     args
     |> Enum.reduce(
       Message,
@@ -489,10 +505,7 @@ defmodule Glific.Messages do
           query
       end
     )
-    |> Repo.all()
-    |> Repo.preload([:contact, :tags])
-    |> make_conversations()
-    |> add_empty_conversations(args)
+    |> do_list_conversations(args, count)
   end
 
   # given all the messages related to multiple contacts, group them

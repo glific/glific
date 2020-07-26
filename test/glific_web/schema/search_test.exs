@@ -28,6 +28,8 @@ defmodule GlificWeb.Schema.SearchTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/searches/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/searches/delete.gql")
   load_gql(:search, GlificWeb.Schema, "assets/gql/searches/search.gql")
+  load_gql(:search_execute, GlificWeb.Schema, "assets/gql/searches/search_execute.gql")
+  load_gql(:search_count, GlificWeb.Schema, "assets/gql/searches/search_count.gql")
 
   test "search field returns list of searches" do
     result = query_gql_by(:list)
@@ -139,6 +141,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "term" => "Default",
           "shouldSave" => false,
           "saveSearchLabel" => "",
+          "saveSearchShortcode" => "",
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -155,6 +158,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "term" => "Default receiver",
           "shouldSave" => false,
           "saveSearchLabel" => "",
+          "saveSearchShortcode" => "",
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -169,6 +173,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "term" => "This term is highly unlikely to occur superfragerlicious",
           "shouldSave" => false,
           "saveSearchLabel" => "",
+          "saveSearchShortcode" => "",
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -185,6 +190,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "term" => "",
           "shouldSave" => false,
           "saveSearchLabel" => "",
+          "saveSearchShortcode" => "",
           "contactOpts" => %{"limit" => Contacts.count_contacts()},
           "messageOpts" => %{"limit" => 1}
         }
@@ -201,6 +207,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "term" => "Default",
           "shouldSave" => true,
           "saveSearchLabel" => "Save with Search",
+          "saveSearchShortcode" => "SaveSearch",
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -287,5 +294,58 @@ defmodule GlificWeb.Schema.SearchTest do
     tags = get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "tags"])
 
     assert %{"label" => "Not Responded"} in tags
+  end
+
+  test "search and count for not replied tagged messages in conversations via a created saved search" do
+    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
+    {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+    {:ok, not_replied_tag} = Repo.fetch_by(Tag, %{label: "Not Replied"})
+
+    {:ok, saved_search} =
+      Repo.fetch_by(SavedSearch, %{label: "Conversations read but not replied"})
+
+    {:ok, message} =
+      %{
+        body: saved_search.args["term"],
+        flow: :inbound,
+        type: :text,
+        sender_id: sender.id,
+        receiver_id: receiver.id
+      }
+      |> Messages.create_message()
+
+    MessageTags.update_message_tags(%{
+      message_id: message.id,
+      add_tag_ids: [not_replied_tag.id],
+      delete_tag_ids: []
+    })
+
+    result =
+      query_gql_by(:search_execute,
+        variables: %{"id" => saved_search.id}
+      )
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "savedSearchExecute", Access.at(0), "contact", "id"]) ==
+             to_string(sender.id)
+
+    result =
+      query_gql_by(:search_execute,
+        variables: %{"id" => saved_search.id, "term" => "defa"}
+      )
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "savedSearchExecute", Access.at(0), "contact", "id"]) ==
+             to_string(sender.id)
+
+    result =
+      query_gql_by(:search_count,
+        variables: %{"id" => saved_search.id}
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "savedSearchCount"]) == 1
   end
 end
