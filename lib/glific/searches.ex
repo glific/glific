@@ -24,7 +24,7 @@ defmodule Glific.Searches do
   """
   @spec list_saved_searches(map()) :: [SavedSearch.t()]
   def list_saved_searches(args \\ %{}),
-    do: Repo.list_filter(args, SavedSearch, &Repo.opts_with_nil/2, &Repo.filter_with/2)
+    do: Repo.list_filter(args, SavedSearch, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
   Gets a single search.
@@ -172,7 +172,10 @@ defmodule Glific.Searches do
     Map.new(
       json,
       fn {k, v} ->
-        atom_k = if is_atom(k), do: k, else: String.to_existing_atom(Macro.underscore(k))
+        atom_k =
+          if is_atom(k),
+            do: k,
+            else: k |> Macro.underscore() |> String.to_existing_atom()
 
         if atom_k in [:filter, :contact_opts, :message_opts],
           do: {atom_k, convert_to_atom(v)},
