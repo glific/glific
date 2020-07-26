@@ -296,7 +296,6 @@ defmodule GlificWeb.Schema.SearchTest do
     assert %{"label" => "Not Responded"} in tags
   end
 
-
   test "search and count for not replied tagged messages in conversations via a created saved search" do
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
     {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default receiver"})
@@ -323,23 +322,30 @@ defmodule GlificWeb.Schema.SearchTest do
 
     result =
       query_gql_by(:search_execute,
-        variables: %{"id" => saved_search.id})
+        variables: %{"id" => saved_search.id}
+      )
+
     assert {:ok, query_data} = result
+
     assert get_in(query_data, [:data, "savedSearchExecute", Access.at(0), "contact", "id"]) ==
-      to_string(sender.id)
+             to_string(sender.id)
 
     result =
       query_gql_by(:search_execute,
-        variables: %{"id" => saved_search.id, "term" => "defa"})
+        variables: %{"id" => saved_search.id, "term" => "defa"}
+      )
+
     assert {:ok, query_data} = result
+
     assert get_in(query_data, [:data, "savedSearchExecute", Access.at(0), "contact", "id"]) ==
-      to_string(sender.id)
+             to_string(sender.id)
 
     result =
       query_gql_by(:search_count,
-        variables: %{"id" => saved_search.id})
-    assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "savedSearchCount",]) == 1
-  end
+        variables: %{"id" => saved_search.id}
+      )
 
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "savedSearchCount"]) == 1
+  end
 end

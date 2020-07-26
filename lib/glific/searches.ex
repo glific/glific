@@ -173,6 +173,7 @@ defmodule Glific.Searches do
       json,
       fn {k, v} ->
         atom_k = if is_atom(k), do: k, else: String.to_existing_atom(Macro.underscore(k))
+
         if atom_k in [:filter, :contact_opts, :message_opts],
           do: {atom_k, convert_to_atom(v)},
           else: {atom_k, v}
