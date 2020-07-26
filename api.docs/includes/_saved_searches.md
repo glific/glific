@@ -3,8 +3,8 @@
 ## Get All Saved Searches
 
 ```graphql
-query savedSearches($filter: SavedSearchFilters!) {
-  savedSearches(filter: $filter) {
+query savedSearches($filter: SavedSearchFilter!, $opts: Opts) {
+  savedSearches(filter: $filter, opts: $opts) {
     id
     label
     shortcode
@@ -14,7 +14,10 @@ query savedSearches($filter: SavedSearchFilters!) {
 
 {
   "filter": {
-    "label": "Unread"
+    "label": "conv"
+  },
+  "opts": {
+    "limit": 1
   }
 }
 ```
@@ -40,13 +43,14 @@ query savedSearches($filter: SavedSearchFilters!) {
   }
 }
 ```
-This returns all the saved searches for the organization filtered by the input <a href="#savedsearchfilters">SavedSearchFilters</a>
+This returns all the saved searches for the organization filtered by the input <a href="#savedsearchfilters">SavedSearchFilter</a>
 
 ### Query Parameters
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-filter | <a href="#savedsearchfilters">SavedSearchFilters</a> | nil | filter the list
+filter | <a href="#savedsearchfilters">SavedSearchFilter</a> | nil | filter the list
+opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
 
 ## Get a specific Saved Search by ID
 
