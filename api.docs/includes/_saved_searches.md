@@ -253,6 +253,7 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#savedsearchresult">SavedSearchResult</a> | An error object or empty
 
+
 ## Saved Search Objects
 
 ### SavedSearch
