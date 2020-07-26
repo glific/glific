@@ -160,6 +160,7 @@ defmodule Glific.Searches do
     |> Map.get(:args)
     |> add_term(Map.get(args, :term))
     |> convert_to_atom()
+    |> IO.inspect()
     |> search(count)
   end
 
@@ -172,9 +173,10 @@ defmodule Glific.Searches do
     Map.new(
       json,
       fn {k, v} ->
-        if k in ["filter", "contact_opts", "message_opts"],
-          do: {String.to_existing_atom(k), convert_to_atom(v)},
-          else: {String.to_existing_atom(k), v}
+        atom_k = String.to_existing_atom(k)
+        if atom_k in [:filter, :contact_opts, :message_opts],
+          do: {atom_k, convert_to_atom(v)},
+          else: {atom_k, v}
       end
     )
   end
