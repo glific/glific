@@ -82,7 +82,6 @@ defmodule Glific.Processor.ConsumerTagger do
   @spec process_message(atom() | Message.t(), map()) :: Message.t()
   defp process_message(message, state) do
     body = Glific.string_clean(message.body)
-
     message
     |> numeric_tagger(body, state)
     |> keyword_tagger(body, state)
@@ -102,8 +101,11 @@ defmodule Glific.Processor.ConsumerTagger do
               "preference",
               "new contact",
               "registration",
-              "timed"
+              "timed",
+              "solworkflow"
             ] do
+
+    IO.inspect(body)
     message = Repo.preload(message, :contact)
     {:ok, flow} = Flows.get_cached_flow(body, %{shortcode: body})
     FlowContext.init_context(flow, message.contact)

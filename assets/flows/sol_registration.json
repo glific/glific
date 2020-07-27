@@ -11,6 +11,13 @@
                     "left": 600
                 }
             },
+            "1654b934-1861-4565-891e-73d54aa35a98": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 1300,
+                    "left": 540
+                }
+            },
             "1d4bdc91-6996-4879-b5ea-c3996b3a03c0": {
                 "type": "execute_actions",
                 "position": {
@@ -25,18 +32,11 @@
                     "left": 540
                 }
             },
-            "5c856a10-b3b8-47e3-89ef-3301f89d71b6": {
-                "type": "execute_actions",
-                "position": {
-                    "top": 580,
-                    "left": 920
-                }
-            },
             "5d13fa3e-29a8-439a-8b40-2c8c85f252a3": {
                 "type": "execute_actions",
                 "position": {
-                    "top": 1360,
-                    "left": 640
+                    "top": 1420,
+                    "left": 540
                 }
             },
             "5f5da8d1-6e89-499d-b0bb-a8d7dcd5eeb2": {
@@ -52,14 +52,14 @@
                     "cases": {}
                 },
                 "position": {
-                    "top": 1100,
-                    "left": 520
+                    "top": 1040,
+                    "left": 460
                 }
             },
             "e109d93a-bd05-4937-8ab7-d99763e87f80": {
                 "type": "execute_actions",
                 "position": {
-                    "top": 800,
+                    "top": 700,
                     "left": 540
                 }
             },
@@ -69,14 +69,14 @@
                     "cases": {}
                 },
                 "position": {
-                    "top": 560,
-                    "left": 560
+                    "top": 540,
+                    "left": 540
                 }
             }
         },
         "stickies": {}
     },
-    "name": "123",
+    "name": "SoL Registration",
     "type": "messaging",
     "uuid": "f4f38e00-3a50-4892-99ce-a281fe24d040",
     "vars": ["f4f38e00-3a50-4892-99ce-a281fe24d040"],
@@ -155,50 +155,25 @@
     }, {
         "uuid": "f7a928ea-75fa-4346-b776-3b85e2ec52a9",
         "exits": [{
-            "uuid": "cd2faf87-60fc-4bb1-b265-d2452d60f5c7",
-            "destination_uuid": "e109d93a-bd05-4937-8ab7-d99763e87f80"
-        }, {
             "uuid": "a368616e-2c18-480d-a5dd-e75256ee3736",
-            "destination_uuid": "5c856a10-b3b8-47e3-89ef-3301f89d71b6"
+            "destination_uuid": "e109d93a-bd05-4937-8ab7-d99763e87f80"
         }],
         "router": {
             "type": "switch",
             "wait": {
                 "type": "msg"
             },
-            "cases": [{
-                "type": "has_text",
-                "uuid": "0931a082-d2bb-4d8c-a21a-c3b808f0ddc2",
-                "arguments": [],
-                "category_uuid": "3e84709b-bdf0-4f9b-bfd2-284a34b0ce5b"
-            }],
+            "cases": [],
             "operand": "@input.text",
             "categories": [{
-                "name": "Name",
-                "uuid": "3e84709b-bdf0-4f9b-bfd2-284a34b0ce5b",
-                "exit_uuid": "cd2faf87-60fc-4bb1-b265-d2452d60f5c7"
-            }, {
-                "name": "Other",
+                "name": "All Responses",
                 "uuid": "4297fca7-9441-4489-ae22-8f65a9534d90",
                 "exit_uuid": "a368616e-2c18-480d-a5dd-e75256ee3736"
             }],
-            "result_name": "name",
+            "result_name": "contact_name",
             "default_category_uuid": "4297fca7-9441-4489-ae22-8f65a9534d90"
         },
         "actions": []
-    }, {
-        "uuid": "5c856a10-b3b8-47e3-89ef-3301f89d71b6",
-        "exits": [{
-            "uuid": "fcfaaa33-2828-476c-bf83-036ed772e499",
-            "destination_uuid": "f7a928ea-75fa-4346-b776-3b85e2ec52a9"
-        }],
-        "actions": [{
-            "text": "Sorry, we didn't get you.\n\nPlease tell us your name.",
-            "type": "send_msg",
-            "uuid": "fdccbbd4-3dc3-40cc-bf58-1e430776adea",
-            "attachments": [],
-            "quick_replies": []
-        }]
     }, {
         "uuid": "e109d93a-bd05-4937-8ab7-d99763e87f80",
         "exits": [{
@@ -206,7 +181,7 @@
             "destination_uuid": "64b4223e-3dc1-4283-bcfe-7a3b76f11a08"
         }],
         "actions": [{
-            "text": "We're glad to know your name @results.englishname\n\nTell us how old you are:\nType 1 if you are less than 10 years\nType 2 if you are 11 years to 14 years of age\nType 3 if you are 15 to 18 years\nType 4 if you are 19 or above ",
+            "text": "We're glad to know your name @contact.fields.name\n\nTell us how old you are:\nType 1 if you are less than 10 years\nType 2 if you are 11 years to 14 years of age\nType 3 if you are 15 to 18 years\nType 4 if you are 19 or above ",
             "type": "send_msg",
             "uuid": "a321c893-85a0-4318-b8bd-f65cb2f07e9d",
             "attachments": [],
@@ -216,16 +191,16 @@
         "uuid": "64b4223e-3dc1-4283-bcfe-7a3b76f11a08",
         "exits": [{
             "uuid": "f1fc8b2c-c7f8-4489-a1cc-37b033152307",
-            "destination_uuid": "5d13fa3e-29a8-439a-8b40-2c8c85f252a3"
+            "destination_uuid": "1654b934-1861-4565-891e-73d54aa35a98"
         }, {
             "uuid": "3ad6cff7-8d60-41bc-a881-0bb93908f540",
-            "destination_uuid": "5d13fa3e-29a8-439a-8b40-2c8c85f252a3"
+            "destination_uuid": "1654b934-1861-4565-891e-73d54aa35a98"
         }, {
             "uuid": "0e1195d9-d658-481f-b51b-794e33a00989",
-            "destination_uuid": "5d13fa3e-29a8-439a-8b40-2c8c85f252a3"
+            "destination_uuid": "1654b934-1861-4565-891e-73d54aa35a98"
         }, {
             "uuid": "eddd128b-69e6-43f5-ac53-0a18b0a151f5",
-            "destination_uuid": "5d13fa3e-29a8-439a-8b40-2c8c85f252a3"
+            "destination_uuid": "1654b934-1861-4565-891e-73d54aa35a98"
         }, {
             "uuid": "1ea86390-6831-4154-8fb4-a7c678f1e666",
             "destination_uuid": "1d4bdc91-6996-4879-b5ea-c3996b3a03c0"
@@ -278,7 +253,7 @@
                 "uuid": "74388e34-71e0-45ef-9632-feecef7b6af9",
                 "exit_uuid": "1ea86390-6831-4154-8fb4-a7c678f1e666"
             }],
-            "result_name": "age",
+            "result_name": "age_group",
             "default_category_uuid": "74388e34-71e0-45ef-9632-feecef7b6af9"
         },
         "actions": []
@@ -296,13 +271,28 @@
             "quick_replies": []
         }]
     }, {
+        "uuid": "1654b934-1861-4565-891e-73d54aa35a98",
+        "exits": [{
+            "uuid": "0d295458-a5a7-48fa-98da-7545dc9a2a05",
+            "destination_uuid": "5d13fa3e-29a8-439a-8b40-2c8c85f252a3"
+        }],
+        "actions": [{
+            "type": "set_contact_field",
+            "uuid": "1a5cadff-66ec-4b5d-991b-08d12fa8723b",
+            "field": {
+                "key": "age_group",
+                "name": "Age Group"
+            },
+            "value": "@results.age_group.category"
+        }]
+    }, {
         "uuid": "5d13fa3e-29a8-439a-8b40-2c8c85f252a3",
         "exits": [{
             "uuid": "7e4f97ec-5fd4-4e04-ac94-e01e4fb4992d",
             "destination_uuid": null
         }],
         "actions": [{
-            "text": "Thank you for introducing yourself to us @results.name 😊 ",
+            "text": "Thank you for introducing yourself to us @contact.fields.name  😊 ",
             "type": "send_msg",
             "uuid": "41525160-355f-4708-ab99-160b866829d8",
             "attachments": [],
