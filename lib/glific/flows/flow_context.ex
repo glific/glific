@@ -140,7 +140,7 @@ defmodule Glific.Flows.FlowContext do
       json,
       context,
       fn {k, v}, context ->
-        update_results(context, key <> "." <> k, v, key)
+        update_results(context, key <> "_" <> k, v, key)
       end
     )
   end
@@ -163,7 +163,11 @@ defmodule Glific.Flows.FlowContext do
     do: {:error, "We have finished the flow"}
 
   def execute(context, messages) do
-    Node.execute(context.node, context, messages)
+    case Node.execute(context.node, context, messages) do
+      {:ok, context, []} -> {:ok, context, []}
+      {:ok, context, messages} -> Node.execute(context.node, context, messages)
+      others -> others
+    end
   end
 
   @doc """

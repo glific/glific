@@ -185,16 +185,21 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "call_webhook"} = action, context, message_stream) do
     # first call the webhook
-    # IO.inspect(action, label: "Calling webhook")
-    json = Webhook.get(action.url, action.headers, action.body)
-    # IO.inspect(json, label: "Result")
+    json = Webhook.get(
+      action.url,
+      Keyword.new(action.headers, fn {k, v} -> {String.to_existing_atom(k), v} end),
+      action.body)
 
     context =
-      if is_nil(json) or is_nil(action.result_name),
-        do: context,
-        else: FlowContext.update_results(context, action.result_name, json)
-
-    {:ok, context, message_stream}
+      if is_nil(json) or is_nil(action.result_name) do
+        {:ok, context, ["Failure"]}
+      else
+        {
+          :ok,
+          FlowContext.update_results(context, action.result_name, json),
+          ["Success"]
+        }
+      end
   end
 
   def execute(action, _context, _message_stream),
