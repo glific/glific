@@ -41,22 +41,10 @@ defmodule Glific.Caches do
   end
 
   @doc """
-  Get a cached value based on a key and if that now exists add that into the cache
-  """
-  @impl Glific.Caches.CacheBehaviour
-  @spec get_or_create(atom(), any, map()) :: {atom(), any}
-  def get_or_create(key, process_fn, args) do
-    case Cachex.exists?(@cache_bucket, key) do
-      {:ok, true} -> Cachex.get(@cache_bucket, key)
-      _ -> set([key], process_fn, args)
-    end
-  end
-
-  @doc """
   Remove a value from the cache
   """
   @impl Glific.Caches.CacheBehaviour
   @spec remove(list()) :: any()
   def remove(keys),
-    do: Enum.reduce(keys, fn key, _acc -> Cachex.del(@cache_bucket, key) end)
+    do: Enum.map(keys, fn key -> Cachex.del(@cache_bucket, key) end)
 end

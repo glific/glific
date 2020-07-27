@@ -240,9 +240,10 @@ defmodule Glific.Flows do
 
   @spec get_cached_flow(any, any) :: {atom, any}
   def get_cached_flow(key, args) do
-    with {:ok, false} <- Caches.get(key),
-         {:ok, flow} <- Caches.get_or_create(key, &Flow.get_loaded_flow/1, args),
-         do: Caches.set([flow.uuid, flow.shortcode], flow)
+    with {:ok, false} <- Caches.get(key) do
+          flow = Flow.get_loaded_flow(args)
+          Caches.set([flow.uuid, flow.shortcode], flow)
+      end
   end
 
   @doc """

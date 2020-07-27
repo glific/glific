@@ -11,7 +11,5 @@ defmodule Glific.Caches.CacheBehaviour do
 
   @callback get(String.t() | atom()) :: {:ok, any()} | {:ok, false}
 
-  @callback get_or_create(atom(), any, map()) :: {atom(), any}
-
   @callback remove(list()) :: any()
 end
