@@ -97,9 +97,10 @@ defmodule Glific.Flows.Node do
       !Enum.empty?(node.actions) && !is_nil(node.router) ->
         # need a better way to figure out if we should handle router or action
         # this is a hack for now
-        if message_stream != [] and hd(message_stream) in ["completed", "expired", "Success", "Failure"],
-          do: Router.execute(node.router, context, message_stream),
-          else: Action.execute(hd(node.actions), context, message_stream)
+        if message_stream != [] and
+             hd(message_stream) in ["completed", "expired", "Success", "Failure"],
+           do: Router.execute(node.router, context, message_stream),
+           else: Action.execute(hd(node.actions), context, message_stream)
 
       !Enum.empty?(node.actions) ->
         # we need to execute all the actions (nodes can have multiple actions)
