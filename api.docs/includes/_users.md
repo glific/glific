@@ -200,6 +200,90 @@ mutation updateUser($id: ID!, $input:UserInput!) {
 }
 ```
 
+> In case of errors, above function returns an error object like the below
+
+```
+{
+  "data": {
+    "updateUser": {
+      "errors": [
+        {
+          "key": "roles",
+          "message": "has an invalid entry"
+        }
+      ],
+      "user": null
+    }
+  }
+}
+```
+
+## Update a User Password
+
+```graphql
+mutation updateUser($id: ID!, $input:UserInput!) {
+  updateUser(id: $id, input: $input) {
+    user {
+      id
+      name
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "id": "2",
+  "input": {
+    "name": "Updated Name",
+    "otp": "340606",
+    "password": "new_password",
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "updateUser": {
+      "errors": null,
+      "user": {
+        "id": "2",
+        "name": "Updated Name"
+      }
+    }
+  }
+}
+```
+
+> In case of otp errors, above function returns an error object like the below
+
+```
+{
+  "data": {
+    "updateUser": null
+  },
+  "errors": [
+    {
+      "locations": [
+        {
+          "column": 3,
+          "line": 2
+        }
+      ],
+      "message": "does_not_exist",
+      "path": [
+        "updateUser"
+      ]
+    }
+  ]
+}
+```
+
 ### Query Parameters
 
 Parameter | Type | Default | Description
@@ -392,6 +476,16 @@ Match the phone
 <tr>
 <td colspan="2" valign="top"><strong>roles</strong></td>
 <td valign="top">[<a href="#string">String</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>otp</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>password</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 </tbody>

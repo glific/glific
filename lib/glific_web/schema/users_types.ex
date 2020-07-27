@@ -36,6 +36,8 @@ defmodule GlificWeb.Schema.UserTypes do
   input_object :user_input do
     field :name, :string
     field :roles, list_of(:string)
+    field :password, :string
+    field :otp, :string
   end
 
   object :user_queries do
