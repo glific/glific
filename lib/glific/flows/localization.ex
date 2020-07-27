@@ -24,12 +24,16 @@ defmodule Glific.Flows.Localization do
   # given a json snippet containing all the translation for a specific language
   # store them in a uuid map
   @spec process_translation(map()) :: map()
+  defp process_translation(json) when is_nil(json), do: %{}
+
   defp process_translation(json) do
     Enum.reduce(
       json,
       %{},
       fn {uuid, values}, acc ->
-        Map.put(acc, uuid, hd(values["text"]))
+        if is_nil(values["text"]),
+          do: acc,
+          else: Map.put(acc, uuid, hd(values["text"]))
       end
     )
   end
