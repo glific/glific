@@ -3,12 +3,17 @@ defmodule GlificWeb.Schema.UserTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Contacts.Contact,
     Repo,
     Seeds.SeedsDev,
+    Users,
     Users.User
   }
 
   setup do
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
     SeedsDev.seed_users()
     :ok
   end
@@ -125,6 +130,53 @@ defmodule GlificWeb.Schema.UserTest do
 
     message = get_in(query_data, [:data, "updateUser", "errors", Access.at(0), "message"])
     assert message == "has an invalid entry"
+  end
+
+  test "update a user password for different scenarios" do
+    # create a user for a contact
+    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+
+    valid_user_attrs = %{
+      "phone" => receiver.phone,
+      "name" => receiver.name,
+      "password" => "password",
+      "password_confirmation" => "password"
+    }
+
+    {:ok, user} =
+      valid_user_attrs
+      |> Users.create_user()
+
+    name = "User Test Name New"
+
+    {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(user.phone)
+
+    result =
+      query_gql_by(:update,
+        variables: %{
+          "id" => user.id,
+          "input" => %{"name" => name, "otp" => otp, "password" => "new_password"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    user_result = get_in(query_data, [:data, "updateUser", "user"])
+    assert user_result["name"] == name
+
+    # update with incorrect otp should give error
+    result =
+      query_gql_by(:update,
+        variables: %{
+          "id" => user.id,
+          "input" => %{"name" => name, "otp" => "incorrect_otp", "password" => "new_password"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:errors, Access.at(0), :message])
+    assert is_nil(message) == false
   end
 
   test "delete a user" do
