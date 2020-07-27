@@ -9,6 +9,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   alias Glific.{
     Communications,
+    Flows,
     Flows.Flow,
     Flows.FlowContext,
     Messages.Message,
@@ -106,7 +107,7 @@ defmodule Glific.Processor.ConsumerTagger do
   end
 
   @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
-  defp check_flows(message, body, state)
+  defp check_flows(message, body, _state)
        when body in [
               "help",
               "language",
@@ -116,21 +117,21 @@ defmodule Glific.Processor.ConsumerTagger do
               "timed"
             ] do
     message = Repo.preload(message, :contact)
-    flow = Glific.Flows.get_cached_flow(body, %{shortcode: body})
-    IO.inspect("flow")
-    IO.inspect(flow)
-    # FlowContext.init_context(Map.get(state.flows, body), message.contact)
+    {:ok, flow } = Flows.get_cached_flow(body, %{shortcode: body})
+    FlowContext.init_context(flow, message.contact)
     message
   end
 
-  defp check_flows(message, _body, state) do
+  defp check_flows(message, body, _state) do
     context = FlowContext.active_context(message.contact_id)
 
-    if context,
-      do:
+    if context
+      do
+        {:ok, flow } = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
         context
-        |> FlowContext.load_context(state.flows[context.flow_uuid])
+        |> FlowContext.load_context(flow)
         |> FlowContext.step_forward(message.body)
+      end
 
     # we can potentially save the {contact_id, context} map here in the flow state,
     # to avoid hitting the DB again. We'll do this after we get this working
@@ -185,10 +186,11 @@ defmodule Glific.Processor.ConsumerTagger do
   # Process one context at a time
   @spec wakeup(FlowContext.t(), map()) ::
           {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
-  defp wakeup(context, state) do
+  defp wakeup(context, _state) do
+    {:ok, flow } = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
     {:ok, context} =
       context
-      |> FlowContext.load_context(state.flows[context.flow_uuid])
+      |> FlowContext.load_context(flow)
       |> FlowContext.step_forward("No Response")
 
     # update the context woken up time

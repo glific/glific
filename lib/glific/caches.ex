@@ -14,7 +14,6 @@ defmodule Glific.Caches do
 
   def set(key, value), do: set_to_cache([key], value)
 
-
   @spec set_to_cache(list(), any) :: {:ok, any()}
   defp set_to_cache(keys, value) do
     keys = Enum.reduce(keys, [], fn key, acc -> [{key, value} | acc] end)
@@ -22,22 +21,34 @@ defmodule Glific.Caches do
     {:ok, value}
   end
 
-  @spec get(any()) :: any()
+  @doc """
+  Get a cached value based on a key
+  """
+  @spec get(any()) :: {:ok, any()}
   def get(key) do
     with {:ok, true} <- Cachex.exists?(:flows_cache, key),
          do: Cachex.get(:flows_cache, key)
   end
 
-  @spec get_or_update(any, any, any) :: {atom, any}
-  def get_or_update(key, process_fn, args) do
+
+  @doc """
+  Get a cached value based on a key and if that now exists add that into the cache
+  """
+  @spec get_or_create(atom(), any, map()) :: {atom(), any}
+  def get_or_create(key, process_fn, args) do
     with {:ok, true} <- Cachex.exists?(:flows_cache, key) do
       Cachex.get(:flows_cache, key)
     else
-      _ -> set([key], process_fn, args)
+      _ ->  set(key, process_fn, args)
     end
   end
 
+
+  @doc """
+  Remove a value from the cache
+  """
   @spec remove(list()) :: any()
   def remove(keys),
     do: Enum.reduce(keys, fn key, _acc -> Cachex.del(:my_cache, key) end)
+
 end

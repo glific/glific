@@ -6,8 +6,10 @@ defmodule Glific.Flows do
   import Ecto.Query, warn: false
   alias Glific.Repo
 
+  alias Glific.Caches
   alias Glific.Flows.Flow
   alias Glific.Flows.FlowRevision
+
 
   @doc """
   Returns the list of flows.
@@ -234,6 +236,16 @@ defmodule Glific.Flows do
 
   @spec get_cached_flow(any, any) :: {atom, any}
   def get_cached_flow(key, args) do
-      Glific.Caches.get_or_update(key, &Flow.get_loaded_flow/1, args)
+    with {:ok, nil} <- Caches.get(key),
+         {:ok, flow} <- Caches.get_or_create(key, &Flow.get_loaded_flow/1, args),
+         do: Caches.set([flow.uuid, flow.shortcode], flow)
   end
+
+  @spec update_cached_flow(Flow.t()) :: {atom, any}
+  def update_cached_flow(flow_uuid) do
+    flow = Flow.get_loaded_flow(%{uuid: flow_uuid})
+    Caches.remove([flow.uuid, flow.shortcode])
+    Caches.set([flow.uuid, flow.shortcode], flow)
+  end
+
 end
