@@ -44,7 +44,7 @@ defmodule Glific.Flows.Localization do
   @spec process(map()) :: Localization.t()
   def process(json) when is_nil(json) do
     language_map = Settings.locale_id_map()
-    %Localization{ localizations: language_map }
+    %Localization{localizations: language_map}
   end
 
   def process(json) do

@@ -10,7 +10,6 @@ defmodule Glific.Processor.ConsumerTagger do
   alias Glific.{
     Communications,
     Flows,
-    Flows.Flow,
     Flows.FlowContext,
     Messages.Message,
     Processor.Helper,
@@ -43,7 +42,6 @@ defmodule Glific.Processor.ConsumerTagger do
         flows: %{}
       }
       |> reload
-      |> reload_flows
 
     # process the wakeup queue every 1 minute
     Process.send_after(self(), :wakeup_timeout, @wakeup_timeout_ms)
@@ -73,16 +71,6 @@ defmodule Glific.Processor.ConsumerTagger do
   end
 
   defp reload(state), do: state
-
-  defp reload_flows(%{flows: flow} = state) when flow == %{} do
-    Map.put(
-      state,
-      :flows,
-      Flow.get_and_cache_flows()
-    )
-  end
-
-  defp reload_flows(state), do: state
 
   @doc false
   def handle_events(messages, _from, state) do
@@ -117,21 +105,21 @@ defmodule Glific.Processor.ConsumerTagger do
               "timed"
             ] do
     message = Repo.preload(message, :contact)
-    {:ok, flow } = Flows.get_cached_flow(body, %{shortcode: body})
+    {:ok, flow} = Flows.get_cached_flow(body, %{shortcode: body})
     FlowContext.init_context(flow, message.contact)
     message
   end
 
-  defp check_flows(message, body, _state) do
+  defp check_flows(message, _body, _state) do
     context = FlowContext.active_context(message.contact_id)
 
-    if context
-      do
-        {:ok, flow } = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
-        context
-        |> FlowContext.load_context(flow)
-        |> FlowContext.step_forward(message.body)
-      end
+    if context do
+      {:ok, flow} = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
+
+      context
+      |> FlowContext.load_context(flow)
+      |> FlowContext.step_forward(message.body)
+    end
 
     # we can potentially save the {contact_id, context} map here in the flow state,
     # to avoid hitting the DB again. We'll do this after we get this working
@@ -187,7 +175,8 @@ defmodule Glific.Processor.ConsumerTagger do
   @spec wakeup(FlowContext.t(), map()) ::
           {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
   defp wakeup(context, _state) do
-    {:ok, flow } = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
+    {:ok, flow} = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
+
     {:ok, context} =
       context
       |> FlowContext.load_context(flow)
