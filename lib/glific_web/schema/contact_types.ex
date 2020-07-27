@@ -28,6 +28,10 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :tags, list_of(:tag) do
       resolve(dataloader(Repo))
     end
+
+    field :groups, list_of(:group) do
+      resolve(dataloader(Repo))
+    end
   end
 
   object :location do
