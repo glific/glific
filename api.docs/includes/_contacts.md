@@ -16,6 +16,10 @@ query contacts($filter: ContactFilter, $opts: Opts) {
       id
       label
     }
+    groups {
+      id
+      label
+    }
   }
 }
 
@@ -33,6 +37,7 @@ query contacts($filter: ContactFilter, $opts: Opts) {
   "data": {
     "contacts": [
       {
+        "groups": [],
         "id": "1",
         "name": "Default Sender",
         "optinTime": null,
