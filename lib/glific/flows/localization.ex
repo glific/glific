@@ -32,8 +32,8 @@ defmodule Glific.Flows.Localization do
       %{},
       fn {uuid, values}, acc ->
         if is_nil(values["text"]),
-          do: acc,
-          else: Map.put(acc, uuid, hd(values["text"]))
+        do: acc,
+        else: Map.put(acc, uuid, hd(values["text"]))
       end
     )
   end
