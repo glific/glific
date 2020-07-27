@@ -15,12 +15,14 @@ defmodule GlificWeb.API.V1.RegistrationController do
   def create(conn, %{"user" => user_params}) do
     %{"phone" => phone, "otp" => otp} = user_params
 
-    with {:ok, _data} <- verify_otp(phone, otp),
-         {:ok, data} <- create_user(conn, user_params) do
-      success_response(conn, data)
+    with {:ok, _message} <- verify_otp(phone, otp),
+         {:ok, response_data} <- create_user(conn, user_params) do
+      json(conn, response_data)
     else
       {:error, errors} ->
-        error_response(conn, 500, "Couldn't create user", errors)
+        conn
+        |> put_status(500)
+        |> json(%{error: %{status: 500, message: "Couldn't create user", errors: errors}})
     end
   end
 
@@ -36,18 +38,6 @@ defmodule GlificWeb.API.V1.RegistrationController do
         # Error response options: :attempt_blocked | :code_expired | :does_not_exist | :incorrect_code
         {:error, [Atom.to_string(error)]}
     end
-  end
-
-  @spec success_response(Conn.t(), map()) :: Conn.t()
-  defp success_response(conn, response_data) do
-    json(conn, response_data)
-  end
-
-  @spec error_response(Conn.t(), integer(), String.t(), []) :: Conn.t()
-  defp error_response(conn, status, message, errors) do
-    conn
-    |> put_status(status)
-    |> json(%{error: %{status: status, message: message, errors: errors}})
   end
 
   @spec create_user(Conn.t(), map()) :: {:ok, map()} | {:error, []}
@@ -127,10 +117,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
     with {:ok, _data} <- verify_otp(phone, otp),
          {:ok, data} <- reset_user_password(user_params) do
-      success_response(conn, data)
+      json(conn, data)
     else
-      {:error, errors} ->
-        error_response(conn, 500, "Couldn't update user password", errors)
+      {:error, _errors} ->
+        conn
+        |> put_status(500)
+        |> json(%{error: %{status: 500, message: "Couldn't update user password"}})
     end
   end
 
