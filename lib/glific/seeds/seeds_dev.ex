@@ -396,7 +396,7 @@ defmodule Glific.Seeds.SeedsDev do
 
     sol_workflow =
       Repo.insert!(%Flow{
-        name: "Slo Workflow",
+        name: "SoL Workflow",
         shortcode: "sol_workflow",
         version_number: "13.1.0",
         uuid: "6fe8fda9-2df6-4694-9fd6-45b9e724f545"
