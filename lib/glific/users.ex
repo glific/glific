@@ -81,9 +81,24 @@ defmodule Glific.Users do
   """
   @spec update_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user(%User{} = user, attrs) do
-    user
-    |> User.update_fields_changeset(attrs)
-    |> Repo.update()
+    with false <- is_nil(attrs[:password]) || is_nil(attrs[:otp]),
+         :ok <- PasswordlessAuth.verify_code(user.phone, attrs.otp) do
+      PasswordlessAuth.remove_code(user.phone)
+      attrs = Map.merge(attrs, %{password_confirmation: attrs.password})
+
+      user
+      |> User.update_fields_changeset(attrs)
+      |> User.reset_password_changeset(attrs)
+      |> Repo.update()
+    else
+      true ->
+        user
+        |> User.update_fields_changeset(attrs)
+        |> Repo.update()
+
+      {:error, error} ->
+        {:error, Atom.to_string(error)}
+    end
   end
 
   @doc """
