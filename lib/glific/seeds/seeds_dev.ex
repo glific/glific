@@ -321,8 +321,6 @@ defmodule Glific.Seeds.SeedsDev do
       flow_id: timed_flow.id
     })
 
-
-
     sol_activity =
       Repo.insert!(%Flow{
         name: "SoL Activity",
@@ -345,7 +343,6 @@ defmodule Glific.Seeds.SeedsDev do
       definition: sol_activity_definition,
       flow_id: sol_activity.id
     })
-
 
     sol_feedback =
       Repo.insert!(%Flow{
@@ -393,7 +390,6 @@ defmodule Glific.Seeds.SeedsDev do
     #   flow_id: sol_registration.id
     # })
 
-
     # sol_workflow =
     #   Repo.insert!(%Flow{
     #     name: "SoL Workflow",
@@ -416,7 +412,6 @@ defmodule Glific.Seeds.SeedsDev do
     #   definition: sol_workflow_definition,
     #   flow_id: sol_workflow.id
     # })
-
   end
 
   @doc """

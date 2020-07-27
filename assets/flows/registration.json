@@ -112,9 +112,13 @@
       "destination_uuid": "e109d93a-bd05-4937-8ab7-d99763e87f80"
     }],
     "actions": [{
-      "name": "@results.contact_name.input",
-      "type": "set_contact_name",
-      "uuid": "b68fca5f-edfa-4c1b-abd5-55a25650b767"
+      "uuid": "b68fca5f-edfa-4c1b-abd5-55a25650b767",
+      "value" : "@results.contact_name.input",
+      "type" : "set_contact_field",
+      "field" : {
+        "key" : "name",
+        "name" : "Name"
+      }
     }]
   }, {
     "uuid": "e109d93a-bd05-4937-8ab7-d99763e87f80",
