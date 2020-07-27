@@ -320,7 +320,7 @@ defmodule Glific.PartnersTest do
       assert [organization] == Partners.list_organizations(%{filter: %{provider: provider.name}})
 
       assert [organization] ==
-               Partners.list_organizations(%{filter: %{default_language: default_language.label}})
+               Partners.list_organizations(%{filter: %{name: "Organization Name"}})
 
       assert [] == Partners.list_organizations(%{filter: %{provider: "RandomString"}})
     end
