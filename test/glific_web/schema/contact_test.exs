@@ -2,11 +2,19 @@ defmodule GlificWeb.Schema.ContactTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Contacts,
+    Contacts.Contact,
+    Messages.Message,
+    Repo,
+    Seeds.SeedsDev
+  }
+
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_messages()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_messages()
     :ok
   end
 
@@ -28,6 +36,9 @@ defmodule GlificWeb.Schema.ContactTest do
     res = contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "Glific Admin" end)
 
     assert res == "Glific Admin"
+
+    [contact | _] = contacts
+    assert contact["groups"] == []
   end
 
   test "contacts field returns list of contacts in asc order" do
@@ -79,7 +90,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
   test "contact id returns one contact or nil" do
     name = "Glific Admin"
-    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
 
     result = query_gql_by(:by_id, variables: %{"id" => contact.id})
     assert {:ok, query_data} = result
@@ -126,7 +137,7 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "update a contact and test possible scenarios and errors" do
-    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Glific Admin"})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
 
     name = "Contact Test Name New"
     phone = "1-415-555-1212 New"
@@ -164,7 +175,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
   test "delete a contact" do
     # Delete a random contact
-    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Chrissy Cron"})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Chrissy Cron"})
 
     result = query_gql_by(:delete, variables: %{"id" => contact.id})
     assert {:ok, query_data} = result
@@ -178,13 +189,12 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "get contact location" do
-    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: "Chrissy Cron"})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Chrissy Cron"})
 
-    {:ok, message} =
-      Glific.Repo.fetch_by(Glific.Messages.Message, %{body: "Default message body"})
+    {:ok, message} = Repo.fetch_by(Message, %{body: "Default message body"})
 
     {:ok, location} =
-      Glific.Contacts.create_location(%{
+      Contacts.create_location(%{
         message_id: message.id,
         contact_id: contact.id,
         longitude: Faker.Address.longitude(),

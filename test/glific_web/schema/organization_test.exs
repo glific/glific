@@ -2,10 +2,18 @@ defmodule GlificWeb.Schema.OrganizationTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Partners.Organization,
+    Partners.Provider,
+    Repo,
+    Seeds.SeedsDev,
+    Settings.Language
+  }
+
   setup do
-    provider = Glific.SeedsDev.seed_providers()
-    # contact = Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_organizations(provider)
+    provider = SeedsDev.seed_providers()
+    # contact = SeedsDev.seed_contacts()
+    SeedsDev.seed_organizations(provider)
     :ok
   end
 
@@ -49,7 +57,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
   test "organization id returns one organization or nil" do
     name = "Glific"
-    {:ok, organization} = Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: name})
+    {:ok, organization} = Repo.fetch_by(Organization, %{name: name})
 
     result = query_gql_by(:by_id, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
@@ -73,10 +81,10 @@ defmodule GlificWeb.Schema.OrganizationTest do
     provider_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
     provider_name = "Default Provider"
-    {:ok, provider} = Glific.Repo.fetch_by(Glific.Partners.Provider, %{name: provider_name})
+    {:ok, provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
     language_locale = "en_US"
-    {:ok, language} = Glific.Repo.fetch_by(Glific.Settings.Language, %{locale: language_locale})
+    {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
 
     result =
       query_gql_by(:create,
@@ -138,7 +146,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   end
 
   test "update an organization and test possible scenarios and errors" do
-    {:ok, organization} = Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: "Glific"})
+    {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
 
     name = "Organization Test Name"
     display_name = "Organization Test Name"
@@ -148,10 +156,10 @@ defmodule GlificWeb.Schema.OrganizationTest do
     provider_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
     provider_name = "Default Provider"
-    {:ok, provider} = Glific.Repo.fetch_by(Glific.Partners.Provider, %{name: provider_name})
+    {:ok, provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
     language_locale = "en_US"
-    {:ok, language} = Glific.Repo.fetch_by(Glific.Settings.Language, %{locale: language_locale})
+    {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
 
     result =
       query_gql_by(:update,
@@ -216,7 +224,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   end
 
   test "delete an organization" do
-    {:ok, organization} = Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: "Glific"})
+    {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
 
     result = query_gql_by(:delete, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result

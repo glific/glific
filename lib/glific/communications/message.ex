@@ -10,6 +10,7 @@ defmodule Glific.Communications.Message do
     Contacts.Contact,
     Messages,
     Messages.Message,
+    Partners.Organization,
     Processor.Producer,
     Repo,
     Taggers,
@@ -172,11 +173,11 @@ defmodule Glific.Communications.Message do
   @doc false
   @spec organization_contact_id() :: integer()
   def organization_contact_id do
-    # Get organization
-    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
-
-    # Confirm organization's contact id
-    {:ok, contact} = Repo.fetch_by(Contact, %{id: organization.contact_id})
-    contact.id
+    # Get contact id
+    Contact
+    |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
+    |> select([c, _o], c.id)
+    |> limit(1)
+    |> Repo.one()
   end
 end

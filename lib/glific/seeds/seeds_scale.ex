@@ -1,4 +1,4 @@
-defmodule Glific.SeedsScale do
+defmodule Glific.Seeds.SeedsScale do
   @moduledoc """
   Script for populating the database at scale
   """

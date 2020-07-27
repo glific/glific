@@ -15,13 +15,12 @@ defmodule Glific.Flows.Flow do
     Flows.FlowRevision,
     Flows.Localization,
     Flows.Node,
-    Repo,
-    Settings.Language
+    Repo
   }
 
   alias Glific.Enums.FlowType
 
-  @required_fields [:name, :language_id, :uuid, :shortcode]
+  @required_fields [:name, :uuid, :shortcode]
   @optional_fields [:flow_type, :version_number, :uuid_map, :nodes]
 
   @type t :: %__MODULE__{
@@ -36,8 +35,6 @@ defmodule Glific.Flows.Flow do
           localization: Localization.t() | nil,
           nodes: [Node.t()] | nil,
           version_number: String.t() | nil,
-          language_id: non_neg_integer | nil,
-          language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           revisions: [FlowRevision.t()] | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -58,8 +55,6 @@ defmodule Glific.Flows.Flow do
     # we use this to store the latest definition for this flow
     field :definition, :map, virtual: true
 
-    belongs_to :language, Language
-
     has_many :revisions, FlowRevision
 
     timestamps(type: :utc_datetime)
@@ -73,7 +68,6 @@ defmodule Glific.Flows.Flow do
     flow
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> foreign_key_constraint(:language_id)
   end
 
   @doc """

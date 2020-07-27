@@ -80,8 +80,6 @@ defmodule Glific.Flows.ExitTest do
       })
 
     result = Exit.execute(exit, context, ["will this disappear"])
-
-    assert elem(result, 0) == :error
-    assert elem(result, 1) == "Unsupported node type"
+    assert result == {:error, "Unsupported node type"}
   end
 end

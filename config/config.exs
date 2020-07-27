@@ -73,6 +73,10 @@ config :sentry,
   },
   included_environments: [:prod]
 
+# phil columns to seed production data
+config :phil_columns,
+  ensure_all_started: ~w(timex)a
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"

@@ -1,6 +1,11 @@
 defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
   use GlificWeb.ConnCase
 
+  alias Glific.{
+    Messages,
+    Seeds.SeedsDev
+  }
+
   @message_event_request_params %{
     "app" => "Glific App",
     "payload" => %{
@@ -17,10 +22,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
   }
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_messages()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_messages()
     :ok
   end
 
@@ -42,8 +47,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
         |> put_in(["payload", "gsId"], gupshup_id)
         |> put_in(["payload", "payload"], %{"ts" => "1592311836"})
 
-      [message | _] = Glific.Messages.list_messages()
-      Glific.Messages.update_message(message, %{provider_message_id: gupshup_id})
+      [message | _] = Messages.list_messages()
+      Messages.update_message(message, %{provider_message_id: gupshup_id})
       %{message_params: message_params, message: message}
     end
 
@@ -51,35 +56,35 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
       # when message enqueued
       conn = post(conn, "/gupshup", setup_config.message_params)
       json_response(conn, 200)
-      message = Glific.Messages.get_message!(setup_config.message.id)
+      message = Messages.get_message!(setup_config.message.id)
       assert message.provider_status == :enqueued
 
       # when message failed
       message_params = put_in(setup_config.message_params, ["payload", "type"], "failed")
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
-      message = Glific.Messages.get_message!(setup_config.message.id)
+      message = Messages.get_message!(setup_config.message.id)
       assert message.provider_status == :error
 
       # when message sent
       message_params = put_in(setup_config.message_params, ["payload", "type"], "sent")
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
-      message = Glific.Messages.get_message!(setup_config.message.id)
+      message = Messages.get_message!(setup_config.message.id)
       assert message.provider_status == :sent
 
       # when message read
       message_params = put_in(setup_config.message_params, ["payload", "type"], "read")
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
-      message = Glific.Messages.get_message!(setup_config.message.id)
+      message = Messages.get_message!(setup_config.message.id)
       assert message.provider_status == :read
 
       # when message delivered
       message_params = put_in(setup_config.message_params, ["payload", "type"], "delivered")
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
-      message = Glific.Messages.get_message!(setup_config.message.id)
+      message = Messages.get_message!(setup_config.message.id)
       assert message.provider_status == :delivered
     end
   end

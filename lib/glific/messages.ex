@@ -131,14 +131,14 @@ defmodule Glific.Messages do
     |> Repo.insert()
   end
 
-  # Still need to improve this fucnation
-  defp put_contact_id(attrs) do
-    case attrs.flow do
-      :inbound -> Map.put(attrs, :contact_id, attrs[:sender_id])
-      :outbound -> Map.put(attrs, :contact_id, attrs[:receiver_id])
-      _ -> attrs
-    end
-  end
+  @spec put_contact_id(map()) :: map()
+  defp put_contact_id(%{flow: :inbound} = attrs),
+    do: Map.put(attrs, :contact_id, attrs[:sender_id])
+
+  defp put_contact_id(%{flow: :outbound} = attrs),
+    do: Map.put(attrs, :contact_id, attrs[:receiver_id])
+
+  defp put_contact_id(attrs), do: attrs
 
   @doc """
   Updates a message.
@@ -194,6 +194,7 @@ defmodule Glific.Messages do
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
+    attrs = Map.put(attrs, :receiver, contact)
 
     Contacts.can_send_message_to?(contact, attrs[:is_hsm])
     |> create_and_send_message(attrs)
@@ -230,7 +231,7 @@ defmodule Glific.Messages do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
       Glific.Repo.fetch_by(SessionTemplate, %{
-        shortcode: "otp_verification",
+        shortcode: "otp",
         is_hsm: true
       })
 
@@ -466,12 +467,28 @@ defmodule Glific.Messages do
     MessageMedia.changeset(message_media, attrs)
   end
 
+  defp do_list_conversations(query, args, false) do
+    query
+    |> Repo.all()
+    |> Repo.preload([:contact, :tags])
+    |> make_conversations()
+    |> add_empty_conversations(args)
+  end
+
+  defp do_list_conversations(query, _args, true) do
+    query
+    |> select([m], m.contact_id)
+    |> distinct(true)
+    |> exclude(:order_by)
+    |> Repo.aggregate(:count)
+  end
+
   @doc """
   Given a list of message ids builds a conversation list with most recent conversations
   at the beginning of the list
   """
-  @spec list_conversations(map()) :: [Conversation.t()]
-  def list_conversations(args) do
+  @spec list_conversations(map(), boolean) :: [Conversation.t()] | integer
+  def list_conversations(args, count \\ false) do
     args
     |> Enum.reduce(
       Message,
@@ -488,10 +505,7 @@ defmodule Glific.Messages do
           query
       end
     )
-    |> Repo.all()
-    |> Repo.preload([:contact, :tags])
-    |> make_conversations()
-    |> add_empty_conversations(args)
+    |> do_list_conversations(args, count)
   end
 
   # given all the messages related to multiple contacts, group them

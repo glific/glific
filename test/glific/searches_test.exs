@@ -6,9 +6,12 @@ defmodule Glific.SearchesTest do
   describe "searches" do
     alias Glific.Searches.SavedSearch
 
-    @valid_attrs %{args: %{}, label: "some label"}
-    @update_attrs %{args: %{}, label: "some updated label"}
-    @invalid_attrs %{args: nil, label: nil}
+    @valid_attrs %{args: %{}, label: "some label", shortcode: "short"}
+    @update_attrs %{args: %{}, label: "some updated label", shortcode: "code"}
+    # no shortcode
+    @invalid_attrs %{args: nil, label: "fsdf"}
+    # no label
+    @invalid_attrs_1 %{args: nil, shortcode: "fsdf"}
 
     def saved_search_fixture(attrs \\ %{}) do
       {:ok, saved_search} =
@@ -37,6 +40,7 @@ defmodule Glific.SearchesTest do
 
     test "create_saved_search/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Searches.create_saved_search(@invalid_attrs)
+      assert {:error, %Ecto.Changeset{}} = Searches.create_saved_search(@invalid_attrs_1)
     end
 
     test "update_saved_search/2 with valid data updates the saved search" do

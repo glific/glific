@@ -1,6 +1,7 @@
-query search($term: String!, $shouldSave: Boolean, $saveSearchLabel: String,
+query search($term: String!, $shouldSave: Boolean, $saveSearchLabel: String, $saveSearchShortcode: String,
   $contactOpts: Opts!, $messageOpts: Opts!, $filter: SearchFilter) {
   search(term: $term, saveSearch: $shouldSave, saveSearchLabel: $saveSearchLabel,
+    saveSearchShortcode: $saveSearchShortcode,
     contactOpts: $contactOpts, messageOpts: $messageOpts, filter: $filter) {
     contact {
       id

@@ -2,8 +2,14 @@ defmodule GlificWeb.Schema.UserTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Repo,
+    Seeds.SeedsDev,
+    Users.User
+  }
+
   setup do
-    Glific.SeedsDev.seed_users()
+    SeedsDev.seed_users()
     :ok
   end
 
@@ -24,6 +30,9 @@ defmodule GlificWeb.Schema.UserTest do
       users |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Basic User 1" end)
 
     assert res == "NGO Basic User 1"
+
+    [user | _] = users
+    assert user["groups"] == []
   end
 
   test "users returns list of users in asc order" do
@@ -72,7 +81,7 @@ defmodule GlificWeb.Schema.UserTest do
 
   test "user by id returns one user or nil" do
     name = "NGO Basic User 1"
-    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: name})
+    {:ok, user} = Repo.fetch_by(User, %{name: name})
 
     result = query_gql_by(:by_id, variables: %{"id" => user.id})
     assert {:ok, query_data} = result
@@ -88,7 +97,7 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "update a user and test possible scenarios and errors" do
-    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: "NGO Basic User 1"})
+    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
 
     name = "User Test Name New"
     roles = ["basic", "admin"]
@@ -119,7 +128,7 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "delete a user" do
-    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: "NGO Basic User 1"})
+    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
 
     result = query_gql_by(:delete, variables: %{"id" => user.id})
     assert {:ok, query_data} = result
