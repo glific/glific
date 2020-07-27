@@ -4,11 +4,11 @@ defmodule Glific.CachesTest do
   alias Glific.Caches
 
   describe "caches" do
-     test "set/2 with a single key will generate the cache" do
+    test "set/2 with a single key will generate the cache" do
       key = "key 1"
       value = "Cached Value"
       assert {:ok, value} == Caches.set(key, value)
-      {:ok, cached_value}  = Caches.get(key)
+      {:ok, cached_value} = Caches.get(key)
       assert cached_value == value
     end
 
@@ -17,8 +17,8 @@ defmodule Glific.CachesTest do
       key2 = "key 2"
       value = "Cached Value"
       assert {:ok, value} == Caches.set([key1, key2], value)
-      {:ok, value1}  = Caches.get(key1)
-      {:ok, value2}  = Caches.get(key2)
+      {:ok, value1} = Caches.get(key1)
+      {:ok, value2} = Caches.get(key2)
       assert value1 == value2
     end
 
@@ -26,7 +26,7 @@ defmodule Glific.CachesTest do
       key = "key 1"
       value = "Cached Value"
       assert {:ok, value} == Caches.set(key, value)
-      assert {:ok, cached_value}  = Caches.get(key)
+      assert {:ok, cached_value} = Caches.get(key)
       assert cached_value == value
     end
 
