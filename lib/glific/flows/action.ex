@@ -7,10 +7,7 @@ defmodule Glific.Flows.Action do
 
   use Ecto.Schema
 
-  alias Glific.{
-    Enums.FlowActionType,
-    Flows
-  }
+  alias Glific.Flows
 
   alias Glific.Flows.{
     ContactAction,
@@ -20,7 +17,7 @@ defmodule Glific.Flows.Action do
     FlowContext,
     Node,
     Templating,
-    Webhook,
+    Webhook
   }
 
   @required_field_common [:uuid, :type]
@@ -40,7 +37,7 @@ defmodule Glific.Flows.Action do
           method: String.t() | nil,
           result_name: String.t() | nil,
           body: String.t() | nil,
-          type: FlowActionType,
+          type: String.t() | nil,
           field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
@@ -67,7 +64,7 @@ defmodule Glific.Flows.Action do
     field :field, :map
     field :language, :string
 
-    field :type, FlowActionType
+    field :type, :string
 
     field :quick_replies, {:array, :string}, default: []
 
@@ -188,14 +185,14 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "call_webhook"} = action, context, message_stream) do
     # first call the webhook
-    IO.inspect(action, label: "Calling webhook")
+    # IO.inspect(action, label: "Calling webhook")
     json = Webhook.get(action.url, action.headers, action.body)
-    IO.inspect(json, label: "Result")
+    # IO.inspect(json, label: "Result")
 
     context =
-    if is_nil(json) or is_nil(action.result_name),
-      do: context,
-      else: FlowContext.update_results(context, action.result_name, json)
+      if is_nil(json) or is_nil(action.result_name),
+        do: context,
+        else: FlowContext.update_results(context, action.result_name, json)
 
     {:ok, context, message_stream}
   end

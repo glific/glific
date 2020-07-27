@@ -136,7 +136,13 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec update_results(FlowContext.t(), String.t(), map()) :: FlowContext.t()
   def update_results(context, key, json) do
-
+    Enum.reduce(
+      json,
+      context,
+      fn {k, v}, context ->
+        update_results(context, key <> "." <> k, v, key)
+      end
+    )
   end
 
   @doc """
