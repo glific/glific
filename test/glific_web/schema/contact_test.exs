@@ -36,6 +36,9 @@ defmodule GlificWeb.Schema.ContactTest do
     res = contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "Glific Admin" end)
 
     assert res == "Glific Admin"
+
+    [contact | _] = contacts
+    assert contact["groups"] == []
   end
 
   test "contacts field returns list of contacts in asc order" do

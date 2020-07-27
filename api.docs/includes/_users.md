@@ -9,6 +9,9 @@ query users($filter: UserFilter, $opts: Opts) {
     name
     phone
     roles
+    groups {
+      label
+    }
   }
 }
 
@@ -26,6 +29,7 @@ query users($filter: UserFilter, $opts: Opts) {
   "data": {
     "users": [
       {
+        "groups": [],
         "id": "1",
         "name": "John Doe",
         "phone": "+919820198765",
@@ -34,6 +38,11 @@ query users($filter: UserFilter, $opts: Opts) {
         ]
       },
       {
+        "groups": [
+          {
+            "label": "First Group"
+          }
+        ],
         "id": "2",
         "name": "Jane Doe",
         "phone": "+918820198765",

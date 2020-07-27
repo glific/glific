@@ -3,5 +3,9 @@ query users ($filter: UserFilter, $opts: Opts) {
     id
     name
     phone
+    groups {
+      id
+      label
+    }
   }
 }

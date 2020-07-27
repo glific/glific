@@ -30,6 +30,9 @@ defmodule GlificWeb.Schema.UserTest do
       users |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Basic User 1" end)
 
     assert res == "NGO Basic User 1"
+
+    [user | _] = users
+    assert user["groups"] == []
   end
 
   test "users returns list of users in asc order" do
