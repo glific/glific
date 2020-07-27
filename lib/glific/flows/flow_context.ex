@@ -132,6 +132,14 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Update the contact results with each element of the json map
+  """
+  @spec update_results(FlowContext.t(), String.t(), map()) :: FlowContext.t()
+  def update_results(context, key, json) do
+
+  end
+
+  @doc """
   Set the new node for the context
   """
   @spec set_node(FlowContext.t(), Node.t()) :: FlowContext.t()
