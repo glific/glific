@@ -375,7 +375,7 @@ defmodule Glific.Seeds.SeedsDev do
         name: "SoL Registration",
         shortcode: "sol_registration",
         version_number: "13.1.0",
-        uuid: "6c21af89-d7de-49ac-9848-c9febbf737a5"
+        uuid: "f4f38e00-3a50-4892-99ce-a281fe24d040"
       })
 
     sol_registration_definition =
@@ -399,7 +399,7 @@ defmodule Glific.Seeds.SeedsDev do
         name: "Slo Workflow",
         shortcode: "sol_workflow",
         version_number: "13.1.0",
-        uuid: "6c21af89-d7de-49ac-9848-c9febbf737a5"
+        uuid: "6fe8fda9-2df6-4694-9fd6-45b9e724f545"
       })
 
     sol_workflow_definition =
