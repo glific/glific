@@ -17,12 +17,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
     with {:ok, _message} <- verify_otp(phone, otp),
          {:ok, response_data} <- create_user(conn, user_params) do
-      json(conn, response_data)
+      success_response(conn, response_data)
     else
       {:error, errors} ->
-        conn
-        |> put_status(500)
-        |> json(%{error: %{status: 500, message: "Couldn't create user", errors: errors}})
+        error_response(conn, 500, "Couldn't create user", errors)
     end
   end
 
@@ -38,6 +36,18 @@ defmodule GlificWeb.API.V1.RegistrationController do
         # Error response options: :attempt_blocked | :code_expired | :does_not_exist | :incorrect_code
         {:error, [Atom.to_string(error)]}
     end
+  end
+
+  @spec success_response(Conn.t(), map()) :: Conn.t()
+  defp success_response(conn, response_data) do
+    json(conn, response_data)
+  end
+
+  @spec error_response(Conn.t(), integer(), String.t(), []) :: Conn.t()
+  defp error_response(conn, status, message, errors) do
+    conn
+    |> put_status(status)
+    |> json(%{error: %{status: status, message: message, errors: errors}})
   end
 
   @spec create_user(Conn.t(), map()) :: {:ok, map()} | {:error, []}
@@ -87,11 +97,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
     with true <- can_send_otp_to_phone?(phone),
          true <- send_otp_allowed?(phone, registration),
          {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
-      json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
+      success_response(conn, %{
+        data: %{phone: phone, message: "OTP sent successfully to #{phone}"}
+      })
     else
       _ ->
-        put_status(conn, 400)
-        |> json(%{error: %{message: "Cannot send the otp to #{phone}"}})
+        error_response(conn, 400, "Cannot send the otp to #{phone}", [])
     end
   end
 
@@ -117,12 +128,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
     with {:ok, _data} <- verify_otp(phone, otp),
          {:ok, data} <- reset_user_password(user_params) do
-      json(conn, data)
+      success_response(conn, data)
     else
-      {:error, _errors} ->
-        conn
-        |> put_status(500)
-        |> json(%{error: %{status: 500, message: "Couldn't update user password"}})
+      {:error, errors} ->
+        error_response(conn, 500, "Couldn't update user password", errors)
     end
   end
 
