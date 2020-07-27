@@ -2,11 +2,18 @@ defmodule GlificWeb.Schema.ContactGroupTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Contacts.Contact,
+    Groups.Group,
+    Repo,
+    Seeds.SeedsDev
+  }
+
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
-    Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_groups()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_groups()
     :ok
   end
 
@@ -15,9 +22,9 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
   test "create a contact group and test possible scenarios and errors" do
     label = "Default Group"
-    {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label})
     name = "Glific Admin"
-    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
 
     result =
       query_gql_by(:create,
@@ -45,9 +52,9 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
   test "delete a contact group" do
     label = "Default Group"
-    {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label})
     name = "Glific Admin"
-    {:ok, contact} = Glific.Repo.fetch_by(Glific.Contacts.Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
 
     {:ok, query_data} =
       query_gql_by(:create,

@@ -15,17 +15,17 @@ defmodule Glific.Conversations do
   @doc """
   Returns the last M conversations, each conversation not more than N messages
   """
-  @spec list_conversations(map()) :: list()
-  def list_conversations(args) do
+  @spec list_conversations(map(), boolean) :: list() | integer
+  def list_conversations(args, count \\ false) do
     Messages.list_conversations(
-      Map.put(args, :ids, get_message_ids(args.contact_opts, args.message_opts, args))
+      Map.put(args, :ids, get_message_ids(args.contact_opts, args.message_opts, args)),
+      count
     )
   end
 
   @doc """
   Returns the filtered conversation by contact id
   """
-
   @spec conversation_by_id(map()) :: Conversation.t() | nil
   def conversation_by_id(%{contact_id: contact_id} = args) do
     args = put_in(args, [Access.key(:filter, %{}), :id], contact_id)

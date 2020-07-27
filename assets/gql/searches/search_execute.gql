@@ -1,0 +1,12 @@
+query savedSearchExecute($id: ID!,$term:String) {
+  savedSearchExecute(id: $id, term: $term) {
+    contact {
+      id
+      name
+    }
+    messages {
+      id
+      body
+    }
+  }
+}

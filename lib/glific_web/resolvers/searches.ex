@@ -59,4 +59,12 @@ defmodule GlificWeb.Resolvers.Searches do
   @spec search(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [any]}
   def search(_, params, _), do: {:ok, Searches.search(params)}
+
+  @doc false
+  @spec saved_search_count(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def saved_search_count(_, params, _), do: {:ok, Searches.saved_search_execute(params, true)}
+
+  @doc false
+  @spec saved_search_execute(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def saved_search_execute(_, params, _), do: {:ok, Searches.saved_search_execute(params, false)}
 end

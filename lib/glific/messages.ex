@@ -131,14 +131,14 @@ defmodule Glific.Messages do
     |> Repo.insert()
   end
 
-  # Still need to improve this fucnation
-  defp put_contact_id(attrs) do
-    case attrs.flow do
-      :inbound -> Map.put(attrs, :contact_id, attrs[:sender_id])
-      :outbound -> Map.put(attrs, :contact_id, attrs[:receiver_id])
-      _ -> attrs
-    end
-  end
+  @spec put_contact_id(map()) :: map()
+  defp put_contact_id(%{flow: :inbound} = attrs),
+    do: Map.put(attrs, :contact_id, attrs[:sender_id])
+
+  defp put_contact_id(%{flow: :outbound} = attrs),
+    do: Map.put(attrs, :contact_id, attrs[:receiver_id])
+
+  defp put_contact_id(attrs), do: attrs
 
   @doc """
   Updates a message.
@@ -194,6 +194,7 @@ defmodule Glific.Messages do
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
+    attrs = Map.put(attrs, :receiver, contact)
 
     Contacts.can_send_message_to?(contact, attrs[:is_hsm])
     |> create_and_send_message(attrs)
@@ -202,8 +203,6 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()}
   defp create_and_send_message(is_valid_contact, attrs) when is_valid_contact == true do
-    send_at = get_in(attrs, [:send_at])
-
     {:ok, message} =
       %{
         sender_id: Communications.Message.organization_contact_id(),
@@ -212,45 +211,12 @@ defmodule Glific.Messages do
       |> Map.merge(attrs)
       |> create_message()
 
-    update_outbound_message_tags_of_contact(message)
-    Communications.Message.send_message(message, send_at)
+    Communications.Message.send_message(message)
   end
 
   @doc false
   defp create_and_send_message(_, _) do
     {:error, "Cannot send the message to the contact."}
-  end
-
-  @spec update_outbound_message_tags_of_contact(Message.t()) :: :ok
-  defp update_outbound_message_tags_of_contact(message) do
-    # Add "Not Responded" tag to message
-    {:ok, tag} = Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Responded"})
-
-    {:ok, _} =
-      Glific.Tags.create_message_tag(%{
-        message_id: message.id,
-        tag_id: tag.id
-      })
-
-    # Remove not responded tag from last outbound message if any
-    # don't remove tag if message is not yet delivered
-    with last_outbound_message when last_outbound_message != nil <-
-           Message
-           |> where([m], m.id != ^message.id)
-           |> where([m], m.receiver_id == ^message.receiver_id)
-           |> where([m], m.flow == "outbound")
-           |> where([m], m.status == "sent")
-           |> Ecto.Query.last()
-           |> Repo.one(),
-         message_tag when message_tag != nil <-
-           Glific.Tags.MessageTag
-           |> where([m], m.tag_id == ^tag.id)
-           |> where([m], m.message_id == ^last_outbound_message.id)
-           |> Ecto.Query.last()
-           |> Repo.one(),
-         do: Glific.Tags.delete_message_tag(message_tag)
-
-    :ok
   end
 
   @doc """
@@ -265,7 +231,7 @@ defmodule Glific.Messages do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
       Glific.Repo.fetch_by(SessionTemplate, %{
-        shortcode: "otp_verification",
+        shortcode: "otp",
         is_hsm: true
       })
 
@@ -501,12 +467,28 @@ defmodule Glific.Messages do
     MessageMedia.changeset(message_media, attrs)
   end
 
+  defp do_list_conversations(query, args, false) do
+    query
+    |> Repo.all()
+    |> Repo.preload([:contact, :tags])
+    |> make_conversations()
+    |> add_empty_conversations(args)
+  end
+
+  defp do_list_conversations(query, _args, true) do
+    query
+    |> select([m], m.contact_id)
+    |> distinct(true)
+    |> exclude(:order_by)
+    |> Repo.aggregate(:count)
+  end
+
   @doc """
   Given a list of message ids builds a conversation list with most recent conversations
   at the beginning of the list
   """
-  @spec list_conversations(map()) :: [Conversation.t()]
-  def list_conversations(args) do
+  @spec list_conversations(map(), boolean) :: [Conversation.t()] | integer
+  def list_conversations(args, count \\ false) do
     args
     |> Enum.reduce(
       Message,
@@ -523,10 +505,7 @@ defmodule Glific.Messages do
           query
       end
     )
-    |> Repo.all()
-    |> Repo.preload([:contact, :tags])
-    |> make_conversations()
-    |> add_empty_conversations(args)
+    |> do_list_conversations(args, count)
   end
 
   # given all the messages related to multiple contacts, group them
@@ -567,7 +546,14 @@ defmodule Glific.Messages do
 
   # for all input contact ids that do not have messages attached to them
   # return a conversation data type with empty messages
+  # we dont add empty conversations when we have either include or exclude tags set
   @spec add_empty_conversations([Conversation.t()], map()) :: [Conversation.t()]
+  defp add_empty_conversations(results, %{filter: %{include_tags: _tags}}),
+    do: results
+
+  defp add_empty_conversations(results, %{filter: %{exclude_tags: _tags}}),
+    do: results
+
   defp add_empty_conversations(results, %{filter: %{id: id}}),
     do: add_empty_conversation(results, [id])
 

@@ -1,13 +1,19 @@
 defmodule Glific.FLowsTest do
   use Glific.DataCase
 
-  alias Glific.{Flows, Flows.Flow, Settings.Language}
+  alias Glific.{Flows, Flows.Flow}
 
   describe "flows" do
-    # language id needs to be added dynamically for all the below actions
     @valid_attrs %{
       name: "Test Flow",
       shortcode: "test_short_code",
+      flow_type: :message,
+      version_number: "13.1.0"
+    }
+
+    @valid_more_attrs %{
+      name: "Test Flow More",
+      shortcode: "test_short_code_2",
       flow_type: :message,
       version_number: "13.1.0"
     }
@@ -25,11 +31,8 @@ defmodule Glific.FLowsTest do
     }
 
     def flow_fixture(attrs \\ %{}) do
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
-
       {:ok, flow} =
         attrs
-        |> Map.put(:language_id, language.id)
         |> Enum.into(@valid_attrs)
         |> Flows.create_flow()
 
@@ -41,19 +44,28 @@ defmodule Glific.FLowsTest do
       assert Enum.filter(Flows.list_flows(), fn fl -> fl.name == flow.name end) == [flow]
     end
 
+    test "count_flows/0 returns count of all flows" do
+      flow_count = Repo.aggregate(Flow, :count)
+
+      _ = flow_fixture()
+      assert Flows.count_flows() == flow_count + 1
+
+      _ = flow_fixture(@valid_more_attrs)
+      assert Flows.count_flows() == flow_count + 2
+
+      assert Flows.count_flows(%{filter: %{name: "Help Workflow"}}) == 1
+    end
+
     test "get_flow!/1 returns the flow with given id" do
       flow = flow_fixture()
       assert Flows.get_flow!(flow.id) == flow
     end
 
     test "create_flow/1 with valid data creates a flow" do
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
-      attrs = Map.merge(@valid_attrs, %{language_id: language.id})
-      assert {:ok, %Flow{} = flow} = Flows.create_flow(attrs)
+      assert {:ok, %Flow{} = flow} = Flows.create_flow(@valid_attrs)
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
       assert flow.shortcode == @valid_attrs.shortcode
-      assert flow.language_id == language.id
     end
 
     test "create_flow/1 with invalid data returns error changeset" do
@@ -61,9 +73,7 @@ defmodule Glific.FLowsTest do
     end
 
     test "create_flow/1 will have a default revision" do
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
-      attrs = Map.merge(@valid_attrs, %{language_id: language.id})
-      assert {:ok, %Flow{} = flow} = Flows.create_flow(attrs)
+      assert {:ok, %Flow{} = flow} = Flows.create_flow(@valid_attrs)
       flow = Glific.Repo.preload(flow, [:revisions])
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
@@ -73,11 +83,8 @@ defmodule Glific.FLowsTest do
 
     test "update_flow/2 with valid data updates the flow" do
       flow = flow_fixture()
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
-      attrs = Map.merge(@update_attrs, %{language_id: language.id})
-      assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, attrs)
+      assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, @update_attrs)
       assert flow.name == @update_attrs.name
-      assert flow.language_id == language.id
     end
 
     test "update_flow/2 with invalid data returns error changeset" do

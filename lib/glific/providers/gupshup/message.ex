@@ -13,17 +13,17 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_text(Message.t(), :datetime) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_text(message, send_at) do
+  @spec send_text(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_text(message) do
     %{type: :text, text: message.body, isHSM: message.is_hsm}
-    |> send_message(message, send_at)
+    |> send_message(message)
   end
 
   @doc false
 
   @impl Glific.Providers.MessageBehaviour
-  @spec send_image(Message.t(), :datetime) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_image(message, send_at) do
+  @spec send_image(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_image(message) do
     message_media = message.media
 
     %{
@@ -32,27 +32,27 @@ defmodule Glific.Providers.Gupshup.Message do
       previewUrl: message_media.url,
       caption: message_media.caption
     }
-    |> send_message(message, send_at)
+    |> send_message(message)
   end
 
   @doc false
 
   @impl Glific.Providers.MessageBehaviour
-  @spec send_audio(Message.t(), :datetime) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_audio(message, send_at) do
+  @spec send_audio(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_audio(message) do
     message_media = message.media
 
     %{
       type: :audio,
       url: message_media.source_url
     }
-    |> send_message(message, send_at)
+    |> send_message(message)
   end
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_video(Message.t(), :datetime) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_video(message, send_at) do
+  @spec send_video(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_video(message) do
     message_media = message.media
 
     %{
@@ -60,14 +60,14 @@ defmodule Glific.Providers.Gupshup.Message do
       url: message_media.source_url,
       caption: message_media.caption
     }
-    |> send_message(message, send_at)
+    |> send_message(message)
   end
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_document(Message.t(), :datetime) ::
+  @spec send_document(Message.t()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_document(message, send_at) do
+  def send_document(message) do
     message_media = message.media
 
     %{
@@ -75,7 +75,7 @@ defmodule Glific.Providers.Gupshup.Message do
       url: message_media.source_url,
       filename: message_media.caption
     }
-    |> send_message(message, send_at)
+    |> send_message(message)
   end
 
   @doc false
@@ -139,9 +139,9 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @spec send_message(map(), Message.t(), :datetime) ::
+  @spec send_message(map(), Message.t()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  defp send_message(payload, message, send_at) do
+  defp send_message(payload, message) do
     request_body =
       %{"channel" => @channel}
       |> Map.merge(format_sender(message.sender))
@@ -151,7 +151,7 @@ defmodule Glific.Providers.Gupshup.Message do
     worker_module = Communications.provider_worker()
     worker_args = %{message: Message.to_minimal_map(message), payload: request_body}
 
-    apply(worker_module, :new, [worker_args, [scheduled_at: send_at]])
+    apply(worker_module, :new, [worker_args, [scheduled_at: message.send_at]])
     |> Oban.insert()
   end
 
