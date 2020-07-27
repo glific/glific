@@ -35,27 +35,14 @@ defmodule Glific.Providers.Gupshup.Worker do
           {:ok, Glific.Messages.Message.t()} | {:error, String.t()}
   defp handle_response({:ok, response}, message) do
     case response do
-      %Tesla.Env{status: 200} -> success_response(response, message)
-      _ -> error_response(response, message)
+      %Tesla.Env{status: 200} -> Communications.Message.handle_success_response(response, message)
+      _ -> Communications.Message.handle_error_response(response, message)
     end
   end
 
-  @doc false
-  @spec success_response(%Tesla.Env{:status => 200}, Glific.Messages.Message.t()) ::
-          {:ok, Glific.Messages.Message.t()}
-  defp success_response(response, message) do
-    Communications.Message.handle_success_response(response, message)
-  end
-
-  @doc false
-  @spec error_response(Tesla.Env.t(), Glific.Messages.Message.t()) :: {:error, String.t()}
-  defp error_response(response, message) do
-    Communications.Message.handle_error_response(response, message)
-  end
-
   @doc """
-    We backoff exponentially but always delay by at least 60 seconds
-    this needs more work and tweaking
+  We backoff exponentially but always delay by at least 60 seconds
+  this needs more work and tweaking
   """
   @impl Oban.Worker
   @spec backoff(integer()) :: pos_integer()

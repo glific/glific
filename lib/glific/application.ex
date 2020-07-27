@@ -26,8 +26,8 @@ defmodule Glific.Application do
 
       # Add Cachex
       %{
-        id: :flows_cache_id,
-        start: {Cachex, :start_link, [:flows_cache, []]}
+        id: :glific_cache_id,
+        start: {Cachex, :start_link, [:glific_cache, []]}
       }
     ]
 
