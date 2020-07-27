@@ -15,23 +15,42 @@ defmodule GlificWeb.API.V1.RegistrationController do
   def create(conn, %{"user" => user_params}) do
     %{"phone" => phone, "otp" => otp} = user_params
 
+    with {:ok, _data} <- verify_otp(phone, otp),
+         {:ok, data} <- create_user(conn, user_params) do
+      success_response(conn, data)
+    else
+      {:error, errors} ->
+        error_response(conn, 500, "Couldn't create user", errors)
+    end
+  end
+
+  @spec verify_otp(String.t(), String.t()) :: {:ok, String.t()} | {:error, []}
+  defp verify_otp(phone, otp) do
     case PasswordlessAuth.verify_code(phone, otp) do
       :ok ->
         # Remove otp code
         PasswordlessAuth.remove_code(phone)
-        create_user(conn, user_params)
+        {:ok, "verified"}
 
       {:error, error} ->
         # Error response options: :attempt_blocked | :code_expired | :does_not_exist | :incorrect_code
-        conn
-        |> put_status(500)
-        |> json(%{
-          error: %{status: 500, message: "Couldn't create user", errors: [Atom.to_string(error)]}
-        })
+        {:error, [Atom.to_string(error)]}
     end
   end
 
-  @spec create_user(Conn.t(), map()) :: Conn.t()
+  @spec success_response(Conn.t(), map()) :: Conn.t()
+  defp success_response(conn, response_data) do
+    json(conn, response_data)
+  end
+
+  @spec error_response(Conn.t(), integer(), String.t(), []) :: Conn.t()
+  defp error_response(conn, status, message, errors) do
+    conn
+    |> put_status(status)
+    |> json(%{error: %{status: status, message: message, errors: errors}})
+  end
+
+  @spec create_user(Conn.t(), map()) :: {:ok, map()} | {:error, []}
   defp create_user(conn, user_params) do
     user_params_with_password_confirmation =
       user_params
@@ -43,20 +62,20 @@ defmodule GlificWeb.API.V1.RegistrationController do
       {:ok, user, conn} ->
         {:ok, _} = add_staff_tag_to_user_contact(user)
 
-        json(conn, %{
+        response_data = %{
           data: %{
             access_token: conn.private[:api_access_token],
             token_expiry_time: conn.private[:api_token_expiry_time],
             renewal_token: conn.private[:api_renewal_token]
           }
-        })
+        }
 
-      {:error, changeset, conn} ->
+        {:ok, response_data}
+
+      {:error, changeset, _conn} ->
         errors = Changeset.traverse_errors(changeset, &ErrorHelpers.translate_error/1)
 
-        conn
-        |> put_status(500)
-        |> json(%{error: %{status: 500, message: "Couldn't create user", errors: errors}})
+        {:error, errors}
     end
   end
 
@@ -106,28 +125,17 @@ defmodule GlificWeb.API.V1.RegistrationController do
   def reset_password(conn, %{"user" => user_params}) do
     %{"phone" => phone, "otp" => otp} = user_params
 
-    case PasswordlessAuth.verify_code(phone, otp) do
-      :ok ->
-        # Remove otp code
-        PasswordlessAuth.remove_code(phone)
-        reset_user_password(conn, user_params)
-
-      {:error, error} ->
-        # Error response options: :attempt_blocked | :code_expired | :does_not_exist | :incorrect_code
-        conn
-        |> put_status(500)
-        |> json(%{
-          error: %{
-            status: 500,
-            message: "Couldn't update user password",
-            errors: [Atom.to_string(error)]
-          }
-        })
+    with {:ok, _data} <- verify_otp(phone, otp),
+         {:ok, data} <- reset_user_password(user_params) do
+      success_response(conn, data)
+    else
+      {:error, errors} ->
+        error_response(conn, 500, "Couldn't update user password", errors)
     end
   end
 
-  @spec reset_user_password(Conn.t(), map()) :: Conn.t()
-  defp reset_user_password(conn, %{"phone" => phone, "password" => password}) do
+  @spec reset_user_password(map()) :: {:ok, map()} | {:error, []}
+  defp reset_user_password(%{"phone" => phone, "password" => password}) do
     update_params = %{
       "password" => password,
       "password_confirmation" => password
@@ -139,14 +147,14 @@ defmodule GlificWeb.API.V1.RegistrationController do
     |> Glific.Users.reset_user_password(update_params)
     |> case do
       {:ok, _user} ->
-        json(conn, %{
+        response_data = %{
           data: %{phone: phone, message: "Password is updated for #{phone}"}
-        })
+        }
+
+        {:ok, response_data}
 
       {:error, _error} ->
-        conn
-        |> put_status(500)
-        |> json(%{error: %{status: 500, message: "Couldn't update user password"}})
+        {:error, []}
     end
   end
 end
