@@ -16,6 +16,10 @@ query contacts($filter: ContactFilter, $opts: Opts) {
       id
       label
     }
+    groups {
+      id
+      label
+    }
   }
 }
 
@@ -33,6 +37,7 @@ query contacts($filter: ContactFilter, $opts: Opts) {
   "data": {
     "contacts": [
       {
+        "groups": [],
         "id": "1",
         "name": "Default Sender",
         "optinTime": null,
@@ -435,6 +440,11 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>tags</strong></td>
 <td valign="top">[<a href="#tag">Tag</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>groups</strong></td>
+<td valign="top">[<a href="#group">Group</a>]</td>
 <td></td>
 </tr>
 </tbody>

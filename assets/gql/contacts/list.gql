@@ -3,5 +3,9 @@ query contacts ($filter: ContactFilter, $opts: Opts) {
     id
     name
     phone
+    groups {
+      id
+      label
+    }
   }
 }

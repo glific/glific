@@ -3,6 +3,8 @@ defmodule Glific.Users.User do
   use Ecto.Schema
   use Pow.Ecto.Schema, user_id_field: :phone
 
+  alias Glific.{Groups.Group}
+
   alias Ecto.Changeset
   import Pow.Ecto.Schema.Changeset, only: [password_changeset: 3, current_password_changeset: 3]
 
@@ -23,6 +25,8 @@ defmodule Glific.Users.User do
     field :roles, {:array, :string}, default: ["none"]
 
     pow_user_fields()
+
+    many_to_many :groups, Group, join_through: "users_groups", on_replace: :delete
 
     timestamps()
   end
