@@ -269,12 +269,10 @@ defmodule Glific.Flows.FlowContext do
   Retrieve the value from a results string
   """
   @spec get_result_value(FlowContext.t(), String.t()) :: String.t() | nil
-  def get_result_value(context, value) do
-    if String.starts_with?(value, "@results.") do
-      parts = String.slice(value, 8..-1) |> String.split(".", trim: true)
-      get_in(context.results, parts)
-    else
-      nil
-    end
+  def get_result_value(context, value) when binary_part(value, 0, 9) == "@results." do
+    parts = String.slice(value, 8..-1) |> String.split(".", trim: true)
+    get_in(context.results, parts)
   end
+
+  def get_result_value(_context, value), do: value
 end

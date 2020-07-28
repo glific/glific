@@ -23,7 +23,8 @@ defmodule Glific.Flows.Action do
   @required_field_common [:uuid, :type]
   @required_fields_enter_flow [:flow | @required_field_common]
   @required_fields_language [:language | @required_field_common]
-  @required_fields_set_contact [:value, :field | @required_field_common]
+  @required_fields_set_contact_field [:value, :field | @required_field_common]
+  @required_fields_set_contact_name [:name | @required_field_common]
   @required_fields_webook [:url, :headers, :method, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
 
@@ -106,8 +107,13 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, %{text: json["language"]})
   end
 
+  def process(%{"type" => "set_contact_name"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_contact_name)
+    process(json, uuid_map, node, %{value: json["name"]})
+  end
+
   def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
-    Flows.check_required_fields(json, @required_fields_set_contact)
+    Flows.check_required_fields(json, @required_fields_set_contact_field)
 
     process(json, uuid_map, node, %{
       value: json["value"],
@@ -162,7 +168,8 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "set_contact_name"} = action, context, message_stream) do
-    context = ContactSetting.set_contact_name(context, action.value)
+    value = FlowContext.get_result_value(context, action.value)
+    context = ContactSetting.set_contact_name(context, value)
     {:ok, context, message_stream}
   end
 

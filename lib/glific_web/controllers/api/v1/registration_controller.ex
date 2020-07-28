@@ -10,28 +10,46 @@ defmodule GlificWeb.API.V1.RegistrationController do
   alias PasswordlessAuth
   alias Plug.Conn
 
+  alias Glific.{
+    Contacts,
+    Contacts.Contact,
+    Repo,
+    Tags,
+    Users,
+    Users.User
+  }
+
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
   def create(conn, %{"user" => user_params}) do
     %{"phone" => phone, "otp" => otp} = user_params
 
+    with {:ok, _message} <- verify_otp(phone, otp),
+         {:ok, response_data} <- create_user(conn, user_params) do
+      json(conn, response_data)
+    else
+      {:error, errors} ->
+        conn
+        |> put_status(500)
+        |> json(%{error: %{status: 500, message: "Couldn't create user", errors: errors}})
+    end
+  end
+
+  @spec verify_otp(String.t(), String.t()) :: {:ok, String.t()} | {:error, []}
+  defp verify_otp(phone, otp) do
     case PasswordlessAuth.verify_code(phone, otp) do
       :ok ->
         # Remove otp code
         PasswordlessAuth.remove_code(phone)
-        create_user(conn, user_params)
+        {:ok, "verified"}
 
       {:error, error} ->
         # Error response options: :attempt_blocked | :code_expired | :does_not_exist | :incorrect_code
-        conn
-        |> put_status(500)
-        |> json(%{
-          error: %{status: 500, message: "Couldn't create user", errors: [Atom.to_string(error)]}
-        })
+        {:error, [Atom.to_string(error)]}
     end
   end
 
-  @spec create_user(Conn.t(), map()) :: Conn.t()
+  @spec create_user(Conn.t(), map()) :: {:ok, map()} | {:error, []}
   defp create_user(conn, user_params) do
     user_params_with_password_confirmation =
       user_params
@@ -43,30 +61,30 @@ defmodule GlificWeb.API.V1.RegistrationController do
       {:ok, user, conn} ->
         {:ok, _} = add_staff_tag_to_user_contact(user)
 
-        json(conn, %{
+        response_data = %{
           data: %{
             access_token: conn.private[:api_access_token],
             token_expiry_time: conn.private[:api_token_expiry_time],
             renewal_token: conn.private[:api_renewal_token]
           }
-        })
+        }
 
-      {:error, changeset, conn} ->
+        {:ok, response_data}
+
+      {:error, changeset, _conn} ->
         errors = Changeset.traverse_errors(changeset, &ErrorHelpers.translate_error/1)
 
-        conn
-        |> put_status(500)
-        |> json(%{error: %{status: 500, message: "Couldn't create user", errors: errors}})
+        {:error, errors}
     end
   end
 
   @doc false
-  @spec add_staff_tag_to_user_contact(Glific.Users.User.t()) :: {:ok, String.t()}
+  @spec add_staff_tag_to_user_contact(User.t()) :: {:ok, String.t()}
   defp add_staff_tag_to_user_contact(user) do
     with {:ok, contact} <-
-           Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: user.phone}),
-         {:ok, tag} <- Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Staff"}),
-         {:ok, _} <- Glific.Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id}),
+           Repo.fetch_by(Contact, %{phone: user.phone}),
+         {:ok, tag} <- Repo.fetch_by(Tags.Tag, %{label: "Staff"}),
+         {:ok, _} <- Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id}),
          do: {:ok, "Staff tag added to the user contatct"}
   end
 
@@ -81,20 +99,21 @@ defmodule GlificWeb.API.V1.RegistrationController do
       json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
     else
       _ ->
-        put_status(conn, 400)
-        |> json(%{error: %{message: "Cannot send the otp to #{phone}"}})
+        conn
+        |> put_status(400)
+        |> json(%{error: %{status: 400, message: "Cannot send the otp to #{phone}"}})
     end
   end
 
   @spec can_send_otp_to_phone?(String.t()) :: boolean
   defp can_send_otp_to_phone?(phone) do
-    with {:ok, contact} <- Glific.Repo.fetch_by(Glific.Contacts.Contact, %{phone: phone}),
-         do: Glific.Contacts.can_send_message_to?(contact, true)
+    with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}),
+         do: Contacts.can_send_message_to?(contact, true)
   end
 
   @spec send_otp_allowed?(String.t(), String.t()) :: boolean
   defp send_otp_allowed?(phone, registration) do
-    {result, _} = Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone})
+    {result, _} = Repo.fetch_by(User, %{phone: phone})
     (result == :ok && registration == "false") || (result == :error && registration != "false")
   end
 
@@ -106,47 +125,40 @@ defmodule GlificWeb.API.V1.RegistrationController do
   def reset_password(conn, %{"user" => user_params}) do
     %{"phone" => phone, "otp" => otp} = user_params
 
-    case PasswordlessAuth.verify_code(phone, otp) do
-      :ok ->
-        # Remove otp code
-        PasswordlessAuth.remove_code(phone)
-        reset_user_password(conn, user_params)
-
-      {:error, error} ->
-        # Error response options: :attempt_blocked | :code_expired | :does_not_exist | :incorrect_code
-        conn
-        |> put_status(500)
-        |> json(%{
-          error: %{
-            status: 500,
-            message: "Couldn't update user password",
-            errors: [Atom.to_string(error)]
-          }
-        })
-    end
-  end
-
-  @spec reset_user_password(Conn.t(), map()) :: Conn.t()
-  defp reset_user_password(conn, %{"phone" => phone, "password" => password}) do
-    update_params = %{
-      "password" => password,
-      "password_confirmation" => password
-    }
-
-    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{phone: phone})
-
-    user
-    |> Glific.Users.reset_user_password(update_params)
-    |> case do
-      {:ok, _user} ->
-        json(conn, %{
-          data: %{phone: phone, message: "Password is updated for #{phone}"}
-        })
-
-      {:error, _error} ->
+    with {:ok, _data} <- verify_otp(phone, otp),
+         {:ok, response_data} <- reset_user_password(conn, user_params) do
+      json(conn, response_data)
+    else
+      {:error, _errors} ->
         conn
         |> put_status(500)
         |> json(%{error: %{status: 500, message: "Couldn't update user password"}})
+    end
+  end
+
+  @spec reset_user_password(Conn.t(), map()) :: {:ok, map()} | {:error, []}
+  defp reset_user_password(conn, %{"phone" => phone, "password" => password} = user_params) do
+    update_params = %{"password" => password, "password_confirmation" => password}
+
+    {:ok, user} = Repo.fetch_by(User, %{phone: phone})
+
+    user
+    |> Users.reset_user_password(update_params)
+    |> case do
+      {:ok, _user} ->
+        {:ok, conn} = Pow.Plug.authenticate_user(conn, user_params)
+
+        {:ok,
+         %{
+           data: %{
+             access_token: conn.private[:api_access_token],
+             token_expiry_time: conn.private[:api_token_expiry_time],
+             renewal_token: conn.private[:api_renewal_token]
+           }
+         }}
+
+      {:error, _error} ->
+        {:error, []}
     end
   end
 end

@@ -9,7 +9,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   alias Glific.{
     Communications,
-    Flows.Flow,
+    Flows,
     Flows.FlowContext,
     Messages.Message,
     Processor.Helper,
@@ -42,7 +42,6 @@ defmodule Glific.Processor.ConsumerTagger do
         flows: %{}
       }
       |> reload
-      |> reload_flows
 
     # process the wakeup queue every 1 minute
     Process.send_after(self(), :wakeup_timeout, @wakeup_timeout_ms)
@@ -73,16 +72,6 @@ defmodule Glific.Processor.ConsumerTagger do
 
   defp reload(state), do: state
 
-  defp reload_flows(%{flows: flow} = state) when flow == %{} do
-    Map.put(
-      state,
-      :flows,
-      Flow.get_and_cache_flows()
-    )
-  end
-
-  defp reload_flows(state), do: state
-
   @doc false
   def handle_events(messages, _from, state) do
     _ = Enum.map(messages, &process_message(&1, state))
@@ -98,7 +87,7 @@ defmodule Glific.Processor.ConsumerTagger do
     |> numeric_tagger(body, state)
     |> keyword_tagger(body, state)
     # we do this before, so it will not pick up the potential flow
-    # started by new conatct tagger
+    # started by new contact tagger
     |> check_flows(body, state)
     |> new_contact_tagger(state)
     |> Repo.preload(:tags)
@@ -106,28 +95,32 @@ defmodule Glific.Processor.ConsumerTagger do
   end
 
   @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
-  defp check_flows(message, body, state)
+  defp check_flows(message, body, _state)
        when body in [
               "help",
               "language",
               "preference",
-              "new contact",
+              "newcontact",
               "registration",
-              "timed"
+              "timed",
+              "solworkflow"
             ] do
     message = Repo.preload(message, :contact)
-    FlowContext.init_context(Map.get(state.flows, body), message.contact)
+    {:ok, flow} = Flows.get_cached_flow(body, %{shortcode: body})
+    FlowContext.init_context(flow, message.contact)
     message
   end
 
-  defp check_flows(message, _body, state) do
+  defp check_flows(message, _body, _state) do
     context = FlowContext.active_context(message.contact_id)
 
-    if context,
-      do:
-        context
-        |> FlowContext.load_context(state.flows[context.flow_uuid])
-        |> FlowContext.step_forward(message.body)
+    if context do
+      {:ok, flow} = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
+
+      context
+      |> FlowContext.load_context(flow)
+      |> FlowContext.step_forward(message.body)
+    end
 
     # we can potentially save the {contact_id, context} map here in the flow state,
     # to avoid hitting the DB again. We'll do this after we get this working
@@ -155,7 +148,7 @@ defmodule Glific.Processor.ConsumerTagger do
     if Status.is_new_contact(message.sender_id) do
       message
       |> add_status_tag("New Contact", state)
-      |> check_flows("new contact", state)
+      |> check_flows("newcontact", state)
     end
 
     message
@@ -182,10 +175,12 @@ defmodule Glific.Processor.ConsumerTagger do
   # Process one context at a time
   @spec wakeup(FlowContext.t(), map()) ::
           {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
-  defp wakeup(context, state) do
+  defp wakeup(context, _state) do
+    {:ok, flow} = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
+
     {:ok, context} =
       context
-      |> FlowContext.load_context(state.flows[context.flow_uuid])
+      |> FlowContext.load_context(flow)
       |> FlowContext.step_forward("No Response")
 
     # update the context woken up time
