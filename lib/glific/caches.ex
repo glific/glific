@@ -26,7 +26,7 @@ defmodule Glific.Caches do
   @spec set_to_cache(list(), any) :: {:ok, any()}
   defp set_to_cache(keys, value) do
     keys = Enum.reduce(keys, [], fn key, acc -> [{key, value} | acc] end)
-    Cachex.put_many(@cache_bucket, keys)
+    {:ok, true} = Cachex.put_many(@cache_bucket, keys)
     {:ok, value}
   end
 
