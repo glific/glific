@@ -18,11 +18,14 @@ defmodule Glific.Flows.Webhook do
 
   Send a get request, and if success, sned the json map back
   """
-  @spec get(String.t(), map(), String.t() | nil) :: map() | nil
+  @spec get(String.t(), Keyword.t(), String.t() | nil) :: map() | nil
   def get(url, headers, body) do
     case Tesla.get(url, headers: headers, body: body) do
-      {:ok, json} -> json
-      {:error, _} -> nil
+      {:ok, %Tesla.Env{status: 200} = message} ->
+        message.body |> Jason.decode!() |> get_in(["results", Access.at(0)])
+
+      _ ->
+        nil
     end
   end
 end

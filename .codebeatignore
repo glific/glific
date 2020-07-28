@@ -1,4 +1,5 @@
 priv/repo/migrations/20200601193405_create_glific_tables.exs
+priv/repo/seeds/20200723172939_add_glific_data.exs
 lib/glific/seeds/**
 lib/glific_web/schema/message_tag_types.ex
 lib/glific/groups/contact_group.ex
