@@ -126,11 +126,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
     %{"phone" => phone, "otp" => otp} = user_params
 
     with {:ok, _data} <- verify_otp(phone, otp),
-         {:ok, _response_data} <- reset_user_password(user_params) do
-      {:ok, conn} =
-        conn
-        |> Pow.Plug.authenticate_user(user_params)
-
+         {:ok, _response_data} <- reset_user_password(user_params),
+         {:ok, conn} <- Pow.Plug.authenticate_user(conn, user_params) do
       json(conn, %{
         data: %{
           access_token: conn.private[:api_access_token],
