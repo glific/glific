@@ -15,15 +15,18 @@ defmodule GlificWeb.Schema.SearchTypes do
   object :saved_search do
     field :id, :id
     field :label, :string
+    field :shortcode, :string
     field :args, :json
   end
 
-  input_object :saved_search_filters do
+  input_object :saved_search_filter do
     field :label, :string
+    field :shortcode, :string
   end
 
   input_object :saved_search_input do
     field :label, :string
+    field :shortcode, :string
     field :args, :json
   end
 
@@ -41,8 +44,9 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :search, list_of(:conversation) do
       arg(:save_search, :boolean, default_value: false)
 
-      @desc "A label for saved search object"
+      @desc "A label and shortcode for saved search object"
       arg(:save_search_label, :string)
+      arg(:save_search_shortcode, :string)
 
       arg(:term, non_null(:string))
       arg(:filter, :search_filter)
@@ -59,8 +63,30 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "Get a list of all searches"
     field :saved_searches, list_of(:saved_search) do
-      arg(:filter, :saved_search_filters)
+      arg(:filter, :saved_search_filter)
+      arg(:opts, :opts)
       resolve(&Resolvers.Searches.saved_searches/3)
+    end
+
+    field :saved_search_count, :integer do
+      # the id of the saved search
+      arg(:id, non_null(:id))
+
+      # if we want to add a search term
+      arg(:term, :string)
+
+      resolve(&Resolvers.Searches.saved_search_count/3)
+    end
+
+    @desc "Convenience function to run a search for a specific saved search id"
+    field :saved_search_execute, list_of(:conversation) do
+      # the id of the saved search
+      arg(:id, non_null(:id))
+
+      # if we want to add a search term
+      arg(:term, :string)
+
+      resolve(&Resolvers.Searches.saved_search_execute/3)
     end
   end
 

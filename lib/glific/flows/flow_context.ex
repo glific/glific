@@ -132,6 +132,20 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Update the contact results with each element of the json map
+  """
+  @spec update_results(FlowContext.t(), String.t(), map()) :: FlowContext.t()
+  def update_results(context, key, json) do
+    Enum.reduce(
+      json,
+      context,
+      fn {k, v}, context ->
+        update_results(context, key <> "_" <> k, v, key)
+      end
+    )
+  end
+
+  @doc """
   Set the new node for the context
   """
   @spec set_node(FlowContext.t(), Node.t()) :: FlowContext.t()
@@ -149,7 +163,11 @@ defmodule Glific.Flows.FlowContext do
     do: {:error, "We have finished the flow"}
 
   def execute(context, messages) do
-    Node.execute(context.node, context, messages)
+    case Node.execute(context.node, context, messages) do
+      {:ok, context, []} -> {:ok, context, []}
+      {:ok, context, messages} -> Node.execute(context.node, context, messages)
+      others -> others
+    end
   end
 
   @doc """
@@ -251,12 +269,10 @@ defmodule Glific.Flows.FlowContext do
   Retrieve the value from a results string
   """
   @spec get_result_value(FlowContext.t(), String.t()) :: String.t() | nil
-  def get_result_value(context, value) do
-    if String.starts_with?(value, "@results.") do
-      parts = String.slice(value, 8..-1) |> String.split(".", trim: true)
-      get_in(context.results, parts)
-    else
-      nil
-    end
+  def get_result_value(context, value) when binary_part(value, 0, 9) == "@results." do
+    parts = String.slice(value, 8..-1) |> String.split(".", trim: true)
+    get_in(context.results, parts)
   end
+
+  def get_result_value(_context, value), do: value
 end

@@ -10,8 +10,7 @@ use Mix.Config
 config :glific,
   ecto_repos: [Glific.Repo],
   provider: Glific.Providers.Gupshup.Message,
-  # provider_worker: Glific.Providers.Gupshup.Worker,
-  provider_worker: Glific.Providers.Glifproxy.Worker,
+  provider_worker: Glific.Providers.Gupshup.Worker,
   provider_id: "gupshup-provider-23",
   provider_limit: 10
 
@@ -73,6 +72,10 @@ config :sentry,
     env: "dev"
   },
   included_environments: [:prod]
+
+# phil columns to seed production data
+config :phil_columns,
+  ensure_all_started: ~w(timex)a
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

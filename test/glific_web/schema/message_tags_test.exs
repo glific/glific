@@ -2,12 +2,17 @@ defmodule GlificWeb.Schema.MessageTagsTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.Tags
+  alias Glific.{
+    Messages.Message,
+    Repo,
+    Seeds.SeedsDev,
+    Tags
+  }
 
   setup do
-    Glific.SeedsDev.seed_tag()
-    Glific.SeedsDev.seed_contacts()
-    Glific.SeedsDev.seed_messages()
+    SeedsDev.seed_tag()
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_messages()
     :ok
   end
 
@@ -16,7 +21,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
   test "update a message tag with add tags" do
     tags_map = Tags.status_map()
     body = "Default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body})
 
     result =
       query_gql_by(:update,
@@ -68,7 +73,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
   test "update a message tag with add and delete tags" do
     tags_map = Tags.status_map()
     body = "Default message body"
-    {:ok, message} = Glific.Repo.fetch_by(Glific.Messages.Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body})
 
     # add some tags, test bad deletion value
     result =

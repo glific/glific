@@ -4,9 +4,7 @@ defmodule GlificWeb.Schema.FlowTypes do
   """
 
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
-  alias Glific.Repo
   alias GlificWeb.Resolvers
 
   object :flow_result do
@@ -21,16 +19,17 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :shortcode, :string
     field :version_number, :string
     field :flow_type, :flow_type_enum
-
-    field :language, :language do
-      resolve(dataloader(Repo))
-    end
   end
 
   input_object :flow_input do
     field :name, :string
     field :shortcode, :string
-    field :language_id, :id
+  end
+
+  @desc "Filtering options for flows"
+  input_object :flow_filter do
+    @desc "Match the name"
+    field :name, :string
   end
 
   object :flow_queries do
@@ -42,7 +41,15 @@ defmodule GlificWeb.Schema.FlowTypes do
 
     @desc "Get a list of all flows"
     field :flows, list_of(:flow) do
+      arg(:filter, :flow_filter)
+      arg(:opts, :opts)
       resolve(&Resolvers.Flows.flows/3)
+    end
+
+    @desc "Get a count of all flows filtered by various criteria"
+    field :count_flows, :integer do
+      arg(:filter, :flow_filter)
+      resolve(&Resolvers.Flows.count_flows/3)
     end
   end
 

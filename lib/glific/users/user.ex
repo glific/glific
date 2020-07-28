@@ -3,6 +3,8 @@ defmodule Glific.Users.User do
   use Ecto.Schema
   use Pow.Ecto.Schema, user_id_field: :phone
 
+  alias Glific.{Groups.Group}
+
   alias Ecto.Changeset
   import Pow.Ecto.Schema.Changeset, only: [password_changeset: 3, current_password_changeset: 3]
 
@@ -23,6 +25,8 @@ defmodule Glific.Users.User do
     field :roles, {:array, :string}, default: ["none"]
 
     pow_user_fields()
+
+    many_to_many :groups, Group, join_through: "users_groups", on_replace: :delete
 
     timestamps()
   end
@@ -64,6 +68,18 @@ defmodule Glific.Users.User do
     |> Changeset.cast(params, [:name, :roles])
     |> Changeset.validate_required([:name, :roles])
     |> Changeset.validate_subset(:roles, @user_roles)
+  end
+
+  @doc """
+  Simple changeset for reset password
+  """
+  @spec reset_password_changeset(Ecto.Schema.t() | Changeset.t(), map()) ::
+          Changeset.t()
+  def reset_password_changeset(user_or_changeset, attrs) do
+    user_or_changeset
+    |> Changeset.cast(attrs, [:password])
+    |> Changeset.validate_required([:password])
+    |> password_changeset(attrs, @pow_config)
   end
 
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),

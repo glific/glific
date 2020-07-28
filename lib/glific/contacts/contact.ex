@@ -2,14 +2,16 @@ defmodule Glific.Contacts.Contact do
   @moduledoc """
   The minimal wrapper for the base Contact structure
   """
-  alias Glific.Contacts.Contact
-
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.Enums.ContactStatus
-  alias Glific.Settings.Language
-  alias Glific.Tags.Tag
+  alias Glific.{
+    Contacts.Contact,
+    Enums.ContactStatus,
+    Groups.Group,
+    Settings.Language,
+    Tags.Tag
+  }
 
   @required_fields [
     :phone,
@@ -61,6 +63,8 @@ defmodule Glific.Contacts.Contact do
     field :fields, :map, default: %{}
 
     many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
+
+    many_to_many :groups, Group, join_through: "contacts_groups", on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end

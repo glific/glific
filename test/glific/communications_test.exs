@@ -3,27 +3,34 @@ defmodule Glific.CommunicationsTest do
   use Oban.Testing, repo: Glific.Repo
 
   alias Faker.Phone
-  alias Glific.Messages
+
+  alias Glific.{
+    Communications,
+    Contacts,
+    Fixtures,
+    Messages,
+    Providers.Gupshup,
+    Providers.Gupshup.Worker,
+    Repo,
+    Seeds.SeedsDev,
+    Tags,
+    Tags.Tag
+  }
 
   setup do
-    default_provider = Glific.SeedsDev.seed_providers()
-    Glific.SeedsDev.seed_organizations(default_provider)
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
     :ok
   end
 
   describe "communications" do
-    alias Glific.Communications
-
     test "fetch provider from config" do
-      Application.put_env(:glific, :provider, Glific.Providers.Gupshup.Message)
-      assert Glific.Providers.Gupshup.Message == Communications.provider()
+      Application.put_env(:glific, :provider, Gupshup.Message)
+      assert Gupshup.Message == Communications.provider()
     end
   end
 
   describe "gupshup_messages" do
-    alias Glific.Communications.Message, as: Communications
-    alias Glific.Providers.Gupshup.Worker, as: Worker
-
     setup do
       Tesla.Mock.mock(fn
         %{method: :post} ->
@@ -69,8 +76,8 @@ defmodule Glific.CommunicationsTest do
     }
 
     defp foreign_key_constraint do
-      {:ok, sender} = Glific.Contacts.create_contact(@sender_attrs)
-      {:ok, receiver} = Glific.Contacts.create_contact(@receiver_attrs)
+      {:ok, sender} = Contacts.create_contact(@sender_attrs)
+      {:ok, receiver} = Contacts.create_contact(@receiver_attrs)
       %{sender_id: sender.id, receiver_id: receiver.id}
     end
 
@@ -83,7 +90,7 @@ defmodule Glific.CommunicationsTest do
         |> Messages.create_message()
 
       message
-      |> Glific.Repo.preload([:receiver, :sender, :media])
+      |> Repo.preload([:receiver, :sender, :media])
     end
 
     defp message_media_fixture(attrs \\ %{}) do
@@ -97,7 +104,7 @@ defmodule Glific.CommunicationsTest do
 
     test "send message should update the provider message id" do
       message = message_fixture()
-      Communications.send_message(message)
+      Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
       Oban.drain_queue(:gupshup)
       message = Messages.get_message!(message.id)
@@ -108,10 +115,10 @@ defmodule Glific.CommunicationsTest do
     end
 
     test "send message will remove the Not Replied tag from messages" do
-      message_1 = Glific.Fixtures.message_fixture(%{flow: :inbound})
+      message_1 = Fixtures.message_fixture(%{flow: :inbound})
 
       message_2 =
-        Glific.Fixtures.message_fixture(%{
+        Fixtures.message_fixture(%{
           flow: :outbound,
           sender_id: message_1.sender_id,
           receiver_id: message_1.contact_id
@@ -119,23 +126,22 @@ defmodule Glific.CommunicationsTest do
 
       assert message_2.contact_id == message_1.contact_id
 
-      {:ok, tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Not Replied"})
-      {:ok, unread_tag} = Glific.Repo.fetch_by(Glific.Tags.Tag, %{label: "Unread"})
+      {:ok, tag} = Repo.fetch_by(Tag, %{label: "Not Replied"})
+      {:ok, unread_tag} = Repo.fetch_by(Tag, %{label: "Unread"})
 
-      message1_tag =
-        Glific.Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
+      message1_tag = Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
 
       message_unread_tag =
-        Glific.Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: unread_tag.id})
+        Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: unread_tag.id})
 
-      Communications.send_message(message_2)
+      Communications.Message.send_message(message_2)
       assert_enqueued(worker: Worker)
       Oban.drain_queue(:gupshup)
 
-      assert_raise Ecto.NoResultsError, fn -> Glific.Tags.get_message_tag!(message1_tag.id) end
+      assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message1_tag.id) end
 
       assert_raise Ecto.NoResultsError, fn ->
-        Glific.Tags.get_message_tag!(message_unread_tag.id)
+        Tags.get_message_tag!(message_unread_tag.id)
       end
     end
 
@@ -149,7 +155,7 @@ defmodule Glific.CommunicationsTest do
       end)
 
       message = message_fixture()
-      Communications.send_message(message)
+      Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
       Oban.drain_queue(:gupshup)
       message = Messages.get_message!(message.id)
@@ -164,7 +170,7 @@ defmodule Glific.CommunicationsTest do
 
       # image message
       message = message_fixture(%{type: :image, media_id: message_media.id})
-      Communications.send_message(message)
+      Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
       Oban.drain_queue(:gupshup)
       message = Messages.get_message!(message.id)
@@ -177,8 +183,8 @@ defmodule Glific.CommunicationsTest do
       {:ok, message} =
         Messages.update_message(message, %{type: :audio, media_id: message_media.id})
 
-      message = Glific.Repo.preload(message, [:receiver, :sender, :media])
-      Communications.send_message(message)
+      message = Repo.preload(message, [:receiver, :sender, :media])
+      Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
       Oban.drain_queue(:gupshup)
       message = Messages.get_message!(message.id)
@@ -190,8 +196,8 @@ defmodule Glific.CommunicationsTest do
       {:ok, message} =
         Messages.update_message(message, %{type: :video, media_id: message_media.id})
 
-      message = Glific.Repo.preload(message, [:receiver, :sender, :media])
-      Communications.send_message(message)
+      message = Repo.preload(message, [:receiver, :sender, :media])
+      Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
       Oban.drain_queue(:gupshup)
       message = Messages.get_message!(message.id)
@@ -203,8 +209,8 @@ defmodule Glific.CommunicationsTest do
       {:ok, message} =
         Messages.update_message(message, %{type: :document, media_id: message_media.id})
 
-      message = Glific.Repo.preload(message, [:receiver, :sender, :media])
-      Communications.send_message(message)
+      message = Repo.preload(message, [:receiver, :sender, :media])
+      Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
       Oban.drain_queue(:gupshup)
       message = Messages.get_message!(message.id)
@@ -217,10 +223,10 @@ defmodule Glific.CommunicationsTest do
       {:ok, receiver} =
         @receiver_attrs
         |> Map.merge(%{status: :invalid, phone: Phone.EnUs.phone()})
-        |> Glific.Contacts.create_contact()
+        |> Contacts.create_contact()
 
       message = message_fixture(%{receiver_id: receiver.id})
-      assert {:error, _msg} = Communications.send_message(message)
+      assert {:error, _msg} = Communications.Message.send_message(message)
 
       message = Messages.get_message!(message.id)
       assert message.status == :contact_opt_out
@@ -231,10 +237,10 @@ defmodule Glific.CommunicationsTest do
       {:ok, receiver} =
         @receiver_attrs
         |> Map.merge(%{provider_status: :invalid, phone: Phone.EnUs.phone()})
-        |> Glific.Contacts.create_contact()
+        |> Contacts.create_contact()
 
       message = message_fixture(%{receiver_id: receiver.id})
-      assert {:error, _msg} = Communications.send_message(message)
+      assert {:error, _msg} = Communications.Message.send_message(message)
     end
 
     test "sending message if last received message is more then 24 hours returns error" do
@@ -244,10 +250,10 @@ defmodule Glific.CommunicationsTest do
           phone: Phone.EnUs.phone(),
           last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
         })
-        |> Glific.Contacts.create_contact()
+        |> Contacts.create_contact()
 
       message = message_fixture(%{receiver_id: receiver.id})
-      assert {:error, _msg} = Communications.send_message(message)
+      assert {:error, _msg} = Communications.Message.send_message(message)
     end
 
     test "update_provider_status/2 will update the message status based on provider message ID" do
@@ -257,15 +263,19 @@ defmodule Glific.CommunicationsTest do
           provider_status: :enqueued
         })
 
-      Communications.update_provider_status(message.provider_message_id, :read)
+      Communications.Message.update_provider_status(message.provider_message_id, :read)
       message = Messages.get_message!(message.id)
       assert message.provider_status == :read
     end
 
     test "send message at a specific time should not send it immediately" do
-      message = message_fixture()
       scheduled_time = Timex.shift(DateTime.utc_now(), hours: 2)
-      Communications.send_message(message, scheduled_time)
+
+      message =
+        %{send_at: scheduled_time}
+        |> message_fixture()
+
+      Communications.Message.send_message(message)
 
       assert_enqueued(worker: Worker)
       Oban.drain_queue(:gupshup)

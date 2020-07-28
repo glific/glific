@@ -1,4 +1,4 @@
-defmodule Glific.SeedsDev do
+defmodule Glific.Seeds.SeedsDev do
   @moduledoc """
   Script for populating the database. We can call this from tests and/or /priv/repo
   """
@@ -226,6 +226,7 @@ defmodule Glific.SeedsDev do
     session_template_parent =
       Repo.insert!(%SessionTemplate{
         label: "Default Template Label",
+        shortcode: "default template",
         body: "Default Template",
         type: :text,
         language_id: en_us.id,
@@ -234,6 +235,7 @@ defmodule Glific.SeedsDev do
 
     Repo.insert!(%SessionTemplate{
       label: "Another Template Label",
+      shortcode: "another template",
       body: "Another Template",
       type: :text,
       language_id: en_us.id,
@@ -283,14 +285,17 @@ defmodule Glific.SeedsDev do
   @doc false
   @spec seed_flows :: nil
   def seed_flows do
-    [en_us | _] = Settings.list_languages(%{label: "english"})
+    test_flow =
+      Repo.insert!(%Flow{
+        name: "Test Workflow",
+        shortcode: "test",
+        version_number: "13.1.0",
+        uuid: "defda715-c520-499d-851e-4428be87def6"
+      })
 
-    Repo.insert!(%Flow{
-      name: "Test Workflow",
-      shortcode: "test",
-      version_number: "13.1.0",
-      uuid: "defda715-c520-499d-851e-4428be87def6",
-      language_id: en_us.id
+    Repo.insert!(%FlowRevision{
+      definition: FlowRevision.default_definition(test_flow),
+      flow_id: test_flow.id
     })
 
     timed_flow =
@@ -298,8 +303,7 @@ defmodule Glific.SeedsDev do
         name: "Timed Workflow",
         shortcode: "timed",
         version_number: "13.1.0",
-        uuid: "8390ded3-06c3-4df4-b428-064666f085c7",
-        language_id: en_us.id
+        uuid: "8390ded3-06c3-4df4-b428-064666f085c7"
       })
 
     timed_flow_definition =
@@ -316,6 +320,98 @@ defmodule Glific.SeedsDev do
       definition: timed_flow_definition,
       flow_id: timed_flow.id
     })
+
+    sol_activity =
+      Repo.insert!(%Flow{
+        name: "SoL Activity",
+        shortcode: "solactivity",
+        version_number: "13.1.0",
+        uuid: "b050c652-65b5-4ccf-b62b-1e8b3f328676"
+      })
+
+    sol_activity_definition =
+      File.read!("assets/flows/sol_activity.json")
+      |> Jason.decode!()
+
+    sol_activity_definition =
+      Map.merge(sol_activity_definition, %{
+        "name" => sol_activity.name,
+        "uuid" => sol_activity.uuid
+      })
+
+    Repo.insert!(%FlowRevision{
+      definition: sol_activity_definition,
+      flow_id: sol_activity.id
+    })
+
+    sol_feedback =
+      Repo.insert!(%Flow{
+        name: "SoL Feedback",
+        shortcode: "solfeedback",
+        version_number: "13.1.0",
+        uuid: "6c21af89-d7de-49ac-9848-c9febbf737a5"
+      })
+
+    sol_feedback_definition =
+      File.read!("assets/flows/sol_feedback.json")
+      |> Jason.decode!()
+
+    sol_feedback_definition =
+      Map.merge(sol_feedback_definition, %{
+        "name" => sol_feedback.name,
+        "uuid" => sol_feedback.uuid
+      })
+
+    Repo.insert!(%FlowRevision{
+      definition: sol_feedback_definition,
+      flow_id: sol_feedback.id
+    })
+
+    # sol_registration =
+    #   Repo.insert!(%Flow{
+    #     name: "SoL Registration",
+    #     shortcode: "solregistration",
+    #     version_number: "13.1.0",
+    #     uuid: "f4f38e00-3a50-4892-99ce-a281fe24d040"
+    #   })
+
+    # sol_registration_definition =
+    #   File.read!("assets/flows/sol_registration.json")
+    #   |> Jason.decode!()
+
+    # sol_registration_definition =
+    #   Map.merge(sol_registration_definition, %{
+    #     "name" => sol_registration.name,
+    #     "uuid" => sol_registration.uuid
+    #   })
+
+    # Repo.insert!(%FlowRevision{
+    #   definition: sol_registration_definition,
+    #   flow_id: sol_registration.id
+    # })
+
+    # sol_workflow =
+    #   Repo.insert!(%Flow{
+    #     name: "SoL Workflow",
+    #     shortcode: "solworkflow",
+    #     version_number: "13.1.0",
+    #     uuid: "6fe8fda9-2df6-4694-9fd6-45b9e724f545"
+    #   })
+
+    # sol_workflow_definition =
+    #   File.read!("assets/flows/sol_workflow.json")
+    #   |> Jason.decode!()
+
+    # sol_workflow_definition =
+    #   Map.merge(sol_workflow_definition, %{
+    #     "name" => sol_workflow.name,
+    #     "uuid" => sol_workflow.uuid
+    #   })
+
+    # Repo.insert!(%FlowRevision{
+    #   definition: sol_workflow_definition,
+    #   flow_id: sol_workflow.id
+    # })
   end
 
   @doc """

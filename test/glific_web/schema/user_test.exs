@@ -2,8 +2,19 @@ defmodule GlificWeb.Schema.UserTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Contacts.Contact,
+    Repo,
+    Seeds.SeedsDev,
+    Users,
+    Users.User
+  }
+
   setup do
-    Glific.SeedsDev.seed_users()
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_users()
     :ok
   end
 
@@ -24,6 +35,9 @@ defmodule GlificWeb.Schema.UserTest do
       users |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Basic User 1" end)
 
     assert res == "NGO Basic User 1"
+
+    [user | _] = users
+    assert user["groups"] == []
   end
 
   test "users returns list of users in asc order" do
@@ -72,7 +86,7 @@ defmodule GlificWeb.Schema.UserTest do
 
   test "user by id returns one user or nil" do
     name = "NGO Basic User 1"
-    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: name})
+    {:ok, user} = Repo.fetch_by(User, %{name: name})
 
     result = query_gql_by(:by_id, variables: %{"id" => user.id})
     assert {:ok, query_data} = result
@@ -88,7 +102,7 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "update a user and test possible scenarios and errors" do
-    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: "NGO Basic User 1"})
+    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
 
     name = "User Test Name New"
     roles = ["basic", "admin"]
@@ -118,8 +132,55 @@ defmodule GlificWeb.Schema.UserTest do
     assert message == "has an invalid entry"
   end
 
+  test "update a user password for different scenarios" do
+    # create a user for a contact
+    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+
+    valid_user_attrs = %{
+      "phone" => receiver.phone,
+      "name" => receiver.name,
+      "password" => "password",
+      "password_confirmation" => "password"
+    }
+
+    {:ok, user} =
+      valid_user_attrs
+      |> Users.create_user()
+
+    name = "User Test Name New"
+
+    {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(user.phone)
+
+    result =
+      query_gql_by(:update,
+        variables: %{
+          "id" => user.id,
+          "input" => %{"name" => name, "otp" => otp, "password" => "new_password"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    user_result = get_in(query_data, [:data, "updateUser", "user"])
+    assert user_result["name"] == name
+
+    # update with incorrect otp should give error
+    result =
+      query_gql_by(:update,
+        variables: %{
+          "id" => user.id,
+          "input" => %{"name" => name, "otp" => "incorrect_otp", "password" => "new_password"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:errors, Access.at(0), :message])
+    assert is_nil(message) == false
+  end
+
   test "delete a user" do
-    {:ok, user} = Glific.Repo.fetch_by(Glific.Users.User, %{name: "NGO Basic User 1"})
+    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
 
     result = query_gql_by(:delete, variables: %{"id" => user.id})
     assert {:ok, query_data} = result

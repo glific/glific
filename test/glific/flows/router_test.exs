@@ -83,9 +83,7 @@ defmodule Glific.Flows.RouterTest do
   test "router execution when no messages are sent" do
     result = Router.execute(nil, nil, [])
 
-    assert elem(result, 0) == :ok
-    assert elem(result, 1) == nil
-    assert elem(result, 2) == []
+    assert result == {:ok, nil, []}
   end
 
   test "router execution with type not equal to switch" do
@@ -145,9 +143,7 @@ defmodule Glific.Flows.RouterTest do
     result = Router.execute(router, context, ["23"])
 
     # we send it to a null node. lets ensure we get the right values
-    assert elem(result, 0) == :ok
-    assert elem(result, 1) == nil
-    assert elem(result, 2) == []
+    assert result == {:ok, nil, []}
 
     # need to recreate the context, since we blew it away when the previous
     # flow finished
@@ -161,9 +157,7 @@ defmodule Glific.Flows.RouterTest do
 
     # lets ensure the default category route also works
     result = Router.execute(router, context, ["123"])
-    assert elem(result, 0) == :ok
-    assert elem(result, 1) == nil
-    assert elem(result, 2) == []
+    assert result == {:ok, nil, []}
   end
 
   test "router with switch and two cases, category" do
@@ -223,9 +217,7 @@ defmodule Glific.Flows.RouterTest do
     result = Router.execute(router, context, ["alpha"])
 
     # we send it to a null node. lets ensure we get the right values
-    assert elem(result, 0) == :ok
-    assert elem(result, 1) == nil
-    assert elem(result, 2) == []
+    assert result == {:ok, nil, []}
 
     # need to recreate the context, since we blew it away when the previous
     # flow finished
@@ -239,8 +231,6 @@ defmodule Glific.Flows.RouterTest do
 
     # lets ensure the default category route also works
     result = Router.execute(router, context, ["123"])
-    assert elem(result, 0) == :ok
-    assert elem(result, 1) == nil
-    assert elem(result, 2) == []
+    assert result == {:ok, nil, []}
   end
 end

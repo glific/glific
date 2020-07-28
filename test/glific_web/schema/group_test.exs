@@ -2,8 +2,10 @@ defmodule GlificWeb.Schema.GroupTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
+  alias Glific.Seeds.SeedsDev
+
   setup do
-    Glific.SeedsDev.seed_groups()
+    SeedsDev.seed_groups()
     :ok
   end
 

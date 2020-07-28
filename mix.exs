@@ -1,8 +1,8 @@
 defmodule Glific.MixProject do
   use Mix.Project
 
-  @github_url "https://github.com/glific/"
-  @home_url "https://github.com/glific/"
+  @github_url "https://github.com/glific/glific/"
+  @home_url "https://glific.io"
 
   def project do
     [
@@ -109,10 +109,11 @@ defmodule Glific.MixProject do
       {:sobelow, "~> 0.8", only: [:dev, :test]},
       {:wormwood, "~> 0.1"},
       {:gen_stage, "~> 1.0"},
-      {:passwordless_auth, git: "https://github.com/glific/passwordless_auth.git"},
       {:timex, "~> 3.0"},
       {:slugify, "~> 1.3"},
-      {:cachex, "~> 3.2"}
+      {:cachex, "~> 3.2"},
+      {:passwordless_auth, git: "https://github.com/glific/passwordless_auth.git"},
+      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"}
     ]
   end
 
@@ -127,9 +128,9 @@ defmodule Glific.MixProject do
       setup: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       reset: ["deps.get", "clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": [
-        "ecto.create",
+        "ecto.create --quiet",
         "ecto.migrate",
-        "run priv/repo/seeds_prod.exs",
+        "phil_columns.seed",
         "run priv/repo/seeds_dev.exs"
       ],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
@@ -138,7 +139,7 @@ defmodule Glific.MixProject do
         "ecto.drop",
         "ecto.create --quiet",
         "ecto.migrate",
-        "run priv/repo/seeds_prod.exs",
+        "phil_columns.seed",
         "test"
       ]
     ]

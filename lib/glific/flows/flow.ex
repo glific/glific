@@ -11,17 +11,17 @@ defmodule Glific.Flows.Flow do
 
   alias Glific.{
     Contacts.Contact,
+    Flows,
     Flows.FlowContext,
     Flows.FlowRevision,
     Flows.Localization,
     Flows.Node,
-    Repo,
-    Settings.Language
+    Repo
   }
 
   alias Glific.Enums.FlowType
 
-  @required_fields [:name, :language_id, :uuid, :shortcode]
+  @required_fields [:name, :uuid, :shortcode]
   @optional_fields [:flow_type, :version_number, :uuid_map, :nodes]
 
   @type t :: %__MODULE__{
@@ -36,8 +36,6 @@ defmodule Glific.Flows.Flow do
           localization: Localization.t() | nil,
           nodes: [Node.t()] | nil,
           version_number: String.t() | nil,
-          language_id: non_neg_integer | nil,
-          language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           revisions: [FlowRevision.t()] | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -58,8 +56,6 @@ defmodule Glific.Flows.Flow do
     # we use this to store the latest definition for this flow
     field :definition, :map, virtual: true
 
-    belongs_to :language, Language
-
     has_many :revisions, FlowRevision
 
     timestamps(type: :utc_datetime)
@@ -73,7 +69,6 @@ defmodule Glific.Flows.Flow do
     flow
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> foreign_key_constraint(:language_id)
   end
 
   @doc """
@@ -168,33 +163,31 @@ defmodule Glific.Flows.Flow do
   """
   @spec get_flow(Ecto.UUID.t()) :: map()
   def get_flow(uuid) do
-    {:ok, flow} = Cachex.get(:flows_cache, uuid)
+    {:ok, flow} = Flows.get_cached_flow(uuid, %{uuid: uuid})
 
-    if is_nil(flow) do
-      flows = get_and_cache_flows(%{uuid: uuid})
-      Map.get(flows, uuid)
-    else
-      flow
-    end
+    flow
   end
 
   @doc """
-  Helper function for various genstage processes to set state
-  by loading all active flows from the database and loading flows on demand
+    Helper function to load a active flow from
+    the database and build an object
   """
-  @spec get_and_cache_flows(map()) :: map()
-  def get_and_cache_flows(args \\ %{}) do
+  @spec get_loaded_flow(map()) :: map()
+  def get_loaded_flow(args) do
     query =
       from f in Flow,
         join: fr in assoc(f, :revisions),
         where: fr.flow_id == f.id and fr.revision_number == 0,
         select: %Flow{id: f.id, uuid: f.uuid, shortcode: f.shortcode, definition: fr.definition}
 
-    query
-    |> args_clause(args)
-    |> Repo.all()
-    |> Enum.reduce(%{}, fn f, acc -> one_flow(f, acc) end)
-    |> cachex_flows()
+    flow =
+      query
+      |> args_clause(args)
+      |> Repo.one()
+
+    flow.definition
+    |> clean_definition()
+    |> process(flow)
   end
 
   # add the appropriate where clause as needed
@@ -209,21 +202,6 @@ defmodule Glific.Flows.Flow do
     do: query |> where([f, _fr], f.shortcode == ^shortcode)
 
   defp args_clause(query, _args), do: query
-
-  # process one specific flow, given flow and flow_revision data
-  @spec one_flow(Flow.t(), map()) :: map()
-  defp one_flow(f, acc) do
-    # first get and clean the flow definition
-    flow =
-      f.definition
-      |> clean_definition()
-      |> process(f)
-
-    # add to map the flow with different keys
-    acc
-    |> Map.put(f.uuid, flow)
-    |> Map.put(f.shortcode, flow)
-  end
 
   @doc """
   Store all the flows in cachex :flows_cache. At some point, we will just use this dynamically
