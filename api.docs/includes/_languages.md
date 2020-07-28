@@ -3,13 +3,21 @@
 ## Get All Languages
 
 ```graphql
-query languages {
-  languages{
+query languages($opts: Opts) {
+  languages(opts: $opts){
     id
     label
     labelLocale
     locale
     isActive
+  }
+}
+
+{
+  "opts": {
+    "order": "DESC",
+    "limit": 10,
+    "offset": 0
   }
 }
 ```

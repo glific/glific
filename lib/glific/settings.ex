@@ -26,6 +26,11 @@ defmodule Glific.Settings do
 
       {:locale, locale}, query ->
         from q in query, where: ilike(q.locale, ^"%#{locale}%")
+
+      {:opts, opts}, query ->
+        query
+        |> Repo.limit_offset(opts)
+        |> Repo.opts_with_label(opts)
     end)
     |> Repo.all()
   end

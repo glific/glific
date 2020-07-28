@@ -37,6 +37,7 @@ defmodule GlificWeb.Schema.LanguageTypes do
 
     @desc "Get a list of all languages filtered by various criteria"
     field :languages, list_of(:language) do
+      arg(:opts, :opts)
       resolve(&Resolvers.Settings.languages/3)
     end
 

@@ -39,6 +39,25 @@ defmodule Glific.SettingsTest do
       assert Settings.list_languages(%{label: "English", locale: "hi"}) == []
     end
 
+    test "list_languages/1 with multiple items with various opts" do
+      language_count = Repo.aggregate(Language, :count)
+
+      _language1 = language_fixture()
+      language2 = language_fixture(%{label: "AAA label"})
+      languages = Settings.list_languages(%{opts: %{order: :asc}})
+
+      assert length(languages) == language_count + 2
+
+      [h | _] = Enum.filter(languages, fn t -> t.label == "AAA label" end)
+      assert h == language2
+
+      languages = Settings.list_languages(%{opts: %{limit: 1}})
+      assert length(languages) == 1
+
+      languages = Settings.list_languages(%{opts: %{offset: 2}})
+      assert length(languages) == language_count
+    end
+
     test "count_languages/0 returns count of all languages" do
       language_count = Repo.aggregate(Language, :count)
       _ = language_fixture()

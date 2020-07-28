@@ -18,18 +18,14 @@ defmodule Glific.Users do
   """
   @spec list_users(map()) :: [User.t()]
   def list_users(args \\ %{}),
-    do: Repo.list_filter(args, User, &Repo.opts_with_name/2, &filter_with/2)
-
-  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_with(query, filter),
-    do: Repo.filter_with(query, filter)
+    do: Repo.list_filter(args, User, &Repo.opts_with_name/2, &Repo.filter_with/2)
 
   @doc """
   Return the count of users, using the same filter as list_users
   """
   @spec count_users(map()) :: integer
   def count_users(args \\ %{}),
-    do: Repo.count_filter(args, User, &filter_with/2)
+    do: Repo.count_filter(args, User, &Repo.filter_with/2)
 
   @doc """
   Gets a single user.
