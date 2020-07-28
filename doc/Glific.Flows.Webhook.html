@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.22.2">
     <meta name="project" content="Glific v0.2.0">
-    <title>Glific.SeedsDev — Glific v0.2.0</title>
+    <title>Glific.Flows.Webhook — Glific v0.2.0</title>
     <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-795bbf7816.js"></script>
+    <script src="dist/sidebar_items-2daba0f8d1.js"></script>
       <script src="docs_config.js"></script>
     <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
@@ -40,7 +40,7 @@
 
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
-      <a href="https://github.com/glific/" class="sidebar-projectName">
+      <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
       <h2 class="sidebar-projectVersion">
         v0.2.0
@@ -64,7 +64,7 @@ Glific      </a>
 
       <h1>
         <small class="app-vsn">Glific v0.2.0</small>
-Glific.SeedsDev          <a href="https://github.com/glific/blob/master/lib/glific/support/seeds_dev.ex#L1" title="View Source" class="view-source" rel="help">
+Glific.Flows.Webhook          <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/webhook.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -72,7 +72,8 @@ Glific.SeedsDev          <a href="https://github.com/glific/blob/master/lib/glif
 
 
         <section id="moduledoc">
-<p>Script for populating the database. We can call this from tests and/or /priv/repo</p>        </section>
+<p>Lets wrap all webhook functionality here as we try and get
+a better handle on the breadth and depth of webhooks</p>        </section>
 
         <section id="summary" class="details-list">
           <h1 class="section-heading">
@@ -88,17 +89,12 @@ Glific.SeedsDev          <a href="https://github.com/glific/blob/master/lib/glif
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#seed/0">seed()</a>
+    <a href="#get/3">get(url, headers, body)</a>
   </div>
-    <div class="summary-synopsis"><p>Function to populate some basic data that we need for the system to operate. We will
-split this function up into multiple different ones for test, dev and production</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#seed_tag/0">seed_tag()</a>
-  </div>
-    <div class="summary-synopsis"><p>Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
-In the next phase we will also add unseeder functions as we learn more of the test capabilities</p></div>
+    <div class="summary-synopsis"><p>Build a tesla dynamic client based on arguments in the flow
+@spec client(String.t()) :: Tesla.Client.t()
+def client(url) do
+  middleware = [</p></div>
 </div>
   </div>
         </section>
@@ -111,14 +107,14 @@ In the next phase we will also add unseeder functions as we learn more of the te
             </a>
 Functions          </h1>
           <div class="functions-list">
-<section class="detail" id="seed/0">
+<section class="detail" id="get/3">
   <div class="detail-header">
-    <a href="#seed/0" class="detail-link" title="Link to this function">
+    <a href="#get/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">seed()</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/support/seeds_dev.ex#L326" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">get(url, headers, body)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/webhook.ex#L22" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -127,33 +123,15 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>seed() :: nil</pre>
+          <pre>get(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>() | nil</pre>
       </div>
 
-<p>Function to populate some basic data that we need for the system to operate. We will
-split this function up into multiple different ones for test, dev and production</p>  </section>
-</section>
-<section class="detail" id="seed_tag/0">
-  <div class="detail-header">
-    <a href="#seed_tag/0" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">seed_tag()</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/support/seeds_dev.ex#L25" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-  </div>
-
-  <section class="docstring">
-      <h2>Specs</h2>
-      <div class="specs">
-          <pre>seed_tag() :: nil</pre>
-      </div>
-
-<p>Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
-In the next phase we will also add unseeder functions as we learn more of the test capabilities</p>  </section>
+<p>Build a tesla dynamic client based on arguments in the flow
+@spec client(String.t()) :: Tesla.Client.t()
+def client(url) do
+  middleware = [</p><pre><code class="nohighlight makeup elixir"><span class="p" data-group-id="3969005326-1">{</span><span class="nc">Tesla.Middleware.BaseUrl</span><span class="p">,</span><span class="w"> </span><span class="n">url</span><span class="p" data-group-id="3969005326-1">}</span><span class="p">,</span><span class="w">
+</span><span class="nc">Tesla.Middleware.JSON</span></code></pre><p>  ]</p><p>  Tesla.client(middleware)
+end</p><p>Send a get request, and if success, sned the json map back</p>  </section>
 </section>
           </div>
         </section>

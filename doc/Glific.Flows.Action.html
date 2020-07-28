@@ -8,7 +8,7 @@
     <meta name="project" content="Glific v0.2.0">
     <title>Glific.Flows.Action — Glific v0.2.0</title>
     <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-795bbf7816.js"></script>
+    <script src="dist/sidebar_items-2daba0f8d1.js"></script>
       <script src="docs_config.js"></script>
     <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
@@ -40,7 +40,7 @@
 
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
-      <a href="https://github.com/glific/" class="sidebar-projectName">
+      <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
       <h2 class="sidebar-projectVersion">
         v0.2.0
@@ -64,7 +64,7 @@ Glific      </a>
 
       <h1>
         <small class="app-vsn">Glific v0.2.0</small>
-Glific.Flows.Action          <a href="https://github.com/glific/blob/master/lib/glific/flows/action.ex#L1" title="View Source" class="view-source" rel="help">
+Glific.Flows.Action          <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/action.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -127,7 +127,7 @@ Types          </h1>
       <span class="sr-only">Link to this type</span>
     </a>
     <h1 class="signature">t()</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/flows/action.ex#L30" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/action.ex#L31" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -137,18 +137,23 @@ Types          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>t() :: %Glific.Flows.Action{
+  body: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
   enter_flow: <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>() | nil,
   enter_flow_uuid: <a href="https://hexdocs.pm/ecto/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>() | nil,
   field: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>() | nil,
+  headers: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>() | nil,
   id: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   language: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  method: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
   name: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
   node: <a href="Glific.Flows.Node.html#t:t/0">Glific.Flows.Node.t</a>() | nil,
   node_uuid: <a href="https://hexdocs.pm/ecto/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>() | nil,
   quick_replies: [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()],
+  result_name: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
   templating: <a href="Glific.Flows.Templating.html#t:t/0">Glific.Flows.Templating.t</a>() | nil,
   text: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
-  type: Glific.Enums.FlowActionType,
+  type: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  url: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
   uuid: <a href="https://hexdocs.pm/ecto/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>() | nil,
   value: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil
 }</pre>
@@ -173,7 +178,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">execute(action, context, message_stream)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/flows/action.ex#L126" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/action.ex#L160" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -196,7 +201,7 @@ Consume the message stream as processing occurs</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">process(json, uuid_map, node)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/flows/action.ex#L83" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/action.ex#L100" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>

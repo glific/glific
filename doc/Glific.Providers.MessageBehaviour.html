@@ -8,7 +8,7 @@
     <meta name="project" content="Glific v0.2.0">
     <title>Glific.Providers.MessageBehaviour — Glific v0.2.0</title>
     <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-795bbf7816.js"></script>
+    <script src="dist/sidebar_items-2daba0f8d1.js"></script>
       <script src="docs_config.js"></script>
     <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
@@ -40,7 +40,7 @@
 
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
-      <a href="https://github.com/glific/" class="sidebar-projectName">
+      <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
       <h2 class="sidebar-projectVersion">
         v0.2.0
@@ -64,7 +64,7 @@ Glific      </a>
 
       <h1>
         <small class="app-vsn">Glific v0.2.0</small>
-Glific.Providers.MessageBehaviour <small>behaviour</small>          <a href="https://github.com/glific/blob/master/lib/glific/providers/message_behaviour.ex#L1" title="View Source" class="view-source" rel="help">
+Glific.Providers.MessageBehaviour <small>behaviour</small>          <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/message_behaviour.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -103,27 +103,27 @@ Glific.Providers.MessageBehaviour <small>behaviour</small>          <a href="htt
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#c:send_audio/2">send_audio(message, atom)</a>
+    <a href="#c:send_audio/1">send_audio(message)</a>
   </div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#c:send_document/2">send_document(message, atom)</a>
+    <a href="#c:send_document/1">send_document(message)</a>
   </div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#c:send_image/2">send_image(message, atom)</a>
+    <a href="#c:send_image/1">send_image(message)</a>
   </div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#c:send_text/2">send_text(message, atom)</a>
+    <a href="#c:send_text/1">send_text(message)</a>
   </div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#c:send_video/2">send_video(message, atom)</a>
+    <a href="#c:send_video/1">send_video(message)</a>
   </div>
 </div>
   </div>
@@ -144,7 +144,7 @@ Callbacks          </h1>
       <span class="sr-only">Link to this callback</span>
     </a>
     <h1 class="signature">receive_location(payload)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/providers/message_behaviour.ex#L25" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/message_behaviour.ex#L25" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -165,7 +165,7 @@ Callbacks          </h1>
       <span class="sr-only">Link to this callback</span>
     </a>
     <h1 class="signature">receive_media(payload)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/providers/message_behaviour.ex#L23" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/message_behaviour.ex#L23" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -186,7 +186,7 @@ Callbacks          </h1>
       <span class="sr-only">Link to this callback</span>
     </a>
     <h1 class="signature">receive_text(payload)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/providers/message_behaviour.ex#L21" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/message_behaviour.ex#L21" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -200,14 +200,14 @@ Callbacks          </h1>
 
   </section>
 </section>
-<section class="detail" id="c:send_audio/2">
+<section class="detail" id="c:send_audio/1">
   <div class="detail-header">
-    <a href="#c:send_audio/2" class="detail-link" title="Link to this callback">
+    <a href="#c:send_audio/1" class="detail-link" title="Link to this callback">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this callback</span>
     </a>
-    <h1 class="signature">send_audio(message, atom)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/providers/message_behaviour.ex#L12" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">send_audio(message)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/message_behaviour.ex#L12" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -216,20 +216,20 @@ Callbacks          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>send_audio(message :: Glific.Messages.Message.t(), :datetime) ::
+          <pre>send_audio(message :: Glific.Messages.Message.t()) ::
   {:ok, <a href="https://hexdocs.pm/oban/Oban.Job.html#t:t/0">Oban.Job.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
   </section>
 </section>
-<section class="detail" id="c:send_document/2">
+<section class="detail" id="c:send_document/1">
   <div class="detail-header">
-    <a href="#c:send_document/2" class="detail-link" title="Link to this callback">
+    <a href="#c:send_document/1" class="detail-link" title="Link to this callback">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this callback</span>
     </a>
-    <h1 class="signature">send_document(message, atom)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/providers/message_behaviour.ex#L18" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">send_document(message)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/message_behaviour.ex#L18" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -238,20 +238,20 @@ Callbacks          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>send_document(message :: Glific.Messages.Message.t(), :datetime) ::
+          <pre>send_document(message :: Glific.Messages.Message.t()) ::
   {:ok, <a href="https://hexdocs.pm/oban/Oban.Job.html#t:t/0">Oban.Job.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
   </section>
 </section>
-<section class="detail" id="c:send_image/2">
+<section class="detail" id="c:send_image/1">
   <div class="detail-header">
-    <a href="#c:send_image/2" class="detail-link" title="Link to this callback">
+    <a href="#c:send_image/1" class="detail-link" title="Link to this callback">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this callback</span>
     </a>
-    <h1 class="signature">send_image(message, atom)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/providers/message_behaviour.ex#L9" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">send_image(message)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/message_behaviour.ex#L9" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -260,20 +260,20 @@ Callbacks          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>send_image(message :: Glific.Messages.Message.t(), :datetime) ::
+          <pre>send_image(message :: Glific.Messages.Message.t()) ::
   {:ok, <a href="https://hexdocs.pm/oban/Oban.Job.html#t:t/0">Oban.Job.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
   </section>
 </section>
-<section class="detail" id="c:send_text/2">
+<section class="detail" id="c:send_text/1">
   <div class="detail-header">
-    <a href="#c:send_text/2" class="detail-link" title="Link to this callback">
+    <a href="#c:send_text/1" class="detail-link" title="Link to this callback">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this callback</span>
     </a>
-    <h1 class="signature">send_text(message, atom)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/providers/message_behaviour.ex#L6" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">send_text(message)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/message_behaviour.ex#L6" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -282,20 +282,20 @@ Callbacks          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>send_text(message :: Glific.Messages.Message.t(), :datetime) ::
+          <pre>send_text(message :: Glific.Messages.Message.t()) ::
   {:ok, <a href="https://hexdocs.pm/oban/Oban.Job.html#t:t/0">Oban.Job.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
   </section>
 </section>
-<section class="detail" id="c:send_video/2">
+<section class="detail" id="c:send_video/1">
   <div class="detail-header">
-    <a href="#c:send_video/2" class="detail-link" title="Link to this callback">
+    <a href="#c:send_video/1" class="detail-link" title="Link to this callback">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this callback</span>
     </a>
-    <h1 class="signature">send_video(message, atom)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/providers/message_behaviour.ex#L15" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">send_video(message)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/message_behaviour.ex#L15" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -304,7 +304,7 @@ Callbacks          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>send_video(message :: Glific.Messages.Message.t(), :datetime) ::
+          <pre>send_video(message :: Glific.Messages.Message.t()) ::
   {:ok, <a href="https://hexdocs.pm/oban/Oban.Job.html#t:t/0">Oban.Job.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 

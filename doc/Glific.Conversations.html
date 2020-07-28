@@ -8,7 +8,7 @@
     <meta name="project" content="Glific v0.2.0">
     <title>Glific.Conversations — Glific v0.2.0</title>
     <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-795bbf7816.js"></script>
+    <script src="dist/sidebar_items-2daba0f8d1.js"></script>
       <script src="docs_config.js"></script>
     <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
@@ -40,7 +40,7 @@
 
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
-      <a href="https://github.com/glific/" class="sidebar-projectName">
+      <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
       <h2 class="sidebar-projectVersion">
         v0.2.0
@@ -64,7 +64,7 @@ Glific      </a>
 
       <h1>
         <small class="app-vsn">Glific v0.2.0</small>
-Glific.Conversations          <a href="https://github.com/glific/blob/master/lib/glific/conversations.ex#L1" title="View Source" class="view-source" rel="help">
+Glific.Conversations          <a href="https://github.com/glific/glific/blob/master/lib/glific/conversations.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -97,7 +97,7 @@ fair number of iterations to get right</p>        </section>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#list_conversations/1">list_conversations(args)</a>
+    <a href="#list_conversations/2">list_conversations(args, count \\ false)</a>
   </div>
     <div class="summary-synopsis"><p>Returns the last M conversations, each conversation not more than N messages</p></div>
 </div>
@@ -119,7 +119,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">conversation_by_id(args)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/conversations.ex#L30" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/conversations.ex#L30" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -133,14 +133,15 @@ Functions          </h1>
 
 <p>Returns the filtered conversation by contact id</p>  </section>
 </section>
-<section class="detail" id="list_conversations/1">
+<section class="detail" id="list_conversations/2">
+    <span id="list_conversations/1"></span>
   <div class="detail-header">
-    <a href="#list_conversations/1" class="detail-link" title="Link to this function">
+    <a href="#list_conversations/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">list_conversations(args)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/conversations.ex#L19" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">list_conversations(args, count \\ false)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/conversations.ex#L19" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -149,7 +150,7 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>list_conversations(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()</pre>
+          <pre>list_conversations(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
       </div>
 
 <p>Returns the last M conversations, each conversation not more than N messages</p>  </section>

@@ -8,7 +8,7 @@
     <meta name="project" content="Glific v0.2.0">
     <title>Glific.Searches — Glific v0.2.0</title>
     <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-795bbf7816.js"></script>
+    <script src="dist/sidebar_items-2daba0f8d1.js"></script>
       <script src="docs_config.js"></script>
     <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
@@ -40,7 +40,7 @@
 
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
-      <a href="https://github.com/glific/" class="sidebar-projectName">
+      <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
       <h2 class="sidebar-projectVersion">
         v0.2.0
@@ -64,7 +64,7 @@ Glific      </a>
 
       <h1>
         <small class="app-vsn">Glific v0.2.0</small>
-Glific.Searches          <a href="https://github.com/glific/blob/master/lib/glific/searches.ex#L1" title="View Source" class="view-source" rel="help">
+Glific.Searches          <a href="https://github.com/glific/glific/blob/master/lib/glific/searches.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -94,6 +94,13 @@ Glific.Searches          <a href="https://github.com/glific/blob/master/lib/glif
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#convert_to_atom/1">convert_to_atom(json)</a>
+  </div>
+    <div class="summary-synopsis"><p>Given a jsonb string, typically either from the database, or maybe via graphql
+convert the string keys to atoms</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#create_saved_search/1">create_saved_search(attrs)</a>
   </div>
     <div class="summary-synopsis"><p>Creates a search.</p></div>
@@ -118,7 +125,14 @@ Glific.Searches          <a href="https://github.com/glific/blob/master/lib/glif
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#search/1">search(args)</a>
+    <a href="#saved_search_execute/2">saved_search_execute(args, count \\ false)</a>
+  </div>
+    <div class="summary-synopsis"><p>Execute a saved search, if term is sent in, it is added to
+the saved search. Either return conversations or count</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#search/2">search(args, count \\ false)</a>
   </div>
     <div class="summary-synopsis"><p>Full text search interface via Postgres</p></div>
 </div>
@@ -147,7 +161,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">change_saved_search(search, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/searches.ex#L113" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/searches.ex#L113" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -164,8 +178,30 @@ Functions          </h1>
   <a href="#change_saved_search/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_saved_search</span><span class="p" data-group-id="1404664276-1">(</span><span class="n">search</span><span class="p" data-group-id="1404664276-1">)</span><span class="w">
-</span><span class="p" data-group-id="1404664276-2">%</span><span class="nc" data-group-id="1404664276-2">Ecto.Changeset</span><span class="p" data-group-id="1404664276-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1404664276-3">%</span><span class="nc" data-group-id="1404664276-3">Search</span><span class="p" data-group-id="1404664276-3">{</span><span class="p" data-group-id="1404664276-3">}</span><span class="p" data-group-id="1404664276-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_saved_search</span><span class="p" data-group-id="0200574525-1">(</span><span class="n">search</span><span class="p" data-group-id="0200574525-1">)</span><span class="w">
+</span><span class="p" data-group-id="0200574525-2">%</span><span class="nc" data-group-id="0200574525-2">Ecto.Changeset</span><span class="p" data-group-id="0200574525-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0200574525-3">%</span><span class="nc" data-group-id="0200574525-3">Search</span><span class="p" data-group-id="0200574525-3">{</span><span class="p" data-group-id="0200574525-3">}</span><span class="p" data-group-id="0200574525-2">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="convert_to_atom/1">
+  <div class="detail-header">
+    <a href="#convert_to_atom/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">convert_to_atom(json)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/searches.ex#L171" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>convert_to_atom(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+      </div>
+
+<p>Given a jsonb string, typically either from the database, or maybe via graphql
+convert the string keys to atoms</p>  </section>
 </section>
 <section class="detail" id="create_saved_search/1">
   <div class="detail-header">
@@ -174,7 +210,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">create_saved_search(attrs)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/searches.ex#L59" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/searches.ex#L59" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -191,11 +227,11 @@ Functions          </h1>
   <a href="#create_saved_search/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_saved_search</span><span class="p" data-group-id="1624478008-1">(</span><span class="p" data-group-id="1624478008-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="1624478008-2">}</span><span class="p" data-group-id="1624478008-1">)</span><span class="w">
-</span><span class="p" data-group-id="1624478008-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1624478008-4">%</span><span class="nc" data-group-id="1624478008-4">SavedSearch</span><span class="p" data-group-id="1624478008-4">{</span><span class="p" data-group-id="1624478008-4">}</span><span class="p" data-group-id="1624478008-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_saved_search</span><span class="p" data-group-id="5940158888-1">(</span><span class="p" data-group-id="5940158888-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="5940158888-2">}</span><span class="p" data-group-id="5940158888-1">)</span><span class="w">
+</span><span class="p" data-group-id="5940158888-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5940158888-4">%</span><span class="nc" data-group-id="5940158888-4">SavedSearch</span><span class="p" data-group-id="5940158888-4">{</span><span class="p" data-group-id="5940158888-4">}</span><span class="p" data-group-id="5940158888-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_saved_search</span><span class="p" data-group-id="1624478008-5">(</span><span class="p" data-group-id="1624478008-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1624478008-6">}</span><span class="p" data-group-id="1624478008-5">)</span><span class="w">
-</span><span class="p" data-group-id="1624478008-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1624478008-8">%</span><span class="nc" data-group-id="1624478008-8">Ecto.Changeset</span><span class="p" data-group-id="1624478008-8">{</span><span class="p" data-group-id="1624478008-8">}</span><span class="p" data-group-id="1624478008-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_saved_search</span><span class="p" data-group-id="5940158888-5">(</span><span class="p" data-group-id="5940158888-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5940158888-6">}</span><span class="p" data-group-id="5940158888-5">)</span><span class="w">
+</span><span class="p" data-group-id="5940158888-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5940158888-8">%</span><span class="nc" data-group-id="5940158888-8">Ecto.Changeset</span><span class="p" data-group-id="5940158888-8">{</span><span class="p" data-group-id="5940158888-8">}</span><span class="p" data-group-id="5940158888-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="delete_saved_search/1">
   <div class="detail-header">
@@ -204,7 +240,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete_saved_search(search)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/searches.ex#L99" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/searches.ex#L99" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -221,11 +257,11 @@ Functions          </h1>
   <a href="#delete_saved_search/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_saved_search</span><span class="p" data-group-id="6361649056-1">(</span><span class="n">search</span><span class="p" data-group-id="6361649056-1">)</span><span class="w">
-</span><span class="p" data-group-id="6361649056-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6361649056-3">%</span><span class="nc" data-group-id="6361649056-3">SavedSearch</span><span class="p" data-group-id="6361649056-3">{</span><span class="p" data-group-id="6361649056-3">}</span><span class="p" data-group-id="6361649056-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_saved_search</span><span class="p" data-group-id="9266146588-1">(</span><span class="n">search</span><span class="p" data-group-id="9266146588-1">)</span><span class="w">
+</span><span class="p" data-group-id="9266146588-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9266146588-3">%</span><span class="nc" data-group-id="9266146588-3">SavedSearch</span><span class="p" data-group-id="9266146588-3">{</span><span class="p" data-group-id="9266146588-3">}</span><span class="p" data-group-id="9266146588-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_saved_search</span><span class="p" data-group-id="6361649056-4">(</span><span class="n">search</span><span class="p" data-group-id="6361649056-4">)</span><span class="w">
-</span><span class="p" data-group-id="6361649056-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6361649056-6">%</span><span class="nc" data-group-id="6361649056-6">Ecto.Changeset</span><span class="p" data-group-id="6361649056-6">{</span><span class="p" data-group-id="6361649056-6">}</span><span class="p" data-group-id="6361649056-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_saved_search</span><span class="p" data-group-id="9266146588-4">(</span><span class="n">search</span><span class="p" data-group-id="9266146588-4">)</span><span class="w">
+</span><span class="p" data-group-id="9266146588-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9266146588-6">%</span><span class="nc" data-group-id="9266146588-6">Ecto.Changeset</span><span class="p" data-group-id="9266146588-6">{</span><span class="p" data-group-id="9266146588-6">}</span><span class="p" data-group-id="9266146588-5">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_saved_search!/1">
   <div class="detail-header">
@@ -234,7 +270,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_saved_search!(id)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/searches.ex#L44" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/searches.ex#L44" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -250,10 +286,10 @@ Functions          </h1>
   <a href="#get_saved_search!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_saved_search!</span><span class="p" data-group-id="1923431130-1">(</span><span class="mi">123</span><span class="p" data-group-id="1923431130-1">)</span><span class="w">
-</span><span class="p" data-group-id="1923431130-2">%</span><span class="nc" data-group-id="1923431130-2">SavedSearch</span><span class="p" data-group-id="1923431130-2">{</span><span class="p" data-group-id="1923431130-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_saved_search!</span><span class="p" data-group-id="3676126389-1">(</span><span class="mi">123</span><span class="p" data-group-id="3676126389-1">)</span><span class="w">
+</span><span class="p" data-group-id="3676126389-2">%</span><span class="nc" data-group-id="3676126389-2">SavedSearch</span><span class="p" data-group-id="3676126389-2">{</span><span class="p" data-group-id="3676126389-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_saved_search!</span><span class="p" data-group-id="1923431130-3">(</span><span class="mi">456</span><span class="p" data-group-id="1923431130-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_saved_search!</span><span class="p" data-group-id="3676126389-3">(</span><span class="mi">456</span><span class="p" data-group-id="3676126389-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="list_saved_searches/1">
@@ -264,7 +300,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">list_saved_searches(args \\ %{})</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/searches.ex#L26" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/searches.ex#L26" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -280,17 +316,18 @@ Functions          </h1>
   <a href="#list_saved_searches/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_saved_searches</span><span class="p" data-group-id="6810676049-1">(</span><span class="p" data-group-id="6810676049-1">)</span><span class="w">
-</span><span class="p" data-group-id="6810676049-2">[</span><span class="p" data-group-id="6810676049-3">%</span><span class="nc" data-group-id="6810676049-3">SavedSearch</span><span class="p" data-group-id="6810676049-3">{</span><span class="p" data-group-id="6810676049-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="6810676049-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_saved_searches</span><span class="p" data-group-id="9449260860-1">(</span><span class="p" data-group-id="9449260860-1">)</span><span class="w">
+</span><span class="p" data-group-id="9449260860-2">[</span><span class="p" data-group-id="9449260860-3">%</span><span class="nc" data-group-id="9449260860-3">SavedSearch</span><span class="p" data-group-id="9449260860-3">{</span><span class="p" data-group-id="9449260860-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="9449260860-2">]</span></code></pre>  </section>
 </section>
-<section class="detail" id="search/1">
+<section class="detail" id="saved_search_execute/2">
+    <span id="saved_search_execute/1"></span>
   <div class="detail-header">
-    <a href="#search/1" class="detail-link" title="Link to this function">
+    <a href="#saved_search_execute/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">search(args)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/searches.ex#L121" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">saved_search_execute(args, count \\ false)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/searches.ex#L158" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -299,7 +336,31 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>search(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Conversations.Conversation.html#t:t/0">Glific.Conversations.Conversation.t</a>()]</pre>
+          <pre>saved_search_execute(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()) ::
+  [<a href="Glific.Conversations.Conversation.html#t:t/0">Glific.Conversations.Conversation.t</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+      </div>
+
+<p>Execute a saved search, if term is sent in, it is added to
+the saved search. Either return conversations or count</p>  </section>
+</section>
+<section class="detail" id="search/2">
+    <span id="search/1"></span>
+  <div class="detail-header">
+    <a href="#search/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">search(args, count \\ false)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/searches.ex#L136" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>search(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()) :: [<a href="Glific.Conversations.Conversation.html#t:t/0">Glific.Conversations.Conversation.t</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
       </div>
 
 <p>Full text search interface via Postgres</p>  </section>
@@ -311,7 +372,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_saved_search(search, attrs)</h1>
-      <a href="https://github.com/glific/blob/master/lib/glific/searches.ex#L79" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/searches.ex#L79" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -328,11 +389,11 @@ Functions          </h1>
   <a href="#update_saved_search/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_saved_search</span><span class="p" data-group-id="3306863958-1">(</span><span class="n">search</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3306863958-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="3306863958-2">}</span><span class="p" data-group-id="3306863958-1">)</span><span class="w">
-</span><span class="p" data-group-id="3306863958-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3306863958-4">%</span><span class="nc" data-group-id="3306863958-4">SavedSearch</span><span class="p" data-group-id="3306863958-4">{</span><span class="p" data-group-id="3306863958-4">}</span><span class="p" data-group-id="3306863958-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_saved_search</span><span class="p" data-group-id="2303495375-1">(</span><span class="n">search</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2303495375-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="2303495375-2">}</span><span class="p" data-group-id="2303495375-1">)</span><span class="w">
+</span><span class="p" data-group-id="2303495375-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2303495375-4">%</span><span class="nc" data-group-id="2303495375-4">SavedSearch</span><span class="p" data-group-id="2303495375-4">{</span><span class="p" data-group-id="2303495375-4">}</span><span class="p" data-group-id="2303495375-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_saved_search</span><span class="p" data-group-id="3306863958-5">(</span><span class="n">search</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3306863958-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3306863958-6">}</span><span class="p" data-group-id="3306863958-5">)</span><span class="w">
-</span><span class="p" data-group-id="3306863958-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3306863958-8">%</span><span class="nc" data-group-id="3306863958-8">Ecto.Changeset</span><span class="p" data-group-id="3306863958-8">{</span><span class="p" data-group-id="3306863958-8">}</span><span class="p" data-group-id="3306863958-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_saved_search</span><span class="p" data-group-id="2303495375-5">(</span><span class="n">search</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2303495375-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2303495375-6">}</span><span class="p" data-group-id="2303495375-5">)</span><span class="w">
+</span><span class="p" data-group-id="2303495375-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2303495375-8">%</span><span class="nc" data-group-id="2303495375-8">Ecto.Changeset</span><span class="p" data-group-id="2303495375-8">{</span><span class="p" data-group-id="2303495375-8">}</span><span class="p" data-group-id="2303495375-7">}</span></code></pre>  </section>
 </section>
           </div>
         </section>
