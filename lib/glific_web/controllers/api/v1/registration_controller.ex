@@ -138,10 +138,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @spec reset_user_password(Conn.t(), map()) :: {:ok, map()} | {:error, []}
   defp reset_user_password(conn, %{"phone" => phone, "password" => password} = user_params) do
-    update_params = %{
-      "password" => password,
-      "password_confirmation" => password
-    }
+    update_params = %{"password" => password, "password_confirmation" => password}
 
     {:ok, user} = Repo.fetch_by(User, %{phone: phone})
 
@@ -151,18 +148,17 @@ defmodule GlificWeb.API.V1.RegistrationController do
       {:ok, _user} ->
         {:ok, conn} = Pow.Plug.authenticate_user(conn, user_params)
 
-        response_data = %{
-          data: %{
-            access_token: conn.private[:api_access_token],
-            token_expiry_time: conn.private[:api_token_expiry_time],
-            renewal_token: conn.private[:api_renewal_token]
-          }
-        }
+        {:ok,
+         %{
+           data: %{
+             access_token: conn.private[:api_access_token],
+             token_expiry_time: conn.private[:api_token_expiry_time],
+             renewal_token: conn.private[:api_renewal_token]
+           }
+         }}
 
-        {:ok, response_data}
-
-      {:error, error} ->
-        {:error, error}
+      {:error, _error} ->
+        {:error, []}
     end
   end
 end
