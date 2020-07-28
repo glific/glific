@@ -4,20 +4,31 @@ defmodule Glific.Flows.MessageVarParserTest do
   alias Glific.Flows.MessageVarParser
 
   test "parse/2 will parse the string with variable" do
-    #binding with 1 dots will replace the variable
-    parsed_test = MessageVarParser.parse("hello @contact.name", %{"contact" => %{"name" => "Glific"}})
+    # binding with 1 dots will replace the variable
+    parsed_test =
+      MessageVarParser.parse("hello @contact.name", %{"contact" => %{"name" => "Glific"}})
+
     assert parsed_test == "hello Glific"
 
-    #binding with 2 dots will replace the variable
-    parsed_test = MessageVarParser.parse("hello @contact.fileds.name", %{"contact" => %{"fileds" => %{"name" => "Glific"}}})
+    # binding with 2 dots will replace the variable
+    parsed_test =
+      MessageVarParser.parse("hello @contact.fileds.name", %{
+        "contact" => %{"fileds" => %{"name" => "Glific"}}
+      })
+
     assert parsed_test == "hello Glific"
 
-    #if variable is not defined then it won't effect the input
-    parsed_test = MessageVarParser.parse("hello @contact.fileds.name", %{"results" => %{"fileds" => %{"name" => "Glific"}}})
+    # if variable is not defined then it won't effect the input
+    parsed_test =
+      MessageVarParser.parse("hello @contact.fileds.name", %{
+        "results" => %{"fileds" => %{"name" => "Glific"}}
+      })
+
     assert parsed_test == "hello @contact.fileds.name"
 
+    # atom keys will be convert into string automatically
+    parsed_test = MessageVarParser.parse("hello @contact.name", %{"contact" => %{name: "Glific"}})
 
+    assert parsed_test == "hello Glific"
   end
-
-
 end
