@@ -17,6 +17,8 @@ query savedSearches($filter: SavedSearchFilter!, $opts: Opts) {
     "label": "conv"
   },
   "opts": {
+    "order": "ASC",
+    "offset": 0,
     "limit": 1
   }
 }
