@@ -83,7 +83,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     @desc "Get a list of all organizations filtered by various criteria"
     field :organizations, list_of(:organization) do
       arg(:filter, :organization_filter)
-      arg(:order, type: :sort_order, default_value: :asc)
+      arg(:opts, :opts)
       resolve(&Resolvers.Partners.organizations/3)
     end
 
