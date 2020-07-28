@@ -9,12 +9,17 @@ defmodule Glific.Application do
     children = [
       # Start the Ecto repository
       Glific.Repo,
+
       # Start the Telemetry supervisor
       GlificWeb.Telemetry,
+
       # Start the PubSub system
       {Phoenix.PubSub, name: Glific.PubSub},
+
       # Start the Endpoint (http/https)
       GlificWeb.Endpoint,
+
+      # Use Mnesia to store Pow tokens
       {Pow.Store.Backend.MnesiaCache, extra_db_nodes: Node.list()},
       Pow.Store.Backend.MnesiaCache.Unsplit,
 

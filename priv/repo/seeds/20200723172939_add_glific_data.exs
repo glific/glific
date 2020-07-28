@@ -39,6 +39,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     saved_searches()
 
     flows()
+
+    fun_with_flags()
   end
 
   def down(_repo) do
@@ -396,7 +398,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       {"New Contact Workflow", "newcontact", "6fe8fda9-2df6-4694-9fd6-45b9e724f545",
        "new_contact.json"},
       {"Registration Workflow", "registration", "f4f38e00-3a50-4892-99ce-a281fe24d040",
-       "registration.json"}
+       "registration.json"},
+      {"Out of Office Workflow", "outofoffice", "f4f38e00-3a50-4892-99ce-a281fe24d040",
+       "out_of_office.json"},
     ]
 
     Enum.map(data, &flow(&1))
@@ -423,5 +427,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       definition: definition,
       flow_id: f.id
     })
+  end
+
+  def fun_with_flags do
+    FunWithFlags.enable(:enable_out_of_office)
+
+    # to begin with lets disable the out_of_office hours.
+    # We'll let Oban take care of it
+    FunWithFlags.disable(:out_of_office_active)
   end
 end

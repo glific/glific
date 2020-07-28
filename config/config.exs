@@ -35,10 +35,17 @@ config :glific,
        Glific.Repo,
        migration_timestamps: [type: :utc_datetime]
 
+# While we store everything in UTC, we need to respect the user's tz
+config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
+
+# Configure Oban, its queues and crontab entries
 config :glific, Oban,
   repo: Glific.Repo,
   prune: {:maxlen, 10_000},
-  queues: [default: 10, gupshup: 10, glifproxy: 10, webhook: 10]
+  queues: [default: 10, gupshup: 10, glifproxy: 10, webhook: 10, crontab: 10],
+  crontab: [
+    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :fun_with_flags}},
+  ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
 
@@ -76,6 +83,22 @@ config :sentry,
 # phil columns to seed production data
 config :phil_columns,
   ensure_all_started: ~w(timex)a
+
+# FunWithFlags configuration.
+config :fun_with_flags, :cache,
+  enabled: true,
+  ttl: 900 # in seconds
+
+# Use ecto.sql persistence adapter is the default, no need to set this.
+config :fun_with_flags, :persistence,
+  adapter: FunWithFlags.Store.Persistent.Ecto,
+  repo: Glific.Repo,
+  ecto_table_name: "fun_with_flags_toggles"
+
+config :fun_with_flags, :cache_bust_notifications,
+  enabled: true,
+  adapter: FunWithFlags.Notifications.PhoenixPubSub,
+  client: Glific.PubSub
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
