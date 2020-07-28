@@ -19,8 +19,8 @@ defmodule Glific.Flows.MessageVarParser do
 
   # We need to figure out a way to replace these kind of variables
   defp bound("@contact.language", binding) do
-    language = get_in(binding, ["contact", "fields", :language])
-    language.label
+    language = get_in(binding, ["contact", "fields", "language"])
+    language["label"]
   end
 
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
@@ -35,7 +35,7 @@ defmodule Glific.Flows.MessageVarParser do
   @spec stringify_keys(map()) :: map() | nil
   defp stringify_keys(nil), do: nil
 
-  defp stringify_keys(map = %{}) do
+  defp stringify_keys(map) when is_map(map) do
     map
     |> Enum.map(fn {k, v} ->
       if is_atom(k), do: {Atom.to_string(k), stringify_keys(v)}, else: {k, stringify_keys(v)}
