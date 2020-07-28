@@ -7,10 +7,7 @@ defmodule Glific.Flows.Action do
 
   use Ecto.Schema
 
-  alias Glific.{
-    Enums.FlowActionType,
-    Flows
-  }
+  alias Glific.Flows
 
   alias Glific.Flows.{
     ContactAction,
@@ -19,20 +16,29 @@ defmodule Glific.Flows.Action do
     Flow,
     FlowContext,
     Node,
-    Templating
+    Templating,
+    Webhook
   }
 
-  @required_fields_enter_flow [:uuid, :type, :flow]
-  @required_fields_language [:uuid, :type, :language]
-  @required_fields_set_contact [:uuid, :type, :value, :field]
-  @required_fields [:uuid, :type, :text]
+  @required_field_common [:uuid, :type]
+  @required_fields_enter_flow [:flow | @required_field_common]
+  @required_fields_language [:language | @required_field_common]
+  @required_fields_set_contact_field [:value, :field | @required_field_common]
+  @required_fields_set_contact_name [:name | @required_field_common]
+  @required_fields_webook [:url, :headers, :method, :result_name | @required_field_common]
+  @required_fields [:text | @required_field_common]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
           name: String.t() | nil,
           text: String.t() | nil,
           value: String.t() | nil,
-          type: FlowActionType,
+          url: String.t() | nil,
+          headers: map() | nil,
+          method: String.t() | nil,
+          result_name: String.t() | nil,
+          body: String.t() | nil,
+          type: String.t() | nil,
           field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
@@ -47,9 +53,20 @@ defmodule Glific.Flows.Action do
     field :name, :string
     field :text, :string
     field :value, :string
+
+    # various fields for webhooks
+    field :url, :string
+    field :headers, :map
+    field :method, :string
+    field :result_name, :string
+    field :body, :string
+
+    # fields for certain actions: set_contact_field, set_contact_language
     field :field, :map
     field :language, :string
-    field :type, FlowActionType
+
+    field :type, :string
+
     field :quick_replies, {:array, :string}, default: []
 
     field :node_uuid, Ecto.UUID
@@ -80,18 +97,23 @@ defmodule Glific.Flows.Action do
   Process a json structure from floweditor to the Glific data types
   """
   @spec process(map(), map(), Node.t()) :: {Action.t(), map()}
-  def process(%{"type" => type} = json, uuid_map, node) when type == "enter_flow" do
+  def process(%{"type" => "enter_flow"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_enter_flow)
     process(json, uuid_map, node, %{enter_flow_uuid: json["flow"]["uuid"]})
   end
 
-  def process(%{"type" => type} = json, uuid_map, node) when type == "set_contact_language" do
+  def process(%{"type" => "set_contact_language"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_language)
     process(json, uuid_map, node, %{text: json["language"]})
   end
 
-  def process(%{"type" => type} = json, uuid_map, node) when type == "set_contact_field" do
-    Flows.check_required_fields(json, @required_fields_set_contact)
+  def process(%{"type" => "set_contact_name"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_contact_name)
+    process(json, uuid_map, node, %{value: json["name"]})
+  end
+
+  def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_contact_field)
 
     process(json, uuid_map, node, %{
       value: json["value"],
@@ -99,6 +121,18 @@ defmodule Glific.Flows.Action do
         name: json["field"]["name"],
         key: json["field"]["key"]
       }
+    })
+  end
+
+  def process(%{"type" => "call_webhook"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_webook)
+
+    process(json, uuid_map, node, %{
+      url: json["url"],
+      method: json["method"],
+      result_name: json["result_name"],
+      body: json["body"],
+      headers: json["headers"]
     })
   end
 
@@ -123,25 +157,23 @@ defmodule Glific.Flows.Action do
   """
   @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def execute(%{type: type} = action, context, message_stream) when type == "send_msg" do
+  def execute(%{type: "send_msg"} = action, context, message_stream) do
     ContactAction.send_message(context, action)
     {:ok, context, message_stream}
   end
 
-  def execute(%{type: type} = action, context, message_stream)
-      when type == "set_contact_language" do
+  def execute(%{type: "set_contact_language"} = action, context, message_stream) do
     context = ContactSetting.set_contact_language(context, action.text)
     {:ok, context, message_stream}
   end
 
-  def execute(%{type: type} = action, context, message_stream)
-      when type == "set_contact_name" do
-    context = ContactSetting.set_contact_name(context, action.value)
+  def execute(%{type: "set_contact_name"} = action, context, message_stream) do
+    value = FlowContext.get_result_value(context, action.value)
+    context = ContactSetting.set_contact_name(context, value)
     {:ok, context, message_stream}
   end
 
-  def execute(%{type: type} = action, context, message_stream)
-      when type == "set_contact_field" do
+  def execute(%{type: "set_contact_field"} = action, context, message_stream) do
     name = action.field.key
     value = FlowContext.get_result_value(context, action.value)
 
@@ -153,10 +185,29 @@ defmodule Glific.Flows.Action do
     {:ok, context, message_stream}
   end
 
-  def execute(%{type: type} = action, context, message_stream)
-      when type == "enter_flow" do
+  def execute(%{type: "enter_flow"} = action, context, message_stream) do
     Flow.start_sub_flow(context, action.enter_flow_uuid)
     {:ok, context, message_stream}
+  end
+
+  def execute(%{type: "call_webhook"} = action, context, message_stream) do
+    # first call the webhook
+    json =
+      Webhook.get(
+        action.url,
+        Keyword.new(action.headers, fn {k, v} -> {String.to_existing_atom(k), v} end),
+        action.body
+      )
+
+    if is_nil(json) or is_nil(action.result_name) do
+      {:ok, context, ["Failure" | message_stream]}
+    else
+      {
+        :ok,
+        FlowContext.update_results(context, action.result_name, json),
+        ["Success" | message_stream]
+      }
+    end
   end
 
   def execute(action, _context, _message_stream),

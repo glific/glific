@@ -393,9 +393,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       {"Language Workflow", "language", "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf", "language.json"},
       {"Preferences Workflow", "preference", "63397051-789d-418d-9388-2ef7eb1268bb",
        "preference.json"},
-      {"New Contact Workflow", "new contact", "973a24ea-dd2e-4d19-a427-83b0620161b0",
+      {"New Contact Workflow", "newcontact", "6fe8fda9-2df6-4694-9fd6-45b9e724f545",
        "new_contact.json"},
-      {"Registration Workflow", "registration", "5e086708-37b2-4b20-80c2-bdc0f213c3c6",
+      {"Registration Workflow", "registration", "f4f38e00-3a50-4892-99ce-a281fe24d040",
        "registration.json"}
     ]
 

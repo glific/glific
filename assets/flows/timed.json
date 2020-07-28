@@ -1,40 +1,38 @@
 {
-  "uuid" : "63397051-789d-418d-9388-2ef7eb1268bb",
-  "name" : "Preferences Workflow",
-  "type" : "message",
   "vars" : [
-    "63397051-789d-418d-9388-2ef7eb1268bb"
+    "8390ded3-06c3-4df4-b428-064666f085c7"
   ],
-  "spec_version" : "13.1.0",
+  "language" : "eng",
+  "uuid" : "8390ded3-06c3-4df4-b428-064666f085c7",
   "nodes" : [
     {
       "uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb",
       "exits" : [
         {
-          "uuid" : "7a4feee4-62d7-478c-a36a-649cc9041740",
-          "destination_uuid" : "aba5eeec-a4e5-4d83-82ca-fd7fdd162d80"
+          "destination_uuid" : "aba5eeec-a4e5-4d83-82ca-fd7fdd162d80",
+          "uuid" : "7a4feee4-62d7-478c-a36a-649cc9041740"
         }
       ],
       "actions" : [
         {
-          "templating" : {
-            "template" : {
-              "name" : "Preferences",
-              "uuid" : "a9834b33-583d-471b-aa50-bdf0a4c8c34b"
-            },
-            "uuid" : "9d288d66-71e1-463e-9256-53dcd65f4cc4",
-            "variables" : [
-
-            ]
-          },
+          "text" : "preference",
           "quick_replies" : [
 
           ],
-          "text" : "preference",
+          "type" : "send_msg",
+          "templating" : {
+            "variables" : [
+
+            ],
+            "template" : {
+              "uuid" : "a9834b33-583d-471b-aa50-bdf0a4c8c34b",
+              "name" : "Preferences"
+            },
+            "uuid" : "9d288d66-71e1-463e-9256-53dcd65f4cc4"
+          },
           "attachments" : [
 
           ],
-          "type" : "send_msg",
           "uuid" : "902dcbfb-6e54-435e-a23b-37686dc495e1"
         }
       ]
@@ -43,33 +41,32 @@
       "actions" : [
 
       ],
-      "uuid" : "aba5eeec-a4e5-4d83-82ca-fd7fdd162d80",
       "router" : {
+        "cases" : [
+
+        ],
+        "default_category_uuid" : "1377d1ee-5917-438f-96b9-f62cfe0071ae",
+        "type" : "switch",
+        "categories" : [
+          {
+            "uuid" : "1377d1ee-5917-438f-96b9-f62cfe0071ae",
+            "exit_uuid" : "b67ab1a7-fb8d-4571-ba35-e2a859b96d8d",
+            "name" : "All Responses"
+          },
+          {
+            "uuid" : "79e6f007-c9cf-4209-a26a-baf388ae273e",
+            "exit_uuid" : "6053fd42-b6ee-4ef2-8f8b-c76a85a1710c",
+            "name" : "No Response"
+          }
+        ],
+        "operand" : "@input.text",
         "wait" : {
           "type" : "msg",
           "timeout" : {
             "seconds" : 60,
             "category_uuid" : "79e6f007-c9cf-4209-a26a-baf388ae273e"
           }
-        },
-        "cases" : [
-
-        ],
-        "operand" : "@input.text",
-        "categories" : [
-          {
-            "uuid" : "1377d1ee-5917-438f-96b9-f62cfe0071ae",
-            "name" : "All Responses",
-            "exit_uuid" : "b67ab1a7-fb8d-4571-ba35-e2a859b96d8d"
-          },
-          {
-            "uuid" : "79e6f007-c9cf-4209-a26a-baf388ae273e",
-            "name" : "No Response",
-            "exit_uuid" : "6053fd42-b6ee-4ef2-8f8b-c76a85a1710c"
-          }
-        ],
-        "type" : "switch",
-        "default_category_uuid" : "1377d1ee-5917-438f-96b9-f62cfe0071ae"
+        }
       },
       "exits" : [
         {
@@ -80,27 +77,28 @@
           "uuid" : "6053fd42-b6ee-4ef2-8f8b-c76a85a1710c",
           "destination_uuid" : "55d23746-42bd-482e-b2ec-4f456ffddee7"
         }
-      ]
+      ],
+      "uuid" : "aba5eeec-a4e5-4d83-82ca-fd7fdd162d80"
     },
     {
       "uuid" : "77eb45aa-67e9-47f7-a3f5-7cab3884f2f0",
       "exits" : [
         {
-          "uuid" : "d7be2c07-2337-4c62-9f1e-7e58b1f58a4d",
-          "destination_uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb"
+          "destination_uuid" : "3e7618ab-f477-4621-b10b-77001972643a",
+          "uuid" : "d7be2c07-2337-4c62-9f1e-7e58b1f58a4d"
         }
       ],
       "actions" : [
         {
-          "quick_replies" : [
-
-          ],
+          "text" : "Patience please",
+          "type" : "send_msg",
           "uuid" : "e9c5aa43-7d6a-4188-9092-4f2b2657bf96",
           "attachments" : [
 
           ],
-          "text" : "Patience please",
-          "type" : "send_msg"
+          "quick_replies" : [
+
+          ]
         }
       ]
     },
@@ -108,27 +106,85 @@
       "uuid" : "55d23746-42bd-482e-b2ec-4f456ffddee7",
       "exits" : [
         {
-          "destination_uuid" : null,
+          "destination_uuid" : "3e7618ab-f477-4621-b10b-77001972643a",
           "uuid" : "2bf494c9-4da2-4e12-8aae-a843a5f68d19"
         }
       ],
       "actions" : [
         {
-          "quick_replies" : [
-
-          ],
+          "text" : "TImer went off\n",
+          "type" : "send_msg",
           "uuid" : "d4b5f1b7-b822-4fa0-abda-0da138e5de29",
           "attachments" : [
 
           ],
-          "text" : "TImer went off\n",
-          "type" : "send_msg"
+          "quick_replies" : [
+
+          ]
+        }
+      ]
+    },
+    {
+      "router" : {
+        "categories" : [
+          {
+            "uuid" : "d4e96c18-2af6-42bb-bdb0-189f151efa85",
+            "exit_uuid" : "b251479d-220d-4181-8ad3-8858f81265a7",
+            "name" : "Success"
+          },
+          {
+            "uuid" : "e986d9cf-9442-49b5-aa73-7b80b0bacd87",
+            "exit_uuid" : "5a98d389-1f8e-481f-ad91-6a8b85812193",
+            "name" : "Failure"
+          }
+        ],
+        "type" : "switch",
+        "cases" : [
+          {
+            "arguments" : [
+              "Success"
+            ],
+            "category_uuid" : "d4e96c18-2af6-42bb-bdb0-189f151efa85",
+            "type" : "has_only_text",
+            "uuid" : "c0186714-26c2-47c9-b3e3-718531c4451b"
+          }
+        ],
+        "default_category_uuid" : "e986d9cf-9442-49b5-aa73-7b80b0bacd87",
+        "operand" : "@results.flowhook.category"
+      },
+      "uuid" : "3e7618ab-f477-4621-b10b-77001972643a",
+      "actions" : [
+        {
+          "type" : "call_webhook",
+          "uuid" : "83a767d6-a41c-44ac-adf9-26724bb852e9",
+          "result_name" : "flowhook",
+          "body" : "",
+          "headers" : {
+            "Accept" : "application\/json"
+          },
+          "url" : "http:\/\/glific.test:4000\/flow-editor/channels",
+          "method" : "GET"
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "b251479d-220d-4181-8ad3-8858f81265a7",
+          "destination_uuid" : null
+        },
+        {
+          "uuid" : "5a98d389-1f8e-481f-ad91-6a8b85812193",
+          "destination_uuid" : null
         }
       ]
     }
   ],
-  "language" : "eng",
+  "localization" : {
+
+  },
   "_ui" : {
+    "stickies" : {
+
+    },
     "languages" : [
       {
         "eng" : "English"
@@ -140,29 +196,39 @@
     "nodes" : {
       "55d23746-42bd-482e-b2ec-4f456ffddee7" : {
         "position" : {
-          "top" : 380,
-          "left" : 960
-        },
-        "type" : "execute_actions"
-      },
-      "77eb45aa-67e9-47f7-a3f5-7cab3884f2f0" : {
-        "position" : {
-          "top" : 380,
-          "left" : 700
+          "left" : 960,
+          "top" : 380
         },
         "type" : "execute_actions"
       },
       "aba5eeec-a4e5-4d83-82ca-fd7fdd162d80" : {
-        "position" : {
-          "top" : 200,
-          "left" : 860
-        },
         "config" : {
           "cases" : {
 
           }
         },
+        "position" : {
+          "left" : 860,
+          "top" : 200
+        },
         "type" : "wait_for_response"
+      },
+      "77eb45aa-67e9-47f7-a3f5-7cab3884f2f0" : {
+        "position" : {
+          "left" : 700,
+          "top" : 380
+        },
+        "type" : "execute_actions"
+      },
+      "3e7618ab-f477-4621-b10b-77001972643a" : {
+        "config" : {
+
+        },
+        "position" : {
+          "top" : 620,
+          "left" : 960
+        },
+        "type" : "split_by_webhook"
       },
       "d977a2dc-5987-4192-817e-1e3d3774abcb" : {
         "position" : {
@@ -171,12 +237,9 @@
         },
         "type" : "execute_actions"
       }
-    },
-    "stickies" : {
-
     }
   },
-  "localization" : {
-
-  }
+  "type" : "message",
+  "spec_version" : "13.1.0",
+  "name" : "Timed Workflow"
 }

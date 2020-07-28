@@ -2,9 +2,10 @@ defmodule GlificWeb.Schema.UserTypes do
   @moduledoc """
   GraphQL Representation of Glific's User DataType
   """
-
   use Absinthe.Schema.Notation
+  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
+  alias Glific.Repo
   alias GlificWeb.Resolvers
 
   object :user_result do
@@ -17,6 +18,10 @@ defmodule GlificWeb.Schema.UserTypes do
     field :name, :string
     field :phone, :string
     field :roles, list_of(:string)
+
+    field :groups, list_of(:group) do
+      resolve(dataloader(Repo))
+    end
   end
 
   @desc "Filtering options for users"
@@ -31,6 +36,8 @@ defmodule GlificWeb.Schema.UserTypes do
   input_object :user_input do
     field :name, :string
     field :roles, list_of(:string)
+    field :password, :string
+    field :otp, :string
   end
 
   object :user_queries do

@@ -1,0 +1,191 @@
+{
+    "_ui": {
+        "nodes": {
+            "030d0b21-ab4e-414e-8eaf-c80e32e33549": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 600,
+                    "left": 840
+                }
+            },
+            "570446be-bf63-447a-b098-23ed76674b87": {
+                "type": "wait_for_response",
+                "config": {
+                    "cases": {}
+                },
+                "position": {
+                    "top": 400,
+                    "left": 560
+                }
+            },
+            "62664d1c-cfd8-4378-8ba1-c912fdd5c8ab": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 0,
+                    "left": 580
+                }
+            },
+            "67e13040-4658-4403-a7a9-8bf0b0d10fe9": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 600,
+                    "left": 360
+                }
+            },
+            "b97332b6-0d40-4dc8-9c67-f075447e63f9": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 600,
+                    "left": 600
+                }
+            }
+        },
+        "stickies": {}
+    },
+    "name": "SLO Activity",
+    "type": "messaging",
+    "uuid": "b050c652-65b5-4ccf-b62b-1e8b3f328676",
+    "vars": ["b050c652-65b5-4ccf-b62b-1e8b3f328676"],
+    "nodes": [{
+        "uuid": "62664d1c-cfd8-4378-8ba1-c912fdd5c8ab",
+        "exits": [{
+            "uuid": "7837b675-5731-41b7-9b83-87743d031521",
+            "destination_uuid": "570446be-bf63-447a-b098-23ed76674b87"
+        }],
+        "actions": [{
+            "text": "Thank you for introducing yourself to us 😊 \n\nType the number in the menu below (1, 2, 3, etc) to navigate and access the content you want.\n\n1. Try Visual arts\n2. Try Poetry\n3. Try Theatre\n\nor,\n\n9. Type 9 for Help",
+            "type": "send_msg",
+            "uuid": "611c1f36-eef2-4077-9ac4-b20ccc1b9285",
+            "attachments": [],
+            "quick_replies": []
+        }]
+    }, {
+        "uuid": "570446be-bf63-447a-b098-23ed76674b87",
+        "exits": [{
+            "uuid": "1d9667d7-8b04-4c77-a13b-1d4986e62010",
+            "destination_uuid": "67e13040-4658-4403-a7a9-8bf0b0d10fe9"
+        }, {
+            "uuid": "dc9e8739-2f1d-48a8-9da9-18aec04c9ada",
+            "destination_uuid": "b97332b6-0d40-4dc8-9c67-f075447e63f9"
+        }, {
+            "uuid": "751e1a59-5990-4f9c-9547-8865c01fec18",
+            "destination_uuid": "030d0b21-ab4e-414e-8eaf-c80e32e33549"
+        }, {
+            "uuid": "c886d2b2-ec93-4bec-946c-24334d565a48",
+            "destination_uuid": null
+        }],
+        "router": {
+            "type": "switch",
+            "wait": {
+                "type": "msg"
+            },
+            "cases": [{
+                "type": "has_number_eq",
+                "uuid": "01da421e-9913-4e34-b1e6-017510b17ad4",
+                "arguments": ["1"],
+                "category_uuid": "ff1cf4ae-dcd5-4f4c-b2b9-e003b000a808"
+            }, {
+                "type": "has_number_eq",
+                "uuid": "9cbf8e53-a11f-48d4-ade4-1e3df27b5057",
+                "arguments": ["2"],
+                "category_uuid": "60a713f9-f767-4c06-9086-e1f733417dd7"
+            }, {
+                "type": "has_number_eq",
+                "uuid": "8998e3c0-f05d-4e69-baff-af1c2afcf2b5",
+                "arguments": ["3"],
+                "category_uuid": "0e01e03d-9e58-41e1-b888-fa9d6835466e"
+            }],
+            "operand": "@input.text",
+            "categories": [{
+                "name": "Visual Arts",
+                "uuid": "ff1cf4ae-dcd5-4f4c-b2b9-e003b000a808",
+                "exit_uuid": "1d9667d7-8b04-4c77-a13b-1d4986e62010"
+            }, {
+                "name": "Poetry",
+                "uuid": "60a713f9-f767-4c06-9086-e1f733417dd7",
+                "exit_uuid": "dc9e8739-2f1d-48a8-9da9-18aec04c9ada"
+            }, {
+                "name": "Theatre",
+                "uuid": "0e01e03d-9e58-41e1-b888-fa9d6835466e",
+                "exit_uuid": "751e1a59-5990-4f9c-9547-8865c01fec18"
+            }, {
+                "name": "Other",
+                "uuid": "b590c662-f15c-49b8-97f9-0954ce7fc721",
+                "exit_uuid": "c886d2b2-ec93-4bec-946c-24334d565a48"
+            }],
+            "result_name": "activity",
+            "default_category_uuid": "b590c662-f15c-49b8-97f9-0954ce7fc721"
+        },
+        "actions": []
+    }, {
+        "uuid": "67e13040-4658-4403-a7a9-8bf0b0d10fe9",
+        "exits": [{
+            "uuid": "03c95a7b-d23a-426a-8e8c-c587754e9e50",
+            "destination_uuid": null
+        }],
+        "actions": [{
+            "text": "“Painting Flowers?” is a fun art activity which will help you to use your fingers and hands to draw beautiful flowers while having fun with your family.",
+            "type": "send_msg",
+            "uuid": "87b55633-80ed-46b2-aa84-719681c52528",
+            "attachments": [],
+            "quick_replies": []
+        }]
+    }, {
+        "uuid": "b97332b6-0d40-4dc8-9c67-f075447e63f9",
+        "exits": [{
+            "uuid": "dbac803e-4ba4-49ea-9065-7290e022bb31",
+            "destination_uuid": null
+        }],
+        "actions": [{
+            "text": "\"There are various forms of poems such as sonnets, haikus, etc. This is a very interesting form of poetry that is as challenging as it is fun to write! Concrete poetry, also called pattern or shape poetry because it has a visual appearance that matches the subject matter of the poem.\"",
+            "type": "send_msg",
+            "uuid": "15116a98-9204-4e60-ad6a-07523eec468b",
+            "attachments": [],
+            "quick_replies": []
+        }]
+    }, {
+        "uuid": "030d0b21-ab4e-414e-8eaf-c80e32e33549",
+        "exits": [{
+            "uuid": "0e99c6be-40d1-4ca6-8199-a8ca0a4c0001",
+            "destination_uuid": null
+        }],
+        "actions": [{
+            "text": "Listen to your body, and find out what it has to say! ",
+            "type": "send_msg",
+            "uuid": "de7e6272-6f91-4ad1-b8ba-8d313c878098",
+            "attachments": [],
+            "quick_replies": []
+        }]
+    }],
+    "language": "base",
+    "localization": {
+        "hi": {
+            "0e01e03d-9e58-41e1-b888-fa9d6835466e": {
+                "name": ["थिएटर"]
+            },
+            "15116a98-9204-4e60-ad6a-07523eec468b": {
+                "text": ["\"कविता के विभिन्न रूप हैं जैसे सोननेट, हाइक, आदि। यह कविता का एक बहुत ही रोचक रूप है जो लिखने के लिए उतना ही चुनौतीपूर्ण है! ठोस कविता, जिसे पैटर्न या आकृति कविता भी कहा जाता है क्योंकि इसमें एक दृश्य उपस्थिति है! कविता के विषय से मेल खाता है। \""]
+            },
+            "60a713f9-f767-4c06-9086-e1f733417dd7": {
+                "name": ["कविता"]
+            },
+            "611c1f36-eef2-4077-9ac4-b20ccc1b9285": {
+                "text": ["हमें अपना परिचय देने के लिए धन्यवाद 😊 \nअपनी इच्छित विषय तक पहुंचने के लिए नीचे दिए गए मेनू में संख्या (1, 2, 3, आदि) टाइप करें। \n\n1. दृश्य कला का प्रयास करें \n2. कविता की कोशिश करो \n3. थिएटर का प्रयास करें \n\nया, \n\n9. मदद के लिए 9 टाइप करें"]
+            },
+            "87b55633-80ed-46b2-aa84-719681c52528": {
+                "text": ["\"फूलों का रंग?\" एक मजेदार कला गतिविधि है जो आपको अपने परिवार के साथ मस्ती करते हुए सुंदर फूलों को आकर्षित करने के लिए अपनी उंगलियों और हाथों का उपयोग करने में मदद करेगी।"]
+            },
+            "b590c662-f15c-49b8-97f9-0954ce7fc721": {
+                "name": ["अन्य"]
+            },
+            "de7e6272-6f91-4ad1-b8ba-8d313c878098": {
+                "text": ["अपने शरीर को सुनो, और पता करें कि उसे क्या कहना है!"]
+            },
+            "ff1cf4ae-dcd5-4f4c-b2b9-e003b000a808": {
+                "name": ["दृश्य कला"]
+            }
+        }
+    },
+    "spec_version": "13.1.0",
+    "expire_after_minutes": 10080
+}

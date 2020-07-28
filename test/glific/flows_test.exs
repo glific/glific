@@ -142,5 +142,26 @@ defmodule Glific.FLowsTest do
       definition = Map.delete(revision.definition, "name")
       assert_raise ArgumentError, fn -> Flows.check_required_fields(definition, [:name]) end
     end
+
+    test "get_cached_flow/2 save the flow to cache returns a touple and flow" do
+      [flow | _tail] = Flows.list_flows()
+      {:ok, loaded_flow} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
+      assert loaded_flow.nodes != nil
+
+      # Next time Flow will be picked from cache
+      Flows.delete_flow(flow)
+      {:ok, loaded_flow_2} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
+      assert loaded_flow_2 == loaded_flow
+    end
+
+    test "update_cached_flow/1 will remove the keys and update the flows" do
+      [flow | _tail] = Flows.list_flows()
+      {:ok, loaded_flow} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
+      Flows.update_flow(flow, %{:shortcode => "flow_new"})
+      Flows.update_cached_flow(flow.uuid)
+      {:ok, loaded_flow_new} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
+      assert loaded_flow.shortcode == flow.shortcode
+      assert loaded_flow_new.shortcode != loaded_flow.shortcode
+    end
   end
 end

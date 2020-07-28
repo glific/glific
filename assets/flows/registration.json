@@ -1,368 +1,303 @@
 {
-  "language" : "base",
-  "_ui" : {
-    "nodes" : {
-      "ce55c518-df76-4889-99f3-8c02d85bcbe0" : {
-        "position" : {
-          "top" : 1100,
-          "left" : 540
-        },
-        "type" : "execute_actions"
-      },
-      "73d66f08-a5e4-4147-a5ad-55a73833e804" : {
-        "position" : {
-          "left" : 560,
-          "top" : 380
-        },
-        "type" : "execute_actions"
-      },
-      "bdd2a976-e8c3-4440-b7b4-187d2ac8cf81" : {
-        "position" : {
-          "top" : 840,
-          "left" : 1060
-        },
-        "type" : "execute_actions"
-      },
-      "79c37c50-5349-4be6-a23b-484746c9f928" : {
-        "position" : {
-          "top" : 260,
-          "left" : 560
-        },
-        "type" : "execute_actions"
-      },
-      "05a0959b-16c1-43f3-946e-08bd24cfd7f2" : {
-        "position" : {
-          "top" : 120,
-          "left" : 560
-        },
-        "type" : "wait_for_response",
-        "config" : {
-          "cases" : {
-
-          }
+  "_ui": {
+    "nodes": {
+      "1654b934-1861-4565-891e-73d54aa35a98": {
+        "type": "execute_actions",
+        "position": {
+          "top": 1300,
+          "left": 540
         }
       },
-      "40b4bb5f-d464-4c23-b097-9b3b003f5a3a" : {
-        "position" : {
-          "left" : 560,
-          "top" : 20
-        },
-        "type" : "execute_actions"
+      "1d4bdc91-6996-4879-b5ea-c3996b3a03c0": {
+        "type": "execute_actions",
+        "position": {
+          "top": 1240,
+          "left": 1000
+        }
       },
-      "02416a97-5301-4a8b-bab2-3b7f3b31346c" : {
-        "position" : {
-          "top" : 900,
-          "left" : 540
-        },
-        "type" : "execute_actions"
+      "3631eb12-391d-4d69-afe6-8446ed5ebbca": {
+        "type": "execute_actions",
+        "position": {
+          "top": 300,
+          "left": 540
+        }
       },
-      "45b34faf-c649-4355-a9f2-d50e63972073" : {
-        "config" : {
-          "cases" : {
-
-          }
+      "5d13fa3e-29a8-439a-8b40-2c8c85f252a3": {
+        "type": "execute_actions",
+        "position": {
+          "top": 1420,
+          "left": 540
+        }
+      },
+      "64b4223e-3dc1-4283-bcfe-7a3b76f11a08": {
+        "type": "wait_for_response",
+        "config": {
+          "cases": {}
         },
-        "type" : "wait_for_response",
-        "position" : {
-          "top" : 680,
-          "left" : 480
+        "position": {
+          "top": 1040,
+          "left": 460
+        }
+      },
+      "93f7697c-f869-47ef-9370-f8325697088b": {
+        "type": "execute_actions",
+        "position": {
+          "top": 700,
+          "left": 280
+        }
+      },
+      "e109d93a-bd05-4937-8ab7-d99763e87f80": {
+        "type": "execute_actions",
+        "position": {
+          "top": 700,
+          "left": 540
+        }
+      },
+      "f7a928ea-75fa-4346-b776-3b85e2ec52a9": {
+        "type": "wait_for_response",
+        "config": {
+          "cases": {}
+        },
+        "position": {
+          "top": 540,
+          "left": 540
         }
       }
     },
-    "stickies" : {
-
-    }
+    "stickies": {}
   },
-  "uuid" : "5e086708-37b2-4b20-80c2-bdc0f213c3c6",
-  "localization" : {
-    "hi" : {
-      "e46cc6ef-d037-4569-8fbe-64b4767c7734" : {
-        "text" : [
-          "HINDI: Thank you for signing up with us @contact.fields.name Your age group is @contact.fields.age_group\n"
-        ]
+  "name": "Registration Workflow",
+  "type": "messaging",
+  "uuid": "f4f38e00-3a50-4892-99ce-a281fe24d040",
+  "vars": ["f4f38e00-3a50-4892-99ce-a281fe24d040"],
+  "nodes": [{
+    "uuid": "3631eb12-391d-4d69-afe6-8446ed5ebbca",
+    "exits": [{
+      "uuid": "4311a8a0-a9d5-4b4f-b00a-83a63c04da00",
+      "destination_uuid": "f7a928ea-75fa-4346-b776-3b85e2ec52a9"
+    }],
+    "actions": [{
+      "text": "Here's an introductory video of the platform and instructional guide.\n\nPlease also tell us your full name",
+      "type": "send_msg",
+      "uuid": "bbe57054-0d1c-4001-ba95-d947fe099f05",
+      "attachments": [],
+      "quick_replies": []
+    }]
+  }, {
+    "uuid": "f7a928ea-75fa-4346-b776-3b85e2ec52a9",
+    "exits": [{
+      "uuid": "a368616e-2c18-480d-a5dd-e75256ee3736",
+      "destination_uuid": "93f7697c-f869-47ef-9370-f8325697088b"
+    }],
+    "router": {
+      "type": "switch",
+      "wait": {
+        "type": "msg"
       },
-      "0cde79fb-bff8-4ed2-ac99-135ea3403dbb" : {
-        "text" : [
-          "HINDI: Sorry, we didn't understand that, please answer with a number 1-4.\n"
-        ]
+      "cases": [],
+      "operand": "@input.text",
+      "categories": [{
+        "name": "All Responses",
+        "uuid": "4297fca7-9441-4489-ae22-8f65a9534d90",
+        "exit_uuid": "a368616e-2c18-480d-a5dd-e75256ee3736"
+      }],
+      "result_name": "contact_name",
+      "default_category_uuid": "4297fca7-9441-4489-ae22-8f65a9534d90"
+    },
+    "actions": []
+  }, {
+    "uuid": "93f7697c-f869-47ef-9370-f8325697088b",
+    "exits": [{
+      "uuid": "bf215fa3-4b95-493e-a398-a6ab5f9b4778",
+      "destination_uuid": "e109d93a-bd05-4937-8ab7-d99763e87f80"
+    }],
+    "actions": [{
+      "uuid": "b68fca5f-edfa-4c1b-abd5-55a25650b767",
+      "value" : "@results.contact_name.input",
+      "type" : "set_contact_field",
+      "field" : {
+        "key" : "name",
+        "name" : "Name"
+      }
+    }]
+  }, {
+    "uuid": "e109d93a-bd05-4937-8ab7-d99763e87f80",
+    "exits": [{
+      "uuid": "0e7267f2-7fce-442a-8dc6-16959a030691",
+      "destination_uuid": "64b4223e-3dc1-4283-bcfe-7a3b76f11a08"
+    }],
+    "actions": [{
+      "text": "We're glad to know your name @contact.fields.name\n\nTell us how old you are:\nType 1 if you are less than 10 years\nType 2 if you are 11 years to 14 years of age\nType 3 if you are 15 to 18 years\nType 4 if you are 19 or above ",
+      "type": "send_msg",
+      "uuid": "a321c893-85a0-4318-b8bd-f65cb2f07e9d",
+      "attachments": [],
+      "quick_replies": []
+    }]
+  }, {
+    "uuid": "64b4223e-3dc1-4283-bcfe-7a3b76f11a08",
+    "exits": [{
+      "uuid": "f1fc8b2c-c7f8-4489-a1cc-37b033152307",
+      "destination_uuid": "1654b934-1861-4565-891e-73d54aa35a98"
+    }, {
+      "uuid": "3ad6cff7-8d60-41bc-a881-0bb93908f540",
+      "destination_uuid": "1654b934-1861-4565-891e-73d54aa35a98"
+    }, {
+      "uuid": "0e1195d9-d658-481f-b51b-794e33a00989",
+      "destination_uuid": "1654b934-1861-4565-891e-73d54aa35a98"
+    }, {
+      "uuid": "eddd128b-69e6-43f5-ac53-0a18b0a151f5",
+      "destination_uuid": "1654b934-1861-4565-891e-73d54aa35a98"
+    }, {
+      "uuid": "1ea86390-6831-4154-8fb4-a7c678f1e666",
+      "destination_uuid": "1d4bdc91-6996-4879-b5ea-c3996b3a03c0"
+    }],
+    "router": {
+      "type": "switch",
+      "wait": {
+        "type": "msg"
       },
-      "e0171377-de7e-42ed-adbf-7c46da94a51c" : {
-        "text" : [
-          "HINDI: Tell us your full name\n"
-        ]
+      "cases": [{
+        "type": "has_number_eq",
+        "uuid": "01d34281-e41b-4f63-8d2b-6f07af372e02",
+        "arguments": ["1"],
+        "category_uuid": "98f47f2a-e175-48e1-9716-853659300bf1"
+      }, {
+        "type": "has_number_eq",
+        "uuid": "80489811-ec3d-4c87-8328-b50842645561",
+        "arguments": ["2"],
+        "category_uuid": "7fce7d80-cb53-4b53-bd88-659ff506ffd0"
+      }, {
+        "type": "has_number_eq",
+        "uuid": "d4335a03-3924-4725-bc1b-4ecd8fc4710d",
+        "arguments": ["3"],
+        "category_uuid": "f7f182ca-478e-4be7-9b0f-50e51ec40bc4"
+      }, {
+        "type": "has_number_eq",
+        "uuid": "379d0c9a-5b62-4f69-9ff1-783aaf38f5aa",
+        "arguments": ["4"],
+        "category_uuid": "0b257da6-515a-4beb-baa9-eb617db36765"
+      }],
+      "operand": "@input.text",
+      "categories": [{
+        "name": "Less than 10",
+        "uuid": "98f47f2a-e175-48e1-9716-853659300bf1",
+        "exit_uuid": "f1fc8b2c-c7f8-4489-a1cc-37b033152307"
+      }, {
+        "name": "11 to 14",
+        "uuid": "7fce7d80-cb53-4b53-bd88-659ff506ffd0",
+        "exit_uuid": "3ad6cff7-8d60-41bc-a881-0bb93908f540"
+      }, {
+        "name": "15 to 18",
+        "uuid": "f7f182ca-478e-4be7-9b0f-50e51ec40bc4",
+        "exit_uuid": "0e1195d9-d658-481f-b51b-794e33a00989"
+      }, {
+        "name": "19 or above",
+        "uuid": "0b257da6-515a-4beb-baa9-eb617db36765",
+        "exit_uuid": "eddd128b-69e6-43f5-ac53-0a18b0a151f5"
+      }, {
+        "name": "Other",
+        "uuid": "74388e34-71e0-45ef-9632-feecef7b6af9",
+        "exit_uuid": "1ea86390-6831-4154-8fb4-a7c678f1e666"
+      }],
+      "result_name": "age_group",
+      "default_category_uuid": "74388e34-71e0-45ef-9632-feecef7b6af9"
+    },
+    "actions": []
+  }, {
+    "uuid": "1d4bdc91-6996-4879-b5ea-c3996b3a03c0",
+    "exits": [{
+      "uuid": "61830b8d-6ceb-4c87-9423-3c03ac04334e",
+      "destination_uuid": "64b4223e-3dc1-4283-bcfe-7a3b76f11a08"
+    }],
+    "actions": [{
+      "text": "Sorry, we didn't understand that.\nPlease select one of the options from (1,2,3,4)",
+      "type": "send_msg",
+      "uuid": "50d39ac9-9c2b-4aa5-ab3d-bee7dd2cd946",
+      "attachments": [],
+      "quick_replies": []
+    }]
+  }, {
+    "uuid": "1654b934-1861-4565-891e-73d54aa35a98",
+    "exits": [{
+      "uuid": "0d295458-a5a7-48fa-98da-7545dc9a2a05",
+      "destination_uuid": "5d13fa3e-29a8-439a-8b40-2c8c85f252a3"
+    }],
+    "actions": [{
+      "type": "set_contact_field",
+      "uuid": "1a5cadff-66ec-4b5d-991b-08d12fa8723b",
+      "field": {
+        "key": "age_group",
+        "name": "Age Group"
       },
-      "818ddbd1-b7c6-4a7f-9b21-94d3280e5a78" : {
-        "text" : [
-          "HINDI: Welcome @contact.fields.name . Tell us how old you are Type 1 if you are less than 10 years Type 2 if you are 11 years to 14 years of age Type 3 if you are 15 to 18 years Type 4 if you are 19 or above"
-        ]
+      "value": "@results.age_group.category"
+    }]
+  }, {
+    "uuid": "5d13fa3e-29a8-439a-8b40-2c8c85f252a3",
+    "exits": [{
+      "uuid": "7e4f97ec-5fd4-4e04-ac94-e01e4fb4992d",
+      "destination_uuid": null
+    }],
+    "actions": [{
+      "text": "Thank you for introducing yourself to us @contact.fields.name  😊 ",
+      "type": "send_msg",
+      "uuid": "41525160-355f-4708-ab99-160b866829d8",
+      "attachments": [],
+      "quick_replies": []
+    }]
+  }],
+  "language": "base",
+  "localization": {
+    "hi": {
+      "0b257da6-515a-4beb-baa9-eb617db36765": {
+        "name": ["19 या उससे ऊपर"]
+      },
+      "34696b56-4c2b-4ab3-86cd-a3d795d9b688": {
+        "name": ["हिन्दी"]
+      },
+      "3e84709b-bdf0-4f9b-bfd2-284a34b0ce5b": {
+        "name": ["नाम"]
+      },
+      "41525160-355f-4708-ab99-160b866829d8": {
+        "text": ["हमें अपना परिचय देने के लिए धन्यवाद @results.name 😊 "]
+      },
+      "4297fca7-9441-4489-ae22-8f65a9534d90": {
+        "name": ["अन्य"]
+      },
+      "50d39ac9-9c2b-4aa5-ab3d-bee7dd2cd946": {
+        "text": ["क्षमा करें, हम आपको समझ नहीं पाए।\n\nकृपया (1,2,3,4) में से किसी एक विकल्प का चयन करें"]
+      },
+      "58578969-ec19-49bf-8910-3db585508f35": {
+        "text": ["क्षमा करें, हम आपको समझ नहीं पाए।\nरचनात्मक कार्यकलाप को प्राप्त करने के लिए आपकी पसंदीदा भाषा क्या है?"]
+      },
+      "74388e34-71e0-45ef-9632-feecef7b6af9": {
+        "name": ["अन्य"]
+      },
+      "7fce7d80-cb53-4b53-bd88-659ff506ffd0": {
+        "name": ["11 से 14"]
+      },
+      "98f47f2a-e175-48e1-9716-853659300bf1": {
+        "name": ["10 से कम"]
+      },
+      "a321c893-85a0-4318-b8bd-f65cb2f07e9d": {
+        "text": ["हमें आपका नाम जानकर खुशी हुई @results.name \nआप कितने साल के हैं? \n\nअगर आप 10 वर्ष से कम हैं तो 1 भेजें \nअगर आप 11 वर्ष से 14 वर्ष की आयु के हैं तो 2 भेजें \n15 से 18 साल होने पर 3 भेजें \nअगर आप 19 या उससे ऊपर हैं तो 4 भेजें"]
+      },
+      "bbe57054-0d1c-4001-ba95-d947fe099f05": {
+        "text": ["हमारे साथ जुड़ने के लिए एक परिचय वीडियो देखें। और कृपया हमें भी अपना नाम बताएं"]
+      },
+      "d03a4c5c-5b30-491b-8d27-4a63862fab55": {
+        "name": ["अन्य"]
+      },
+      "e7420a28-69a6-41bd-951d-d9f9f57bc1d1": {
+        "name": ["अंग्रेज़ी"]
+      },
+      "f7f182ca-478e-4be7-9b0f-50e51ec40bc4": {
+        "name": ["15 से 18"]
+      },
+      "fdccbbd4-3dc3-40cc-bf58-1e430776adea": {
+        "text": ["क्षमा करें, हम आपको समझ नहीं पाए।\n\nकृपया हमें अपना नाम बताएं।\n"]
       }
     }
   },
-  "spec_version" : "13.1.0",
-  "nodes" : [
-    {
-      "exits" : [
-        {
-          "destination_uuid" : "05a0959b-16c1-43f3-946e-08bd24cfd7f2",
-          "uuid" : "6fef56db-8b9d-4879-9a14-392c5b92eb51"
-        }
-      ],
-      "uuid" : "40b4bb5f-d464-4c23-b097-9b3b003f5a3a",
-      "actions" : [
-        {
-          "attachments" : [
-
-          ],
-          "text" : "Tell us your full name",
-          "uuid" : "e0171377-de7e-42ed-adbf-7c46da94a51c",
-          "quick_replies" : [
-
-          ],
-          "type" : "send_msg"
-        }
-      ]
-    },
-    {
-      "uuid" : "05a0959b-16c1-43f3-946e-08bd24cfd7f2",
-      "router" : {
-        "default_category_uuid" : "8a939724-1a35-4453-864f-7467617e1655",
-        "cases" : [
-
-        ],
-        "result_name" : "contact_name",
-        "wait" : {
-          "type" : "msg"
-        },
-        "categories" : [
-          {
-            "uuid" : "8a939724-1a35-4453-864f-7467617e1655",
-            "name" : "All Responses",
-            "exit_uuid" : "e084393a-ce63-48e8-a4a9-714cf6e46825"
-          }
-        ],
-        "operand" : "@input.text",
-        "type" : "switch"
-      },
-      "actions" : [
-
-      ],
-      "exits" : [
-        {
-          "uuid" : "e084393a-ce63-48e8-a4a9-714cf6e46825",
-          "destination_uuid" : "79c37c50-5349-4be6-a23b-484746c9f928"
-        }
-      ]
-    },
-    {
-      "uuid" : "79c37c50-5349-4be6-a23b-484746c9f928",
-      "actions" : [
-        {
-          "uuid" : "a65473be-bb5f-4f94-9c18-94a58689609f",
-          "value" : "@results.contact_name.input",
-          "type" : "set_contact_field",
-          "field" : {
-            "key" : "name",
-            "name" : "Name"
-          }
-        }
-      ],
-      "exits" : [
-        {
-          "uuid" : "828d13bd-3eca-4306-8cad-d489f1eb0154",
-          "destination_uuid" : "73d66f08-a5e4-4147-a5ad-55a73833e804"
-        }
-      ]
-    },
-    {
-      "uuid" : "73d66f08-a5e4-4147-a5ad-55a73833e804",
-      "actions" : [
-        {
-          "uuid" : "818ddbd1-b7c6-4a7f-9b21-94d3280e5a78",
-          "text" : "Welcome @contact.fields.name . Tell us how old you are\nType 1 if you are less than 10 years\nType 2 if you are 11 years to 14 years of age\nType 3 if you are 15 to 18 years\nType 4 if you are 19 or above ",
-          "type" : "send_msg",
-          "attachments" : [
-
-          ],
-          "quick_replies" : [
-
-          ]
-        }
-      ],
-      "exits" : [
-        {
-          "uuid" : "ec52ba14-35ce-4c9a-be49-680df179327d",
-          "destination_uuid" : "45b34faf-c649-4355-a9f2-d50e63972073"
-        }
-      ]
-    },
-    {
-      "uuid" : "45b34faf-c649-4355-a9f2-d50e63972073",
-      "router" : {
-        "wait" : {
-          "type" : "msg"
-        },
-        "default_category_uuid" : "906571b4-50d1-4d70-baa1-4fda01accd2e",
-        "operand" : "@input.text",
-        "cases" : [
-          {
-            "arguments" : [
-              "1"
-            ],
-            "category_uuid" : "a9c3e251-c1ea-4cd0-946e-4ede4e2ea073",
-            "uuid" : "cfb9e055-c48f-4d82-b831-013c6ef6f47e",
-            "type" : "has_number_eq"
-          },
-          {
-            "arguments" : [
-              "2"
-            ],
-            "category_uuid" : "667f7135-ba8d-4527-b9cd-0b37bd058893",
-            "uuid" : "16b93cbf-58af-451a-a1b5-28d9bd41cba8",
-            "type" : "has_number_eq"
-          },
-          {
-            "arguments" : [
-              "3"
-            ],
-            "category_uuid" : "e2d5b1fa-f614-4870-9146-bbce1e29a9ce",
-            "uuid" : "f38b3b3c-519e-4f9e-97e0-a3f787ec2efb",
-            "type" : "has_number_eq"
-          },
-          {
-            "arguments" : [
-              "4"
-            ],
-            "category_uuid" : "c63942b1-3b99-46ed-819b-92f4049912ac",
-            "uuid" : "9cc29f40-e27e-49a5-8a47-212a1a8df5f4",
-            "type" : "has_number_eq"
-          }
-        ],
-        "type" : "switch",
-        "categories" : [
-          {
-            "uuid" : "a9c3e251-c1ea-4cd0-946e-4ede4e2ea073",
-            "name" : "child",
-            "exit_uuid" : "fcc898d9-c870-4cbe-a2a9-849d60ad61b6"
-          },
-          {
-            "uuid" : "667f7135-ba8d-4527-b9cd-0b37bd058893",
-            "name" : "youth",
-            "exit_uuid" : "390d8c46-1200-4d13-9f10-b338585c6389"
-          },
-          {
-            "uuid" : "e2d5b1fa-f614-4870-9146-bbce1e29a9ce",
-            "name" : "young adult",
-            "exit_uuid" : "5ac49013-37d8-4073-926c-bd62642c6016"
-          },
-          {
-            "uuid" : "c63942b1-3b99-46ed-819b-92f4049912ac",
-            "name" : "adult",
-            "exit_uuid" : "2d95c17b-a7a4-477e-98bd-19f433dc7616"
-          },
-          {
-            "uuid" : "906571b4-50d1-4d70-baa1-4fda01accd2e",
-            "name" : "Other",
-            "exit_uuid" : "c4697946-1999-4b19-9595-fdc1259cde9a"
-          }
-        ],
-        "result_name" : "age_group"
-      },
-      "exits" : [
-        {
-          "uuid" : "fcc898d9-c870-4cbe-a2a9-849d60ad61b6",
-          "destination_uuid" : "02416a97-5301-4a8b-bab2-3b7f3b31346c"
-        },
-        {
-          "uuid" : "390d8c46-1200-4d13-9f10-b338585c6389",
-          "destination_uuid" : "02416a97-5301-4a8b-bab2-3b7f3b31346c"
-        },
-        {
-          "uuid" : "5ac49013-37d8-4073-926c-bd62642c6016",
-          "destination_uuid" : "02416a97-5301-4a8b-bab2-3b7f3b31346c"
-        },
-        {
-          "uuid" : "2d95c17b-a7a4-477e-98bd-19f433dc7616",
-          "destination_uuid" : "02416a97-5301-4a8b-bab2-3b7f3b31346c"
-        },
-        {
-          "uuid" : "c4697946-1999-4b19-9595-fdc1259cde9a",
-          "destination_uuid" : "bdd2a976-e8c3-4440-b7b4-187d2ac8cf81"
-        }
-      ],
-      "actions" : [
-
-      ]
-    },
-    {
-      "uuid" : "bdd2a976-e8c3-4440-b7b4-187d2ac8cf81",
-      "actions" : [
-        {
-          "quick_replies" : [
-
-          ],
-          "uuid" : "0cde79fb-bff8-4ed2-ac99-135ea3403dbb",
-          "attachments" : [
-
-          ],
-          "text" : "Sorry, we didn't understand that, please answer with a number 1-4.",
-          "type" : "send_msg"
-        }
-      ],
-      "exits" : [
-        {
-          "uuid" : "098cb240-c34c-4f87-95b2-9412cda7ca87",
-          "destination_uuid" : "45b34faf-c649-4355-a9f2-d50e63972073"
-        }
-      ]
-    },
-    {
-      "uuid" : "02416a97-5301-4a8b-bab2-3b7f3b31346c",
-      "actions" : [
-        {
-          "field" : {
-            "name" : "Age Group",
-            "key" : "age_group"
-          },
-          "type" : "set_contact_field",
-          "value" : "@results.age_group.category",
-          "uuid" : "1defa208-7a0b-4516-89bd-ada34ab2b151"
-        }
-      ],
-      "exits" : [
-        {
-          "destination_uuid" : "ce55c518-df76-4889-99f3-8c02d85bcbe0",
-          "uuid" : "5905a59e-c9f6-46de-be0a-60df7e689ae0"
-        }
-      ]
-    },
-    {
-      "uuid" : "ce55c518-df76-4889-99f3-8c02d85bcbe0",
-      "actions" : [
-        {
-          "type" : "send_msg",
-          "uuid" : "e46cc6ef-d037-4569-8fbe-64b4767c7734",
-          "attachments" : [
-
-          ],
-          "text" : "Thank you for signing up with us @contact.fields.name Your age group is @contact.fields.age_group",
-          "all_urns" : false,
-          "quick_replies" : [
-
-          ]
-        }
-      ],
-      "exits" : [
-        {
-          "uuid" : "7942ad13-0eae-473b-ace4-f5e65fb17f33",
-          "destination_uuid" : null
-        }
-      ]
-    }
-  ],
-  "vars" : [
-    "5e086708-37b2-4b20-80c2-bdc0f213c3c6"
-  ],
-  "name" : "Registration Workflow",
-  "type" : "messaging",
-  "expire_after_minutes" : 10080
+  "spec_version": "13.1.0",
+  "expire_after_minutes": 10080
 }
