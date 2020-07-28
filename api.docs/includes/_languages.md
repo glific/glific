@@ -50,7 +50,9 @@ This returns all the languages
 
 ### Query Parameters
 
-None
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
 
 ### Return Parameters
 Type | Description
