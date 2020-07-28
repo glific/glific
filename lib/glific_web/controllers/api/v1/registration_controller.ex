@@ -126,15 +126,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
     %{"phone" => phone, "otp" => otp} = user_params
 
     with {:ok, _data} <- verify_otp(phone, otp),
-         {:ok, _response_data} <- reset_user_password(user_params),
-         {:ok, conn} <- Pow.Plug.authenticate_user(conn, user_params) do
-      json(conn, %{
-        data: %{
-          access_token: conn.private[:api_access_token],
-          token_expiry_time: conn.private[:api_token_expiry_time],
-          renewal_token: conn.private[:api_renewal_token]
-        }
-      })
+         {:ok, response_data} <- reset_user_password(conn, user_params) do
+      json(conn, response_data)
     else
       {:error, _errors} ->
         conn
@@ -143,8 +136,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
 
-  @spec reset_user_password(map()) :: {:ok, User.t()} | {:error, Changeset.t()}
-  defp reset_user_password(%{"phone" => phone, "password" => password}) do
+  @spec reset_user_password(Conn.t(), map()) :: {:ok, map()} | {:error, []}
+  defp reset_user_password(conn, %{"phone" => phone, "password" => password} = user_params) do
     update_params = %{
       "password" => password,
       "password_confirmation" => password
@@ -154,5 +147,22 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
     user
     |> Users.reset_user_password(update_params)
+    |> case do
+      {:ok, _user} ->
+        {:ok, conn} = Pow.Plug.authenticate_user(conn, user_params)
+
+        response_data = %{
+          data: %{
+            access_token: conn.private[:api_access_token],
+            token_expiry_time: conn.private[:api_token_expiry_time],
+            renewal_token: conn.private[:api_renewal_token]
+          }
+        }
+
+        {:ok, response_data}
+
+      {:error, error} ->
+        {:error, error}
+    end
   end
 end
