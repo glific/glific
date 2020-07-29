@@ -18,6 +18,11 @@ query users($filter: UserFilter, $opts: Opts) {
 {
   "filter": {
     "name": "Doe"
+  },
+  "opts": {
+    "order": "ASC",
+    "limit": 10,
+    "offset": 0
   }
 }
 ```

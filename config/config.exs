@@ -41,7 +41,6 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 # Configure Oban, its queues and crontab entries
 config :glific, Oban,
   repo: Glific.Repo,
-  prune: {:maxlen, 10_000},
   queues: [default: 10, gupshup: 10, glifproxy: 10, webhook: 10, crontab: 10],
   crontab: [
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :fun_with_flags}}

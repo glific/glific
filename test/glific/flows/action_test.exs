@@ -157,7 +157,7 @@ defmodule Glific.Flows.ActionTest do
 
   test "execute an action when type is set_contact_language" do
     language_label = "English (United States)"
-    [language | _] = Settings.list_languages(%{label: language_label})
+    [language | _] = Settings.list_languages(%{filter: %{label: language_label}})
 
     [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
 
