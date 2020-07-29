@@ -3,7 +3,6 @@ defmodule Glific.Seeds.SeedsDev do
   Script for populating the database. We can call this from tests and/or /priv/repo
   """
   alias Glific.{
-    Contacts,
     Contacts.Contact,
     Flows.Flow,
     Flows.FlowRevision,
@@ -415,37 +414,6 @@ defmodule Glific.Seeds.SeedsDev do
     # })
   end
 
-  @doc false
-  @spec seed_opted_in_contacts :: nil
-  def seed_opted_in_contacts do
-    {:ok, response} =
-      HTTPoison.get(
-        "https://api.gupshup.io/sm/api/v1/users/glificapp",
-        [
-          {"apikey", Application.fetch_env!(:glific, :provider_key)}
-        ]
-      )
-
-    {:ok, response_data} = Poison.decode(response.body)
-
-    users = response_data["users"]
-
-    Enum.each(users, fn user ->
-      {:ok, last_message_at} = DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
-      {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
-
-      phone = user["countryCode"] <> user["phoneCode"]
-
-      Contacts.upsert(%{
-        phone: phone,
-        last_message_at: last_message_at |> DateTime.truncate(:second),
-        optin_time: optin_time |> DateTime.truncate(:second)
-      })
-    end)
-
-    nil
-  end
-
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
   split this function up into multiple different ones for test, dev and production
@@ -469,7 +437,5 @@ defmodule Glific.Seeds.SeedsDev do
     seed_messages_media()
 
     seed_flows()
-
-    seed_opted_in_contacts()
   end
 end
