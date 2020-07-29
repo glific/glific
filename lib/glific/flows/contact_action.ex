@@ -37,8 +37,10 @@ defmodule Glific.Flows.ContactAction do
     body = MessageVarParser.parse(text, message_vars)
     # super hack for now, lets wait for the previous messages to go out
     :timer.sleep(50)
+
     {:ok, _message} =
       Messages.create_and_send_message(%{body: body, type: :text, receiver_id: context.contact_id})
+
     context
   end
 
@@ -54,6 +56,7 @@ defmodule Glific.Flows.ContactAction do
 
     # super hack for now, lets wait for the previous messages to go out
     :timer.sleep(50)
+
     {:ok, _message} =
       Messages.create_and_send_session_template(session_template, context.contact_id)
 

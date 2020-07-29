@@ -31,7 +31,9 @@ defmodule TestProducer do
 
   def init(demand), do: {:producer, demand}
 
-  def handle_demand(demand, counter) when counter > 10 do
+  def handle_demand(demand, counter) when counter >= 10 do
+    IO.inspect(demand)
+    IO.inspect(counter)
     send(:test, {:called_back})
     {:stop, :normal, demand}
   end
