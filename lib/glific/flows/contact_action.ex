@@ -35,7 +35,12 @@ defmodule Glific.Flows.ContactAction do
     # so we have to fetch the latest contact fields
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     body = MessageVarParser.parse(text, message_vars)
-    Messages.create_and_send_message(%{body: body, type: :text, receiver_id: context.contact_id})
+    # super hack for now, lets wait for the previous messages to go out
+    :timer.sleep(50)
+
+    {:ok, _message} =
+      Messages.create_and_send_message(%{body: body, type: :text, receiver_id: context.contact_id})
+
     context
   end
 
@@ -48,6 +53,9 @@ defmodule Glific.Flows.ContactAction do
 
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
     session_template = Messages.parse_template_vars(templating.template, vars)
+
+    # super hack for now, lets wait for the previous messages to go out
+    :timer.sleep(50)
 
     {:ok, _message} =
       Messages.create_and_send_session_template(session_template, context.contact_id)
