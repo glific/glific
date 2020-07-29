@@ -31,9 +31,7 @@ defmodule TestProducer do
 
   def init(demand), do: {:producer, demand}
 
-  def handle_demand(demand, counter) when counter >= 10 do
-    IO.inspect(demand)
-    IO.inspect(counter)
+  def handle_demand(demand, counter) when counter > 10 do
     send(:test, {:called_back})
     {:stop, :normal, demand}
   end
@@ -75,7 +73,7 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     {:ok, _consumer} = ConsumerTagger.start_link(producer: producer, name: TestConsumerTagger)
 
     Process.register(self(), :test)
-    assert_receive({:called_back}, 1000)
+    assert_receive({:called_back}, 10000)
 
     # ensure we have a few message tags in the DB
     assert Repo.aggregate(MessageTag, :count) > 0
