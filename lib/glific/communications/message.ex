@@ -42,7 +42,9 @@ defmodule Glific.Communications.Message do
       {:ok, _} = apply(Communications.provider(), @type_to_token[message.type], [message])
       {:ok, Communications.publish_data(message, :sent_message)}
     else
-      {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, provider_status: nil})
+      {:ok, _} =
+        Messages.update_message(message, %{status: :contact_opt_out, provider_status: nil})
+
       {:error, "Cannot send the message to the contact."}
     end
   end
