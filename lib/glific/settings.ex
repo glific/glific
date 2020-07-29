@@ -27,6 +27,7 @@ defmodule Glific.Settings do
   def count_languages(args \\ %{}),
     do: Repo.count_filter(args, Language, &filter_with/2)
 
+  # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
@@ -43,6 +44,7 @@ defmodule Glific.Settings do
         query
     end)
   end
+  # codebeat:enable[ABC]
 
   @doc """
   Gets a single language.
