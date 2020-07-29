@@ -42,7 +42,7 @@ defmodule Glific.Search.Full do
         ^"%#{unquote(term)}%",
         ^"%#{unquote(term)}%",
         ^unquote(args).contact_opts.offset,
-        ^unquote(args).contact_opts.limit
+        ^unquote(args).contact_opts[:limit]
       )
     end
   end
@@ -51,7 +51,7 @@ defmodule Glific.Search.Full do
   defp run_helper(query, "", args) do
     query
     |> offset(^args.contact_opts.offset)
-    |> limit(^args.contact_opts.limit)
+    |> limit(^args.contact_opts[:limit])
   end
 
   defp run_helper(query, term, args) do

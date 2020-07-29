@@ -137,6 +137,9 @@ defmodule Glific.Searches do
     # save the search if needed
     do_save_search(args)
 
+    #disabling all contact filters to get the count
+    args = update_args_for_count(args, count)
+
     contact_ids =
       search_query(term, args)
       |> Repo.all()
@@ -183,4 +186,15 @@ defmodule Glific.Searches do
       end
     )
   end
+
+  # disabling all contact filters to get the count
+  @spec update_args_for_count(map(), boolean()) :: map()
+  defp update_args_for_count(args, true) do
+      args
+      |> put_in([:contact_opts, :limit], nil)
+      |> put_in([:contact_opts, :offset], nil)
+  end
+
+  defp update_args_for_count(args, false), do: args
+
 end
