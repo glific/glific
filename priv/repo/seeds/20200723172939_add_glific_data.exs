@@ -39,8 +39,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     saved_searches()
 
     flows()
-
-    opted_in_contacts()
   end
 
   def down(_repo) do
@@ -425,32 +423,5 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       definition: definition,
       flow_id: f.id
     })
-  end
-
-  def opted_in_contacts do
-    {:ok, response} =
-      HTTPoison.get(
-        "https://api.gupshup.io/sm/api/v1/users/glificapp",
-        [
-          {"apikey", Application.fetch_env!(:glific, :provider_key)}
-        ]
-      )
-
-    {:ok, response_data} = Poison.decode(response.body)
-
-    users = response_data["users"]
-
-    Enum.each(users, fn user ->
-      {:ok, last_message_at} = DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
-      {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
-
-      phone = user["countryCode"] <> user["phoneCode"]
-
-      Glific.Contacts.upsert(%{
-        phone: phone,
-        last_message_at: last_message_at |> DateTime.truncate(:second),
-        optin_time: optin_time |> DateTime.truncate(:second)
-      })
-    end)
   end
 end
