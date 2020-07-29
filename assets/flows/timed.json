@@ -162,7 +162,7 @@
           "headers" : {
             "Accept" : "application\/json"
           },
-          "url" : "http:\/\/glific.test:4000\/flowhook",
+          "url" : "http:\/\/glific.test:4000\/flow-editor/channels",
           "method" : "GET"
         }
       ],
