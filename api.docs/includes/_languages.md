@@ -46,12 +46,13 @@ query languages($opts: Opts) {
   }
 }
 ```
-This returns all the languages
+This returns all the languages filtered by the input <a href="#languagefilter">LanguageFilter</a>
 
 ### Query Parameters
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
+filter | <a href="#languagefilter">LanguageFilter</a> | nil | filter the list
 opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
 
 ### Return Parameters
@@ -122,7 +123,9 @@ query countLanguages {
 
 ### Query Parameters
 
-None
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+filter | <a href="#languagefilter">LanguageFilter</a> | nil | filter the list
 
 ### Return Parameters
 Type | Description

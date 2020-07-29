@@ -36,7 +36,7 @@ defmodule Glific.SettingsTest do
     test "list_languages/0 returns all languages" do
       language = language_fixture()
       assert language in Settings.list_languages()
-      assert Settings.list_languages(%{label: "English", locale: "hi"}) == []
+      assert Settings.list_languages(%{filter: %{label: "English", locale: "hi"}}) == []
     end
 
     test "list_languages/1 with multiple items with various opts" do
@@ -116,7 +116,7 @@ defmodule Glific.SettingsTest do
     end
 
     test "deleting a language with tags associated, should result in an error" do
-      [hi_in | _] = Settings.list_languages(%{label: "hindi"})
+      [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
       SeedsDev.seed_tag()
 
       assert {:error, %Ecto.Changeset{}} = Settings.delete_language(hi_in)

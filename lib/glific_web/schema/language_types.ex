@@ -15,6 +15,15 @@ defmodule GlificWeb.Schema.LanguageTypes do
     field :is_active, :boolean
   end
 
+  @desc "Filtering options for languages"
+  input_object :language_filter do
+    @desc "Match the label"
+    field :label, :string
+
+    @desc "Match the locale"
+    field :locale, :string
+  end
+
   input_object :language_input do
     field :label, non_null(:string)
     field :label_locale, non_null(:string)
@@ -38,11 +47,13 @@ defmodule GlificWeb.Schema.LanguageTypes do
     @desc "Get a list of all languages filtered by various criteria"
     field :languages, list_of(:language) do
       arg(:opts, :opts)
+      arg(:filter, :language_filter)
       resolve(&Resolvers.Settings.languages/3)
     end
 
     @desc "Get a count of all languages"
     field :count_languages, :integer do
+      arg(:filter, :language_filter)
       resolve(&Resolvers.Settings.count_languages/3)
     end
   end
