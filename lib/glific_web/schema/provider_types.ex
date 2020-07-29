@@ -43,7 +43,7 @@ defmodule GlificWeb.Schema.ProviderTypes do
     @desc "Get a list of all providers filtered by various criteria"
     field :providers, list_of(:provider) do
       arg(:filter, :provider_filter)
-      arg(:order, type: :sort_order, default_value: :asc)
+      arg(:opts, :opts)
       resolve(&Resolvers.Partners.providers/3)
     end
 

@@ -3,8 +3,8 @@
 ## Get All Providers
 
 ```graphql
-query providers($filter: ProviderFilter, $order: SortOrder) {
-  providers(filter: $filter, order:$order) {
+query providers($filter: ProviderFilter, $opts: Opts) {
+  providers(filter: $filter, opts: $opts) {
     id
     name
     apiEndPoint
@@ -13,6 +13,11 @@ query providers($filter: ProviderFilter, $order: SortOrder) {
 }
 
 {
+  "opts": {
+    "limit": 10,
+    "offset": 1,
+    "order": "ASC"
+  },
   "filter": {
     "name": "Default"
   }
@@ -42,7 +47,7 @@ This returns all the providers filtered by the input <a href="#providerfilter">P
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 filter | <a href="#providerfilter">ProviderFilter</a> | nil | filter the list
-order | <a href="#sortorder">SortOrder</a> | ASC | ASC / DESC
+opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
 
 ### Return Parameters
 Type | Description

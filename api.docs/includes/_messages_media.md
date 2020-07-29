@@ -12,9 +12,10 @@ query messagesMedia($opts: Opts) {
 
 {
   "opts": {
+    "order": "ASC",
     "limit": 10,
     "offset": 0
-  },
+  }
 }
 ```
 
@@ -42,7 +43,7 @@ This returns all the messages media for the organization.
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-opts | <a href="#opts">Opts</a> | nil | limit / offset 
+opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
 
 ## Get a specific Message Media by ID
 

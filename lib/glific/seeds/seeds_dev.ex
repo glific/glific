@@ -23,8 +23,8 @@ defmodule Glific.Seeds.SeedsDev do
   """
   @spec seed_tag :: nil
   def seed_tag do
-    [hi_in | _] = Settings.list_languages(%{label: "hindi"})
-    [en_us | _] = Settings.list_languages(%{label: "english"})
+    [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
+    [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
     Repo.insert!(%Tag{label: "This is for testing", language: en_us})
     Repo.insert!(%Tag{label: "यह परीक्षण के लिए है", language: hi_in})
@@ -33,8 +33,8 @@ defmodule Glific.Seeds.SeedsDev do
   @doc false
   @spec seed_contacts :: {integer(), nil}
   def seed_contacts do
-    [hi_in | _] = Settings.list_languages(%{label: "hindi"})
-    [en_us | _] = Settings.list_languages(%{label: "english"})
+    [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
+    [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
     contacts = [
       %{phone: "917834811231", name: "Default receiver", language_id: hi_in.id},
@@ -221,7 +221,7 @@ defmodule Glific.Seeds.SeedsDev do
   @doc false
   @spec seed_session_templates :: nil
   def seed_session_templates do
-    [en_us | _] = Settings.list_languages(%{label: "english"})
+    [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
     session_template_parent =
       Repo.insert!(%SessionTemplate{

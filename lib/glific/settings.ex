@@ -17,25 +17,34 @@ defmodule Glific.Settings do
 
   """
   @spec list_languages(map()) :: [Language.t(), ...]
-  def list_languages(args \\ %{}) do
-    args
-    |> Enum.reduce(Language, fn
+  def list_languages(args \\ %{}),
+    do: Repo.list_filter(args, Language, &Repo.opts_with_label/2, &filter_with/2)
+
+  @doc """
+  Return the count of languages, using the same filter as list_languages
+  """
+  @spec count_languages(map()) :: integer
+  def count_languages(args \\ %{}),
+    do: Repo.count_filter(args, Language, &filter_with/2)
+
+  # codebeat:disable[ABC]
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
       {:label, label}, query ->
         from q in query,
           where: ilike(q.label, ^"%#{label}%") or ilike(q.label_locale, ^"%#{label}%")
 
       {:locale, locale}, query ->
         from q in query, where: ilike(q.locale, ^"%#{locale}%")
-    end)
-    |> Repo.all()
-  end
 
-  @doc """
-  Return the count of languages, using the same filter as list_languages
-  """
-  @spec count_languages(map()) :: integer
-  def count_languages(_args \\ %{}),
-    do: Repo.aggregate(Language, :count)
+      _, query ->
+        query
+    end)
+  end
+  # codebeat:enable[ABC]
 
   @doc """
   Gets a single language.
