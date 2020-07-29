@@ -69,10 +69,13 @@ defmodule Glific.Flows.Action do
 
     field :quick_replies, {:array, :string}, default: []
 
+    field :attachments, :map
+
     field :node_uuid, Ecto.UUID
     embeds_one :node, Node
 
     embeds_one :templating, Templating
+
 
     field :enter_flow_uuid, Ecto.UUID
     embeds_one :enter_flow, Flow
@@ -142,8 +145,12 @@ defmodule Glific.Flows.Action do
     attrs = %{
       name: json["name"],
       text: json["text"],
-      quick_replies: json["quick_replies"]
+      quick_replies: json["quick_replies"],
+      attachments: process_attachments(json["quick_replies"])
+
     }
+
+
 
     {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
     attrs = Map.put(attrs, :templating, templating)
@@ -204,4 +211,20 @@ defmodule Glific.Flows.Action do
 
   def execute(action, _context, _message_stream),
     do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
+
+  # let's format attachment and add as a map
+  @spec process_attachments(list()) :: map()
+  defp process_attachments(nil), do: %{}
+
+  defp process_attachments(attachment_list) do
+    attachment_list
+    |> Enum.map(
+          fn attchement
+            -> [type, url] = String.split(attchement)
+               {type, url}
+          end)
+    |> Map.new()
+  end
+
+
 end

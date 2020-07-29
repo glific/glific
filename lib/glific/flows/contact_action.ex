@@ -35,6 +35,8 @@ defmodule Glific.Flows.ContactAction do
     # so we have to fetch the latest contact fields
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     body = MessageVarParser.parse(text, message_vars)
+
+
     Messages.create_and_send_message(%{body: body, type: :text, receiver_id: context.contact_id})
     context
   end
