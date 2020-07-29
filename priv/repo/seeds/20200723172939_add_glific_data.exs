@@ -358,6 +358,19 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
       uuid: "e55f2c10-541c-470b-a5ff-9249ae82bc95"
     })
+
+    Repo.insert!(%SessionTemplate{
+      label: "User Regitstration",
+      body: """
+      Please click on the link to register with the phone number @contact.name
+      @global.register.url
+      """,
+      type: :text,
+      shortcode: "user-registration",
+      is_reserved: true,
+      language_id: en_us.id,
+      uuid: "fbf8d5a6-91ab-47ab-9691-35ef35443ad8",
+    })
   end
 
   def saved_searches do
