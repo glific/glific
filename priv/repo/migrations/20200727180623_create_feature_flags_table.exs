@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.SetTriggerForFlowRevisionNumber do
+defmodule Glific.Repo.Migrations.FunWithFlags do
   use Ecto.Migration
 
   # This migration assumes the default table name of "fun_with_flags_toggles"
@@ -15,10 +15,11 @@ defmodule Glific.Repo.Migrations.SetTriggerForFlowRevisionNumber do
     end
 
     create index(
-      :fun_with_flags_toggles,
-      [:flag_name, :gate_type, :target],
-      [unique: true, name: "fwf_flag_name_gate_target_idx"]
-    )
+             :fun_with_flags_toggles,
+             [:flag_name, :gate_type, :target],
+             unique: true,
+             name: "fwf_flag_name_gate_target_idx"
+           )
   end
 
   def down do

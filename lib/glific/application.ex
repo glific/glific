@@ -49,7 +49,20 @@ defmodule Glific.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
-    Supervisor.start_link(children, opts)
+    return_value = Supervisor.start_link(children, opts)
+
+    # not a great spot to put it, but will do for now
+    fun_with_flags()
+
+    return_value
+  end
+
+  defp fun_with_flags do
+    FunWithFlags.enable(:enable_out_of_office)
+
+    # to begin with lets disable the out_of_office hours.
+    # We'll let Oban take care of it
+    FunWithFlags.disable(:out_of_office_active)
   end
 
   # Tell Phoenix to update the endpoint configuration

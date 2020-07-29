@@ -44,7 +44,7 @@ config :glific, Oban,
   prune: {:maxlen, 10_000},
   queues: [default: 10, gupshup: 10, glifproxy: 10, webhook: 10, crontab: 10],
   crontab: [
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :fun_with_flags}},
+    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :fun_with_flags}}
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
@@ -87,7 +87,8 @@ config :phil_columns,
 # FunWithFlags configuration.
 config :fun_with_flags, :cache,
   enabled: true,
-  ttl: 900 # in seconds
+  # in seconds
+  ttl: 900
 
 # Use ecto.sql persistence adapter is the default, no need to set this.
 config :fun_with_flags, :persistence,

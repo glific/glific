@@ -10,6 +10,11 @@ defmodule Glific.Jobs.MinuteWorker do
   @hours_of_day 9..20
 
   @impl Oban.Worker
+  @doc """
+  Worker to implement cron job functionality as implemented by Oban. This
+  is a work in progress and subject to change
+  """
+  @spec perform(map(), Oban.Job.t()) :: :ok | :error
   def perform(_map, %Oban.Job{args: %{job: :fun_with_flags}}) do
     if FunWithFlags.enabled?(:enable_out_of_office) do
       # check if current day and time is valid
@@ -24,10 +29,11 @@ defmodule Glific.Jobs.MinuteWorker do
           do: FunWithFlags.disable(:out_of_office_active)
       else
         # we are closed now, enable out_of_office flow
-        if ! FunWithFlags.enabled?(:out_of_office_active),
+        if !FunWithFlags.enabled?(:out_of_office_active),
           do: FunWithFlags.enable(:out_of_office_active)
       end
     end
+
     :ok
   end
 
