@@ -374,6 +374,19 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Enum.each(data, &saved_search(&1, labels))
   end
 
+  defp saved_search({label, shortcode}, _labels) when label == "All"
+    do:
+  Repo.insert!(%SavedSearch{
+        label: label,
+        shortcode: shortcode,
+        args: %{
+          contactOpts: %{limit: 20, offset: 0},
+          messageOpts: %{limit: 10, offset: 0},
+          term: ""
+        },
+        is_reserved: true
+               })
+
   defp saved_search({label, shortcode}, labels),
     do:
       Repo.insert!(%SavedSearch{
