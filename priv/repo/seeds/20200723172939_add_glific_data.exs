@@ -4,6 +4,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   envs([:dev, :test, :prod])
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Flows.Flow,
     Flows.FlowRevision,
@@ -39,6 +40,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     saved_searches()
 
     flows()
+
+    opted_in_contacts()
   end
 
   def down(_repo) do
@@ -438,5 +441,28 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       definition: definition,
       flow_id: f.id
     })
+  end
+
+  def opted_in_contacts do
+    with {:ok, url} <- Application.fetch_env(:glific, :provider_optin_list_url),
+         {:ok, api_key} <- Application.fetch_env(:glific, :provider_key),
+         {:ok, response} <- HTTPoison.get(url, [{"apikey", api_key}]),
+         {:ok, response_data} <- Poison.decode(response.body),
+         false <- is_nil(response_data["users"]) do
+      users = response_data["users"]
+
+      Enum.each(users, fn user ->
+        {:ok, last_message_at} = DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
+        {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
+
+        phone = user["countryCode"] <> user["phoneCode"]
+
+        Contacts.upsert(%{
+          phone: phone,
+          last_message_at: last_message_at |> DateTime.truncate(:second),
+          optin_time: optin_time |> DateTime.truncate(:second)
+        })
+      end)
+    end
   end
 end
