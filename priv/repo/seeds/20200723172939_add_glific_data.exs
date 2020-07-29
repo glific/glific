@@ -431,8 +431,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def opted_in_contacts do
     with {:ok, url} <- Application.fetch_env(:glific, :provider_optin_list_url),
          {:ok, api_key} <- Application.fetch_env(:glific, :provider_key),
-         {:ok, response} <- HTTPoison.get(url, [{"apikey", api_key}]) do
-      {:ok, response_data} = Poison.decode(response.body)
+         {:ok, response} <- HTTPoison.get(url, [{"apikey", api_key}]),
+         {:ok, response_data} <- Poison.decode(response.body),
+         false <- is_nil(response_data["users"]) do
       users = response_data["users"]
 
       Enum.each(users, fn user ->
