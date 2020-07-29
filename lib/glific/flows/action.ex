@@ -46,7 +46,7 @@ defmodule Glific.Flows.Action do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           templating: Templating.t() | nil
-        }
+      }
 
   embedded_schema do
     field :uuid, Ecto.UUID
@@ -146,11 +146,8 @@ defmodule Glific.Flows.Action do
       name: json["name"],
       text: json["text"],
       quick_replies: json["quick_replies"],
-      attachments: process_attachments(json["quick_replies"])
-
+      attachments: process_attachments(json["attachments"])
     }
-
-
 
     {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
     attrs = Map.put(attrs, :templating, templating)

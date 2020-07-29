@@ -36,8 +36,17 @@ defmodule Glific.Flows.ContactAction do
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     body = MessageVarParser.parse(text, message_vars)
 
+    IO.inspect("language language")
+    IO.inspect(action.attachments)
 
-    Messages.create_and_send_message(%{body: body, type: :text, receiver_id: context.contact_id})
+    {type, media_id} = get_media_from_attachment(action.attachments)
+
+    {:ok, _message} = Messages.create_and_send_message(%{
+            body: body,
+            type: :text,
+            receiver_id: context.contact_id
+    })
+
     context
   end
 
@@ -45,17 +54,28 @@ defmodule Glific.Flows.ContactAction do
   Given a shortcode and a context, send the right session template message
   to the contact
   """
-  def send_message(context, %Action{templating: templating}) do
+  def send_message(context, %Action{templating: templating, attachments: attachments}) do
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
-
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
     session_template = Messages.parse_template_vars(templating.template, vars)
+
+    {type, media_id} = get_media_from_attachment(attachments)
 
     {:ok, _message} =
       Messages.create_and_send_session_template(session_template, context.contact_id)
 
     context
   end
+
+
+  @spec get_media_from_attachment(map()) :: {atom(), nil | integer()}
+  defp get_media_from_attachment(%{}), do: {:text, nil}
+
+  defp get_media_from_attachment(attachment) do
+    IO.inspect(attachment)
+    {:text, nil}
+  end
+
 
   @doc """
   Contact opts out
@@ -81,4 +101,6 @@ defmodule Glific.Flows.ContactAction do
     end)
     |> put_in(["fields", :language], %{label: contact.language.label})
   end
+
+
 end

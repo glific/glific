@@ -14,8 +14,8 @@
       "5499045e-9ab7-4cf2-8a9f-c6d1fc322dbf": {
         "type": "execute_actions",
         "position": {
-          "top": 0,
-          "left": 560
+          "top": 180,
+          "left": 580
         }
       },
       "60258578-bd6b-48f6-9f6a-405924b6e9bc": {
@@ -57,10 +57,24 @@
       "destination_uuid": "215233b8-cd9f-433a-aef1-4980954e7f84"
     }],
     "actions": [{
-      "text": "Your language is currently set at @contact.language Do you want to change the language you want to receive messages in? हिंदी में संदेश प्राप्त करने के लिए 1 टाइप करें To continue to receive messages in English, type 2",
+      "text": "language",
       "type": "send_msg",
       "uuid": "463f5324-9810-4230-806c-fd905d917d58",
+      "templating": {
+        "uuid": "c4420c6f-e971-4eb1-82a4-8503f28d3dac",
+        "template": {
+          "name": "Language",
+          "uuid": "942cb24b-5c78-4c7f-a3f9-1b4d1ba63118"
+        },
+        "variables": ["@contact.language"]
+      },
       "attachments": [],
+      "quick_replies": []
+    }, {
+      "text": "Hello With attachment",
+      "type": "send_msg",
+      "uuid": "bc866563-d3c7-412f-bf60-e5b265e9812e",
+      "attachments": ["image:https://via.placeholder.com/150"],
       "quick_replies": []
     }]
   }, {
