@@ -368,7 +368,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       {"All unread conversations", "Unread"},
       {"Conversations read but not replied", "Not Replied"},
       {"Conversations where the contact has opted out", "Optout"},
-      {"Conversations read but not responded", "Not Responded"},
+      {"Conversations read but not responded", "Not Responded"}
     ]
 
     Enum.each(data, &session_template(&1, labels))
@@ -386,7 +386,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
           term: ""
         },
         is_reserved: true
-    })
+      })
 
   defp session_template({label, shortcode}, labels),
     do:
