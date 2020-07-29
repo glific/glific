@@ -44,6 +44,7 @@ defmodule Glific.Settings do
         query
     end)
   end
+
   # codebeat:enable[ABC]
 
   @doc """

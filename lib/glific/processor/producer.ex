@@ -16,7 +16,19 @@ defmodule Glific.Processor.Producer do
 
   @doc false
   def init(:ok) do
+    # not a great place to do this, but for a short term workaround
+    fun_with_flags()
+
     {:producer, nil, dispatcher: GenStage.BroadcastDispatcher}
+  end
+
+  @spec fun_with_flags() :: nil
+  defp fun_with_flags do
+    FunWithFlags.enable(:enable_out_of_office)
+
+    # to begin with lets disable the out_of_office hours.
+    # We'll let Oban take care of it
+    FunWithFlags.disable(:out_of_office_active)
   end
 
   @doc """

@@ -14,8 +14,8 @@ defmodule Glific.Jobs.MinuteWorker do
   Worker to implement cron job functionality as implemented by Oban. This
   is a work in progress and subject to change
   """
-  @spec perform(map(), Oban.Job.t()) :: :ok | :error
-  def perform(_map, %Oban.Job{args: %{job: :fun_with_flags}}) do
+  @spec perform(Oban.Job.t()) :: :ok | :error
+  def perform(%Oban.Job{args: %{job: :fun_with_flags}}) do
     if FunWithFlags.enabled?(:enable_out_of_office) do
       # check if current day and time is valid
       {:ok, now} = DateTime.now(@timezone)
