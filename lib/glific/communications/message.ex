@@ -39,10 +39,10 @@ defmodule Glific.Communications.Message do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
     if Contacts.can_send_message_to?(message.receiver, message.is_hsm) do
-      apply(Communications.provider(), @type_to_token[message.type], [message])
+      {:ok, _} = apply(Communications.provider(), @type_to_token[message.type], [message])
       {:ok, Communications.publish_data(message, :sent_message)}
     else
-      Messages.update_message(message, %{status: :contact_opt_out, provider_status: nil})
+      {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, provider_status: nil})
       {:error, "Cannot send the message to the contact."}
     end
   end
