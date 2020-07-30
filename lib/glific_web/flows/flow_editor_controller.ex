@@ -204,9 +204,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec completion(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def completion(conn, _params) do
     completion =
-      File.read!("assets/flows/completion.json")
+      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/completion.json"))
       |> Jason.decode!()
-
     json(conn, completion)
   end
 
@@ -282,7 +281,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec functions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def functions(conn, _) do
     functions =
-      File.read!("assets/flows/functions.json")
+      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
       |> Jason.decode!()
 
     json(conn, functions)

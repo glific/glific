@@ -430,7 +430,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       })
 
     definition =
-      File.read!("assets/flows/" <> file)
+      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
       |> Jason.decode!()
       |> Map.merge(%{
         "name" => f.name,
