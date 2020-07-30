@@ -316,7 +316,7 @@ defmodule Glific.MessagesTest do
         Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
 
       assert_enqueued(worker: Worker)
-      Oban.drain_queue(:gupshup)
+      Oban.drain_queue(queue: :gupshup)
 
       message1 = Messages.get_message!(message1.id)
       message2 = Messages.get_message!(message2.id)
@@ -355,7 +355,7 @@ defmodule Glific.MessagesTest do
         Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
 
       assert_enqueued(worker: Worker)
-      Oban.drain_queue(:gupshup)
+      Oban.drain_queue(queue: :gupshup)
 
       message = Messages.get_message!(message.id)
 

@@ -1,0 +1,285 @@
+{
+  "uuid" : "3fa22108-f464-41e5-81d9-d8a298854429",
+  "vars" : [
+    "3fa22108-f464-41e5-81d9-d8a298854429"
+  ],
+  "_ui" : {
+    "languages" : [
+      {
+        "eng" : "English"
+      },
+      {
+        "spa" : "Spanish"
+      }
+    ],
+    "nodes" : {
+      "3ea030e9-41c4-4c6c-8880-68bc2828d67b" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 600,
+          "top" : 0
+        }
+      },
+      "6f68083e-2340-449e-9fca-ac57c6835876" : {
+        "config" : {
+          "cases" : {
+
+          }
+        },
+        "position" : {
+          "top" : 300,
+          "left" : 120
+        },
+        "type" : "wait_for_response"
+      },
+      "85e897d2-49e4-42b7-8574-8dc2aee97121" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 220,
+          "top" : 500
+        }
+      },
+      "6d39df59-4572-4f4c-99b7-f667ea112e03" : {
+        "type" : "execute_actions",
+        "position" : {
+          "top" : 500,
+          "left" : 440
+        }
+      },
+      "f189f142-6d39-40fa-bf11-95578daeceea" : {
+        "type" : "execute_actions",
+        "position" : {
+          "top" : 500,
+          "left" : 0
+        }
+      },
+      "814c3140-7f99-4b3a-a990-cfc3a00756ff" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 800,
+          "top" : 460
+        }
+      }
+    }
+  },
+  "type" : "message",
+  "nodes" : [
+    {
+      "uuid" : "3ea030e9-41c4-4c6c-8880-68bc2828d67b",
+      "actions" : [
+        {
+          "attachments" : [
+
+          ],
+          "type" : "send_msg",
+          "uuid" : "e319cd39-f764-4680-9199-4cb7da647166",
+          "quick_replies" : [
+
+          ],
+          "text" : "Thank you for reaching out. Is this what you're looking for-\n      \nType 1 to know more about Glific,\nType 2 if you'd like to be onboarded to Glific\nType 3 to goto the Glific WebSite\nType 4 to output"
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : "6f68083e-2340-449e-9fca-ac57c6835876",
+          "uuid" : "a8311645-482e-4d35-b300-c92a9b18798b"
+        }
+      ]
+    },
+    {
+      "uuid" : "6f68083e-2340-449e-9fca-ac57c6835876",
+      "exits" : [
+        {
+          "uuid" : "744b1082-4d95-40d0-839a-89fc1bb99d30",
+          "destination_uuid" : "f189f142-6d39-40fa-bf11-95578daeceea"
+        },
+        {
+          "uuid" : "77cd0e42-6a13-4122-a5fc-84b2e2daa1d4",
+          "destination_uuid" : "85e897d2-49e4-42b7-8574-8dc2aee97121"
+        },
+        {
+          "uuid" : "0caba4c7-0955-41c9-b8dc-6c58112503a0",
+          "destination_uuid" : "6d39df59-4572-4f4c-99b7-f667ea112e03"
+        },
+        {
+          "uuid" : "1da8bf0a-827f-43d8-8222-a3c79bcace46",
+          "destination_uuid" : "814c3140-7f99-4b3a-a990-cfc3a00756ff"
+        },
+        {
+          "uuid" : "d11aaf4b-106f-4646-a15d-d18f3a534e38",
+          "destination_uuid" : "3ea030e9-41c4-4c6c-8880-68bc2828d67b"
+        }
+      ],
+      "actions" : [
+
+      ],
+      "router" : {
+        "type" : "switch",
+        "wait" : {
+          "type" : "msg"
+        },
+        "default_category_uuid" : "65da0a4d-2bcc-42a2-99f5-4c9ed147f8a6",
+        "cases" : [
+          {
+            "uuid" : "0345357f-dbfa-4946-9249-5828b58161a0",
+            "type" : "has_any_word",
+            "category_uuid" : "de13e275-a05f-41bf-afd8-73e9ed32f3bf",
+            "arguments" : [
+              "1"
+            ]
+          },
+          {
+            "uuid" : "bc425dbf-d50c-48cf-81ba-622c06e153b0",
+            "type" : "has_any_word",
+            "category_uuid" : "d3f0bf85-dac1-4b7d-8084-5c1ad2575f12",
+            "arguments" : [
+              "2"
+            ]
+          },
+          {
+            "uuid" : "be6bc73d-6108-405c-9f88-c317c05311ad",
+            "type" : "has_any_word",
+            "category_uuid" : "243766e5-e353-4d65-b87a-4405dbc24b1d",
+            "arguments" : [
+              "3"
+            ]
+          },
+          {
+            "uuid" : "ebacc52f-a9b0-406d-837e-9e5ca1557d17",
+            "type" : "has_any_word",
+            "category_uuid" : "3ce58365-61f2-4a6c-9b03-1eeccf988952",
+            "arguments" : [
+              "4"
+            ]
+          }
+        ],
+        "categories" : [
+          {
+            "uuid" : "de13e275-a05f-41bf-afd8-73e9ed32f3bf",
+            "exit_uuid" : "744b1082-4d95-40d0-839a-89fc1bb99d30",
+            "name" : "One"
+          },
+          {
+            "uuid" : "d3f0bf85-dac1-4b7d-8084-5c1ad2575f12",
+            "exit_uuid" : "77cd0e42-6a13-4122-a5fc-84b2e2daa1d4",
+            "name" : "Two"
+          },
+          {
+            "uuid" : "243766e5-e353-4d65-b87a-4405dbc24b1d",
+            "exit_uuid" : "0caba4c7-0955-41c9-b8dc-6c58112503a0",
+            "name" : "Three"
+          },
+          {
+            "uuid" : "3ce58365-61f2-4a6c-9b03-1eeccf988952",
+            "exit_uuid" : "1da8bf0a-827f-43d8-8222-a3c79bcace46",
+            "name" : "Four"
+          },
+          {
+            "uuid" : "65da0a4d-2bcc-42a2-99f5-4c9ed147f8a6",
+            "exit_uuid" : "d11aaf4b-106f-4646-a15d-d18f3a534e38",
+            "name" : "Other"
+          }
+        ],
+        "operand" : "@input.text"
+      }
+    },
+    {
+      "uuid" : "814c3140-7f99-4b3a-a990-cfc3a00756ff",
+      "actions" : [
+        {
+          "value" : "optout",
+          "uuid" : "4b6e08a1-84a3-4a4f-87ce-2d1f41a3e69b",
+          "field" : {
+            "key" : "settings",
+            "name" : "Settings"
+          },
+          "type" : "set_contact_field"
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : null,
+          "uuid" : "2b8543a5-d75e-4d1f-aba0-6f15fa88d8cb"
+        }
+      ]
+    },
+    {
+      "uuid" : "f189f142-6d39-40fa-bf11-95578daeceea",
+      "actions" : [
+        {
+          "attachments" : [
+
+          ],
+          "quick_replies" : [
+
+          ],
+          "text" : "Glific is designed specifically for NGOs in the social sector to enable them to interact with their users on a regular basis",
+          "type" : "send_msg",
+          "uuid" : "ed7d10f7-6298-4d84-a8d2-7b1f6e91da07"
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : null,
+          "uuid" : "d002db23-a51f-4183-81d6-b1e93c5132fb"
+        }
+      ]
+    },
+    {
+      "uuid" : "85e897d2-49e4-42b7-8574-8dc2aee97121",
+      "actions" : [
+        {
+          "uuid" : "a970d5d9-2951-48dc-8c66-ee6833c4b21e",
+          "quick_replies" : [
+
+          ],
+          "text" : "If you are interested in using Glific, let us know. You can find more information on our website",
+          "type" : "send_msg",
+          "attachments" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "37a545df-825b-4611-a7fe-b17dfb62c430",
+          "destination_uuid" : null
+        }
+      ]
+    },
+    {
+      "uuid" : "6d39df59-4572-4f4c-99b7-f667ea112e03",
+      "actions" : [
+        {
+          "uuid" : "10196f43-87f0-4205-aabd-1549aaa7e242",
+          "text" : "https:\/\/glific.io\/",
+          "type" : "send_msg",
+          "attachments" : [
+
+          ],
+          "quick_replies" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : null,
+          "uuid" : "b913ee73-87d2-495b-8a2d-6e7c40f31fd5"
+        }
+      ]
+    }
+  ],
+  "language" : "eng",
+  "spec_version" : "13.1.0",
+  "localization" : {
+    "hi" : {
+      "e319cd39-f764-4680-9199-4cb7da647166" : {
+        "text" : [
+          "बाहर तक पहुँचने के लिए धन्यवाद। क्या यह आप के लिए देख रहे हैं- टाइप 1, ग्लिफ़ टाइप 2 के बारे में अधिक जानने के लिए, यदि आप ग्लिफ़ टाइप 3 के लिए शानदार वेबसीइट टाइप 4 से आउटपुट के लिए ऑनबोर्ड होना चाहते हैं"
+        ]
+      }
+    }
+  },
+  "name" : "Help Workflow"
+}

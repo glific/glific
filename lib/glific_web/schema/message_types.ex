@@ -38,6 +38,10 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(dataloader(Repo))
     end
 
+    field :contact, :contact do
+      resolve(dataloader(Repo))
+    end
+
     field :user, :user do
       resolve(dataloader(Repo))
     end

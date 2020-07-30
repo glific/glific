@@ -3,13 +3,21 @@
 ## Get All Languages
 
 ```graphql
-query languages {
-  languages{
+query languages($opts: Opts) {
+  languages(opts: $opts){
     id
     label
     labelLocale
     locale
     isActive
+  }
+}
+
+{
+  "opts": {
+    "order": "DESC",
+    "limit": 10,
+    "offset": 0
   }
 }
 ```
@@ -38,11 +46,14 @@ query languages {
   }
 }
 ```
-This returns all the languages
+This returns all the languages filtered by the input <a href="#languagefilter">LanguageFilter</a>
 
 ### Query Parameters
 
-None
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+filter | <a href="#languagefilter">LanguageFilter</a> | nil | filter the list
+opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
 
 ### Return Parameters
 Type | Description
@@ -112,7 +123,9 @@ query countLanguages {
 
 ### Query Parameters
 
-None
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+filter | <a href="#languagefilter">LanguageFilter</a> | nil | filter the list
 
 ### Return Parameters
 Type | Description

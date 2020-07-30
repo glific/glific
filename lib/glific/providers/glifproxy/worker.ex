@@ -18,8 +18,8 @@ defmodule Glific.Providers.Glifproxy.Worker do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(map(), Oban.Job.t()) :: {:ok, :queue_started}
-  def perform(%{"message" => message, "payload" => payload}, _job) do
+  @spec perform(Oban.Job.t()) :: :ok
+  def perform(%Oban.Job{args: %{"message" => message, "payload" => payload}}) do
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
     # Refactoring because of credo warning
     # We are in a proxy here, we simulate the message has been sent
@@ -30,7 +30,7 @@ defmodule Glific.Providers.Glifproxy.Worker do
       _ -> {:error, :rate_limit_exceeded}
     end
 
-    {:ok, :queue_started}
+    :ok
   end
 
   @doc """
@@ -107,15 +107,5 @@ defmodule Glific.Providers.Glifproxy.Worker do
   @spec error_response(Tesla.Env.t(), Glific.Messages.Message.t()) :: {:error, String.t()}
   defp error_response(response, message) do
     Communications.Message.handle_error_response(response, message)
-  end
-
-  @doc """
-  We backoff exponentially but always delay by at least 60 seconds
-  this needs more work and tweaking
-  """
-  @impl Oban.Worker
-  @spec backoff(integer()) :: pos_integer()
-  def backoff(attempt) do
-    trunc(:math.pow(attempt, 4) + 60 + :rand.uniform(30) * attempt)
   end
 end

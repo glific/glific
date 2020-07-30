@@ -3,11 +3,22 @@
 ## Get All Groups
 
 ```graphql
-query groups {
-  groups {
+query groups($filter: GroupFilter, $opts: Opts) {
+  groups(filter: $filter, opts:$opts) {
     id
     label
     isRestricted
+  }
+}
+
+{
+  "opts": {
+    "order": "ASC",
+    "limit": 10,
+    "offset": 0
+  },
+  "filter": {
+    "label": "Group"
   }
 }
 ```

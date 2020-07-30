@@ -4,6 +4,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   envs([:dev, :test, :prod])
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Flows.Flow,
     Flows.FlowRevision,
@@ -39,6 +40,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     saved_searches()
 
     flows()
+
+    opted_in_contacts()
   end
 
   def down(_repo) do
@@ -105,7 +108,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       # Status of Message
       %{label: "Important", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "New Contact", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Not Replied", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Not replied", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Unread", language_id: en_us.id, parent_id: message_tags_mt.id},
 
@@ -361,27 +364,42 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def saved_searches do
-    labels = Repo.label_id_map(Tag, ["Not Replied", "Not Responded", "Optout", "Unread"])
+    labels = Repo.label_id_map(Tag, ["Not replied", "Not Responded", "Optout", "Unread"])
 
     data = [
+      {"All conversations", "All"},
       {"All unread conversations", "Unread"},
-      {"Conversations read but not replied", "Not Replied"},
+      {"Conversations read but not replied", "Not replied"},
       {"Conversations where the contact has opted out", "Optout"},
       {"Conversations read but not responded", "Not Responded"}
     ]
 
-    Enum.each(data, &session_template(&1, labels))
+    Enum.each(data, &saved_search(&1, labels))
   end
 
-  defp session_template({label, shortcode}, labels),
+  defp saved_search({label, shortcode}, labels) when shortcode == "All",
+    do:
+      Repo.insert!(%SavedSearch{
+        label: label,
+        shortcode: shortcode,
+        args: %{
+          filter: %{},
+          contactOpts: %{limit: 20, offset: 0},
+          messageOpts: %{limit: 10, offset: 0},
+          term: ""
+        },
+        is_reserved: true
+      })
+
+  defp saved_search({label, shortcode}, labels),
     do:
       Repo.insert!(%SavedSearch{
         label: label,
         shortcode: shortcode,
         args: %{
           filter: %{includeTags: [to_string(labels[shortcode])]},
-          contactOpts: %{limit: 10, offset: 0},
-          messageOpts: %{limit: 5, offset: 0},
+          contactOpts: %{limit: 20, offset: 0},
+          messageOpts: %{limit: 10, offset: 0},
           term: ""
         },
         is_reserved: true
@@ -412,7 +430,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       })
 
     definition =
-      File.read!("assets/flows/" <> file)
+      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
       |> Jason.decode!()
       |> Map.merge(%{
         "name" => f.name,
@@ -423,5 +441,28 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       definition: definition,
       flow_id: f.id
     })
+  end
+
+  def opted_in_contacts do
+    with {:ok, url} <- Application.fetch_env(:glific, :provider_optin_list_url),
+         {:ok, api_key} <- Application.fetch_env(:glific, :provider_key),
+         {:ok, response} <- HTTPoison.get(url, [{"apikey", api_key}]),
+         {:ok, response_data} <- Poison.decode(response.body),
+         false <- is_nil(response_data["users"]) do
+      users = response_data["users"]
+
+      Enum.each(users, fn user ->
+        {:ok, last_message_at} = DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
+        {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
+
+        phone = user["countryCode"] <> user["phoneCode"]
+
+        Contacts.upsert(%{
+          phone: phone,
+          last_message_at: last_message_at |> DateTime.truncate(:second),
+          optin_time: optin_time |> DateTime.truncate(:second)
+        })
+      end)
+    end
   end
 end
