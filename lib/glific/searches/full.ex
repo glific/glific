@@ -61,6 +61,7 @@ defmodule Glific.Search.Full do
     |> where([_c, _m, mt], mt.tag_id == ^tag_id)
     |> offset(^args.contact_opts.offset)
     |> limit(^args.contact_opts.limit)
+    |> order_by([_c, m, _mt], desc: m.updated_at)
   end
 
   defp run_helper(query, "", args) do
