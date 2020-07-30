@@ -128,12 +128,9 @@ defmodule GlificWeb.Schema do
   """
   @spec context(map()) :: map()
   def context(ctx) do
-    source = Dataloader.Ecto.new(Repo)
-
     loader =
       Dataloader.new()
       |> Dataloader.add_source(Repo, Dataloader.Ecto.new(Repo))
-      |> Dataloader.add_source(Contact, source)
 
     Map.put(ctx, :loader, loader)
   end
