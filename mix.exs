@@ -101,7 +101,7 @@ defmodule Glific.MixProject do
       {:dataloader, "~> 1.0"},
       {:hackney, "~> 1.16"},
       {:tesla, "~> 1.3"},
-      {:oban, "~> 1.2"},
+      {:oban, "~> 2.0"},
       {:faker, "~> 0.13", only: [:dev, :test]},
       {:excoveralls, "~> 0.13", only: :test},
       {:cors_plug, "~> 2.0"},

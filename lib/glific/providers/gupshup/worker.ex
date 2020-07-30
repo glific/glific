@@ -18,8 +18,8 @@ defmodule Glific.Providers.Gupshup.Worker do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(map(), Oban.Job.t()) :: {:ok, :queue_started}
-  def perform(%{"message" => message, "payload" => payload}, _job) do
+  @spec perform(Oban.Job.t()) :: :ok
+  def perform(%Oban.Job{args: %{"message" => message, "payload" => payload}}) do
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
     # Refactring because of credo warning
     case ExRated.check_rate(@rate_name, 60_000, @rate_limit) do
@@ -27,7 +27,7 @@ defmodule Glific.Providers.Gupshup.Worker do
       _ -> {:error, :rate_limit_exceeded}
     end
 
-    {:ok, :queue_started}
+    :ok
   end
 
   @doc false
@@ -38,15 +38,5 @@ defmodule Glific.Providers.Gupshup.Worker do
       %Tesla.Env{status: 200} -> Communications.Message.handle_success_response(response, message)
       _ -> Communications.Message.handle_error_response(response, message)
     end
-  end
-
-  @doc """
-  We backoff exponentially but always delay by at least 60 seconds
-  this needs more work and tweaking
-  """
-  @impl Oban.Worker
-  @spec backoff(integer()) :: pos_integer()
-  def backoff(attempt) do
-    trunc(:math.pow(attempt, 4) + 60 + :rand.uniform(30) * attempt)
   end
 end

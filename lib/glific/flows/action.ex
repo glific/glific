@@ -158,7 +158,7 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, message_stream) do
-    ContactAction.send_message(context, action)
+    context = ContactAction.send_message(context, action)
     {:ok, context, message_stream}
   end
 
@@ -186,20 +186,32 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "enter_flow"} = action, context, message_stream) do
+    # we start off a new context here and dont really modify the current context
+    # hence ignoring the return value of start_sub_flow
+    # for now, we'll just delay by at least 1 second
+    context = %{context | delay: min(context.delay + 1, 1)}
     Flow.start_sub_flow(context, action.enter_flow_uuid)
     {:ok, context, message_stream}
   end
 
   def execute(%{type: "call_webhook"} = action, context, message_stream) do
     # first call the webhook
-    json = Webhook.get(action.url, action.headers, action.body)
+    json =
+      Webhook.get(
+        action.url,
+        Keyword.new(action.headers, fn {k, v} -> {String.to_existing_atom(k), v} end),
+        action.body
+      )
 
-    context =
-      if is_nil(json) or is_nil(action.result_name),
-        do: context,
-        else: FlowContext.update_results(context, action.result_name, json)
-
-    {:ok, context, message_stream}
+    if is_nil(json) or is_nil(action.result_name) do
+      {:ok, context, ["Failure" | message_stream]}
+    else
+      {
+        :ok,
+        FlowContext.update_results(context, action.result_name, json),
+        ["Success" | message_stream]
+      }
+    end
   end
 
   def execute(action, _context, _message_stream),

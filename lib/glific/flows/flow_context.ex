@@ -18,7 +18,7 @@ defmodule Glific.Flows.FlowContext do
   }
 
   @required_fields [:contact_id, :flow_id, :flow_uuid, :uuid_map]
-  @optional_fields [:node_uuid, :parent_id, :results, :wakeup_at, :completed_at]
+  @optional_fields [:node_uuid, :parent_id, :results, :wakeup_at, :completed_at, :delay]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -33,6 +33,7 @@ defmodule Glific.Flows.FlowContext do
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
+          delay: integer,
           wakeup_at: :utc_datetime | nil,
           completed_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
@@ -50,6 +51,8 @@ defmodule Glific.Flows.FlowContext do
 
     field :wakeup_at, :utc_datetime, default: nil
     field :completed_at, :utc_datetime, default: nil
+
+    field :delay, :integer, default: 0, virtual: true
 
     belongs_to :contact, Contact
     belongs_to :flow, Flow
@@ -140,7 +143,7 @@ defmodule Glific.Flows.FlowContext do
       json,
       context,
       fn {k, v}, context ->
-        update_results(context, key <> "." <> k, v, key)
+        update_results(context, key <> "_" <> k, v, key)
       end
     )
   end
@@ -163,16 +166,20 @@ defmodule Glific.Flows.FlowContext do
     do: {:error, "We have finished the flow"}
 
   def execute(context, messages) do
-    Node.execute(context.node, context, messages)
+    case Node.execute(context.node, context, messages) do
+      {:ok, context, []} -> {:ok, context, []}
+      {:ok, context, messages} -> Node.execute(context.node, context, messages)
+      others -> others
+    end
   end
 
   @doc """
   Start a new context, if there is an existing context, blow it away
   """
-  @spec init_context(Flow.t(), Contact.t(), non_neg_integer | nil) ::
+  @spec init_context(Flow.t(), Contact.t(), non_neg_integer | nil, non_neg_integer | 0) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def init_context(flow, contact, parent_id \\ nil) do
-    # set previous context only if we are not starting a sub flow
+  def init_context(flow, contact, parent_id \\ nil, current_delay \\ 0) do
+    # set all previous context to be completed if we are not starting a sub flow
     if is_nil(parent_id) do
       now = DateTime.utc_now()
 
@@ -194,7 +201,8 @@ defmodule Glific.Flows.FlowContext do
         results: %{},
         flow_id: flow.id,
         flow: flow,
-        uuid_map: flow.uuid_map
+        uuid_map: flow.uuid_map,
+        delay: current_delay
       })
 
     context

@@ -3,14 +3,25 @@
 ## Get All Flows
 
 ```graphql
-query flows {
-  flows {
+query flows($filter: FlowFilter, $opts: Opts) {
+  flows(filter: $filter, opts: $opts) {
     id
     uuid
     name
     shortcode
     versionNumber
     flowType
+  }
+}
+
+{
+  "opts": {
+    "limit": 2,
+    "offset": 0,
+    "order": "ASC"
+  },
+  "filter": {
+    "name": "Workflow"
   }
 }
 ```
@@ -42,6 +53,13 @@ query flows {
 }
 ```
 This returns all the flows
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+filter | <a href="#flowfilter">FlowFilter</a> | nil | filter the list
+opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
 
 ### Return Parameters
 Type | Description
