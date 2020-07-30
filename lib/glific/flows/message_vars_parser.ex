@@ -23,6 +23,11 @@ defmodule Glific.Flows.MessageVarParser do
     language["label"]
   end
 
+  defp bound("@contact.phone", binding) do
+    phone = get_in(binding, ["contact", "fields", "phone"])
+    phone
+  end
+
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
     substitution = get_in(binding, String.split(var, "."))
     if substitution == nil, do: "@#{var}", else: substitution

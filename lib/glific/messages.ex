@@ -204,11 +204,12 @@ defmodule Glific.Messages do
   @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()}
   defp create_and_send_message(is_valid_contact, attrs) when is_valid_contact == true do
     {:ok, message} =
-      %{
+      attrs
+      |> Map.merge(%{
         sender_id: Communications.Message.organization_contact_id(),
-        flow: :outbound
-      }
-      |> Map.merge(attrs)
+        flow: :outbound,
+        body: parse_session_template_body(attrs)
+      })
       |> create_message()
 
     Communications.Message.send_message(message)
@@ -217,6 +218,12 @@ defmodule Glific.Messages do
   @doc false
   defp create_and_send_message(_, _) do
     {:error, "Cannot send the message to the contact."}
+  end
+
+  @spec parse_session_template_body(map()) :: String.t() | nil
+  defp parse_session_template_body(attrs) do
+    message_vars = %{"contact" => %{"fields" => %{phone: attrs.receiver.phone}}}
+    Glific.Flows.MessageVarParser.parse(attrs.body, message_vars)
   end
 
   @doc """

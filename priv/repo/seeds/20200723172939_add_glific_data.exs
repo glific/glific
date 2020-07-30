@@ -365,14 +365,14 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.insert!(%SessionTemplate{
       label: "User Regitstration",
       body: """
-      Please click on the link to register with the phone number @contact.name
+      Please click on the link to register with the phone number @contact.phone
       @global.register.url
       """,
       type: :text,
       shortcode: "user-registration",
       is_reserved: true,
       language_id: en_us.id,
-      uuid: "fbf8d5a6-91ab-47ab-9691-35ef35443ad8",
+      uuid: "fbf8d5a6-91ab-47ab-9691-35ef35443ad8"
     })
   end
 
