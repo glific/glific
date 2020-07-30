@@ -59,7 +59,7 @@ defmodule Glific.Processor.ConsumerFlow do
     {:noreply, [], state}
   end
 
-  @spec process_flow(atom() | Message.t(), map()) :: Flow.t()
+  @spec process_flow(atom() | Message.t(), map()) :: Message.t()
   defp process_flow(message, state) do
     body = Glific.string_clean(message.body)
 

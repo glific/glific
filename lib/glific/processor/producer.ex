@@ -29,6 +29,8 @@ defmodule Glific.Processor.Producer do
     # to begin with lets disable the out_of_office hours.
     # We'll let Oban take care of it
     FunWithFlags.disable(:out_of_office_active)
+
+    nil
   end
 
   @doc """
