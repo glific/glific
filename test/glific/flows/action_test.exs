@@ -254,7 +254,7 @@ defmodule Glific.Flows.ActionTest do
 
     assert {:ok, updated_context, updated_message_stream} = result
 
-    assert updated_context == context
+    assert Map.delete(updated_context, :delay) ==  Map.delete(context, :delay)
   end
 
   test "execute an action when type is not supported" do

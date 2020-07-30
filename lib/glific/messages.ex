@@ -250,26 +250,29 @@ defmodule Glific.Messages do
   Send a session template to the specific contact. This is typically used in automation
   """
 
+  @spec create_and_send_session_template(String.t(), integer) :: {:ok, Message.t()}
+  def create_and_send_session_template(template_id, receiver_id) when is_binary(template_id),
+    do: create_and_send_session_template(String.to_integer(template_id), receiver_id)
+
   @spec create_and_send_session_template(integer, integer) :: {:ok, Message.t()}
   def create_and_send_session_template(template_id, receiver_id) when is_integer(template_id) do
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
-    create_and_send_session_template(session_template, receiver_id)
+
+    create_and_send_session_template(
+      session_template,
+      %{receiver_id: receiver_id}
+    )
   end
 
-  @spec create_and_send_session_template(String.t(), integer) :: {:ok, Message.t()}
-  def create_and_send_session_template(template_id, receiver_id) when is_binary(template_id) do
-    {:ok, session_template} = Repo.fetch(SessionTemplate, String.to_integer(template_id))
-    create_and_send_session_template(session_template, receiver_id)
-  end
-
-  @spec create_and_send_session_template(SessionTemplate.t(), integer) :: {:ok, Message.t()}
-  def create_and_send_session_template(session_template, receiver_id) do
+  @spec create_and_send_session_template(SessionTemplate.t(), map()) :: {:ok, Message.t()}
+  def create_and_send_session_template(session_template, args) do
     message_params = %{
       body: session_template.body,
       type: session_template.type,
       media_id: session_template.message_media_id,
       sender_id: Communications.Message.organization_contact_id(),
-      receiver_id: receiver_id
+      receiver_id: args[:receiver_id],
+      send_at: args[:send_at]
     }
 
     create_and_send_message(message_params)
