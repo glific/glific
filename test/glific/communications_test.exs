@@ -114,7 +114,7 @@ defmodule Glific.CommunicationsTest do
       assert message.flow == :outbound
     end
 
-    test "send message will remove the Not Replied tag from messages" do
+    test "send message will remove the Not replied tag from messages" do
       message_1 = Fixtures.message_fixture(%{flow: :inbound})
 
       message_2 =
@@ -126,7 +126,7 @@ defmodule Glific.CommunicationsTest do
 
       assert message_2.contact_id == message_1.contact_id
 
-      {:ok, tag} = Repo.fetch_by(Tag, %{label: "Not Replied"})
+      {:ok, tag} = Repo.fetch_by(Tag, %{label: "Not replied"})
       {:ok, unread_tag} = Repo.fetch_by(Tag, %{label: "Unread"})
 
       message1_tag = Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
