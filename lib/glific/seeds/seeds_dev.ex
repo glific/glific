@@ -17,6 +17,8 @@ defmodule Glific.Seeds.SeedsDev do
     Users
   }
 
+  alias Faker.Lorem.Shakespeare
+
   @doc """
   Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
   In the next phase we will also add unseeder functions as we learn more of the test capabilities
@@ -50,11 +52,6 @@ defmodule Glific.Seeds.SeedsDev do
       },
       %{
         name: "Chrissy Cron",
-        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-        language_id: en_us.id
-      },
-      %{
-        name: "Hailey Wardlaw",
         phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
         language_id: en_us.id
       }
@@ -103,6 +100,9 @@ defmodule Glific.Seeds.SeedsDev do
   def seed_messages do
     {:ok, sender} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+    {:ok, receiver2} = Repo.fetch_by(Contact, %{name: "Adelle Cavin"})
+    {:ok, receiver3} = Repo.fetch_by(Contact, %{name: "Margarita Quinteros"})
+    {:ok, receiver4} = Repo.fetch_by(Contact, %{name: "Chrissy Cron"})
 
     Repo.insert!(%Message{
       body: "Default message body",
@@ -127,7 +127,7 @@ defmodule Glific.Seeds.SeedsDev do
     })
 
     Repo.insert!(%Message{
-      body: Faker.Lorem.sentence(),
+      body: Shakespeare.hamlet(),
       flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
@@ -138,7 +138,7 @@ defmodule Glific.Seeds.SeedsDev do
     })
 
     Repo.insert!(%Message{
-      body: Faker.Lorem.sentence(),
+      body: Shakespeare.hamlet(),
       flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
@@ -179,6 +179,39 @@ defmodule Glific.Seeds.SeedsDev do
       sender_id: receiver.id,
       receiver_id: sender.id,
       contact_id: receiver.id
+    })
+
+    Repo.insert!(%Message{
+      body: Shakespeare.hamlet(),
+      flow: :inbound,
+      type: :text,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
+      sender_id: receiver2.id,
+      receiver_id: sender.id,
+      contact_id: receiver2.id
+    })
+
+    Repo.insert!(%Message{
+      body: Shakespeare.hamlet(),
+      flow: :inbound,
+      type: :text,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
+      sender_id: receiver3.id,
+      receiver_id: sender.id,
+      contact_id: receiver3.id
+    })
+
+    Repo.insert!(%Message{
+      body: Shakespeare.hamlet(),
+      flow: :inbound,
+      type: :text,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
+      sender_id: receiver4.id,
+      receiver_id: sender.id,
+      contact_id: receiver4.id
     })
   end
 
