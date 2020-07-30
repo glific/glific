@@ -50,17 +50,19 @@ defmodule Glific.Processor.ConsumerFlow do
     }
   end
 
-  defp reload(state), do: state
+  defp reload(state) do
+
+  end
 
   @doc false
   def handle_events(messages, _from, state) do
-    Enum.each(messages, &process_flow(&1, state))
+    Enum.each(messages, &process_message(&1, state))
 
     {:noreply, [], state}
   end
 
-  @spec process_flow(atom() | Message.t(), map()) :: Message.t()
-  defp process_flow(message, state) do
+  @spec process_message(atom() | Message.t(), map()) :: Message.t()
+  defp process_message(message, state) do
     body = Glific.string_clean(message.body)
 
     message
@@ -97,6 +99,14 @@ defmodule Glific.Processor.ConsumerFlow do
       context
       |> FlowContext.load_context(flow)
       |> FlowContext.step_forward(message.body)
+    else
+      # lets  check if we should initiate the out of office flow
+      # lets do this only if we've not sent them the out of office flow
+      # in the past 12 hours
+      if FunWithFlags.enabled?(:out_of_office_active) do
+        {:ok, flow} = Flows.get_cached_flow(body, %{shortcode: "outofoffice"})
+
+      end
     end
 
     # we can potentially save the {contact_id, context} map here in the flow state,

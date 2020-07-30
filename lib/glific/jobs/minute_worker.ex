@@ -32,6 +32,11 @@ defmodule Glific.Jobs.MinuteWorker do
         if !FunWithFlags.enabled?(:out_of_office_active),
           do: FunWithFlags.enable(:out_of_office_active)
       end
+    else
+      # lets make sure that out_of_office_active is disabled
+      # if we dont want this functionality
+      if FunWithFlags.enabled?(:out_of_office_active),
+        do: FunWithFlags.disable(:out_of_office_active)
     end
 
     :ok
