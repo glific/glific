@@ -1,6 +1,9 @@
 FROM elixir:1.10.4-alpine as build
 MAINTAINER opensource@coloredcow.com
 
+# install build dependencies
+RUN apk add --update git build-base nodejs npm yarn python
+
 RUN mkdir /app
 WORKDIR /app
 
@@ -12,15 +15,11 @@ RUN apk add git
 ENV MIX_ENV=prod
 
 # install mix dependencies
-# COPY mix.exs mix.lock ./
-# COPY config config
 COPY . .
 RUN HEX_HTTP_CONCURRENCY=1 HEX_HTTP_TIMEOUT=120 mix deps.get --only prod
 RUN mix deps.compile
 
 # build project
-# COPY priv priv
-# COPY lib lib
 RUN mix compile
 
 RUN mix release
