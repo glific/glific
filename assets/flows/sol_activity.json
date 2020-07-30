@@ -226,10 +226,10 @@
             "uuid" : "8998e3c0-f05d-4e69-baff-af1c2afcf2b5"
           },
           {
-            "type" : "has_number",
+            "type" : "has_number_eq",
             "category_uuid" : "a2e6a033-176a-49a9-b613-be786a1eef45",
             "arguments" : [
-
+              "9"
             ],
             "uuid" : "b722a535-fb54-4923-88ef-f9e1e8924ad5"
           }

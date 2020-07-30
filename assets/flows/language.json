@@ -68,7 +68,7 @@
           "quick_replies" : [
 
           ],
-          "text" : "      Your language is currently set at @contact.language\n\n      Do you want to change the language you want to receive messages in?\n\n      हिंदी में संदेश प्राप्त करने के लिए 1 टाइप करें\n      To continue to receive messages in English, type 2",
+          "text" : "Your language is currently set at @contact.language\n\nDo you want to change the language you want to receive messages in?\n\nहिंदी में संदेश प्राप्त करने के लिए 1 टाइप करें\nTo continue to receive messages in English, type 2",
           "attachments" : [
 
           ],
