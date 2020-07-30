@@ -163,6 +163,24 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+    Contact's fields map which can be used to update message template body
+  """
+  @spec get_contact_field_map(integer) :: map()
+  def get_contact_field_map(contact_id) do
+    contact =
+      Glific.Contacts.get_contact!(contact_id)
+      |> Glific.Repo.preload([:language])
+
+    %{
+      name: contact.name,
+      phone: contact.phone,
+      language: %{
+        label: contact.language.label
+      }
+    }
+  end
+
+  @doc """
   Check if this contact id is a new conatct
   """
 

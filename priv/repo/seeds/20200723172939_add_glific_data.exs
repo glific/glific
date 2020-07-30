@@ -366,7 +366,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       label: "User Regitstration",
       body: """
       Please click on the link to register with the phone number @contact.phone
-      @global.register.url
+      @global.registration.url
       """,
       type: :text,
       shortcode: "user-registration",

@@ -9,7 +9,9 @@ defmodule Glific.Messages do
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
+    Flows.MessageVarParser,
     Messages.Message,
+    Messages.MessageVariables,
     Repo,
     Tags.MessageTag,
     Templates.SessionTemplate
@@ -208,7 +210,7 @@ defmodule Glific.Messages do
       |> Map.merge(%{
         sender_id: Communications.Message.organization_contact_id(),
         flow: :outbound,
-        body: parse_session_template_body(attrs)
+        body: parse_message_body(attrs)
       })
       |> create_message()
 
@@ -220,10 +222,14 @@ defmodule Glific.Messages do
     {:error, "Cannot send the message to the contact."}
   end
 
-  @spec parse_session_template_body(map()) :: String.t() | nil
-  defp parse_session_template_body(attrs) do
-    message_vars = %{"contact" => %{"fields" => %{phone: attrs.receiver.phone}}}
-    Glific.Flows.MessageVarParser.parse(attrs.body, message_vars)
+  @spec parse_message_body(map()) :: String.t() | nil
+  defp parse_message_body(attrs) do
+    message_vars = %{
+      "contact" => Contacts.get_contact_field_map(attrs.receiver_id),
+      "global" => MessageVariables.get_global_field_map()
+    }
+
+    MessageVarParser.parse(attrs.body, message_vars)
   end
 
   @doc """
