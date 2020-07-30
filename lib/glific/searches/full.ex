@@ -51,30 +51,36 @@ defmodule Glific.Search.Full do
     end
   end
 
-  @spec run_helper(Ecto.Query.t(), String.t(), map()) :: Ecto.Query.t()
-  defp run_helper(query, "", %{filter: %{include_tags: [tag_id]}} = args) do
+  @spec run_include_tags(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp run_include_tags(query, %{filter: %{include_tags: [tag_id]}}) do
     {:ok, tag_id} = Glific.parse_maybe_integer(tag_id)
 
     query
     |> join(:inner, [c], m in Message, on: m.contact_id == c.id)
     |> join(:inner, [c, m], mt in MessageTag, on: mt.message_id == m.id)
     |> where([_c, _m, mt], mt.tag_id == ^tag_id)
-    |> offset(^args.contact_opts.offset)
-    |> limit(^args.contact_opts.limit)
     |> order_by([_c, m, _mt], desc: m.updated_at)
   end
 
+  defp run_include_tags(query, _args), do: query
+
+  @spec run_helper(Ecto.Queryable.t(), String.t(), map()) :: Ecto.Queryable.t()
   defp run_helper(query, "", args) do
     query
+    |> run_include_tags(args)
     |> offset(^args.contact_opts.offset)
     |> limit(^args.contact_opts.limit)
   end
 
   defp run_helper(query, term, args) do
-    from q in query,
-      join: id_and_rank in matching_contact_ids_and_ranks(term, args),
-      on: id_and_rank.id == q.id,
-      order_by: [desc: id_and_rank.rank]
+    query
+    |> join(:inner, [c], id_and_rank in matching_contact_ids_and_ranks(term, args),
+      on: id_and_rank.id == c.id
+    )
+    |> order_by([_c, id_and_rank], desc: id_and_rank.rank)
+    |> run_include_tags(args)
+    |> offset(^args.contact_opts.offset)
+    |> limit(^args.contact_opts.limit)
   end
 
   @spec normalize(String.t()) :: String.t()

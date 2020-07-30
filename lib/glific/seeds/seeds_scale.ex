@@ -7,7 +7,7 @@ defmodule Glific.Seeds.SeedsScale do
     Messages.Message,
     Repo,
     Tags.MessageTag,
-    Tags.Tag,
+    Tags.Tag
   }
 
   alias Faker.{

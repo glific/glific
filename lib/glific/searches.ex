@@ -119,6 +119,7 @@ defmodule Glific.Searches do
   defp search_query(term, args),
     do: Contact |> select([c], c.id) |> Full.run(term, args)
 
+  @spec do_save_search(map()) :: SavedSearch.t() | nil
   defp do_save_search(%{save_search: true} = args),
     do:
       create_saved_search(%{
