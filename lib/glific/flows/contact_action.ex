@@ -19,7 +19,16 @@ defmodule Glific.Flows.ContactAction do
     session_template = Helper.get_session_message_template(shortcode, language_id)
 
     {:ok, _message} =
-      Messages.create_and_send_session_template(session_template, context.contact_id)
+      Messages.create_and_send_session_template(
+        session_template,
+        %{
+          receiver_id: context.contact_id,
+          send_at: DateTime.add(DateTime.utc_now(), context.delay)
+        }
+      )
+
+    # increment the delay
+    %{context | delay: context.delay + 1}
   end
 
   @doc """
@@ -35,13 +44,17 @@ defmodule Glific.Flows.ContactAction do
     # so we have to fetch the latest contact fields
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     body = MessageVarParser.parse(text, message_vars)
-    # super hack for now, lets wait for the previous messages to go out
-    :timer.sleep(50)
 
     {:ok, _message} =
-      Messages.create_and_send_message(%{body: body, type: :text, receiver_id: context.contact_id})
+      Messages.create_and_send_message(%{
+        body: body,
+        type: :text,
+        receiver_id: context.contact_id,
+        send_at: DateTime.add(DateTime.utc_now(), context.delay)
+      })
 
-    context
+    # increment the delay
+    %{context | delay: context.delay + 1}
   end
 
   @doc """
@@ -54,13 +67,17 @@ defmodule Glific.Flows.ContactAction do
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
     session_template = Messages.parse_template_vars(templating.template, vars)
 
-    # super hack for now, lets wait for the previous messages to go out
-    :timer.sleep(50)
-
     {:ok, _message} =
-      Messages.create_and_send_session_template(session_template, context.contact_id)
+      Messages.create_and_send_session_template(
+        session_template,
+        %{
+          receiver_id: context.contact_id,
+          send_at: DateTime.add(DateTime.utc_now(), context.delay)
+        }
+      )
 
-    context
+    # increment the delay
+    %{context | delay: context.delay + 1}
   end
 
   @doc """
@@ -68,7 +85,7 @@ defmodule Glific.Flows.ContactAction do
   """
   @spec optout(FlowContext.t()) :: FlowContext.t()
   def optout(context) do
-    send_session_message_template(context, "optout")
+    context = send_session_message_template(context, "optout")
 
     # We need to update the contact with optout_time and status
     Contacts.contact_opted_out(context.contact.phone, DateTime.utc_now())
