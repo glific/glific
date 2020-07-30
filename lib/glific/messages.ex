@@ -579,21 +579,24 @@ defmodule Glific.Messages do
     # the difference is the empty contacts id list
     empty_contact_ids = contact_ids -- present_contact_ids
 
-    # now only generate conversations objects for the empty contact ids
-    Enum.reduce(
-      empty_contact_ids,
-      results,
-      fn id, acc -> add_conversation(acc, id) end
-    )
+    # lets load all contacts ids in one query, rather than multiople single queries
+    empty_results =
+      Contact
+      |> where([c], c.id in ^empty_contact_ids)
+      |> Repo.all()
+      # now only generate conversations objects for the empty contact ids
+      |> Enum.reduce(
+        [],
+        fn contact, acc -> add_conversation(acc, contact) end
+      )
+
+    results ++ empty_results
   end
 
   # add an empty conversation for a specific contact if ONLY if it exists
-  @spec add_conversation([Conversation.t()], integer) :: [Conversation.t()]
-  defp add_conversation(results, contact_id) do
-    case Repo.fetch(Contact, contact_id) do
-      {:ok, contact} -> [Conversation.new(contact, []) | results]
-      {:error, _} -> results
-    end
+  @spec add_conversation([Conversation.t()], Contact.t()) :: [Conversation.t()]
+  defp add_conversation(results, contact) do
+    [Conversation.new(contact, []) | results]
   end
 
   # restrict the conversations query based on the filters in the input args

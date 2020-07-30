@@ -137,7 +137,7 @@ defmodule Glific.Searches do
     # save the search if needed
     do_save_search(args)
 
-    # disabling all contact filters to get the count
+    # disabling all contact filters if we need to get the count
     args = update_args_for_count(args, count)
 
     contact_ids =
