@@ -206,6 +206,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     completion =
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/completion.json"))
       |> Jason.decode!()
+
     json(conn, completion)
   end
 
