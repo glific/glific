@@ -108,7 +108,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       # Status of Message
       %{label: "Important", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "New Contact", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Not Replied", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Not replied", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
       %{label: "Unread", language_id: en_us.id, parent_id: message_tags_mt.id},
 
@@ -377,12 +377,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def saved_searches do
-    labels = Repo.label_id_map(Tag, ["Not Replied", "Not Responded", "Optout", "Unread"])
+    labels = Repo.label_id_map(Tag, ["Not replied", "Not Responded", "Optout", "Unread"])
 
     data = [
       {"All conversations", "All"},
       {"All unread conversations", "Unread"},
-      {"Conversations read but not replied", "Not Replied"},
+      {"Conversations read but not replied", "Not replied"},
       {"Conversations where the contact has opted out", "Optout"},
       {"Conversations read but not responded", "Not Responded"}
     ]
