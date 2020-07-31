@@ -9,7 +9,9 @@ defmodule Glific.Messages do
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
+    Flows.MessageVarParser,
     Messages.Message,
+    Messages.MessageVariables,
     Partners,
     Repo,
     Tags.MessageTag,
@@ -205,11 +207,12 @@ defmodule Glific.Messages do
   @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()}
   defp create_and_send_message(is_valid_contact, attrs) when is_valid_contact == true do
     {:ok, message} =
-      %{
+      attrs
+      |> Map.merge(%{
         sender_id: Partners.organization_contact_id(),
-        flow: :outbound
-      }
-      |> Map.merge(attrs)
+        flow: :outbound,
+        body: parse_message_body(attrs)
+      })
       |> create_message()
 
     Communications.Message.send_message(message)
@@ -218,6 +221,16 @@ defmodule Glific.Messages do
   @doc false
   defp create_and_send_message(_, _) do
     {:error, "Cannot send the message to the contact."}
+  end
+
+  @spec parse_message_body(map()) :: String.t() | nil
+  defp parse_message_body(attrs) do
+    message_vars = %{
+      "contact" => Contacts.get_contact!(attrs.receiver_id) |> Map.from_struct(),
+      "global" => MessageVariables.get_global_field_map()
+    }
+
+    MessageVarParser.parse(attrs.body, message_vars)
   end
 
   @doc """
