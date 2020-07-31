@@ -19,5 +19,6 @@ echo "connected"
 
 bin="/app/bin/prod"
 eval "$bin eval \"Glific.Release.migrate\""
+eval "$bin eval \"Glific.Seeds.Seeder.seed\""
 # start the elixir application
 exec "$bin" "start"
