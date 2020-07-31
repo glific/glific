@@ -14,6 +14,8 @@ defmodule Glific.Flows.ContactAction do
     Processor.Helper
   }
 
+  @min_delay 2
+
   defp send_session_message_template(context, shortcode) do
     language_id = context.contact.language_id
     session_template = Helper.get_session_message_template(shortcode, language_id)
@@ -28,7 +30,7 @@ defmodule Glific.Flows.ContactAction do
       )
 
     # increment the delay
-    %{context | delay: context.delay + 1}
+    %{context | delay: context.delay + @min_delay}
   end
 
   @doc """
@@ -54,7 +56,7 @@ defmodule Glific.Flows.ContactAction do
       })
 
     # increment the delay
-    %{context | delay: context.delay + 1}
+    %{context | delay: context.delay + @min_delay}
   end
 
   @doc """
@@ -77,7 +79,7 @@ defmodule Glific.Flows.ContactAction do
       )
 
     # increment the delay
-    %{context | delay: context.delay + 1}
+    %{context | delay: context.delay + @min_delay}
   end
 
   @doc """
