@@ -5,11 +5,11 @@ defmodule Glific.Messages.MessageVariables do
   """
 
   @doc """
-  Get map for global variables
+  Get map of global variables
   """
-  @spec get_global_field_map :: map()
+  @spec get_global_field_map :: map() | :error
   def get_global_field_map do
-    with {:ok, base_url} <- Application.fetch_env(:glific, :app_base_url) do
+    with {:ok, base_url} <- Application.fetch_env(:glific, :app_bases_url) do
       %{
         registration: %{
           url: base_url <> "registration"
