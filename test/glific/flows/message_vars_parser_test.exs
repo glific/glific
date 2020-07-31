@@ -1,6 +1,7 @@
 defmodule Glific.Flows.MessageVarParserTest do
   use Glific.DataCase, async: true
 
+  alias Glific.Contacts
   alias Glific.Flows.MessageVarParser
 
   test "parse/2 will parse the string with variable" do
@@ -33,5 +34,10 @@ defmodule Glific.Flows.MessageVarParserTest do
     parsed_test = MessageVarParser.parse("hello @contact.name", %{"contact" => %{name: "Glific"}})
 
     assert parsed_test == "hello Glific"
+
+    [contact | _tail] = Contacts.list_contacts()
+    contact = Map.from_struct(contact)
+    parsed_test = MessageVarParser.parse("hello @contact.name", %{"contact" => contact})
+    assert parsed_test == "hello #{contact.name}"
   end
 end

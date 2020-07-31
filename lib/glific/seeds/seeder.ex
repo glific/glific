@@ -4,13 +4,14 @@ defmodule Glific.Seeds.Seeder do
   Wish us luck
   """
 
-  import Mix.Ecto
   import Mix.PhilColumns
+
+  @app :glific
 
   @doc false
   @spec seed(any, any) :: any
-  def seed(opts, seeder \\ &PhilColumns.Seeder.run/4) do
-    repos = parse_repo(opts) |> List.wrap()
+  def seed(opts \\ Keyword.new, seeder \\ &PhilColumns.Seeder.run/4) do
+    repos = load_repos() |> List.wrap()
 
     # set env with current_env/0 overwriting provided arg
     opts = Keyword.put(opts, :env, current_env())
@@ -36,4 +37,11 @@ defmodule Glific.Seeds.Seeder do
   end
 
   defp current_env, do: :prod
+
+   # Get active repo context
+  @spec load_repos() :: any()
+  defp load_repos do
+    Application.load(@app)
+    Application.fetch_env!(@app, :ecto_repos)
+  end
 end

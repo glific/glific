@@ -119,6 +119,7 @@ defmodule Glific.Searches do
   @spec search_query(String.t(), map()) :: Ecto.Query.t()
   defp search_query(term, args) do
     org_contact_id = Partners.organization_contact_id()
+
     Contact
     |> select([c], c.id)
     |> where([c], c.id != ^org_contact_id)
