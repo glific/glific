@@ -106,6 +106,7 @@ defmodule GlificWeb.APIAuthPlug do
   @doc """
     Delete all user sessions after user resets or updates the password
   """
+  @spec delete_all_user_sessions(Config.t(), map()) :: :ok
   def delete_all_user_sessions(config, user) do
     CredentialsCache.sessions(store_config(config), user)
     |> Enum.each(fn token ->
@@ -134,7 +135,7 @@ defmodule GlificWeb.APIAuthPlug do
   end
 
   defp verify_token(conn, token, config),
-  do: Plug.verify_token(conn, signing_salt(), token, config)
+    do: Plug.verify_token(conn, signing_salt(), token, config)
 
   defp store_config(config) do
     backend = Config.get(config, :cache_store_backend, Pow.Store.Backend.MnesiaCache)
