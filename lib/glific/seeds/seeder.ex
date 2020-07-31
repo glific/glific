@@ -10,7 +10,7 @@ defmodule Glific.Seeds.Seeder do
 
   @doc false
   @spec seed(any, any) :: any
-  def seed(opts \\ Keyword.new, seeder \\ &PhilColumns.Seeder.run/4) do
+  def seed(opts \\ Keyword.new(), seeder \\ &PhilColumns.Seeder.run/4) do
     repos = load_repos() |> List.wrap()
 
     # set env with current_env/0 overwriting provided arg
@@ -38,7 +38,7 @@ defmodule Glific.Seeds.Seeder do
 
   defp current_env, do: :prod
 
-   # Get active repo context
+  # Get active repo context
   @spec load_repos() :: any()
   defp load_repos do
     Application.load(@app)
