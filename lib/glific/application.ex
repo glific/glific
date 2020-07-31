@@ -15,8 +15,9 @@ defmodule Glific.Application do
       {Phoenix.PubSub, name: Glific.PubSub},
       # Start the Endpoint (http/https)
       GlificWeb.Endpoint,
-      {Pow.Store.Backend.MnesiaCache, extra_db_nodes: Node.list()},
-      Pow.Store.Backend.MnesiaCache.Unsplit,
+
+      # Start Mnesia to be used for pow cache store
+      Pow.Store.Backend.MnesiaCache,
 
       # Add Oban to process jobs
       {Oban, oban_config()},

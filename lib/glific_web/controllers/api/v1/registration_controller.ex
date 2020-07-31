@@ -6,9 +6,13 @@ defmodule GlificWeb.API.V1.RegistrationController do
   use GlificWeb, :controller
 
   alias Ecto.Changeset
-  alias GlificWeb.ErrorHelpers
   alias PasswordlessAuth
   alias Plug.Conn
+
+  alias GlificWeb.{
+    APIAuthPlug,
+    ErrorHelpers
+  }
 
   alias Glific.{
     Contacts,
@@ -145,7 +149,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
     user
     |> Users.reset_user_password(update_params)
     |> case do
-      {:ok, _user} ->
+      {:ok, user} ->
+        # Delete existing user session
+        Pow.Plug.fetch_config(conn)
+        |> APIAuthPlug.delete_all_user_sessions(user)
+
+        # Create new user session
         {:ok, conn} = Pow.Plug.authenticate_user(conn, user_params)
 
         {:ok,
