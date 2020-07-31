@@ -106,14 +106,7 @@ defmodule Glific.Flows.ContactAction do
 
   @spec get_contact_field_map(integer) :: map()
   defp get_contact_field_map(contact_id) do
-    contact =
-      Glific.Contacts.get_contact!(contact_id)
-      |> Glific.Repo.preload([:language])
-
-    contact.fields
-    |> Enum.reduce(%{"fields" => %{}}, fn {field, map}, acc ->
-      put_in(acc, ["fields", field], map["value"])
-    end)
+    contact = Contacts.get!(contact_id)
     |> put_in(["fields", :language], %{label: contact.language.label})
   end
 
