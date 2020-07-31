@@ -6,7 +6,7 @@ db_host = System.get_env("DATABASE_HOST") ||
   raise """
   environment variable DATABASE_HOST is missing.
   """
-db_database = System.get_env("DATABASE_DB") || "postgres" 
+db_database = System.get_env("DATABASE_DB") || "glific_prod" 
 db_username = System.get_env("DATABASE_USER") || "postgres" 
 db_password = System.get_env("DATABASE_PASSWORD") || "postgres"
 db_url = "ecto://#{db_username}:#{db_password}@#{db_host}/#{db_database}"
