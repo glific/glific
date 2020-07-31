@@ -415,8 +415,6 @@ defmodule Glific.Seeds.SeedsDev do
 
     seed_users()
 
-    seed_session_templates()
-
     seed_tag()
 
     seed_messages()
