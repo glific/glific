@@ -1,6 +1,5 @@
 defmodule Glific.MessageVariablesTest do
   use Glific.DataCase
-  use Oban.Testing, repo: Glific.Repo
 
   alias Glific.Messages.MessageVariables
 
