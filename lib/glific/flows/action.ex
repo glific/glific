@@ -20,6 +20,8 @@ defmodule Glific.Flows.Action do
     Webhook
   }
 
+  @min_delay 2
+
   @required_field_common [:uuid, :type]
   @required_fields_enter_flow [:flow | @required_field_common]
   @required_fields_language [:language | @required_field_common]
@@ -188,8 +190,8 @@ defmodule Glific.Flows.Action do
   def execute(%{type: "enter_flow"} = action, context, message_stream) do
     # we start off a new context here and dont really modify the current context
     # hence ignoring the return value of start_sub_flow
-    # for now, we'll just delay by at least 1 second
-    context = %{context | delay: min(context.delay + 1, 1)}
+    # for now, we'll just delay by at least min_delay second
+    context = %{context | delay: min(context.delay + @min_delay, @min_delay)}
     Flow.start_sub_flow(context, action.enter_flow_uuid)
     {:ok, context, message_stream}
   end
