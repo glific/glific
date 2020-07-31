@@ -19,9 +19,8 @@ defmodule Glific.Application do
       # Start the Endpoint (http/https)
       GlificWeb.Endpoint,
 
-      # Use Mnesia to store Pow tokens
-      {Pow.Store.Backend.MnesiaCache, extra_db_nodes: Node.list()},
-      Pow.Store.Backend.MnesiaCache.Unsplit,
+      # Start Mnesia to be used for pow cache store
+      Pow.Store.Backend.MnesiaCache,
 
       # Add Oban to process jobs
       {Oban, oban_config()},

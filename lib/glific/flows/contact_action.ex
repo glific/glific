@@ -10,26 +10,10 @@ defmodule Glific.Flows.ContactAction do
     Flows.FlowContext,
     Flows.Localization,
     Flows.MessageVarParser,
-    Messages,
-    Processor.Helper
+    Messages
   }
 
-  defp send_session_message_template(context, shortcode) do
-    language_id = context.contact.language_id
-    session_template = Helper.get_session_message_template(shortcode, language_id)
-
-    {:ok, _message} =
-      Messages.create_and_send_session_template(
-        session_template,
-        %{
-          receiver_id: context.contact_id,
-          send_at: DateTime.add(DateTime.utc_now(), context.delay)
-        }
-      )
-
-    # increment the delay
-    %{context | delay: context.delay + 1}
-  end
+  @min_delay 2
 
   @doc """
   If the template is not define for the message send text messages
@@ -54,7 +38,7 @@ defmodule Glific.Flows.ContactAction do
       })
 
     # increment the delay
-    %{context | delay: context.delay + 1}
+    %{context | delay: context.delay + @min_delay}
   end
 
   @doc """
@@ -77,7 +61,7 @@ defmodule Glific.Flows.ContactAction do
       )
 
     # increment the delay
-    %{context | delay: context.delay + 1}
+    %{context | delay: context.delay + @min_delay}
   end
 
   @doc """
@@ -85,8 +69,6 @@ defmodule Glific.Flows.ContactAction do
   """
   @spec optout(FlowContext.t()) :: FlowContext.t()
   def optout(context) do
-    context = send_session_message_template(context, "optout")
-
     # We need to update the contact with optout_time and status
     Contacts.contact_opted_out(context.contact.phone, DateTime.utc_now())
     context

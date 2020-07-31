@@ -6,9 +6,12 @@ defmodule Glific.Partners do
 
   import Ecto.Query, warn: false
 
-  alias Glific.Partners.Organization
-  alias Glific.Partners.Provider
-  alias Glific.Repo
+  alias Glific.{
+    Contacts.Contact,
+    Partners.Organization,
+    Partners.Provider,
+    Repo
+  }
 
   @doc """
   Returns the list of providers.
@@ -274,5 +277,19 @@ defmodule Glific.Partners do
   @spec change_organization(Organization.t(), map()) :: Ecto.Changeset.t()
   def change_organization(%Organization{} = organization, attrs \\ %{}) do
     Organization.changeset(organization, attrs)
+  end
+
+  @doc """
+  We will cache this soon, since this is a frequently requested item. This contact id is special
+  since it is the sender for all outbound messages and the receiver for all inbound messages
+  """
+  @spec organization_contact_id() :: integer()
+  def organization_contact_id do
+    # Get contact id
+    Contact
+    |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
+    |> select([c, _o], c.id)
+    |> limit(1)
+    |> Repo.one()
   end
 end

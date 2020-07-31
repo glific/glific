@@ -56,8 +56,8 @@ defmodule Glific.Taggers.TaggerHelper do
 
   @spec add_not_replied_tag(Message.t()) :: Message.t()
   defp add_not_replied_tag(message) do
-    Tags.remove_tag_from_all_message(message.contact_id, "Not Replied")
-    add_tag(message, "Not Replied")
+    Tags.remove_tag_from_all_message(message.contact_id, "Not replied")
+    add_tag(message, "Not replied")
   end
 
   @spec remove_not_responded_tag(Message.t()) :: Message.t()
