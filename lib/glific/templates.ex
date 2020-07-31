@@ -29,6 +29,7 @@ defmodule Glific.Templates do
   def count_session_templates(args \\ %{}),
     do: Repo.count_filter(args, SessionTemplate, &filter_with/2)
 
+  # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
@@ -48,6 +49,7 @@ defmodule Glific.Templates do
         query
     end)
   end
+  # codebeat:enable[ABC]
 
   @doc """
   Gets a single session_template.
