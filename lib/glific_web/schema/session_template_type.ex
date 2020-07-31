@@ -70,6 +70,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     @desc "Match the reserved flag"
     field :is_reserved, :boolean
+
+    @desc "Match the label or body or shortcode"
+    field :term, :string
   end
 
   input_object :session_template_input do

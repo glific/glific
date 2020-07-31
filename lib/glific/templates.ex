@@ -37,6 +37,13 @@ defmodule Glific.Templates do
       {:is_hsm, is_hsm}, query ->
         from q in query, where: q.is_hsm == ^is_hsm
 
+      {:term, term}, query ->
+        from q in query,
+          where:
+            ilike(q.label, ^"%#{term}%") or
+              ilike(q.shortcode, ^"%#{term}%") or
+              ilike(q.body, ^"%#{term}%")
+
       _, query ->
         query
     end)
