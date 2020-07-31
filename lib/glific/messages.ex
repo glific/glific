@@ -226,7 +226,7 @@ defmodule Glific.Messages do
   @spec parse_message_body(map()) :: String.t() | nil
   defp parse_message_body(attrs) do
     message_vars = %{
-      "contact" => Contacts.get_contact_field_map(attrs.receiver_id),
+      "contact" => Contacts.get_contact!(attrs.receiver_id) |> Map.from_struct(),
       "global" => MessageVariables.get_global_field_map()
     }
 
