@@ -176,13 +176,20 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "set_contact_field"} = action, context, message_stream) do
-    name = action.field.key
+    key = String.downcase(action.field.key)
     value = FlowContext.get_result_value(context, action.value)
 
     context =
-      if name == "settings",
-        do: ContactSetting.set_contact_preference(context, value),
-        else: ContactField.add_contact_field(context, name, value, "string")
+      cond do
+        key == "settings" and value == "optout" ->
+          ContactAction.optout(context)
+
+        key == "settings" ->
+          ContactSetting.set_contact_preference(context, value)
+
+        true ->
+          ContactField.add_contact_field(context, key, value, "string")
+      end
 
     {:ok, context, message_stream}
   end
