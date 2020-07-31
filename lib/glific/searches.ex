@@ -6,9 +6,8 @@ defmodule Glific.Searches do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Contacts.Contact,
     Conversations.Conversation,
-    Partners,
+    Messages.Message,
     Repo,
     Search.Full,
     Searches.SavedSearch
@@ -118,11 +117,10 @@ defmodule Glific.Searches do
   # common function to build query between count and search
   @spec search_query(String.t(), map()) :: Ecto.Query.t()
   defp search_query(term, args) do
-    org_contact_id = Partners.organization_contact_id()
-
-    Contact
-    |> select([c], c.id)
-    |> where([c], c.id != ^org_contact_id)
+    Message
+    |> select([m], m.contact_id)
+    |> where([m], m.message_number == 0)
+    |> order_by([m], desc: m.updated_at)
     |> Full.run(term, args)
   end
 
