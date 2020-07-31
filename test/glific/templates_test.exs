@@ -124,8 +124,7 @@ defmodule Glific.TemplatesTest do
       session_template_fixture(%{label: "label2", body: "term_filter"})
       session_template_fixture(%{label: "label3", shortcode: "term_filter"})
 
-      session_template_list =
-        Templates.list_session_templates(%{filter: %{term: "term_filter"}})
+      session_template_list = Templates.list_session_templates(%{filter: %{term: "term_filter"}})
 
       assert length(session_template_list) == 3
     end

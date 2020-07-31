@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
   alias Glific.{
     Contacts.Contact,
+    Fixtures,
     Messages,
     Repo,
     Seeds.SeedsDev,
@@ -13,9 +14,9 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   setup do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
-    SeedsDev.seed_session_templates()
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
+    Fixtures.session_template_fixture()
     :ok
   end
 
@@ -71,6 +72,8 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   end
 
   test "session_templates field returns list of session_templates in desc order" do
+    Fixtures.session_template_fixture(%{label: "AAA"})
+
     result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
@@ -78,7 +81,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert length(session_templates) > 0
 
     [session_template | _] = session_templates
-    assert get_in(session_template, ["body"]) == "Another Template"
+    assert get_in(session_template, ["label"]) == "AAA"
   end
 
   test "session_templates returns list of session templates in various filters" do
@@ -121,6 +124,15 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert {:ok, query_data} = result
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
     assert length(session_templates) >= 1
+
+    Fixtures.session_template_fixture(%{label: "term_filter"})
+    Fixtures.session_template_fixture(%{label: "label2", body: "term_filter"})
+    Fixtures.session_template_fixture(%{label: "label3", shortcode: "term_filter"})
+
+    result = query_gql_by(:list, variables: %{"filter" => %{"term" => "term_filter"}})
+    assert {:ok, query_data} = result
+    session_templates = get_in(query_data, [:data, "sessionTemplates"])
+    assert length(session_templates) == 3
   end
 
   test "session_template by id returns one session_template or nil" do
