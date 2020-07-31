@@ -31,7 +31,8 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
 
 {
   "filter": {
-  	"body": "template"
+  	"body": "template",
+    "term": "label"
   },
   "opts": {
     "order": "ASC",
@@ -497,7 +498,7 @@ Filtering options for session_templates
 <td valign="top"><a href="#string">String</a></td>
 <td>
 
-Match the label or body or shortcode of template
+Match term with label, body or shortcode of template
 
 </td>
 </tr>
