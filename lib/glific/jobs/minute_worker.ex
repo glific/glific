@@ -14,7 +14,8 @@ defmodule Glific.Jobs.MinuteWorker do
   Worker to implement cron job functionality as implemented by Oban. This
   is a work in progress and subject to change
   """
-  @spec perform(Oban.Job.t()) :: :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
+  @spec perform(Oban.Job.t()) ::
+          :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{job: :fun_with_flags}}) do
     if FunWithFlags.enabled?(:enable_out_of_office) do
       # check if current day and time is valid

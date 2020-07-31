@@ -50,9 +50,7 @@ defmodule Glific.Processor.ConsumerFlow do
     }
   end
 
-  defp reload(state) do
-
-  end
+  defp reload(_state), do: nil
 
   @doc false
   def handle_events(messages, _from, state) do
@@ -104,9 +102,14 @@ defmodule Glific.Processor.ConsumerFlow do
       # lets do this only if we've not sent them the out of office flow
       # in the past 12 hours
       if FunWithFlags.enabled?(:out_of_office_active) do
-        {:ok, flow} = Flows.get_cached_flow(body, %{shortcode: "outofoffice"})
+        {:ok, flow} = Flows.get_cached_flow("outofoffice", %{shortcode: "outofoffice"})
 
+        if !Flows.flow_activated(flow.id, message.contact_id) do
+          FlowContext.init_context(flow, message.contact)
+        end
       end
+
+      message
     end
 
     # we can potentially save the {contact_id, context} map here in the flow state,
