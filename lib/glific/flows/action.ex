@@ -238,8 +238,11 @@ defmodule Glific.Flows.Action do
     attachment_list
     |> Enum.map(
           fn attchement
-            -> [type, url] = String.split(attchement)
-               {type, url}
+            ->
+              case String.split(attchement, ":", parts: 2) do
+                [type, url] -> {type, url}
+                _ -> {nil, nil}
+              end
           end)
     |> Map.new()
   end
