@@ -95,7 +95,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       conn = get(conn, "/flow-editor/completion", %{})
 
       completion =
-        File.read!("assets/flows/completion.json")
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/completion.json"))
         |> Jason.decode!()
 
       assert json_response(conn, 200) == completion
@@ -149,7 +149,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
 
     test "functions", %{conn: conn} do
       functions =
-        File.read!("assets/flows/functions.json")
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
         |> Jason.decode!()
 
       conn = get(conn, "/flow-editor/functions", %{})

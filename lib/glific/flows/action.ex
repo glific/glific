@@ -162,7 +162,7 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, message_stream) do
-    ContactAction.send_message(context, action)
+    context = ContactAction.send_message(context, action)
     {:ok, context, message_stream}
   end
 
@@ -190,6 +190,10 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "enter_flow"} = action, context, message_stream) do
+    # we start off a new context here and dont really modify the current context
+    # hence ignoring the return value of start_sub_flow
+    # for now, we'll just delay by at least 1 second
+    context = %{context | delay: min(context.delay + 1, 1)}
     Flow.start_sub_flow(context, action.enter_flow_uuid)
     {:ok, context, message_stream}
   end

@@ -37,7 +37,6 @@ config :glific,
 
 config :glific, Oban,
   repo: Glific.Repo,
-  prune: {:maxlen, 10_000},
   queues: [default: 10, gupshup: 10, glifproxy: 10, webhook: 10]
 
 config :tesla, adapter: Tesla.Adapter.Hackney

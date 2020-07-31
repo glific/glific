@@ -8,6 +8,7 @@ defmodule Glific.Searches do
   alias Glific.{
     Contacts.Contact,
     Conversations.Conversation,
+    Partners,
     Repo,
     Search.Full,
     Searches.SavedSearch
@@ -116,9 +117,15 @@ defmodule Glific.Searches do
 
   # common function to build query between count and search
   @spec search_query(String.t(), map()) :: Ecto.Query.t()
-  defp search_query(term, args),
-    do: Contact |> select([c], c.id) |> Full.run(term, args)
+  defp search_query(term, args) do
+    org_contact_id = Partners.organization_contact_id()
+    Contact
+    |> select([c], c.id)
+    |> where([c], c.id != ^org_contact_id)
+    |> Full.run(term, args)
+  end
 
+  @spec do_save_search(map()) :: SavedSearch.t() | nil
   defp do_save_search(%{save_search: true} = args),
     do:
       create_saved_search(%{
@@ -136,6 +143,9 @@ defmodule Glific.Searches do
   def search(%{term: term} = args, count \\ false) do
     # save the search if needed
     do_save_search(args)
+
+    # disabling all contact filters if we need to get the count
+    args = update_args_for_count(args, count)
 
     contact_ids =
       search_query(term, args)
@@ -183,4 +193,14 @@ defmodule Glific.Searches do
       end
     )
   end
+
+  # disabling all contact filters to get the count
+  @spec update_args_for_count(map(), boolean()) :: map()
+  defp update_args_for_count(args, true) do
+    args
+    |> put_in([:contact_opts, :limit], nil)
+    |> put_in([:contact_opts, :offset], nil)
+  end
+
+  defp update_args_for_count(args, false), do: args
 end

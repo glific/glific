@@ -34,7 +34,9 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
   	"body": "template"
   },
   "opts": {
-    "order": "ASC"
+    "order": "ASC",
+    "limit": 10,
+    "offset": 0
   }
 }
 ```

@@ -26,6 +26,11 @@ query contacts($filter: ContactFilter, $opts: Opts) {
 {
   "filter": {
     "name": "Default Sender"
+  },
+  "opts": {
+    "order": "ASC",
+    "limit": 10,
+    "offset": 0
   }
 }
 ```
