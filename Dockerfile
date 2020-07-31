@@ -32,7 +32,6 @@ FROM alpine:3.9 AS app
 # install runtime dependencies
 RUN apk add --update bash openssl postgresql-client
 
-EXPOSE 4000
 ENV MIX_ENV=prod
 
 # prepare app directory
