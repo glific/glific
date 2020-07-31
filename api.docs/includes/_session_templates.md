@@ -493,6 +493,15 @@ Filtering options for session_templates
 </thead>
 <tbody>
 <tr>
+<td colspan="2" valign="top"><strong>term</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+
+Match the label or body or shortcode of template
+
+</td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>body</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td>
