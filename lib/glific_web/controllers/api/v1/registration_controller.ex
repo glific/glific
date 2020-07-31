@@ -9,6 +9,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   alias GlificWeb.ErrorHelpers
   alias PasswordlessAuth
   alias Plug.Conn
+  alias GlificWeb.APIAuthPlug
 
   alias Glific.{
     Contacts,
@@ -145,8 +146,11 @@ defmodule GlificWeb.API.V1.RegistrationController do
     user
     |> Users.reset_user_password(update_params)
     |> case do
-      {:ok, _user} ->
+      {:ok, user} ->
         {:ok, conn} = Pow.Plug.authenticate_user(conn, user_params)
+
+        Pow.Plug.fetch_config(conn)
+        |> APIAuthPlug.delete_all_user_sessions(user)
 
         {:ok,
          %{
