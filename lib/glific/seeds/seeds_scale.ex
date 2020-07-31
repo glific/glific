@@ -6,7 +6,8 @@ defmodule Glific.Seeds.SeedsScale do
     Contacts.Contact,
     Messages.Message,
     Repo,
-    Tags.MessageTag
+    Tags.MessageTag,
+    Tags.Tag
   }
 
   alias Faker.{
@@ -101,29 +102,6 @@ defmodule Glific.Seeds.SeedsScale do
     end
   end
 
-  defp create_message_tag(message_id, tag_ids, acc) do
-    x = Enum.random(0..100)
-    [t0, t1, t2, t3, t4] = Enum.take_random(tag_ids, 5)
-
-    [m0, m1, m2, m3, m4] = [
-      %{message_id: message_id, tag_id: t0},
-      %{message_id: message_id, tag_id: t1},
-      %{message_id: message_id, tag_id: t2},
-      %{message_id: message_id, tag_id: t3},
-      %{message_id: message_id, tag_id: t4}
-    ]
-
-    # seed message_tags on received messages only: 10% no tags etc
-    cond do
-      x < 10 -> acc
-      x < 40 -> [m0 | acc]
-      x < 60 -> [m0 | [m1 | acc]]
-      x < 80 -> [m0 | [m1 | [m2 | acc]]]
-      x < 90 -> [m0 | [m1 | [m2 | [m3 | acc]]]]
-      true -> [m0 | [m1 | [m2 | [m3 | [m4 | acc]]]]]
-    end
-  end
-
   defp seed_contacts(contacts_count) do
     # create random contacts entries
     contact_entries = create_contact_entries(contacts_count)
@@ -150,18 +128,117 @@ defmodule Glific.Seeds.SeedsScale do
   end
 
   defp seed_message_tags do
-    tag_ids = Repo.all(from t in "tags", select: t.id) |> Enum.shuffle()
-
     Repo.query!("ALTER TABLE messages_tags DISABLE TRIGGER update_search_message_trigger;")
 
-    _ =
-      Repo.all(from m in "messages", select: m.id, where: m.receiver_id == 1)
-      |> Enum.shuffle()
-      |> Enum.reduce([], fn x, acc -> create_message_tag(x, tag_ids, acc) end)
-      |> Enum.chunk_every(1000)
-      |> Enum.map(&Repo.insert_all(MessageTag, &1))
+    seed_message_tags_generic()
+
+    seed_message_tags_unread()
+
+    seed_message_tags_not_responded()
 
     Repo.query!("ALTER TABLE messages_tags ENABLE TRIGGER update_search_message_trigger;")
+  end
+
+  defp seed_message_tags_generic do
+    query =
+      from t in Tag,
+        select: t.id,
+        where: t.label not in ["Unread", "Not Responded", "Not Replied"]
+
+    tag_ids = Repo.all(query) |> Enum.shuffle()
+
+    _ =
+      Repo.all(
+        from m in "messages", select: m.id, where: m.receiver_id == 1 and m.message_number != 0
+      )
+      |> Enum.shuffle()
+      |> Enum.reduce([], fn x, acc -> create_message_tag_generic(x, tag_ids, acc) end)
+      |> Enum.chunk_every(1000)
+      |> Enum.map(&Repo.insert_all(MessageTag, &1))
+  end
+
+  defp create_message_tag_generic(message_id, tag_ids, acc) do
+    x = Enum.random(0..100)
+    [t0, t1, t2] = Enum.take_random(tag_ids, 3)
+
+    [m0, m1, m2] = [
+      %{message_id: message_id, tag_id: t0},
+      %{message_id: message_id, tag_id: t1},
+      %{message_id: message_id, tag_id: t2}
+    ]
+
+    # seed message_tags on received messages only: 10% no tags etc
+    cond do
+      x < 20 -> acc
+      x < 50 -> [m0 | acc]
+      x < 80 -> [m0 | [m1 | acc]]
+      true -> [m0 | [m1 | [m2 | acc]]]
+    end
+  end
+
+  defp seed_message_tags_unread do
+    query =
+      from t in Tag,
+        select: t.id,
+        where: t.label in ["Unread", "Not replied"]
+
+    tag_ids = Repo.all(query) |> Enum.shuffle()
+
+    _ =
+      Repo.all(
+        from m in "messages", select: m.id, where: m.receiver_id == 1 and m.message_number == 0
+      )
+      |> Enum.shuffle()
+      |> Enum.reduce([], fn x, acc -> create_message_tag_unread(x, tag_ids, acc) end)
+      |> Enum.chunk_every(1000)
+      |> Enum.map(&Repo.insert_all(MessageTag, &1))
+  end
+
+  defp create_message_tag_unread(message_id, tag_ids, acc) do
+    x = Enum.random(0..100)
+    [t0, t1] = Enum.take_random(tag_ids, 2)
+
+    [m0, m1] = [
+      %{message_id: message_id, tag_id: t0},
+      %{message_id: message_id, tag_id: t1}
+    ]
+
+    # seed message_tags on received messages only: 10% no tags etc
+    cond do
+      x < 20 -> acc
+      x < 70 -> [m0 | acc]
+      true -> [m0 | [m1 | acc]]
+    end
+  end
+
+  defp seed_message_tags_not_responded do
+    query =
+      from t in Tag,
+        select: t.id,
+        where: t.label in ["Not Responded"]
+
+    tag_ids = Repo.all(query) |> Enum.shuffle()
+
+    _ =
+      Repo.all(
+        from m in "messages", select: m.id, where: m.receiver_id != 1 and m.message_number == 0
+      )
+      |> Enum.shuffle()
+      |> Enum.reduce([], fn x, acc -> create_message_tag_not_responded(x, tag_ids, acc) end)
+      |> Enum.chunk_every(1000)
+      |> Enum.map(&Repo.insert_all(MessageTag, &1))
+  end
+
+  defp create_message_tag_not_responded(message_id, tag_ids, acc) do
+    x = Enum.random(0..100)
+    [t0] = Enum.take_random(tag_ids, 1)
+
+    m0 = %{message_id: message_id, tag_id: t0}
+
+    # seed message_tags on received messages only: 10% no tags etc
+    if x < 50,
+      do: acc,
+      else: [m0 | acc]
   end
 
   @doc false
