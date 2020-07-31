@@ -7,10 +7,9 @@ defmodule Glific.Communications.Message do
   alias Glific.{
     Communications,
     Contacts,
-    Contacts.Contact,
     Messages,
     Messages.Message,
-    Partners.Organization,
+    Partners,
     Processor.Producer,
     Repo,
     Taggers,
@@ -115,7 +114,7 @@ defmodule Glific.Communications.Message do
       |> Map.merge(%{
         type: type,
         sender_id: contact.id,
-        receiver_id: organization_contact_id(),
+        receiver_id: Partners.organization_contact_id(),
         flow: :inbound,
         provider_status: :delivered,
         status: :delivered
@@ -170,16 +169,5 @@ defmodule Glific.Communications.Message do
     |> Communications.publish_data(:received_message)
 
     {:ok}
-  end
-
-  @doc false
-  @spec organization_contact_id() :: integer()
-  def organization_contact_id do
-    # Get contact id
-    Contact
-    |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
-    |> select([c, _o], c.id)
-    |> limit(1)
-    |> Repo.one()
   end
 end

@@ -10,6 +10,7 @@ defmodule Glific.Messages do
     Contacts.Contact,
     Conversations.Conversation,
     Messages.Message,
+    Partners,
     Repo,
     Tags.MessageTag,
     Templates.SessionTemplate
@@ -205,7 +206,7 @@ defmodule Glific.Messages do
   defp create_and_send_message(is_valid_contact, attrs) when is_valid_contact == true do
     {:ok, message} =
       %{
-        sender_id: Communications.Message.organization_contact_id(),
+        sender_id: Partners.organization_contact_id(),
         flow: :outbound
       }
       |> Map.merge(attrs)
@@ -270,7 +271,7 @@ defmodule Glific.Messages do
       body: session_template.body,
       type: session_template.type,
       media_id: session_template.message_media_id,
-      sender_id: Communications.Message.organization_contact_id(),
+      sender_id: Partners.organization_contact_id(),
       receiver_id: args[:receiver_id],
       send_at: args[:send_at]
     }
@@ -293,7 +294,7 @@ defmodule Glific.Messages do
         body: updated_template.body,
         type: updated_template.type,
         is_hsm: updated_template.is_hsm,
-        sender_id: Communications.Message.organization_contact_id(),
+        sender_id: Partners.organization_contact_id(),
         receiver_id: receiver_id
       }
 

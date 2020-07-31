@@ -1,10 +1,10 @@
 defmodule GlificWeb.Schema.MessageTest do
   alias Glific.{
-    Communications,
     Contacts,
     Contacts.Contact,
     Messages,
     Messages.Message,
+    Partners,
     Repo,
     Seeds.SeedsDev,
     Templates.SessionTemplate
@@ -240,7 +240,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "type" => "TEXT",
-            "sender_id" => Communications.Message.organization_contact_id()
+            "sender_id" => Partners.organization_contact_id()
           },
           "contact_ids" => [contact1.id, contact2.id]
         }
@@ -290,7 +290,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "receiverId" => contact.id,
-            "senderId" => Communications.Message.organization_contact_id(),
+            "senderId" => Partners.organization_contact_id(),
             "type" => "TEXT"
           }
         }
@@ -313,7 +313,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => message_body,
             "flow" => "OUTBOUND",
             "receiverId" => contact.id,
-            "senderId" => Communications.Message.organization_contact_id(),
+            "senderId" => Partners.organization_contact_id(),
             "type" => "TEXT"
           }
         }
