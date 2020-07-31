@@ -197,7 +197,8 @@ defmodule GlificWeb.Schema.SearchTest do
       )
 
     assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "search"])) == Contacts.count_contacts()
+    # search excludes the org contact id since that is the sender of all messages
+    assert length(get_in(query_data, [:data, "search"])) == Contacts.count_contacts() - 1
   end
 
   test "save search will save the arguments" do
