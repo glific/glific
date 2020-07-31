@@ -2,14 +2,13 @@ FROM elixir:1.10.4-alpine as build
 MAINTAINER opensource@coloredcow.com
 
 # install build dependencies
-RUN apk add --update git build-base nodejs npm yarn python
+RUN apk add --update git nodejs npm
 
 RUN mkdir /app
 WORKDIR /app
 
 # install Hex + Rebar
 RUN mix do local.hex --force, local.rebar --force
-RUN apk add git
 
 # set build ENV
 ENV MIX_ENV=prod
@@ -18,6 +17,9 @@ ENV MIX_ENV=prod
 COPY . .
 RUN HEX_HTTP_CONCURRENCY=1 HEX_HTTP_TIMEOUT=120 mix deps.get --only prod
 RUN mix deps.compile
+
+# build assets
+RUN cd assets && npm install && npm run deploy
 
 # build project
 RUN mix compile

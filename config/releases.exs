@@ -10,7 +10,7 @@ db_database = System.get_env("DATABASE_DB") || "postgres"
 db_username = System.get_env("DATABASE_USER") || "postgres" 
 db_password = System.get_env("DATABASE_PASSWORD") || "postgres"
 db_url = "ecto://#{db_username}:#{db_password}@#{db_host}/#{db_database}"
-port = System.get_env("PORT") || 4000
+ssl_port = System.get_env("SSL_PORT") || 444
 config :glific, Glific.Repo,
   url:  db_url,
   pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
@@ -22,7 +22,13 @@ secret_key_base = System.get_env("SECRET_KEY_BASE") ||
   """ 
 config :glific, GlificWeb.Endpoint,
   server: true,
-  http: [:inet6, port: port],
-  https: false,
+  http: [:inet6, port: 4000],
+  https: [
+    port: ssl_port,
+    cipher_suite: :strong,
+    keyfile: '/etc/letsencrypt/live/tides.coloredcow.com/privkey.pem',
+    certfile: '/etc/letsencrypt/live/tides.coloredcow.com/cert.pem',
+    cacertfile: '/etc/letsencrypt/live/tides.coloredcow.com/fullchain.pem'
+  ],
   secret_key_base: secret_key_base,
-  url: [host: System.get_env("BASE_URL"), port: port]
+  url: [host: System.get_env("BASE_URL")]
