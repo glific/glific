@@ -1,0 +1,235 @@
+{
+  "vars" : [
+    "8390ded3-06c3-4df4-b428-064666f085c7"
+  ],
+  "localization" : {
+
+  },
+  "language" : "eng",
+  "name" : "Timed Workflow",
+  "nodes" : [
+    {
+      "actions" : [
+        {
+          "quick_replies" : [
+
+          ],
+          "uuid" : "902dcbfb-6e54-435e-a23b-37686dc495e1",
+          "text" : "I'm just a placeholder. You can type anything or just wait for magic to happen",
+          "type" : "send_msg",
+          "attachments" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "7a4feee4-62d7-478c-a36a-649cc9041740",
+          "destination_uuid" : "aba5eeec-a4e5-4d83-82ca-fd7fdd162d80"
+        }
+      ],
+      "uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb"
+    },
+    {
+      "uuid" : "aba5eeec-a4e5-4d83-82ca-fd7fdd162d80",
+      "exits" : [
+        {
+          "destination_uuid" : "77eb45aa-67e9-47f7-a3f5-7cab3884f2f0",
+          "uuid" : "b67ab1a7-fb8d-4571-ba35-e2a859b96d8d"
+        },
+        {
+          "destination_uuid" : "55d23746-42bd-482e-b2ec-4f456ffddee7",
+          "uuid" : "6053fd42-b6ee-4ef2-8f8b-c76a85a1710c"
+        }
+      ],
+      "router" : {
+        "type" : "switch",
+        "operand" : "@input.text",
+        "cases" : [
+
+        ],
+        "categories" : [
+          {
+            "exit_uuid" : "b67ab1a7-fb8d-4571-ba35-e2a859b96d8d",
+            "name" : "All Responses",
+            "uuid" : "1377d1ee-5917-438f-96b9-f62cfe0071ae"
+          },
+          {
+            "exit_uuid" : "6053fd42-b6ee-4ef2-8f8b-c76a85a1710c",
+            "name" : "No Response",
+            "uuid" : "79e6f007-c9cf-4209-a26a-baf388ae273e"
+          }
+        ],
+        "wait" : {
+          "timeout" : {
+            "seconds" : 60,
+            "category_uuid" : "79e6f007-c9cf-4209-a26a-baf388ae273e"
+          },
+          "type" : "msg"
+        },
+        "default_category_uuid" : "1377d1ee-5917-438f-96b9-f62cfe0071ae"
+      },
+      "actions" : [
+
+      ]
+    },
+    {
+      "actions" : [
+        {
+          "quick_replies" : [
+
+          ],
+          "type" : "send_msg",
+          "uuid" : "e9c5aa43-7d6a-4188-9092-4f2b2657bf96",
+          "text" : "Patience please",
+          "attachments" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "d7be2c07-2337-4c62-9f1e-7e58b1f58a4d",
+          "destination_uuid" : "3e7618ab-f477-4621-b10b-77001972643a"
+        }
+      ],
+      "uuid" : "77eb45aa-67e9-47f7-a3f5-7cab3884f2f0"
+    },
+    {
+      "actions" : [
+        {
+          "uuid" : "d4b5f1b7-b822-4fa0-abda-0da138e5de29",
+          "text" : "TImer went off\n",
+          "quick_replies" : [
+
+          ],
+          "type" : "send_msg",
+          "attachments" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "2bf494c9-4da2-4e12-8aae-a843a5f68d19",
+          "destination_uuid" : "3e7618ab-f477-4621-b10b-77001972643a"
+        }
+      ],
+      "uuid" : "55d23746-42bd-482e-b2ec-4f456ffddee7"
+    },
+    {
+      "actions" : [
+        {
+          "method" : "GET",
+          "type" : "call_webhook",
+          "url" : "http:\/\/glific.test:4000\/flow-editor\/channels",
+          "headers" : {
+            "Accept" : "application\/json"
+          },
+          "result_name" : "flowhook",
+          "body" : "",
+          "uuid" : "83a767d6-a41c-44ac-adf9-26724bb852e9"
+        }
+      ],
+      "uuid" : "3e7618ab-f477-4621-b10b-77001972643a",
+      "exits" : [
+        {
+          "destination_uuid" : null,
+          "uuid" : "b251479d-220d-4181-8ad3-8858f81265a7"
+        },
+        {
+          "destination_uuid" : null,
+          "uuid" : "5a98d389-1f8e-481f-ad91-6a8b85812193"
+        }
+      ],
+      "router" : {
+        "categories" : [
+          {
+            "exit_uuid" : "b251479d-220d-4181-8ad3-8858f81265a7",
+            "name" : "Success",
+            "uuid" : "d4e96c18-2af6-42bb-bdb0-189f151efa85"
+          },
+          {
+            "exit_uuid" : "5a98d389-1f8e-481f-ad91-6a8b85812193",
+            "name" : "Failure",
+            "uuid" : "e986d9cf-9442-49b5-aa73-7b80b0bacd87"
+          }
+        ],
+        "cases" : [
+          {
+            "category_uuid" : "d4e96c18-2af6-42bb-bdb0-189f151efa85",
+            "type" : "has_only_text",
+            "arguments" : [
+              "Success"
+            ],
+            "uuid" : "c0186714-26c2-47c9-b3e3-718531c4451b"
+          }
+        ],
+        "operand" : "@results.flowhook.category",
+        "default_category_uuid" : "e986d9cf-9442-49b5-aa73-7b80b0bacd87",
+        "type" : "switch"
+      }
+    }
+  ],
+  "_ui" : {
+    "languages" : [
+      {
+        "eng" : "English"
+      },
+      {
+        "spa" : "Spanish"
+      }
+    ],
+    "nodes" : {
+      "aba5eeec-a4e5-4d83-82ca-fd7fdd162d80" : {
+        "type" : "wait_for_response",
+        "position" : {
+          "top" : 200,
+          "left" : 860
+        },
+        "config" : {
+          "cases" : {
+
+          }
+        }
+      },
+      "77eb45aa-67e9-47f7-a3f5-7cab3884f2f0" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 700,
+          "top" : 380
+        }
+      },
+      "3e7618ab-f477-4621-b10b-77001972643a" : {
+        "type" : "split_by_webhook",
+        "config" : {
+
+        },
+        "position" : {
+          "left" : 960,
+          "top" : 620
+        }
+      },
+      "55d23746-42bd-482e-b2ec-4f456ffddee7" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 960,
+          "top" : 380
+        }
+      },
+      "d977a2dc-5987-4192-817e-1e3d3774abcb" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 960,
+          "top" : 0
+        }
+      }
+    },
+    "stickies" : {
+
+    }
+  },
+  "uuid" : "8390ded3-06c3-4df4-b428-064666f085c7",
+  "type" : "message",
+  "spec_version" : "13.1.0"
+}

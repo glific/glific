@@ -35,6 +35,8 @@ defmodule Glific.Flows.MessageVarParser do
   @spec stringify_keys(map()) :: map() | nil
   defp stringify_keys(nil), do: nil
 
+  defp stringify_keys(map) when is_struct(map), do: Map.from_struct(map)
+
   defp stringify_keys(map) when is_map(map) do
     map
     |> Enum.map(fn {k, v} ->
@@ -45,11 +47,10 @@ defmodule Glific.Flows.MessageVarParser do
 
   # Walk the list and stringify the keys of
   # of any map members
-  defp stringify_keys([head | rest]) do
+  defp stringify_keys([head | rest] = list) when is_list(list) do
     [stringify_keys(head) | stringify_keys(rest)]
   end
 
-  defp stringify_keys(not_a_map) do
-    not_a_map
-  end
+  defp stringify_keys(value),
+    do: value
 end

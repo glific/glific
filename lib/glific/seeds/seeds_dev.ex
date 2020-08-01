@@ -13,9 +13,10 @@ defmodule Glific.Seeds.SeedsDev do
     Repo,
     Settings,
     Tags.Tag,
-    Templates.SessionTemplate,
     Users
   }
+
+  alias Faker.Lorem.Shakespeare
 
   @doc """
   Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
@@ -23,8 +24,8 @@ defmodule Glific.Seeds.SeedsDev do
   """
   @spec seed_tag :: nil
   def seed_tag do
-    [hi_in | _] = Settings.list_languages(%{label: "hindi"})
-    [en_us | _] = Settings.list_languages(%{label: "english"})
+    [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
+    [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
     Repo.insert!(%Tag{label: "This is for testing", language: en_us})
     Repo.insert!(%Tag{label: "यह परीक्षण के लिए है", language: hi_in})
@@ -33,8 +34,8 @@ defmodule Glific.Seeds.SeedsDev do
   @doc false
   @spec seed_contacts :: {integer(), nil}
   def seed_contacts do
-    [hi_in | _] = Settings.list_languages(%{label: "hindi"})
-    [en_us | _] = Settings.list_languages(%{label: "english"})
+    [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
+    [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
     contacts = [
       %{phone: "917834811231", name: "Default receiver", language_id: hi_in.id},
@@ -50,11 +51,6 @@ defmodule Glific.Seeds.SeedsDev do
       },
       %{
         name: "Chrissy Cron",
-        phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-        language_id: en_us.id
-      },
-      %{
-        name: "Hailey Wardlaw",
         phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
         language_id: en_us.id
       }
@@ -103,6 +99,9 @@ defmodule Glific.Seeds.SeedsDev do
   def seed_messages do
     {:ok, sender} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+    {:ok, receiver2} = Repo.fetch_by(Contact, %{name: "Adelle Cavin"})
+    {:ok, receiver3} = Repo.fetch_by(Contact, %{name: "Margarita Quinteros"})
+    {:ok, receiver4} = Repo.fetch_by(Contact, %{name: "Chrissy Cron"})
 
     Repo.insert!(%Message{
       body: "Default message body",
@@ -127,7 +126,7 @@ defmodule Glific.Seeds.SeedsDev do
     })
 
     Repo.insert!(%Message{
-      body: Faker.Lorem.sentence(),
+      body: Shakespeare.hamlet(),
       flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
@@ -138,7 +137,7 @@ defmodule Glific.Seeds.SeedsDev do
     })
 
     Repo.insert!(%Message{
-      body: Faker.Lorem.sentence(),
+      body: Shakespeare.hamlet(),
       flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
@@ -180,6 +179,39 @@ defmodule Glific.Seeds.SeedsDev do
       receiver_id: sender.id,
       contact_id: receiver.id
     })
+
+    Repo.insert!(%Message{
+      body: Shakespeare.hamlet(),
+      flow: :inbound,
+      type: :text,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
+      sender_id: receiver2.id,
+      receiver_id: sender.id,
+      contact_id: receiver2.id
+    })
+
+    Repo.insert!(%Message{
+      body: Shakespeare.hamlet(),
+      flow: :inbound,
+      type: :text,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
+      sender_id: receiver3.id,
+      receiver_id: sender.id,
+      contact_id: receiver3.id
+    })
+
+    Repo.insert!(%Message{
+      body: Shakespeare.hamlet(),
+      flow: :inbound,
+      type: :text,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
+      sender_id: receiver4.id,
+      receiver_id: sender.id,
+      contact_id: receiver4.id
+    })
   end
 
   @doc false
@@ -216,34 +248,6 @@ defmodule Glific.Seeds.SeedsDev do
       caption: Faker.String.base64(10),
       provider_media_id: Faker.String.base64(10)
     })
-  end
-
-  @doc false
-  @spec seed_session_templates :: nil
-  def seed_session_templates do
-    [en_us | _] = Settings.list_languages(%{label: "english"})
-
-    session_template_parent =
-      Repo.insert!(%SessionTemplate{
-        label: "Default Template Label",
-        shortcode: "default template",
-        body: "Default Template",
-        type: :text,
-        language_id: en_us.id,
-        uuid: "92bc663f-ac05-45d5-aa13-4dae06165ae4"
-      })
-
-    Repo.insert!(%SessionTemplate{
-      label: "Another Template Label",
-      shortcode: "another template",
-      body: "Another Template",
-      type: :text,
-      language_id: en_us.id,
-      parent_id: session_template_parent.id,
-      uuid: "53008c3d-e619-4ec6-80cd-b9b2c89386dc"
-    })
-
-    nil
   end
 
   @doc false
@@ -307,7 +311,7 @@ defmodule Glific.Seeds.SeedsDev do
       })
 
     timed_flow_definition =
-      File.read!("assets/flows/timed.json")
+      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/timed.json"))
       |> Jason.decode!()
 
     timed_flow_definition =
@@ -330,7 +334,7 @@ defmodule Glific.Seeds.SeedsDev do
       })
 
     sol_activity_definition =
-      File.read!("assets/flows/sol_activity.json")
+      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/sol_activity.json"))
       |> Jason.decode!()
 
     sol_activity_definition =
@@ -353,7 +357,7 @@ defmodule Glific.Seeds.SeedsDev do
       })
 
     sol_feedback_definition =
-      File.read!("assets/flows/sol_feedback.json")
+      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/sol_feedback.json"))
       |> Jason.decode!()
 
     sol_feedback_definition =
@@ -366,52 +370,6 @@ defmodule Glific.Seeds.SeedsDev do
       definition: sol_feedback_definition,
       flow_id: sol_feedback.id
     })
-
-    # sol_registration =
-    #   Repo.insert!(%Flow{
-    #     name: "SoL Registration",
-    #     shortcode: "solregistration",
-    #     version_number: "13.1.0",
-    #     uuid: "f4f38e00-3a50-4892-99ce-a281fe24d040"
-    #   })
-
-    # sol_registration_definition =
-    #   File.read!("assets/flows/sol_registration.json")
-    #   |> Jason.decode!()
-
-    # sol_registration_definition =
-    #   Map.merge(sol_registration_definition, %{
-    #     "name" => sol_registration.name,
-    #     "uuid" => sol_registration.uuid
-    #   })
-
-    # Repo.insert!(%FlowRevision{
-    #   definition: sol_registration_definition,
-    #   flow_id: sol_registration.id
-    # })
-
-    # sol_workflow =
-    #   Repo.insert!(%Flow{
-    #     name: "SoL Workflow",
-    #     shortcode: "solworkflow",
-    #     version_number: "13.1.0",
-    #     uuid: "6fe8fda9-2df6-4694-9fd6-45b9e724f545"
-    #   })
-
-    # sol_workflow_definition =
-    #   File.read!("assets/flows/sol_workflow.json")
-    #   |> Jason.decode!()
-
-    # sol_workflow_definition =
-    #   Map.merge(sol_workflow_definition, %{
-    #     "name" => sol_workflow.name,
-    #     "uuid" => sol_workflow.uuid
-    #   })
-
-    # Repo.insert!(%FlowRevision{
-    #   definition: sol_workflow_definition,
-    #   flow_id: sol_workflow.id
-    # })
   end
 
   @doc """
@@ -427,8 +385,6 @@ defmodule Glific.Seeds.SeedsDev do
     seed_contacts()
 
     seed_users()
-
-    seed_session_templates()
 
     seed_tag()
 

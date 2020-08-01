@@ -15,8 +15,9 @@ defmodule Glific.Application do
       {Phoenix.PubSub, name: Glific.PubSub},
       # Start the Endpoint (http/https)
       GlificWeb.Endpoint,
-      {Pow.Store.Backend.MnesiaCache, extra_db_nodes: Node.list()},
-      Pow.Store.Backend.MnesiaCache.Unsplit,
+
+      # Start Mnesia to be used for pow cache store
+      Pow.Store.Backend.MnesiaCache,
 
       # Add Oban to process jobs
       {Oban, oban_config()},
@@ -55,15 +56,6 @@ defmodule Glific.Application do
   end
 
   defp oban_config do
-    opts = Application.get_env(:glific, Oban)
-
-    # Prevent running queues or scheduling jobs from an iex console, i.e. when starting app with `iex -S mix`
-    if Code.ensure_loaded?(IEx) and IEx.started?() do
-      opts
-      |> Keyword.put(:crontab, false)
-      |> Keyword.put(:queues, false)
-    else
-      opts
-    end
+    Application.get_env(:glific, Oban)
   end
 end

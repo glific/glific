@@ -155,7 +155,7 @@ defmodule Glific.Flows.Flow do
     # we might want to put the current one under some sort of pause status
     flow = get_flow(uuid)
 
-    FlowContext.init_context(flow, context.contact, context.id)
+    FlowContext.init_context(flow, context.contact, context.id, context.delay)
   end
 
   @doc """

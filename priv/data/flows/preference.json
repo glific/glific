@@ -1,0 +1,257 @@
+{
+  "vars" : [
+    "63397051-789d-418d-9388-2ef7eb1268bb"
+  ],
+  "localization" : {
+
+  },
+  "name" : "Preferences Workflow",
+  "nodes" : [
+    {
+      "uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb",
+      "exits" : [
+        {
+          "uuid" : "7a4feee4-62d7-478c-a36a-649cc9041740",
+          "destination_uuid" : "c5aaefdf-687f-4d8b-93b2-8efbcfdc1ca3"
+        }
+      ],
+      "actions" : [
+        {
+          "quick_replies" : [
+
+          ],
+          "type" : "send_msg",
+          "attachments" : [
+
+          ],
+          "text" : "What type of activity do you prefer\n\n      1. Poetry\n      2. Writing\n      3. Story\n      4. Video\n      5. Done\n      6. Reset my preferences",
+          "uuid" : "902dcbfb-6e54-435e-a23b-37686dc495e1"
+        }
+      ]
+    },
+    {
+      "router" : {
+        "categories" : [
+          {
+            "name" : "poetry",
+            "uuid" : "ef1cc619-89d7-48be-81fc-3959da378112",
+            "exit_uuid" : "54a66e2a-8cf8-498b-9449-6b0404300e39"
+          },
+          {
+            "name" : "writing",
+            "uuid" : "382c3269-fadf-4fdc-b477-91c4da489705",
+            "exit_uuid" : "dd56125c-01b7-4de1-befb-f0c44c132909"
+          },
+          {
+            "name" : "story",
+            "uuid" : "54c93b06-2ca8-4897-b108-e222bc7d88e1",
+            "exit_uuid" : "96acc5e7-9ca7-461e-9f74-87b99c0b5d4d"
+          },
+          {
+            "name" : "video",
+            "uuid" : "8f2c8772-34a0-4bc7-9bd4-c84af14b5bb4",
+            "exit_uuid" : "792eb527-aebc-4947-8b24-7ac447a7d73d"
+          },
+          {
+            "name" : "done",
+            "uuid" : "0595d183-ca02-43f8-b64d-ad5b7e13f06b",
+            "exit_uuid" : "e0115e19-1a94-4ba6-9a03-a5f29088654f"
+          },
+          {
+            "name" : "reset",
+            "uuid" : "2af50c61-26ac-4039-8a54-395b419748f4",
+            "exit_uuid" : "66ed3a99-9666-420f-8e50-b6b922e6c7af"
+          },
+          {
+            "name" : "Other",
+            "uuid" : "9d88e613-092d-40ae-8186-a2fe9d2b13df",
+            "exit_uuid" : "1bb26071-cb76-41fc-8f81-78fd31394758"
+          }
+        ],
+        "result_name" : "preference",
+        "cases" : [
+          {
+            "category_uuid" : "ef1cc619-89d7-48be-81fc-3959da378112",
+            "arguments" : [
+              "1"
+            ],
+            "uuid" : "93d8b8d5-0a5b-47e3-960d-97d3a10b9efe",
+            "type" : "has_only_phrase"
+          },
+          {
+            "category_uuid" : "382c3269-fadf-4fdc-b477-91c4da489705",
+            "arguments" : [
+              "2"
+            ],
+            "uuid" : "63661235-ff18-44cb-92c6-e13da3703eb8",
+            "type" : "has_only_phrase"
+          },
+          {
+            "category_uuid" : "54c93b06-2ca8-4897-b108-e222bc7d88e1",
+            "arguments" : [
+              "3"
+            ],
+            "uuid" : "dc747279-7303-44b1-8dce-fa187fa85873",
+            "type" : "has_only_phrase"
+          },
+          {
+            "category_uuid" : "8f2c8772-34a0-4bc7-9bd4-c84af14b5bb4",
+            "arguments" : [
+              "4"
+            ],
+            "uuid" : "f08eec5d-1ab6-44f8-b35e-92581d02aa74",
+            "type" : "has_any_word"
+          },
+          {
+            "category_uuid" : "0595d183-ca02-43f8-b64d-ad5b7e13f06b",
+            "arguments" : [
+              "5"
+            ],
+            "uuid" : "f78e5612-5afe-4301-b32c-161e7599b3d1",
+            "type" : "has_any_word"
+          },
+          {
+            "category_uuid" : "2af50c61-26ac-4039-8a54-395b419748f4",
+            "arguments" : [
+              "6"
+            ],
+            "uuid" : "045fa16e-1d46-4898-a6f3-2a507bbebc6c",
+            "type" : "has_any_word"
+          }
+        ],
+        "default_category_uuid" : "9d88e613-092d-40ae-8186-a2fe9d2b13df",
+        "operand" : "@input.text",
+        "type" : "switch",
+        "wait" : {
+          "type" : "msg"
+        }
+      },
+      "exits" : [
+        {
+          "uuid" : "54a66e2a-8cf8-498b-9449-6b0404300e39",
+          "destination_uuid" : "1cfb74d7-8286-4830-8269-97723f7302e6"
+        },
+        {
+          "uuid" : "dd56125c-01b7-4de1-befb-f0c44c132909",
+          "destination_uuid" : "1cfb74d7-8286-4830-8269-97723f7302e6"
+        },
+        {
+          "uuid" : "96acc5e7-9ca7-461e-9f74-87b99c0b5d4d",
+          "destination_uuid" : "1cfb74d7-8286-4830-8269-97723f7302e6"
+        },
+        {
+          "uuid" : "792eb527-aebc-4947-8b24-7ac447a7d73d",
+          "destination_uuid" : "1cfb74d7-8286-4830-8269-97723f7302e6"
+        },
+        {
+          "uuid" : "e0115e19-1a94-4ba6-9a03-a5f29088654f",
+          "destination_uuid" : null
+        },
+        {
+          "uuid" : "66ed3a99-9666-420f-8e50-b6b922e6c7af",
+          "destination_uuid" : "f0362730-b26f-4dfa-ace8-35cdcef895b8"
+        },
+        {
+          "uuid" : "1bb26071-cb76-41fc-8f81-78fd31394758",
+          "destination_uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb"
+        }
+      ],
+      "uuid" : "c5aaefdf-687f-4d8b-93b2-8efbcfdc1ca3",
+      "actions" : [
+
+      ]
+    },
+    {
+      "exits" : [
+        {
+          "uuid" : "1509cd6a-0512-443c-bdcf-33d48d627afb",
+          "destination_uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb"
+        }
+      ],
+      "uuid" : "1cfb74d7-8286-4830-8269-97723f7302e6",
+      "actions" : [
+        {
+          "uuid" : "3aa56e1d-19ca-41af-a3cc-16fcf20c62e6",
+          "field" : {
+            "name" : "Settings",
+            "key" : "settings"
+          },
+          "value" : "@results.preference.category",
+          "type" : "set_contact_field"
+        }
+      ]
+    },
+    {
+      "exits" : [
+        {
+          "uuid" : "2266df88-7bee-4f6d-8cc6-bf513befb4ae",
+          "destination_uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb"
+        }
+      ],
+      "uuid" : "f0362730-b26f-4dfa-ace8-35cdcef895b8",
+      "actions" : [
+        {
+          "uuid" : "2fb60d38-e9ce-4dd4-820f-4b7130a85fc2",
+          "field" : {
+            "name" : "Settings",
+            "key" : "settings"
+          },
+          "type" : "set_contact_field",
+          "value" : ""
+        }
+      ]
+    }
+  ],
+  "uuid" : "63397051-789d-418d-9388-2ef7eb1268bb",
+  "_ui" : {
+    "languages" : [
+      {
+        "eng" : "English"
+      },
+      {
+        "spa" : "Spanish"
+      }
+    ],
+    "nodes" : {
+      "f0362730-b26f-4dfa-ace8-35cdcef895b8" : {
+        "type" : "execute_actions",
+        "position" : {
+          "top" : 480,
+          "left" : 340
+        }
+      },
+      "d977a2dc-5987-4192-817e-1e3d3774abcb" : {
+        "type" : "execute_actions",
+        "position" : {
+          "top" : 0,
+          "left" : 960
+        }
+      },
+      "1cfb74d7-8286-4830-8269-97723f7302e6" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 20,
+          "top" : 480
+        }
+      },
+      "c5aaefdf-687f-4d8b-93b2-8efbcfdc1ca3" : {
+        "type" : "wait_for_response",
+        "position" : {
+          "left" : 220,
+          "top" : 220
+        },
+        "config" : {
+          "cases" : {
+
+          }
+        }
+      }
+    },
+    "stickies" : {
+
+    }
+  },
+  "language" : "eng",
+  "type" : "message",
+  "spec_version" : "13.1.0"
+}

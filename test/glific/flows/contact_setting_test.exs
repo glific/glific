@@ -6,7 +6,7 @@ defmodule Glific.Flows.ContactSettingTest do
     Flows.ContactSetting,
     Flows.FlowContext,
     Seeds.SeedsDev,
-    Settings
+    Settings.Language
   }
 
   setup do
@@ -18,7 +18,7 @@ defmodule Glific.Flows.ContactSettingTest do
 
   test "set contact language" do
     language_label = "English (United States)"
-    [language | _] = Settings.list_languages(%{label: language_label})
+    {:ok, language} = Repo.fetch_by(Language, %{label: language_label})
 
     [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
 

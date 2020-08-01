@@ -154,7 +154,7 @@ defmodule Glific.Flows do
         end
       )
 
-    %{results: Enum.reverse(asset_list)}
+    %{results: Enum.sort(asset_list) |> Enum.reverse()}
   end
 
   @doc """

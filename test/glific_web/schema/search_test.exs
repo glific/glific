@@ -197,7 +197,8 @@ defmodule GlificWeb.Schema.SearchTest do
       )
 
     assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "search"])) == Contacts.count_contacts()
+    # search excludes the org contact id since that is the sender of all messages
+    assert length(get_in(query_data, [:data, "search"])) == Contacts.count_contacts() - 1
   end
 
   test "save search will save the arguments" do
@@ -221,7 +222,7 @@ defmodule GlificWeb.Schema.SearchTest do
   test "search for not replied tagged messages in conversations" do
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
     {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-    {:ok, not_replied_tag} = Repo.fetch_by(Tag, %{label: "Not Replied"})
+    {:ok, not_replied_tag} = Repo.fetch_by(Tag, %{label: "Not replied"})
 
     {:ok, saved_search} =
       Repo.fetch_by(SavedSearch, %{label: "Conversations read but not replied"})
@@ -254,7 +255,7 @@ defmodule GlificWeb.Schema.SearchTest do
 
     tags = get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "tags"])
 
-    assert %{"label" => "Not Replied"} in tags
+    assert %{"label" => "Not replied"} in tags
   end
 
   test "search for not responded tagged messages in conversations" do
@@ -299,7 +300,7 @@ defmodule GlificWeb.Schema.SearchTest do
   test "search and count for not replied tagged messages in conversations via a created saved search" do
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
     {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-    {:ok, not_replied_tag} = Repo.fetch_by(Tag, %{label: "Not Replied"})
+    {:ok, not_replied_tag} = Repo.fetch_by(Tag, %{label: "Not replied"})
 
     {:ok, saved_search} =
       Repo.fetch_by(SavedSearch, %{label: "Conversations read but not replied"})

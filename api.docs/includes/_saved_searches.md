@@ -9,6 +9,7 @@ query savedSearches($filter: SavedSearchFilter!, $opts: Opts) {
     label
     shortcode
     args
+    count
   }
 }
 
@@ -17,6 +18,8 @@ query savedSearches($filter: SavedSearchFilter!, $opts: Opts) {
     "label": "conv"
   },
   "opts": {
+    "order": "ASC",
+    "offset": 0,
     "limit": 1
   }
 }
@@ -37,7 +40,8 @@ query savedSearches($filter: SavedSearchFilter!, $opts: Opts) {
         }",
         "id": "1",
         "label": "All unread conversations",
-        "shortcode": "Unread"
+        "shortcode": "Unread",
+        "count": 4
       }
     ]
   }
@@ -60,6 +64,7 @@ query savedSearch($id: ID!) {
     savedSearch {
       id
       label
+      count
     }
   }
 }
@@ -78,6 +83,7 @@ query savedSearch($id: ID!) {
       "savedSearch": {
         "id": "2",
         "label": "All Read and Not replied messages",
+        "count": 0
       }
     }
   }
@@ -288,9 +294,14 @@ Parameter | Type | Default | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>Args</strong></td>
+<td colspan="2" valign="top"><strong>args</strong></td>
 <td valign="top"><a href="#json">Json</a></td>
 <td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>count</strong></td>
+<td valign="top"><a href="#integer">Integer</a></td>
+<td>This is a computed field, and requires a few DB queries. Use with caution</td>
 </tr>
 </tbody>
 </table>

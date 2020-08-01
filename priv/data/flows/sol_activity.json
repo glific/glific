@@ -1,0 +1,481 @@
+{
+  "_ui" : {
+    "nodes" : {
+      "030d0b21-ab4e-414e-8eaf-c80e32e33549" : {
+        "type" : "execute_actions",
+        "position" : {
+          "top" : 340,
+          "left" : 880
+        }
+      },
+      "b97332b6-0d40-4dc8-9c67-f075447e63f9" : {
+        "type" : "execute_actions",
+        "position" : {
+          "top" : 340,
+          "left" : 580
+        }
+      },
+      "377ca922-0a4a-4c1c-b54a-712d1cb5fad3" : {
+        "type" : "split_by_subflow",
+        "config" : {
+
+        },
+        "position" : {
+          "left" : 260,
+          "top" : 740
+        }
+      },
+      "67e13040-4658-4403-a7a9-8bf0b0d10fe9" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 340,
+          "top" : 340
+        }
+      },
+      "0af7a49e-ad82-4c43-ba54-b75d6e34241d" : {
+        "type" : "split_by_subflow",
+        "config" : {
+
+        },
+        "position" : {
+          "top" : 100,
+          "left" : 860
+        }
+      },
+      "f92a0270-77e2-464f-bf05-3b86653aa880" : {
+        "type" : "wait_for_response",
+        "config" : {
+          "cases" : {
+
+          }
+        },
+        "position" : {
+          "top" : 660,
+          "left" : 520
+        }
+      },
+      "62664d1c-cfd8-4378-8ba1-c912fdd5c8ab" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 0,
+          "top" : 0
+        }
+      },
+      "570446be-bf63-447a-b098-23ed76674b87" : {
+        "type" : "wait_for_response",
+        "config" : {
+          "cases" : {
+
+          }
+        },
+        "position" : {
+          "left" : 480,
+          "top" : 0
+        }
+      }
+    },
+    "stickies" : {
+
+    }
+  },
+  "spec_version" : "13.1.0",
+  "localization" : {
+    "hi" : {
+      "ff1cf4ae-dcd5-4f4c-b2b9-e003b000a808" : {
+        "name" : [
+          "दृश्य कला"
+        ]
+      },
+      "60a713f9-f767-4c06-9086-e1f733417dd7" : {
+        "name" : [
+          "कविता"
+        ]
+      },
+      "0e01e03d-9e58-41e1-b888-fa9d6835466e" : {
+        "name" : [
+          "थिएटर"
+        ]
+      },
+      "611c1f36-eef2-4077-9ac4-b20ccc1b9285" : {
+        "text" : [
+          "अपनी इच्छित विषय तक पहुंचने के लिए नीचे दिए गए मेनू में संख्या (1, 2, 3, आदि) टाइप करें। \n\n1. दृश्य कला का प्रयास करें \n2. कविता की कोशिश करो \n3. थिएटर का प्रयास करें \n\nया, \n\n9. मदद के लिए 9 टाइप करें"
+        ]
+      },
+      "15116a98-9204-4e60-ad6a-07523eec468b" : {
+        "text" : [
+          "\"कविता के विभिन्न रूप हैं जैसे सोननेट, हाइक, आदि। यह कविता का एक बहुत ही रोचक रूप है जो लिखने के लिए उतना ही चुनौतीपूर्ण है! ठोस कविता, जिसे पैटर्न या आकृति कविता भी कहा जाता है क्योंकि इसमें एक दृश्य उपस्थिति है! कविता के विषय से मेल खाता है। \""
+        ]
+      },
+      "de7e6272-6f91-4ad1-b8ba-8d313c878098" : {
+        "text" : [
+          "अपने शरीर को सुनो, और पता करें कि उसे क्या कहना है!"
+        ]
+      },
+      "87b55633-80ed-46b2-aa84-719681c52528" : {
+        "text" : [
+          "\"फूलों का रंग?\" एक मजेदार कला गतिविधि है जो आपको अपने परिवार के साथ मस्ती करते हुए सुंदर फूलों को आकर्षित करने के लिए अपनी उंगलियों और हाथों का उपयोग करने में मदद करेगी।"
+        ]
+      },
+      "b590c662-f15c-49b8-97f9-0954ce7fc721" : {
+        "name" : [
+          "अन्य"
+        ]
+      }
+    }
+  },
+  "uuid" : "b050c652-65b5-4ccf-b62b-1e8b3f328676",
+  "nodes" : [
+    {
+      "uuid" : "62664d1c-cfd8-4378-8ba1-c912fdd5c8ab",
+      "actions" : [
+        {
+          "type" : "send_msg",
+          "text" : "Type the number in the menu below (1, 2, 3, etc) to navigate and access the content you want.\n\n1. Try Visual arts\n2. Try Poetry\n3. Try Theatre\n\nor,\n\n9. Type 9 for Help",
+          "attachments" : [
+
+          ],
+          "uuid" : "611c1f36-eef2-4077-9ac4-b20ccc1b9285",
+          "quick_replies" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "7837b675-5731-41b7-9b83-87743d031521",
+          "destination_uuid" : "570446be-bf63-447a-b098-23ed76674b87"
+        }
+      ]
+    },
+    {
+      "uuid" : "570446be-bf63-447a-b098-23ed76674b87",
+      "exits" : [
+        {
+          "uuid" : "1d9667d7-8b04-4c77-a13b-1d4986e62010",
+          "destination_uuid" : "67e13040-4658-4403-a7a9-8bf0b0d10fe9"
+        },
+        {
+          "uuid" : "dc9e8739-2f1d-48a8-9da9-18aec04c9ada",
+          "destination_uuid" : "b97332b6-0d40-4dc8-9c67-f075447e63f9"
+        },
+        {
+          "uuid" : "751e1a59-5990-4f9c-9547-8865c01fec18",
+          "destination_uuid" : "030d0b21-ab4e-414e-8eaf-c80e32e33549"
+        },
+        {
+          "uuid" : "e7d56330-bda5-4d05-bd8b-f4f9349bf1b4",
+          "destination_uuid" : "0af7a49e-ad82-4c43-ba54-b75d6e34241d"
+        },
+        {
+          "uuid" : "c886d2b2-ec93-4bec-946c-24334d565a48",
+          "destination_uuid" : "62664d1c-cfd8-4378-8ba1-c912fdd5c8ab"
+        }
+      ],
+      "router" : {
+        "categories" : [
+          {
+            "uuid" : "ff1cf4ae-dcd5-4f4c-b2b9-e003b000a808",
+            "name" : "Visual Arts",
+            "exit_uuid" : "1d9667d7-8b04-4c77-a13b-1d4986e62010"
+          },
+          {
+            "uuid" : "60a713f9-f767-4c06-9086-e1f733417dd7",
+            "name" : "Poetry",
+            "exit_uuid" : "dc9e8739-2f1d-48a8-9da9-18aec04c9ada"
+          },
+          {
+            "uuid" : "0e01e03d-9e58-41e1-b888-fa9d6835466e",
+            "name" : "Theatre",
+            "exit_uuid" : "751e1a59-5990-4f9c-9547-8865c01fec18"
+          },
+          {
+            "uuid" : "a2e6a033-176a-49a9-b613-be786a1eef45",
+            "name" : "Help",
+            "exit_uuid" : "e7d56330-bda5-4d05-bd8b-f4f9349bf1b4"
+          },
+          {
+            "uuid" : "b590c662-f15c-49b8-97f9-0954ce7fc721",
+            "name" : "Other",
+            "exit_uuid" : "c886d2b2-ec93-4bec-946c-24334d565a48"
+          }
+        ],
+        "result_name" : "activity",
+        "cases" : [
+          {
+            "type" : "has_number_eq",
+            "category_uuid" : "ff1cf4ae-dcd5-4f4c-b2b9-e003b000a808",
+            "arguments" : [
+              "1"
+            ],
+            "uuid" : "01da421e-9913-4e34-b1e6-017510b17ad4"
+          },
+          {
+            "type" : "has_number_eq",
+            "category_uuid" : "60a713f9-f767-4c06-9086-e1f733417dd7",
+            "arguments" : [
+              "2"
+            ],
+            "uuid" : "9cbf8e53-a11f-48d4-ade4-1e3df27b5057"
+          },
+          {
+            "type" : "has_number_eq",
+            "category_uuid" : "0e01e03d-9e58-41e1-b888-fa9d6835466e",
+            "arguments" : [
+              "3"
+            ],
+            "uuid" : "8998e3c0-f05d-4e69-baff-af1c2afcf2b5"
+          },
+          {
+            "type" : "has_number_eq",
+            "category_uuid" : "a2e6a033-176a-49a9-b613-be786a1eef45",
+            "arguments" : [
+              "9"
+            ],
+            "uuid" : "b722a535-fb54-4923-88ef-f9e1e8924ad5"
+          }
+        ],
+        "default_category_uuid" : "b590c662-f15c-49b8-97f9-0954ce7fc721",
+        "operand" : "@input.text",
+        "type" : "switch",
+        "wait" : {
+          "type" : "msg"
+        }
+      },
+      "actions" : [
+
+      ]
+    },
+    {
+      "uuid" : "0af7a49e-ad82-4c43-ba54-b75d6e34241d",
+      "exits" : [
+        {
+          "uuid" : "59fa9fc1-5121-4c59-85e7-35e71d211389",
+          "destination_uuid" : null
+        },
+        {
+          "uuid" : "9cbc5f11-84c5-4ee6-b823-cb68a95caa1f",
+          "destination_uuid" : null
+        }
+      ],
+      "router" : {
+        "default_category_uuid" : "4d2895a7-f73e-4ac6-a7fe-537dcbbd52fe",
+        "operand" : "@child.run.status",
+        "type" : "switch",
+        "categories" : [
+          {
+            "uuid" : "04e86a11-9014-4eaa-915d-e2b85c9051d4",
+            "name" : "Complete",
+            "exit_uuid" : "59fa9fc1-5121-4c59-85e7-35e71d211389"
+          },
+          {
+            "uuid" : "4d2895a7-f73e-4ac6-a7fe-537dcbbd52fe",
+            "name" : "Expired",
+            "exit_uuid" : "9cbc5f11-84c5-4ee6-b823-cb68a95caa1f"
+          }
+        ],
+        "cases" : [
+          {
+            "uuid" : "1c4160c0-cc95-4ac0-b2ff-ac7d825ddff2",
+            "arguments" : [
+              "completed"
+            ],
+            "type" : "has_only_text",
+            "category_uuid" : "04e86a11-9014-4eaa-915d-e2b85c9051d4"
+          },
+          {
+            "uuid" : "107bdfa6-c3e4-49a3-ae74-444f079713fd",
+            "arguments" : [
+              "expired"
+            ],
+            "type" : "has_only_text",
+            "category_uuid" : "4d2895a7-f73e-4ac6-a7fe-537dcbbd52fe"
+          }
+        ]
+      },
+      "actions" : [
+        {
+          "uuid" : "883a4070-5201-4780-8fd6-86017afc87c9",
+          "flow" : {
+            "uuid" : "3fa22108-f464-41e5-81d9-d8a298854429",
+            "name" : "Help Workflow"
+          },
+          "type" : "enter_flow"
+        }
+      ]
+    },
+    {
+      "uuid" : "67e13040-4658-4403-a7a9-8bf0b0d10fe9",
+      "actions" : [
+        {
+          "uuid" : "87b55633-80ed-46b2-aa84-719681c52528",
+          "quick_replies" : [
+
+          ],
+          "text" : "“Painting Flowers?” is a fun art activity which will help you to use your fingers and hands to draw beautiful flowers while having fun with your family.",
+          "attachments" : [
+
+          ],
+          "type" : "send_msg"
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "03c95a7b-d23a-426a-8e8c-c587754e9e50",
+          "destination_uuid" : "f92a0270-77e2-464f-bf05-3b86653aa880"
+        }
+      ]
+    },
+    {
+      "uuid" : "b97332b6-0d40-4dc8-9c67-f075447e63f9",
+      "actions" : [
+        {
+          "type" : "send_msg",
+          "quick_replies" : [
+
+          ],
+          "text" : "\"There are various forms of poems such as sonnets, haikus, etc. This is a very interesting form of poetry that is as challenging as it is fun to write! Concrete poetry, also called pattern or shape poetry because it has a visual appearance that matches the subject matter of the poem.\"",
+          "attachments" : [
+
+          ],
+          "uuid" : "15116a98-9204-4e60-ad6a-07523eec468b"
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : "f92a0270-77e2-464f-bf05-3b86653aa880",
+          "uuid" : "dbac803e-4ba4-49ea-9065-7290e022bb31"
+        }
+      ]
+    },
+    {
+      "uuid" : "030d0b21-ab4e-414e-8eaf-c80e32e33549",
+      "actions" : [
+        {
+          "attachments" : [
+
+          ],
+          "uuid" : "de7e6272-6f91-4ad1-b8ba-8d313c878098",
+          "quick_replies" : [
+
+          ],
+          "text" : "Listen to your body, and find out what it has to say! ",
+          "type" : "send_msg"
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : "f92a0270-77e2-464f-bf05-3b86653aa880",
+          "uuid" : "0e99c6be-40d1-4ca6-8199-a8ca0a4c0001"
+        }
+      ]
+    },
+    {
+      "actions" : [
+
+      ],
+      "exits" : [
+        {
+          "uuid" : "b939bed0-239d-4bc7-b8b8-e74ac7206c40",
+          "destination_uuid" : "377ca922-0a4a-4c1c-b54a-712d1cb5fad3"
+        },
+        {
+          "uuid" : "402d70d2-f874-4ea1-b596-23b807bd0cb7",
+          "destination_uuid" : "377ca922-0a4a-4c1c-b54a-712d1cb5fad3"
+        }
+      ],
+      "router" : {
+        "operand" : "@input.text",
+        "wait" : {
+          "type" : "msg",
+          "timeout" : {
+            "seconds" : 60,
+            "category_uuid" : "af0cd29f-b311-4afc-ba97-1745ae4860a4"
+          }
+        },
+        "categories" : [
+          {
+            "uuid" : "89247ee1-e40b-4122-afc4-622552cf382c",
+            "name" : "All Responses",
+            "exit_uuid" : "b939bed0-239d-4bc7-b8b8-e74ac7206c40"
+          },
+          {
+            "uuid" : "af0cd29f-b311-4afc-ba97-1745ae4860a4",
+            "name" : "No Response",
+            "exit_uuid" : "402d70d2-f874-4ea1-b596-23b807bd0cb7"
+          }
+        ],
+        "type" : "switch",
+        "cases" : [
+
+        ],
+        "default_category_uuid" : "89247ee1-e40b-4122-afc4-622552cf382c"
+      },
+      "uuid" : "f92a0270-77e2-464f-bf05-3b86653aa880"
+    },
+    {
+      "actions" : [
+        {
+          "uuid" : "fbe61add-c0fd-4bad-b3e9-ea3ff1ac69af",
+          "flow" : {
+            "uuid" : "6c21af89-d7de-49ac-9848-c9febbf737a5",
+            "name" : "SoL Feedback"
+          },
+          "type" : "enter_flow"
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "36cec246-14ff-4ac8-beae-acb450ddef97",
+          "destination_uuid" : "62664d1c-cfd8-4378-8ba1-c912fdd5c8ab"
+        },
+        {
+          "uuid" : "7d8636ca-f7b5-45a4-a576-96f1b1ad8d3d",
+          "destination_uuid" : "62664d1c-cfd8-4378-8ba1-c912fdd5c8ab"
+        }
+      ],
+      "router" : {
+        "default_category_uuid" : "c2814b18-73c2-48bb-b672-ad905aff401e",
+        "categories" : [
+          {
+            "uuid" : "8713c931-a14e-49d2-b1f1-142569746c37",
+            "name" : "Complete",
+            "exit_uuid" : "36cec246-14ff-4ac8-beae-acb450ddef97"
+          },
+          {
+            "uuid" : "c2814b18-73c2-48bb-b672-ad905aff401e",
+            "name" : "Expired",
+            "exit_uuid" : "7d8636ca-f7b5-45a4-a576-96f1b1ad8d3d"
+          }
+        ],
+        "operand" : "@child.run.status",
+        "cases" : [
+          {
+            "category_uuid" : "8713c931-a14e-49d2-b1f1-142569746c37",
+            "uuid" : "ac674e5a-ad14-4c12-848f-6be15942a0c9",
+            "type" : "has_only_text",
+            "arguments" : [
+              "completed"
+            ]
+          },
+          {
+            "category_uuid" : "c2814b18-73c2-48bb-b672-ad905aff401e",
+            "uuid" : "74e54940-9aea-429d-8586-e5cb99f0c794",
+            "type" : "has_only_text",
+            "arguments" : [
+              "expired"
+            ]
+          }
+        ],
+        "type" : "switch"
+      },
+      "uuid" : "377ca922-0a4a-4c1c-b54a-712d1cb5fad3"
+    }
+  ],
+  "vars" : [
+    "b050c652-65b5-4ccf-b62b-1e8b3f328676"
+  ],
+  "language" : "base",
+  "expire_after_minutes" : 10080,
+  "name" : "SoL Activity",
+  "type" : "messaging"
+}

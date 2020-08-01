@@ -17,7 +17,7 @@ defmodule Glific.Flows.ContactSetting do
   @spec set_contact_language(FlowContext.t(), String.t()) :: FlowContext.t()
   def set_contact_language(context, language) do
     # get the language id
-    [language | _] = Settings.list_languages(%{label: language})
+    [language | _] = Settings.list_languages(%{filter: %{label: language}})
     {:ok, contact} = Contacts.update_contact(context.contact, %{language_id: language.id})
     Map.put(context, :contact, contact)
   end

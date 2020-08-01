@@ -3,8 +3,8 @@
 ## Get All Organizations
 
 ```graphql
-query organizations($filter: OrganizationFilter, $order: SortOrder) {
-  organizations(filter: $filter, order:$order) {
+query organizations($filter: OrganizationFilter, $opts: Opts) {
+  organizations(filter: $filter, opts: $opts) {
     id
     name
     defaultLanguage {
@@ -15,7 +15,11 @@ query organizations($filter: OrganizationFilter, $order: SortOrder) {
 }
 
 {
-  "order": "ASC",
+  "opts": {
+    "limit": 10,
+    "offset": 1,
+    "order": "ASC"
+  },
   "filter": {
     "defaultLanguage": "Hindi"
   }
@@ -55,7 +59,7 @@ This returns all the organizations filtered by the input <a href="#organizationf
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 filter | <a href="#organizationfilter">OrganizationFilter</a> | nil | filter the list
-order | <a href="#sortorder">SortOrder</a> | ASC | ASC / DESC
+opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
 
 ### Return Parameters
 Type | Description

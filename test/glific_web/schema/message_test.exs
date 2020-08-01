@@ -1,10 +1,10 @@
 defmodule GlificWeb.Schema.MessageTest do
   alias Glific.{
-    Communications,
     Contacts,
     Contacts.Contact,
     Messages,
     Messages.Message,
+    Partners,
     Repo,
     Seeds.SeedsDev,
     Templates.SessionTemplate
@@ -240,7 +240,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "type" => "TEXT",
-            "sender_id" => Communications.Message.organization_contact_id()
+            "sender_id" => Partners.organization_contact_id()
           },
           "contact_ids" => [contact1.id, contact2.id]
         }
@@ -290,7 +290,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "receiverId" => contact.id,
-            "senderId" => Communications.Message.organization_contact_id(),
+            "senderId" => Partners.organization_contact_id(),
             "type" => "TEXT"
           }
         }
@@ -299,6 +299,29 @@ defmodule GlificWeb.Schema.MessageTest do
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "createAndSendMessage", "message"])
     assert message["body"] == "Message body"
+  end
+
+  test "create and send a message should parse the message body" do
+    [contact | _tail] = Contacts.list_contacts()
+    Contacts.contact_opted_in(contact.phone, DateTime.utc_now())
+    {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: DateTime.utc_now()})
+
+    result =
+      query_gql_by(:create_and_send_message,
+        variables: %{
+          "input" => %{
+            "body" => "A message for @contact.name",
+            "flow" => "OUTBOUND",
+            "receiverId" => contact.id,
+            "senderId" => Partners.organization_contact_id(),
+            "type" => "TEXT"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "createAndSendMessage", "message"])
+    assert message["body"] == "A message for " <> contact.name
   end
 
   test "create and send a message to in valid contact will not create a message" do
@@ -313,7 +336,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => message_body,
             "flow" => "OUTBOUND",
             "receiverId" => contact.id,
-            "senderId" => Communications.Message.organization_contact_id(),
+            "senderId" => Partners.organization_contact_id(),
             "type" => "TEXT"
           }
         }

@@ -20,6 +20,8 @@ defmodule Glific.Flows.Action do
     Webhook
   }
 
+  @min_delay 2
+
   @required_field_common [:uuid, :type]
   @required_fields_enter_flow [:flow | @required_field_common]
   @required_fields_language [:language | @required_field_common]
@@ -158,7 +160,7 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, message_stream) do
-    ContactAction.send_message(context, action)
+    context = ContactAction.send_message(context, action)
     {:ok, context, message_stream}
   end
 
@@ -174,18 +176,29 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "set_contact_field"} = action, context, message_stream) do
-    name = action.field.key
+    key = String.downcase(action.field.key)
     value = FlowContext.get_result_value(context, action.value)
 
     context =
-      if name == "settings",
-        do: ContactSetting.set_contact_preference(context, value),
-        else: ContactField.add_contact_field(context, name, value, "string")
+      cond do
+        key == "settings" and value == "optout" ->
+          ContactAction.optout(context)
+
+        key == "settings" ->
+          ContactSetting.set_contact_preference(context, value)
+
+        true ->
+          ContactField.add_contact_field(context, key, value, "string")
+      end
 
     {:ok, context, message_stream}
   end
 
   def execute(%{type: "enter_flow"} = action, context, message_stream) do
+    # we start off a new context here and dont really modify the current context
+    # hence ignoring the return value of start_sub_flow
+    # for now, we'll just delay by at least min_delay second
+    context = %{context | delay: min(context.delay + @min_delay, @min_delay)}
     Flow.start_sub_flow(context, action.enter_flow_uuid)
     {:ok, context, message_stream}
   end

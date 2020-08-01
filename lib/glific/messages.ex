@@ -9,7 +9,10 @@ defmodule Glific.Messages do
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
+    Flows.MessageVarParser,
     Messages.Message,
+    Messages.MessageVariables,
+    Partners,
     Repo,
     Tags.MessageTag,
     Templates.SessionTemplate
@@ -204,11 +207,12 @@ defmodule Glific.Messages do
   @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()}
   defp create_and_send_message(is_valid_contact, attrs) when is_valid_contact == true do
     {:ok, message} =
-      %{
-        sender_id: Communications.Message.organization_contact_id(),
-        flow: :outbound
-      }
-      |> Map.merge(attrs)
+      attrs
+      |> Map.merge(%{
+        sender_id: Partners.organization_contact_id(),
+        flow: :outbound,
+        body: parse_message_body(attrs)
+      })
       |> create_message()
 
     Communications.Message.send_message(message)
@@ -217,6 +221,16 @@ defmodule Glific.Messages do
   @doc false
   defp create_and_send_message(_, _) do
     {:error, "Cannot send the message to the contact."}
+  end
+
+  @spec parse_message_body(map()) :: String.t() | nil
+  defp parse_message_body(attrs) do
+    message_vars = %{
+      "contact" => Contacts.get_contact!(attrs.receiver_id) |> Map.from_struct(),
+      "global" => MessageVariables.get_global_field_map()
+    }
+
+    MessageVarParser.parse(attrs.body, message_vars)
   end
 
   @doc """
@@ -250,26 +264,29 @@ defmodule Glific.Messages do
   Send a session template to the specific contact. This is typically used in automation
   """
 
+  @spec create_and_send_session_template(String.t(), integer) :: {:ok, Message.t()}
+  def create_and_send_session_template(template_id, receiver_id) when is_binary(template_id),
+    do: create_and_send_session_template(String.to_integer(template_id), receiver_id)
+
   @spec create_and_send_session_template(integer, integer) :: {:ok, Message.t()}
   def create_and_send_session_template(template_id, receiver_id) when is_integer(template_id) do
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
-    create_and_send_session_template(session_template, receiver_id)
+
+    create_and_send_session_template(
+      session_template,
+      %{receiver_id: receiver_id}
+    )
   end
 
-  @spec create_and_send_session_template(String.t(), integer) :: {:ok, Message.t()}
-  def create_and_send_session_template(template_id, receiver_id) when is_binary(template_id) do
-    {:ok, session_template} = Repo.fetch(SessionTemplate, String.to_integer(template_id))
-    create_and_send_session_template(session_template, receiver_id)
-  end
-
-  @spec create_and_send_session_template(SessionTemplate.t(), integer) :: {:ok, Message.t()}
-  def create_and_send_session_template(session_template, receiver_id) do
+  @spec create_and_send_session_template(SessionTemplate.t(), map()) :: {:ok, Message.t()}
+  def create_and_send_session_template(session_template, args) do
     message_params = %{
       body: session_template.body,
       type: session_template.type,
       media_id: session_template.message_media_id,
-      sender_id: Communications.Message.organization_contact_id(),
-      receiver_id: receiver_id
+      sender_id: Partners.organization_contact_id(),
+      receiver_id: args[:receiver_id],
+      send_at: args[:send_at]
     }
 
     create_and_send_message(message_params)
@@ -290,7 +307,7 @@ defmodule Glific.Messages do
         body: updated_template.body,
         type: updated_template.type,
         is_hsm: updated_template.is_hsm,
-        sender_id: Communications.Message.organization_contact_id(),
+        sender_id: Partners.organization_contact_id(),
         receiver_id: receiver_id
       }
 
@@ -576,21 +593,24 @@ defmodule Glific.Messages do
     # the difference is the empty contacts id list
     empty_contact_ids = contact_ids -- present_contact_ids
 
-    # now only generate conversations objects for the empty contact ids
-    Enum.reduce(
-      empty_contact_ids,
-      results,
-      fn id, acc -> add_conversation(acc, id) end
-    )
+    # lets load all contacts ids in one query, rather than multiople single queries
+    empty_results =
+      Contact
+      |> where([c], c.id in ^empty_contact_ids)
+      |> Repo.all()
+      # now only generate conversations objects for the empty contact ids
+      |> Enum.reduce(
+        [],
+        fn contact, acc -> add_conversation(acc, contact) end
+      )
+
+    results ++ empty_results
   end
 
   # add an empty conversation for a specific contact if ONLY if it exists
-  @spec add_conversation([Conversation.t()], integer) :: [Conversation.t()]
-  defp add_conversation(results, contact_id) do
-    case Repo.fetch(Contact, contact_id) do
-      {:ok, contact} -> [Conversation.new(contact, []) | results]
-      {:error, _} -> results
-    end
+  @spec add_conversation([Conversation.t()], Contact.t()) :: [Conversation.t()]
+  defp add_conversation(results, contact) do
+    [Conversation.new(contact, []) | results]
   end
 
   # restrict the conversations query based on the filters in the input args

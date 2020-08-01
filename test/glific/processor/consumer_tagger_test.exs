@@ -64,7 +64,6 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     SeedsDev.seed_tag()
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
-    SeedsDev.seed_session_templates()
     :ok
   end
 
@@ -73,7 +72,7 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     {:ok, _consumer} = ConsumerTagger.start_link(producer: producer, name: TestConsumerTagger)
 
     Process.register(self(), :test)
-    assert_receive({:called_back}, 1000)
+    assert_receive({:called_back}, 10_000)
 
     # ensure we have a few message tags in the DB
     assert Repo.aggregate(MessageTag, :count) > 0

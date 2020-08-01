@@ -106,7 +106,7 @@ defmodule Glific.CommunicationsTest do
       message = message_fixture()
       Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
-      Oban.drain_queue(:gupshup)
+      Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
       assert message.provider_message_id != nil
       assert message.sent_at != nil
@@ -114,7 +114,7 @@ defmodule Glific.CommunicationsTest do
       assert message.flow == :outbound
     end
 
-    test "send message will remove the Not Replied tag from messages" do
+    test "send message will remove the Not replied tag from messages" do
       message_1 = Fixtures.message_fixture(%{flow: :inbound})
 
       message_2 =
@@ -126,7 +126,7 @@ defmodule Glific.CommunicationsTest do
 
       assert message_2.contact_id == message_1.contact_id
 
-      {:ok, tag} = Repo.fetch_by(Tag, %{label: "Not Replied"})
+      {:ok, tag} = Repo.fetch_by(Tag, %{label: "Not replied"})
       {:ok, unread_tag} = Repo.fetch_by(Tag, %{label: "Unread"})
 
       message1_tag = Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
@@ -136,7 +136,7 @@ defmodule Glific.CommunicationsTest do
 
       Communications.Message.send_message(message_2)
       assert_enqueued(worker: Worker)
-      Oban.drain_queue(:gupshup)
+      Oban.drain_queue(queue: :gupshup)
 
       assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message1_tag.id) end
 
@@ -157,7 +157,7 @@ defmodule Glific.CommunicationsTest do
       message = message_fixture()
       Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
-      Oban.drain_queue(:gupshup)
+      Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
       assert message.provider_message_id == nil
       assert message.provider_status == :error
@@ -172,7 +172,7 @@ defmodule Glific.CommunicationsTest do
       message = message_fixture(%{type: :image, media_id: message_media.id})
       Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
-      Oban.drain_queue(:gupshup)
+      Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
       assert message.provider_message_id != nil
       assert message.provider_status == :enqueued
@@ -186,7 +186,7 @@ defmodule Glific.CommunicationsTest do
       message = Repo.preload(message, [:receiver, :sender, :media])
       Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
-      Oban.drain_queue(:gupshup)
+      Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
       assert message.provider_message_id != nil
       assert message.provider_status == :enqueued
@@ -199,7 +199,7 @@ defmodule Glific.CommunicationsTest do
       message = Repo.preload(message, [:receiver, :sender, :media])
       Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
-      Oban.drain_queue(:gupshup)
+      Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
       assert message.provider_message_id != nil
       assert message.provider_status == :enqueued
@@ -212,7 +212,7 @@ defmodule Glific.CommunicationsTest do
       message = Repo.preload(message, [:receiver, :sender, :media])
       Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
-      Oban.drain_queue(:gupshup)
+      Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
       assert message.provider_message_id != nil
       assert message.provider_status == :enqueued
@@ -278,7 +278,7 @@ defmodule Glific.CommunicationsTest do
       Communications.Message.send_message(message)
 
       assert_enqueued(worker: Worker)
-      Oban.drain_queue(:gupshup)
+      Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
 
       assert message.status == :enqueued
