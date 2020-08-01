@@ -4,11 +4,14 @@ defmodule Glific.Flows do
   """
 
   import Ecto.Query, warn: false
-  alias Glific.Repo
 
-  alias Glific.Caches
-  alias Glific.Flows.Flow
-  alias Glific.Flows.FlowRevision
+  alias Glific.{
+    Caches,
+    Flows.Flow,
+    Flows.FlowContext,
+    Flows.FlowRevision,
+    Repo
+  }
 
   @doc """
   Returns the list of flows.

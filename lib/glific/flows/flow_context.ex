@@ -106,7 +106,7 @@ defmodule Glific.Flows.FlowContext do
     # load that context and keep going
     if context.parent_id do
       # we load the parent context, and resume it with a message of "Completed"
-      parent = active_context(context.contact_id)
+      parent = active_context(context.contact_id, context.parent_id)
 
       parent
       |> load_context(Flow.get_flow(parent.flow_uuid))
@@ -226,8 +226,8 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Check if there is an active context (i.e. with a non null, node_uuid for this contact)
   """
-  @spec active_context(non_neg_integer) :: FlowContext.t() | nil
-  def active_context(contact_id) do
+  @spec active_context(non_neg_integer, non_neg_integer) :: FlowContext.t() | nil
+  def active_context(contact_id, parent_id \\ nil) do
     # need to fix this instead of assuming the highest id is the most
     # active context (or is that a wrong assumption). Maybe a context number? like
     # we do for other tables
@@ -239,6 +239,11 @@ defmodule Glific.Flows.FlowContext do
             is_nil(fc.completed_at),
         order_by: [desc: fc.id],
         limit: 1
+
+    query =
+      if parent_id,
+        do: query |> where([fc], fc.id == ^parent_id),
+        else: query
 
     Repo.one(query) |> Repo.preload(:contact)
   end

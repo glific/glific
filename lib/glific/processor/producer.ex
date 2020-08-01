@@ -5,9 +5,13 @@ defmodule Glific.Processor.Producer do
   """
   use GenStage
 
-  alias Glific.Messages.Message
+  alias Glific.{
+    Flags,
+    Messages.Message
+  }
 
   @doc false
+
   @spec start_link(any) :: GenServer.on_start()
   def start_link(opts) do
     name = Keyword.get(opts, :name, __MODULE__)
@@ -17,20 +21,9 @@ defmodule Glific.Processor.Producer do
   @doc false
   def init(:ok) do
     # not a great place to do this, but for a short term workaround
-    fun_with_flags()
+    Flags.init()
 
     {:producer, nil, dispatcher: GenStage.BroadcastDispatcher}
-  end
-
-  @spec fun_with_flags() :: nil
-  defp fun_with_flags do
-    FunWithFlags.enable(:enable_out_of_office)
-
-    # to begin with lets disable the out_of_office hours.
-    # We'll let Oban take care of it
-    FunWithFlags.disable(:out_of_office_active)
-
-    nil
   end
 
   @doc """

@@ -37,7 +37,8 @@ defmodule Glific.Application do
 
     glific_children = [
       Glific.Processor.Producer,
-      Glific.Processor.ConsumerTagger
+      Glific.Processor.ConsumerTagger,
+      Glific.Processor.ConsumerFlow
     ]
 
     children =
