@@ -12,7 +12,8 @@ defmodule Glific.Fixtures do
     Contacts,
     Messages,
     Settings,
-    Tags
+    Tags,
+    Templates
   }
 
   @doc false
@@ -130,5 +131,41 @@ defmodule Glific.Fixtures do
       |> Tags.create_contact_tag()
 
     contact_tag
+  end
+
+  @doc false
+  @spec session_template_fixture(map()) :: Templates.SessionTemplate.t()
+  def session_template_fixture(attrs \\ %{}) do
+    language = language_fixture()
+
+    valid_attrs = %{
+      label: "Default Template Label",
+      shortcode: "default template",
+      body: "Default Template",
+      type: :text,
+      language_id: language.id,
+      uuid: Ecto.UUID.generate()
+    }
+
+    {:ok, session_template} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Templates.create_session_template()
+
+    valid_attrs_2 = %{
+      label: "Another Template Label",
+      shortcode: "another template",
+      body: "Another Template",
+      type: :text,
+      language_id: language.id,
+      parent_id: session_template.id,
+      uuid: "53008c3d-e619-4ec6-80cd-b9b2c89386dc"
+    }
+
+    {:ok, _session_template} =
+      valid_attrs_2
+      |> Templates.create_session_template()
+
+    session_template
   end
 end

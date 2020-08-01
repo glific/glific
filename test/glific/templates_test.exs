@@ -102,9 +102,7 @@ defmodule Glific.TemplatesTest do
     end
 
     test "list_session_templates/1 with multiple session_templates filteres" do
-      templates_count = Repo.aggregate(SessionTemplate, :count)
-
-      _session_template = session_template_fixture(@valid_attrs)
+      _session_template = session_template_fixture()
       session_template1 = session_template_fixture(@valid_attrs_1)
 
       session_template_list =
@@ -122,8 +120,13 @@ defmodule Glific.TemplatesTest do
 
       assert session_template_list == [session_template1]
 
-      session_template_list = Templates.list_session_templates()
-      assert length(session_template_list) == templates_count + 2
+      session_template_fixture(%{label: "term_filter"})
+      session_template_fixture(%{label: "label2", body: "term_filter"})
+      session_template_fixture(%{label: "label3", shortcode: "term_filter"})
+
+      session_template_list = Templates.list_session_templates(%{filter: %{term: "term_filter"}})
+
+      assert length(session_template_list) == 3
     end
 
     test "list_session_templates/1 with multiple items" do
@@ -131,6 +134,7 @@ defmodule Glific.TemplatesTest do
 
       session_template_fixture()
       session_template_fixture(@valid_attrs_1)
+
       session_templates = Templates.list_session_templates()
       assert length(session_templates) == templates_count + 2
     end
