@@ -8,7 +8,7 @@
     <meta name="project" content="Glific v0.2.0">
     <title>Glific.Flows.Webhook — Glific v0.2.0</title>
     <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-2daba0f8d1.js"></script>
+    <script src="dist/sidebar_items-36aabe96b3.js"></script>
       <script src="docs_config.js"></script>
     <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
@@ -129,7 +129,7 @@ Functions          </h1>
 <p>Build a tesla dynamic client based on arguments in the flow
 @spec client(String.t()) :: Tesla.Client.t()
 def client(url) do
-  middleware = [</p><pre><code class="nohighlight makeup elixir"><span class="p" data-group-id="3969005326-1">{</span><span class="nc">Tesla.Middleware.BaseUrl</span><span class="p">,</span><span class="w"> </span><span class="n">url</span><span class="p" data-group-id="3969005326-1">}</span><span class="p">,</span><span class="w">
+  middleware = [</p><pre><code class="nohighlight makeup elixir"><span class="p" data-group-id="1801588301-1">{</span><span class="nc">Tesla.Middleware.BaseUrl</span><span class="p">,</span><span class="w"> </span><span class="n">url</span><span class="p" data-group-id="1801588301-1">}</span><span class="p">,</span><span class="w">
 </span><span class="nc">Tesla.Middleware.JSON</span></code></pre><p>  ]</p><p>  Tesla.client(middleware)
 end</p><p>Send a get request, and if success, sned the json map back</p>  </section>
 </section>

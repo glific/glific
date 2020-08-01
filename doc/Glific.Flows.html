@@ -8,7 +8,7 @@
     <meta name="project" content="Glific v0.2.0">
     <title>Glific.Flows — Glific v0.2.0</title>
     <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-2daba0f8d1.js"></script>
+    <script src="dist/sidebar_items-36aabe96b3.js"></script>
       <script src="docs_config.js"></script>
     <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
@@ -233,8 +233,8 @@ Router/Cases, and Router/Categories</p>  </section>
   <a href="#change_flow/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_flow</span><span class="p" data-group-id="2845858488-1">(</span><span class="n">flow</span><span class="p" data-group-id="2845858488-1">)</span><span class="w">
-</span><span class="p" data-group-id="2845858488-2">%</span><span class="nc" data-group-id="2845858488-2">Ecto.Changeset</span><span class="p" data-group-id="2845858488-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2845858488-3">%</span><span class="nc" data-group-id="2845858488-3">Flow</span><span class="p" data-group-id="2845858488-3">{</span><span class="p" data-group-id="2845858488-3">}</span><span class="p" data-group-id="2845858488-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_flow</span><span class="p" data-group-id="0555023127-1">(</span><span class="n">flow</span><span class="p" data-group-id="0555023127-1">)</span><span class="w">
+</span><span class="p" data-group-id="0555023127-2">%</span><span class="nc" data-group-id="0555023127-2">Ecto.Changeset</span><span class="p" data-group-id="0555023127-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0555023127-3">%</span><span class="nc" data-group-id="0555023127-3">Flow</span><span class="p" data-group-id="0555023127-3">{</span><span class="p" data-group-id="0555023127-3">}</span><span class="p" data-group-id="0555023127-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="check_required_fields/2">
   <div class="detail-header">
@@ -304,11 +304,11 @@ Router/Cases, and Router/Categories</p>  </section>
   <a href="#create_flow/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_flow</span><span class="p" data-group-id="3489198339-1">(</span><span class="p" data-group-id="3489198339-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="3489198339-2">}</span><span class="p" data-group-id="3489198339-1">)</span><span class="w">
-</span><span class="p" data-group-id="3489198339-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3489198339-4">%</span><span class="nc" data-group-id="3489198339-4">Flow</span><span class="p" data-group-id="3489198339-4">{</span><span class="p" data-group-id="3489198339-4">}</span><span class="p" data-group-id="3489198339-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_flow</span><span class="p" data-group-id="7861796334-1">(</span><span class="p" data-group-id="7861796334-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="7861796334-2">}</span><span class="p" data-group-id="7861796334-1">)</span><span class="w">
+</span><span class="p" data-group-id="7861796334-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7861796334-4">%</span><span class="nc" data-group-id="7861796334-4">Flow</span><span class="p" data-group-id="7861796334-4">{</span><span class="p" data-group-id="7861796334-4">}</span><span class="p" data-group-id="7861796334-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_flow</span><span class="p" data-group-id="3489198339-5">(</span><span class="p" data-group-id="3489198339-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3489198339-6">}</span><span class="p" data-group-id="3489198339-5">)</span><span class="w">
-</span><span class="p" data-group-id="3489198339-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3489198339-8">%</span><span class="nc" data-group-id="3489198339-8">Ecto.Changeset</span><span class="p" data-group-id="3489198339-8">{</span><span class="p" data-group-id="3489198339-8">}</span><span class="p" data-group-id="3489198339-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_flow</span><span class="p" data-group-id="7861796334-5">(</span><span class="p" data-group-id="7861796334-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="7861796334-6">}</span><span class="p" data-group-id="7861796334-5">)</span><span class="w">
+</span><span class="p" data-group-id="7861796334-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7861796334-8">%</span><span class="nc" data-group-id="7861796334-8">Ecto.Changeset</span><span class="p" data-group-id="7861796334-8">{</span><span class="p" data-group-id="7861796334-8">}</span><span class="p" data-group-id="7861796334-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="create_flow_revision/1">
   <div class="detail-header">
@@ -355,11 +355,11 @@ Router/Cases, and Router/Categories</p>  </section>
   <a href="#delete_flow/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_flow</span><span class="p" data-group-id="6933285859-1">(</span><span class="n">flow</span><span class="p" data-group-id="6933285859-1">)</span><span class="w">
-</span><span class="p" data-group-id="6933285859-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6933285859-3">%</span><span class="nc" data-group-id="6933285859-3">Flow</span><span class="p" data-group-id="6933285859-3">{</span><span class="p" data-group-id="6933285859-3">}</span><span class="p" data-group-id="6933285859-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_flow</span><span class="p" data-group-id="9589126706-1">(</span><span class="n">flow</span><span class="p" data-group-id="9589126706-1">)</span><span class="w">
+</span><span class="p" data-group-id="9589126706-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9589126706-3">%</span><span class="nc" data-group-id="9589126706-3">Flow</span><span class="p" data-group-id="9589126706-3">{</span><span class="p" data-group-id="9589126706-3">}</span><span class="p" data-group-id="9589126706-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_flow</span><span class="p" data-group-id="6933285859-4">(</span><span class="n">flow</span><span class="p" data-group-id="6933285859-4">)</span><span class="w">
-</span><span class="p" data-group-id="6933285859-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6933285859-6">%</span><span class="nc" data-group-id="6933285859-6">Ecto.Changeset</span><span class="p" data-group-id="6933285859-6">{</span><span class="p" data-group-id="6933285859-6">}</span><span class="p" data-group-id="6933285859-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_flow</span><span class="p" data-group-id="9589126706-4">(</span><span class="n">flow</span><span class="p" data-group-id="9589126706-4">)</span><span class="w">
+</span><span class="p" data-group-id="9589126706-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9589126706-6">%</span><span class="nc" data-group-id="9589126706-6">Ecto.Changeset</span><span class="p" data-group-id="9589126706-6">{</span><span class="p" data-group-id="9589126706-6">}</span><span class="p" data-group-id="9589126706-5">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_cached_flow/2">
   <div class="detail-header">
@@ -406,10 +406,10 @@ Router/Cases, and Router/Categories</p>  </section>
   <a href="#get_flow!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_flow!</span><span class="p" data-group-id="2480246267-1">(</span><span class="mi">123</span><span class="p" data-group-id="2480246267-1">)</span><span class="w">
-</span><span class="p" data-group-id="2480246267-2">%</span><span class="nc" data-group-id="2480246267-2">Flow</span><span class="p" data-group-id="2480246267-2">{</span><span class="p" data-group-id="2480246267-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_flow!</span><span class="p" data-group-id="8597054979-1">(</span><span class="mi">123</span><span class="p" data-group-id="8597054979-1">)</span><span class="w">
+</span><span class="p" data-group-id="8597054979-2">%</span><span class="nc" data-group-id="8597054979-2">Flow</span><span class="p" data-group-id="8597054979-2">{</span><span class="p" data-group-id="8597054979-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_flow!</span><span class="p" data-group-id="2480246267-3">(</span><span class="mi">456</span><span class="p" data-group-id="2480246267-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_flow!</span><span class="p" data-group-id="8597054979-3">(</span><span class="mi">456</span><span class="p" data-group-id="8597054979-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_flow_revision/2">
@@ -478,8 +478,8 @@ Router/Cases, and Router/Categories</p>  </section>
   <a href="#list_flows/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_flows</span><span class="p" data-group-id="0491341504-1">(</span><span class="p" data-group-id="0491341504-1">)</span><span class="w">
-</span><span class="p" data-group-id="0491341504-2">[</span><span class="p" data-group-id="0491341504-3">%</span><span class="nc" data-group-id="0491341504-3">Flow</span><span class="p" data-group-id="0491341504-3">{</span><span class="p" data-group-id="0491341504-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="0491341504-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_flows</span><span class="p" data-group-id="8998755268-1">(</span><span class="p" data-group-id="8998755268-1">)</span><span class="w">
+</span><span class="p" data-group-id="8998755268-2">[</span><span class="p" data-group-id="8998755268-3">%</span><span class="nc" data-group-id="8998755268-3">Flow</span><span class="p" data-group-id="8998755268-3">{</span><span class="p" data-group-id="8998755268-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="8998755268-2">]</span></code></pre>  </section>
 </section>
 <section class="detail" id="update_cached_flow/1">
   <div class="detail-header">
@@ -526,11 +526,11 @@ Router/Cases, and Router/Categories</p>  </section>
   <a href="#update_flow/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_flow</span><span class="p" data-group-id="3287662404-1">(</span><span class="n">flow</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3287662404-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="3287662404-2">}</span><span class="p" data-group-id="3287662404-1">)</span><span class="w">
-</span><span class="p" data-group-id="3287662404-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3287662404-4">%</span><span class="nc" data-group-id="3287662404-4">Flow</span><span class="p" data-group-id="3287662404-4">{</span><span class="p" data-group-id="3287662404-4">}</span><span class="p" data-group-id="3287662404-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_flow</span><span class="p" data-group-id="0867500385-1">(</span><span class="n">flow</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0867500385-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="0867500385-2">}</span><span class="p" data-group-id="0867500385-1">)</span><span class="w">
+</span><span class="p" data-group-id="0867500385-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0867500385-4">%</span><span class="nc" data-group-id="0867500385-4">Flow</span><span class="p" data-group-id="0867500385-4">{</span><span class="p" data-group-id="0867500385-4">}</span><span class="p" data-group-id="0867500385-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_flow</span><span class="p" data-group-id="3287662404-5">(</span><span class="n">flow</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3287662404-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3287662404-6">}</span><span class="p" data-group-id="3287662404-5">)</span><span class="w">
-</span><span class="p" data-group-id="3287662404-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3287662404-8">%</span><span class="nc" data-group-id="3287662404-8">Ecto.Changeset</span><span class="p" data-group-id="3287662404-8">{</span><span class="p" data-group-id="3287662404-8">}</span><span class="p" data-group-id="3287662404-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_flow</span><span class="p" data-group-id="0867500385-5">(</span><span class="n">flow</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0867500385-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0867500385-6">}</span><span class="p" data-group-id="0867500385-5">)</span><span class="w">
+</span><span class="p" data-group-id="0867500385-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0867500385-8">%</span><span class="nc" data-group-id="0867500385-8">Ecto.Changeset</span><span class="p" data-group-id="0867500385-8">{</span><span class="p" data-group-id="0867500385-8">}</span><span class="p" data-group-id="0867500385-7">}</span></code></pre>  </section>
 </section>
           </div>
         </section>

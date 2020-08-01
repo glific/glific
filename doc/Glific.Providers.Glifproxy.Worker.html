@@ -8,7 +8,7 @@
     <meta name="project" content="Glific v0.2.0">
     <title>Glific.Providers.Glifproxy.Worker — Glific v0.2.0</title>
     <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-2daba0f8d1.js"></script>
+    <script src="dist/sidebar_items-36aabe96b3.js"></script>
       <script src="docs_config.js"></script>
     <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
@@ -88,14 +88,7 @@ Glific.Providers.Glifproxy.Worker          <a href="https://github.com/glific/gl
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#backoff/1">backoff(attempt)</a>
-  </div>
-    <div class="summary-synopsis"><p>We backoff exponentially but always delay by at least 60 seconds
-this needs more work and tweaking</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#perform/2">perform(map, job)</a>
+    <a href="#perform/1">perform(job)</a>
   </div>
     <div class="summary-synopsis"><p>Standard perform method to use Oban worker</p></div>
 </div>
@@ -117,35 +110,13 @@ tailored for receiving. We need to generate a few random ids for various message
             </a>
 Functions          </h1>
           <div class="functions-list">
-<section class="detail" id="backoff/1">
+<section class="detail" id="perform/1">
   <div class="detail-header">
-    <a href="#backoff/1" class="detail-link" title="Link to this function">
+    <a href="#perform/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">backoff(attempt)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/glifproxy/worker.ex#L118" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-  </div>
-
-  <section class="docstring">
-      <h2>Specs</h2>
-      <div class="specs">
-          <pre>backoff(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">pos_integer</a>()</pre>
-      </div>
-
-<p>We backoff exponentially but always delay by at least 60 seconds
-this needs more work and tweaking</p>  </section>
-</section>
-<section class="detail" id="perform/2">
-  <div class="detail-header">
-    <a href="#perform/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">perform(map, job)</h1>
+    <h1 class="signature">perform(job)</h1>
       <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/glifproxy/worker.ex#L22" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
@@ -155,7 +126,7 @@ this needs more work and tweaking</p>  </section>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>perform(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/oban/Oban.Job.html#t:t/0">Oban.Job.t</a>()) :: {:ok, :queue_started}</pre>
+          <pre>perform(<a href="https://hexdocs.pm/oban/Oban.Job.html#t:t/0">Oban.Job.t</a>()) :: :ok</pre>
       </div>
 
 <p>Standard perform method to use Oban worker</p>  </section>

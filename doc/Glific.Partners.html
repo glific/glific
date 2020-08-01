@@ -8,7 +8,7 @@
     <meta name="project" content="Glific v0.2.0">
     <title>Glific.Partners — Glific v0.2.0</title>
     <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-2daba0f8d1.js"></script>
+    <script src="dist/sidebar_items-36aabe96b3.js"></script>
       <script src="docs_config.js"></script>
     <script async src="dist/app-0103364119015b97e56c.js"></script>
   </head>
@@ -161,6 +161,13 @@ and Provider information.</p>        </section>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#organization_contact_id/0">organization_contact_id()</a>
+  </div>
+    <div class="summary-synopsis"><p>We will cache this soon, since this is a frequently requested item. This contact id is special
+since it is the sender for all outbound messages and the receiver for all inbound messages</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#update_organization/2">update_organization(provider, attrs)</a>
   </div>
     <div class="summary-synopsis"><p>Updates an organization.</p></div>
@@ -190,7 +197,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">change_organization(organization, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L275" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L278" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -207,8 +214,8 @@ Functions          </h1>
   <a href="#change_organization/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">change_organization</span><span class="p" data-group-id="2075099258-1">(</span><span class="n">organization</span><span class="p" data-group-id="2075099258-1">)</span><span class="w">
-</span><span class="p" data-group-id="2075099258-2">%</span><span class="nc" data-group-id="2075099258-2">Ecto.Changeset</span><span class="p" data-group-id="2075099258-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2075099258-3">%</span><span class="nc" data-group-id="2075099258-3">Glific.Partners.Organization</span><span class="p" data-group-id="2075099258-3">{</span><span class="p" data-group-id="2075099258-3">}</span><span class="p" data-group-id="2075099258-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">change_organization</span><span class="p" data-group-id="4608272791-1">(</span><span class="n">organization</span><span class="p" data-group-id="4608272791-1">)</span><span class="w">
+</span><span class="p" data-group-id="4608272791-2">%</span><span class="nc" data-group-id="4608272791-2">Ecto.Changeset</span><span class="p" data-group-id="4608272791-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4608272791-3">%</span><span class="nc" data-group-id="4608272791-3">Glific.Partners.Organization</span><span class="p" data-group-id="4608272791-3">{</span><span class="p" data-group-id="4608272791-3">}</span><span class="p" data-group-id="4608272791-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="change_provider/2">
     <span id="change_provider/1"></span>
@@ -218,7 +225,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">change_provider(provider, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L131" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L134" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -246,8 +253,8 @@ Functions          </h1>
   <a href="#change_provider/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_provider</span><span class="p" data-group-id="9318326501-1">(</span><span class="n">provider</span><span class="p" data-group-id="9318326501-1">)</span><span class="w">
-</span><span class="p" data-group-id="9318326501-2">%</span><span class="nc" data-group-id="9318326501-2">Ecto.Changeset</span><span class="p" data-group-id="9318326501-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9318326501-3">%</span><span class="nc" data-group-id="9318326501-3">Provider</span><span class="p" data-group-id="9318326501-3">{</span><span class="p" data-group-id="9318326501-3">}</span><span class="p" data-group-id="9318326501-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_provider</span><span class="p" data-group-id="3440674450-1">(</span><span class="n">provider</span><span class="p" data-group-id="3440674450-1">)</span><span class="w">
+</span><span class="p" data-group-id="3440674450-2">%</span><span class="nc" data-group-id="3440674450-2">Ecto.Changeset</span><span class="p" data-group-id="3440674450-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3440674450-3">%</span><span class="nc" data-group-id="3440674450-3">Provider</span><span class="p" data-group-id="3440674450-3">{</span><span class="p" data-group-id="3440674450-3">}</span><span class="p" data-group-id="3440674450-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="count_organizations/1">
     <span id="count_organizations/0"></span>
@@ -257,7 +264,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">count_organizations(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L152" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L155" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -279,7 +286,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">count_providers(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L30" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L33" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -301,7 +308,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">create_organization(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L221" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L224" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -318,11 +325,11 @@ Functions          </h1>
   <a href="#create_organization/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">create_organization</span><span class="p" data-group-id="6543491975-1">(</span><span class="p" data-group-id="6543491975-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="6543491975-2">}</span><span class="p" data-group-id="6543491975-1">)</span><span class="w">
-</span><span class="p" data-group-id="6543491975-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6543491975-4">%</span><span class="nc" data-group-id="6543491975-4">Glific.Partners.Organization</span><span class="p" data-group-id="6543491975-4">{</span><span class="p" data-group-id="6543491975-4">}</span><span class="p" data-group-id="6543491975-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">create_organization</span><span class="p" data-group-id="0166710421-1">(</span><span class="p" data-group-id="0166710421-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="0166710421-2">}</span><span class="p" data-group-id="0166710421-1">)</span><span class="w">
+</span><span class="p" data-group-id="0166710421-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0166710421-4">%</span><span class="nc" data-group-id="0166710421-4">Glific.Partners.Organization</span><span class="p" data-group-id="0166710421-4">{</span><span class="p" data-group-id="0166710421-4">}</span><span class="p" data-group-id="0166710421-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">create_organization</span><span class="p" data-group-id="6543491975-5">(</span><span class="p" data-group-id="6543491975-6">%{</span><span class="ss">bad_field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6543491975-6">}</span><span class="p" data-group-id="6543491975-5">)</span><span class="w">
-</span><span class="p" data-group-id="6543491975-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6543491975-8">%</span><span class="nc" data-group-id="6543491975-8">Ecto.Changeset</span><span class="p" data-group-id="6543491975-8">{</span><span class="p" data-group-id="6543491975-8">}</span><span class="p" data-group-id="6543491975-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">create_organization</span><span class="p" data-group-id="0166710421-5">(</span><span class="p" data-group-id="0166710421-6">%{</span><span class="ss">bad_field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0166710421-6">}</span><span class="p" data-group-id="0166710421-5">)</span><span class="w">
+</span><span class="p" data-group-id="0166710421-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0166710421-8">%</span><span class="nc" data-group-id="0166710421-8">Ecto.Changeset</span><span class="p" data-group-id="0166710421-8">{</span><span class="p" data-group-id="0166710421-8">}</span><span class="p" data-group-id="0166710421-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="create_provider/1">
     <span id="create_provider/0"></span>
@@ -332,7 +339,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">create_provider(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L76" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L79" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -360,11 +367,11 @@ Functions          </h1>
   <a href="#create_provider/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_provider</span><span class="p" data-group-id="4882764883-1">(</span><span class="p" data-group-id="4882764883-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="4882764883-2">}</span><span class="p" data-group-id="4882764883-1">)</span><span class="w">
-</span><span class="p" data-group-id="4882764883-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4882764883-4">%</span><span class="nc" data-group-id="4882764883-4">Provider</span><span class="p" data-group-id="4882764883-4">{</span><span class="p" data-group-id="4882764883-4">}</span><span class="p" data-group-id="4882764883-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_provider</span><span class="p" data-group-id="6116933815-1">(</span><span class="p" data-group-id="6116933815-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="6116933815-2">}</span><span class="p" data-group-id="6116933815-1">)</span><span class="w">
+</span><span class="p" data-group-id="6116933815-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6116933815-4">%</span><span class="nc" data-group-id="6116933815-4">Provider</span><span class="p" data-group-id="6116933815-4">{</span><span class="p" data-group-id="6116933815-4">}</span><span class="p" data-group-id="6116933815-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_provider</span><span class="p" data-group-id="4882764883-5">(</span><span class="p" data-group-id="4882764883-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4882764883-6">}</span><span class="p" data-group-id="4882764883-5">)</span><span class="w">
-</span><span class="p" data-group-id="4882764883-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4882764883-8">%</span><span class="nc" data-group-id="4882764883-8">Ecto.Changeset</span><span class="p" data-group-id="4882764883-8">{</span><span class="p" data-group-id="4882764883-8">}</span><span class="p" data-group-id="4882764883-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_provider</span><span class="p" data-group-id="6116933815-5">(</span><span class="p" data-group-id="6116933815-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6116933815-6">}</span><span class="p" data-group-id="6116933815-5">)</span><span class="w">
+</span><span class="p" data-group-id="6116933815-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6116933815-8">%</span><span class="nc" data-group-id="6116933815-8">Ecto.Changeset</span><span class="p" data-group-id="6116933815-8">{</span><span class="p" data-group-id="6116933815-8">}</span><span class="p" data-group-id="6116933815-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="delete_organization/1">
   <div class="detail-header">
@@ -373,7 +380,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete_organization(organization)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L261" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L264" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -390,11 +397,11 @@ Functions          </h1>
   <a href="#delete_organization/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">delete_organization</span><span class="p" data-group-id="6455326783-1">(</span><span class="n">organization</span><span class="p" data-group-id="6455326783-1">)</span><span class="w">
-</span><span class="p" data-group-id="6455326783-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6455326783-3">%</span><span class="nc" data-group-id="6455326783-3">Glific.Partners.Organization</span><span class="p" data-group-id="6455326783-3">{</span><span class="p" data-group-id="6455326783-3">}</span><span class="p" data-group-id="6455326783-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">delete_organization</span><span class="p" data-group-id="5380365302-1">(</span><span class="n">organization</span><span class="p" data-group-id="5380365302-1">)</span><span class="w">
+</span><span class="p" data-group-id="5380365302-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5380365302-3">%</span><span class="nc" data-group-id="5380365302-3">Glific.Partners.Organization</span><span class="p" data-group-id="5380365302-3">{</span><span class="p" data-group-id="5380365302-3">}</span><span class="p" data-group-id="5380365302-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_organization</span><span class="p" data-group-id="6455326783-4">(</span><span class="n">organization</span><span class="p" data-group-id="6455326783-4">)</span><span class="w">
-</span><span class="p" data-group-id="6455326783-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6455326783-6">%</span><span class="nc" data-group-id="6455326783-6">Ecto.Changeset</span><span class="p" data-group-id="6455326783-6">{</span><span class="p" data-group-id="6455326783-6">}</span><span class="p" data-group-id="6455326783-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_organization</span><span class="p" data-group-id="5380365302-4">(</span><span class="n">organization</span><span class="p" data-group-id="5380365302-4">)</span><span class="w">
+</span><span class="p" data-group-id="5380365302-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5380365302-6">%</span><span class="nc" data-group-id="5380365302-6">Ecto.Changeset</span><span class="p" data-group-id="5380365302-6">{</span><span class="p" data-group-id="5380365302-6">}</span><span class="p" data-group-id="5380365302-5">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="delete_provider/1">
   <div class="detail-header">
@@ -403,7 +410,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete_provider(provider)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L114" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L117" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -440,11 +447,11 @@ Functions          </h1>
   <a href="#delete_provider/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_provider</span><span class="p" data-group-id="2966042629-1">(</span><span class="n">provider</span><span class="p" data-group-id="2966042629-1">)</span><span class="w">
-</span><span class="p" data-group-id="2966042629-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2966042629-3">%</span><span class="nc" data-group-id="2966042629-3">Provider</span><span class="p" data-group-id="2966042629-3">{</span><span class="p" data-group-id="2966042629-3">}</span><span class="p" data-group-id="2966042629-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_provider</span><span class="p" data-group-id="1272519802-1">(</span><span class="n">provider</span><span class="p" data-group-id="1272519802-1">)</span><span class="w">
+</span><span class="p" data-group-id="1272519802-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1272519802-3">%</span><span class="nc" data-group-id="1272519802-3">Provider</span><span class="p" data-group-id="1272519802-3">{</span><span class="p" data-group-id="1272519802-3">}</span><span class="p" data-group-id="1272519802-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_provider</span><span class="p" data-group-id="2966042629-4">(</span><span class="n">provider</span><span class="p" data-group-id="2966042629-4">)</span><span class="w">
-</span><span class="p" data-group-id="2966042629-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2966042629-6">%</span><span class="nc" data-group-id="2966042629-6">Ecto.Changeset</span><span class="p" data-group-id="2966042629-6">{</span><span class="p" data-group-id="2966042629-6">}</span><span class="p" data-group-id="2966042629-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_provider</span><span class="p" data-group-id="1272519802-4">(</span><span class="n">provider</span><span class="p" data-group-id="1272519802-4">)</span><span class="w">
+</span><span class="p" data-group-id="1272519802-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1272519802-6">%</span><span class="nc" data-group-id="1272519802-6">Ecto.Changeset</span><span class="p" data-group-id="1272519802-6">{</span><span class="p" data-group-id="1272519802-6">}</span><span class="p" data-group-id="1272519802-5">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_organization!/1">
   <div class="detail-header">
@@ -453,7 +460,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_organization!(id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L206" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L209" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -469,10 +476,10 @@ Functions          </h1>
   <a href="#get_organization!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">get_organization!</span><span class="p" data-group-id="4800872026-1">(</span><span class="mi">1</span><span class="p" data-group-id="4800872026-1">)</span><span class="w">
-</span><span class="p" data-group-id="4800872026-2">%</span><span class="nc" data-group-id="4800872026-2">Glific.Partners.Organization</span><span class="p" data-group-id="4800872026-2">{</span><span class="p" data-group-id="4800872026-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">get_organization!</span><span class="p" data-group-id="4407504041-1">(</span><span class="mi">1</span><span class="p" data-group-id="4407504041-1">)</span><span class="w">
+</span><span class="p" data-group-id="4407504041-2">%</span><span class="nc" data-group-id="4407504041-2">Glific.Partners.Organization</span><span class="p" data-group-id="4407504041-2">{</span><span class="p" data-group-id="4407504041-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">get_organization!</span><span class="p" data-group-id="4800872026-3">(</span><span class="o">-</span><span class="mi">1</span><span class="p" data-group-id="4800872026-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">get_organization!</span><span class="p" data-group-id="4407504041-3">(</span><span class="o">-</span><span class="mi">1</span><span class="p" data-group-id="4407504041-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_provider!/1">
@@ -482,7 +489,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_provider!(id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L61" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L64" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -507,10 +514,10 @@ Functions          </h1>
   <a href="#get_provider!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_provider!</span><span class="p" data-group-id="8437135357-1">(</span><span class="mi">123</span><span class="p" data-group-id="8437135357-1">)</span><span class="w">
-</span><span class="p" data-group-id="8437135357-2">%</span><span class="nc" data-group-id="8437135357-2">Provider</span><span class="p" data-group-id="8437135357-2">{</span><span class="p" data-group-id="8437135357-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_provider!</span><span class="p" data-group-id="9568327670-1">(</span><span class="mi">123</span><span class="p" data-group-id="9568327670-1">)</span><span class="w">
+</span><span class="p" data-group-id="9568327670-2">%</span><span class="nc" data-group-id="9568327670-2">Provider</span><span class="p" data-group-id="9568327670-2">{</span><span class="p" data-group-id="9568327670-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_provider!</span><span class="p" data-group-id="8437135357-3">(</span><span class="mi">456</span><span class="p" data-group-id="8437135357-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_provider!</span><span class="p" data-group-id="9568327670-3">(</span><span class="mi">456</span><span class="p" data-group-id="9568327670-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="list_organizations/1">
@@ -521,7 +528,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">list_organizations(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L145" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L148" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -537,8 +544,8 @@ Functions          </h1>
   <a href="#list_organizations/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">list_organizations</span><span class="p" data-group-id="1242522767-1">(</span><span class="p" data-group-id="1242522767-1">)</span><span class="w">
-</span><span class="p" data-group-id="1242522767-2">[</span><span class="p" data-group-id="1242522767-3">%</span><span class="nc" data-group-id="1242522767-3">Glific.Partners.Organization</span><span class="p" data-group-id="1242522767-3">{</span><span class="p" data-group-id="1242522767-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="1242522767-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">list_organizations</span><span class="p" data-group-id="2359098636-1">(</span><span class="p" data-group-id="2359098636-1">)</span><span class="w">
+</span><span class="p" data-group-id="2359098636-2">[</span><span class="p" data-group-id="2359098636-3">%</span><span class="nc" data-group-id="2359098636-3">Glific.Partners.Organization</span><span class="p" data-group-id="2359098636-3">{</span><span class="p" data-group-id="2359098636-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="2359098636-2">]</span></code></pre>  </section>
 </section>
 <section class="detail" id="list_providers/1">
     <span id="list_providers/0"></span>
@@ -548,7 +555,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">list_providers(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L23" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L26" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -576,8 +583,30 @@ Functions          </h1>
   <a href="#list_providers/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_providers</span><span class="p" data-group-id="7905168544-1">(</span><span class="p" data-group-id="7905168544-1">)</span><span class="w">
-</span><span class="p" data-group-id="7905168544-2">[</span><span class="p" data-group-id="7905168544-3">%</span><span class="nc" data-group-id="7905168544-3">Provider</span><span class="p" data-group-id="7905168544-3">{</span><span class="p" data-group-id="7905168544-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="7905168544-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_providers</span><span class="p" data-group-id="9710243358-1">(</span><span class="p" data-group-id="9710243358-1">)</span><span class="w">
+</span><span class="p" data-group-id="9710243358-2">[</span><span class="p" data-group-id="9710243358-3">%</span><span class="nc" data-group-id="9710243358-3">Provider</span><span class="p" data-group-id="9710243358-3">{</span><span class="p" data-group-id="9710243358-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="9710243358-2">]</span></code></pre>  </section>
+</section>
+<section class="detail" id="organization_contact_id/0">
+  <div class="detail-header">
+    <a href="#organization_contact_id/0" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">organization_contact_id()</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L287" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>organization_contact_id() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+      </div>
+
+<p>We will cache this soon, since this is a frequently requested item. This contact id is special
+since it is the sender for all outbound messages and the receiver for all inbound messages</p>  </section>
 </section>
 <section class="detail" id="update_organization/2">
   <div class="detail-header">
@@ -586,7 +615,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_organization(provider, attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L241" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L244" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -603,11 +632,11 @@ Functions          </h1>
   <a href="#update_organization/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">update_organization</span><span class="p" data-group-id="3367799914-1">(</span><span class="nc">Organization</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3367799914-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">new_name</span><span class="p" data-group-id="3367799914-2">}</span><span class="p" data-group-id="3367799914-1">)</span><span class="w">
-</span><span class="p" data-group-id="3367799914-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3367799914-4">%</span><span class="nc" data-group-id="3367799914-4">Glific.Partners.Organization</span><span class="p" data-group-id="3367799914-4">{</span><span class="p" data-group-id="3367799914-4">}</span><span class="p" data-group-id="3367799914-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">update_organization</span><span class="p" data-group-id="2952955267-1">(</span><span class="nc">Organization</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2952955267-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">new_name</span><span class="p" data-group-id="2952955267-2">}</span><span class="p" data-group-id="2952955267-1">)</span><span class="w">
+</span><span class="p" data-group-id="2952955267-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2952955267-4">%</span><span class="nc" data-group-id="2952955267-4">Glific.Partners.Organization</span><span class="p" data-group-id="2952955267-4">{</span><span class="p" data-group-id="2952955267-4">}</span><span class="p" data-group-id="2952955267-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">update_organization</span><span class="p" data-group-id="3367799914-5">(</span><span class="nc">Organization</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3367799914-6">%{</span><span class="ss">abc</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3367799914-6">}</span><span class="p" data-group-id="3367799914-5">)</span><span class="w">
-</span><span class="p" data-group-id="3367799914-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3367799914-8">%</span><span class="nc" data-group-id="3367799914-8">Ecto.Changeset</span><span class="p" data-group-id="3367799914-8">{</span><span class="p" data-group-id="3367799914-8">}</span><span class="p" data-group-id="3367799914-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">update_organization</span><span class="p" data-group-id="2952955267-5">(</span><span class="nc">Organization</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2952955267-6">%{</span><span class="ss">abc</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2952955267-6">}</span><span class="p" data-group-id="2952955267-5">)</span><span class="w">
+</span><span class="p" data-group-id="2952955267-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2952955267-8">%</span><span class="nc" data-group-id="2952955267-8">Ecto.Changeset</span><span class="p" data-group-id="2952955267-8">{</span><span class="p" data-group-id="2952955267-8">}</span><span class="p" data-group-id="2952955267-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="update_provider/2">
   <div class="detail-header">
@@ -616,7 +645,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_provider(provider, attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L95" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L98" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -656,11 +685,11 @@ Functions          </h1>
   <a href="#update_provider/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_provider</span><span class="p" data-group-id="7944175765-1">(</span><span class="n">provider</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7944175765-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="7944175765-2">}</span><span class="p" data-group-id="7944175765-1">)</span><span class="w">
-</span><span class="p" data-group-id="7944175765-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7944175765-4">%</span><span class="nc" data-group-id="7944175765-4">Provider</span><span class="p" data-group-id="7944175765-4">{</span><span class="p" data-group-id="7944175765-4">}</span><span class="p" data-group-id="7944175765-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_provider</span><span class="p" data-group-id="0105391134-1">(</span><span class="n">provider</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0105391134-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="0105391134-2">}</span><span class="p" data-group-id="0105391134-1">)</span><span class="w">
+</span><span class="p" data-group-id="0105391134-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0105391134-4">%</span><span class="nc" data-group-id="0105391134-4">Provider</span><span class="p" data-group-id="0105391134-4">{</span><span class="p" data-group-id="0105391134-4">}</span><span class="p" data-group-id="0105391134-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_provider</span><span class="p" data-group-id="7944175765-5">(</span><span class="n">provider</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7944175765-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="7944175765-6">}</span><span class="p" data-group-id="7944175765-5">)</span><span class="w">
-</span><span class="p" data-group-id="7944175765-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7944175765-8">%</span><span class="nc" data-group-id="7944175765-8">Ecto.Changeset</span><span class="p" data-group-id="7944175765-8">{</span><span class="p" data-group-id="7944175765-8">}</span><span class="p" data-group-id="7944175765-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_provider</span><span class="p" data-group-id="0105391134-5">(</span><span class="n">provider</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0105391134-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0105391134-6">}</span><span class="p" data-group-id="0105391134-5">)</span><span class="w">
+</span><span class="p" data-group-id="0105391134-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0105391134-8">%</span><span class="nc" data-group-id="0105391134-8">Ecto.Changeset</span><span class="p" data-group-id="0105391134-8">{</span><span class="p" data-group-id="0105391134-8">}</span><span class="p" data-group-id="0105391134-7">}</span></code></pre>  </section>
 </section>
           </div>
         </section>
