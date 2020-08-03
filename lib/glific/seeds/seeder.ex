@@ -12,8 +12,9 @@ defmodule Glific.Seeds.Seeder do
     repos = load_repos()
     # set env with current_env/0 overwriting provided arg
     # Tags keyword is required for the PhilColumns library
-    opts = Keyword.put(opts, :env, current_env())
-          |> Keyword.put(:tags, [])
+    opts =
+      Keyword.put(opts, :env, current_env())
+      |> Keyword.put(:tags, [])
 
     opts =
       if opts[:to] || opts[:step] || opts[:all],
@@ -34,7 +35,6 @@ defmodule Glific.Seeds.Seeder do
     for repo <- repos do
       {:ok, _, _} = Ecto.Migrator.with_repo(repo, &run_seeders(&1, seeder, opts))
     end
-
   end
 
   defp current_env, do: :prod
@@ -46,6 +46,7 @@ defmodule Glific.Seeds.Seeder do
     Application.fetch_env!(@app, :ecto_repos)
   end
 
+  @spec run_seeders(any(), any(), Keyword.t()) :: any()
   defp run_seeders(repo, seeder, opts) do
     seeder.(repo, Path.join(:code.priv_dir(@app), "repo/seeds"), :up, opts)
   end
