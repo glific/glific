@@ -4,8 +4,6 @@ defmodule Glific.Seeds.Seeder do
   Wish us luck
   """
 
-  import Mix.PhilColumns
-
   @app :glific
 
   @doc false
@@ -13,7 +11,9 @@ defmodule Glific.Seeds.Seeder do
   def seed(opts \\ Keyword.new(), seeder \\ &PhilColumns.Seeder.run/4) do
     repos = load_repos()
     # set env with current_env/0 overwriting provided arg
+    # Tags keyword is required for the PhilColumns library
     opts = Keyword.put(opts, :env, current_env())
+          |> Keyword.put(:tags, [])
 
     opts =
       if opts[:to] || opts[:step] || opts[:all],
@@ -30,9 +30,11 @@ defmodule Glific.Seeds.Seeder do
         do: Keyword.put(opts, :log, false),
         else: opts
 
-    Enum.each(repos, fn repo ->
-      Ecto.Migrator.with_repo(repo, &seeder.(&1, Path.join(:code.priv_dir(:glific), "repo/seeds"), :up, opts))
-    end)
+    # We need to run the with the loaded repo. This is a public API provided
+    for repo <- repos do
+      {:ok, _, _} = Ecto.Migrator.with_repo(repo, &run_seeders(&1, seeder, opts))
+    end
+
   end
 
   defp current_env, do: :prod
@@ -44,4 +46,7 @@ defmodule Glific.Seeds.Seeder do
     Application.fetch_env!(@app, :ecto_repos)
   end
 
+  defp run_seeders(repo, seeder, opts) do
+    seeder.(repo, Path.join(:code.priv_dir(@app), "repo/seeds"), :up, opts)
+  end
 end
