@@ -114,6 +114,7 @@ defmodule Glific.Seeds.SeedsScale do
 
   defp seed_messages do
     Repo.query!("ALTER TABLE messages DISABLE TRIGGER update_search_message_trigger;")
+    Repo.query!("TRUNCATE messages CASCADE;")
 
     # get all beneficiaries ids
     _ =

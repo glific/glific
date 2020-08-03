@@ -13,7 +13,6 @@ defmodule Glific.Seeds.SeedsDev do
     Repo,
     Settings,
     Tags.Tag,
-    Templates.SessionTemplate,
     Users
   }
 
@@ -249,34 +248,6 @@ defmodule Glific.Seeds.SeedsDev do
       caption: Faker.String.base64(10),
       provider_media_id: Faker.String.base64(10)
     })
-  end
-
-  @doc false
-  @spec seed_session_templates :: nil
-  def seed_session_templates do
-    [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
-
-    session_template_parent =
-      Repo.insert!(%SessionTemplate{
-        label: "Default Template Label",
-        shortcode: "default template",
-        body: "Default Template",
-        type: :text,
-        language_id: en_us.id,
-        uuid: "92bc663f-ac05-45d5-aa13-4dae06165ae4"
-      })
-
-    Repo.insert!(%SessionTemplate{
-      label: "Another Template Label",
-      shortcode: "another template",
-      body: "Another Template",
-      type: :text,
-      language_id: en_us.id,
-      parent_id: session_template_parent.id,
-      uuid: "53008c3d-e619-4ec6-80cd-b9b2c89386dc"
-    })
-
-    nil
   end
 
   @doc false

@@ -6,7 +6,6 @@ defmodule Glific.Search.Full do
   import Ecto.Query
 
   alias Glific.{
-    Messages.Message,
     Tags.MessageTag
   }
 
@@ -56,10 +55,8 @@ defmodule Glific.Search.Full do
     {:ok, tag_id} = Glific.parse_maybe_integer(tag_id)
 
     query
-    |> join(:inner, [c], m in Message, on: m.contact_id == c.id)
-    |> join(:inner, [c, m], mt in MessageTag, on: mt.message_id == m.id)
-    |> where([_c, _m, mt], mt.tag_id == ^tag_id)
-    |> order_by([_c, m, _mt], desc: m.updated_at)
+    |> join(:inner, [m], mt in MessageTag, on: mt.message_id == m.id)
+    |> where([_m, mt], mt.tag_id == ^tag_id)
   end
 
   defp run_include_tags(query, _args), do: query
@@ -74,13 +71,13 @@ defmodule Glific.Search.Full do
 
   defp run_helper(query, term, args) do
     query
-    |> join(:inner, [c], id_and_rank in matching_contact_ids_and_ranks(term, args),
-      on: id_and_rank.id == c.id
+    |> join(:inner, [m], id_and_rank in matching_contact_ids_and_ranks(term, args),
+      on: id_and_rank.id == m.contact_id
     )
-    |> order_by([_c, id_and_rank], desc: id_and_rank.rank)
+    # eliminate any previous order by, since this takes precedence
+    |> exclude(:order_by)
+    |> order_by([_m, id_and_rank], desc: id_and_rank.rank)
     |> run_include_tags(args)
-    |> offset(^args.contact_opts.offset)
-    |> limit(^args.contact_opts.limit)
   end
 
   @spec normalize(String.t()) :: String.t()

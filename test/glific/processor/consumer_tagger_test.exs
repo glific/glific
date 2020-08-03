@@ -64,7 +64,6 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     SeedsDev.seed_tag()
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
-    SeedsDev.seed_session_templates()
     :ok
   end
 
