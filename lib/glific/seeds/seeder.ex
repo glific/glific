@@ -11,8 +11,7 @@ defmodule Glific.Seeds.Seeder do
   @doc false
   @spec seed(any, any) :: any
   def seed(opts \\ Keyword.new(), seeder \\ &PhilColumns.Seeder.run/4) do
-    repos = load_repos() |> List.wrap()
-
+    repos = load_repos()
     # set env with current_env/0 overwriting provided arg
     opts = Keyword.put(opts, :env, current_env())
 
@@ -32,7 +31,7 @@ defmodule Glific.Seeds.Seeder do
         else: opts
 
     Enum.each(repos, fn repo ->
-      seeder.(repo, seeds_path(repo), :up, opts)
+      Ecto.Migrator.with_repo(repo, &seeder.(&1, Path.join(:code.priv_dir(:glific), "repo/seeds"), :up, opts))
     end)
   end
 
@@ -44,4 +43,5 @@ defmodule Glific.Seeds.Seeder do
     Application.load(@app)
     Application.fetch_env!(@app, :ecto_repos)
   end
+
 end
