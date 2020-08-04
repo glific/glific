@@ -206,8 +206,21 @@ defmodule Glific.Partners do
 
   """
   @spec get_organization!(integer) :: Organization.t()
-  def get_organization!(id), do: Repo.get!(Organization, id)
+  def get_organization!(id) do
+    case Cachex.get(:my_cache, id) do
+      {:ok, nil} -> get_organization_from_db(id)
+      {:ok, _} ->
+          {:ok, organization_cache}= Cachex.get(:my_cache, id)
+          organization_cache    
+      {:error, _} -> Repo.get!(Organization, id)
+    end
+  end
 
+  def get_organization_from_db(id) do
+    organization_data =  Repo.get!(Organization, id)
+    Cachex.put(:my_cache, id, organization_data)
+    organization_data
+  end
   @doc ~S"""
   Creates a organization.
 
