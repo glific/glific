@@ -24,8 +24,10 @@ defmodule Glific.Flows.MessageVarParser do
   end
 
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
-    substitution = get_in(binding, String.split(var, "."))
-    |> bound()
+    substitution =
+      get_in(binding, String.split(var, "."))
+      |> bound()
+
     if substitution == nil, do: "@#{var}", else: substitution
   end
 

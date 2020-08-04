@@ -48,7 +48,7 @@ defmodule Glific.Flows.Action do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           templating: Templating.t() | nil
-      }
+        }
 
   embedded_schema do
     field :uuid, Ecto.UUID
@@ -77,7 +77,6 @@ defmodule Glific.Flows.Action do
     embeds_one :node, Node
 
     embeds_one :templating, Templating
-
 
     field :enter_flow_uuid, Ecto.UUID
     embeds_one :enter_flow, Flow
@@ -236,16 +235,12 @@ defmodule Glific.Flows.Action do
 
   defp process_attachments(attachment_list) do
     attachment_list
-    |> Enum.map(
-          fn attchement
-            ->
-              case String.split(attchement, ":", parts: 2) do
-                [type, url] -> {type, url}
-                _ -> {nil, nil}
-              end
-          end)
+    |> Enum.map(fn attchement ->
+      case String.split(attchement, ":", parts: 2) do
+        [type, url] -> {type, url}
+        _ -> {nil, nil}
+      end
+    end)
     |> Map.new()
   end
-
-
 end

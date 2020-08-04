@@ -278,7 +278,7 @@ defmodule Glific.Messages do
     )
   end
 
-  @spec create_and_send_session_template(SessionTemplate.t(), map()) :: {:ok, Message.t()}
+  @spec create_and_send_session_template(SessionTemplate.t() | map(), map()) :: {:ok, Message.t()}
   def create_and_send_session_template(session_template, args) do
     message_params = %{
       body: session_template.body,

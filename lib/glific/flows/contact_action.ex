@@ -30,7 +30,7 @@ defmodule Glific.Flows.ContactAction do
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     body = MessageVarParser.parse(text, message_vars)
 
-   {type, media_id} = get_media_from_attachment(action.attachments, action.text)
+    {type, media_id} = get_media_from_attachment(action.attachments, action.text)
 
     {:ok, _message} =
       Messages.create_and_send_message(%{
@@ -55,6 +55,7 @@ defmodule Glific.Flows.ContactAction do
     session_template = Messages.parse_template_vars(templating.template, vars)
 
     {type, media_id} = get_media_from_attachment(attachments, "")
+
     session_template =
       session_template
       |> Map.merge(%{media_id: media_id, type: type})
@@ -72,9 +73,8 @@ defmodule Glific.Flows.ContactAction do
     %{context | delay: context.delay + @min_delay}
   end
 
-
   @spec get_media_from_attachment(map(), any()) :: {atom(), nil | integer()}
-  defp get_media_from_attachment(attachment, _) when attachment == %{} , do: {:text, nil}
+  defp get_media_from_attachment(attachment, _) when attachment == %{} or is_nil(attachment), do: {:text, nil}
 
   defp get_media_from_attachment(attachment, caption) do
     [type | _tail] = Map.keys(attachment)
@@ -83,14 +83,15 @@ defmodule Glific.Flows.ContactAction do
     {:ok, message_media} =
       %{
         type: String.to_existing_atom(type),
-        url: url, source_url: url, thumbnail: url,
+        url: url,
+        source_url: url,
+        thumbnail: url,
         caption: caption
       }
       |> Messages.create_message_media()
 
-     {String.to_existing_atom(type), message_media.id}
+    {String.to_existing_atom(type), message_media.id}
   end
-
 
   @doc """
   Contact opts out
@@ -104,12 +105,11 @@ defmodule Glific.Flows.ContactAction do
 
   @spec get_contact_field_map(integer) :: map()
   defp get_contact_field_map(contact_id) do
-    contact = Contacts.get_contact!(contact_id)
-              |> Repo.preload([:language])
-              |> Map.from_struct()
+    contact =
+      Contacts.get_contact!(contact_id)
+      |> Repo.preload([:language])
+      |> Map.from_struct()
 
     put_in(contact, [:fields, :language], %{label: contact.language.label})
   end
-
-
 end
