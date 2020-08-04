@@ -54,7 +54,7 @@ defmodule Glific.Flows.ContactAction do
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
     session_template = Messages.parse_template_vars(templating.template, vars)
 
-    {type, media_id} = get_media_from_attachment(attachments)
+    {type, media_id} = get_media_from_attachment(attachments, "")
     session_template =
       session_template
       |> Map.merge(%{media_id: media_id, type: type})
@@ -73,10 +73,10 @@ defmodule Glific.Flows.ContactAction do
   end
 
 
-  @spec get_media_from_attachment(map()) :: {atom(), nil | integer()}
+  @spec get_media_from_attachment(map(), any()) :: {atom(), nil | integer()}
   defp get_media_from_attachment(attachment, _) when attachment == %{} , do: {:text, nil}
 
-  defp get_media_from_attachment(attachment, caption  \\ "") do
+  defp get_media_from_attachment(attachment, caption) do
     [type | _tail] = Map.keys(attachment)
     url = attachment[type]
 

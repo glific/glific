@@ -25,8 +25,14 @@ defmodule Glific.Flows.MessageVarParser do
 
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
     substitution = get_in(binding, String.split(var, "."))
+    |> bound()
     if substitution == nil, do: "@#{var}", else: substitution
   end
+
+  # this is for the otherfileds like @contact.fields.name which is a map of (value)
+  defp bound(substitution) when is_map(substitution), do: bound(substitution["value"])
+
+  defp bound(substitution), do: substitution
 
   # """
   # Convert map atom keys to strings
