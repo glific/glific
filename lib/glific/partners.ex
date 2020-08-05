@@ -10,7 +10,8 @@ defmodule Glific.Partners do
     Contacts.Contact,
     Partners.Organization,
     Partners.Provider,
-    Repo
+    Repo,
+    Caches
   }
 
   @doc """
@@ -193,8 +194,6 @@ defmodule Glific.Partners do
 
   @doc ~S"""
   Gets a single organization.
-  Checks if organization exists in cache.
-  Returns samme if exists in cache else returns by querying in database
 
   Raises `Ecto.NoResultsError` if the organization does not exist.
 
@@ -209,26 +208,15 @@ defmodule Glific.Partners do
   """
   @spec get_organization!(integer) :: Organization.t()
   def get_organization!(id) do
-    case Cachex.get(:my_cache, id) do
-      {:ok, nil} -> get_organization_from_db(id)
+    case Caches.get(id) do
+      {:ok, false} -> 
+        organization_data =  Repo.get!(Organization, id)
+        Caches.set(id, organization_data)
+        organization_data
       {:ok, _} ->
-          {:ok, organization_cache}= Cachex.get(:my_cache, id)
+          {:ok, organization_cache}= Caches.get(id)
           organization_cache    
-      {:error, _} -> Repo.get!(Organization, id)
     end
-  end
-  
-  @doc ~S"""
-  Gets a single organization from database when not found in cache.
-
-  Raises `Ecto.NoResultsError` if the organization does not exist.
-
-  """
-  @spec get_organization_from_db(integer) :: Organization.t()
-  def get_organization_from_db(id) do
-    organization_data =  Repo.get!(Organization, id)
-    Cachex.put(:my_cache, id, organization_data)
-    organization_data
   end
   @doc ~S"""
   Creates a organization.
@@ -308,10 +296,19 @@ defmodule Glific.Partners do
   @spec organization_contact_id() :: integer()
   def organization_contact_id do
     # Get contact id
-    Contact
-    |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
-    |> select([c, _o], c.id)
-    |> limit(1)
-    |> Repo.one()
+    case Caches.get("contact_id") do
+      {:ok, false} -> 
+        contact_id =  Contact
+                              |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
+                              |> select([c, _o], c.id)
+                              |> limit(1)
+                              |> Repo.one()
+        Caches.set("contact_id", contact_id)
+        contact_id
+      {:ok, _} ->
+          {:ok, contactid_cache}= Caches.get("contact_id")
+          contactid_cache    
+    end
+    
   end
 end
