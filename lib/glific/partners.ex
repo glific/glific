@@ -208,13 +208,13 @@ defmodule Glific.Partners do
   """
   @spec get_organization!(integer) :: Organization.t()
   def get_organization!(id) do
-    case Caches.get(id) do
+    case Caches.get("organization" <>"#{id}") do
       {:ok, false} -> 
         organization_data =  Repo.get!(Organization, id)
-        Caches.set(id, organization_data)
+        Caches.set("organization" <>"#{id}", organization_data)
         organization_data
       {:ok, _} ->
-          {:ok, organization_cache}= Caches.get(id)
+          {:ok, organization_cache}= Caches.get("organization" <>"#{id}")
           organization_cache    
     end
   end
