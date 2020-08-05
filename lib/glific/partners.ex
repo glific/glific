@@ -216,6 +216,7 @@ defmodule Glific.Partners do
     end
   end
 
+  @spec get_organization_from_db(integer) :: Organization.t()
   def get_organization_from_db(id) do
     organization_data =  Repo.get!(Organization, id)
     Cachex.put(:my_cache, id, organization_data)
