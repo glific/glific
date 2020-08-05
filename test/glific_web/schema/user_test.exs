@@ -21,7 +21,7 @@ defmodule GlificWeb.Schema.UserTest do
   load_gql(:count, GlificWeb.Schema, "assets/gql/users/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/users/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/users/by_id.gql")
-  load_gql(:update, GlificWeb.Schema, "assets/gql/users/update.gql")
+  load_gql(:update_current, GlificWeb.Schema, "assets/gql/users/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/users/delete.gql")
 
   test "users returns list of users" do
@@ -101,35 +101,21 @@ defmodule GlificWeb.Schema.UserTest do
     assert message == "Resource not found"
   end
 
-  test "update a user and test possible scenarios and errors" do
+  test "update a user with correct data" do
     {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
 
     name = "User Test Name New"
-    roles = ["basic", "admin"]
 
     result =
-      query_gql_by(:update,
-        variables: %{"id" => user.id, "input" => %{"name" => name, "roles" => roles}}
+      query_gql_by(:update_current,
+        variables: %{"id" => user.id, "input" => %{"name" => name}}
       )
 
     assert {:ok, query_data} = result
 
-    user_result = get_in(query_data, [:data, "updateUser", "user"])
+    user_result = get_in(query_data, [:data, "updateCurrentUser", "user"])
+
     assert user_result["name"] == name
-    assert user_result["roles"] == roles
-
-    # update with incorrect role should give error
-    roles = ["admin", "incorrect_role"]
-
-    result =
-      query_gql_by(:update,
-        variables: %{"id" => user.id, "input" => %{"name" => name, "roles" => roles}}
-      )
-
-    assert {:ok, query_data} = result
-
-    message = get_in(query_data, [:data, "updateUser", "errors", Access.at(0), "message"])
-    assert message == "has an invalid entry"
   end
 
   test "update a user password for different scenarios" do
@@ -152,7 +138,7 @@ defmodule GlificWeb.Schema.UserTest do
     {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(user.phone)
 
     result =
-      query_gql_by(:update,
+      query_gql_by(:update_current,
         variables: %{
           "id" => user.id,
           "input" => %{"name" => name, "otp" => otp, "password" => "new_password"}
@@ -161,12 +147,12 @@ defmodule GlificWeb.Schema.UserTest do
 
     assert {:ok, query_data} = result
 
-    user_result = get_in(query_data, [:data, "updateUser", "user"])
+    user_result = get_in(query_data, [:data, "updateCurrentUser", "user"])
     assert user_result["name"] == name
 
     # update with incorrect otp should give error
     result =
-      query_gql_by(:update,
+      query_gql_by(:update_current,
         variables: %{
           "id" => user.id,
           "input" => %{"name" => name, "otp" => "incorrect_otp", "password" => "new_password"}

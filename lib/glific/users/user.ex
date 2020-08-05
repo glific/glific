@@ -65,21 +65,10 @@ defmodule Glific.Users.User do
           Changeset.t()
   def update_fields_changeset(user_or_changeset, params) do
     user_or_changeset
-    |> Changeset.cast(params, [:name, :roles])
+    |> Changeset.cast(params, [:name, :roles, :password])
     |> Changeset.validate_required([:name, :roles])
     |> Changeset.validate_subset(:roles, @user_roles)
-  end
-
-  @doc """
-  Simple changeset for reset password
-  """
-  @spec reset_password_changeset(Ecto.Schema.t() | Changeset.t(), map()) ::
-          Changeset.t()
-  def reset_password_changeset(user_or_changeset, attrs) do
-    user_or_changeset
-    |> Changeset.cast(attrs, [:password])
-    |> Changeset.validate_required([:password])
-    |> password_changeset(attrs, @pow_config)
+    |> password_changeset(params, @pow_config)
   end
 
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),
