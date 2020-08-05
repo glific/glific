@@ -39,6 +39,11 @@ defmodule GlificWeb.Schema.UserTypes do
     field :otp, :string
   end
 
+  input_object :user_input do
+    field :name, :string
+    field :roles, list_of(:string)
+  end
+
   object :user_queries do
     @desc "get the details of one user"
     field :user, :user_result do
@@ -70,6 +75,13 @@ defmodule GlificWeb.Schema.UserTypes do
     field :delete_user, :user_result do
       arg(:id, non_null(:id))
       resolve(&Resolvers.Users.delete_user/3)
+    end
+
+    field :update_user, :user_result do
+      arg(:id, non_null(:id))
+      arg(:input, :user_input)
+      arg(:group_ids, non_null(list_of(:id)))
+      resolve(&Resolvers.Users.update_user/3)
     end
   end
 end

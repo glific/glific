@@ -5,7 +5,7 @@ defmodule GlificWeb.Resolvers.Users do
   """
 
   alias Glific.Repo
-  alias Glific.{Users, Users.User}
+  alias Glific.{Groups, Users, Users.User}
 
   @doc false
   @spec user(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -58,6 +58,20 @@ defmodule GlificWeb.Resolvers.Users do
 
       {:error, error} ->
         {:error, error}
+    end
+  end
+
+  @doc """
+  Update user
+  Later on this end point will be accessible only to role admin
+  """
+  @spec update_user(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_user(_, %{id: id, input: params, group_ids: group_ids}, _) do
+    with {:ok, user} <- Repo.fetch(User, id),
+         {:ok, user} <- Users.update_user(user, params),
+         :ok <- Groups.update_user_groups(%{user_id: user.id, group_ids: group_ids}) do
+      {:ok, %{user: user}}
     end
   end
 
