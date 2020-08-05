@@ -204,11 +204,11 @@ defmodule Glific.Groups do
       |> Repo.all()
 
     group_ids = Enum.map(group_ids, fn x -> String.to_integer(x) end)
-    new_group_ids = group_ids -- user_group_ids
-    trash_group_ids = user_group_ids -- group_ids
+    add_group_ids = group_ids -- user_group_ids
+    delete_group_ids = user_group_ids -- group_ids
 
     new_group_entries =
-      Enum.map(new_group_ids, fn group_id ->
+      Enum.map(add_group_ids, fn group_id ->
         %{user_id: user_id, group_id: group_id}
       end)
 
@@ -216,7 +216,7 @@ defmodule Glific.Groups do
     |> Repo.insert_all(new_group_entries)
 
     UserGroup
-    |> where([ug], ug.user_id == ^user_id and ug.group_id in ^trash_group_ids)
+    |> where([ug], ug.user_id == ^user_id and ug.group_id in ^delete_group_ids)
     |> Repo.delete_all()
 
     :ok

@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.UserTest do
 
   alias Glific.{
     Contacts.Contact,
+    Fixtures,
     Repo,
     Seeds.SeedsDev,
     Users,
@@ -21,7 +22,8 @@ defmodule GlificWeb.Schema.UserTest do
   load_gql(:count, GlificWeb.Schema, "assets/gql/users/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/users/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/users/by_id.gql")
-  load_gql(:update_current, GlificWeb.Schema, "assets/gql/users/update.gql")
+  load_gql(:update_current, GlificWeb.Schema, "assets/gql/users/update_current.gql")
+  load_gql(:update, GlificWeb.Schema, "assets/gql/users/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/users/delete.gql")
 
   test "users returns list of users" do
@@ -101,7 +103,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert message == "Resource not found"
   end
 
-  test "update a user with correct data" do
+  test "update current user with correct data" do
     {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
 
     name = "User Test Name New"
@@ -118,7 +120,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert user_result["name"] == name
   end
 
-  test "update a user password for different scenarios" do
+  test "update current user password for different scenarios" do
     # create a user for a contact
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
@@ -177,5 +179,54 @@ defmodule GlificWeb.Schema.UserTest do
 
     message = get_in(query_data, [:data, "deleteUser", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "update a user and test possible scenarios and errors" do
+    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
+
+    name = "User Test Name New"
+    roles = ["basic", "admin"]
+
+    group = Fixtures.group_fixture()
+
+    result =
+      query_gql_by(:update,
+        variables: %{"id" => user.id, "input" => %{"name" => name, "roles" => roles}, "groupIds" => [group.id]}
+      )
+
+    assert {:ok, query_data} = result
+
+    user_result = get_in(query_data, [:data, "updateUser", "user"])
+
+    assert user_result["name"] == name
+    assert user_result["roles"] == roles
+    assert user_result["groups"] == [%{"id" => "#{group.id}"}]
+
+    # update with incorrect role should give error
+    roles = ["admin", "incorrect_role"]
+
+    result =
+      query_gql_by(:update,
+        variables: %{"id" => user.id, "input" => %{"name" => name, "roles" => roles}, "groupIds" => []}
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "updateUser", "errors", Access.at(0), "message"])
+    assert message == "has an invalid entry"
+
+    #update user groups
+    group_2 = Fixtures.group_fixture(%{label: "new group"})
+    roles = ["admin"]
+
+    result =
+      query_gql_by(:update,
+        variables: %{"id" => user.id, "input" => %{"name" => name, "roles" => roles}, "groupIds" => [group_2.id]}
+      )
+
+    assert {:ok, query_data} = result
+
+    user_result = get_in(query_data, [:data, "updateUser", "user"])
+
+    assert user_result["groups"] == [%{"id" => "#{group_2.id}"}]
   end
 end

@@ -10,6 +10,7 @@ defmodule Glific.Fixtures do
 
   alias Glific.{
     Contacts,
+    Groups,
     Messages,
     Settings,
     Tags,
@@ -167,5 +168,22 @@ defmodule Glific.Fixtures do
       |> Templates.create_session_template()
 
     session_template
+  end
+
+  @doc false
+  @spec group_fixture(map()) :: Groups.Group.t()
+  def group_fixture(attrs \\ %{}) do
+
+    valid_attrs = %{
+      label: "Poetry group",
+      description: "default description",
+    }
+
+    {:ok, group} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Groups.create_group()
+
+    group
   end
 end
