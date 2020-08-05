@@ -193,6 +193,8 @@ defmodule Glific.Partners do
 
   @doc ~S"""
   Gets a single organization.
+  Checks if organization exists in cache.
+  Returns samme if exists in cache else returns by querying in database
 
   Raises `Ecto.NoResultsError` if the organization does not exist.
 
@@ -215,7 +217,13 @@ defmodule Glific.Partners do
       {:error, _} -> Repo.get!(Organization, id)
     end
   end
+  
+  @doc ~S"""
+  Gets a single organization from database when not found in cache.
 
+  Raises `Ecto.NoResultsError` if the organization does not exist.
+
+  """
   @spec get_organization_from_db(integer) :: Organization.t()
   def get_organization_from_db(id) do
     organization_data =  Repo.get!(Organization, id)
