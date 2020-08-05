@@ -204,20 +204,8 @@ defmodule Glific.Groups do
       |> Repo.all()
 
     group_ids = Enum.map(group_ids, fn x -> String.to_integer(x) end)
-
-    new_group_ids =
-      Enum.filter(group_ids, fn x ->
-        if x not in user_group_ids do
-          x
-        end
-      end)
-
-    trash_group_ids =
-      Enum.filter(user_group_ids, fn x ->
-        if x not in group_ids do
-          x
-        end
-      end)
+    new_group_ids = group_ids -- user_group_ids
+    trash_group_ids = user_group_ids -- group_ids
 
     new_group_entries =
       Enum.map(new_group_ids, fn group_id ->
