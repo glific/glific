@@ -191,7 +191,11 @@ defmodule GlificWeb.Schema.UserTest do
 
     result =
       query_gql_by(:update,
-        variables: %{"id" => user.id, "input" => %{"name" => name, "roles" => roles}, "groupIds" => [group.id]}
+        variables: %{
+          "id" => user.id,
+          "input" => %{"name" => name, "roles" => roles},
+          "groupIds" => [group.id]
+        }
       )
 
     assert {:ok, query_data} = result
@@ -207,20 +211,28 @@ defmodule GlificWeb.Schema.UserTest do
 
     result =
       query_gql_by(:update,
-        variables: %{"id" => user.id, "input" => %{"name" => name, "roles" => roles}, "groupIds" => []}
+        variables: %{
+          "id" => user.id,
+          "input" => %{"name" => name, "roles" => roles},
+          "groupIds" => []
+        }
       )
 
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "updateUser", "errors", Access.at(0), "message"])
     assert message == "has an invalid entry"
 
-    #update user groups
+    # update user groups
     group_2 = Fixtures.group_fixture(%{label: "new group"})
     roles = ["admin"]
 
     result =
       query_gql_by(:update,
-        variables: %{"id" => user.id, "input" => %{"name" => name, "roles" => roles}, "groupIds" => [group_2.id]}
+        variables: %{
+          "id" => user.id,
+          "input" => %{"name" => name, "roles" => roles},
+          "groupIds" => [group_2.id]
+        }
       )
 
     assert {:ok, query_data} = result

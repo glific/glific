@@ -173,10 +173,9 @@ defmodule Glific.Fixtures do
   @doc false
   @spec group_fixture(map()) :: Groups.Group.t()
   def group_fixture(attrs \\ %{}) do
-
     valid_attrs = %{
       label: "Poetry group",
-      description: "default description",
+      description: "default description"
     }
 
     {:ok, group} =
