@@ -41,24 +41,30 @@ defmodule Glific.Flows.MessageVarParserTest do
 
     [contact | _tail] = Contacts.list_contacts()
 
-    {:ok, contact} = Contacts.update_contact(contact,  %{ fields: %{
+    {:ok, contact} =
+      Contacts.update_contact(contact, %{
+        fields: %{
           "name" => %{
             "type" => "string",
             "value" => "Glific Contact",
             "inserted_at" => "2020-08-04"
           },
-
           "age" => %{
             "type" => "string",
             "value" => "20",
             "inserted_at" => "2020-08-04"
           }
         }
-     })
+      })
 
     contact = Map.from_struct(contact)
-    parsed_test = MessageVarParser.parse("hello @contact.fields.name, your age is @contact.fields.age years.", %{"contact" => contact})
-    assert parsed_test == "hello Glific Contact, your age is 20 years."
 
+    parsed_test =
+      MessageVarParser.parse(
+        "hello @contact.fields.name, your age is @contact.fields.age years.",
+        %{"contact" => contact}
+      )
+
+    assert parsed_test == "hello Glific Contact, your age is 20 years."
   end
 end

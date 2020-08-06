@@ -411,7 +411,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         args: %{
           filter: %{includeTags: [to_string(labels[shortcode])], term: ""},
           contactOpts: %{limit: 20, offset: 0},
-          messageOpts: %{limit: 10, offset: 0},
+          messageOpts: %{limit: 10, offset: 0}
         },
         is_reserved: true
       })

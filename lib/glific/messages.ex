@@ -633,7 +633,8 @@ defmodule Glific.Messages do
         |> join(:left, [m], mt in MessageTag, on: m.id == mt.message_id)
         |> where([m, mt], mt.tag_id not in ^tag_ids or is_nil(mt.tag_id))
 
-      _filter, query -> query
+      _filter, query ->
+        query
     end)
   end
 

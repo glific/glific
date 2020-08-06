@@ -214,8 +214,7 @@ defmodule GlificWeb.Schema.SearchTest do
             "label" => "Save with Search",
             "shortcode" => "SaveSearch"
           },
-
-          "filter" => %{ "term" => "Default"},
+          "filter" => %{"term" => "Default"},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }

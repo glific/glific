@@ -39,8 +39,8 @@ defmodule GlificWeb.Schema.SearchTypes do
   end
 
   input_object :save_search_input do
-      field :label, :string
-      field :shortcode, :string
+    field :label, :string
+    field :shortcode, :string
   end
 
   @desc "Filtering options for search"
@@ -53,7 +53,6 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "term for saving the search"
     field :term, :string
-
   end
 
   object :search_queries do
