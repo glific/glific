@@ -79,6 +79,14 @@ defmodule GlificWeb.Resolvers.Groups do
     end
   end
 
+  @doc false
+  @spec update_group_contacts(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_group_contacts(_, %{input: params}, _) do
+    group_contacts = Groups.GroupContacts.update_group_contacts(params)
+    {:ok, group_contacts}
+  end
+
   @doc """
   Deletes an contact group entry
   """

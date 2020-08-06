@@ -157,6 +157,26 @@ defmodule Glific.Groups do
   end
 
   @doc """
+  In Join tables we rarely use the table id. We always know the object ids
+  and hence more convenient to delete an entry via its object ids.
+  We will generalize this function and move it to Repo.ex when we get a better
+  handle on how to do so :)
+  """
+  @spec delete_contact_group_by_ids(integer, integer) :: {integer(), nil | [term()]}
+  def delete_contact_group_by_ids(group_id, contact_id) when is_integer(contact_id) do
+    %ContactGroup{}
+    |> where([m], m.group_id == ^group_id and m.contact_id == ^contact_id)
+    |> Repo.delete_all()
+  end
+
+  @spec delete_contact_group_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_contact_group_by_ids(group_id, contact_ids) when is_list(contact_ids) do
+    ContactGroup
+    |> where([m], m.group_id == ^group_id and m.contact_id in ^contact_ids)
+    |> Repo.delete_all()
+  end
+
+  @doc """
   Creates a user group.
 
   ## Examples
