@@ -396,10 +396,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         label: label,
         shortcode: shortcode,
         args: %{
-          filter: %{},
+          filter: %{term: ""},
           contactOpts: %{limit: 20, offset: 0},
-          messageOpts: %{limit: 10, offset: 0},
-          term: ""
+          messageOpts: %{limit: 10, offset: 0}
         },
         is_reserved: true
       })
@@ -410,10 +409,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         label: label,
         shortcode: shortcode,
         args: %{
-          filter: %{includeTags: [to_string(labels[shortcode])]},
+          filter: %{includeTags: [to_string(labels[shortcode])], term: ""},
           contactOpts: %{limit: 20, offset: 0},
-          messageOpts: %{limit: 10, offset: 0},
-          term: ""
+          messageOpts: %{limit: 10, offset: 0}
         },
         is_reserved: true
       })

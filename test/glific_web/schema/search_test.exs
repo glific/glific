@@ -138,10 +138,8 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "term" => "Default",
-          "shouldSave" => false,
-          "saveSearchLabel" => "",
-          "saveSearchShortcode" => "",
+          "saveSearch" => false,
+          "filter" => %{"term" => ""},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -155,10 +153,12 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "term" => "Default receiver",
-          "shouldSave" => false,
-          "saveSearchLabel" => "",
-          "saveSearchShortcode" => "",
+          "saveSearch" => false,
+          "saveSearchInput" => %{
+            "label" => "",
+            "shortcode" => ""
+          },
+          "filter" => %{"term" => "Default receiver"},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -170,10 +170,12 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "term" => "This term is highly unlikely to occur superfragerlicious",
-          "shouldSave" => false,
-          "saveSearchLabel" => "",
-          "saveSearchShortcode" => "",
+          "saveSearch" => false,
+          "saveSearchInput" => %{
+            "label" => "",
+            "shortcode" => ""
+          },
+          "filter" => %{"term" => "This term is highly unlikely to occur superfragerlicious"},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -187,10 +189,12 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "term" => "",
-          "shouldSave" => false,
-          "saveSearchLabel" => "",
-          "saveSearchShortcode" => "",
+          "saveSearch" => false,
+          "saveSearchInput" => %{
+            "label" => "",
+            "shortcode" => ""
+          },
+          "filter" => %{"term" => ""},
           "contactOpts" => %{"limit" => Contacts.count_contacts()},
           "messageOpts" => %{"limit" => 1}
         }
@@ -205,10 +209,12 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "term" => "Default",
-          "shouldSave" => true,
-          "saveSearchLabel" => "Save with Search",
-          "saveSearchShortcode" => "SaveSearch",
+          "saveSearch" => true,
+          "saveSearchInput" => %{
+            "label" => "Save with Search",
+            "shortcode" => "SaveSearch"
+          },
+          "filter" => %{"term" => "Default"},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
