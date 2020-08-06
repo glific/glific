@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Fixtures,
     Groups.Group,
     Repo,
     Seeds.SeedsDev,
@@ -11,7 +12,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
   setup do
     SeedsDev.seed_users()
-    SeedsDev.seed_groups()
+    Fixtures.group_fixture()
     :ok
   end
 

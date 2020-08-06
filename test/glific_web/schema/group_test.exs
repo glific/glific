@@ -2,10 +2,10 @@ defmodule GlificWeb.Schema.GroupTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
-  alias Glific.Seeds.SeedsDev
+  alias Glific.Fixtures
 
   setup do
-    SeedsDev.seed_groups()
+    Fixtures.group_fixture()
     :ok
   end
 
@@ -98,27 +98,29 @@ defmodule GlificWeb.Schema.GroupTest do
   test "create a group and test possible scenarios and errors" do
     result =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "Test Group"}}
+        variables: %{"input" => %{"label" => "Test Group", "type" => "staff"}}
       )
 
     assert {:ok, query_data} = result
-    label = get_in(query_data, [:data, "createGroup", "group", "label"])
-    assert label == "Test Group"
+    # response = get_in(query_data, [:data, "createGroup"])
+    assert query_data[:data]["createGroup"]["errors"] == nil
+    assert query_data[:data]["createGroup"]["group"]["label"] == "Test Group"
 
     # try creating the same group twice
     _ =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "test label"}}
+        variables: %{"input" => %{"label" => "test label", "type" => "staff"}}
       )
 
     result =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "test label"}}
+        variables: %{"input" => %{"label" => "test label", "type" => "staff"}}
       )
 
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createGroup", "errors", Access.at(0), "message"])
+    assert query_data[:data]["createGroup"]["errors"] != nil
     assert message == "has already been taken"
   end
 

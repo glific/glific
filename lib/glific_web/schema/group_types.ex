@@ -15,6 +15,7 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :id, :id
     field :label, :string
     field :is_restricted, :boolean
+    field :type, :string
   end
 
   @desc "Filtering options for groups"
@@ -26,6 +27,7 @@ defmodule GlificWeb.Schema.GroupTypes do
   input_object :group_input do
     field :label, :string
     field :is_restricted, :boolean
+    field :type, :string
   end
 
   object :group_queries do

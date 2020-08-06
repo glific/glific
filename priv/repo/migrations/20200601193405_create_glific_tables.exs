@@ -414,8 +414,12 @@ defmodule Glific.Repo.Migrations.GlificTables do
     create table(:groups) do
       # Label of the group
       add :label, :string, null: false
-      # visibility of conversations with to the other groups
+      # Description of the group
+      add :description, :string, null: true
+      # visibility of conversations to the other groups
       add :is_restricted, :boolean, default: false
+      # group type: staff, beneficiary
+      add :type, :string, null: false
 
       timestamps(type: :utc_datetime)
     end

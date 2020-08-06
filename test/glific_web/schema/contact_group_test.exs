@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
   alias Glific.{
     Contacts.Contact,
+    Fixtures,
     Groups.Group,
     Repo,
     Seeds.SeedsDev
@@ -13,7 +14,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
-    SeedsDev.seed_groups()
+    Fixtures.group_fixture()
     :ok
   end
 

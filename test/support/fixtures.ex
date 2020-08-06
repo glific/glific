@@ -175,13 +175,28 @@ defmodule Glific.Fixtures do
   def group_fixture(attrs \\ %{}) do
     valid_attrs = %{
       label: "Poetry group",
-      description: "default description"
+      description: "default description",
+      type: "staff"
     }
 
     {:ok, group} =
       attrs
       |> Enum.into(valid_attrs)
       |> Groups.create_group()
+
+    %{
+      label: "Default Group",
+      is_restricted: false,
+      type: "staff"
+    }
+    |> Groups.create_group()
+
+    %{
+      label: "Restricted Group",
+      is_restricted: true,
+      type: "beneficiary"
+    }
+    |> Groups.create_group()
 
     group
   end

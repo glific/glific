@@ -7,7 +7,7 @@ defmodule Glific.Groups.Group do
   import Ecto.Changeset
   alias Glific.Groups.Group
 
-  @required_fields [:label]
+  @required_fields [:label, :type]
   @optional_fields [:is_restricted]
 
   @type t() :: %__MODULE__{
@@ -15,6 +15,7 @@ defmodule Glific.Groups.Group do
           id: non_neg_integer | nil,
           label: String.t() | nil,
           is_restricted: boolean(),
+          type: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -22,6 +23,7 @@ defmodule Glific.Groups.Group do
   schema "groups" do
     field :label, :string
     field :is_restricted, :boolean, default: false
+    field :type, :string
 
     timestamps(type: :utc_datetime)
   end
