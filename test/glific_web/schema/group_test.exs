@@ -102,7 +102,6 @@ defmodule GlificWeb.Schema.GroupTest do
       )
 
     assert {:ok, query_data} = result
-    # response = get_in(query_data, [:data, "createGroup"])
     assert query_data[:data]["createGroup"]["errors"] == nil
     assert query_data[:data]["createGroup"]["group"]["label"] == "Test Group"
 

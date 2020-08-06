@@ -14,13 +14,11 @@ defmodule Glific.GroupsTest do
   describe "groups" do
     @valid_attrs %{
       label: "some group",
-      is_restricted: false,
-      type: "staff"
+      is_restricted: false
     }
     @valid_other_attrs %{
       label: "other group",
-      is_restricted: true,
-      type: "staff"
+      is_restricted: true
     }
     @update_attrs %{
       label: "updated group",
