@@ -38,6 +38,11 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :args, :json
   end
 
+  input_object :save_search_input do
+      field :label, :string
+      field :shortcode, :string
+  end
+
   @desc "Filtering options for search"
   input_object :search_filter do
     @desc "Include conversations with these tags"
@@ -45,6 +50,10 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "Exclude conversations with these tags"
     field :exclude_tags, list_of(:gid)
+
+    @desc "term for saving the search"
+    field :term, :string
+
   end
 
   object :search_queries do
@@ -52,12 +61,10 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :search, list_of(:conversation) do
       arg(:save_search, :boolean, default_value: false)
 
-      @desc "A label and shortcode for saved search object"
-      arg(:save_search_label, :string)
-      arg(:save_search_shortcode, :string)
+      @desc "Inputs to save a search"
+      arg(:save_search_input, :save_search_input)
 
-      arg(:term, non_null(:string))
-      arg(:filter, :search_filter)
+      arg(:filter, non_null(:search_filter))
       arg(:message_opts, non_null(:opts))
       arg(:contact_opts, non_null(:opts))
       resolve(&Resolvers.Searches.search/3)
