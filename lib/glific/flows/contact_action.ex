@@ -74,7 +74,8 @@ defmodule Glific.Flows.ContactAction do
   end
 
   @spec get_media_from_attachment(map(), any()) :: {atom(), nil | integer()}
-  defp get_media_from_attachment(attachment, _) when attachment == %{} or is_nil(attachment), do: {:text, nil}
+  defp get_media_from_attachment(attachment, _) when attachment == %{} or is_nil(attachment),
+    do: {:text, nil}
 
   defp get_media_from_attachment(attachment, caption) do
     [type | _tail] = Map.keys(attachment)

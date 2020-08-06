@@ -50,7 +50,7 @@ defmodule Glific.UsersTest do
       phone: "some updated phone",
       password: @password,
       password_confirmation: @password,
-      roles: ["basic", "admin"]
+      roles: ["staff", "admin"]
     }
     @invalid_attrs %{
       name: nil,
@@ -105,7 +105,7 @@ defmodule Glific.UsersTest do
 
       assert {:ok, %User{} = user} = Users.update_user(user, @update_attrs)
       assert user.name == "some updated name"
-      assert user.roles == ["basic", "admin"]
+      assert user.roles == ["staff", "admin"]
 
       # Check phone doesn't get updated
       assert user.phone == "some phone"
