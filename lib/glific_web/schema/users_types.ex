@@ -68,7 +68,7 @@ defmodule GlificWeb.Schema.UserTypes do
   object :user_mutations do
     field :update_current_user, :user_result do
       arg(:id, non_null(:id))
-      arg(:input, :current_user_input)
+      arg(:input, non_null(:current_user_input))
       resolve(&Resolvers.Users.update_current_user/3)
     end
 
@@ -79,7 +79,7 @@ defmodule GlificWeb.Schema.UserTypes do
 
     field :update_user, :user_result do
       arg(:id, non_null(:id))
-      arg(:input, :user_input)
+      arg(:input, non_null(:user_input))
       arg(:group_ids, non_null(list_of(:id)))
       resolve(&Resolvers.Users.update_user/3)
     end

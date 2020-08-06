@@ -158,16 +158,20 @@ Type | Description
 | ---- | -----------
 <a href="#int">Int</a> | Count of filtered users
 
+
 ## Update a User
 
 ```graphql
-mutation updateUser($id: ID!, $input:UserInput!) {
-  updateUser(id: $id, input: $input) {
+mutation updateUser($id: ID!, $input: UserInput!, $groupIds: [ID]!) {
+  updateUser(id: $id, input: $input, groupIds: $groupIds) {
     user {
       id
       name
       phone
       roles
+      groups {
+        label
+      }
     }
     errors {
       key
@@ -179,8 +183,15 @@ mutation updateUser($id: ID!, $input:UserInput!) {
 {
   "id": "2",
   "input": {
-    "name": "Updated Name"
-  }
+    "name": "Updated Name",
+    "roles": [
+      "admin"
+    ]
+  },
+  "groupIds": [
+    1,
+    2
+  ]
 }
 ```
 
@@ -192,11 +203,18 @@ mutation updateUser($id: ID!, $input:UserInput!) {
     "updateUser": {
       "errors": null,
       "user": {
+        "groups": [
+          {
+            "label": "First Group"
+          },
+          {
+            "label": "Poetry Group"
+          }
+        ],
         "id": "2",
         "name": "Updated Name",
-        "phone": "+918820198765",
+        "phone": "919876543210",
         "roles": [
-          "basic",
           "admin"
         ]
       }
@@ -223,11 +241,72 @@ mutation updateUser($id: ID!, $input:UserInput!) {
 }
 ```
 
-## Update a User Password
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+id | <a href="#id">ID</a>! | required ||
+input | <a href="#userinput">UserInput</a> | required ||
+groupIds | [<a href="#id">ID</a>] | required ||
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#userresult">UserResult</a> | The updated user object
+
+
+## Update Current User
 
 ```graphql
-mutation updateUser($id: ID!, $input:UserInput!) {
-  updateUser(id: $id, input: $input) {
+mutation updateCurrentUser($id: ID!, $input:CurrentUserInput!) {
+  updateCurrentUser(id: $id, input: $input) {
+    user {
+      id
+      name
+      phone
+      roles
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "id": "2",
+  "input": {
+    "name": "Updated Name"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "updateCurrentUser": {
+      "errors": null,
+      "user": {
+        "id": "2",
+        "name": "Updated Name",
+        "phone": "+918820198765",
+        "roles": [
+          "staff",
+          "admin"
+        ]
+      }
+    }
+  }
+}
+```
+
+## Update Current User Password
+
+```graphql
+mutation updateCurrentUser($id: ID!, $input:CurrentUserInput!) {
+  updateCurrentUser(id: $id, input: $input) {
     user {
       id
       name
@@ -244,7 +323,7 @@ mutation updateUser($id: ID!, $input:UserInput!) {
   "input": {
     "name": "Updated Name",
     "otp": "340606",
-    "password": "new_password",
+    "password": "new_password"
   }
 }
 ```
@@ -254,7 +333,7 @@ mutation updateUser($id: ID!, $input:UserInput!) {
 ```json
 {
   "data": {
-    "updateUser": {
+    "updateCurrentUser": {
       "errors": null,
       "user": {
         "id": "2",
@@ -270,7 +349,7 @@ mutation updateUser($id: ID!, $input:UserInput!) {
 ```
 {
   "data": {
-    "updateUser": null
+    "updateCurrentUser": null
   },
   "errors": [
     {
@@ -282,7 +361,7 @@ mutation updateUser($id: ID!, $input:UserInput!) {
       ],
       "message": "does_not_exist",
       "path": [
-        "updateUser"
+        "updateCurrentUser"
       ]
     }
   ]
@@ -294,7 +373,7 @@ mutation updateUser($id: ID!, $input:UserInput!) {
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 id | <a href="#id">ID</a>! | required ||
-input | <a href="#userinput">UserInput</a> | required ||
+input | <a href="#currentuserinput">CurrentUserInput</a> | required ||
 
 ### Return Parameters
 Type | Description
@@ -481,6 +560,25 @@ Match the phone
 <tr>
 <td colspan="2" valign="top"><strong>roles</strong></td>
 <td valign="top">[<a href="#string">String</a>]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### CurrentUserInput
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>name</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>
