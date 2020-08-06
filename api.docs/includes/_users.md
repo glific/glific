@@ -52,7 +52,7 @@ query users($filter: UserFilter, $opts: Opts) {
         "name": "Jane Doe",
         "phone": "+918820198765",
         "roles": [
-          "basic",
+          "staff",
           "admin"
         ]
       }

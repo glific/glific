@@ -185,7 +185,7 @@ defmodule GlificWeb.Schema.UserTest do
     {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
 
     name = "User Test Name New"
-    roles = ["basic", "admin"]
+    roles = ["staff", "admin"]
 
     group = Fixtures.group_fixture()
 
