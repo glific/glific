@@ -210,5 +210,42 @@ defmodule Glific.GroupsTest do
       assert {:error, %Ecto.Changeset{}} =
                Groups.create_user_group(%{user_id: user.id, group_id: group.id})
     end
+
+    test "update_user_groups/1 should add and delete user groups according to the input" do
+      [user | _] = Users.list_users()
+      group_1 = group_fixture()
+      group_2 = group_fixture(%{label: "new group"})
+      group_3 = group_fixture(%{label: "another group"})
+
+      # add user groups
+      :ok =
+        Groups.update_user_groups(%{
+          user_id: user.id,
+          group_ids: ["#{group_1.id}", "#{group_2.id}"]
+        })
+
+      user_group_ids =
+        Groups.UserGroup
+        |> where([ug], ug.user_id == ^user.id)
+        |> select([ug], ug.group_id)
+        |> Repo.all()
+
+      assert user_group_ids == [group_1.id, group_2.id]
+
+      # update user groups
+      :ok =
+        Groups.update_user_groups(%{
+          user_id: user.id,
+          group_ids: ["#{group_1.id}", "#{group_3.id}"]
+        })
+
+      user_group_ids =
+        Groups.UserGroup
+        |> where([ug], ug.user_id == ^user.id)
+        |> select([ug], ug.group_id)
+        |> Repo.all()
+
+      assert user_group_ids == [group_1.id, group_3.id]
+    end
   end
 end
