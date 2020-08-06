@@ -98,7 +98,7 @@ defmodule GlificWeb.Schema.GroupTest do
   test "create a group and test possible scenarios and errors" do
     result =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "Test Group", "type" => "staff"}}
+        variables: %{"input" => %{"label" => "Test Group"}}
       )
 
     assert {:ok, query_data} = result
@@ -109,12 +109,12 @@ defmodule GlificWeb.Schema.GroupTest do
     # try creating the same group twice
     _ =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "test label", "type" => "staff"}}
+        variables: %{"input" => %{"label" => "test label"}}
       )
 
     result =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "test label", "type" => "staff"}}
+        variables: %{"input" => %{"label" => "test label"}}
       )
 
     assert {:ok, query_data} = result

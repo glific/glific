@@ -7,8 +7,8 @@ defmodule Glific.Groups.Group do
   import Ecto.Changeset
   alias Glific.Groups.Group
 
-  @required_fields [:label, :type]
-  @optional_fields [:is_restricted, :description]
+  @required_fields [:label]
+  @optional_fields [:is_restricted, :description, :type]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
