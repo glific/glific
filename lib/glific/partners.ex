@@ -296,18 +296,18 @@ defmodule Glific.Partners do
   @spec organization_contact_id() :: integer()
   def organization_contact_id do
     # Get contact id
-    case Caches.get("contact_id") do
-      {:ok, false} -> 
-        contact_id =  Contact
-                      |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
-                      |> select([c, _o], c.id)
-                      |> limit(1)
-                      |> Repo.one()
-        Caches.set("contact_id", contact_id)
-        contact_id
-      {:ok, _} ->
-          {:ok, contactid_cache}= Caches.get("contact_id")
-          contactid_cache    
+    with {:ok, false} <-  Caches.get("contact_id") do
+      contact_id =  Contact
+                    |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
+                    |> select([c, _o], c.id)
+                    |> limit(1)
+                    |> Repo.one()
+      Caches.set("contact_id", contact_id)
+      contact_id
+    else
+    {:ok, _} ->
+      {:ok, contactid_cache}= Caches.get("contact_id")
+      contactid_cache    
     end  
   end
 end
