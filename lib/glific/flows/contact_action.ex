@@ -10,7 +10,8 @@ defmodule Glific.Flows.ContactAction do
     Flows.FlowContext,
     Flows.Localization,
     Flows.MessageVarParser,
-    Messages
+    Messages,
+    Repo
   }
 
   @min_delay 2
@@ -29,10 +30,13 @@ defmodule Glific.Flows.ContactAction do
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     body = MessageVarParser.parse(text, message_vars)
 
+    {type, media_id} = get_media_from_attachment(action.attachments, action.text)
+
     {:ok, _message} =
       Messages.create_and_send_message(%{
         body: body,
-        type: :text,
+        type: type,
+        media_id: media_id,
         receiver_id: context.contact_id,
         send_at: DateTime.add(DateTime.utc_now(), context.delay)
       })
@@ -45,11 +49,16 @@ defmodule Glific.Flows.ContactAction do
   Given a shortcode and a context, send the right session template message
   to the contact
   """
-  def send_message(context, %Action{templating: templating}) do
+  def send_message(context, %Action{templating: templating, attachments: attachments}) do
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
-
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
     session_template = Messages.parse_template_vars(templating.template, vars)
+
+    {type, media_id} = get_media_from_attachment(attachments, "")
+
+    session_template =
+      session_template
+      |> Map.merge(%{media_id: media_id, type: type})
 
     {:ok, _message} =
       Messages.create_and_send_session_template(
@@ -62,6 +71,27 @@ defmodule Glific.Flows.ContactAction do
 
     # increment the delay
     %{context | delay: context.delay + @min_delay}
+  end
+
+  @spec get_media_from_attachment(map(), any()) :: {atom(), nil | integer()}
+  defp get_media_from_attachment(attachment, _) when attachment == %{} or is_nil(attachment),
+    do: {:text, nil}
+
+  defp get_media_from_attachment(attachment, caption) do
+    [type | _tail] = Map.keys(attachment)
+    url = attachment[type]
+
+    {:ok, message_media} =
+      %{
+        type: String.to_existing_atom(type),
+        url: url,
+        source_url: url,
+        thumbnail: url,
+        caption: caption
+      }
+      |> Messages.create_message_media()
+
+    {String.to_existing_atom(type), message_media.id}
   end
 
   @doc """
@@ -77,13 +107,10 @@ defmodule Glific.Flows.ContactAction do
   @spec get_contact_field_map(integer) :: map()
   defp get_contact_field_map(contact_id) do
     contact =
-      Glific.Contacts.get_contact!(contact_id)
-      |> Glific.Repo.preload([:language])
+      Contacts.get_contact!(contact_id)
+      |> Repo.preload([:language])
+      |> Map.from_struct()
 
-    contact.fields
-    |> Enum.reduce(%{"fields" => %{}}, fn {field, map}, acc ->
-      put_in(acc, ["fields", field], map["value"])
-    end)
-    |> put_in(["fields", :language], %{label: contact.language.label})
+    put_in(contact, [:fields, :language], %{label: contact.language.label})
   end
 end

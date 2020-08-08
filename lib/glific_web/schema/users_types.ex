@@ -33,11 +33,15 @@ defmodule GlificWeb.Schema.UserTypes do
     field :phone, :string
   end
 
+  input_object :current_user_input do
+    field :name, :string
+    field :password, :string
+    field :otp, :string
+  end
+
   input_object :user_input do
     field :name, :string
     field :roles, list_of(:string)
-    field :password, :string
-    field :otp, :string
   end
 
   object :user_queries do
@@ -62,15 +66,22 @@ defmodule GlificWeb.Schema.UserTypes do
   end
 
   object :user_mutations do
-    field :update_user, :user_result do
+    field :update_current_user, :user_result do
       arg(:id, non_null(:id))
-      arg(:input, :user_input)
-      resolve(&Resolvers.Users.update_user/3)
+      arg(:input, non_null(:current_user_input))
+      resolve(&Resolvers.Users.update_current_user/3)
     end
 
     field :delete_user, :user_result do
       arg(:id, non_null(:id))
       resolve(&Resolvers.Users.delete_user/3)
+    end
+
+    field :update_user, :user_result do
+      arg(:id, non_null(:id))
+      arg(:input, non_null(:user_input))
+      arg(:group_ids, non_null(list_of(:id)))
+      resolve(&Resolvers.Users.update_user/3)
     end
   end
 end

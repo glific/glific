@@ -260,7 +260,7 @@ defmodule Glific.Seeds.SeedsDev do
       phone: "919820112345",
       password: password,
       confirm_password: password,
-      roles: ["basic"]
+      roles: ["staff"]
     })
 
     Users.create_user(%{

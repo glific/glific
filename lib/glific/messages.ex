@@ -278,7 +278,7 @@ defmodule Glific.Messages do
     )
   end
 
-  @spec create_and_send_session_template(SessionTemplate.t(), map()) :: {:ok, Message.t()}
+  @spec create_and_send_session_template(SessionTemplate.t() | map(), map()) :: {:ok, Message.t()}
   def create_and_send_session_template(session_template, args) do
     message_params = %{
       body: session_template.body,
@@ -632,6 +632,9 @@ defmodule Glific.Messages do
         query
         |> join(:left, [m], mt in MessageTag, on: m.id == mt.message_id)
         |> where([m, mt], mt.tag_id not in ^tag_ids or is_nil(mt.tag_id))
+
+      _filter, query ->
+        query
     end)
   end
 

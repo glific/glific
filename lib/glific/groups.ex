@@ -170,7 +170,6 @@ defmodule Glific.Groups do
   """
   @spec create_user_group(map()) :: {:ok, UserGroup.t()} | {:error, Ecto.Changeset.t()}
   def create_user_group(attrs \\ %{}) do
-    # Merge default values if not present in attributes
     %UserGroup{}
     |> UserGroup.changeset(attrs)
     |> Repo.insert()
@@ -191,5 +190,35 @@ defmodule Glific.Groups do
   @spec delete_user_group(UserGroup.t()) :: {:ok, UserGroup.t()} | {:error, Ecto.Changeset.t()}
   def delete_user_group(%UserGroup{} = user_group) do
     Repo.delete(user_group)
+  end
+
+  @doc """
+  Updates user groups entries
+  """
+  @spec update_user_groups(map()) :: :ok
+  def update_user_groups(%{user_id: user_id, group_ids: group_ids}) do
+    user_group_ids =
+      UserGroup
+      |> where([ug], ug.user_id == ^user_id)
+      |> select([ug], ug.group_id)
+      |> Repo.all()
+
+    group_ids = Enum.map(group_ids, fn x -> String.to_integer(x) end)
+    add_group_ids = group_ids -- user_group_ids
+    delete_group_ids = user_group_ids -- group_ids
+
+    new_group_entries =
+      Enum.map(add_group_ids, fn group_id ->
+        %{user_id: user_id, group_id: group_id}
+      end)
+
+    UserGroup
+    |> Repo.insert_all(new_group_entries)
+
+    UserGroup
+    |> where([ug], ug.user_id == ^user_id and ug.group_id in ^delete_group_ids)
+    |> Repo.delete_all()
+
+    :ok
   end
 end

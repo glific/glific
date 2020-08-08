@@ -128,8 +128,8 @@ defmodule Glific.Searches do
   defp do_save_search(%{save_search: true} = args),
     do:
       create_saved_search(%{
-        label: args.save_search_label,
-        shortcode: args.save_search_shortcode,
+        label: args.save_search_input.label,
+        shortcode: args.save_search_input.shortcode,
         args: args
       })
 
@@ -139,7 +139,7 @@ defmodule Glific.Searches do
   Full text search interface via Postgres
   """
   @spec search(map(), boolean) :: [Conversation.t()] | integer
-  def search(%{term: term} = args, count \\ false) do
+  def search(args, count \\ false) do
     # save the search if needed
     do_save_search(args)
 
@@ -147,7 +147,7 @@ defmodule Glific.Searches do
     args = update_args_for_count(args, count)
 
     contact_ids =
-      search_query(term, args)
+      search_query(args.filter[:term], args)
       |> Repo.all()
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
