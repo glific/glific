@@ -17,6 +17,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Providers.Gupshup.Message,
     Repo,
     Tags,
     Users,
@@ -99,7 +100,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
     with true <- can_send_otp_to_phone?(phone),
          true <- send_otp_allowed?(phone, registration),
-         {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
+         {:ok, _otp} <- Message.create_and_send_verification_code(phone) do
       json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
     else
       _ ->
