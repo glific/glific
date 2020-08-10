@@ -55,6 +55,7 @@ defmodule Glific.MessagesTest do
       optin_time: ~U[2010-04-17 14:00:00Z],
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "101013131",
+      provider_status: :session_and_hsm,
       last_message_at: DateTime.utc_now()
     }
 
