@@ -7,7 +7,7 @@ defmodule Glific.Partners do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Caches
+    Caches,
     Contacts.Contact,
     Partners.Organization,
     Partners.Provider,
