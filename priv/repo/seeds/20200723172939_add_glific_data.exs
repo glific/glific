@@ -482,7 +482,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     if Timex.diff(DateTime.utc_now(), last_message_at, :hours) < 24 do
       :session_and_hsm
     else
-      :hsm_only
+      :hsm
     end
   end
 end
