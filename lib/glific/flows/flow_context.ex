@@ -226,7 +226,7 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Check if there is an active context (i.e. with a non null, node_uuid for this contact)
   """
-  @spec active_context(non_neg_integer, non_neg_integer) :: FlowContext.t() | nil
+  @spec active_context(non_neg_integer, non_neg_integer | nil) :: FlowContext.t() | nil
   def active_context(contact_id, parent_id \\ nil) do
     # need to fix this instead of assuming the highest id is the most
     # active context (or is that a wrong assumption). Maybe a context number? like

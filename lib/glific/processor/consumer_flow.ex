@@ -83,6 +83,7 @@ defmodule Glific.Processor.ConsumerFlow do
              "timed",
              "solworkflow"
            ] do
+    message = Repo.preload(message, :contact)
     {:ok, flow} = Flows.get_cached_flow(body, %{shortcode: body})
     FlowContext.init_context(flow, message.contact)
     message

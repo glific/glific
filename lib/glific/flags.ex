@@ -5,9 +5,12 @@ defmodule Glific.Flags do
   """
 
   @timezone "Asia/Kolkata"
-  @days_of_week 1..5 # mon .. fri
-  @hours_of_day 9..18 # 9:00 - 18:59
+  # mon .. fri
+  @days_of_week 1..5
+  # 9:00 - 18:59
+  @hours_of_day 9..18
 
+  @doc false
   @spec init :: nil
   def init do
     FunWithFlags.enable(:enable_out_of_office)
@@ -16,12 +19,10 @@ defmodule Glific.Flags do
   end
 
   defp business_day?(time),
-    do:
-  (time |> DateTime.to_date() |> Date.day_of_week() ) in @days_of_week
+    do: (time |> DateTime.to_date() |> Date.day_of_week()) in @days_of_week
 
   defp office_hours?(time),
-    do:
-      (time |> DateTime.to_time() |> Map.get(:hour)) in @hours_of_day
+    do: (time |> DateTime.to_time() |> Map.get(:hour)) in @hours_of_day
 
   defp enable_out_of_office do
     # enable only if needed
@@ -47,6 +48,10 @@ defmodule Glific.Flags do
       else: enable_out_of_office()
   end
 
+  @doc """
+  Update the out of office flag, so we know if we should actually do any work
+  """
+  @spec out_of_office_update() :: nil
   def out_of_office_update,
     do:
       if(FunWithFlags.enabled?(:enable_out_of_office),
