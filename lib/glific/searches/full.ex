@@ -6,7 +6,8 @@ defmodule Glific.Search.Full do
   import Ecto.Query
 
   alias Glific.{
-    Tags.MessageTag
+    Tags.MessageTag,
+    Groups.ContactGroup
   }
 
   @doc """
@@ -74,11 +75,8 @@ defmodule Glific.Search.Full do
 
   defp run_include_groups(query, _args), do: query
 
-
   @spec run_helper(Ecto.Queryable.t(), String.t(), map()) :: Ecto.Queryable.t()
   defp run_helper(query, "", args) do
-    IO.inspect("Hell 3")
-    IO.inspect(query)
     query
     |> apply_filters(args.filter)
     |> offset(^args.contact_opts.offset)
@@ -87,7 +85,6 @@ defmodule Glific.Search.Full do
 
 
   defp run_helper(query, term, args) do
-    IO.inspect("Hell 1")
     query
     |> join(:inner, [m], id_and_rank in matching_contact_ids_and_ranks(term, args),
       on: id_and_rank.id == m.contact_id
@@ -102,8 +99,6 @@ defmodule Glific.Search.Full do
 
   defp apply_filters(query, filter) do
     Enum.reduce(filter, query, fn
-      {:include_tags, tag_ids}, query -> run_include_tags(query, tag_ids)
-
       {:include_groups, group_ids}, query -> run_include_groups(query, group_ids)
       _filter, query -> query
     end)
