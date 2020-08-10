@@ -250,7 +250,7 @@ defmodule Glific.CommunicationsTest do
         |> Map.merge(%{
           phone: Phone.EnUs.phone(),
           last_message_at: Timex.shift(DateTime.utc_now(), days: -2),
-          provider_status: :none,
+          provider_status: :none
         })
         |> Contacts.create_contact()
 
