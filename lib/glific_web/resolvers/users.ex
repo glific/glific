@@ -5,7 +5,7 @@ defmodule GlificWeb.Resolvers.Users do
   """
 
   alias Glific.Repo
-  alias Glific.{Users, Users.User}
+  alias Glific.{Groups, Users, Users.User}
 
   @doc false
   @spec user(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -30,12 +30,47 @@ defmodule GlificWeb.Resolvers.Users do
     {:ok, Users.count_users(args)}
   end
 
-  @doc false
-  @spec update_user(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
+  @doc """
+  Update current user
+  """
+  @spec update_current_user(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
           {:ok, any} | {:error, any}
-  def update_user(_, %{id: id, input: params}, _) do
+  def update_current_user(_, %{id: id, input: params}, _) do
     with {:ok, user} <- Repo.fetch(User, id),
+         {:ok, params} <- update_password_params(user, params),
          {:ok, user} <- Users.update_user(user, params) do
+      {:ok, %{user: user}}
+    end
+  end
+
+  @spec update_password_params(User.t(), map()) :: {:ok, map()} | {:error, any}
+  defp update_password_params(user, params) do
+    with false <- is_nil(params[:password]) || is_nil(params[:otp]),
+         :ok <- PasswordlessAuth.verify_code(user.phone, params.otp) do
+      PasswordlessAuth.remove_code(user.phone)
+      params = Map.merge(params, %{password_confirmation: params.password})
+      {:ok, params}
+    else
+      true ->
+        {:ok, params}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Update user
+  Later on this end point will be accessible only to role admin
+  """
+  @spec update_user(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_user(_, %{id: id, input: params, group_ids: group_ids}, _) do
+    with {:ok, user} <- Repo.fetch(User, id),
+         {:ok, user} <- Users.update_user(user, params),
+         :ok <- Groups.update_user_groups(%{user_id: user.id, group_ids: group_ids}) do
       {:ok, %{user: user}}
     end
   end

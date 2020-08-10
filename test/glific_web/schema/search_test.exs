@@ -138,10 +138,7 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "term" => "Default",
-          "shouldSave" => false,
-          "saveSearchLabel" => "",
-          "saveSearchShortcode" => "",
+          "filter" => %{"term" => ""},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -155,10 +152,7 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "term" => "Default receiver",
-          "shouldSave" => false,
-          "saveSearchLabel" => "",
-          "saveSearchShortcode" => "",
+          "filter" => %{"term" => "Default receiver"},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -170,10 +164,7 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "term" => "This term is highly unlikely to occur superfragerlicious",
-          "shouldSave" => false,
-          "saveSearchLabel" => "",
-          "saveSearchShortcode" => "",
+          "filter" => %{"term" => "This term is highly unlikely to occur superfragerlicious"},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
@@ -187,10 +178,7 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "term" => "",
-          "shouldSave" => false,
-          "saveSearchLabel" => "",
-          "saveSearchShortcode" => "",
+          "filter" => %{"term" => ""},
           "contactOpts" => %{"limit" => Contacts.count_contacts()},
           "messageOpts" => %{"limit" => 1}
         }
@@ -205,10 +193,11 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "term" => "Default",
-          "shouldSave" => true,
-          "saveSearchLabel" => "Save with Search",
-          "saveSearchShortcode" => "SaveSearch",
+          "saveSearchInput" => %{
+            "label" => "Save with Search",
+            "shortcode" => "SaveSearch"
+          },
+          "filter" => %{"term" => "Default"},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }

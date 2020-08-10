@@ -3,13 +3,10 @@
 ## Search Contacts and Conversations
 
 ```graphql
-query search($term: String!, $searchFilter: SearchFilter!,
-  $shouldSave: Boolean, $saveSearchLabel: String, $saveSearchShortcode: String,
-  $contactOpts: Opts!, $messageOpts: Opts!) {
+query search(  $saveSearchInput: SaveSearchInput,
+  $searchFilter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!) {
 
-  search(term: $term, filter: $searchFilter,
-    saveSearch: $shouldSave, saveSearchLabel: $saveSearchLabel, saveSearchShortcode: $saveSearchShortcode,
-    contactOpts: $contactOpts, messageOpts: $messageOpts) {
+  search(filter: $searchFilter, saveSearchInput: $saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts) {
 
     messages {
       id,
@@ -26,12 +23,14 @@ query search($term: String!, $searchFilter: SearchFilter!,
 }
 
 {
-  "term": "def",
-  "shouldSave": true,
-  "saveSearchLabel": "Save with this name",
-  "saveSearchShortcode": "SaveName",
+  "saveSearchInput": {
+      "label" => "Save with this name",
+      "shortcode" => "SaveName"
+  },
+
   "searchFilter": {
-    "includeTags": ["17"]
+    "includeTags": ["17"],
+    "term": "def",
   },
   "messageOpts": {
     "limit": 3,
@@ -95,11 +94,10 @@ This returns a list of conversations that match the term and filters <a href="#c
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-term | <a href="#string">String</a> | nil | keyword for search
 filter | <a href="#searchfilter">SearchFilter</a> | nil | filter the list
-saveSearch | <a href="#boolean">Boolean</a> | nil | Search should be saved or not
-saveSearchLabel | <a href="#string">String</a> | nil | label for save search object
-saveSearchShortcode | <a href="#string">String</a> | nil | shortcode for save search object
+
+saveSearchInput | <a href="#savesearchinput">SaveSearchInput</a> | nil | filter the list. The label and other parameter should be available.
+
 messageOpts | <a href="#opts">Opts</a> | nil | limit / offset message options
 contactOpts | <a href="#opts">Opts</a> | nil | limit / offset contact options
 
@@ -209,13 +207,48 @@ term | <a href="#string">String</a> | nil | optional keyword to add to saved sea
 </thead>
 <tbody>
 <tr>
+<td colspan="2" valign="top"><strong>Term</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+
+<tr>
 <td colspan="2" valign="top"><strong>IncludeTags</strong></td>
 <td valign="top">[<a href="#gid">Gid</a>]</td>
 <td></td>
 </tr>
+
 <tr>
 <td colspan="2" valign="top"><strong>ExcludeTags</strong></td>
 <td valign="top">[<a href="#gid">Gid</a>]</td>
+<td></td>
+</tr>
+
+</tbody>
+</table>
+
+
+### SaveSearchInput
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>label</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>shortcode</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 
