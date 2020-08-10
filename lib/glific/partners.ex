@@ -11,7 +11,7 @@ defmodule Glific.Partners do
     Contacts.Contact,
     Partners.Organization,
     Partners.Provider,
-    Repo,
+    Repo
   }
 
   @doc """
@@ -208,10 +208,10 @@ defmodule Glific.Partners do
   """
   @spec get_organization!(integer) :: Organization.t()
   def get_organization!(id) do
-    case Caches.get("organization" <>"#{id}") do
+    case Caches.get("organization#{id}") do
       {:ok, false} -> 
         organization_data =  Repo.get!(Organization, id)
-        Caches.set("organization" <>"#{id}", organization_data)
+        Caches.set("organization#{id}", organization_data)
         organization_data
       {:ok, organization_cache} ->
         organization_cache    
@@ -295,14 +295,14 @@ defmodule Glific.Partners do
   @spec organization_contact_id() :: integer()
   def organization_contact_id do
     # Get contact id
-    case Caches.get("contact_id") do
+    case Caches.get("organization_id") do
       {:ok, false} ->  
         contact_id =  Contact
                       |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
                       |> select([c, _o], c.id)
                       |> limit(1)
                       |> Repo.one()
-        Caches.set("contact_id", contact_id)
+        Caches.set("organization_id", contact_id)
         contact_id
       {:ok, contactid_cache} ->
       contactid_cache    
