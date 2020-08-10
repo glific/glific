@@ -109,13 +109,16 @@ defmodule GlificWeb.API.V1.RegistrationController do
     end
   end
   
-  @spec create_and_send_verification_code(map()) :: {:ok, String.t()}
+  @doc """
+  Function for generating verification code and sending otp verification message
+  """
+  @spec create_and_send_verification_code(String.t()) :: {:ok, String.t()}
   def create_and_send_verification_code(phone) do
     code = PasswordlessAuth.generate_code(phone)
     Glific.Messages.create_and_send_otp_verification_message(phone, code)
     {:ok, code}
   end
-
+  
   @spec can_send_otp_to_phone?(String.t()) :: boolean
   defp can_send_otp_to_phone?(phone) do
     with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}),
