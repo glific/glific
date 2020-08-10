@@ -183,7 +183,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       add :phone, :string, null: false
 
       # whatsapp status
-      # the current options are: none, session, session_and_hsm, hsm_only
+      # the current options are: none, session, session_and_hsm, hsm.
       add :provider_status, :contact_provider_status_enum, null: false, default: "none"
 
       # Is this contact active (for some definition of active)
