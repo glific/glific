@@ -37,7 +37,8 @@ config :glific,
 
 config :glific, Oban,
   repo: Glific.Repo,
-  queues: [default: 10, gupshup: 10, glifproxy: 10, webhook: 10]
+  queues: [default: 10, gupshup: 10, glifproxy: 10, webhook: 10],
+  crontab: [{"*/3 * * * *", Glific.Contacts.Worker}]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
 
