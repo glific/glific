@@ -20,7 +20,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :phone, :string
 
     field :status, :contact_status_enum
-    field :provider_status, :contact_status_enum
+    field :provider_status, :contact_provider_status_enum
 
     field :optin_time, :datetime
     field :optout_time, :datetime
@@ -49,14 +49,14 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     @desc "Match the status"
     field :status, :contact_status_enum
-    field :provider_status, :contact_status_enum
+    field :provider_status, :contact_provider_status_enum
   end
 
   input_object :contact_input do
     field :name, :string
     field :phone, :string
     field :status, :contact_status_enum
-    field :provider_status, :contact_status_enum
+    field :provider_status, :contact_provider_status_enum
   end
 
   object :contact_queries do
