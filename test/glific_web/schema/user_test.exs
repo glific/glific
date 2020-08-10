@@ -5,6 +5,7 @@ defmodule GlificWeb.Schema.UserTest do
   alias Glific.{
     Contacts.Contact,
     Fixtures,
+    Providers.Gupshup.Message,
     Repo,
     Seeds.SeedsDev,
     Users,
@@ -137,7 +138,7 @@ defmodule GlificWeb.Schema.UserTest do
 
     name = "User Test Name New"
 
-    {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(user.phone)
+    {:ok, otp} = Message.create_and_send_verification_code(user.phone)
 
     result =
       query_gql_by(:update_current,
