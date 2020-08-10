@@ -7,11 +7,11 @@ defmodule Glific.Partners do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Caches
     Contacts.Contact,
     Partners.Organization,
     Partners.Provider,
     Repo,
-    Caches
   }
 
   @doc """
