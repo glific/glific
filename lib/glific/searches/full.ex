@@ -51,7 +51,7 @@ defmodule Glific.Search.Full do
   end
 
   @spec run_include_tags(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
-  defp run_include_tags(query, %{filter: %{include_tags: [tag_id]}}) do
+  defp run_include_tags(query, [tag_id]) do
     {:ok, tag_id} = Glific.parse_maybe_integer(tag_id)
 
     query
@@ -61,13 +61,27 @@ defmodule Glific.Search.Full do
 
   defp run_include_tags(query, _args), do: query
 
+  @spec run_include_groups(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp run_include_groups(query, groupIds) do
+    query
+    #
+
+    # query
+    # |> join(:inner, [m], mt in MessageTag, on: mt.message_id == m.id)
+    # |> where([_m, mt], mt.tag_id == ^tag_id)
+  end
+
+  defp run_include_groups(query, _args), do: query
+
+
   @spec run_helper(Ecto.Queryable.t(), String.t(), map()) :: Ecto.Queryable.t()
   defp run_helper(query, "", args) do
     query
-    |> run_include_tags(args)
+    |> apply_filters(args.filter)
     |> offset(^args.contact_opts.offset)
     |> limit(^args.contact_opts.limit)
   end
+
 
   defp run_helper(query, term, args) do
     query
@@ -77,7 +91,17 @@ defmodule Glific.Search.Full do
     # eliminate any previous order by, since this takes precedence
     |> exclude(:order_by)
     |> order_by([_m, id_and_rank], desc: id_and_rank.rank)
-    |> run_include_tags(args)
+    |> apply_filters(args)
+  end
+
+  defp apply_filters(query, filter) when is_nil(filter), do: query
+
+  defp apply_filters(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:include_tags, tag_ids}, query -> run_include_tags(query, tag_ids)
+      {:include_groups, group_ids}, query -> run_include_groups(query, group_ids)
+      _filter, query -> query
+    end)
   end
 
   @spec normalize(String.t()) :: String.t()
