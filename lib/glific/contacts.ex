@@ -188,7 +188,7 @@ defmodule Glific.Contacts do
       last_message_at: utc_time,
       optout_time: nil,
       status: :valid,
-      provider_status: :valid,
+      provider_status: :session_and_hsm,
       updated_at: DateTime.utc_now()
     })
 
@@ -223,7 +223,7 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t(), boolean()) :: boolean()
   def can_send_message_to?(contact, is_hsm) when is_hsm == true do
     with :valid <- contact.status,
-         :valid <- contact.provider_status,
+         true <- contact.provider_status == :session_and_hsm || :hsm_only,
          true <- contact.optin_time != nil do
       true
     else
@@ -236,7 +236,7 @@ defmodule Glific.Contacts do
   """
   def can_send_message_to?(contact, _is_hsm) do
     with :valid <- contact.status,
-         :valid <- contact.provider_status,
+         :session_and_hsm <- contact.provider_status,
          true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24 do
       true
     else

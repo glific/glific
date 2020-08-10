@@ -63,6 +63,7 @@ defmodule Glific.Seeds.SeedsDev do
         contact_entry
         |> Map.put(:inserted_at, inserted_time)
         |> Map.put(:updated_at, inserted_time)
+        |> Map.put(:provider_status, :session_and_hsm)
         |> Map.put(:last_message_at, inserted_time)
       end
 
