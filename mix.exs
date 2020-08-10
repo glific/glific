@@ -112,6 +112,8 @@ defmodule Glific.MixProject do
       {:timex, "~> 3.0"},
       {:slugify, "~> 1.3"},
       {:cachex, "~> 3.2"},
+      {:fun_with_flags, "~> 1.5"},
+      {:fun_with_flags_ui, "~> 0.7.2"},
       {:phil_columns, "~> 3.1"},
       {:passwordless_auth, git: "https://github.com/glific/passwordless_auth.git"}
     ]

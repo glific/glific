@@ -17,6 +17,12 @@ defmodule GlificWeb.Router do
     plug Pow.Plug.Session, otp_app: :glific
   end
 
+  scope path: "/feature-flags" do
+    # ensure that this is protected once we have authentication in place
+    pipe_through :browser
+    forward "/", FunWithFlags.UI.Router, namespace: "feature-flags"
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
     plug GlificWeb.APIAuthPlug, otp_app: :glific
@@ -76,7 +82,6 @@ defmodule GlificWeb.Router do
 
   scope "/", GlificWeb do
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
-    1
   end
 
   scope "/flow-editor", GlificWeb.Flows do

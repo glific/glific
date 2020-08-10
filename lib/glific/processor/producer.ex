@@ -5,9 +5,13 @@ defmodule Glific.Processor.Producer do
   """
   use GenStage
 
-  alias Glific.Messages.Message
+  alias Glific.{
+    Flags,
+    Messages.Message
+  }
 
   @doc false
+
   @spec start_link(any) :: GenServer.on_start()
   def start_link(opts) do
     name = Keyword.get(opts, :name, __MODULE__)
@@ -16,6 +20,9 @@ defmodule Glific.Processor.Producer do
 
   @doc false
   def init(:ok) do
+    # not a great place to do this, but for a short term workaround
+    Flags.init()
+
     {:producer, nil, dispatcher: GenStage.BroadcastDispatcher}
   end
 
