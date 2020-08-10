@@ -213,9 +213,8 @@ defmodule Glific.Partners do
         organization_data =  Repo.get!(Organization, id)
         Caches.set("organization" <>"#{id}", organization_data)
         organization_data
-      {:ok, _} ->
-          {:ok, organization_cache}= Caches.get("organization" <>"#{id}")
-          organization_cache    
+      {:ok, organization_cache} ->
+        organization_cache    
     end
   end
   @doc ~S"""
