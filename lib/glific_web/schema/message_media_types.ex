@@ -17,7 +17,7 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
     field :source_url, :string
     field :thumbnail, :string
     field :caption, :string
-    field :wa_media_id, :string
+    field :provider_media_id, :string
   end
 
   input_object :message_media_input do
@@ -25,7 +25,7 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
     field :source_url, :string
     field :thumbnail, :string
     field :caption, :string
-    field :wa_media_id, :string
+    field :provider_media_id, :string
   end
 
   object :message_media_queries do
@@ -35,9 +35,15 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
       resolve(&Resolvers.Messages.message_media/3)
     end
 
-    @desc "Get a list of all message_media filtered by various criteria"
+    @desc "Get a list of all message_media"
     field :messages_media, list_of(:message_media) do
+      arg(:opts, :opts)
       resolve(&Resolvers.Messages.messages_media/3)
+    end
+
+    @desc "Get a count of all message media"
+    field :count_messages_media, :integer do
+      resolve(&Resolvers.Messages.count_messages_media/3)
     end
   end
 

@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateGroup($id: ID!, $input: GroupInput!) {
+  updateGroup(id: $id, input: $input) {
+    ...GroupFields
+
+    ...ErrorFields
+  }
+}

@@ -1,6 +1,9 @@
-name: continuous-integration
+name: Continuous Integration
+
 
 on:
+  push:
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -10,7 +13,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:11 # postgres image for test database.
+        image: postgres:12 # postgres image for test database.
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -25,8 +28,8 @@ jobs:
 
     strategy:
       matrix:  # build matrix for the job
-        elixir: [1.10.3]
-        otp: [22.2.8] 
+        elixir: [1.10.4]
+        otp: [23.0.2]
 
     steps:
       - name: Checkout the code
@@ -58,7 +61,7 @@ jobs:
         with:
           path: priv/plts
           key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
-  
+
       - name: Create PLTs
         if: steps.elixir-plt-cache.outputs.cache-hit != 'true'
         run: |
@@ -67,3 +70,9 @@ jobs:
 
       - name: Run check
         run: mix check
+
+      - name: Coveralls for code covarage
+        run: mix do compile --warnings-as-errors, coveralls.json
+
+      - name: Code coverage
+        run: bash <(curl -s https://codecov.io/bash)

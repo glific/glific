@@ -4,7 +4,9 @@ defmodule GlificWeb.Schema.ContactTypes do
   """
 
   use Absinthe.Schema.Notation
+  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
+  alias Glific.Repo
   alias GlificWeb.Resolvers
 
   object :contact_result do
@@ -18,10 +20,23 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :phone, :string
 
     field :status, :contact_status_enum
-    field :wa_status, :contact_status_enum
+    field :provider_status, :contact_status_enum
 
     field :optin_time, :datetime
     field :optout_time, :datetime
+
+    field :tags, list_of(:tag) do
+      resolve(dataloader(Repo))
+    end
+
+    field :groups, list_of(:group) do
+      resolve(dataloader(Repo))
+    end
+  end
+
+  object :location do
+    field :longitude, :float
+    field :latitude, :float
   end
 
   @desc "Filtering options for contacts"
@@ -34,14 +49,14 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     @desc "Match the status"
     field :status, :contact_status_enum
-    field :wa_status, :contact_status_enum
+    field :provider_status, :contact_status_enum
   end
 
   input_object :contact_input do
     field :name, :string
     field :phone, :string
     field :status, :contact_status_enum
-    field :wa_status, :contact_status_enum
+    field :provider_status, :contact_status_enum
   end
 
   object :contact_queries do
@@ -54,14 +69,20 @@ defmodule GlificWeb.Schema.ContactTypes do
     @desc "Get a list of all contacts filtered by various criteria"
     field :contacts, list_of(:contact) do
       arg(:filter, :contact_filter)
-      arg(:order, type: :sort_order, default_value: :asc)
+      arg(:opts, :opts)
       resolve(&Resolvers.Contacts.contacts/3)
     end
 
-    field :search, list_of(:contact) do
-      arg(:term, non_null(:string))
-      arg(:order, type: :sort_order, default_value: :asc)
-      resolve(&Resolvers.Contacts.search/3)
+    @desc "Get a count of all contacts filtered by various criteria"
+    field :count_contacts, :integer do
+      arg(:filter, :contact_filter)
+      resolve(&Resolvers.Contacts.count_contacts/3)
+    end
+
+    @desc "Get contact's current location"
+    field :contact_location, :location do
+      arg(:id, non_null(:id))
+      resolve(&Resolvers.Contacts.contact_location/3)
     end
   end
 

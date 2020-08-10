@@ -8,13 +8,14 @@ defmodule Glific.Settings.Language do
 
   alias Glific.Settings.Language
 
-  @required_fields [:label, :locale]
+  @required_fields [:label, :label_locale, :locale]
   @optional_fields [:description, :is_active]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           label: String.t() | nil,
+          label_locale: String.t() | nil,
           locale: String.t() | nil,
           description: String.t() | nil,
           is_active: boolean(),
@@ -24,15 +25,13 @@ defmodule Glific.Settings.Language do
 
   schema "languages" do
     field :label, :string
+    field :label_locale, :string
     field :locale, :string
     field :description, :string
 
-    field :is_active, :boolean, default: false
+    field :is_active, :boolean, default: true
 
-    # Comment for now, enable when we add tags to glific
-    has_many :tags, Glific.Tags.Tag
-
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
   @doc """
@@ -54,6 +53,6 @@ defmodule Glific.Settings.Language do
   def delete_changeset(language) do
     language
     |> cast(%{}, @required_fields ++ @optional_fields)
-    |> foreign_key_constraint(:tags_language_id_fk)
+    |> foreign_key_constraint(:tags_language_id_fkey, name: :tags_language_id_fkey)
   end
 end

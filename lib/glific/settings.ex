@@ -17,9 +17,35 @@ defmodule Glific.Settings do
 
   """
   @spec list_languages(map()) :: [Language.t(), ...]
-  def list_languages(_args \\ %{}) do
-    Repo.all(Language)
+  def list_languages(args \\ %{}),
+    do: Repo.list_filter(args, Language, &Repo.opts_with_label/2, &filter_with/2)
+
+  @doc """
+  Return the count of languages, using the same filter as list_languages
+  """
+  @spec count_languages(map()) :: integer
+  def count_languages(args \\ %{}),
+    do: Repo.count_filter(args, Language, &filter_with/2)
+
+  # codebeat:disable[ABC]
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:label, label}, query ->
+        from q in query,
+          where: ilike(q.label, ^"%#{label}%") or ilike(q.label_locale, ^"%#{label}%")
+
+      {:locale, locale}, query ->
+        from q in query, where: ilike(q.locale, ^"%#{locale}%")
+
+      _, query ->
+        query
+    end)
   end
+
+  # codebeat:enable[ABC]
 
   @doc """
   Gets a single language.
@@ -91,8 +117,7 @@ defmodule Glific.Settings do
   @spec delete_language(Language.t()) :: {:ok, Language.t()} | {:error, Ecto.Changeset.t()}
   def delete_language(%Language{} = language) do
     language
-    |> Ecto.Changeset.change()
-    |> Ecto.Changeset.no_assoc_constraint(:tags)
+    |> Language.delete_changeset()
     |> Repo.delete()
   end
 
@@ -124,5 +149,17 @@ defmodule Glific.Settings do
       )
 
     {:ok, language}
+  end
+
+  @doc """
+  Get map of localte to ids for easier lookup for json based flow editor
+  """
+  @spec locale_id_map() :: %{String.t() => integer}
+  def locale_id_map do
+    Language
+    |> where([l], l.is_active == true)
+    |> select([:id, :locale])
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.locale, language.id) end)
   end
 end

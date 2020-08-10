@@ -1,0 +1,11 @@
+query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
+  sessionTemplates(filter: $filter, opts: $opts) {
+    id
+    label
+    body
+    language {
+      id
+      label
+    }
+  }
+}

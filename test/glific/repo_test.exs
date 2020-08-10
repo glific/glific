@@ -8,14 +8,16 @@ defmodule Glific.RepoTest do
 
   describe "repo" do
     @valid_attrs %{
-      label: "English (United States)",
-      locale: "en_US",
+      label: "Faker English (United States)",
+      label_locale: "Faker English",
+      locale: "faker_en_US",
       is_active: true
     }
 
     @valid_hindi_attrs %{
-      label: "Hindi (India)",
-      locale: "hi_IN",
+      label: "Faker Hindi (India)",
+      label_locale: "Faker हिन्दी",
+      locale: "faker_hi",
       is_active: true
     }
 
@@ -41,8 +43,8 @@ defmodule Glific.RepoTest do
       en = language_fixture()
       hi = language_fixture(@valid_hindi_attrs)
 
-      assert {:ok, hi} == Repo.fetch_by(Language, %{label: "Hindi (India)"})
-      assert {:ok, en} == Repo.fetch_by(Language, %{locale: "en_US"})
+      assert {:ok, hi} == Repo.fetch_by(Language, %{label: "Faker Hindi (India)"})
+      assert {:ok, en} == Repo.fetch_by(Language, %{locale: "faker_en_US"})
       assert :error == elem(Repo.fetch_by(Language, %{locale: "does not exist"}), 0)
     end
   end

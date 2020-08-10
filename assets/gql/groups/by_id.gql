@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query group($id: ID!) {
+  group(id: $id) {
+    ...GroupFields
+
+    ...ErrorFields
+  }
+}

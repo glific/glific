@@ -1,7 +1,7 @@
-query organizations {
-  organizations {
+query organizations($filter: OrganizationFilter) {
+  organizations(filter: $filter) {
     name
     email
-    wa_number
+    provider_number
   }
 }

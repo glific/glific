@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Partners do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Partners, Partners.BSP, Partners.Organization, Repo}
+  alias Glific.{Partners, Partners.Organization, Partners.Provider, Repo}
 
   @doc """
   Get a specific organization by id
@@ -23,6 +23,14 @@ defmodule GlificWeb.Resolvers.Partners do
           {:ok, any} | {:error, any}
   def organizations(_, args, _) do
     {:ok, Partners.list_organizations(args)}
+  end
+
+  @doc """
+  Get the count of organizations filtered by args
+  """
+  @spec count_organizations(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_organizations(_, args, _) do
+    {:ok, Partners.count_organizations(args)}
   end
 
   @doc """
@@ -62,55 +70,63 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
-  Get a specific bsp by id
+  Get a specific provider by id
   """
-  @spec bsp(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  @spec provider(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def bsp(_, %{id: id}, _) do
-    with {:ok, bsp} <- Repo.fetch(BSP, id),
-         do: {:ok, %{bsp: bsp}}
+  def provider(_, %{id: id}, _) do
+    with {:ok, provider} <- Repo.fetch(Provider, id),
+         do: {:ok, %{provider: provider}}
   end
 
   @doc """
-  Get the list of bsps
+  Get the list of providers
   """
-  @spec bsps(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, any} | {:error, any}
-  def bsps(_, args, _) do
-    {:ok, Partners.list_bsps(args)}
+  @spec providers(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, any} | {:error, any}
+  def providers(_, args, _) do
+    {:ok, Partners.list_providers(args)}
   end
 
   @doc """
-  Creates a bsp
+  Get the count of providers filtered by args
   """
-  @spec create_bsp(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+  @spec count_providers(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_providers(_, args, _) do
+    {:ok, Partners.count_providers(args)}
+  end
+
+  @doc """
+  Creates a provider
+  """
+  @spec create_provider(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_bsp(_, %{input: params}, _) do
-    with {:ok, bsp} <- Partners.create_bsp(params) do
-      {:ok, %{bsp: bsp}}
+  def create_provider(_, %{input: params}, _) do
+    with {:ok, provider} <- Partners.create_provider(params) do
+      {:ok, %{provider: provider}}
     end
   end
 
   @doc """
-  Updates a bsp
+  Updates a provider
   """
-  @spec update_bsp(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
+  @spec update_provider(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_bsp(_, %{id: id, input: params}, _) do
-    with {:ok, bsp} <- Repo.fetch(BSP, id),
-         {:ok, bsp} <- Partners.update_bsp(bsp, params) do
-      {:ok, %{bsp: bsp}}
+  def update_provider(_, %{id: id, input: params}, _) do
+    with {:ok, provider} <- Repo.fetch(Provider, id),
+         {:ok, provider} <- Partners.update_provider(provider, params) do
+      {:ok, %{provider: provider}}
     end
   end
 
   @doc """
-  Deletes a bsp
+  Deletes a provider
   """
-  @spec delete_bsp(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  @spec delete_provider(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_bsp(_, %{id: id}, _) do
-    with {:ok, bsp} <- Repo.fetch(BSP, id),
-         {:ok, bsp} <- Partners.delete_bsp(bsp) do
-      {:ok, bsp}
+  def delete_provider(_, %{id: id}, _) do
+    with {:ok, provider} <- Repo.fetch(Provider, id),
+         {:ok, provider} <- Partners.delete_provider(provider) do
+      {:ok, provider}
     end
   end
 end

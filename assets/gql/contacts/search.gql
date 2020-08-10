@@ -1,7 +1,0 @@
-query search($term: String!) {
-  search(term: $term) {
-    id
-    name
-    phone
-  }
-}

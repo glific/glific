@@ -1,0 +1,22 @@
+fragment MessageTagFields on MessageTagResult {
+  message_tag {
+    id
+   
+    message {
+      id
+      body
+    }
+
+    tag {
+      id
+      label
+    }
+  }
+}
+
+fragment ErrorFields on MessageTagResult {
+  errors {
+    key
+    message
+  }
+}

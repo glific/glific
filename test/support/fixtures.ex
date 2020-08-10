@@ -4,27 +4,29 @@ defmodule Glific.Fixtures do
   """
   alias Faker.{
     DateTime,
-    Name,
+    Person,
     Phone
   }
 
   alias Glific.{
     Contacts,
+    Groups,
     Messages,
     Settings,
-    Tags
+    Tags,
+    Templates
   }
 
   @doc false
   @spec contact_fixture(map()) :: Contacts.Contact.t()
   def contact_fixture(attrs \\ %{}) do
     valid_attrs = %{
-      name: Name.name(),
+      name: Person.name(),
       optin_time: DateTime.backward(1),
-      optout_time: DateTime.backward(1),
+      last_message_at: DateTime.backward(0),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      wa_status: :invalid
+      provider_status: :valid
     }
 
     {:ok, contact} =
@@ -38,17 +40,18 @@ defmodule Glific.Fixtures do
   @doc false
   @spec message_fixture(map()) :: Messages.Message.t()
   def message_fixture(attrs \\ %{}) do
-    sender = contact_fixture()
-    receiver = contact_fixture()
+    sender = contact_fixture(attrs)
+    receiver = contact_fixture(attrs)
 
     valid_attrs = %{
       body: Faker.Lorem.sentence(),
       flow: :inbound,
       type: :text,
-      wa_message_id: Faker.String.base64(10),
-      wa_status: :enqueued,
+      provider_message_id: Faker.String.base64(10),
+      provider_status: :enqueued,
       sender_id: sender.id,
-      receiver_id: receiver.id
+      receiver_id: receiver.id,
+      contact_id: receiver.id
     }
 
     {:ok, message} =
@@ -64,6 +67,7 @@ defmodule Glific.Fixtures do
   def language_fixture(attrs \\ %{}) do
     valid_attrs = %{
       label: Faker.Lorem.word(),
+      label_locale: Faker.Lorem.word(),
       locale: Faker.Lorem.word(),
       is_active: true
     }
@@ -128,5 +132,57 @@ defmodule Glific.Fixtures do
       |> Tags.create_contact_tag()
 
     contact_tag
+  end
+
+  @doc false
+  @spec session_template_fixture(map()) :: Templates.SessionTemplate.t()
+  def session_template_fixture(attrs \\ %{}) do
+    language = language_fixture()
+
+    valid_attrs = %{
+      label: "Default Template Label",
+      shortcode: "default template",
+      body: "Default Template",
+      type: :text,
+      language_id: language.id,
+      uuid: Ecto.UUID.generate()
+    }
+
+    {:ok, session_template} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Templates.create_session_template()
+
+    valid_attrs_2 = %{
+      label: "Another Template Label",
+      shortcode: "another template",
+      body: "Another Template",
+      type: :text,
+      language_id: language.id,
+      parent_id: session_template.id,
+      uuid: "53008c3d-e619-4ec6-80cd-b9b2c89386dc"
+    }
+
+    {:ok, _session_template} =
+      valid_attrs_2
+      |> Templates.create_session_template()
+
+    session_template
+  end
+
+  @doc false
+  @spec group_fixture(map()) :: Groups.Group.t()
+  def group_fixture(attrs \\ %{}) do
+    valid_attrs = %{
+      label: "Poetry group",
+      description: "default description"
+    }
+
+    {:ok, group} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Groups.create_group()
+
+    group
   end
 end

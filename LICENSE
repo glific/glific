@@ -67,7 +67,7 @@ works, such as semiconductor masks.
 
   "The Program" refers to any copyrightable work licensed under this
 License.  Each licensee is addressed as "you".  "Licensees" and
-"recipients" may be individuals or organizations.
+"receivers" may be individuals or organizations.
 
   To "modify" a work means to copy from or adapt all or part of the work
 in a fashion requiring copyright permission, other than the making of an
@@ -188,7 +188,7 @@ appropriately publish on each copy an appropriate copyright notice;
 keep intact all notices stating that this License and any
 non-permissive terms added in accord with section 7 apply to the code;
 keep intact all notices of the absence of any warranty; and give all
-recipients a copy of this License along with the Program.
+receivers a copy of this License along with the Program.
 
   You may charge any price or no price for each copy that you convey,
 and you may offer support or warranty protection for a fee.
@@ -263,7 +263,7 @@ in one of these ways:
     d) Convey the object code by offering access from a designated
     place (gratis or for a charge), and offer equivalent access to the
     Corresponding Source in the same way through the same place at no
-    further charge.  You need not require recipients to copy the
+    further charge.  You need not require receivers to copy the
     Corresponding Source along with the object code.  If the place to
     copy the object code is a network server, the Corresponding Source
     may be on a different server (operated by you or a third party)
@@ -306,7 +306,7 @@ modification has been made.
   If you convey an object code work under this section in, or with, or
 specifically for use in, a User Product, and the conveying occurs as
 part of a transaction in which the right of possession and use of the
-User Product is transferred to the recipient in perpetuity or for a
+User Product is transferred to the receiver in perpetuity or for a
 fixed term (regardless of how the transaction is characterized), the
 Corresponding Source conveyed under this section must be accompanied
 by the Installation Information.  But this requirement does not apply
@@ -316,7 +316,7 @@ been installed in ROM).
 
   The requirement to provide Installation Information does not include a
 requirement to continue to provide support service, warranty, or updates
-for a work that has been modified or installed by the recipient, or for
+for a work that has been modified or installed by the receiver, or for
 the User Product in which it has been modified or installed.  Access to a
 network may be denied when the modification itself materially and
 adversely affects the operation of the network or violates the rules and
@@ -369,7 +369,7 @@ that material) supplement the terms of this License with terms:
 
     f) Requiring indemnification of licensors and authors of that
     material by anyone who conveys the material (or modified versions of
-    it) with contractual assumptions of liability to the recipient, for
+    it) with contractual assumptions of liability to the receiver, for
     any liability that these contractual assumptions directly impose on
     those licensors and authors.
 
@@ -433,7 +433,7 @@ covered work, you indicate your acceptance of this License to do so.
 
   10. Automatic Licensing of Downstream Recipients.
 
-  Each time you convey a covered work, the recipient automatically
+  Each time you convey a covered work, the receiver automatically
 receives a license from the original licensors, to run, modify and
 propagate that work, subject to this License.  You are not responsible
 for enforcing compliance by third parties with this License.
@@ -492,9 +492,9 @@ then you must either (1) cause the Corresponding Source to be so
 available, or (2) arrange to deprive yourself of the benefit of the
 patent license for this particular work, or (3) arrange, in a manner
 consistent with the requirements of this License, to extend the patent
-license to downstream recipients.  "Knowingly relying" means you have
+license to downstream receivers.  "Knowingly relying" means you have
 actual knowledge that, but for the patent license, your conveying the
-covered work in a country, or your recipient's use of the covered work
+covered work in a country, or your receiver's use of the covered work
 in a country, would infringe one or more identifiable patents in that
 country that you have reason to believe are valid.
 
@@ -503,7 +503,7 @@ arrangement, you convey, or propagate by procuring conveyance of, a
 covered work, and grant a patent license to some of the parties
 receiving the covered work authorizing them to use, propagate, modify
 or convey a specific copy of the covered work, then the patent license
-you grant is automatically extended to all recipients of the covered
+you grant is automatically extended to all receivers of the covered
 work and works based on it.
 
   A patent license is "discriminatory" if it does not include within

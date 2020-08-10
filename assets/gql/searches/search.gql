@@ -1,0 +1,23 @@
+query search( 
+    $saveSearchInput: SaveSearchInput,
+    $contactOpts: Opts!, 
+    $messageOpts: Opts!, 
+    $filter: SearchFilter
+  ) {
+    search(saveSearchInput:$saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts, filter: $filter) {
+      contact {
+        id
+        name
+        phone
+      }
+      messages {
+        id
+        body
+        flow
+        type
+        tags {
+          label
+        }
+      }
+    }
+}

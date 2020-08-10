@@ -1,5 +1,14 @@
 %Doctor.Config{
-  ignore_modules: [],
+  ignore_modules: [
+    Glific.Processor.ConsumerAutomation,
+    Glific.Processor.ConsumerHelp,
+    Glific.Processor.ConsumerLanguage,
+    Glific.Processor.ConsumerNewContact,
+    Glific.Processor.ConsumerNumeric,
+    Glific.Processor.ConsumerOptout,
+    Glific.Processor.ConsumerTagger,
+    Glific.Processor.Producer
+  ],
   ignore_paths: [
     ~r(lib/glific_web/views/.*),
     "lib/glific/application.ex",

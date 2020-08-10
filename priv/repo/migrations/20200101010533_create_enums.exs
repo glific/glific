@@ -4,27 +4,42 @@ defmodule Glific.Repo.Migrations.CreateEnums do
   alias Glific.Enums.{
     APIStatus,
     ContactStatus,
+    FlowCase,
+    FlowRouter,
+    FlowActionType,
+    FlowType,
     MessageFlow,
-    MessageTypes,
+    MessageType,
     MessageStatus,
+    QuestionType,
     SortOrder
   }
 
   def up do
     APIStatus.create_type()
     ContactStatus.create_type()
+    FlowCase.create_type()
+    FlowRouter.create_type()
+    FlowActionType.create_type()
+    FlowType.create_type()
     MessageFlow.create_type()
-    MessageTypes.create_type()
+    MessageType.create_type()
     MessageStatus.create_type()
+    QuestionType.create_type()
     SortOrder.create_type()
   end
 
   def down do
     APIStatus.drop_type()
     ContactStatus.drop_type()
+    FlowCase.drop_type()
+    FlowRouter.drop_type()
+    FlowActionType.drop_type()
+    FlowType.drop_type()
     MessageFlow.drop_type()
     MessageStatus.drop_type()
-    MessageTypes.drop_type()
+    MessageType.drop_type()
+    QuestionType.drop_type()
     SortOrder.drop_type()
   end
 end

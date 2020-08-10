@@ -18,12 +18,20 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :id, :id
     field :name, :string
     field :display_name, :string
-    field :bsp_key, :string
+    field :provider_key, :string
     field :contact_name, :string
     field :email, :string
-    field :wa_number, :string
+    field :provider_number, :string
 
-    field :bsp, :bsp do
+    field :provider, :provider do
+      resolve(dataloader(Repo))
+    end
+
+    field :contact, :contact do
+      resolve(dataloader(Repo))
+    end
+
+    field :default_language, :language do
       resolve(dataloader(Repo))
     end
   end
@@ -43,10 +51,13 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :contact_name, :string
 
     @desc "Match the whatsapp number of organization"
-    field :wa_number, :string
+    field :provider_number, :string
 
-    @desc "Match the bsp"
-    field :bsp, :string
+    @desc "Match the provider"
+    field :provider, :string
+
+    @desc "Match the default language"
+    field :default_language, :string
   end
 
   input_object :organization_input do
@@ -54,10 +65,12 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :display_name, :string
     field :contact_name, :string
     field :email, :string
-    field :bsp_key, :string
-    field :wa_number, :string
+    field :provider_key, :string
+    field :provider_number, :string
 
-    field :bsp_id, :id
+    field :provider_id, :id
+    field :contact_id, :id
+    field :default_language_id, :id
   end
 
   object :organization_queries do
@@ -70,8 +83,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     @desc "Get a list of all organizations filtered by various criteria"
     field :organizations, list_of(:organization) do
       arg(:filter, :organization_filter)
-      arg(:order, type: :sort_order, default_value: :asc)
+      arg(:opts, :opts)
       resolve(&Resolvers.Partners.organizations/3)
+    end
+
+    @desc "Get a count of all organizations filtered by various criteria"
+    field :count_organizations, :integer do
+      arg(:filter, :organization_filter)
+      resolve(&Resolvers.Partners.count_organizations/3)
     end
   end
 

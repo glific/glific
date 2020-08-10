@@ -1,17 +1,32 @@
 defmodule Glific.ContactsTest do
   use Glific.DataCase, async: true
-  alias Glific.Contacts
+
+  alias Faker.Phone
+
+  alias Glific.{
+    Contacts,
+    Contacts.Contact,
+    Partners.Organization,
+    Seeds.SeedsDev,
+    Settings,
+    Settings.Language
+  }
+
+  setup do
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    :ok
+  end
 
   describe "contacts" do
-    alias Glific.Contacts.Contact
-
     @valid_attrs %{
       name: "some name",
       optin_time: ~U[2010-04-17 14:00:00Z],
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone",
       status: :valid,
-      wa_status: :invalid
+      provider_status: :invalid,
+      fileds: %{}
     }
     @valid_attrs_1 %{
       name: "some name 1",
@@ -19,7 +34,8 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 1",
       status: :invalid,
-      wa_status: :invalid
+      provider_status: :invalid,
+      fileds: %{}
     }
     @valid_attrs_2 %{
       name: "some name 2",
@@ -27,7 +43,8 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 2",
       status: :valid,
-      wa_status: :valid
+      provider_status: :valid,
+      fileds: %{}
     }
     @valid_attrs_3 %{
       name: "some name 3",
@@ -35,7 +52,26 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2010-04-17 14:00:00Z],
       phone: "some phone 3",
       status: :invalid,
-      wa_status: :valid
+      provider_status: :valid,
+      fileds: %{}
+    }
+    @valid_attrs_to_test_order_1 %{
+      name: "aaaa name",
+      optin_time: ~U[2010-04-17 14:00:00Z],
+      optout_time: ~U[2010-04-17 14:00:00Z],
+      phone: "some phone 4",
+      status: :valid,
+      provider_status: :invalid,
+      fileds: %{}
+    }
+    @valid_attrs_to_test_order_2 %{
+      name: "zzzz name",
+      optin_time: ~U[2010-04-17 14:00:00Z],
+      optout_time: ~U[2010-04-17 14:00:00Z],
+      phone: "some phone 5",
+      status: :valid,
+      provider_status: :invalid,
+      fileds: %{}
     }
     @update_attrs %{
       name: "some updated name",
@@ -43,7 +79,8 @@ defmodule Glific.ContactsTest do
       optout_time: ~U[2011-05-18 15:01:01Z],
       phone: "some updated phone",
       status: :invalid,
-      wa_status: :invalid
+      provider_status: :invalid,
+      fileds: %{}
     }
     @invalid_attrs %{
       name: nil,
@@ -51,7 +88,8 @@ defmodule Glific.ContactsTest do
       optout_time: nil,
       phone: nil,
       status: nil,
-      wa_status: nil
+      provider_status: nil,
+      fileds: %{}
     }
 
     def contact_fixture(attrs \\ %{}) do
@@ -64,8 +102,19 @@ defmodule Glific.ContactsTest do
     end
 
     test "list_contacts/0 returns all contacts" do
-      contact = contact_fixture()
-      assert Contacts.list_contacts() == [contact]
+      contacts_count = Repo.aggregate(Contact, :count)
+
+      _contact = contact_fixture()
+      assert length(Contacts.list_contacts()) == contacts_count + 1
+    end
+
+    test "count_contacts/0 returns count of all contacts" do
+      contacts_count = Repo.aggregate(Contact, :count)
+
+      _ = contact_fixture()
+      assert Contacts.count_contacts() == contacts_count + 1
+
+      assert Contacts.count_contacts(%{filter: %{name: "some name"}}) == 1
     end
 
     test "get_contact!/1 returns the contact with given id" do
@@ -80,7 +129,29 @@ defmodule Glific.ContactsTest do
       assert contact.optout_time == ~U[2010-04-17 14:00:00Z]
       assert contact.phone == "some phone"
       assert contact.status == :valid
-      assert contact.wa_status == :invalid
+      assert contact.provider_status == :invalid
+
+      # Contact should be created with organization's default language
+      {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
+
+      assert contact.language_id == organization.default_language_id
+    end
+
+    test "create_contact/1 with language id creates a contact" do
+      {:ok, language} = Repo.fetch_by(Language, %{locale: "hi"})
+
+      attrs =
+        @valid_attrs
+        |> Map.merge(%{language_id: language.id})
+
+      assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs)
+      assert contact.name == "some name"
+      assert contact.optin_time == ~U[2010-04-17 14:00:00Z]
+      assert contact.optout_time == ~U[2010-04-17 14:00:00Z]
+      assert contact.phone == "some phone"
+      assert contact.status == :valid
+      assert contact.provider_status == :invalid
+      assert contact.language_id == language.id
     end
 
     test "create_contact/1 with invalid data returns error changeset" do
@@ -95,7 +166,7 @@ defmodule Glific.ContactsTest do
       assert contact.optout_time == ~U[2011-05-18 15:01:01Z]
       assert contact.phone == "some updated phone"
       assert contact.status == :invalid
-      assert contact.wa_status == :invalid
+      assert contact.provider_status == :invalid
     end
 
     test "update_contact/2 with invalid data returns error changeset" do
@@ -116,25 +187,29 @@ defmodule Glific.ContactsTest do
     end
 
     test "list_contacts/1 with multiple contacts" do
+      contacts_count = Repo.aggregate(Contact, :count)
+
       _c0 = contact_fixture(@valid_attrs)
       _c1 = contact_fixture(@valid_attrs_1)
       _c2 = contact_fixture(@valid_attrs_2)
       _c3 = contact_fixture(@valid_attrs_3)
 
-      assert length(Contacts.list_contacts()) == 4
+      assert length(Contacts.list_contacts()) == contacts_count + 4
     end
 
     test "list_contacts/1 with multiple contacts sorted" do
-      c0 = contact_fixture(@valid_attrs)
-      c1 = contact_fixture(@valid_attrs_1)
-      c2 = contact_fixture(@valid_attrs_2)
-      c3 = contact_fixture(@valid_attrs_3)
+      contacts_count = Repo.aggregate(Contact, :count)
 
-      cs = Contacts.list_contacts(%{order: :asc})
-      assert [c0, c1, c2, c3] == cs
+      c0 = contact_fixture(@valid_attrs_to_test_order_1)
+      c1 = contact_fixture(@valid_attrs_to_test_order_2)
 
-      cs = Contacts.list_contacts(%{order: :desc})
-      assert [c3, c2, c1, c0] == cs
+      assert length(Contacts.list_contacts()) == contacts_count + 2
+
+      [ordered_c0 | _] = Contacts.list_contacts(%{opts: %{order: :asc}})
+      assert c0 == ordered_c0
+
+      [ordered_c1 | _] = Contacts.list_contacts(%{opts: %{order: :desc}})
+      assert c1 == ordered_c1
     end
 
     test "list_contacts/1 with multiple contacts filtered" do
@@ -143,28 +218,140 @@ defmodule Glific.ContactsTest do
       _c2 = contact_fixture(@valid_attrs_2)
       c3 = contact_fixture(@valid_attrs_3)
 
-      cs = Contacts.list_contacts(%{order: :asc, filter: %{phone: "some phone 3"}})
+      cs = Contacts.list_contacts(%{opts: %{order: :asc}, filter: %{phone: "some phone 3"}})
       assert cs == [c3]
 
       cs = Contacts.list_contacts(%{filter: %{phone: "some phone"}})
       assert length(cs) == 4
 
-      cs = Contacts.list_contacts(%{order: :asc, filter: %{name: "some name 1"}})
+      cs = Contacts.list_contacts(%{opts: %{order: :asc}, filter: %{name: "some name 1"}})
       assert cs == [c1]
 
-      cs = Contacts.list_contacts(%{order: :asc, filter: %{status: :valid, wa_status: :invalid}})
+      cs =
+        Contacts.list_contacts(%{
+          opts: %{order: :asc},
+          filter: %{status: :valid, provider_status: :invalid}
+        })
+
       assert cs == [c0]
     end
 
     test "upsert contacts" do
+      org = Organization |> Ecto.Query.first() |> Repo.one()
       c0 = contact_fixture(@valid_attrs)
 
-      assert Contacts.upsert(%{phone: c0.phone, name: c0.name}).id == c0.id
+      # check if the defualt language is set
+      assert org.default_language_id == c0.language_id
+
+      {:ok, contact} = Contacts.upsert(%{phone: c0.phone, name: c0.name})
+      assert contact.id == c0.id
+    end
+
+    test "ensure that upsert contacts overrides the language id" do
+      c0 = contact_fixture(@valid_attrs)
+      org = Organization |> Ecto.Query.first() |> Repo.one()
+
+      language =
+        Settings.list_languages()
+        |> Enum.find(fn ln -> ln.id != org.default_language_id end)
+
+      {:ok, contact} =
+        Contacts.upsert(%{
+          phone: c0.phone,
+          name: c0.name,
+          language_id: language.id
+        })
+
+      assert contact.language_id == language.id
     end
 
     test "ensure that creating contacts with same name/phone give an error" do
       contact_fixture(@valid_attrs)
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(@valid_attrs)
+    end
+
+    test "ensure that contact returns the valid state for sending the message" do
+      contact =
+        contact_fixture(%{
+          provider_status: :valid,
+          last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      contact2 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :invalid,
+          last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      contact3 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :valid,
+          last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
+        })
+
+      assert true == Contacts.can_send_message_to?(contact)
+      assert false == Contacts.can_send_message_to?(contact2)
+      assert false == Contacts.can_send_message_to?(contact3)
+    end
+
+    test "ensure that contact returns the valid state for sending the hsm message" do
+      contact1 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :invalid
+        })
+
+      # When contact opts in, optout_time should be set to nil
+      contact2 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :valid,
+          optin_time: DateTime.utc_now(),
+          optout_time: nil
+        })
+
+      contact3 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :valid,
+          optin_time: nil
+        })
+
+      contact4 =
+        contact_fixture(%{
+          phone: Phone.EnUs.phone(),
+          provider_status: :valid,
+          optin_time: nil,
+          optout_time: DateTime.utc_now()
+        })
+
+      assert false == Contacts.can_send_message_to?(contact1, true)
+      assert true == Contacts.can_send_message_to?(contact2, true)
+      assert false == Contacts.can_send_message_to?(contact3, true)
+      assert false == Contacts.can_send_message_to?(contact4, true)
+    end
+
+    test "contact_opted_in/2 will setup the contact as valid contact for message" do
+      contact = contact_fixture(%{status: :invalid})
+
+      Contacts.contact_opted_in(contact.phone, DateTime.utc_now())
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: contact.phone})
+
+      assert contact.status == :valid
+      assert contact.optin_time != nil
+      assert contact.optout_time == nil
+    end
+
+    test "contact_opted_out/2 will setup the contact as valid contact for message" do
+      contact = contact_fixture(%{status: :valid})
+
+      Contacts.contact_opted_out(contact.phone, DateTime.utc_now())
+      {:ok, contact} = Repo.fetch_by(Contact, %{phone: contact.phone})
+
+      assert contact.status == :invalid
+      assert contact.optout_time != nil
     end
   end
 end

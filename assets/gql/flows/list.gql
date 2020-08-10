@@ -1,0 +1,9 @@
+query {
+  flows {
+    id
+    name
+    shortcode
+    versionNumber
+    flowType
+  }
+}

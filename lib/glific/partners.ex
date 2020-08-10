@@ -1,135 +1,138 @@
 defmodule Glific.Partners do
   @moduledoc """
   The Partners context. This is the gateway for the application to access/update all the organization
-  and BSP information.
+  and Provider information.
   """
 
   import Ecto.Query, warn: false
 
-  alias Glific.Partners.BSP
-  alias Glific.Partners.Organization
-  alias Glific.Repo
+  alias Glific.{
+    Contacts.Contact,
+    Partners.Organization,
+    Partners.Provider,
+    Repo
+  }
 
   @doc """
-  Returns the list of bsps.
+  Returns the list of providers.
 
   ## Examples
 
-      iex> list_bsps()
-      [%BSP{}, ...]
+      iex> list_providers()
+      [%Provider{}, ...]
 
   """
-  @spec list_bsps(map()) :: [%BSP{}, ...]
-  def list_bsps(args \\ %{}) do
-    args
-    |> Enum.reduce(BSP, fn
-      {:order, order}, query ->
-        query |> order_by({^order, :name})
+  @spec list_providers(map()) :: [%Provider{}, ...]
+  def list_providers(args \\ %{}),
+    do: Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
 
-      {:filter, filter}, query ->
-        query |> filter_bsp_with(filter)
-    end)
-    |> Repo.all()
-  end
+  @doc """
+  Return the count of providers, using the same filter as list_providers
+  """
+  @spec count_providers(map()) :: integer
+  def count_providers(args \\ %{}),
+    do: Repo.count_filter(args, Provider, &filter_provider_with/2)
 
-  @spec filter_bsp_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_bsp_with(query, filter) do
+  @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_provider_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
     Enum.reduce(filter, query, fn
-      {:name, name}, query ->
-        from q in query, where: ilike(q.name, ^"%#{name}%")
-
       {:url, url}, query ->
         from q in query, where: ilike(q.url, ^"%#{url}%")
+
+      _, query ->
+        query
     end)
   end
 
   @doc """
-  Gets a single bsp.
+  Gets a single provider.
 
-  Raises `Ecto.NoResultsError` if the Bsp does not exist.
+  Raises `Ecto.NoResultsError` if the Provider does not exist.
 
   ## Examples
 
-      iex> get_bsp!(123)
-      %BSP{}
+      iex> get_provider!(123)
+      %Provider{}
 
-      iex> get_bsp!(456)
+      iex> get_provider!(456)
       ** (Ecto.NoResultsError)
 
   """
-  @spec get_bsp!(id :: integer) :: %BSP{}
-  def get_bsp!(id), do: Repo.get!(BSP, id)
+  @spec get_provider!(id :: integer) :: %Provider{}
+  def get_provider!(id), do: Repo.get!(Provider, id)
 
   @doc """
-  Creates a bsp.
+  Creates a provider.
 
   ## Examples
 
-      iex> create_bsp(%{field: value})
-      {:ok, %BSP{}}
+      iex> create_provider(%{field: value})
+      {:ok, %Provider{}}
 
-      iex> create_bsp(%{field: bad_value})
+      iex> create_provider(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_bsp(map()) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
-  def create_bsp(attrs \\ %{}) do
-    %BSP{}
-    |> BSP.changeset(attrs)
+  @spec create_provider(map()) :: {:ok, %Provider{}} | {:error, Ecto.Changeset.t()}
+  def create_provider(attrs \\ %{}) do
+    %Provider{}
+    |> Provider.changeset(attrs)
     |> Repo.insert()
   end
 
   @doc """
-  Updates a bsp.
+  Updates a provider.
 
   ## Examples
 
-      iex> update_bsp(bsp, %{field: new_value})
-      {:ok, %BSP{}}
+      iex> update_provider(provider, %{field: new_value})
+      {:ok, %Provider{}}
 
-      iex> update_bsp(bsp, %{field: bad_value})
+      iex> update_provider(provider, %{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_bsp(%BSP{}, map()) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
-  def update_bsp(%BSP{} = bsp, attrs) do
-    bsp
-    |> BSP.changeset(attrs)
+  @spec update_provider(%Provider{}, map()) :: {:ok, %Provider{}} | {:error, Ecto.Changeset.t()}
+  def update_provider(%Provider{} = provider, attrs) do
+    provider
+    |> Provider.changeset(attrs)
     |> Repo.update()
   end
 
   @doc """
-  Deletes a bsp.
+  Deletes a provider.
 
   ## Examples
 
-      iex> delete_bsp(bsp)
-      {:ok, %BSP{}}
+      iex> delete_provider(provider)
+      {:ok, %Provider{}}
 
-      iex> delete_bsp(bsp)
+      iex> delete_provider(provider)
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_bsp(%BSP{}) :: {:ok, %BSP{}} | {:error, Ecto.Changeset.t()}
-  def delete_bsp(%BSP{} = bsp) do
-    bsp
+  @spec delete_provider(%Provider{}) :: {:ok, %Provider{}} | {:error, Ecto.Changeset.t()}
+  def delete_provider(%Provider{} = provider) do
+    provider
     |> Ecto.Changeset.change()
     |> Ecto.Changeset.no_assoc_constraint(:organizations)
     |> Repo.delete()
   end
 
   @doc ~S"""
-  Returns an `%Ecto.Changeset{}` for tracking bsp changes.
+  Returns an `%Ecto.Changeset{}` for tracking provider changes.
 
   ## Examples
 
-      iex> change_bsp(bsp)
-      %Ecto.Changeset{data: %BSP{}}
+      iex> change_provider(provider)
+      %Ecto.Changeset{data: %Provider{}}
 
   """
-  @spec change_bsp(%BSP{}, map()) :: Ecto.Changeset.t()
-  def change_bsp(%BSP{} = bsp, attrs \\ %{}) do
-    BSP.changeset(bsp, attrs)
+  @spec change_provider(%Provider{}, map()) :: Ecto.Changeset.t()
+  def change_provider(%Provider{} = provider, attrs \\ %{}) do
+    Provider.changeset(provider, attrs)
   end
 
   @doc ~S"""
@@ -142,24 +145,23 @@ defmodule Glific.Partners do
 
   """
   @spec list_organizations(map()) :: [Organization.t()]
-  def list_organizations(args \\ %{}) do
-    args
-    |> Enum.reduce(Organization, fn
-      {:order, order}, query ->
-        query |> order_by({^order, :name})
+  def list_organizations(args \\ %{}),
+    do: Repo.list_filter(args, Organization, &Repo.opts_with_name/2, &filter_organization_with/2)
 
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.all()
-  end
+  @doc """
+  Return the count of organizations, using the same filter as list_organizations
+  """
+  @spec count_organizations(map()) :: integer
+  def count_organizations(args \\ %{}),
+    do: Repo.count_filter(args, Organization, &filter_organization_with/2)
 
-  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp filter_with(query, filter) do
+  # codebeat:disable[ABC]
+  @spec filter_organization_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
+          Ecto.Queryable.t()
+  defp filter_organization_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
     Enum.reduce(filter, query, fn
-      {:name, name}, query ->
-        from q in query, where: ilike(q.name, ^"%#{name}%")
-
       {:display_name, display_name}, query ->
         from q in query, where: ilike(q.display_name, ^"%#{display_name}%")
 
@@ -169,15 +171,25 @@ defmodule Glific.Partners do
       {:email, email}, query ->
         from q in query, where: ilike(q.email, ^"%#{email}%")
 
-      {:bsp, bsp}, query ->
+      {:provider, provider}, query ->
         from q in query,
-          join: c in assoc(q, :bsp),
-          where: ilike(c.name, ^"%#{bsp}%")
+          join: c in assoc(q, :provider),
+          where: ilike(c.name, ^"%#{provider}%")
 
-      {:wa_number, wa_number}, query ->
-        from q in query, where: ilike(q.wa_number, ^"%#{wa_number}%")
+      {:provider_number, provider_number}, query ->
+        from q in query, where: ilike(q.provider_number, ^"%#{provider_number}%")
+
+      {:default_language, default_language}, query ->
+        from q in query,
+          join: c in assoc(q, :default_language),
+          where: ilike(c.label, ^"%#{default_language}%")
+
+      _, query ->
+        query
     end)
   end
+
+  # codebeat:enable[ABC]
 
   @doc ~S"""
   Gets a single organization.
@@ -229,8 +241,8 @@ defmodule Glific.Partners do
   """
   @spec update_organization(Organization.t(), map()) ::
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
-  def update_organization(%Organization{} = bsp, attrs) do
-    bsp
+  def update_organization(%Organization{} = provider, attrs) do
+    provider
     |> Organization.changeset(attrs)
     |> Repo.update()
   end
@@ -265,5 +277,19 @@ defmodule Glific.Partners do
   @spec change_organization(Organization.t(), map()) :: Ecto.Changeset.t()
   def change_organization(%Organization{} = organization, attrs \\ %{}) do
     Organization.changeset(organization, attrs)
+  end
+
+  @doc """
+  We will cache this soon, since this is a frequently requested item. This contact id is special
+  since it is the sender for all outbound messages and the receiver for all inbound messages
+  """
+  @spec organization_contact_id() :: integer()
+  def organization_contact_id do
+    # Get contact id
+    Contact
+    |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
+    |> select([c, _o], c.id)
+    |> limit(1)
+    |> Repo.one()
   end
 end

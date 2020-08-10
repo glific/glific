@@ -1,0 +1,18 @@
+fragment UserFields on UserResult {
+  user {
+    id
+    name
+    phone
+    roles
+    groups {
+      id
+    }
+  }
+}
+
+fragment ErrorFields on UserResult {
+  errors {
+    key
+    message
+  }
+}

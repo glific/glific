@@ -4,11 +4,14 @@ fragment OrganizationFields on OrganizationResult {
     name
     display_name
     contact_name
+    contact {
+      name
+    }
     email
-    bsp_key
-    wa_number 
+    provider_key
+    provider_number 
    
-    bsp {
+    provider {
       id
       name
       url

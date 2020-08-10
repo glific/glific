@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-query bsp($id: ID!) {
-  bsp(id: $id) {
-    ...BspFields
-
-    ...ErrorFields
-  }
-}

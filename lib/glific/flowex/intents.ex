@@ -93,7 +93,7 @@ defmodule Glific.Flowex.Intents do
   defp set_training_phrase(nil, text) do
     [
       %{
-        "name" => UUID.uuid4(),
+        "name" => Ecto.UUID.generate(),
         "parts" => [%{"text" => text}],
         "type" => "EXAMPLE"
       }
@@ -103,7 +103,7 @@ defmodule Glific.Flowex.Intents do
   defp set_training_phrase(training_phrases, text) do
     [
       %{
-        "name" => UUID.uuid4(),
+        "name" => Ecto.UUID.generate(),
         "parts" => [%{"text" => text}],
         "type" => "EXAMPLE"
       }

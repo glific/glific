@@ -4,7 +4,11 @@ defmodule Glific.Contacts do
   """
   import Ecto.Query, warn: false
 
-  alias Glific.{Contacts.Contact, Repo, Search.Full}
+  alias Glific.{
+    Contacts.Contact,
+    Contacts.Location,
+    Repo
+  }
 
   @doc """
   Returns the list of contacts.
@@ -16,34 +20,34 @@ defmodule Glific.Contacts do
 
   """
   @spec list_contacts(map()) :: [Contact.t()]
-  def list_contacts(args \\ %{}) do
-    args
-    |> Enum.reduce(Contact, fn
-      {:order, order}, query ->
-        query |> order_by({^order, :name})
+  def list_contacts(args \\ %{}),
+    do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &filter_with/2)
 
-      {:filter, filter}, query ->
-        query |> filter_with(filter)
-    end)
-    |> Repo.all()
-  end
+  @doc """
+  Return the count of contacts, using the same filter as list_contacts
+  """
+  @spec count_contacts(map()) :: integer
+  def count_contacts(args \\ %{}),
+    do: Repo.count_filter(args, Contact, &filter_with/2)
 
+  # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
     Enum.reduce(filter, query, fn
-      {:name, name}, query ->
-        from q in query, where: ilike(q.name, ^"%#{name}%")
-
-      {:phone, phone}, query ->
-        from q in query, where: ilike(q.phone, ^"%#{phone}%")
-
       {:status, status}, query ->
         from q in query, where: q.status == ^status
 
-      {:wa_status, wa_status}, query ->
-        from q in query, where: q.wa_status == ^wa_status
+      {:provider_status, provider_status}, query ->
+        from q in query, where: q.provider_status == ^provider_status
+
+      _, query ->
+        query
     end)
   end
+
+  # codebeat:enable[ABC]
 
   @doc """
   Gets a single contact.
@@ -76,6 +80,11 @@ defmodule Glific.Contacts do
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(attrs \\ %{}) do
+    # Get the organization
+    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+
+    attrs = Map.put(attrs, :language_id, attrs[:language_id] || organization.default_language_id)
+
     %Contact{}
     |> Contact.changeset(attrs)
     |> Repo.insert()
@@ -135,24 +144,134 @@ defmodule Glific.Contacts do
   Gets or Creates a Contact based on the unique indexes in the table. If there is a match
   it returns the existing contact, else it creates a new one
   """
-  @spec upsert(map()) :: Contact.t()
+  @spec upsert(map()) :: {:ok, Contact.t()}
   def upsert(attrs) do
-    Repo.insert!(
-      change_contact(%Contact{}, attrs),
-      on_conflict: [set: [phone: attrs.phone]],
-      conflict_target: :phone
-    )
+    # Get the organization
+    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+    # we keep this separate to avoid overwriting the language if already set by a contact
+    # this will not appear in the set field of the on_conflict: clause below
+    language = Map.put(%{}, :language_id, attrs[:language_id] || organization.default_language_id)
+
+    contact =
+      Repo.insert!(
+        change_contact(%Contact{}, Map.merge(language, attrs)),
+        on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
+        conflict_target: :phone
+      )
+
+    {:ok, contact}
   end
 
   @doc """
-  Full text search interface via Postgres
+  Check if this contact id is a new conatct
   """
-  @spec search(String.t()) :: [Contact.t()]
-  def search(term) do
-    query = from(c in Contact)
 
-    query
-    |> Full.run(term)
-    |> Repo.all()
+  @spec is_new_contact(integer()) :: boolean()
+  def is_new_contact(contact_id) do
+    case Glific.Messages.Message
+         |> where([c], c.contact_id == ^contact_id)
+         |> where([c], c.flow == "outbound")
+         |> Repo.all() do
+      [] -> true
+      _ -> false
+    end
+  end
+
+  @doc """
+  Update DB fields when contact opted in
+  """
+  @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
+  def contact_opted_in(phone, utc_time) do
+    upsert(%{
+      phone: phone,
+      optin_time: utc_time,
+      last_message_at: utc_time,
+      optout_time: nil,
+      status: :valid,
+      provider_status: :valid,
+      updated_at: DateTime.utc_now()
+    })
+
+    {:ok}
+  end
+
+  @doc """
+  Update DB fields when contact opted out
+  """
+  @spec contact_opted_out(String.t(), DateTime.t()) :: {:ok}
+  def contact_opted_out(phone, utc_time) do
+    upsert(%{
+      phone: phone,
+      optout_time: utc_time,
+      optin_time: nil,
+      status: :invalid,
+      provider_status: :invalid,
+      updated_at: DateTime.utc_now()
+    })
+
+    {:ok}
+  end
+
+  @doc """
+  Check if we can send a message to the contact
+  """
+
+  @spec can_send_message_to?(Contact.t()) :: boolean()
+  def can_send_message_to?(contact), do: can_send_message_to?(contact, false)
+
+  @doc false
+  @spec can_send_message_to?(Contact.t(), boolean()) :: boolean()
+  def can_send_message_to?(contact, is_hsm) when is_hsm == true do
+    with :valid <- contact.status,
+         :valid <- contact.provider_status,
+         true <- contact.optin_time != nil do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  @doc """
+  Check if we can send a session message to the contact
+  """
+  def can_send_message_to?(contact, _is_hsm) do
+    with :valid <- contact.status,
+         :valid <- contact.provider_status,
+         true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24 do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  @doc """
+  Get contact's current location
+  """
+  @spec contact_location(Contact.t()) :: {:ok, Location.t()}
+  def contact_location(contact) do
+    location =
+      Location
+      |> where([l], l.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    {:ok, location}
+  end
+
+  @doc """
+  Creates a location.
+
+  ## Examples
+      iex> Glific.Contacts.create_location(%{name: value})
+      {:ok, %Glific.Contacts.Location{}}
+
+      iex> Glific.Contacts.create_location(%{bad_field: bad_value})
+      {:error, %Ecto.Changeset{}}
+  """
+  @spec create_location(map()) :: {:ok, Location.t()} | {:error, Ecto.Changeset.t()}
+  def create_location(attrs \\ %{}) do
+    %Location{}
+    |> Location.changeset(attrs)
+    |> Repo.insert()
   end
 end

@@ -4,7 +4,12 @@ defmodule GlificWeb.Resolvers.Messages do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Messages, Messages.Message, Messages.MessageMedia, Repo}
+  alias Glific.{
+    Messages,
+    Messages.Message,
+    Messages.MessageMedia,
+    Repo
+  }
 
   @doc """
   Get a specific message by id
@@ -23,6 +28,14 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def messages(_, args, _) do
     {:ok, Messages.list_messages(args)}
+  end
+
+  @doc """
+  Get the count of messages filtered by args
+  """
+  @spec count_messages(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_messages(_, args, _) do
+    {:ok, Messages.count_messages(args)}
   end
 
   @doc false
@@ -54,13 +67,30 @@ defmodule GlificWeb.Resolvers.Messages do
     end
   end
 
-  # def send_message(_, %{id: id}, _) do
-  #   with {:ok, message} <- Repo.fetch(Message, id) do
-  #     Repo.preload(message, [:receiver, :sender, :media])
-  #     |> Communications.send_message()
-  #     {:ok, %{message: message}}
-  #   end
-  # end
+  @doc false
+  @spec create_and_send_message(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, %{message: Message.t()}}
+  def create_and_send_message(_, %{input: params}, _) do
+    with {:ok, message} <- Messages.create_and_send_message(params),
+         do: {:ok, %{message: message}}
+  end
+
+  @doc false
+  @spec create_and_send_message_to_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_and_send_message_to_contacts(_, %{input: message, contact_ids: contact_ids}, _) do
+    with {:ok, messages} <- Messages.create_and_send_message_to_contacts(message, contact_ids),
+         do: {:ok, messages}
+  end
+
+  @doc false
+  @spec send_hsm_message(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def send_hsm_message(_, %{template_id: id, receiver_id: receiver_id, parameters: parameters}, _) do
+    with {:ok, message} <-
+           Messages.create_and_send_hsm_message(id, receiver_id, parameters),
+         do: {:ok, %{message: message}}
+  end
 
   # Message Media Resolver which sits between the GraphQL schema and Glific
   # Message Context API.
@@ -82,6 +112,14 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def messages_media(_, args, _) do
     {:ok, Messages.list_messages_media(args)}
+  end
+
+  @doc """
+  Get the count of message media
+  """
+  @spec count_messages_media(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_messages_media(_, args, _) do
+    {:ok, Messages.count_messages_media(args)}
   end
 
   @doc false
@@ -112,6 +150,18 @@ defmodule GlificWeb.Resolvers.Messages do
     with {:ok, message_media} <- Repo.fetch(MessageMedia, id),
          {:ok, message_media} <- Messages.delete_message_media(message_media) do
       {:ok, message_media}
+    end
+  end
+
+  ## Subcriptions
+
+  @doc false
+  @spec publish_sent_message(map(), any(), any()) ::
+          {:ok, Message.t()} | {:error, any}
+  def publish_sent_message(args, _, _) do
+    case args do
+      %{message: message} -> {:ok, message}
+      message -> {:ok, message}
     end
   end
 end

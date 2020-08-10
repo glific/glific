@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createUserGroup($input:UserGroupInput!) {
+  createUserGroup(input: $input) {
+    ...UserGroupFields
+
+    ...ErrorFields
+  }
+}

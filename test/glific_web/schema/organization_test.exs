@@ -1,13 +1,23 @@
-defmodule GlificWeb.Schema.Query.OrganizationTest do
+defmodule GlificWeb.Schema.OrganizationTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Partners.Organization,
+    Partners.Provider,
+    Repo,
+    Seeds.SeedsDev,
+    Settings.Language
+  }
+
   setup do
-    bsp = Glific.Seeds.seed_bsps()
-    Glific.Seeds.seed_organizations(bsp)
+    provider = SeedsDev.seed_providers()
+    # contact = SeedsDev.seed_contacts()
+    SeedsDev.seed_organizations(provider)
     :ok
   end
 
+  load_gql(:count, GlificWeb.Schema, "assets/gql/organizations/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/organizations/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/organizations/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/organizations/create.gql")
@@ -24,14 +34,30 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
     res =
       organizations
       |> get_in([Access.all(), "name"])
-      |> Enum.find(fn x -> x == "Default Organization" end)
+      |> Enum.find(fn x -> x == "Glific" end)
 
-    assert res == "Default Organization"
+    assert res == "Glific"
+  end
+
+  test "count returns the number of organizations" do
+    {:ok, query_data} = query_gql_by(:count)
+    assert get_in(query_data, [:data, "countOrganizations"]) == 1
+
+    {:ok, query_data} =
+      query_gql_by(:count,
+        variables: %{"filter" => %{"name" => "This organization should never ever exist"}}
+      )
+
+    assert get_in(query_data, [:data, "countOrganizations"]) == 0
+
+    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"name" => "Glific"}})
+
+    assert get_in(query_data, [:data, "countOrganizations"]) == 1
   end
 
   test "organization id returns one organization or nil" do
-    name = "Default Organization"
-    {:ok, organization} = Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: name})
+    name = "Glific"
+    {:ok, organization} = Repo.fetch_by(Organization, %{name: name})
 
     result = query_gql_by(:by_id, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
@@ -51,11 +77,14 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
     display_name = "Organization Test Name"
     contact_name = "Test"
     email = "test2@glific.org"
-    bsp_key = "random"
-    wa_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+    provider_key = "random"
+    provider_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
-    bsp_name = "Default BSP"
-    {:ok, bsp} = Glific.Repo.fetch_by(Glific.Partners.BSP, %{name: bsp_name})
+    provider_name = "Default Provider"
+    {:ok, provider} = Repo.fetch_by(Provider, %{name: provider_name})
+
+    language_locale = "en_US"
+    {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
 
     result =
       query_gql_by(:create,
@@ -65,9 +94,10 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
             "display_name" => display_name,
             "email" => email,
             "contact_name" => contact_name,
-            "bsp_key" => bsp_key,
-            "bsp_id" => bsp.id,
-            "wa_number" => wa_number
+            "provider_key" => provider_key,
+            "provider_id" => provider.id,
+            "provider_number" => provider_number,
+            "default_language_id" => language.id
           }
         }
       )
@@ -85,9 +115,10 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
           "display_name" => display_name,
           "email" => email,
           "contact_name" => contact_name,
-          "bsp_key" => bsp_key,
-          "bsp_id" => bsp.id,
-          "wa_number" => wa_number
+          "provider_key" => provider_key,
+          "provider_id" => provider.id,
+          "provider_number" => provider_number,
+          "default_language_id" => language.id
         }
       }
     )
@@ -100,9 +131,10 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
             "display_name" => display_name,
             "email" => email,
             "contact_name" => contact_name,
-            "bsp_key" => bsp_key,
-            "bsp_id" => bsp.id,
-            "wa_number" => wa_number
+            "provider_key" => provider_key,
+            "provider_id" => provider.id,
+            "provider_number" => provider_number,
+            "default_language_id" => language.id
           }
         }
       )
@@ -114,18 +146,20 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
   end
 
   test "update an organization and test possible scenarios and errors" do
-    {:ok, organization} =
-      Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: "Default Organization"})
+    {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
 
     name = "Organization Test Name"
     display_name = "Organization Test Name"
     contact_name = "Test"
     email = "test2@glific.org"
-    bsp_key = "random"
-    wa_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+    provider_key = "random"
+    provider_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
-    bsp_name = "Default BSP"
-    {:ok, bsp} = Glific.Repo.fetch_by(Glific.Partners.BSP, %{name: bsp_name})
+    provider_name = "Default Provider"
+    {:ok, provider} = Repo.fetch_by(Provider, %{name: provider_name})
+
+    language_locale = "en_US"
+    {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
 
     result =
       query_gql_by(:update,
@@ -136,9 +170,10 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
             "display_name" => display_name,
             "email" => email,
             "contact_name" => contact_name,
-            "bsp_key" => bsp_key,
-            "bsp_id" => bsp.id,
-            "wa_number" => wa_number
+            "provider_key" => provider_key,
+            "provider_id" => provider.id,
+            "provider_number" => provider_number,
+            "default_language_id" => language.id
           }
         }
       )
@@ -156,14 +191,15 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
           "display_name" => display_name,
           "email" => "new email",
           "contact_name" => contact_name,
-          "bsp_key" => bsp_key,
-          "bsp_id" => bsp.id,
-          "wa_number" => "new wa_number"
+          "provider_key" => provider_key,
+          "provider_id" => provider.id,
+          "provider_number" => "new provider_number",
+          "default_language_id" => language.id
         }
       }
     )
 
-    # ensure we cannot update an existing organization with the same name, email or wa_number
+    # ensure we cannot update an existing organization with the same name, email or provider_number
     result =
       query_gql_by(:update,
         variables: %{
@@ -173,9 +209,10 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
             "display_name" => display_name,
             "email" => "new email",
             "contact_name" => contact_name,
-            "bsp_key" => bsp_key,
-            "bsp_id" => bsp.id,
-            "wa_number" => "new wa_number"
+            "provider_key" => provider_key,
+            "provider_id" => provider.id,
+            "provider_number" => "new provider_number",
+            "default_language_id" => language.id
           }
         }
       )
@@ -187,11 +224,11 @@ defmodule GlificWeb.Schema.Query.OrganizationTest do
   end
 
   test "delete an organization" do
-    {:ok, organization} =
-      Glific.Repo.fetch_by(Glific.Partners.Organization, %{name: "Default Organization"})
+    {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
 
     result = query_gql_by(:delete, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
+
     assert get_in(query_data, [:data, "deleteOrganization", "errors"]) == nil
 
     result = query_gql_by(:delete, variables: %{"id" => 123_456_789})

@@ -1,7 +1,11 @@
-query contacts {
-  contacts {
+query contacts ($filter: ContactFilter, $opts: Opts) {
+  contacts (filter: $filter, opts: $opts) {
     id
     name
     phone
+    groups {
+      id
+      label
+    }
   }
 }

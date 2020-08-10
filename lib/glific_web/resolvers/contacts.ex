@@ -21,6 +21,14 @@ defmodule GlificWeb.Resolvers.Contacts do
     {:ok, Contacts.list_contacts(args)}
   end
 
+  @doc """
+  Get the count of contacts filtered by args
+  """
+  @spec count_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_contacts(_, args, _) do
+    {:ok, Contacts.count_contacts(args)}
+  end
+
   @doc false
   @spec create_contact(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
@@ -50,10 +58,15 @@ defmodule GlificWeb.Resolvers.Contacts do
     end
   end
 
-  @doc false
-  @spec search(Absinthe.Resolution.t(), %{term: String.t()}, %{context: map()}) ::
-          {:ok, [any]}
-  def search(_, %{term: term}, _) do
-    {:ok, Contacts.search(term)}
+  @doc """
+  Get current location of the contact
+  """
+  @spec contact_location(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def contact_location(_, %{id: id}, _) do
+    with {:ok, contact} <- Repo.fetch(Contact, id),
+         {:ok, location} <- Contacts.contact_location(contact) do
+      {:ok, location}
+    end
   end
 end

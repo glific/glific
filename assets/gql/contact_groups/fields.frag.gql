@@ -1,0 +1,22 @@
+fragment ContactGroupFields on ContactGroupResult {
+  contact_group {
+    id
+   
+    contact {
+      id
+      name
+    }
+
+    group {
+      id
+      label
+    }
+  }
+}
+
+fragment ErrorFields on ContactGroupResult {
+  errors {
+    key
+    message
+  }
+}

@@ -9,6 +9,9 @@ config :glific, Glific.Repo,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
+# setting the state of the environment for use within code base
+config :glific, :environment, :dev
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
@@ -29,6 +32,10 @@ config :glific, GlificWeb.Endpoint,
       cd: Path.expand("../assets", __DIR__)
     ]
   ]
+
+# config :absinthe, Absinthe.Logger,
+#  pipeline: true,
+#  level: :debug
 
 # ## SSL Support
 #
@@ -79,3 +86,5 @@ config :phoenix, :plug_init_mode, :runtime
 config :goth,
   json: "config/.dialogflow.credentials.json" |> File.read!(),
   actor_email: "elixirclient@small-talk-talnvm.iam.gserviceaccount.com"
+
+import_config "dev.secret.exs"

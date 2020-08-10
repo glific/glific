@@ -6,23 +6,8 @@ defmodule GlificWeb.Schema.TagTypes do
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
-  alias Glific.{Repo, Settings.Language, Tags.Tag}
+  alias Glific.Repo
   alias GlificWeb.Resolvers
-
-  interface :search_result do
-    field :label, :string
-
-    resolve_type(fn
-      %Tag{}, _ ->
-        :tag
-
-      %Language{}, _ ->
-        :language
-
-      _, _ ->
-        nil
-    end)
-  end
 
   object :tag_result do
     field :tag, :tag
@@ -30,13 +15,16 @@ defmodule GlificWeb.Schema.TagTypes do
   end
 
   object :tag do
-    interfaces([:search_result])
-
     field :id, :id
     field :label, :string
     field :description, :string
     field :is_active, :boolean
     field :is_reserved, :boolean
+    field :keywords, list_of(:string)
+
+    field :parent, :tag do
+      resolve(dataloader(Repo))
+    end
 
     field :language, :language do
       resolve(dataloader(Repo))
@@ -51,8 +39,17 @@ defmodule GlificWeb.Schema.TagTypes do
     @desc "Match the description"
     field :description, :string
 
+    @desc "Match the parent"
+    field :parent, :string
+
+    @desc "Match the parent"
+    field :parent_id, :integer
+
     @desc "Match a language"
     field :language, :string
+
+    @desc "Match a language id"
+    field :language_id, :integer
 
     @desc "Match the active flag"
     field :is_active, :boolean
@@ -67,6 +64,7 @@ defmodule GlificWeb.Schema.TagTypes do
     field :is_active, :boolean
     field :is_reserved, :boolean
     field :language_id, :id
+    field :keywords, list_of(:string)
   end
 
   object :tag_queries do
@@ -79,8 +77,14 @@ defmodule GlificWeb.Schema.TagTypes do
     @desc "Get a list of all tags filtered by various criteria"
     field :tags, list_of(:tag) do
       arg(:filter, :tag_filter)
-      arg(:order, type: :sort_order, default_value: :asc)
+      arg(:opts, :opts)
       resolve(&Resolvers.Tags.tags/3)
+    end
+
+    @desc "Get a count of all tags filtered by various criteria"
+    field :count_tags, :integer do
+      arg(:filter, :tag_filter)
+      resolve(&Resolvers.Tags.count_tags/3)
     end
   end
 
@@ -99,6 +103,12 @@ defmodule GlificWeb.Schema.TagTypes do
     field :delete_tag, :tag_result do
       arg(:id, non_null(:id))
       resolve(&Resolvers.Tags.delete_tag/3)
+    end
+
+    @desc "Remove unread tag from messages and returns a list of message ids"
+    field :mark_contact_messages_as_read, list_of(:id) do
+      arg(:contact_id, non_null(:gid))
+      resolve(&Resolvers.Tags.mark_contact_messages_as_read/3)
     end
   end
 end

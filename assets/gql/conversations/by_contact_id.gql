@@ -1,0 +1,12 @@
+query conversation($contact_id: Gid!, $messageOpts: Opts!, $filter: ConversationFilter) {
+  conversation(contactId: $contact_id, messageOpts: $messageOpts, filter: $filter) {
+    contact {
+      id
+      name
+    }
+    messages {
+      id
+      body
+    }
+  }
+}
