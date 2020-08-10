@@ -125,7 +125,7 @@ defmodule Glific.Searches do
   end
 
   @spec do_save_search(map()) :: SavedSearch.t() | nil
-  defp do_save_search(%{save_search: true} = args),
+  defp do_save_search(%{save_search_input: save_search_input} = args) when save_search_input != nil,
     do:
       create_saved_search(%{
         label: args.save_search_input.label,

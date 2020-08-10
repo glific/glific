@@ -1,11 +1,10 @@
 query search( 
-    $saveSearch: Boolean, 
     $saveSearchInput: SaveSearchInput,
     $contactOpts: Opts!, 
     $messageOpts: Opts!, 
     $filter: SearchFilter
   ) {
-    search(saveSearch: $saveSearch, saveSearchInput:$saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts, filter: $filter) {
+    search(saveSearchInput:$saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts, filter: $filter) {
       contact {
         id
         name
