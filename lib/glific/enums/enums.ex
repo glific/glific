@@ -20,7 +20,7 @@ defmodule Glific.Enums do
   [:failed, :invalid, :processing, :valid]
 
   iex> Glific.Enums.contact_provider_status_const()
-  [:none, :session_and_hsm, :hsm_only]
+  [:none, :session, :session_and_hsm, :hsm]
 
   iex> Glific.Enums.flow_case_const()
   [:has_any_word]

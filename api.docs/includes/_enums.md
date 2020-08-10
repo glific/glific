@@ -44,11 +44,15 @@ The Contact Provider Status enum
 <td></td>
 </tr>
 <tr>
+<td valign="top"><strong>SESSION</strong></td>
+<td></td>
+</tr>
+<tr>
 <td valign="top"><strong>SESSION_AND_HSM</strong></td>
 <td></td>
 </tr>
 <tr>
-<td valign="top"><strong>HSM_ONLY</strong></td>
+<td valign="top"><strong>HSM</strong></td>
 <td></td>
 </tr>
 </tbody>
