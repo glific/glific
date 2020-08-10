@@ -1,10 +1,10 @@
 defmodule GlificWeb.API.V1.RegistrationControllerTest do
   use GlificWeb.ConnCase
 
+  alias GlificWeb.API.V1.RegistrationController
   alias Glific.{
     Contacts,
     Contacts.Contact,
-    Providers.Gupshup.Message,
     Repo,
     Seeds.SeedsDev,
     Tags.ContactTag,
@@ -34,7 +34,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     test "with valid params", %{conn: conn} do
       {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
-      {:ok, otp} = Message.create_and_send_verification_code(receiver.phone)
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver.phone)
 
       valid_params = %{
         "user" => %{
@@ -66,7 +66,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     test "with password less than minimum characters should give error", %{conn: conn} do
       {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
-      {:ok, otp} = Message.create_and_send_verification_code(receiver.phone)
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver.phone)
 
       valid_params = %{
         "user" => %{
@@ -99,7 +99,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     test "with invalid params", %{conn: conn} do
       {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
-      {:ok, otp} = Message.create_and_send_verification_code(receiver.phone)
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver.phone)
 
       invalid_params = %{
         "user" => %{
@@ -215,7 +215,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       user = user_fixture()
 
       # reset password of a user
-      {:ok, otp} = Message.create_and_send_verification_code(user.phone)
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(user.phone)
 
       valid_params = %{
         "user" => %{
@@ -252,7 +252,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     test "with incorrect phone number", %{conn: conn} do
       user = user_fixture()
 
-      {:ok, otp} = Message.create_and_send_verification_code(user.phone)
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(user.phone)
 
       invalid_params = %{
         "user" => %{
@@ -272,7 +272,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       user = user_fixture()
 
       # reset password of user
-      {:ok, otp} = Message.create_and_send_verification_code(user.phone)
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(user.phone)
 
       valid_params = %{
         "user" => %{

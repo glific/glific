@@ -154,15 +154,4 @@ defmodule Glific.Providers.Gupshup.Message do
     apply(worker_module, :new, [worker_args, [scheduled_at: message.send_at]])
     |> Oban.insert()
   end
-
-  @doc """
-  Create and send OTP
-  This function is going to be used by sms_adapter of passwordless_auth library
-  """
-  @spec create_and_send_verification_code(map()) :: {:ok, String.t()}
-  def create_and_send_verification_code(phone) do
-    code = PasswordlessAuth.generate_code(phone)
-    Glific.Messages.create_and_send_otp_verification_message(phone, code)
-    {:ok, code}
-  end
 end
