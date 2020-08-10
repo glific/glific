@@ -112,7 +112,8 @@ defmodule Glific.MixProject do
       {:timex, "~> 3.0"},
       {:slugify, "~> 1.3"},
       {:cachex, "~> 3.2"},
-      {:passwordless_auth, git: "https://github.com/madebymany/passwordless_auth.git" , branch: "v0.3.0"},
+      {:passwordless_auth,
+       git: "https://github.com/madebymany/passwordless_auth.git", branch: "v0.3.0"},
       {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"}
     ]
   end

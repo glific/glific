@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.UserTest do
   use Wormwood.GQLCase
 
   alias GlificWeb.API.V1.RegistrationController
+
   alias Glific.{
     Contacts.Contact,
     Fixtures,

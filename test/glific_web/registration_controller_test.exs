@@ -2,6 +2,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   use GlificWeb.ConnCase
 
   alias GlificWeb.API.V1.RegistrationController
+
   alias Glific.{
     Contacts,
     Contacts.Contact,
