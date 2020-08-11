@@ -156,28 +156,18 @@ defmodule Glific.Groups do
     Repo.delete(contact_group)
   end
 
-  @doc false
+  @doc """
+  Update group contacts
+  """
   @spec delete_contact_group_by_ids(integer, integer) :: {integer(), nil | [term()]}
   def delete_contact_group_by_ids(group_id, contact_id) when is_integer(contact_id) do
-    fields = %{
-      "key_1" => :group_id,
-      "key_2" => :contact_id,
-      "value_1" => group_id,
-      "values_2" => [contact_id]
-    }
-
+    fields = [{:group_id, :contact_id}, {group_id, [contact_id]}]
     Repo.delete_relationships_by_ids(ContactGroup, fields)
   end
 
   @spec delete_contact_group_by_ids(integer, []) :: {integer(), nil | [term()]}
   def delete_contact_group_by_ids(group_id, contact_ids) when is_list(contact_ids) do
-    fields = %{
-      "key_1" => :group_id,
-      "key_2" => :contact_id,
-      "value_1" => group_id,
-      "values_2" => contact_ids
-    }
-
+    fields = [{:group_id, :contact_id}, {group_id, contact_ids}]
     Repo.delete_relationships_by_ids(ContactGroup, fields)
   end
 
@@ -218,23 +208,18 @@ defmodule Glific.Groups do
   end
 
   @doc """
-  In Join tables we rarely use the table id. We always know the object ids
-  and hence more convenient to delete an entry via its object ids.
-  We will generalize this function and move it to Repo.ex when we get a better
-  handle on how to do so :)
+  Update group users
   """
   @spec delete_user_group_by_ids(integer, integer) :: {integer(), nil | [term()]}
   def delete_user_group_by_ids(group_id, user_id) when is_integer(user_id) do
-    %UserGroup{}
-    |> where([m], m.group_id == ^group_id and m.user_id == ^user_id)
-    |> Repo.delete_all()
+    fields = [{:group_id, :user_id}, {group_id, [user_id]}]
+    Repo.delete_relationships_by_ids(UserGroup, fields)
   end
 
   @spec delete_user_group_by_ids(integer, []) :: {integer(), nil | [term()]}
   def delete_user_group_by_ids(group_id, user_ids) when is_list(user_ids) do
-    UserGroup
-    |> where([m], m.group_id == ^group_id and m.user_id in ^user_ids)
-    |> Repo.delete_all()
+    fields = [{:group_id, :user_id}, {group_id, user_ids}]
+    Repo.delete_relationships_by_ids(UserGroup, fields)
   end
 
   @doc """

@@ -202,11 +202,13 @@ defmodule Glific.Repo do
   """
   @spec delete_relationships_by_ids(atom(), map()) :: {integer(), nil | [term()]}
   def delete_relationships_by_ids(object, fields) do
+    [{key_1, key_2}, {value_1, values_2}] = fields
+
     object
     |> where(
       [m],
-      field(m, ^fields["key_1"]) == ^fields["value_1"] and
-        field(m, ^fields["key_2"]) in ^fields["values_2"]
+      field(m, ^key_1) == ^value_1 and
+        field(m, ^key_2) in ^values_2
     )
     |> Repo.delete_all()
   end
