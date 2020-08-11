@@ -8,6 +8,9 @@ defmodule Glific.Contacts.Worker do
     priority: 0
 
   alias Glific.Contacts
+  alias Glific.Repo
+
+  import Ecto.Query, warn: false
 
   @doc """
   Standard perform method to use Oban worker
@@ -21,10 +24,19 @@ defmodule Glific.Contacts.Worker do
   @doc false
   @spec update_contacts_status() :: :ok
   defp update_contacts_status() do
-    Contacts.list_contacts(%{filter: %{provider_status: :session_and_hsm}})
+    t = DateTime.utc_now() |> DateTime.add(-24*60*60)
+    contacts = Contacts.Contact
+      |> where([c], c.last_message_at <= ^t)
+      |> where([c], c.provider_status == "session" or c.provider_status == "session_and_hsm")
+      |> Repo.all()
+
+    contacts
     |> Enum.each(fn contact ->
-      with true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) > 24 do
-        Contacts.update_contact(contact, %{provider_status: :none})
+      case contact.provider_status do
+        :session_and_hsm ->
+          Contacts.update_contact(contact, %{provider_status: :hsm})
+        :session ->
+          Contacts.update_contact(contact, %{provider_status: :none})
       end
     end)
 

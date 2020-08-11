@@ -236,7 +236,7 @@ defmodule Glific.Contacts do
   """
   def can_send_message_to?(contact, _is_hsm) do
     with :valid <- contact.status,
-         :session_and_hsm <- contact.provider_status,
+         true <- contact.provider_status == :session_and_hsm || :session,
          true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24 do
       true
     else
