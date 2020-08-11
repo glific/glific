@@ -1,5 +1,34 @@
 # Users
 
+## Get All Roles
+```graphql
+query {
+  roles
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+
+{
+  "data": {
+    "roles": [
+      "none",
+      "staff",
+      "manager",
+      "admin"
+    ]
+  }
+}
+```
+This returns all the roles
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+[<a href="#string">Role</a>] | List of roles
+
 ## Get All Users
 
 ```graphql
