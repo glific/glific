@@ -56,8 +56,8 @@ defmodule GlificWeb.Schema.UserGroupTest do
       )
 
     assert {:ok, query_data} = result
-    numberDeleted = get_in(query_data, [:data, "updateGroupUsers", "numberDeleted"])
-    assert numberDeleted == 1
+    number_deleted = get_in(query_data, [:data, "updateGroupUsers", "numberDeleted"])
+    assert number_deleted == 1
 
     # test for incorrect user id
     result =

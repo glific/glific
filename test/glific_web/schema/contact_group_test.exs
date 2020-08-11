@@ -21,7 +21,12 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_groups/create.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contact_groups/delete.gql")
-  load_gql(:update_group_contacts, GlificWeb.Schema, "assets/gql/contact_groups/update_group_contacts.gql")
+
+  load_gql(
+    :update_group_contacts,
+    GlificWeb.Schema,
+    "assets/gql/contact_groups/update_group_contacts.gql"
+  )
 
   test "update group contacts" do
     label = "Default Group"
@@ -58,8 +63,8 @@ defmodule GlificWeb.Schema.ContactGroupTest do
       )
 
     assert {:ok, query_data} = result
-    numberDeleted = get_in(query_data, [:data, "updateGroupContacts", "numberDeleted"])
-    assert numberDeleted == 1
+    number_deleted = get_in(query_data, [:data, "updateGroupContacts", "numberDeleted"])
+    assert number_deleted == 1
 
     # test for incorrect contact id
     result =
