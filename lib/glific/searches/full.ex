@@ -66,10 +66,9 @@ defmodule Glific.Search.Full do
   defp run_include_groups(query, _args), do: query
 
   @spec run_date_range(Ecto.Queryable.t(), any()) :: Ecto.Queryable.t()
-  defp run_date_range(query, _dates) do
-    from =  DateTime.utc_now()
-    to =  DateTime.utc_now()
-
+  defp run_date_range(query, dates) do
+    from =  Timex.to_datetime(dates.from)
+    to =  Timex.to_datetime(dates.to)
     query
     |> join(:inner, [m], c1 in Contact, as: :contact, on: m.contact_id == c1.id)
     |> where([_m, contact: c1], c1.last_message_at >= ^from and  c1.last_message_at <= ^to )

@@ -45,10 +45,10 @@ defmodule GlificWeb.Schema.SearchTypes do
 
   input_object :date_range_input do
     @desc "Start date for the filter"
-    field :from, :string
+    field :from, :date
 
     @desc "End date for the filter"
-    field :to, :string
+    field :to, :date
   end
 
   @desc "Filtering options for search"
