@@ -27,6 +27,13 @@ defmodule Glific.Searches do
     do: Repo.list_filter(args, SavedSearch, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
+  Returns the count of searches, using the same filter as list_saved_searches
+  """
+  @spec count_saved_searches(map()) :: integer
+  def count_saved_searches(args \\ %{}),
+    do: Repo.count_filter(args, SavedSearch, &Repo.filter_with/2)
+
+  @doc """
   Gets a single search.
 
   Raises `Ecto.NoResultsError` if the SavedSearch does not exist.
