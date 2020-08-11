@@ -48,8 +48,8 @@ defmodule GlificWeb.Schema.SearchTypes do
     @desc "Include conversations with these tags"
     field :include_tags, list_of(:gid)
 
-    @desc "Exclude conversations with these tags"
-    field :exclude_tags, list_of(:gid)
+    @desc "Include conversations with these groups"
+    field :include_groups, list_of(:gid)
 
     @desc "term for saving the search"
     field :term, :string

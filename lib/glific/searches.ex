@@ -151,6 +151,8 @@ defmodule Glific.Searches do
       search_query(args.filter[:term], args)
       |> Repo.all()
 
+    IO.inspect(contact_ids)
+
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Glific.Conversations.list_conversations(count)
   end
