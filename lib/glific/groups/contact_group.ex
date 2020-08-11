@@ -36,5 +36,7 @@ defmodule Glific.Groups.ContactGroup do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:contact_id, :group_id])
+    |> foreign_key_constraint(:contact_id)
+    |> foreign_key_constraint(:group_id)
   end
 end

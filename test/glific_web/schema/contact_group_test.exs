@@ -60,6 +60,22 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert {:ok, query_data} = result
     numberDeleted = get_in(query_data, [:data, "updateGroupContacts", "numberDeleted"])
     assert numberDeleted == 1
+
+    # test for incorrect contact id
+    result =
+      query_gql_by(:update_group_contacts,
+        variables: %{
+          "input" => %{
+            "group_id" => group.id,
+            "add_contact_ids" => ["-1"],
+            "delete_contact_ids" => []
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    group_contacts = get_in(query_data, [:data, "updateGroupContacts", "groupContacts"])
+    assert group_contacts == []
   end
 
   test "create a contact group and test possible scenarios and errors" do
