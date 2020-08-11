@@ -6,6 +6,7 @@ defmodule Glific.Seeds.SeedsDev do
     Contacts.Contact,
     Flows.Flow,
     Flows.FlowRevision,
+    Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
     Partners.Provider,
@@ -268,6 +269,20 @@ defmodule Glific.Seeds.SeedsDev do
       password: password,
       confirm_password: password,
       roles: ["admin"]
+    })
+  end
+
+  @doc false
+  @spec seed_groups :: {Group.t()}
+  def seed_groups do
+    Repo.insert!(%Group{
+      label: "Default Group",
+      is_restricted: false
+    })
+
+    Repo.insert!(%Group{
+      label: "Restricted Group",
+      is_restricted: true
     })
   end
 

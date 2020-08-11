@@ -16,7 +16,6 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :label, :string
     field :description, :string
     field :is_restricted, :boolean
-    field :type, :string
   end
 
   @desc "Filtering options for groups"
@@ -29,7 +28,6 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :label, :string
     field :description, :string
     field :is_restricted, :boolean
-    field :type, :string
   end
 
   object :group_queries do

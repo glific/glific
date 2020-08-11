@@ -418,8 +418,6 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :description, :string, null: true
       # visibility of conversations to the other groups
       add :is_restricted, :boolean, default: false
-      # group type: staff, beneficiary
-      add :type, :string, null: true
 
       timestamps(type: :utc_datetime)
     end
