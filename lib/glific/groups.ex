@@ -159,12 +159,6 @@ defmodule Glific.Groups do
   @doc """
   Update group contacts
   """
-  @spec delete_contact_group_by_ids(integer, integer) :: {integer(), nil | [term()]}
-  def delete_contact_group_by_ids(group_id, contact_id) when is_integer(contact_id) do
-    fields = [{:group_id, :contact_id}, {group_id, [contact_id]}]
-    Repo.delete_relationships_by_ids(ContactGroup, fields)
-  end
-
   @spec delete_contact_group_by_ids(integer, []) :: {integer(), nil | [term()]}
   def delete_contact_group_by_ids(group_id, contact_ids) when is_list(contact_ids) do
     fields = [{:group_id, :contact_id}, {group_id, contact_ids}]
@@ -210,12 +204,6 @@ defmodule Glific.Groups do
   @doc """
   Update group users
   """
-  @spec delete_user_group_by_ids(integer, integer) :: {integer(), nil | [term()]}
-  def delete_user_group_by_ids(group_id, user_id) when is_integer(user_id) do
-    fields = [{:group_id, :user_id}, {group_id, [user_id]}]
-    Repo.delete_relationships_by_ids(UserGroup, fields)
-  end
-
   @spec delete_user_group_by_ids(integer, []) :: {integer(), nil | [term()]}
   def delete_user_group_by_ids(group_id, user_ids) when is_list(user_ids) do
     fields = [{:group_id, :user_id}, {group_id, user_ids}]
