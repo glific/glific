@@ -82,6 +82,12 @@ defmodule GlificWeb.Schema.SearchTypes do
       resolve(&Resolvers.Searches.saved_searches/3)
     end
 
+    @desc "Get a count of all searches"
+    field :count_saved_searches, :integer do
+      arg(:filter, :saved_search_filter)
+      resolve(&Resolvers.Searches.count_saved_searches/3)
+    end
+
     field :saved_search_count, :integer do
       # the id of the saved search
       arg(:id, non_null(:id))

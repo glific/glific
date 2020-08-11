@@ -13,11 +13,9 @@
 Install the following packages using your favorite package manager. Links are provided for some
 
   * [Install Elixir](https://elixir-lang.org/install.html#distributions)
+    1. For Ubuntu users you also need to install the `inotify-tools` package
   * [Install Postgres](https://www.postgresql.org/download/)
-    1. For Postgres, for the development server, we default to using postgres/postgres as the username/password.
-  This is configurable
-    2. The db user needs to have **superuser status** on the database since we create a materialized view.
-  This might change in a future release to a table
+    1. For Postgres, for the development server, we default to using postgres/postgres as the username/password. This is configurable
 
 ## Download code
 

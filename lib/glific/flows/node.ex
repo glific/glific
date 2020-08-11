@@ -98,7 +98,7 @@ defmodule Glific.Flows.Node do
         # need a better way to figure out if we should handle router or action
         # this is a hack for now
         if message_stream != [] and
-             hd(message_stream) in ["completed", "expired", "Success", "Failure"],
+             String.downcase(hd(message_stream)) in ["completed", "expired", "success", "failure"],
            do: Router.execute(node.router, context, message_stream),
            else: Action.execute(hd(node.actions), context, message_stream)
 
