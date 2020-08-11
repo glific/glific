@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.UserTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias Glific.Repo
+  alias Glific.Users.User
   alias GlificWeb.Resolvers
 
   object :user_result do
@@ -45,6 +46,13 @@ defmodule GlificWeb.Schema.UserTypes do
   end
 
   object :user_queries do
+    @desc "get list of roles"
+    field :roles, list_of(:string) do
+      resolve(fn _, _, _ ->
+        {:ok, User.get_roles_list()}
+      end)
+    end
+
     @desc "get the details of one user"
     field :user, :user_result do
       arg(:id, non_null(:id))
