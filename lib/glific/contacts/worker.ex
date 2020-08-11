@@ -24,8 +24,10 @@ defmodule Glific.Contacts.Worker do
   @doc false
   @spec update_contacts_status() :: :ok
   defp update_contacts_status() do
-    t = DateTime.utc_now() |> DateTime.add(-24*60*60)
-    contacts = Contacts.Contact
+    t = DateTime.utc_now() |> DateTime.add(-24 * 60 * 60)
+
+    contacts =
+      Contacts.Contact
       |> where([c], c.last_message_at <= ^t)
       |> where([c], c.provider_status == "session" or c.provider_status == "session_and_hsm")
       |> Repo.all()
@@ -35,6 +37,7 @@ defmodule Glific.Contacts.Worker do
       case contact.provider_status do
         :session_and_hsm ->
           Contacts.update_contact(contact, %{provider_status: :hsm})
+
         :session ->
           Contacts.update_contact(contact, %{provider_status: :none})
       end

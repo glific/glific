@@ -137,10 +137,12 @@ defmodule Glific.Communications.Message do
     case provider_status do
       :hsm ->
         :session_and_hsm
+
       :none ->
         :session
+
       _ ->
-      provider_status
+        provider_status
     end
   end
 
