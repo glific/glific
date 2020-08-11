@@ -126,13 +126,13 @@ defmodule Glific.Searches do
 
   @spec do_save_search(map()) :: SavedSearch.t() | nil
   defp do_save_search(%{save_search_input: save_search_input} = args)
-    when save_search_input != nil,
-    do:
-      create_saved_search(%{
-        label: args.save_search_input.label,
-        shortcode: args.save_search_input.shortcode,
-        args: Map.put(args, :save_search_input, nil)
-      })
+       when save_search_input != nil,
+       do:
+         create_saved_search(%{
+           label: args.save_search_input.label,
+           shortcode: args.save_search_input.shortcode,
+           args: Map.put(args, :save_search_input, nil)
+         })
 
   defp do_save_search(_args), do: nil
 
@@ -151,7 +151,6 @@ defmodule Glific.Searches do
     contact_ids =
       search_query(args.filter[:term], args)
       |> Repo.all()
-
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Glific.Conversations.list_conversations(count)
@@ -217,5 +216,4 @@ defmodule Glific.Searches do
   end
 
   defp check_filter_for_save_search(args), do: args
-
 end

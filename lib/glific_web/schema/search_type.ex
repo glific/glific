@@ -67,7 +67,6 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "It will use the save search filters"
     field :saved_search_id, :id
-
   end
 
   object :search_queries do

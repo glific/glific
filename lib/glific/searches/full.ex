@@ -53,10 +53,11 @@ defmodule Glific.Search.Full do
 
   @spec run_include_groups(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   defp run_include_groups(query, groupIds) when is_list(groupIds) do
-    groupIds = Enum.map(groupIds, fn groupID ->
-      {:ok, groupID} = Glific.parse_maybe_integer(groupID)
-      groupID
-    end)
+    groupIds =
+      Enum.map(groupIds, fn groupID ->
+        {:ok, groupID} = Glific.parse_maybe_integer(groupID)
+        groupID
+      end)
 
     query
     |> join(:inner, [m], cg in ContactGroup, as: :cg, on: cg.contact_id == m.contact_id)
@@ -67,14 +68,13 @@ defmodule Glific.Search.Full do
 
   @spec run_date_range(Ecto.Queryable.t(), any()) :: Ecto.Queryable.t()
   defp run_date_range(query, dates) do
-    from =  Timex.to_datetime(dates.from)
-    to =  Timex.to_datetime(dates.to)
+    from = Timex.to_datetime(dates.from)
+    to = Timex.to_datetime(dates.to)
+
     query
     |> join(:inner, [m], c1 in Contact, as: :contact, on: m.contact_id == c1.id)
-    |> where([_m, contact: c1], c1.last_message_at >= ^from and  c1.last_message_at <= ^to )
-
+    |> where([_m, contact: c1], c1.last_message_at >= ^from and c1.last_message_at <= ^to)
   end
-
 
   @spec run_helper(Ecto.Queryable.t(), String.t(), map()) :: Ecto.Queryable.t()
   defp run_helper(query, term, args) when term != nil and term != "" do
@@ -106,9 +106,8 @@ defmodule Glific.Search.Full do
         query |> run_date_range(dates)
 
       {_key, _value}, query ->
-          query
+        query
     end)
-
   end
 
   @spec normalize(String.t()) :: String.t()
