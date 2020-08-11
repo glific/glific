@@ -66,6 +66,77 @@ Type | Description
 | ---- | -----------
 <a href="#contactgroupresult">ContactGroupResult</a> | The created contact group object
 
+## Update a Group with contacts to be added and contacts to be deleted
+
+```graphql
+mutation updateGroupContacts($input: GroupContactsInput!) {
+  updateGroupContacts(input: $input) {
+    groupContacts {
+      id
+      group {
+        label
+      }
+      contact {
+        name
+      }
+    }
+    numberDeleted
+  }
+}
+
+{
+  "input": {
+    "groupId": 2,
+    "addContactIds": [1, 2],
+    "deleteContactIds": [3, 8]
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "updateGroupContacts": {
+      "groupContacts": [
+        {
+          "contact": {
+            "name": "Default Receiver"
+          },
+          "group": {
+            "label": "Art"
+          },
+          "id": "2"
+        },
+        {
+          "contact": {
+            "name": "Glific Admin"
+          },
+          "group": {
+            "label": "Art"
+          },
+          "id": "1"
+        }
+      ],
+      "numberDeleted": 1
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#groupcontactsinput">GroupContactsInput</a> | required ||
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#group_contacts">groupContacts</a> | The list of contact groups added
+integer | The number of contact groups deleted
+
 ## Delete a ContactGroup
 
 ```graphql
@@ -190,6 +261,35 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>groupId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### GroupContactsInput ###
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>GroupId</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>AddContactIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>DeleteContactIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
 <td></td>
 </tr>
 </tbody>
