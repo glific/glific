@@ -209,7 +209,7 @@ defmodule Glific.Searches do
   # Get all the filters from saved search
   @spec check_filter_for_save_search(map()) :: map()
   defp check_filter_for_save_search(%{filter: %{saved_search_id: saved_search_id}} = args) do
-    test = saved_search_id
+    saved_search_id
     |> get_saved_search!()
     |> Map.get(:args)
     |> put_in([Access.key(:filter, %{}), :term], get_in(args, [:filter, :term]))
