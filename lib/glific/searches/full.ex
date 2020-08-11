@@ -7,7 +7,6 @@ defmodule Glific.Search.Full do
 
   alias Glific.{
     Contacts.Contact,
-    Tags.MessageTag,
     Groups.ContactGroup
   }
 
@@ -60,11 +59,23 @@ defmodule Glific.Search.Full do
     end)
 
     query
-    |> join(:inner, [m], cg in ContactGroup, on: cg.contact_id == m.contact_id)
-    |> where([_m, _f, cg], cg.group_id in ^groupIds)
+    |> join(:inner, [m], cg in ContactGroup, as: :cg, on: cg.contact_id == m.contact_id)
+    |> where([_m, cg: cg], cg.group_id in ^groupIds)
   end
 
   defp run_include_groups(query, _args), do: query
+
+  @spec run_date_range(Ecto.Queryable.t(), any()) :: Ecto.Queryable.t()
+  defp run_date_range(query, _dates) do
+    from =  DateTime.utc_now()
+    to =  DateTime.utc_now()
+
+    query
+    |> join(:inner, [m], c1 in Contact, as: :contact, on: m.contact_id == c1.id)
+    |> where([_m, contact: c1], c1.last_message_at >= ^from and  c1.last_message_at <= ^to )
+
+  end
+
 
   @spec run_helper(Ecto.Queryable.t(), String.t(), map()) :: Ecto.Queryable.t()
   defp run_helper(query, term, args) when term != nil and term != "" do
@@ -80,7 +91,6 @@ defmodule Glific.Search.Full do
 
   defp run_helper(query, _, args) do
     query
-    |> join(:inner, [m], c in Contact, on: m.contact_id == c.id)
     |> apply_filters(args.filter)
     |> offset(^args.contact_opts.offset)
     |> limit(^args.contact_opts.limit)
@@ -91,11 +101,12 @@ defmodule Glific.Search.Full do
   defp apply_filters(query, filter) do
     Enum.reduce(filter, query, fn
       {:include_groups, group_ids}, query ->
-        IO.inspect("Hell 1")
         query |> run_include_groups(group_ids)
 
+      {:date_range, dates}, query ->
+        query |> run_date_range(dates)
+
       {_key, _value}, query ->
-          IO.inspect("Hell 2")
           query
     end)
 
