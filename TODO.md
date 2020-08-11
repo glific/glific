@@ -1,11 +1,9 @@
 # Things coming in the near/far future
 
 * RapidPro like FlowBuilder functionality
-  * [Floweditor git repository](https://github.com/nyaruka/floweditor)
 * [Integrate fasttext.cc for language identification](https://fasttext.cc/docs/en/language-identification.html)
 * Integrate with [ChatBase](https://chatbase.com/documentation/suggested-intents)
 * High throughput testing framework
-* More details on a contact from WA Profile
 * Claiming conversations by Groups
 
 ## Other Advanced models we should investigate
