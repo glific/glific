@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Fixtures,
     Groups.Group,
@@ -20,6 +21,46 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_groups/create.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contact_groups/delete.gql")
+  load_gql(:update_group_contacts, GlificWeb.Schema, "assets/gql/contact_groups/update_group_contacts.gql")
+
+  test "update group contacts" do
+    label = "Default Group"
+    {:ok, group} = Repo.fetch_by(Group, %{label: label})
+
+    [contact1, contact2 | _] = Contacts.list_contacts()
+
+    # add group contacts
+    result =
+      query_gql_by(:update_group_contacts,
+        variables: %{
+          "input" => %{
+            "group_id" => group.id,
+            "add_contact_ids" => [contact1.id, contact2.id],
+            "delete_contact_ids" => []
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    group_contacts = get_in(query_data, [:data, "updateGroupContacts", "groupContacts"])
+    assert length(group_contacts) == 2
+
+    # delete group contacts
+    result =
+      query_gql_by(:update_group_contacts,
+        variables: %{
+          "input" => %{
+            "group_id" => group.id,
+            "add_contact_ids" => [],
+            "delete_contact_ids" => [contact1.id]
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    numberDeleted = get_in(query_data, [:data, "updateGroupContacts", "numberDeleted"])
+    assert numberDeleted == 1
+  end
 
   test "create a contact group and test possible scenarios and errors" do
     label = "Default Group"
