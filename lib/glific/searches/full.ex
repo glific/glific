@@ -52,16 +52,16 @@ defmodule Glific.Search.Full do
   end
 
   @spec run_include_groups(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
-  defp run_include_groups(query, groupIds) when is_list(groupIds) do
-    groupIds =
-      Enum.map(groupIds, fn groupID ->
-        {:ok, groupID} = Glific.parse_maybe_integer(groupID)
-        groupID
+  defp run_include_groups(query, group_ids) when is_list(group_ids) do
+    group_ids =
+      Enum.map(group_ids, fn group_id ->
+        {:ok, group_id} = Glific.parse_maybe_integer(group_id)
+        group_id
       end)
 
     query
     |> join(:inner, [m], cg in ContactGroup, as: :cg, on: cg.contact_id == m.contact_id)
-    |> where([_m, cg: cg], cg.group_id in ^groupIds)
+    |> where([_m, cg: cg], cg.group_id in ^group_ids)
   end
 
   defp run_include_groups(query, _args), do: query
