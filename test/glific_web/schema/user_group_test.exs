@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
   alias Glific.{
     Fixtures,
+    Groups,
     Groups.Group,
     Repo,
     Seeds.SeedsDev,
@@ -20,6 +21,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/user_groups/create.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/user_groups/delete.gql")
   load_gql(:update_group_users, GlificWeb.Schema, "assets/gql/user_groups/update_group_users.gql")
+  load_gql(:update_user_groups, GlificWeb.Schema, "assets/gql/user_groups/update_user_groups.gql")
 
   test "update group users" do
     label = "Default Group"
@@ -74,6 +76,61 @@ defmodule GlificWeb.Schema.UserGroupTest do
     assert {:ok, query_data} = result
     group_users = get_in(query_data, [:data, "updateGroupUsers", "groupUsers"])
     assert group_users == []
+  end
+
+  test "update user groups" do
+    name = "NGO Admin"
+    {:ok, user} = Repo.fetch_by(User, %{name: name})
+
+    [group1, group2 | _] = Groups.list_groups()
+
+    # add user groups
+    result =
+      query_gql_by(:update_user_groups,
+        variables: %{
+          "input" => %{
+            "user_id" => user.id,
+            "add_group_ids" => [group1.id, group2.id],
+            "delete_group_ids" => []
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    user_groups = get_in(query_data, [:data, "updateUserGroups", "userGroups"])
+    assert length(user_groups) == 2
+
+    # delete group groups
+    result =
+      query_gql_by(:update_user_groups,
+        variables: %{
+          "input" => %{
+            "user_id" => user.id,
+            "add_group_ids" => [],
+            "delete_group_ids" => [group1.id]
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    number_deleted = get_in(query_data, [:data, "updateUserGroups", "numberDeleted"])
+    assert number_deleted == 1
+
+    # test for incorrect group id
+    result =
+      query_gql_by(:update_user_groups,
+        variables: %{
+          "input" => %{
+            "user_id" => user.id,
+            "add_group_ids" => ["-1"],
+            "delete_group_ids" => []
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    user_groups = get_in(query_data, [:data, "updateUserGroups", "userGroups"])
+    assert user_groups == []
   end
 
   test "create a user group and test possible scenarios and errors" do

@@ -202,11 +202,20 @@ defmodule Glific.Groups do
   end
 
   @doc """
-  Update group users
+  Delete group users
   """
-  @spec delete_user_group_by_ids(integer, []) :: {integer(), nil | [term()]}
-  def delete_user_group_by_ids(group_id, user_ids) do
+  @spec delete_group_users_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_group_users_by_ids(group_id, user_ids) do
     fields = {{:group_id, group_id}, {:user_id, user_ids}}
+    Repo.delete_relationships_by_ids(UserGroup, fields)
+  end
+
+  @doc """
+  Delete user groups
+  """
+  @spec delete_user_groups_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_user_groups_by_ids(user_id, group_ids) do
+    fields = {{:user_id, user_id}, {:group_id, group_ids}}
     Repo.delete_relationships_by_ids(UserGroup, fields)
   end
 

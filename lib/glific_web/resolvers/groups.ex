@@ -118,6 +118,14 @@ defmodule GlificWeb.Resolvers.Groups do
     {:ok, group_users}
   end
 
+  @doc false
+  @spec update_user_groups(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_user_groups(_, %{input: params}, _) do
+    group_users = Groups.UserGroups.update_user_groups(params)
+    {:ok, group_users}
+  end
+
   @doc """
   Deletes an user group entry
   """

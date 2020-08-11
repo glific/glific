@@ -45,7 +45,7 @@ defmodule Glific.Groups.GroupUsers do
         end
       )
 
-    {number_deleted, _} = Groups.delete_user_group_by_ids(group_id, delete_ids)
+    {number_deleted, _} = Groups.delete_group_users_by_ids(group_id, delete_ids)
 
     %GroupUsers{
       number_deleted: number_deleted,
