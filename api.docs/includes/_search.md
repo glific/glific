@@ -3,11 +3,10 @@
 ## Search Contacts and Conversations
 
 ```graphql
-query search( 
-  $saveSearch: Boolean!,  $saveSearchInput: SaveSearchInput,
+query search(  $saveSearchInput: SaveSearchInput,
   $searchFilter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!) {
 
-  search(filter: $searchFilter, saveSearch: $saveSearch,  saveSearchInput: $saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts) {
+  search(filter: $searchFilter, saveSearchInput: $saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts) {
 
     messages {
       id,
@@ -24,7 +23,6 @@ query search(
 }
 
 {
-  "saveSearch": true,
   "saveSearchInput": {
       "label" => "Save with this name",
       "shortcode" => "SaveName"
@@ -96,10 +94,9 @@ This returns a list of conversations that match the term and filters <a href="#c
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-saveSearch | <a href="#boolean">Boolean</a> | nil | Search should be saved or not
 filter | <a href="#searchfilter">SearchFilter</a> | nil | filter the list
 
-saveSearchInput | <a href="#savesearchinput">SaveSearchInput</a> | nil | filter the list
+saveSearchInput | <a href="#savesearchinput">SaveSearchInput</a> | nil | filter the list. The label and other parameter should be available.
 
 messageOpts | <a href="#opts">Opts</a> | nil | limit / offset message options
 contactOpts | <a href="#opts">Opts</a> | nil | limit / offset contact options

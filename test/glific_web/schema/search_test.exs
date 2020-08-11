@@ -23,6 +23,7 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   load_gql(:list, GlificWeb.Schema, "assets/gql/searches/list.gql")
+  load_gql(:count, GlificWeb.Schema, "assets/gql/searches/count.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/searches/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/searches/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/searches/update.gql")
@@ -31,13 +32,32 @@ defmodule GlificWeb.Schema.SearchTest do
   load_gql(:search_execute, GlificWeb.Schema, "assets/gql/searches/search_execute.gql")
   load_gql(:search_count, GlificWeb.Schema, "assets/gql/searches/search_count.gql")
 
-  test "search field returns list of searches" do
+  test "savedSearches field returns list of searches" do
     result = query_gql_by(:list)
     assert {:ok, query_data} = result
     saved_searches = get_in(query_data, [:data, "savedSearches"])
     assert length(saved_searches) > 0
     [saved_search | _] = saved_searches
     assert get_in(saved_search, ["label"]) != nil
+  end
+
+  test "count returns the number of savedSearches" do
+    {:ok, query_data} = query_gql_by(:count)
+    assert get_in(query_data, [:data, "countSavedSearches"]) >= 5
+
+    {:ok, query_data} =
+      query_gql_by(:count,
+        variables: %{"filter" => %{"label" => "This tag should never ever exist"}}
+      )
+
+    assert get_in(query_data, [:data, "countSavedSearches"]) == 0
+
+    {:ok, query_data} =
+      query_gql_by(:count,
+        variables: %{"filter" => %{"label" => "Conversations read but not replied"}}
+      )
+
+    assert get_in(query_data, [:data, "countSavedSearches"]) == 1
   end
 
   test "savedSearch id returns one saved search or nil" do
@@ -138,7 +158,6 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "saveSearch" => false,
           "filter" => %{"term" => ""},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
@@ -153,11 +172,6 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "saveSearch" => false,
-          "saveSearchInput" => %{
-            "label" => "",
-            "shortcode" => ""
-          },
           "filter" => %{"term" => "Default receiver"},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
@@ -170,11 +184,6 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "saveSearch" => false,
-          "saveSearchInput" => %{
-            "label" => "",
-            "shortcode" => ""
-          },
           "filter" => %{"term" => "This term is highly unlikely to occur superfragerlicious"},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
@@ -189,11 +198,6 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "saveSearch" => false,
-          "saveSearchInput" => %{
-            "label" => "",
-            "shortcode" => ""
-          },
           "filter" => %{"term" => ""},
           "contactOpts" => %{"limit" => Contacts.count_contacts()},
           "messageOpts" => %{"limit" => 1}
@@ -209,7 +213,6 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "saveSearch" => true,
           "saveSearchInput" => %{
             "label" => "Save with Search",
             "shortcode" => "SaveSearch"
