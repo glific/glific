@@ -7,6 +7,7 @@ defmodule Glific.Partners do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Caches,
     Contacts.Contact,
     Partners.Organization,
     Partners.Provider,
@@ -283,13 +284,23 @@ defmodule Glific.Partners do
   We will cache this soon, since this is a frequently requested item. This contact id is special
   since it is the sender for all outbound messages and the receiver for all inbound messages
   """
-  @spec organization_contact_id() :: integer()
+  @spec organization_contact_id() :: {atom, integer()}
   def organization_contact_id do
     # Get contact id
-    Contact
-    |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
-    |> select([c, _o], c.id)
-    |> limit(1)
-    |> Repo.one()
+    case Caches.get("organization_contact_id") do
+      {:ok, false} ->
+        contact_id =
+          Contact
+          |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
+          |> select([c, _o], c.id)
+          |> limit(1)
+          |> Repo.one()
+
+        Caches.set("organization_contact_id", contact_id)
+        contact_id
+
+      {:ok, contact_id} ->
+        contact_id
+    end
   end
 end
