@@ -29,18 +29,12 @@ defmodule Glific.Contacts.Worker do
     contacts =
       Contacts.Contact
       |> where([c], c.last_message_at <= ^t)
-      |> where([c], c.provider_status == "session" or c.provider_status == "session_and_hsm")
       |> Repo.all()
 
     contacts
     |> Enum.each(fn contact ->
-      case contact.provider_status do
-        :session_and_hsm ->
-          Contacts.update_contact(contact, %{provider_status: :hsm})
-
-        :session ->
-          Contacts.update_contact(contact, %{provider_status: :none})
-      end
+      new_status = Contacts.set_session_status(contact, :none)
+      Contacts.update_contact(contact, %{provider_status: new_status})
     end)
 
     :ok

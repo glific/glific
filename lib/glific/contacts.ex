@@ -274,4 +274,28 @@ defmodule Glific.Contacts do
     |> Location.changeset(attrs)
     |> Repo.insert()
   end
+
+  @doc """
+  Set session status for opted in and opted out contacts
+  """
+  @spec set_session_status(Contact.t(), atom()) :: atom()
+  def set_session_status(contact, status) when status == :none do
+    case contact.optin_time != nil do
+      false ->
+        :none
+
+      true ->
+        :hsm
+    end
+  end
+
+  def set_session_status(contact, status) when status == :session do
+    case contact.optin_time != nil do
+      false ->
+        :session
+
+      true ->
+        :session_and_hsm
+    end
+  end
 end

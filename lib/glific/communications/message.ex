@@ -109,7 +109,7 @@ defmodule Glific.Communications.Message do
     {:ok, contact} =
       message_params.sender
       |> Map.put(:last_message_at, DateTime.utc_now())
-      |> Map.put(:provider_status, set_provider_status(contact.provider_status))
+      |> Map.put(:provider_status, Contacts.set_session_status(contact, :session))
       |> Contacts.upsert()
 
     message_params =
@@ -129,20 +129,6 @@ defmodule Glific.Communications.Message do
       # For location and address messages, will add that when there will be a use case
       type == :location -> receive_location(message_params)
       true -> {:error, "Message type not supported"}
-    end
-  end
-
-  @spec set_provider_status(atom()) :: atom()
-  defp set_provider_status(provider_status) do
-    case provider_status do
-      :hsm ->
-        :session_and_hsm
-
-      :none ->
-        :session
-
-      _ ->
-        provider_status
     end
   end
 
