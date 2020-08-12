@@ -212,8 +212,10 @@ defmodule Glific.Partners do
 
   @spec get_cached_organization!() :: {atom, any}
   defp get_cached_organization!() do
-    with {:ok, false} <- Caches.get("organization"), do:
-      Caches.set("organization", Repo.get!(Organization, id))
+    with {:ok, false} <- Caches.get("organization") do
+      [organization | _ ] =  list_organizations()
+      Caches.set("organization", organization)
+    end
   end
 
   @doc ~S"""
@@ -301,7 +303,12 @@ defmodule Glific.Partners do
           |> select([c, _o], c.id)
           |> limit(1)
           |> Repo.one()
-      Caches.set("organization_contact_id", contact_id)
+
+        {:ok, contact_id} = Caches.set("organization_contact_id", contact_id)
+        contact_id
+
+      else
+        {:ok, contact_id} -> contact_id
     end
   end
 end
