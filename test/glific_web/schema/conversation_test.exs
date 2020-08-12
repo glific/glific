@@ -125,8 +125,6 @@ defmodule GlificWeb.Schema.ConversationTest do
         }
       )
 
-    IO.inspect(result)
-
     assert get_in(result, [:data, "search"]) |> length == length(contact_ids)
     assert get_in(result, [:data, "search", Access.at(0), "contact", "id"]) in contact_ids
   end

@@ -231,19 +231,11 @@ defmodule Glific.Searches do
 
   # Get all the filters from saved search
   @spec check_filter_for_save_search(map()) :: map()
-  defp check_filter_for_save_search(%{filter: %{saved_search_id: saved_search_id}} = args) do
-    saved_search_args =
-          get_saved_search!(saved_search_id)
-          |> Map.get(:args)
-
-    saved_search_args =
-          if(get_in(args, [:filter, :term])) do
-            put_in(saved_search_args, ["filter", "term"], get_in(args, [:filter, :term]))
-          else
-            saved_search_args
-          end
-
-    convert_to_atom(saved_search_args)
+  defp check_filter_for_save_search(%{filter: %{saved_search_id: id}} = args) do
+    get_saved_search!(id)
+    |> Map.get(:args)
+    |> add_term(Map.get(args, :term))
+    |> convert_to_atom()
   end
 
 
