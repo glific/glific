@@ -84,12 +84,6 @@ config :sentry,
   },
   included_environments: [:prod]
 
-# config dialogflow
-config :glific,
-  dialogflow_url: "https://dialogflow.clients6.google.com",
-  dialogflow_project_id: "newagent-wtro",
-  dialogflow_project_email: "dialogflow-pnfavu@newagent-wtro.iam.gserviceaccount.com"
-
 # phil columns to seed production data
 config :phil_columns,
   ensure_all_started: ~w(timex)a
@@ -110,6 +104,10 @@ config :fun_with_flags, :cache_bust_notifications,
   enabled: true,
   adapter: FunWithFlags.Notifications.PhoenixPubSub,
   client: Glific.PubSub
+
+# import the dialogflow config, splitting it up into a seperate file
+# since we have some code in there to handle credentials
+import_config "dialogflow.exs"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
