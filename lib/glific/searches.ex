@@ -171,32 +171,16 @@ defmodule Glific.Searches do
   defp add_term(args, term) when is_nil(term) or term == "", do: args
   defp add_term(args, term), do: Map.put(args, :term, term)
 
+
   @doc """
   Execute a saved search, if term is sent in, it is added to
   the saved search. Either return conversations or count
   """
-  @spec saved_search_execute(map(), boolean) :: [Conversation.t()] | integer
-  def saved_search_execute(%{id: id} = args, count \\ false) do
-    get_saved_search!(id)
-    |> Map.get(:args)
-    |> add_term(Map.get(args, :term))
-    |> convert_to_atom()
-    |> search(count)
-  end
-
-
-   @doc """
-  Execute a saved search, if term is sent in, it is added to
-  the saved search. Either return conversations or count
-  """
-  @spec saved_search_count(map(), boolean) :: [Conversation.t()] | integer
-  def saved_search_count(%{id: id} = args, count \\ false) do
-    get_saved_search!(id)
-    |> Map.get(:args)
-    |> add_term(Map.get(args, :term))
-    |> convert_to_atom()
-    |> search(count)
-  end
+  @spec saved_search_count(map()) :: [Conversation.t()] | integer
+  def saved_search_count(%{id: id} = args),
+    do:
+    saved_search_args_map(id, args)
+    |> search(true)
 
   @doc """
   Given a jsonb string, typically either from the database, or maybe via graphql
@@ -231,13 +215,15 @@ defmodule Glific.Searches do
 
   # Get all the filters from saved search
   @spec check_filter_for_save_search(map()) :: map()
-  defp check_filter_for_save_search(%{filter: %{saved_search_id: id}} = args) do
-    get_saved_search!(id)
-    |> Map.get(:args)
-    |> add_term(Map.get(args, :term))
-    |> convert_to_atom()
-  end
-
+  defp check_filter_for_save_search(%{filter: %{saved_search_id: id}} = args),
+  do: saved_search_args_map(id, args)
 
   defp check_filter_for_save_search(args), do: args
+
+  # Get the args map from the saved search and override the term
+  defp saved_search_args_map(id, args),
+    do: get_saved_search!(id)
+      |> Map.get(:args)
+      |> add_term(Map.get(args, :term))
+      |> convert_to_atom()
 end
