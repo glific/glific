@@ -13,7 +13,6 @@ defmodule GlificWeb.Schema do
 
   import_types(__MODULE__.ContactTypes)
   import_types(__MODULE__.ContactTagTypes)
-  import_types(__MODULE__.ConversationTypes)
   import_types(__MODULE__.EnumTypes)
   import_types(__MODULE__.GenericTypes)
   import_types(__MODULE__.LanguageTypes)
@@ -33,8 +32,6 @@ defmodule GlificWeb.Schema do
 
   query do
     import_fields(:contact_queries)
-
-    import_fields(:conversation_queries)
 
     import_fields(:language_queries)
 
