@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Searches do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Conversations, Repo, Searches, Searches.SavedSearch}
+  alias Glific.{Repo, Searches, Searches.SavedSearch}
 
   @doc """
   Get a specific saved_search by id
