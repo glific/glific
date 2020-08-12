@@ -250,9 +250,6 @@ defmodule Glific.Repo.Migrations.GlificCore do
   """
   def messages do
     create table(:messages) do
-      # Message uuid, primarly needed for flow editor
-      add :uuid, :uuid, null: false
-
       # The body of the message
       add :body, :text
 
