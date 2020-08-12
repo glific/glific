@@ -51,7 +51,7 @@ defmodule Glific.Messages.Message do
   ]
 
   schema "messages" do
-    field :uuid, Ecto.UUID, autogenerate: true
+    field :uuid, Ecto.UUID
     field :body, :string
     field :flow, MessageFlow
     field :type, MessageType
