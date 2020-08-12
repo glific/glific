@@ -61,27 +61,22 @@ defmodule Glific.Search.Full do
 
     query
     |> join(:inner, [m], cg in ContactGroup, as: :cg, on: cg.contact_id == m.contact_id)
-    |> where([_m, cg: cg], cg.group_id in ^group_ids)
+    |> where([cg: cg], cg.group_id in ^group_ids)
   end
 
   defp run_include_groups(query, _args), do: query
 
   @spec run_date_range(Ecto.Queryable.t(), any()) :: Ecto.Queryable.t()
   defp run_date_range(query, dates) do
-    from = Timex.to_datetime(dates.from)
-    to = Timex.to_datetime(dates.to)
-
     query
     |> join(:inner, [m], c1 in Contact, as: :contact, on: m.contact_id == c1.id)
-    |> where([_m, contact: c1], c1.last_message_at >= ^from and c1.last_message_at <= ^to)
+    |> date_query(dates[:from], dates[:to])
   end
 
   @spec run_helper(Ecto.Queryable.t(), String.t(), map()) :: Ecto.Queryable.t()
   defp run_helper(query, term, args) when term != nil and term != "" do
     query
-    |> join(:inner, [m], id_and_rank in matching_contact_ids_and_ranks(term, args),
-      on: id_and_rank.contact_id == m.contact_id
-    )
+    |> join(:inner, [m], id_and_rank in matching_contact_ids_and_ranks(term, args), as: :id_and_rank, on: id_and_rank.contact_id == m.contact_id)
     # eliminate any previous order by, since this takes precedence
     |> apply_filters(args.filter)
     |> exclude(:order_by)
@@ -95,6 +90,7 @@ defmodule Glific.Search.Full do
     |> limit(^args.contact_opts.limit)
   end
 
+  @spec apply_filters(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   defp apply_filters(query, filter) when is_nil(filter), do: query
 
   defp apply_filters(query, filter) do
@@ -120,4 +116,24 @@ defmodule Glific.Search.Full do
   end
 
   defp normalize(term), do: term
+
+  # Filter based on the date range
+  @spec date_query(Ecto.Queryable.t(), DateTime.t(), DateTime.t()) :: Ecto.Queryable.t()
+  defp date_query(query, nil, nil), do: query
+
+  defp date_query(query, nil, to) do
+    query
+    |> where([contact: c1], c1.last_message_at <= ^Timex.to_datetime(to))
+  end
+
+  defp date_query(query, from, nil) do
+    query
+    |> where([contact: c1], c1.last_message_at >= ^Timex.to_datetime(from))
+  end
+
+  defp date_query(query, from, to) do
+    query
+    |> where([contact: c1], c1.last_message_at >= ^Timex.to_datetime(from) and c1.last_message_at <= ^Timex.to_datetime(to))
+  end
+
 end
