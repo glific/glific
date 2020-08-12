@@ -47,14 +47,44 @@ query savedSearches($filter: SavedSearchFilter!, $opts: Opts) {
   }
 }
 ```
-This returns all the saved searches for the organization filtered by the input <a href="#savedsearchfilters">SavedSearchFilter</a>
+This returns all the saved searches for the organization filtered by the input <a href="#savedsearchfilter">SavedSearchFilter</a>
 
 ### Query Parameters
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-filter | <a href="#savedsearchfilters">SavedSearchFilter</a> | nil | filter the list
+filter | <a href="#savedsearchfilter">SavedSearchFilter</a> | nil | filter the list
 opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+
+## Count all Saved Searches
+
+```graphql
+query countSavedSearches($filter: SavedSearchFilter) {
+  countSavedSearches(filter: $filter)
+}
+
+{
+  "filter": {
+    "label": "Conversations read but not replied"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "countSavedSearches": 1
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+filter | <a href="#savedsearchfilter">SavedSearchFilter</a> | nil | filter the list
 
 ## Get a specific Saved Search by ID
 

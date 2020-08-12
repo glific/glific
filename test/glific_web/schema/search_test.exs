@@ -2,10 +2,13 @@ defmodule GlificWeb.Schema.SearchTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  import Ecto.Query
+
   alias Glific.{
     Contacts,
     Contacts.Contact,
     Messages,
+    Messages.Message,
     Repo,
     Searches,
     Searches.SavedSearch,
@@ -23,21 +26,40 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   load_gql(:list, GlificWeb.Schema, "assets/gql/searches/list.gql")
+  load_gql(:count, GlificWeb.Schema, "assets/gql/searches/count.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/searches/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/searches/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/searches/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/searches/delete.gql")
   load_gql(:search, GlificWeb.Schema, "assets/gql/searches/search.gql")
-  load_gql(:search_execute, GlificWeb.Schema, "assets/gql/searches/search_execute.gql")
   load_gql(:search_count, GlificWeb.Schema, "assets/gql/searches/search_count.gql")
 
-  test "search field returns list of searches" do
+  test "savedSearches field returns list of searches" do
     result = query_gql_by(:list)
     assert {:ok, query_data} = result
     saved_searches = get_in(query_data, [:data, "savedSearches"])
     assert length(saved_searches) > 0
     [saved_search | _] = saved_searches
     assert get_in(saved_search, ["label"]) != nil
+  end
+
+  test "count returns the number of savedSearches" do
+    {:ok, query_data} = query_gql_by(:count)
+    assert get_in(query_data, [:data, "countSavedSearches"]) >= 5
+
+    {:ok, query_data} =
+      query_gql_by(:count,
+        variables: %{"filter" => %{"label" => "This tag should never ever exist"}}
+      )
+
+    assert get_in(query_data, [:data, "countSavedSearches"]) == 0
+
+    {:ok, query_data} =
+      query_gql_by(:count,
+        variables: %{"filter" => %{"label" => "Conversations read but not replied"}}
+      )
+
+    assert get_in(query_data, [:data, "countSavedSearches"]) == 1
   end
 
   test "savedSearch id returns one saved search or nil" do
@@ -138,7 +160,6 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "saveSearch" => false,
           "filter" => %{"term" => ""},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
@@ -153,11 +174,6 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "saveSearch" => false,
-          "saveSearchInput" => %{
-            "label" => "",
-            "shortcode" => ""
-          },
           "filter" => %{"term" => "Default receiver"},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
@@ -170,11 +186,6 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "saveSearch" => false,
-          "saveSearchInput" => %{
-            "label" => "",
-            "shortcode" => ""
-          },
           "filter" => %{"term" => "This term is highly unlikely to occur superfragerlicious"},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
@@ -189,11 +200,6 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "saveSearch" => false,
-          "saveSearchInput" => %{
-            "label" => "",
-            "shortcode" => ""
-          },
           "filter" => %{"term" => ""},
           "contactOpts" => %{"limit" => Contacts.count_contacts()},
           "messageOpts" => %{"limit" => 1}
@@ -209,7 +215,6 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "saveSearch" => true,
           "saveSearchInput" => %{
             "label" => "Save with Search",
             "shortcode" => "SaveSearch"
@@ -328,23 +333,31 @@ defmodule GlificWeb.Schema.SearchTest do
     })
 
     result =
-      query_gql_by(:search_execute,
-        variables: %{"id" => saved_search.id}
+      query_gql_by(:search,
+        variables: %{
+          "filter" => %{"savedSearchId" => saved_search.id},
+          "contactOpts" => %{},
+          "messageOpts" => %{}
+        }
       )
 
     assert {:ok, query_data} = result
 
-    assert get_in(query_data, [:data, "savedSearchExecute", Access.at(0), "contact", "id"]) ==
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
              to_string(sender.id)
 
     result =
-      query_gql_by(:search_execute,
-        variables: %{"id" => saved_search.id, "term" => "defa"}
+      query_gql_by(:search,
+        variables: %{
+          "filter" => %{"savedSearchId" => saved_search.id, "term" => "defa"},
+          "contactOpts" => %{},
+          "messageOpts" => %{}
+        }
       )
 
     assert {:ok, query_data} = result
 
-    assert get_in(query_data, [:data, "savedSearchExecute", Access.at(0), "contact", "id"]) ==
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
              to_string(sender.id)
 
     result =
@@ -354,5 +367,122 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "savedSearchCount"]) == 1
+  end
+
+  # Let's test some of the essential search queries for the conversation
+
+  test "conversations always returns a few threads" do
+    {:ok, result} =
+      query_gql_by(:search,
+        variables: %{
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 3},
+          "filter" => %{}
+        }
+      )
+
+    assert get_in(result, [:data, "search"]) |> length >= 1
+
+    contact_id = get_in(result, [:data, "search", Access.at(0), "contact", "id"])
+
+    {:ok, result} =
+      query_gql_by(:search,
+        variables: %{
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1},
+          "filter" => %{"id" => contact_id}
+        }
+      )
+
+    assert get_in(result, [:data, "search"]) |> length == 1
+  end
+
+  test "conversations filtered by a contact id" do
+    # if we send in an invalid id, we should not see any conversations
+    {:ok, result} =
+      query_gql_by(:search,
+        variables: %{
+          "contactOpts" => %{"limit" => 3},
+          "messageOpts" => %{"limit" => 3},
+          "filter" => %{"Gid" => "234567893453"}
+        }
+      )
+
+    assert get_in(result, [:data, "search"]) == nil
+
+    # lets create a new contact with no message
+    {:ok, contact} =
+      Contacts.create_contact(%{name: "My conversation contact", phone: "+123456789"})
+
+    cid = Integer.to_string(contact.id)
+
+    {:ok, result} =
+      query_gql_by(:search,
+        variables: %{
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1},
+          "filter" => %{"id" => cid}
+        }
+      )
+
+    assert get_in(result, [:data, "search"]) |> length == 1
+    assert get_in(result, [:data, "search", Access.at(0), "contact", "id"]) == cid
+    assert get_in(result, [:data, "search", Access.at(0), "messages"]) == []
+  end
+
+  test "conversation by id" do
+    # lets create a new contact with no message
+    {:ok, contact} =
+      Contacts.create_contact(%{name: "My conversation contact", phone: "+123456789"})
+
+    cid = Integer.to_string(contact.id)
+
+    {:ok, result} =
+      query_gql_by(:search,
+        variables: %{
+          "messageOpts" => %{"limit" => 1},
+          "filter" => %{"id" => cid},
+          "contactOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert get_in(result, [:data, "search"]) != nil
+    assert get_in(result, [:data, "search", Access.at(0), "contact", "id"]) == cid
+    assert get_in(result, [:data, "search", Access.at(0), "messages"]) == []
+
+    # if we send in an invalid id, we should get nil
+
+    {:ok, result} =
+      query_gql_by(:search,
+        variables: %{
+          "messageOpts" => %{"limit" => 3},
+          "filter" => %{"id" => "234567893453"}
+        }
+      )
+
+    assert get_in(result, [:data, "search"]) == nil
+  end
+
+  test "conversation by ids" do
+    # lets create a new contact with no message
+    Contacts.create_contact(%{name: "My conversation contact", phone: "+123456789"})
+
+    contact_ids =
+      from(c in Message, select: c.contact_id)
+      |> Repo.all()
+      |> Enum.map(&Integer.to_string(&1))
+      |> Enum.uniq()
+
+    {:ok, result} =
+      query_gql_by(:search,
+        variables: %{
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1},
+          "filter" => %{"ids" => contact_ids}
+        }
+      )
+
+    assert get_in(result, [:data, "search"]) |> length == length(contact_ids)
+    assert get_in(result, [:data, "search", Access.at(0), "contact", "id"]) in contact_ids
   end
 end
