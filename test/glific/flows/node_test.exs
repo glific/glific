@@ -98,7 +98,11 @@ defmodule Glific.Flows.NodeTest do
           "type" => "set_contact_language",
           "language" => "English (United States)"
         },
-        %{"uuid" => Ecto.UUID.generate(), "type" => "send_msg", "text" => "This is a test message"}
+        %{
+          "uuid" => Ecto.UUID.generate(),
+          "type" => "send_msg",
+          "text" => "This is a test message"
+        }
       ],
       "exits" => [
         %{"uuid" => "UUID Exit 1", "destination_uuid" => nil}

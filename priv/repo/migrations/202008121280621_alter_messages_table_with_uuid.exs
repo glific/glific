@@ -1,5 +1,6 @@
 defmodule Glific.Repo.Migrations.AlterMessageTableForUUID do
   use Ecto.Migration
+
   @moduledoc """
   Alter messages table with uuid field
   """
