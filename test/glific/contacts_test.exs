@@ -22,16 +22,16 @@ defmodule Glific.ContactsTest do
     @valid_attrs %{
       name: "some name",
       optin_time: ~U[2010-04-17 14:00:00Z],
-      optout_time: ~U[2010-04-17 14:00:00Z],
+      optout_time: nil,
       phone: "some phone",
       status: :valid,
-      provider_status: :none,
+      provider_status: :hsm,
       fileds: %{}
     }
     @valid_attrs_1 %{
       name: "some name 1",
-      optin_time: ~U[2010-04-17 14:00:00Z],
-      optout_time: ~U[2010-04-17 14:00:00Z],
+      optin_time: nil,
+      optout_time: nil,
       phone: "some phone 1",
       status: :invalid,
       provider_status: :none,
@@ -40,16 +40,16 @@ defmodule Glific.ContactsTest do
     @valid_attrs_2 %{
       name: "some name 2",
       optin_time: ~U[2010-04-17 14:00:00Z],
-      optout_time: ~U[2010-04-17 14:00:00Z],
+      optout_time: nil,
       phone: "some phone 2",
       status: :valid,
-      provider_status: :session_and_hsm,
+      provider_status: :hsm,
       fileds: %{}
     }
     @valid_attrs_3 %{
       name: "some name 3",
-      optin_time: ~U[2010-04-17 14:00:00Z],
-      optout_time: ~U[2010-04-17 14:00:00Z],
+      optin_time: DateTime.utc_now(),
+      optout_time: nil,
       phone: "some phone 3",
       status: :invalid,
       provider_status: :session_and_hsm,
@@ -57,8 +57,8 @@ defmodule Glific.ContactsTest do
     }
     @valid_attrs_to_test_order_1 %{
       name: "aaaa name",
-      optin_time: ~U[2010-04-17 14:00:00Z],
-      optout_time: ~U[2010-04-17 14:00:00Z],
+      optin_time: nil,
+      optout_time: nil,
       phone: "some phone 4",
       status: :valid,
       provider_status: :none,
@@ -66,8 +66,8 @@ defmodule Glific.ContactsTest do
     }
     @valid_attrs_to_test_order_2 %{
       name: "zzzz name",
-      optin_time: ~U[2010-04-17 14:00:00Z],
-      optout_time: ~U[2010-04-17 14:00:00Z],
+      optin_time: nil,
+      optout_time: nil,
       phone: "some phone 5",
       status: :valid,
       provider_status: :none,
@@ -76,10 +76,10 @@ defmodule Glific.ContactsTest do
     @update_attrs %{
       name: "some updated name",
       optin_time: ~U[2011-05-18 15:01:01Z],
-      optout_time: ~U[2011-05-18 15:01:01Z],
+      optout_time: nil,
       phone: "some updated phone",
       status: :invalid,
-      provider_status: :none,
+      provider_status: :hsm,
       fileds: %{}
     }
     @invalid_attrs %{
@@ -126,10 +126,10 @@ defmodule Glific.ContactsTest do
       assert {:ok, %Contact{} = contact} = Contacts.create_contact(@valid_attrs)
       assert contact.name == "some name"
       assert contact.optin_time == ~U[2010-04-17 14:00:00Z]
-      assert contact.optout_time == ~U[2010-04-17 14:00:00Z]
+      assert contact.optout_time == nil
       assert contact.phone == "some phone"
       assert contact.status == :valid
-      assert contact.provider_status == :none
+      assert contact.provider_status == :hsm
 
       # Contact should be created with organization's default language
       {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
@@ -147,10 +147,10 @@ defmodule Glific.ContactsTest do
       assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs)
       assert contact.name == "some name"
       assert contact.optin_time == ~U[2010-04-17 14:00:00Z]
-      assert contact.optout_time == ~U[2010-04-17 14:00:00Z]
+      assert contact.optout_time == nil
       assert contact.phone == "some phone"
       assert contact.status == :valid
-      assert contact.provider_status == :none
+      assert contact.provider_status == :hsm
       assert contact.language_id == language.id
     end
 
@@ -163,10 +163,10 @@ defmodule Glific.ContactsTest do
       assert {:ok, %Contact{} = contact} = Contacts.update_contact(contact, @update_attrs)
       assert contact.name == "some updated name"
       assert contact.optin_time == ~U[2011-05-18 15:01:01Z]
-      assert contact.optout_time == ~U[2011-05-18 15:01:01Z]
+      assert contact.optout_time == nil
       assert contact.phone == "some updated phone"
       assert contact.status == :invalid
-      assert contact.provider_status == :none
+      assert contact.provider_status == :hsm
     end
 
     test "update_contact/2 with invalid data returns error changeset" do
@@ -213,7 +213,7 @@ defmodule Glific.ContactsTest do
     end
 
     test "list_contacts/1 with multiple contacts filtered" do
-      _c0 = contact_fixture(@valid_attrs)
+      c0 = contact_fixture(@valid_attrs)
       c1 = contact_fixture(@valid_attrs_1)
       c2 = contact_fixture(@valid_attrs_2)
       c3 = contact_fixture(@valid_attrs_3)
@@ -230,10 +230,10 @@ defmodule Glific.ContactsTest do
       cs =
         Contacts.list_contacts(%{
           opts: %{order: :asc},
-          filter: %{status: :valid, provider_status: :session_and_hsm}
+          filter: %{status: :valid, provider_status: :hsm}
         })
 
-      assert cs == [c2]
+      assert cs == [c0, c2]
     end
 
     test "upsert contacts" do
@@ -352,6 +352,26 @@ defmodule Glific.ContactsTest do
 
       assert contact.status == :invalid
       assert contact.optout_time != nil
+    end
+
+    test "set_session_status/2 will set provider status of not opted in contact" do
+      contact = contact_fixture(%{provider_status: :none, optin_time: nil})
+
+      {:ok, contact} = Contacts.set_session_status(contact, :none)
+      assert contact.provider_status == :none
+
+      {:ok, contact} = Contacts.set_session_status(contact, :session)
+      assert contact.provider_status == :session
+    end
+
+    test "set_session_status/2 will set provider status opted in contact" do
+      contact = contact_fixture(%{provider_status: :none, optin_time: DateTime.utc_now()})
+
+      {:ok, contact} = Contacts.set_session_status(contact, :none)
+      assert contact.provider_status == :hsm
+
+      {:ok, contact} = Contacts.set_session_status(contact, :session)
+      assert contact.provider_status == :session_and_hsm
     end
   end
 end
