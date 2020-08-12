@@ -37,8 +37,16 @@ defmodule Glific.Seeds.SeedsDev do
     [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
+    inserted_time = DateTime.utc_now() |> DateTime.truncate(:second)
+
     contacts = [
-      %{phone: "917834811231", name: "Default receiver", language_id: hi_in.id},
+      %{
+        phone: "917834811231",
+        name: "Default receiver",
+        language_id: hi_in.id,
+        optin_time: inserted_time,
+        provider_status: :session_and_hsm
+      },
       %{
         name: "Adelle Cavin",
         phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
@@ -56,14 +64,15 @@ defmodule Glific.Seeds.SeedsDev do
       }
     ]
 
-    inserted_time = DateTime.utc_now() |> DateTime.truncate(:second)
-
     contact_entries =
       for contact_entry <- contacts do
-        contact_entry
-        |> Map.put(:inserted_at, inserted_time)
-        |> Map.put(:updated_at, inserted_time)
-        |> Map.put(:last_message_at, inserted_time)
+        %{
+          inserted_at: inserted_time,
+          updated_at: inserted_time,
+          last_message_at: inserted_time,
+          provider_status: :session
+        }
+        |> Map.merge(contact_entry)
       end
 
     # seed contacts

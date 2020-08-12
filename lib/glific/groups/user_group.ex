@@ -36,5 +36,7 @@ defmodule Glific.Groups.UserGroup do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:user_id, :group_id])
+    |> foreign_key_constraint(:user_id)
+    |> foreign_key_constraint(:group_id)
   end
 end

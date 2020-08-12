@@ -473,9 +473,18 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         Contacts.upsert(%{
           phone: phone,
           last_message_at: last_message_at |> DateTime.truncate(:second),
-          optin_time: optin_time |> DateTime.truncate(:second)
+          optin_time: optin_time |> DateTime.truncate(:second),
+          provider_status: check_provider_status(last_message_at)
         })
       end)
+    end
+  end
+
+  defp check_provider_status(last_message_at) do
+    if Timex.diff(DateTime.utc_now(), last_message_at, :hours) < 24 do
+      :session_and_hsm
+    else
+      :hsm
     end
   end
 end

@@ -157,6 +157,24 @@ defmodule Glific.Groups do
   end
 
   @doc """
+  Delete group contacts
+  """
+  @spec delete_group_contacts_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_group_contacts_by_ids(group_id, contact_ids) do
+    fields = {{:group_id, group_id}, {:contact_id, contact_ids}}
+    Repo.delete_relationships_by_ids(ContactGroup, fields)
+  end
+
+  @doc """
+  Delete contact groups
+  """
+  @spec delete_contact_groups_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_contact_groups_by_ids(contact_id, group_ids) do
+    fields = {{:contact_id, contact_id}, {:group_id, group_ids}}
+    Repo.delete_relationships_by_ids(ContactGroup, fields)
+  end
+
+  @doc """
   Creates a user group.
 
   ## Examples
@@ -190,6 +208,24 @@ defmodule Glific.Groups do
   @spec delete_user_group(UserGroup.t()) :: {:ok, UserGroup.t()} | {:error, Ecto.Changeset.t()}
   def delete_user_group(%UserGroup{} = user_group) do
     Repo.delete(user_group)
+  end
+
+  @doc """
+  Delete group users
+  """
+  @spec delete_group_users_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_group_users_by_ids(group_id, user_ids) do
+    fields = {{:group_id, group_id}, {:user_id, user_ids}}
+    Repo.delete_relationships_by_ids(UserGroup, fields)
+  end
+
+  @doc """
+  Delete user groups
+  """
+  @spec delete_user_groups_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_user_groups_by_ids(user_id, group_ids) do
+    fields = {{:user_id, user_id}, {:group_id, group_ids}}
+    Repo.delete_relationships_by_ids(UserGroup, fields)
   end
 
   @doc """

@@ -14,6 +14,7 @@ defmodule GlificWeb.Schema.GroupTypes do
   object :group do
     field :id, :id
     field :label, :string
+    field :description, :string
     field :is_restricted, :boolean
   end
 
@@ -25,6 +26,7 @@ defmodule GlificWeb.Schema.GroupTypes do
 
   input_object :group_input do
     field :label, :string
+    field :description, :string
     field :is_restricted, :boolean
   end
 

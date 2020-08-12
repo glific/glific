@@ -24,9 +24,9 @@ defmodule Glific.Seeds.SeedsScale do
     %{
       name: Person.name(),
       phone: phone,
-      provider_status: "valid",
+      provider_status: "session_and_hsm",
       optin_time: DateTime.truncate(DateTime.utc_now(), :second),
-      optout_time: DateTime.truncate(DateTime.utc_now(), :second),
+      optout_time: nil,
       status: "valid",
       language_id: language_id,
       inserted_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.truncate(:second),

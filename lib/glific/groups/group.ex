@@ -8,12 +8,13 @@ defmodule Glific.Groups.Group do
   alias Glific.Groups.Group
 
   @required_fields [:label]
-  @optional_fields [:is_restricted]
+  @optional_fields [:is_restricted, :description]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           label: String.t() | nil,
+          description: String.t() | nil,
           is_restricted: boolean(),
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -21,6 +22,7 @@ defmodule Glific.Groups.Group do
 
   schema "groups" do
     field :label, :string
+    field :description, :string
     field :is_restricted, :boolean, default: false
 
     timestamps(type: :utc_datetime)
