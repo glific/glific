@@ -109,6 +109,8 @@ defmodule Glific.Communications.Message do
       |> Map.put(:last_message_at, DateTime.utc_now())
       |> Contacts.upsert()
 
+    {:ok, _} = Contacts.set_session_status(contact, :session)
+
     message_params =
       message_params
       |> Map.merge(%{
