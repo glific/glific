@@ -223,7 +223,7 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t(), boolean()) :: boolean()
   def can_send_message_to?(contact, is_hsm) when is_hsm == true do
     with :valid <- contact.status,
-         true <- contact.provider_status == :session_and_hsm || :hsm,
+         true <- contact.provider_status == :session_and_hsm || contact.provider_status == :hsm,
          true <- contact.optin_time != nil do
       true
     else
@@ -236,7 +236,8 @@ defmodule Glific.Contacts do
   """
   def can_send_message_to?(contact, _is_hsm) do
     with :valid <- contact.status,
-         true <- contact.provider_status == :session_and_hsm || :session,
+         true <-
+           contact.provider_status == :session_and_hsm || contact.provider_status == :session,
          true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24 do
       true
     else
@@ -278,24 +279,25 @@ defmodule Glific.Contacts do
   @doc """
   Set session status for opted in and opted out contacts
   """
-  @spec set_session_status(Contact.t(), atom()) :: atom()
+  @spec set_session_status(Contact.t(), atom()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def set_session_status(contact, status) when status == :none do
-    case contact.optin_time != nil do
-      false ->
-        :none
-
+    case contact.optin_time == nil do
       true ->
-        :hsm
+        update_contact(contact, %{provider_status: :none})
+
+      false ->
+        update_contact(contact, %{provider_status: :hsm})
     end
   end
 
   def set_session_status(contact, status) when status == :session do
-    case contact.optin_time != nil do
-      false ->
-        :session
-
+    case contact.optin_time == nil do
       true ->
-        :session_and_hsm
+        update_contact(contact, %{provider_status: :session})
+
+      false ->
+        update_contact(contact, %{provider_status: :session_and_hsm})
     end
   end
 end

@@ -33,8 +33,7 @@ defmodule Glific.Contacts.Worker do
 
     contacts
     |> Enum.each(fn contact ->
-      new_status = Contacts.set_session_status(contact, :none)
-      Contacts.update_contact(contact, %{provider_status: new_status})
+      Contacts.set_session_status(contact, :none)
     end)
 
     :ok

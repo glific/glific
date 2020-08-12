@@ -104,13 +104,12 @@ defmodule Glific.Communications.Message do
   """
   @spec receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
   def receive_message(message_params, type \\ :text) do
-    [contact | _] = Contacts.list_contacts(%{filter: %{phone: message_params.sender.phone}})
-
     {:ok, contact} =
       message_params.sender
       |> Map.put(:last_message_at, DateTime.utc_now())
-      |> Map.put(:provider_status, Contacts.set_session_status(contact, :session))
       |> Contacts.upsert()
+
+    {:ok, _} = Contacts.set_session_status(contact, :session)
 
     message_params =
       message_params
