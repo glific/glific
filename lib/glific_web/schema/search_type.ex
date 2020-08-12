@@ -27,6 +27,11 @@ defmodule GlificWeb.Schema.SearchTypes do
     end
   end
 
+  object :conversation do
+    field :contact, :contact
+    field :messages, list_of(:message)
+  end
+
   input_object :saved_search_filter do
     field :label, :string
     field :shortcode, :string
@@ -43,16 +48,36 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :shortcode, :string
   end
 
+  input_object :date_range_input do
+    @desc "Start date for the filter"
+    field :from, :date
+
+    @desc "End date for the filter"
+    field :to, :date
+  end
+
   @desc "Filtering options for search"
   input_object :search_filter do
+    @desc "Match one contact ID"
+    field :id, :gid
+
+    @desc "Match multiple contact ids"
+    field :ids, list_of(:gid)
+
     @desc "Include conversations with these tags"
     field :include_tags, list_of(:gid)
 
-    @desc "Exclude conversations with these tags"
-    field :exclude_tags, list_of(:gid)
+    @desc "Include conversations with these groups"
+    field :include_groups, list_of(:gid)
 
     @desc "term for saving the search"
     field :term, :string
+
+    @desc "term for saving the search"
+    field :date_range, :date_range_input
+
+    @desc "It will use the save search filters"
+    field :saved_search_id, :id
   end
 
   object :search_queries do
@@ -82,6 +107,12 @@ defmodule GlificWeb.Schema.SearchTypes do
       resolve(&Resolvers.Searches.saved_searches/3)
     end
 
+    @desc "Get a count of all searches"
+    field :count_saved_searches, :integer do
+      arg(:filter, :saved_search_filter)
+      resolve(&Resolvers.Searches.count_saved_searches/3)
+    end
+
     field :saved_search_count, :integer do
       # the id of the saved search
       arg(:id, non_null(:id))
@@ -90,17 +121,6 @@ defmodule GlificWeb.Schema.SearchTypes do
       arg(:term, :string)
 
       resolve(&Resolvers.Searches.saved_search_count/3)
-    end
-
-    @desc "Convenience function to run a search for a specific saved search id"
-    field :saved_search_execute, list_of(:conversation) do
-      # the id of the saved search
-      arg(:id, non_null(:id))
-
-      # if we want to add a search term
-      arg(:term, :string)
-
-      resolve(&Resolvers.Searches.saved_search_execute/3)
     end
   end
 
