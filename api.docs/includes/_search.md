@@ -30,6 +30,7 @@ query search(  $saveSearchInput: SaveSearchInput,
 
   "searchFilter": {
     "includeTags": ["17"],
+    "includeGroups": ["1"],
     "term": "def",
   },
   "messageOpts": {
@@ -218,9 +219,22 @@ term | <a href="#string">String</a> | nil | optional keyword to add to saved sea
 <td></td>
 </tr>
 
+
 <tr>
-<td colspan="2" valign="top"><strong>ExcludeTags</strong></td>
+<td colspan="2" valign="top"><strong>IncludeGroups</strong></td>
 <td valign="top">[<a href="#gid">Gid</a>]</td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>DateRange</strong></td>
+<td valign="top">[<a href="#daterange">DateRange</a>]</td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>SaveSearchID</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>
 
@@ -249,6 +263,35 @@ term | <a href="#string">String</a> | nil | optional keyword to add to saved sea
 <tr>
 <td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+
+</tbody>
+</table>
+
+
+
+### daterange
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>From</strong></td>
+<td valign="top"><a href="#date">Date</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>to</strong></td>
+<td valign="top"><a href="#date">Date</a></td>
 <td></td>
 </tr>
 

@@ -138,7 +138,7 @@ defmodule Glific.Searches do
          create_saved_search(%{
            label: args.save_search_input.label,
            shortcode: args.save_search_input.shortcode,
-           args: args
+           args: Map.put(args, :save_search_input, nil)
          })
 
   defp do_save_search(_args), do: nil
@@ -151,8 +151,9 @@ defmodule Glific.Searches do
     # save the search if needed
     do_save_search(args)
 
-    # disabling all contact filters if we need to get the count
-    args = update_args_for_count(args, count)
+    args =
+      check_filter_for_save_search(args)
+      |> update_args_for_count(count)
 
     contact_ids =
       search_query(args.filter[:term], args)
@@ -210,4 +211,16 @@ defmodule Glific.Searches do
   end
 
   defp update_args_for_count(args, false), do: args
+
+  # Get all the filters from saved search
+  @spec check_filter_for_save_search(map()) :: map()
+  defp check_filter_for_save_search(%{filter: %{saved_search_id: saved_search_id}} = args) do
+    saved_search_id
+    |> get_saved_search!()
+    |> Map.get(:args)
+    |> put_in([Access.key(:filter, %{}), :term], get_in(args, [:filter, :term]))
+    |> convert_to_atom()
+  end
+
+  defp check_filter_for_save_search(args), do: args
 end

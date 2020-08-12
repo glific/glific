@@ -43,16 +43,30 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :shortcode, :string
   end
 
+  input_object :date_range_input do
+    @desc "Start date for the filter"
+    field :from, :date
+
+    @desc "End date for the filter"
+    field :to, :date
+  end
+
   @desc "Filtering options for search"
   input_object :search_filter do
     @desc "Include conversations with these tags"
     field :include_tags, list_of(:gid)
 
-    @desc "Exclude conversations with these tags"
-    field :exclude_tags, list_of(:gid)
+    @desc "Include conversations with these groups"
+    field :include_groups, list_of(:gid)
 
     @desc "term for saving the search"
     field :term, :string
+
+    @desc "term for saving the search"
+    field :date_range, :date_range_input
+
+    @desc "It will use the save search filters"
+    field :saved_search_id, :id
   end
 
   object :search_queries do
