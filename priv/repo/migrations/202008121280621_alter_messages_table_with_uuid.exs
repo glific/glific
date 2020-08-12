@@ -9,7 +9,5 @@ defmodule Glific.Repo.Migrations.AlterMessageTableForUUID do
       # Message uuid, primarly needed for flow editor
       add :uuid, :uuid, null: true
     end
-
-    create unique_index(:messages, :uuid)
   end
 end
