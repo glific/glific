@@ -18,12 +18,12 @@ defmodule Glific.Contacts.Worker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok
   def perform(_args) do
-    update_contacts_status()
+    update_contact_status()
   end
 
   @doc false
-  @spec update_contacts_status :: :ok
-  defp update_contacts_status do
+  @spec update_contact_status :: :ok
+  defp update_contact_status do
     t = DateTime.utc_now() |> DateTime.add(-24 * 60 * 60)
 
     contacts =
