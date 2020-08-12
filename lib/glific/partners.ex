@@ -209,15 +209,6 @@ defmodule Glific.Partners do
   @spec get_organization!(integer) :: Organization.t()
   def get_organization!(id), do: Repo.get!(Organization, id)
 
-
-  @spec get_cached_organization!() :: {atom, any}
-  defp get_cached_organization!() do
-    with {:ok, false} <- Caches.get("organization") do
-      [organization | _ ] =  list_organizations()
-      Caches.set("organization", organization)
-    end
-  end
-
   @doc ~S"""
   Creates a organization.
 
@@ -296,19 +287,20 @@ defmodule Glific.Partners do
   @spec organization_contact_id() :: {atom, integer()}
   def organization_contact_id do
     # Get contact id
-    with {:ok, false} <- Caches.get("organization_contact_id") do
-      contact_id =
-        Contact
+    case Caches.get("organization_contact_id") do
+      {:ok, false} ->
+        contact_id =
+          Contact
           |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
           |> select([c, _o], c.id)
           |> limit(1)
           |> Repo.one()
 
-        {:ok, contact_id} = Caches.set("organization_contact_id", contact_id)
+        Caches.set("organization_contact_id", contact_id)
         contact_id
 
-      else
-        {:ok, contact_id} -> contact_id
+      {:ok, contact_id} ->
+        contact_id
     end
   end
 end
