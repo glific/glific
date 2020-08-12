@@ -2,6 +2,7 @@ defmodule Glific.Flows.FlowContextTest do
   use Glific.DataCase, async: true
 
   alias Glific.Fixtures
+
   alias Glific.Flows.{
     Action,
     Category,
@@ -31,7 +32,7 @@ defmodule Glific.Flows.FlowContextTest do
     # create a simple flow context
     {:ok, context} =
       FlowContext.create_flow_context(%{
-            contact_id: Fixtures.contact_fixture().id,
+        contact_id: Fixtures.contact_fixture().id,
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
         uuid_map: %{}
@@ -53,7 +54,7 @@ defmodule Glific.Flows.FlowContextTest do
 
     {:ok, context_2} =
       FlowContext.create_flow_context(%{
-            contact_id: Fixtures.contact_fixture().id,
+        contact_id: Fixtures.contact_fixture().id,
         flow_id: 1,
         flow_uuid: json["flow"]["uuid"],
         uuid_map: uuid_map
