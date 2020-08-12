@@ -32,6 +32,10 @@ query search(  $saveSearchInput: SaveSearchInput,
     "includeTags": ["17"],
     "includeGroups": ["1"],
     "term": "def",
+    "dateRange": {
+      "to": "2020-08-10",
+      "from": "2020-08-12"
+    }
   },
   "messageOpts": {
     "limit": 3,
@@ -107,59 +111,83 @@ contactOpts | <a href="#opts">Opts</a> | nil | limit / offset contact options
 Runs a search as specified by a saved search. Can optionally send in a string to replace the saved search input string.
 
 ```graphql
-query savedSearchExecute($id: ID!,$term:String) {
-  savedSearchExecute(id: $id, term: $term) {
-    contact {
-      id
-      name
-    }
+query search(
+  $searchFilter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!) {
+
+  search(filter: $searchFilter, contactOpts: $contactOpts, messageOpts: $messageOpts) {
+
     messages {
-      id
-      body
+      id,
+      body,
+      tags{
+        label
+      }
+    }
+
+    contact {
+      name
     }
   }
 }
 
 {
-  "id": 4
+  "searchFilter": {
+    "savedSearchID": "17",
+    "term": "def",
+  },
+  "messageOpts": {
+    "limit": 3,
+    "order": "ASC"
+  },
+  "contactOpts": {
+    "order": "DESC",
+    "limit": 1
+  }
 }
 ```
 
-> The above query executes saved search 4 and returns JSON structured like this:
+> The above query returns JSON structured like this:
 
 ```json
 {
   "data": {
-    "savedSearchExecute": [
+     "search": [
       {
         "contact": {
-          "id": "2",
           "name": "Default receiver"
         },
         "messages": [
           {
-            "body": "hindi",
-            "id": "5"
+            "body": "ZZZ message body for order test",
+            "id": "2",
+            "tags": [
+              {
+                "label": "Compliment"
+              },
+              {
+                "label": "Good Bye"
+              },
+              {
+                "label": "Greeting"
+              },
+              {
+                "label": "Thank You"
+              }
+            ]
           },
           {
-            "body": "hola",
-            "id": "7"
-          }
+            "body": "Omnis architecto qui pariatur autem minima.",
+            "id": "3",
+            "tags": []
+          },
         ]
       }
     ]
   }
 }
 ```
+This returns a list of conversations that match the term and filters <a href="#conversation">Conversation</a>
 
-This returns a list of conversations that match the term and saved search filter <a href="#conversation">Conversation</a>
-
-### Query Parameters
-
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a> | required | Saved search ID
-term | <a href="#string">String</a> | nil | optional keyword to add to saved search
 
 ## Saved Search Count
 
@@ -285,13 +313,13 @@ term | <a href="#string">String</a> | nil | optional keyword to add to saved sea
 <tbody>
 <tr>
 <td colspan="2" valign="top"><strong>From</strong></td>
-<td valign="top"><a href="#date">Date</a></td>
+<td valign="top"><a href="#date">Date (Y-M-d)</a></td>
 <td></td>
 </tr>
 
 <tr>
 <td colspan="2" valign="top"><strong>to</strong></td>
-<td valign="top"><a href="#date">Date</a></td>
+<td valign="top"><a href="#date">Date(Y-M-d)</a></td>
 <td></td>
 </tr>
 

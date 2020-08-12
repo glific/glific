@@ -221,6 +221,7 @@ defmodule Glific.Searches do
   defp check_filter_for_save_search(args), do: args
 
   # Get the args map from the saved search and override the term
+  @spec saved_search_args_map(integer(), map) :: map()
   defp saved_search_args_map(id, args),
     do: get_saved_search!(id)
       |> Map.get(:args)
