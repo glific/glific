@@ -34,6 +34,7 @@ defmodule Glific.Flows.ContactAction do
 
     {:ok, _message} =
       Messages.create_and_send_message(%{
+        uuid: action.uuid,
         body: body,
         type: type,
         media_id: media_id,
