@@ -10,6 +10,7 @@ defmodule Glific.Messages.Message do
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
+          uuid: Ecto.UUID.t() | nil,
           type: String.t() | nil,
           is_hsm: boolean | nil,
           flow: String.t() | nil,
@@ -37,6 +38,7 @@ defmodule Glific.Messages.Message do
     :contact_id
   ]
   @optional_fields [
+    :uuid,
     :body,
     :is_hsm,
     :status,
@@ -49,6 +51,7 @@ defmodule Glific.Messages.Message do
   ]
 
   schema "messages" do
+    field :uuid, Ecto.UUID, autogenerate: true
     field :body, :string
     field :flow, MessageFlow
     field :type, MessageType
