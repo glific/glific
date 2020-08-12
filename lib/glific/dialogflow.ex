@@ -1,4 +1,4 @@
-defmodule Glific.Flowex do
+defmodule Glific.Dialogflow do
   @moduledoc """
   Module to communicate with DialogFlow v2. This module was taken directly from:
   https://github.com/resuelve/flowex/

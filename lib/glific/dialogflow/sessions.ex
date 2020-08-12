@@ -1,9 +1,9 @@
-defmodule Glific.Flowex.Sessions do
+defmodule Glific.Dialogflow.Sessions do
   @moduledoc """
   Helper to help manage intents
   """
 
-  alias Glific.Flowex
+  alias Glific.Dialogflow
 
   @doc """
   Function to communicate with dialogflow to detect the intent of the request
@@ -19,6 +19,6 @@ defmodule Glific.Flowex.Sessions do
       }
     }
 
-    Flowex.request(project, :post, "sessions/#{session_id}:detectIntent", body)
+    Dialogflow.request(project, :post, "sessions/#{session_id}:detectIntent", body)
   end
 end

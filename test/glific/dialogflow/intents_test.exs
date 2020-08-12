@@ -1,9 +1,9 @@
-defmodule Glific.Flowex.IntentsTest do
+defmodule Glific.Dialogflow.IntentsTest do
   use ExUnit.Case
 
   import Mock
 
-  alias Glific.Flowex.Intents
+  alias Glific.Dialogflow.Intents
   alias Goth.Token
 
   @intents %{

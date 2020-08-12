@@ -1,9 +1,9 @@
-defmodule Glific.Flowex.Intents do
+defmodule Glific.Dialogflow.Intents do
   @moduledoc """
   The main intents module which stiches it all together
   """
 
-  alias Glific.Flowex
+  alias Glific.Dialogflow
 
   @doc """
   List all the intents of the agent per pageToken.
@@ -37,7 +37,7 @@ defmodule Glific.Flowex.Intents do
       "intents?languageCode=#{language}&intentView=#{view}&" <>
         "pageSize=#{page_size}&pageToken=#{token}"
 
-    Flowex.request(project, :get, url, "")
+    Dialogflow.request(project, :get, url, "")
   end
 
   @doc """
@@ -47,7 +47,7 @@ defmodule Glific.Flowex.Intents do
   def get(project, id, language \\ "en", view \\ "INTENT_VIEW_UNSPECIFIED") do
     url = "intents/#{id}?languageCode=#{language}&intentView=#{view}"
 
-    Flowex.request(project, :get, url, "")
+    Dialogflow.request(project, :get, url, "")
   end
 
   @doc """
@@ -57,7 +57,7 @@ defmodule Glific.Flowex.Intents do
   def create(project, body, language \\ "es") do
     url = "intents?languageCode=#{language}"
 
-    Flowex.request(project, :post, url, body)
+    Dialogflow.request(project, :post, url, body)
   end
 
   @doc """
@@ -72,7 +72,7 @@ defmodule Glific.Flowex.Intents do
       |> Map.get("trainingPhrases")
       |> set_training_phrase(text)
       |> (&Map.put(intent, "trainingPhrases", &1)).()
-      |> (&Flowex.request(project, :patch, url, &1)).()
+      |> (&Dialogflow.request(project, :patch, url, &1)).()
     end
   end
 
@@ -83,7 +83,7 @@ defmodule Glific.Flowex.Intents do
   def update(project, id, intent, language \\ "es") do
     url = "intents/#{id}?languageCode=#{language}&intentView=INTENT_VIEW_FULL"
 
-    Flowex.request(project, :patch, url, intent)
+    Dialogflow.request(project, :patch, url, intent)
   end
 
   # ---------------------------------------------------------------------------

@@ -1,9 +1,9 @@
-defmodule Glific.Flowex.SessionsTest do
+defmodule Glific.Dialogflow.SessionsTest do
   use ExUnit.Case
 
   import Mock
 
-  alias Glific.Flowex.Sessions
+  alias Glific.Dialogflow.Sessions
   alias Goth.Token
 
   @query %{

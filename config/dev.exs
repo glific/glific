@@ -84,7 +84,6 @@ config :phoenix, :plug_init_mode, :runtime
 
 # config goth
 config :goth,
-  json: "config/.dialogflow.credentials.json" |> File.read!(),
-  actor_email: "elixirclient@small-talk-talnvm.iam.gserviceaccount.com"
+  json: "config/.dialogflow.credentials.json" |> File.read!()
 
 import_config "dev.secret.exs"

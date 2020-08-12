@@ -8,13 +8,14 @@
 use Mix.Config
 
 config :glific,
-  ecto_repos: [Glific.Repo],
-  dialogflow_url: "https://dialogflow.clients6.google.com",
-  dialogflow_project_id: "newagent-wtro",
-  dialogflow_project_email: "dialogflow-pnfavu@newagent-wtro.iam.gserviceaccount.com",
+  ecto_repos: [Glific.Repo]
+
+# Settings for gupshup, this should actually go in Provider database table or something
+# similar
+config :glific,
   provider: Glific.Providers.Gupshup.Message,
   provider_worker: Glific.Providers.Gupshup.Worker,
-  provider_id: "gupshup-provider-23",
+  provider_id: "gupshup",
   provider_limit: 10
 
 # Configures the endpoint
@@ -82,6 +83,12 @@ config :sentry,
     env: "dev"
   },
   included_environments: [:prod]
+
+# config dialogflow
+config :glific,
+  dialogflow_url: "https://dialogflow.clients6.google.com",
+  dialogflow_project_id: "newagent-wtro",
+  dialogflow_project_email: "dialogflow-pnfavu@newagent-wtro.iam.gserviceaccount.com"
 
 # phil columns to seed production data
 config :phil_columns,

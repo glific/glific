@@ -1,9 +1,9 @@
-defmodule Glific.Flowex.AgentTest do
+defmodule Glific.Dialogflow.AgentTest do
   use ExUnit.Case
 
   import Mock
 
-  alias Glific.Flowex.Agent
+  alias Glific.Dialogflow.Agent
   alias Goth.Token
 
   @agent %{
