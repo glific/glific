@@ -72,13 +72,4 @@ defmodule GlificWeb.Resolvers.Searches do
   @spec saved_search_count(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
   def saved_search_count(_, params, _), do: {:ok, Searches.saved_search_execute(params, true)}
 
-    @doc """
-  Get a specific conversation by contact id
-  """
-  @spec conversation(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def conversation(_, args, _) do
-    {:ok, Conversations.conversation_by_id(args)}
-  end
-
 end
