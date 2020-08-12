@@ -22,8 +22,8 @@ defmodule Glific.Contacts.Worker do
   end
 
   @doc false
-  @spec update_contacts_status() :: :ok
-  defp update_contacts_status() do
+  @spec update_contacts_status :: :ok
+  defp update_contacts_status do
     t = DateTime.utc_now() |> DateTime.add(-24 * 60 * 60)
 
     contacts =

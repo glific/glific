@@ -7,8 +7,8 @@ defmodule Glific.Contacts.Contact do
 
   alias Glific.{
     Contacts.Contact,
-    Enums.ContactStatus,
     Enums.ContactProviderStatus,
+    Enums.ContactStatus,
     Groups.Group,
     Settings.Language,
     Tags.Tag
