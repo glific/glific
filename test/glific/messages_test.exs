@@ -333,10 +333,7 @@ defmodule Glific.MessagesTest do
     end
 
     test "send hsm message incorrect parameters" do
-      name = "Default receiver"
-      {:ok, contact} = Repo.fetch_by(Contacts.Contact, %{name: name})
-
-      Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
+      contact = Fixtures.contact_fixture()
 
       shortcode = "otp"
       {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{shortcode: shortcode})

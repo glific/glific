@@ -1,6 +1,7 @@
 defmodule Glific.Flows.FlowContextTest do
   use Glific.DataCase, async: true
 
+  alias Glific.Fixtures
   alias Glific.Flows.{
     Action,
     Category,
@@ -10,7 +11,6 @@ defmodule Glific.Flows.FlowContextTest do
   }
 
   @valid_attrs %{
-    contact_id: 1,
     flow_id: 1,
     flow_uuid: Ecto.UUID.generate(),
     uuid_map: %{},
@@ -20,6 +20,7 @@ defmodule Glific.Flows.FlowContextTest do
   def flow_context_fixture(attrs \\ %{}) do
     {:ok, flow_context} =
       attrs
+      |> Map.put(:contact_id, Fixtures.contact_fixture().id)
       |> Enum.into(@valid_attrs)
       |> FlowContext.create_flow_context()
 
@@ -30,7 +31,7 @@ defmodule Glific.Flows.FlowContextTest do
     # create a simple flow context
     {:ok, context} =
       FlowContext.create_flow_context(%{
-        contact_id: 1,
+            contact_id: Fixtures.contact_fixture().id,
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
         uuid_map: %{}
@@ -52,7 +53,7 @@ defmodule Glific.Flows.FlowContextTest do
 
     {:ok, context_2} =
       FlowContext.create_flow_context(%{
-        contact_id: 1,
+            contact_id: Fixtures.contact_fixture().id,
         flow_id: 1,
         flow_uuid: json["flow"]["uuid"],
         uuid_map: uuid_map
@@ -91,7 +92,7 @@ defmodule Glific.Flows.FlowContextTest do
   test "init_context/3 will initaite a flow context" do
     [flow | _tail] = Glific.Flows.list_flows()
     flow = Flow.get_loaded_flow(%{shortcode: flow.shortcode})
-    contact = Glific.Fixtures.contact_fixture()
+    contact = Fixtures.contact_fixture()
     {:ok, flow_context, _} = FlowContext.init_context(flow, contact)
     assert flow_context.id != nil
   end
@@ -104,7 +105,7 @@ defmodule Glific.Flows.FlowContextTest do
   test "execute an context should return ok tuple" do
     [flow | _tail] = Glific.Flows.list_flows()
     flow = Flow.get_loaded_flow(%{shortcode: flow.shortcode})
-    contact = Glific.Fixtures.contact_fixture()
+    contact = Fixtures.contact_fixture()
     {:ok, flow_context, _} = FlowContext.init_context(flow, contact)
     assert {:ok, _, _} = FlowContext.execute(flow_context, ["Test"])
   end
