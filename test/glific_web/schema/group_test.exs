@@ -2,10 +2,10 @@ defmodule GlificWeb.Schema.GroupTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
-  alias Glific.Seeds.SeedsDev
+  alias Glific.Fixtures
 
   setup do
-    SeedsDev.seed_groups()
+    Fixtures.group_fixture()
     :ok
   end
 
@@ -102,8 +102,8 @@ defmodule GlificWeb.Schema.GroupTest do
       )
 
     assert {:ok, query_data} = result
-    label = get_in(query_data, [:data, "createGroup", "group", "label"])
-    assert label == "Test Group"
+    assert query_data[:data]["createGroup"]["errors"] == nil
+    assert query_data[:data]["createGroup"]["group"]["label"] == "Test Group"
 
     # try creating the same group twice
     _ =
@@ -119,6 +119,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createGroup", "errors", Access.at(0), "message"])
+    assert query_data[:data]["createGroup"]["errors"] != nil
     assert message == "has already been taken"
   end
 
