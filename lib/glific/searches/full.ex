@@ -76,7 +76,10 @@ defmodule Glific.Search.Full do
   @spec run_helper(Ecto.Queryable.t(), String.t(), map()) :: Ecto.Queryable.t()
   defp run_helper(query, term, args) when term != nil and term != "" do
     query
-    |> join(:inner, [m], id_and_rank in matching_contact_ids_and_ranks(term, args), as: :id_and_rank, on: id_and_rank.contact_id == m.contact_id)
+    |> join(:inner, [m], id_and_rank in matching_contact_ids_and_ranks(term, args),
+      as: :id_and_rank,
+      on: id_and_rank.contact_id == m.contact_id
+    )
     # eliminate any previous order by, since this takes precedence
     |> apply_filters(args.filter)
     |> exclude(:order_by)
@@ -133,7 +136,10 @@ defmodule Glific.Search.Full do
 
   defp date_query(query, from, to) do
     query
-    |> where([contact: c1], c1.last_message_at >= ^Timex.to_datetime(from) and c1.last_message_at <= ^Timex.to_datetime(to))
+    |> where(
+      [contact: c1],
+      c1.last_message_at >= ^Timex.to_datetime(from) and
+        c1.last_message_at <= ^Timex.to_datetime(to)
+    )
   end
-
 end

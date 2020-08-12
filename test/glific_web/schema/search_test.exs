@@ -335,7 +335,7 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "filter" => %{"savedSearchId" => saved_search.id },
+          "filter" => %{"savedSearchId" => saved_search.id},
           "contactOpts" => %{},
           "messageOpts" => %{}
         }
@@ -349,7 +349,7 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "filter" => %{"savedSearchId" => saved_search.id, "term" => "defa" },
+          "filter" => %{"savedSearchId" => saved_search.id, "term" => "defa"},
           "contactOpts" => %{},
           "messageOpts" => %{}
         }
@@ -369,11 +369,16 @@ defmodule GlificWeb.Schema.SearchTest do
     assert get_in(query_data, [:data, "savedSearchCount"]) == 1
   end
 
+  # Let's test some of the essential search queries for the conversation
 
   test "conversations always returns a few threads" do
     {:ok, result} =
       query_gql_by(:search,
-        variables: %{"contactOpts" => %{"limit" => 1}, "messageOpts" => %{"limit" => 3}, "filter" => %{}}
+        variables: %{
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 3},
+          "filter" => %{}
+        }
       )
 
     assert get_in(result, [:data, "search"]) |> length >= 1
@@ -434,7 +439,11 @@ defmodule GlificWeb.Schema.SearchTest do
 
     {:ok, result} =
       query_gql_by(:search,
-        variables: %{"messageOpts" => %{"limit" => 1}, "filter" => %{"id" => cid}, "contactOpts" => %{"limit" => 1}}
+        variables: %{
+          "messageOpts" => %{"limit" => 1},
+          "filter" => %{"id" => cid},
+          "contactOpts" => %{"limit" => 1}
+        }
       )
 
     assert get_in(result, [:data, "search"]) != nil
@@ -447,7 +456,7 @@ defmodule GlificWeb.Schema.SearchTest do
       query_gql_by(:search,
         variables: %{
           "messageOpts" => %{"limit" => 3},
-          "filter" => %{"id" => "234567893453" }
+          "filter" => %{"id" => "234567893453"}
         }
       )
 
@@ -462,7 +471,7 @@ defmodule GlificWeb.Schema.SearchTest do
       from(c in Message, select: c.contact_id)
       |> Repo.all()
       |> Enum.map(&Integer.to_string(&1))
-      |> Enum.uniq
+      |> Enum.uniq()
 
     {:ok, result} =
       query_gql_by(:search,

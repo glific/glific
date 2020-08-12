@@ -122,7 +122,6 @@ defmodule GlificWeb.Schema.SearchTypes do
 
       resolve(&Resolvers.Searches.saved_search_count/3)
     end
-
   end
 
   object :search_mutations do
