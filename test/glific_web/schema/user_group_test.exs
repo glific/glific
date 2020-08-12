@@ -100,7 +100,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
     user_groups = get_in(query_data, [:data, "updateUserGroups", "userGroups"])
     assert length(user_groups) == 2
 
-    # delete group groups
+    # delete user groups
     result =
       query_gql_by(:update_user_groups,
         variables: %{

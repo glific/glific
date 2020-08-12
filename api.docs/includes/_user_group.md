@@ -137,7 +137,7 @@ Type | Description
 <a href="#group_users">groupUsers</a> | The list of user groups added
 integer | The number of user groups deleted
 
-## Update a User with groups to be added and groups to be deleted
+## Update groups to be added and groups to be deleted to a User
 
 ```graphql
 mutation updateUserGroups($input: UserGroupsInput!) {

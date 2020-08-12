@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
+    Groups,
     Groups.Group,
     Repo,
     Seeds.SeedsDev
@@ -26,6 +27,12 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     :update_group_contacts,
     GlificWeb.Schema,
     "assets/gql/contact_groups/update_group_contacts.gql"
+  )
+
+  load_gql(
+    :update_contact_groups,
+    GlificWeb.Schema,
+    "assets/gql/contact_groups/update_contact_groups.gql"
   )
 
   test "update group contacts" do
@@ -81,6 +88,61 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert {:ok, query_data} = result
     group_contacts = get_in(query_data, [:data, "updateGroupContacts", "groupContacts"])
     assert group_contacts == []
+  end
+
+  test "update contact groups" do
+    name = "Default receiver"
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
+
+    [group1, group2 | _] = Groups.list_groups()
+
+    # add contact groups
+    result =
+      query_gql_by(:update_contact_groups,
+        variables: %{
+          "input" => %{
+            "contact_id" => contact.id,
+            "add_group_ids" => [group1.id, group2.id],
+            "delete_group_ids" => []
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contact_groups = get_in(query_data, [:data, "updateContactGroups", "contactGroups"])
+    assert length(contact_groups) == 2
+
+    # delete contact groups
+    result =
+      query_gql_by(:update_contact_groups,
+        variables: %{
+          "input" => %{
+            "contact_id" => contact.id,
+            "add_group_ids" => [],
+            "delete_group_ids" => [group1.id]
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    number_deleted = get_in(query_data, [:data, "updateContactGroups", "numberDeleted"])
+    assert number_deleted == 1
+
+    # test for incorrect group id
+    result =
+      query_gql_by(:update_contact_groups,
+        variables: %{
+          "input" => %{
+            "contact_id" => contact.id,
+            "add_group_ids" => ["-1"],
+            "delete_group_ids" => []
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contact_groups = get_in(query_data, [:data, "updateContactGroups", "contactGroups"])
+    assert contact_groups == []
   end
 
   test "create a contact group and test possible scenarios and errors" do

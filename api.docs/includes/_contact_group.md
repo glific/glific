@@ -137,6 +137,68 @@ Type | Description
 <a href="#group_contacts">groupContacts</a> | The list of contact groups added
 integer | The number of contact groups deleted
 
+## Update groups to be added and groups to be deleted to a Contact
+
+```graphql
+mutation updateContactGroups($input: ContactGroupsInput!) {
+  updateContactGroups(input: $input) {
+    contactGroups {
+      id
+      group {
+        label
+      }
+      contact {
+        name
+      }
+    }
+    numberDeleted
+  }
+}
+
+{
+  "input": {
+    "contactId": 2,
+    "addGroupIds": [1],
+    "deleteGroupIds": [2, 3]
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "updateContactGroups": {
+      "numberDeleted": 2,
+      "contactGroups": [
+        {
+          "group": {
+            "label": "Poetry"
+          },
+          "id": "13",
+          "contact": {
+            "name": "Default Receiver"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#contactgroupsinput">ContactGroupsInput</a> | required ||
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#contact_groups">contactGroups</a> | The list of contact groups added
+integer | The number of contact groups deleted
+
 ## Delete a ContactGroup
 
 ```graphql
@@ -289,6 +351,35 @@ Type | Description
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>DeleteContactIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### ContactGroupsInput ###
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>ContactId</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>AddGroupIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>DeleteGroupIds</strong></td>
 <td valign="top">[<a href="#id">Id</a>]</td>
 <td></td>
 </tr>

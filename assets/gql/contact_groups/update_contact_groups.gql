@@ -1,0 +1,16 @@
+mutation updateContactGroups($input:ContactGroupsInput!) {
+  updateContactGroups(input: $input) {
+    contactGroups {
+      id
+      contact {
+        id
+        name
+      }
+      group {
+        id
+        label
+      }
+    }
+    numberDeleted
+  }
+}
