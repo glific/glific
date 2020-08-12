@@ -134,13 +134,6 @@ defmodule GlificWeb.Schema.SearchTypes do
       resolve(&Resolvers.Searches.saved_search_execute/3)
     end
 
-    @desc "get the details of conversation with one user"
-    field :conversation, :conversation do
-      arg(:contact_id, non_null(:gid))
-      arg(:message_opts, non_null(:opts))
-      resolve(&Resolvers.Searches.conversation/3)
-    end
-
   end
 
   object :search_mutations do
