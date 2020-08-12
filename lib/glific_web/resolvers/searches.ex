@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Searches do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Repo, Searches, Searches.SavedSearch}
+  alias Glific.{Conversations, Repo, Searches, Searches.SavedSearch}
 
   @doc """
   Get a specific saved_search by id
@@ -75,4 +75,14 @@ defmodule GlificWeb.Resolvers.Searches do
   @doc false
   @spec saved_search_execute(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
   def saved_search_execute(_, params, _), do: {:ok, Searches.saved_search_execute(params, false)}
+
+    @doc """
+  Get a specific conversation by contact id
+  """
+  @spec conversation(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def conversation(_, args, _) do
+    {:ok, Conversations.conversation_by_id(args)}
+  end
+
 end

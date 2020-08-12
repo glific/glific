@@ -27,6 +27,11 @@ defmodule GlificWeb.Schema.SearchTypes do
     end
   end
 
+  object :conversation do
+    field :contact, :contact
+    field :messages, list_of(:message)
+  end
+
   input_object :saved_search_filter do
     field :label, :string
     field :shortcode, :string
@@ -53,6 +58,12 @@ defmodule GlificWeb.Schema.SearchTypes do
 
   @desc "Filtering options for search"
   input_object :search_filter do
+    @desc "Match one contact ID"
+    field :id, :gid
+
+    @desc "Match multiple contact ids"
+    field :ids, list_of(:gid)
+
     @desc "Include conversations with these tags"
     field :include_tags, list_of(:gid)
 
@@ -122,6 +133,14 @@ defmodule GlificWeb.Schema.SearchTypes do
 
       resolve(&Resolvers.Searches.saved_search_execute/3)
     end
+
+    @desc "get the details of conversation with one user"
+    field :conversation, :conversation do
+      arg(:contact_id, non_null(:gid))
+      arg(:message_opts, non_null(:opts))
+      resolve(&Resolvers.Searches.conversation/3)
+    end
+
   end
 
   object :search_mutations do

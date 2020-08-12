@@ -45,13 +45,5 @@ defmodule GlificWeb.Schema.ConversationTypes do
       arg(:contact_opts, non_null(:opts))
       resolve(&Resolvers.Conversations.conversations/3)
     end
-
-    @desc "get the details of conversation with one user"
-    field :conversation, :conversation do
-      arg(:contact_id, non_null(:gid))
-      arg(:filter, :conversation_filter)
-      arg(:message_opts, non_null(:opts))
-      resolve(&Resolvers.Conversations.conversation/3)
-    end
   end
 end

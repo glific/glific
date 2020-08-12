@@ -32,7 +32,7 @@ defmodule Glific.Conversations do
     message_opts = args.message_opts
 
     case args
-         |> Map.put(:ids, get_message_ids(%{limit: 1}, message_opts, args))
+         |> Map.put(:ids, get_message_ids(%{}, message_opts, args))
          |> Messages.list_conversations() do
       [conversation] -> conversation
       _ -> nil

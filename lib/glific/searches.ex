@@ -155,9 +155,12 @@ defmodule Glific.Searches do
       check_filter_for_save_search(args)
       |> update_args_for_count(count)
 
-    contact_ids =
-      search_query(args.filter[:term], args)
-      |> Repo.all()
+    contact_ids = if(args.filter[:ids]) do
+                      args.filter[:ids]
+                  else
+                    search_query(args.filter[:term], args)
+                        |> Repo.all()
+                  end
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Glific.Conversations.list_conversations(count)
@@ -174,6 +177,20 @@ defmodule Glific.Searches do
   """
   @spec saved_search_execute(map(), boolean) :: [Conversation.t()] | integer
   def saved_search_execute(%{id: id} = args, count \\ false) do
+    get_saved_search!(id)
+    |> Map.get(:args)
+    |> add_term(Map.get(args, :term))
+    |> convert_to_atom()
+    |> search(count)
+  end
+
+
+   @doc """
+  Execute a saved search, if term is sent in, it is added to
+  the saved search. Either return conversations or count
+  """
+  @spec saved_search_count(map(), boolean) :: [Conversation.t()] | integer
+  def saved_search_count(%{id: id} = args, count \\ false) do
     get_saved_search!(id)
     |> Map.get(:args)
     |> add_term(Map.get(args, :term))
@@ -215,12 +232,20 @@ defmodule Glific.Searches do
   # Get all the filters from saved search
   @spec check_filter_for_save_search(map()) :: map()
   defp check_filter_for_save_search(%{filter: %{saved_search_id: saved_search_id}} = args) do
-    saved_search_id
-    |> get_saved_search!()
-    |> Map.get(:args)
-    |> put_in([Access.key(:filter, %{}), :term], get_in(args, [:filter, :term]))
-    |> convert_to_atom()
+    saved_search_args =
+          get_saved_search!(saved_search_id)
+          |> Map.get(:args)
+
+    saved_search_args =
+          if(get_in(args, [:filter, :term])) do
+            put_in(saved_search_args, ["filter", "term"], get_in(args, [:filter, :term]))
+          else
+            saved_search_args
+          end
+
+    convert_to_atom(saved_search_args)
   end
+
 
   defp check_filter_for_save_search(args), do: args
 end

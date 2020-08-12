@@ -331,23 +331,31 @@ defmodule GlificWeb.Schema.SearchTest do
     })
 
     result =
-      query_gql_by(:search_execute,
-        variables: %{"id" => saved_search.id}
+      query_gql_by(:search,
+        variables: %{
+          "filter" => %{"savedSearchId" => saved_search.id },
+          "contactOpts" => %{},
+          "messageOpts" => %{}
+        }
       )
 
     assert {:ok, query_data} = result
 
-    assert get_in(query_data, [:data, "savedSearchExecute", Access.at(0), "contact", "id"]) ==
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
              to_string(sender.id)
 
     result =
-      query_gql_by(:search_execute,
-        variables: %{"id" => saved_search.id, "term" => "defa"}
+      query_gql_by(:search,
+        variables: %{
+          "filter" => %{"savedSearchId" => saved_search.id, "term" => "defa" },
+          "contactOpts" => %{},
+          "messageOpts" => %{}
+        }
       )
 
     assert {:ok, query_data} = result
 
-    assert get_in(query_data, [:data, "savedSearchExecute", Access.at(0), "contact", "id"]) ==
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
              to_string(sender.id)
 
     result =
