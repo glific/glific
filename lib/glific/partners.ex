@@ -207,21 +207,15 @@ defmodule Glific.Partners do
 
   """
   @spec get_organization!(integer) :: Organization.t()
-  def get_organization!(id) do
-    get_cached_organization!(id)
+  def get_organization!(id), do: Repo.get!(Organization, id)
+
+
+  @spec get_cached_organization!() :: {atom, any}
+  defp get_cached_organization!() do
+    with {:ok, false} <- Caches.get("organization"), do:
+      Caches.set("organization", Repo.get!(Organization, id))
   end
 
-  @spec get_cached_organization!(integer) :: Organization.t()
-  defp get_cached_organization!(id) do
-    case Caches.get("organization#{id}") do
-      {:ok, false} ->
-        organization_data =  Repo.get!(Organization, id)
-        Caches.set("organization#{id}", organization_data)
-        organization_data
-      {:ok, organization_cache} ->
-        organization_cache
-    end
-  end
   @doc ~S"""
   Creates a organization.
 
@@ -297,20 +291,17 @@ defmodule Glific.Partners do
   We will cache this soon, since this is a frequently requested item. This contact id is special
   since it is the sender for all outbound messages and the receiver for all inbound messages
   """
-  @spec organization_contact_id() :: integer()
+  @spec organization_contact_id() :: {atom, integer()}
   def organization_contact_id do
     # Get contact id
-    case Caches.get("organization_contact_id") do
-      {:ok, false} ->
-        contact_id =  Contact
-                      |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
-                      |> select([c, _o], c.id)
-                      |> limit(1)
-                      |> Repo.one()
-        Caches.set("organization_contact_id", contact_id)
-        contact_id
-      {:ok, cached_id} ->
-        cached_id
-    end  
+    with {:ok, false} <- Caches.get("organization_contact_id") do
+      contact_id =
+        Contact
+          |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
+          |> select([c, _o], c.id)
+          |> limit(1)
+          |> Repo.one()
+      Caches.set("organization_contact_id", contact_id)
+    end
   end
 end
