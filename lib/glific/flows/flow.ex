@@ -13,6 +13,7 @@ defmodule Glific.Flows.Flow do
     Contacts.Contact,
     Flows,
     Flows.FlowContext,
+    Flows.FlowGlobalKeyword,
     Flows.FlowRevision,
     Flows.Localization,
     Flows.Node,
@@ -22,7 +23,7 @@ defmodule Glific.Flows.Flow do
   alias Glific.Enums.FlowType
 
   @required_fields [:name, :uuid, :shortcode]
-  @optional_fields [:flow_type, :version_number, :uuid_map, :nodes]
+  @optional_fields [:flow_type, :version_number, :uuid_map, :nodes, :ignore_keywords]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -52,6 +53,9 @@ defmodule Glific.Flows.Flow do
     field :uuid_map, :map, virtual: true
     field :nodes, :map, virtual: true
     field :localization, :map, virtual: true
+
+    field :ignore_keywords, :boolean, default: false
+    has_many :global_keywords, FlowGlobalKeyword
 
     # we use this to store the latest definition for this flow
     field :definition, :map, virtual: true
