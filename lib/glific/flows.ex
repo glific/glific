@@ -24,7 +24,22 @@ defmodule Glific.Flows do
   """
   @spec list_flows(map()) :: [Flow.t()]
   def list_flows(args \\ %{}),
-    do: Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &Repo.filter_with/2)
+    do: Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:keyword, keyword}, query ->
+        from f in query,
+          join: k in assoc(f, :global_keywords),
+          where: k.flow_id == f.id and k.name == ^keyword
+
+      _, query ->
+        query
+    end)
+  end
 
   @doc """
   Return the count of tags, using the same filter as list_tags
@@ -278,5 +293,15 @@ defmodule Glific.Flows do
     if results != [],
       do: true,
       else: false
+  end
+
+  @spec get_flow_by_keyword(keyword) :: Flow.t()
+  def get_flow_by_keyword(keyword) do
+    query =
+      from f in Flow,
+        join: fg in assoc(f, :global_keywords),
+        where: fg.flow_id == f.id and fg.name == ^keyword
+
+    query |> Repo.one()
   end
 end

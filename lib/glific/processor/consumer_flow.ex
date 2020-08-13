@@ -63,9 +63,15 @@ defmodule Glific.Processor.ConsumerFlow do
   defp process_message(message, state) do
     body = Glific.string_clean(message.body)
 
-    message
-    |> Repo.preload(:contact)
-    |> check_flows(body, state)
+    message = message |> Repo.preload(:contact)
+
+    keywords_list = Flows.FlowGlobalKeyword.list_flow_global_keywords()
+
+    if body in keywords_list do
+      check_flows(message, body, state)
+    else
+      check_contexts(message, body, state)
+    end
   end
 
   @doc """
@@ -73,23 +79,16 @@ defmodule Glific.Processor.ConsumerFlow do
   trigger mechanism once we have that under control.
   """
   @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
-  def check_flows(message, body, _state)
-      when body in [
-             "help",
-             "language",
-             "preference",
-             "newcontact",
-             "registration",
-             "timed",
-             "solworkflow"
-           ] do
+  def check_flows(message, body, _state) do
     message = Repo.preload(message, :contact)
-    {:ok, flow} = Flows.get_cached_flow(body, %{shortcode: body})
+    # flow = Flows.get_flow_by_keyword(body)
+    [flow] = Flows.list_flows(%{filter: %{keyword: body}})
+    {:ok, flow} = Flows.get_cached_flow(flow.shortcode, %{shortcode: flow.shortcode})
     FlowContext.init_context(flow, message.contact)
     message
   end
 
-  def check_flows(message, _body, _state) do
+  def check_contexts(message, _body, _state) do
     context = FlowContext.active_context(message.contact_id)
 
     if context do

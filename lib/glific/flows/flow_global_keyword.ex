@@ -5,6 +5,8 @@ defmodule Glific.Flows.FlowGlobalKeyword do
   use Ecto.Schema
   import Ecto.Changeset
 
+  import Ecto.Query, warn: false
+
   alias __MODULE__
 
   alias Glific.{
@@ -19,7 +21,7 @@ defmodule Glific.Flows.FlowGlobalKeyword do
           id: non_neg_integer | nil,
           name: String.t() | nil,
           flow_id: non_neg_integer | nil,
-          flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "flow_global_keywords" do
@@ -37,10 +39,22 @@ defmodule Glific.Flows.FlowGlobalKeyword do
     |> validate_required(@required_fields)
   end
 
-  @spec create_flow_global_keyword(map()) :: {:ok, FlowGlobalKeyword.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_flow_global_keyword(map()) ::
+          {:ok, FlowGlobalKeyword.t()} | {:error, Ecto.Changeset.t()}
   def create_flow_global_keyword(attrs \\ %{}) do
     %FlowGlobalKeyword{}
     |> FlowGlobalKeyword.changeset(attrs)
     |> Repo.insert()
   end
+
+  @spec get_global_keywords :: [String.t()]
+  def get_global_keywords do
+    FlowGlobalKeyword
+    |> select([g], g.name)
+    |> Repo.all()
+  end
+
+  @spec list_flow_global_keywords() :: [FlowGlobalKeyword.t()]
+  def list_flow_global_keywords(),
+    do: Repo.all(FlowGlobalKeyword)
 end
