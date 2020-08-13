@@ -258,7 +258,7 @@ defmodule Glific.Flows do
   def get_cached_flow(key, args) do
     with {:ok, false} <- Caches.get(key) do
       flow = Flow.get_loaded_flow(args)
-      Caches.set([flow.uuid, flow.shortcode], flow)
+      Caches.set([flow.uuid, flow.shortcode | flow.global_keywords], flow)
     end
   end
 
@@ -292,15 +292,5 @@ defmodule Glific.Flows do
     if results != [],
       do: true,
       else: false
-  end
-
-  @spec get_flow_by_keyword(keyword) :: Flow.t()
-  def get_flow_by_keyword(keyword) do
-    query =
-      from f in Flow,
-        join: fg in assoc(f, :global_keywords),
-        where: fg.flow_id == f.id and fg.name == ^keyword
-
-    query |> Repo.one()
   end
 end

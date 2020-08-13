@@ -68,7 +68,9 @@ defmodule Glific.Processor.ConsumerFlow do
     message = message |> Repo.preload(:contact)
 
     keywords_list =
-      Flows.Flow |> select([f], f.global_keywords) |> Repo.all
+      Flows.Flow
+      |> select([f], f.global_keywords)
+      |> Repo.all()
       |> Enum.reduce([], fn global_keywords, acc -> global_keywords ++ acc end)
 
     if body in keywords_list do
@@ -85,8 +87,7 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
   def check_flows(message, body, _state) do
     message = Repo.preload(message, :contact)
-    [flow] = Flows.list_flows(%{filter: %{keyword: body}})
-    {:ok, flow} = Flows.get_cached_flow(flow.shortcode, %{shortcode: flow.shortcode})
+    {:ok, flow} = Flows.get_cached_flow(body, %{keyword: body})
     FlowContext.init_context(flow, message.contact)
     message
   end

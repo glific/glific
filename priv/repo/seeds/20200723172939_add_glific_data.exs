@@ -7,7 +7,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Contacts,
     Contacts.Contact,
     Flows.Flow,
-    Flows.FlowGlobalKeyword,
     Flows.FlowRevision,
     Partners.Organization,
     Partners.Provider,

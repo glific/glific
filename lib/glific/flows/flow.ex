@@ -13,7 +13,6 @@ defmodule Glific.Flows.Flow do
     Contacts.Contact,
     Flows,
     Flows.FlowContext,
-    Flows.FlowGlobalKeyword,
     Flows.FlowRevision,
     Flows.Localization,
     Flows.Node,
@@ -32,6 +31,8 @@ defmodule Glific.Flows.Flow do
           shortcode: String.t() | nil,
           uuid: Ecto.UUID.t() | nil,
           uuid_map: map() | nil,
+          global_keywords: [String.t()] | nil,
+          ignore_keywords: boolean() | nil,
           flow_type: String.t() | nil,
           definition: map() | nil,
           localization: Localization.t() | nil,
@@ -182,7 +183,13 @@ defmodule Glific.Flows.Flow do
       from f in Flow,
         join: fr in assoc(f, :revisions),
         where: fr.flow_id == f.id and fr.revision_number == 0,
-        select: %Flow{id: f.id, uuid: f.uuid, shortcode: f.shortcode, definition: fr.definition}
+        select: %Flow{
+          id: f.id,
+          uuid: f.uuid,
+          shortcode: f.shortcode,
+          global_keywords: f.global_keywords,
+          definition: fr.definition
+        }
 
     flow =
       query
@@ -204,6 +211,9 @@ defmodule Glific.Flows.Flow do
 
   defp args_clause(query, %{shortcode: shortcode}),
     do: query |> where([f, _fr], f.shortcode == ^shortcode)
+
+  defp args_clause(query, %{keyword: keyword}),
+    do: query |> where([f, _fr], ^keyword in f.global_keywords)
 
   defp args_clause(query, _args), do: query
 
