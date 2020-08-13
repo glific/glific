@@ -4,13 +4,15 @@ defmodule Glific.Repo.Seeds.AddTagData do
   envs([:dev, :test, :prod])
 
   alias Glific.{
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Repo,
+    Settings.Language,
+    Tags.Tag
   }
 
   def up(_repo) do
     languages = languages()
-
-    tags(languages)
+    gtags(languages)
   end
 
   def down(_repo) do
@@ -23,27 +25,27 @@ defmodule Glific.Repo.Seeds.AddTagData do
 
   def languages,
     do: {
-      Repo.get_by(Language, %{label: "Hindi"}),
-      Repo.get_by(Language, %{label_locale: "English"})
+      Repo.fetch_by(Language, %{label: "Hindi"}),
+      Repo.fetch_by(Language, %{label_locale: "English"})
     }
 
-  def tags(languages) do
-    {_hi, en_us} = languages
+  def gtags(languages) do
+    {_hi, {:ok, en_us}} = languages
 
     # seed tags
-    message_tags_mt = Repo.get_by(Tag, %{label: "Messages"})
+    {:ok, message_tags_mt } = Repo.fetch_by(Tag, %{label: "Messages"})
 
     tags = [
       # Intent of message
       %{
         label: "Yes",
-        language_id: en_us.id,
+        language_id: 2,
         parent_id: message_tags_mt.id,
         keywords: ["yes", "yeah", "okay", "ok"]
       },
       %{
         label: "No",
-        language_id: en_us.id,
+        language_id: 2,
         parent_id: message_tags_mt.id,
         keywords: ["no", "nope", "nay"]
       }
