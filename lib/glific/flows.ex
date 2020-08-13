@@ -263,6 +263,22 @@ defmodule Glific.Flows do
   end
 
   @doc """
+  Helper function which checks cached flows before checking the database
+  """
+  @spec check_cached_flow(String.t()) :: {:ok, any}
+  def check_cached_flow(key) do
+    with {:ok, false} <- Caches.get(key) do
+      query =
+        from f in Flow,
+          where: ^key in f.global_keywords
+
+      flow = query |> Repo.one()
+
+      {:ok, flow}
+    end
+  end
+
+  @doc """
   Update the cached flow from db. This typically happens when the flow definition is updated
   via the UI
   """

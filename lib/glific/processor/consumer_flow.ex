@@ -67,16 +67,12 @@ defmodule Glific.Processor.ConsumerFlow do
 
     message = message |> Repo.preload(:contact)
 
-    keywords_list =
-      Flows.Flow
-      |> select([f], f.global_keywords)
-      |> Repo.all()
-      |> Enum.reduce([], fn global_keywords, acc -> global_keywords ++ acc end)
+    case Flows.check_cached_flow(body) do
+      {:ok, nil} ->
+        check_contexts(message, body, state)
 
-    if body in keywords_list do
-      check_flows(message, body, state)
-    else
-      check_contexts(message, body, state)
+      {:ok, _flow} ->
+        check_flows(message, body, state)
     end
   end
 
@@ -92,6 +88,10 @@ defmodule Glific.Processor.ConsumerFlow do
     message
   end
 
+  @doc """
+  Check contexts
+  """
+  @spec check_contexts(atom() | Message.t(), String.t(), map()) :: Message.t()
   def check_contexts(message, _body, _state) do
     context = FlowContext.active_context(message.contact_id)
 
