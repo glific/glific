@@ -7,6 +7,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Contacts,
     Contacts.Contact,
     Flows.Flow,
+    Flows.FlowGlobalKeyword,
     Flows.FlowRevision,
     Partners.Organization,
     Partners.Provider,
@@ -441,6 +442,11 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         version_number: "13.1.0",
         uuid: uuid
       })
+
+    Repo.insert!(%FlowGlobalKeyword{
+      name: shortcode,
+      flow_id: f.id
+    })
 
     definition =
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
