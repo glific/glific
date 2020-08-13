@@ -48,4 +48,22 @@ defmodule Glific.Processor.Helper do
 
     message
   end
+
+  @doc """
+  Helper function to add tag
+  """
+  @spec add_dialogflow_tag(Message.t(), map()) :: any()
+  def add_dialogflow_tag(_message, %{"intent" => %{"isFallback" => true}}), do: nil
+
+  def add_dialogflow_tag(message, %{"intent" => intent}) do
+    tag_label =
+      intent["displayName"]
+      |> String.split(".")
+      |> Enum.at(1)
+
+    with {:ok, tag} <- Repo.fetch_by(Tags.Tag, %{label: tag_label}),
+      do: add_tag(message, tag.id)
+
+  end
+
 end

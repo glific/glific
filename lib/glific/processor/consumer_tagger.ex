@@ -137,11 +137,15 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @spec dialogflow_tagger({Message.t(), map()}) :: {Message.t(), map()}
   defp dialogflow_tagger({message, %{tagged: false} = state}) do
-    _intent =
+    {:ok, response} =
       Sessions.detect_intent(
         message.body,
         state.dialogflow_session_id
       )
+
+      Helper.add_dialogflow_tag(message, response["queryResult"])
+      {message, state}
+
   end
 
   defp dialogflow_tagger({message, state}), do: {message, state}
