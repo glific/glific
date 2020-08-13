@@ -8,8 +8,8 @@ defmodule Glific.Dialogflow.Agent do
   @doc """
   Get the agent that we are talking with for this specific project
   """
-  @spec get(String.t()) :: tuple
-  def get(project) do
-    Dialogflow.request(project, :get, "", "")
+  @spec get() :: tuple
+  def get do
+    Dialogflow.request(:get, "", "")
   end
 end

@@ -12,9 +12,9 @@ defmodule Glific.Dialogflow do
   @doc """
   The request controller which sends and parses requests. We should move this to Tesla
   """
-  @spec request(String.t(), atom, String.t(), String.t() | map) :: tuple
-  def request(project, method, path, body) do
-    %{id: id, email: email} = project_info(project)
+  @spec request(atom, String.t(), String.t() | map) :: tuple
+  def request(method, path, body) do
+    %{id: id, email: email} = project_info()
 
     url = "#{host()}/v2/projects/#{id}/agent/#{path}"
 
@@ -41,7 +41,7 @@ defmodule Glific.Dialogflow do
   defp body(body), do: Poison.encode!(body)
 
   # ---------------------------------------------------------------------------
-  # Obtine el host de Dialogflow API
+  # Get the host of the dialogflow API
   # ---------------------------------------------------------------------------
   @spec host :: String.t()
   defp host, do: Application.fetch_env!(:glific, :dialogflow_url)
@@ -62,8 +62,8 @@ defmodule Glific.Dialogflow do
   # ---------------------------------------------------------------------------
   # Get the project details needed for authentication and to send via the API
   # ---------------------------------------------------------------------------
-  @spec project_info(String.t()) :: %{:id => String.t(), :email => String.t()}
-  defp project_info(_project) do
+  @spec project_info() :: %{:id => String.t(), :email => String.t()}
+  defp project_info do
     %{
       id: Application.fetch_env!(:glific, :dialogflow_project_id),
       email: Application.fetch_env!(:glific, :dialogflow_project_email)

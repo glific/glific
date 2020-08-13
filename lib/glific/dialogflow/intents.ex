@@ -8,11 +8,11 @@ defmodule Glific.Dialogflow.Intents do
   @doc """
   List all the intents of the agent per pageToken.
   """
-  @spec list(String.t(), String.t(), String.t(), String.t() | nil, list) :: tuple
-  def list(project, language \\ "en", view \\ "INTENT_VIEW_UNSPECIFIED", token \\ nil, acc \\ []) do
-    case list_by_page(project, language, view, 100, token) do
+  @spec list(String.t(), String.t(), String.t() | nil, list) :: tuple
+  def list(language \\ "en", view \\ "INTENT_VIEW_UNSPECIFIED", token \\ nil, acc \\ []) do
+    case list_by_page(language, view, 100, token) do
       {:ok, %{"intents" => intents, "nextPageToken" => next_page_token}} ->
-        list(project, language, view, next_page_token, acc ++ intents)
+        list(language, view, next_page_token, acc ++ intents)
 
       {:ok, %{"intents" => intents}} ->
         {:ok, acc ++ intents}
@@ -25,9 +25,8 @@ defmodule Glific.Dialogflow.Intents do
   @doc """
   List an agent's intents by pageToken and defining page size.
   """
-  @spec list_by_page(String.t(), String.t(), String.t(), integer, String.t() | nil) :: tuple
+  @spec list_by_page(String.t(), String.t(), integer, String.t() | nil) :: tuple
   def list_by_page(
-        project,
         language \\ "en",
         view \\ "INTENT_VIEW_UNSPECIFIED",
         page_size \\ 100,
@@ -37,53 +36,53 @@ defmodule Glific.Dialogflow.Intents do
       "intents?languageCode=#{language}&intentView=#{view}&" <>
         "pageSize=#{page_size}&pageToken=#{token}"
 
-    Dialogflow.request(project, :get, url, "")
+    Dialogflow.request(:get, url, "")
   end
 
   @doc """
   Get an intent for a specific id
   """
-  @spec get(String.t(), String.t(), String.t(), String.t()) :: tuple
-  def get(project, id, language \\ "en", view \\ "INTENT_VIEW_UNSPECIFIED") do
+  @spec get(String.t(), String.t(), String.t()) :: tuple
+  def get(id, language \\ "en", view \\ "INTENT_VIEW_UNSPECIFIED") do
     url = "intents/#{id}?languageCode=#{language}&intentView=#{view}"
 
-    Dialogflow.request(project, :get, url, "")
+    Dialogflow.request(:get, url, "")
   end
 
   @doc """
   Create an intent
   """
-  @spec create(String.t(), map, String.t()) :: tuple
-  def create(project, body, language \\ "es") do
+  @spec create(map, String.t()) :: tuple
+  def create(body, language \\ "es") do
     url = "intents?languageCode=#{language}"
 
-    Dialogflow.request(project, :post, url, body)
+    Dialogflow.request(:post, url, body)
   end
 
   @doc """
   Add a training phrase to an intent.
   """
-  @spec add_training_phrase(String.t(), String.t(), String.t(), String.t()) :: tuple
-  def add_training_phrase(project, id, text, language \\ "en") do
+  @spec add_training_phrase(String.t(), String.t(), String.t()) :: tuple
+  def add_training_phrase(id, text, language \\ "en") do
     url = "intents/#{id}?languageCode=#{language}&intentView=INTENT_VIEW_FULL"
 
-    with {:ok, intent} <- get(project, id, language, "INTENT_VIEW_FULL") do
+    with {:ok, intent} <- get(id, language, "INTENT_VIEW_FULL") do
       intent
       |> Map.get("trainingPhrases")
       |> set_training_phrase(text)
       |> (&Map.put(intent, "trainingPhrases", &1)).()
-      |> (&Dialogflow.request(project, :patch, url, &1)).()
+      |> (&Dialogflow.request(:patch, url, &1)).()
     end
   end
 
   @doc """
   Update an intent view full.
   """
-  @spec update(String.t(), String.t(), map, String.t()) :: tuple
-  def update(project, id, intent, language \\ "es") do
+  @spec update(String.t(), map, String.t()) :: tuple
+  def update(id, intent, language \\ "es") do
     url = "intents/#{id}?languageCode=#{language}&intentView=INTENT_VIEW_FULL"
 
-    Dialogflow.request(project, :patch, url, intent)
+    Dialogflow.request(:patch, url, intent)
   end
 
   # ---------------------------------------------------------------------------

@@ -9,6 +9,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   alias Glific.{
     Communications,
+    Dialogflow.Sessions,
     Messages.Message,
     Processor.ConsumerFlow,
     Processor.Helper,
@@ -37,7 +38,9 @@ defmodule Glific.Processor.ConsumerTagger do
         producer: opts[:producer],
         numeric_map: Numeric.get_numeric_map(),
         numeric_tag_id: 0,
-        flows: %{}
+        flows: %{},
+        dialogflow_session_id: Ecto.UUID.generate(),
+        tagged: false
       }
       |> reload
 
@@ -78,42 +81,70 @@ defmodule Glific.Processor.ConsumerTagger do
   defp process_message(message, state) do
     body = Glific.string_clean(message.body)
 
-    message
-    |> numeric_tagger(body, state)
-    |> keyword_tagger(body, state)
-    |> new_contact_tagger(state)
+    {message, Map.put(state, :tagged, false)}
+    |> numeric_tagger(body)
+    |> keyword_tagger(body)
+    |> new_contact_tagger()
+    |> dialogflow_tagger()
+    # get the first element which is the message
+    |> elem(0)
     |> Repo.preload(:tags)
     |> Communications.publish_data(:created_message_tag)
   end
 
-  @spec numeric_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()
-  defp numeric_tagger(message, body, state) do
+  @spec numeric_tagger({atom() | Message.t(), map()}, String.t()) :: {Message.t(), map()}
+  defp numeric_tagger({message, state}, body) do
     case Numeric.tag_body(body, state.numeric_map) do
-      {:ok, value} -> Helper.add_tag(message, state.numeric_tag_id, value)
-      _ -> message
+      {:ok, value} ->
+        {
+          Helper.add_tag(message, state.numeric_tag_id, value),
+          Map.put(state, :tagged, true)
+        }
+
+      _ ->
+        {message, state}
     end
   end
 
-  @spec keyword_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()
-  defp keyword_tagger(message, body, state) do
+  @spec keyword_tagger({atom() | Message.t(), map()}, String.t()) :: {Message.t(), map()}
+  defp keyword_tagger({message, state}, body) do
     case Taggers.Keyword.tag_body(body, state.keyword_map) do
-      {:ok, value} -> Helper.add_tag(message, value, body)
-      _ -> message
+      {:ok, value} ->
+        {
+          Helper.add_tag(message, value, body),
+          Map.put(state, :tagged, true)
+        }
+
+      _ ->
+        {message, state}
     end
   end
 
-  @spec new_contact_tagger(Message.t(), map()) :: Message.t()
-  defp new_contact_tagger(message, state) do
+  @spec new_contact_tagger({atom() | Message.t(), map()}) :: {Message.t(), map()}
+  defp new_contact_tagger({message, state}) do
     if Status.is_new_contact(message.sender_id) do
       message
       |> add_status_tag("New Contact", state)
       # We make a cross module function call which is its own genserver
       # but should be fine for now
       |> ConsumerFlow.check_flows("newcontact", state)
-    end
 
-    message
+      {message, Map.put(state, :tagged, true)}
+    else
+      {message, state}
+    end
   end
+
+  @spec dialogflow_tagger({Message.t(), map()}) :: {Message.t(), map()}
+  defp dialogflow_tagger({message, %{tagged: false} = state}) do
+    _intent =
+      Sessions.detect_intent(
+        message.body,
+        state.dialogflow_session_id
+      )
+  end
+
+  defp dialogflow_tagger({message, state}), do: {message, state}
 
   @spec add_status_tag(Message.t(), String.t(), map()) :: Message.t()
   defp add_status_tag(message, status, state),

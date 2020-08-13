@@ -83,7 +83,7 @@ defmodule Glific.Dialogflow.IntentsTest do
         ]
       }
     ]) do
-      assert Intents.list("lbot-170198") == {:ok, @intents["intents"]}
+      assert Intents.list() == {:ok, @intents["intents"]}
     end
   end
 
@@ -105,7 +105,7 @@ defmodule Glific.Dialogflow.IntentsTest do
         ]
       }
     ]) do
-      assert Intents.get("lbot-170198", "5eec5344-8a09-40ba-8f46-1d2ed3f7b0df") == {:ok, @intent}
+      assert Intents.get("5eec5344-8a09-40ba-8f46-1d2ed3f7b0df") == {:ok, @intent}
     end
   end
 
@@ -135,7 +135,7 @@ defmodule Glific.Dialogflow.IntentsTest do
         ]
       }
     ]) do
-      assert {:ok, intent} = Intents.create("lbot-170198", %{displayName: "test"})
+      assert {:ok, intent} = Intents.create(%{displayName: "test"})
 
       assert intent["displayName"] == @create_attrs.displayName
     end
@@ -159,7 +159,7 @@ defmodule Glific.Dialogflow.IntentsTest do
         ]
       }
     ]) do
-      assert {:error, errors} = Intents.create("lbot-170198", %{displayName: "test"})
+      assert {:error, errors} = Intents.create(%{displayName: "test"})
 
       assert errors["error"]["message"] == @invalid_intent["error"]["message"]
     end
@@ -184,7 +184,6 @@ defmodule Glific.Dialogflow.IntentsTest do
       }
     ]) do
       assert Intents.update(
-               "lbot-170198",
                "5eec5344-8a09-40ba-8f46-1d2ed3f7b0df",
                @intent_view_full
              ) == {:ok, @intent_view_full}

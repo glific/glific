@@ -8,8 +8,8 @@ defmodule Glific.Dialogflow.Sessions do
   @doc """
   Function to communicate with dialogflow to detect the intent of the request
   """
-  @spec detect_intent(String.t(), String.t(), String.t(), String.t()) :: tuple
-  def detect_intent(project, text, session_id, language \\ "en") do
+  @spec detect_intent(String.t(), String.t(), String.t()) :: tuple
+  def detect_intent(text, session_id, language \\ "en") do
     body = %{
       queryInput: %{
         text: %{
@@ -19,6 +19,6 @@ defmodule Glific.Dialogflow.Sessions do
       }
     }
 
-    Dialogflow.request(project, :post, "sessions/#{session_id}:detectIntent", body)
+    Dialogflow.request(:post, "sessions/#{session_id}:detectIntent", body)
   end
 end

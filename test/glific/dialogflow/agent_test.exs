@@ -36,7 +36,7 @@ defmodule Glific.Dialogflow.AgentTest do
         ]
       }
     ]) do
-      assert Agent.get("lbot-170198") == {:ok, @agent}
+      assert Agent.get() == {:ok, @agent}
     end
   end
 end
