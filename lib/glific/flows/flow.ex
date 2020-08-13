@@ -22,7 +22,7 @@ defmodule Glific.Flows.Flow do
 
   alias Glific.Enums.FlowType
 
-  @required_fields [:name, :uuid, :shortcode]
+  @required_fields [:name, :uuid, :shortcode, :global_keywords]
   @optional_fields [:flow_type, :version_number, :uuid_map, :nodes, :ignore_keywords]
 
   @type t :: %__MODULE__{
@@ -54,8 +54,8 @@ defmodule Glific.Flows.Flow do
     field :nodes, :map, virtual: true
     field :localization, :map, virtual: true
 
+    field :global_keywords, {:array, :string}, default: []
     field :ignore_keywords, :boolean, default: false
-    has_many :global_keywords, FlowGlobalKeyword
 
     # we use this to store the latest definition for this flow
     field :definition, :map, virtual: true

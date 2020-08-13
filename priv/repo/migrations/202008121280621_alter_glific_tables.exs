@@ -19,15 +19,9 @@ defmodule Glific.Repo.Migrations.AlterGlificTables do
     alter table(:flows) do
       # Enable ignore keywords while in the flow
       add :ignore_keywords, :boolean, default: false
+
+      # List of global keywords to trigger the flow
+      add :global_keywords, {:array, :string}, default: []
     end
-
-    # List of global keywords to trigger the flow
-    create table(:flow_global_keywords) do
-      add :name, :string, null: false
-
-      add :flow_id, references(:flows, on_delete: :delete_all), null: false
-    end
-
-    create unique_index(:flow_global_keywords, :name)
   end
 end

@@ -7,6 +7,8 @@ defmodule Glific.Processor.ConsumerFlow do
 
   use GenStage
 
+  import Ecto.Query, warn: false
+
   alias Glific.{
     Flows,
     Flows.FlowContext,
@@ -65,7 +67,9 @@ defmodule Glific.Processor.ConsumerFlow do
 
     message = message |> Repo.preload(:contact)
 
-    keywords_list = Flows.FlowGlobalKeyword.list_flow_global_keywords()
+    keywords_list =
+      Flows.Flow |> select([f], f.global_keywords) |> Repo.all
+      |> Enum.reduce([], fn global_keywords, acc -> global_keywords ++ acc end)
 
     if body in keywords_list do
       check_flows(message, body, state)
@@ -81,7 +85,6 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
   def check_flows(message, body, _state) do
     message = Repo.preload(message, :contact)
-    # flow = Flows.get_flow_by_keyword(body)
     [flow] = Flows.list_flows(%{filter: %{keyword: body}})
     {:ok, flow} = Flows.get_cached_flow(flow.shortcode, %{shortcode: flow.shortcode})
     FlowContext.init_context(flow, message.contact)

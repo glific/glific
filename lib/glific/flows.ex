@@ -33,8 +33,7 @@ defmodule Glific.Flows do
     Enum.reduce(filter, query, fn
       {:keyword, keyword}, query ->
         from f in query,
-          join: k in assoc(f, :global_keywords),
-          where: k.flow_id == f.id and k.name == ^keyword
+          where: ^keyword in f.global_keywords
 
       _, query ->
         query
