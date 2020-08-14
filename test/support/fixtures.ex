@@ -85,6 +85,7 @@ defmodule Glific.Fixtures do
   def tag_fixture(attrs \\ %{}) do
     valid_attrs = %{
       label: "some label",
+      shortcode: "some-label",
       description: "some description",
       locale: "en_US",
       is_active: true,

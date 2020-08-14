@@ -144,7 +144,7 @@ defmodule Glific.Seeds.SeedsScale do
     query =
       from t in Tag,
         select: t.id,
-        where: t.label not in ["Unread", "Not Responded", "Not Replied"]
+        where: t.shortcode not in ["unread", "notresponded", "notreplied"]
 
     tag_ids = Repo.all(query) |> Enum.shuffle()
 
@@ -181,7 +181,7 @@ defmodule Glific.Seeds.SeedsScale do
     query =
       from t in Tag,
         select: t.id,
-        where: t.label in ["Unread", "Not replied"]
+        where: t.shortcode in ["unread", "notreplied"]
 
     tag_ids = Repo.all(query) |> Enum.shuffle()
 
@@ -216,7 +216,7 @@ defmodule Glific.Seeds.SeedsScale do
     query =
       from t in Tag,
         select: t.id,
-        where: t.label in ["Not Responded"]
+        where: t.shortcode in ["notresponded"]
 
     tag_ids = Repo.all(query) |> Enum.shuffle()
 

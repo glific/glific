@@ -55,7 +55,7 @@ defmodule Glific.Processor.ConsumerTagger do
   end
 
   defp reload(%{numeric_tag_id: numeric_tag_id} = state) when numeric_tag_id == 0 do
-    case Repo.fetch_by(Tag, %{label: "Numeric"}) do
+    case Repo.fetch_by(Tag, %{shortcode: "numeric"}) do
       {:ok, tag} -> Map.put(state, :numeric_tag_id, tag.id)
       _ -> state
     end
@@ -106,7 +106,7 @@ defmodule Glific.Processor.ConsumerTagger do
   defp new_contact_tagger(message, state) do
     if Status.is_new_contact(message.sender_id) do
       message
-      |> add_status_tag("New Contact", state)
+      |> add_status_tag("newcontact", state)
       # We make a cross module function call which is its own genserver
       # but should be fine for now
       |> ConsumerFlow.check_flows("newcontact", state)
