@@ -420,7 +420,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     data = [
       {"Help Workflow", "help", ["help", "मदद"], "3fa22108-f464-41e5-81d9-d8a298854429",
        "help.json"},
-      {"Language Workflow", "language", ["language"], "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
+      {"Language Workflow", "language", ["language", "भाषा"], "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
        "language.json"},
       {"Preferences Workflow", "preference", ["preference"],
        "63397051-789d-418d-9388-2ef7eb1268bb", "preference.json"},
