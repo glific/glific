@@ -76,21 +76,23 @@ defmodule Glific.Flows.Flow do
     |> validate_required(@required_fields)
     |> unique_constraint(:shortcode)
     |> unique_constraint(:name)
-    |> glific_global_keywords_changeset()
+    |> glific_validate_global_keywords(flow)
   end
 
   @doc """
   Changeset helper for global keywords
   """
-  @spec glific_global_keywords_changeset(Changeset.t()) :: Changeset.t()
-  def glific_global_keywords_changeset(changeset) do
+  @spec glific_validate_global_keywords(Changeset.t(), map()) :: Changeset.t()
+  def glific_validate_global_keywords(changeset, %{id: id}) do
     case get_change(changeset, :global_keywords) do
       nil ->
         changeset
 
       global_keywords ->
+        query = if is_nil(id), do: Flow, else: Flow |> where([f], f.id)
+
         keywords_list =
-          Flows.Flow
+          query
           |> select([f], f.global_keywords)
           |> Repo.all()
           |> Enum.reduce([], fn global_keywords, acc -> global_keywords ++ acc end)
