@@ -7,6 +7,7 @@ defmodule Glific.FLowsTest do
     @valid_attrs %{
       name: "Test Flow",
       shortcode: "test_short_code",
+      keywords: ["test_keyword"],
       flow_type: :message,
       version_number: "13.1.0"
     }
@@ -15,6 +16,7 @@ defmodule Glific.FLowsTest do
       name: "Test Flow More",
       shortcode: "test_short_code_2",
       flow_type: :message,
+      keywords: ["test_keyword_2"],
       version_number: "13.1.0"
     }
 
@@ -42,6 +44,20 @@ defmodule Glific.FLowsTest do
     test "list_flows/0 returns all flows" do
       flow = flow_fixture()
       assert Enum.filter(Flows.list_flows(), fn fl -> fl.name == flow.name end) == [flow]
+    end
+
+    test "list_flows/1 returns flows filtered by keyword" do
+      f0 = flow_fixture(@valid_attrs)
+      _f1 = flow_fixture(@valid_more_attrs)
+
+      flows = Flows.list_flows(%{filter: %{keyword: "test_keyword"}})
+      assert flows == [f0]
+
+      flows = Flows.list_flows(%{filter: %{keyword: "wrong_keyword"}})
+      assert flows == []
+
+      flows = Flows.list_flows(%{filter: %{wrong_filter: "test"}})
+      assert length(flows) >= 2
     end
 
     test "count_flows/0 returns count of all flows" do
@@ -72,6 +88,16 @@ defmodule Glific.FLowsTest do
       assert {:error, %Ecto.Changeset{}} = Flows.create_flow(@invalid_attrs)
     end
 
+    test "create_flow/1 with existing keyword returns error changeset" do
+      Flows.create_flow(@valid_attrs)
+
+      invalid_attrs =
+        @valid_attrs
+        |> Map.merge(%{keywords: ["test_keyword", "test_keyword_2"]})
+
+      assert {:error, %Ecto.Changeset{}} = Flows.create_flow(invalid_attrs)
+    end
+
     test "create_flow/1 will have a default revision" do
       assert {:ok, %Flow{} = flow} = Flows.create_flow(@valid_attrs)
       flow = Glific.Repo.preload(flow, [:revisions])
@@ -91,6 +117,25 @@ defmodule Glific.FLowsTest do
       flow = flow_fixture()
       assert {:error, %Ecto.Changeset{}} = Flows.update_flow(flow, @invalid_attrs)
       assert flow == Flows.get_flow!(flow.id)
+    end
+
+    test "update_flow/2 with keywords" do
+      flow = flow_fixture()
+
+      valid_attrs =
+        @valid_attrs
+        |> Map.merge(%{keywords: ["test_keyword", "test_keyword_1"]})
+
+      assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, valid_attrs)
+
+      # update flow with existing keyword should return error
+      flow = flow_fixture(@valid_more_attrs)
+
+      invalid_attrs =
+        @valid_attrs
+        |> Map.merge(%{keywords: ["test_keyword_2", "test_keyword_1"]})
+
+      assert {:error, %Ecto.Changeset{}} = Flows.update_flow(flow, invalid_attrs)
     end
 
     test "delete_flow/1 deletes the flow" do

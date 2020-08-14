@@ -416,8 +416,6 @@ defmodule Glific.Repo.Migrations.GlificCore do
     create table(:groups) do
       # Label of the group
       add :label, :string, null: false
-      # Description of the group
-      add :description, :string, null: true
       # visibility of conversations to the other groups
       add :is_restricted, :boolean, default: false
 

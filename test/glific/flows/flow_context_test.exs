@@ -118,7 +118,7 @@ defmodule Glific.Flows.FlowContextTest do
   end
 
   test "load_context/2 will load all the nodes and actions in memory for the context" do
-    flow = Flow.get_loaded_flow(%{shortcode: "help"})
+    flow = Flow.get_loaded_flow(%{keyword: "help"})
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
     flow_context = FlowContext.load_context(flow_context, flow)
@@ -126,7 +126,7 @@ defmodule Glific.Flows.FlowContextTest do
   end
 
   test "step_forward/2 will set the context to next node " do
-    flow = Flow.get_loaded_flow(%{shortcode: "help"})
+    flow = Flow.get_loaded_flow(%{keyword: "help"})
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
     flow_context = FlowContext.load_context(flow_context, flow)
