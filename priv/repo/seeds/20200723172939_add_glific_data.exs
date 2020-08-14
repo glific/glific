@@ -130,13 +130,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       },
       %{
         label: "New Contact",
-        shortcode: "new-contact",
+        shortcode: "newcontact",
         language_id: en_us.id,
         parent_id: message_tags_mt.id
       },
       %{
         label: "Not replied",
-        shortcode: "not-replied",
+        shortcode: "notreplied",
         language_id: en_us.id,
         parent_id: message_tags_mt.id
       },
@@ -151,7 +151,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       # Status of outbound Message
       %{
         label: "Not Responded",
-        shortcode: "not-responded",
+        shortcode: "notresponded",
         language_id: en_us.id,
         parent_id: message_tags_mt.id
       },

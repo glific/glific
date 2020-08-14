@@ -106,7 +106,7 @@ defmodule Glific.Processor.ConsumerTagger do
   defp new_contact_tagger(message, state) do
     if Status.is_new_contact(message.sender_id) do
       message
-      |> add_status_tag("new-contact", state)
+      |> add_status_tag("newcontact", state)
       # We make a cross module function call which is its own genserver
       # but should be fine for now
       |> ConsumerFlow.check_flows("newcontact", state)

@@ -127,7 +127,7 @@ defmodule Glific.CommunicationsTest do
 
       assert message_2.contact_id == message_1.contact_id
 
-      {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "not-replied"})
+      {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "notreplied"})
       {:ok, unread_tag} = Repo.fetch_by(Tag, %{shortcode: "unread"})
 
       message1_tag = Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})

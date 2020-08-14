@@ -192,7 +192,7 @@ defmodule GlificWeb.Schema.TagTest do
       query_gql_by(:update,
         variables: %{
           "id" => tag.id,
-          "input" => %{"label" => "New Test Tag Label", "shortcode" => "new-test-tag-label"}
+          "input" => %{"label" => "New Test Tag Label", "shortcode" => "newtesttaglabel"}
         }
       )
 

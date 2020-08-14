@@ -149,7 +149,7 @@ defmodule Glific.Tags do
   """
   @spec status_map() :: %{String.t() => integer}
   def status_map,
-    do: tags_map(["language", "new-contact", "not-replied", "unread"])
+    do: tags_map(["language", "newcontact", "notreplied", "unread"])
 
   @doc """
   Generic function to build a tag map for easy queries. Suspect we'll need it

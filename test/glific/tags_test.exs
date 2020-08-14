@@ -209,11 +209,11 @@ defmodule Glific.TagsTest do
 
     test "status_map/0 returns a keyword map with ids" do
       tag = tag_fixture(%{label: "Unread", shortcode: "unread"})
-      tag2 = tag_fixture(%{label: "New Contact", shortcode: "new-contact"})
+      tag2 = tag_fixture(%{label: "New Contact", shortcode: "newcontact"})
       status_map = Tags.status_map()
       assert is_map(status_map)
       assert status_map["unread"] == tag.id
-      assert status_map["new-contact"] == tag2.id
+      assert status_map["newcontact"] == tag2.id
     end
   end
 
