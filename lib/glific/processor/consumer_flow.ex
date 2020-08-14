@@ -52,7 +52,19 @@ defmodule Glific.Processor.ConsumerFlow do
     }
   end
 
-  defp reload(state), do: state
+  defp reload(state) do
+    flow_keywords_map =
+      Flows.Flow
+      |> select([:global_keywords, :id])
+      |> Repo.all()
+      |> Enum.reduce(%{}, fn flow, acc ->
+        Enum.reduce(flow.global_keywords, acc, fn global_keyword, acc ->
+          Map.put(acc, global_keyword, flow.id)
+        end)
+      end)
+
+    Map.put(state, :flow_keywords, flow_keywords_map)
+  end
 
   @doc false
   def handle_events(messages, _from, state) do
@@ -67,11 +79,11 @@ defmodule Glific.Processor.ConsumerFlow do
 
     message = message |> Repo.preload(:contact)
 
-    case Flows.check_cached_flow(body) do
-      {:ok, nil} ->
+    case Map.has_key?(state.flow_keywords, body) do
+      false ->
         check_contexts(message, body, state)
 
-      {:ok, _flow} ->
+      true ->
         check_flows(message, body, state)
     end
   end

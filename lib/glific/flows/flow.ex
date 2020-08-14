@@ -78,16 +78,16 @@ defmodule Glific.Flows.Flow do
       |> unique_constraint(:shortcode)
       |> unique_constraint(:name)
 
-    glific_validate_global_keywords(changeset, get_change(changeset, :global_keywords))
+    validate_keywords(changeset, get_change(changeset, :global_keywords))
   end
 
   @doc """
   Changeset helper for global keywords
   """
-  @spec glific_validate_global_keywords(Ecto.Changeset.t(), []) :: Ecto.Changeset.t()
-  def glific_validate_global_keywords(changeset, nil), do: changeset
+  @spec validate_keywords(Ecto.Changeset.t(), []) :: Ecto.Changeset.t()
+  def validate_keywords(changeset, nil), do: changeset
 
-  def glific_validate_global_keywords(changeset, global_keywords) do
+  def validate_keywords(changeset, global_keywords) do
     id = get_field(changeset, :id)
     query = if is_nil(id), do: Flows.Flow, else: Flows.Flow |> where([f], f.id != ^id)
 
