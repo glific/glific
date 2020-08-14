@@ -74,6 +74,45 @@ defmodule Glific.Flows.Flow do
     flow
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint(:shortcode)
+    |> unique_constraint(:name)
+    |> glific_global_keywords_changeset()
+  end
+
+  @doc """
+  Changeset helper for global keywords
+  """
+  @spec glific_global_keywords_changeset(Changeset.t()) :: Changeset.t()
+  def glific_global_keywords_changeset(changeset) do
+    case get_change(changeset, :global_keywords) do
+      nil ->
+        changeset
+
+      global_keywords ->
+        keywords_list =
+          Flows.Flow
+          |> select([f], f.global_keywords)
+          |> Repo.all()
+          |> Enum.reduce([], fn global_keywords, acc -> global_keywords ++ acc end)
+
+        # get list of existing keywords
+        existing_keywords =
+          Enum.filter(global_keywords, fn keyword ->
+            if keyword in keywords_list do
+              keyword
+            end
+          end)
+
+        if existing_keywords != [] do
+          changeset
+          |> add_error(
+            :global_keywords,
+            "global keywords are already taken"
+          )
+        else
+          changeset
+        end
+    end
   end
 
   @doc """
