@@ -3,9 +3,11 @@ defmodule Glific.Seeds.SeedsDev do
   Script for populating the database. We can call this from tests and/or /priv/repo
   """
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Flows.Flow,
     Flows.FlowRevision,
+    Groups,
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
@@ -296,6 +298,50 @@ defmodule Glific.Seeds.SeedsDev do
   end
 
   @doc false
+  @spec seed_group_contacts :: {Group.t()}
+  def seed_group_contacts do
+    [c1, c2 | _] = Contacts.list_contacts()
+    [g1, g2 | _] = Groups.list_groups()
+
+    Repo.insert!(%Groups.ContactGroup{
+      contact_id: c1.id,
+      group_id: g1.id
+    })
+
+    Repo.insert!(%Groups.ContactGroup{
+      contact_id: c2.id,
+      group_id: g1.id
+    })
+
+    Repo.insert!(%Groups.ContactGroup{
+      contact_id: c1.id,
+      group_id: g2.id
+    })
+  end
+
+  @doc false
+  @spec seed_group_users :: {Group.t()}
+  def seed_group_users do
+    [u1, u2 | _] = Users.list_users()
+    [g1, g2 | _] = Groups.list_groups()
+
+    Repo.insert!(%Groups.UserGroup{
+      user_id: u1.id,
+      group_id: g1.id
+    })
+
+    Repo.insert!(%Groups.UserGroup{
+      user_id: u2.id,
+      group_id: g1.id
+    })
+
+    Repo.insert!(%Groups.UserGroup{
+      user_id: u1.id,
+      group_id: g2.id
+    })
+  end
+
+  @doc false
   @spec seed_flows :: nil
   def seed_flows do
     test_flow =
@@ -402,5 +448,11 @@ defmodule Glific.Seeds.SeedsDev do
     seed_messages_media()
 
     seed_flows()
+
+    seed_groups()
+
+    seed_group_contacts()
+
+    seed_group_users()
   end
 end
