@@ -33,7 +33,7 @@ defmodule Glific.Flows do
     Enum.reduce(filter, query, fn
       {:keyword, keyword}, query ->
         from f in query,
-          where: ^keyword in f.global_keywords
+          where: ^keyword in f.keywords
 
       _, query ->
         query
@@ -258,7 +258,7 @@ defmodule Glific.Flows do
   def get_cached_flow(key, args) do
     with {:ok, false} <- Caches.get(key) do
       flow = Flow.get_loaded_flow(args)
-      Caches.set([flow.uuid, flow.shortcode | flow.global_keywords], flow)
+      Caches.set([flow.uuid, flow.shortcode | flow.keywords], flow)
     end
   end
 

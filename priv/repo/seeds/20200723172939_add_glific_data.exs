@@ -438,7 +438,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       Repo.insert!(%Flow{
         name: name,
         shortcode: shortcode,
-        global_keywords: [shortcode],
+        keywords: [shortcode],
         version_number: "13.1.0",
         uuid: uuid
       })

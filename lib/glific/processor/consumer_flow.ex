@@ -55,11 +55,11 @@ defmodule Glific.Processor.ConsumerFlow do
   defp reload(state) do
     flow_keywords_map =
       Flows.Flow
-      |> select([:global_keywords, :id])
+      |> select([:keywords, :id])
       |> Repo.all()
       |> Enum.reduce(%{}, fn flow, acc ->
-        Enum.reduce(flow.global_keywords, acc, fn global_keyword, acc ->
-          Map.put(acc, global_keyword, flow.id)
+        Enum.reduce(flow.keywords, acc, fn keyword, acc ->
+          Map.put(acc, keyword, flow.id)
         end)
       end)
 

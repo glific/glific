@@ -17,7 +17,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :uuid, :uuid4
     field :name, :string
     field :shortcode, :string
-    field :global_keywords, list_of(:string)
+    field :keywords, list_of(:string)
     field :ignore_keywords, :boolean
     field :version_number, :string
     field :flow_type, :flow_type_enum
@@ -26,7 +26,7 @@ defmodule GlificWeb.Schema.FlowTypes do
   input_object :flow_input do
     field :name, :string
     field :shortcode, :string
-    field :global_keywords, list_of(:string)
+    field :keywords, list_of(:string)
     field :ignore_keywords, :boolean
   end
 
@@ -34,8 +34,8 @@ defmodule GlificWeb.Schema.FlowTypes do
   input_object :flow_filter do
     @desc "Match the name"
     field :name, :string
-    @desc "Match the global keywords"
-    field :global_keywords, list_of(:string)
+    @desc "Match the keywords"
+    field :keywords, list_of(:string)
   end
 
   object :flow_queries do

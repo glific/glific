@@ -21,7 +21,7 @@ defmodule Glific.Repo.Migrations.AlterGlificTables do
       add :ignore_keywords, :boolean, default: false
 
       # List of global keywords to trigger the flow
-      add :global_keywords, {:array, :string}, default: []
+      add :keywords, {:array, :string}, default: []
     end
   end
 end
