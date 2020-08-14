@@ -258,7 +258,7 @@ defmodule Glific.Flows do
   def get_cached_flow(key, args) do
     with {:ok, false} <- Caches.get(key) do
       flow = Flow.get_loaded_flow(args)
-      Caches.set([flow.uuid, flow.shortcode | flow.keywords], flow)
+      Caches.set([flow.uuid | flow.keywords], flow)
     end
   end
 

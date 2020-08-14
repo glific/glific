@@ -34,8 +34,8 @@ defmodule GlificWeb.Schema.FlowTypes do
   input_object :flow_filter do
     @desc "Match the name"
     field :name, :string
-    @desc "Match the keywords"
-    field :keywords, list_of(:string)
+    @desc "Match the keyword"
+    field :keyword, :string
   end
 
   object :flow_queries do

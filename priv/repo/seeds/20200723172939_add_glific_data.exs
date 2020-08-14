@@ -418,27 +418,29 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   def flows() do
     data = [
-      {"Help Workflow", "help", "3fa22108-f464-41e5-81d9-d8a298854429", "help.json"},
-      {"Language Workflow", "language", "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf", "language.json"},
-      {"Preferences Workflow", "preference", "63397051-789d-418d-9388-2ef7eb1268bb",
-       "preference.json"},
-      {"New Contact Workflow", "newcontact", "6fe8fda9-2df6-4694-9fd6-45b9e724f545",
-       "new_contact.json"},
-      {"Registration Workflow", "registration", "f4f38e00-3a50-4892-99ce-a281fe24d040",
-       "registration.json"},
-      {"Out of Office Workflow", "outofoffice", "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7",
-       "out_of_office.json"}
+      {"Help Workflow", "help", ["help", "मदद"], "3fa22108-f464-41e5-81d9-d8a298854429",
+       "help.json"},
+      {"Language Workflow", "language", ["language"], "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
+       "language.json"},
+      {"Preferences Workflow", "preference", ["preference"],
+       "63397051-789d-418d-9388-2ef7eb1268bb", "preference.json"},
+      {"New Contact Workflow", "newcontact", ["newcontact"],
+       "6fe8fda9-2df6-4694-9fd6-45b9e724f545", "new_contact.json"},
+      {"Registration Workflow", "registration", ["registration"],
+       "f4f38e00-3a50-4892-99ce-a281fe24d040", "registration.json"},
+      {"Out of Office Workflow", "outofoffice", ["outofoffice"],
+       "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7", "out_of_office.json"}
     ]
 
     Enum.map(data, &flow(&1))
   end
 
-  defp flow({name, shortcode, uuid, file}) do
+  defp flow({name, shortcode, keywords, uuid, file}) do
     f =
       Repo.insert!(%Flow{
         name: name,
         shortcode: shortcode,
-        keywords: [shortcode],
+        keywords: keywords,
         version_number: "13.1.0",
         uuid: uuid
       })
