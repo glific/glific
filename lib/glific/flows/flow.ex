@@ -104,10 +104,15 @@ defmodule Glific.Flows.Flow do
           end)
 
         if existing_keywords != [] do
+          existing_keywords_string =
+            existing_keywords
+            |> Enum.map(&to_string/1)
+            |> Enum.join(", ")
+
           changeset
           |> add_error(
             :global_keywords,
-            "global keywords are already taken"
+            "global keywords [#{existing_keywords_string}] are already taken"
           )
         else
           changeset
