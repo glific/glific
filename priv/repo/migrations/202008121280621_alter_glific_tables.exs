@@ -20,7 +20,7 @@ defmodule Glific.Repo.Migrations.AlterGlificTables do
       # Enable ignore keywords while in the flow
       add :ignore_keywords, :boolean, default: false
 
-      # List of global keywords to trigger the flow
+      # List of keywords to trigger the flow
       add :keywords, {:array, :string}, default: []
     end
   end

@@ -82,7 +82,7 @@ defmodule Glific.Flows.Flow do
   end
 
   @doc """
-  Changeset helper for global keywords
+  Changeset helper for keywords
   """
   @spec validate_keywords(Ecto.Changeset.t(), []) :: Ecto.Changeset.t()
   def validate_keywords(changeset, nil), do: changeset
@@ -121,7 +121,7 @@ defmodule Glific.Flows.Flow do
       |> Enum.map(&to_string/1)
       |> Enum.join(", ")
 
-    "global keywords [#{existing_keywords_string}] are already taken"
+    "keywords [#{existing_keywords_string}] are already taken"
   end
 
   @doc """
