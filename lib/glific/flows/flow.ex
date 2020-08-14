@@ -71,55 +71,56 @@ defmodule Glific.Flows.Flow do
   """
   @spec changeset(Flow.t(), map()) :: Ecto.Changeset.t()
   def changeset(flow, attrs) do
-    flow
-    |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_required(@required_fields)
-    |> unique_constraint(:shortcode)
-    |> unique_constraint(:name)
-    |> glific_validate_global_keywords(flow)
+    changeset =
+      flow
+      |> cast(attrs, @required_fields ++ @optional_fields)
+      |> validate_required(@required_fields)
+      |> unique_constraint(:shortcode)
+      |> unique_constraint(:name)
+
+    glific_validate_global_keywords(changeset, get_change(changeset, :global_keywords), flow)
   end
 
   @doc """
   Changeset helper for global keywords
   """
-  @spec glific_validate_global_keywords(Changeset.t(), map()) :: Changeset.t()
-  def glific_validate_global_keywords(changeset, %{id: id}) do
-    case get_change(changeset, :global_keywords) do
-      nil ->
-        changeset
+  @spec glific_validate_global_keywords(Ecto.Changeset.t(), [], map()) :: Ecto.Changeset.t()
+  def glific_validate_global_keywords(changeset, nil, _), do: changeset
 
-      global_keywords ->
-        query = if is_nil(id), do: Flow, else: Flow |> where([f], f.id)
+  def glific_validate_global_keywords(changeset, global_keywords, %{id: id}) do
+    query = if is_nil(id), do: Flows.Flow, else: Flows.Flow |> where([f], f.id != ^id)
 
-        keywords_list =
-          query
-          |> select([f], f.global_keywords)
-          |> Repo.all()
-          |> Enum.reduce([], fn global_keywords, acc -> global_keywords ++ acc end)
+    keywords_list =
+      query
+      |> select([f], f.global_keywords)
+      |> Repo.all()
+      |> Enum.reduce([], fn global_keywords, acc -> global_keywords ++ acc end)
 
-        # get list of existing keywords
-        existing_keywords =
-          Enum.filter(global_keywords, fn keyword ->
-            if keyword in keywords_list do
-              keyword
-            end
-          end)
+    # get list of existing keywords
+    existing_keywords =
+      Enum.filter(global_keywords, fn keyword ->
+        if keyword in keywords_list, do: keyword
+      end)
 
-        if existing_keywords != [] do
-          existing_keywords_string =
-            existing_keywords
-            |> Enum.map(&to_string/1)
-            |> Enum.join(", ")
-
-          changeset
-          |> add_error(
-            :global_keywords,
-            "global keywords [#{existing_keywords_string}] are already taken"
-          )
-        else
-          changeset
-        end
+    if existing_keywords != [] do
+      changeset
+      |> add_error(
+        :global_keywords,
+        create_global_keywords_error_message(existing_keywords)
+      )
+    else
+      changeset
     end
+  end
+
+  @spec create_global_keywords_error_message([]) :: String.t()
+  defp create_global_keywords_error_message(existing_keywords) do
+    existing_keywords_string =
+      existing_keywords
+      |> Enum.map(&to_string/1)
+      |> Enum.join(", ")
+
+    "global keywords [#{existing_keywords_string}] are already taken"
   end
 
   @doc """
