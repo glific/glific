@@ -81,8 +81,21 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     {_hi, en_us} = languages
 
     # seed tags
-    message_tags_mt = Repo.insert!(%Tag{label: "Messages", shortcode: "messages", is_reserved: true, language: en_us})
-    message_tags_ct = Repo.insert!(%Tag{label: "Contacts", shortcode: "contacts", is_reserved: true, language: en_us})
+    message_tags_mt =
+      Repo.insert!(%Tag{
+        label: "Messages",
+        shortcode: "messages",
+        is_reserved: true,
+        language: en_us
+      })
+
+    message_tags_ct =
+      Repo.insert!(%Tag{
+        label: "Contacts",
+        shortcode: "contacts",
+        is_reserved: true,
+        language: en_us
+      })
 
     tags = [
       # Intent of message
@@ -109,14 +122,39 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       },
 
       # Status of Message
-      %{label: "Important", shortcode: "important", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "New Contact", shortcode: "new-contact", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Not replied", shortcode: "not-replied", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{
+        label: "Important",
+        shortcode: "important",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id
+      },
+      %{
+        label: "New Contact",
+        shortcode: "new-contact",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id
+      },
+      %{
+        label: "Not replied",
+        shortcode: "not-replied",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id
+      },
       %{label: "Spam", shortcode: "spam", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Unread", shortcode: "unread", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{
+        label: "Unread",
+        shortcode: "unread",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id
+      },
 
       # Status of outbound Message
-      %{label: "Not Responded", shortcode: "not-responded", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{
+        label: "Not Responded",
+        shortcode: "not-responded",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id
+      },
 
       # Languages
       %{
@@ -146,12 +184,28 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       },
 
       # Tags with Value
-      %{label: "Numeric", shortcode: "numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
+      %{
+        label: "Numeric",
+        shortcode: "numeric",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        is_value: true
+      },
 
       # Type of Contact
       %{label: "Child", shortcode: "child", language_id: en_us.id, parent_id: message_tags_ct.id},
-      %{label: "Parent", shortcode: "parent", language_id: en_us.id, parent_id: message_tags_ct.id},
-      %{label: "Participant", shortcode: "participant", language_id: en_us.id, parent_id: message_tags_ct.id},
+      %{
+        label: "Parent",
+        shortcode: "parent",
+        language_id: en_us.id,
+        parent_id: message_tags_ct.id
+      },
+      %{
+        label: "Participant",
+        shortcode: "participant",
+        language_id: en_us.id,
+        parent_id: message_tags_ct.id
+      },
       %{label: "Staff", shortcode: "staff", language_id: en_us.id, parent_id: message_tags_ct.id}
     ]
 

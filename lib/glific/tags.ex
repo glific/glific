@@ -60,13 +60,15 @@ defmodule Glific.Tags do
   @spec create_tag(map()) :: {:ok, Tag.t()} | {:error, Ecto.Changeset.t()}
   def create_tag(attrs \\ %{}) do
     %Tag{}
-    |> Tag.changeset(attrs)
+    |> Tag.changeset(check_shortcode(attrs))
     |> Repo.insert()
   end
 
-
+  # Adding this so that frontend does not fix it
+  # immediately, will remove this very soon
+  @spec check_shortcode(map()) :: map()
   defp check_shortcode(%{label: label} = attrs) when label != nil,
-    do: Map.update(attrs, :shortcode, Slug.slugify(label), &(&1))
+    do: Map.update(attrs, :shortcode, Slug.slugify(label), & &1)
 
   defp check_shortcode(attrs), do: attrs
 

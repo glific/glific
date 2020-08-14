@@ -18,7 +18,7 @@ defmodule Glific.TagsTest do
       shortcode: "some-label",
       description: "some fixed description",
       is_active: true,
-      is_reserved: true,
+      is_reserved: true
     }
     @valid_more_attrs %{
       label: "hindi some label",
