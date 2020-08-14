@@ -15,18 +15,21 @@ defmodule Glific.TagsTest do
     # language id needs to be added dynamically for all the below actions
     @valid_attrs %{
       label: "some label",
+      shortcode: "some-label",
       description: "some fixed description",
       is_active: true,
-      is_reserved: true
+      is_reserved: true,
     }
     @valid_more_attrs %{
       label: "hindi some label",
+      shortcode: "hindi-some-label",
       description: "some fixed description",
       is_active: true,
       is_reserved: true
     }
     @update_attrs %{
       label: "some updated label",
+      shortcode: "some-updated-label",
       description: "some updated description",
       is_active: false,
       is_reserved: false
@@ -191,7 +194,7 @@ defmodule Glific.TagsTest do
 
     test "keyword_map/0 returns a keyword map with ids" do
       tag = tag_fixture()
-      tag2 = tag_fixture(%{label: "tag 2"})
+      tag2 = tag_fixture(%{label: "tag 2", shortcode: "tag-2"})
 
       Tags.update_tag(tag, %{
         keywords: ["Hello foobar", "hi example", "hola test", "namaste saab"]
@@ -205,8 +208,8 @@ defmodule Glific.TagsTest do
     end
 
     test "status_map/0 returns a keyword map with ids" do
-      tag = tag_fixture(%{label: "Unread"})
-      tag2 = tag_fixture(%{label: "New Contact"})
+      tag = tag_fixture(%{label: "Unread", shortcode: "unread"})
+      tag2 = tag_fixture(%{label: "New Contact", shortcode: "new-contact"})
       status_map = Tags.status_map()
       assert is_map(status_map)
       assert status_map["Unread"] == tag.id

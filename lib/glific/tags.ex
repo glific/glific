@@ -64,6 +64,12 @@ defmodule Glific.Tags do
     |> Repo.insert()
   end
 
+
+  defp check_shortcode(%{label: label} = attrs) when label != nil,
+    do: Map.update(attrs, :shortcode, Slug.slugify(label), &(&1))
+
+  defp check_shortcode(attrs), do: attrs
+
   @doc """
   Updates a tag.
 

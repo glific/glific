@@ -142,7 +142,7 @@ defmodule GlificWeb.Schema.TagTest do
 
     result =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "Test Tag", "languageId" => language_id}}
+        variables: %{"input" => %{"label" => "Test Tag", "shortcode" => "test-tag", "languageId" => language_id}}
       )
 
     assert {:ok, query_data} = result
@@ -152,12 +152,12 @@ defmodule GlificWeb.Schema.TagTest do
     # try creating the same tag twice
     _ =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "Klingon", "languageId" => language_id}}
+        variables: %{"input" => %{"label" => "Klingon", "shortcode" => "klingon", "languageId" => language_id}}
       )
 
     result =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "Klingon", "languageId" => language_id}}
+        variables: %{"input" => %{"label" => "Klingon", "shortcode" => "klingon", "languageId" => language_id}}
       )
 
     assert {:ok, query_data} = result
@@ -172,7 +172,7 @@ defmodule GlificWeb.Schema.TagTest do
 
     result =
       query_gql_by(:update,
-        variables: %{"id" => tag.id, "input" => %{"label" => "New Test Tag Label"}}
+        variables: %{"id" => tag.id, "input" => %{"label" => "New Test Tag Label", "shortcode" => "new-test-tag-label"}}
       )
 
     assert {:ok, query_data} = result
@@ -184,7 +184,7 @@ defmodule GlificWeb.Schema.TagTest do
       query_gql_by(:update,
         variables: %{
           "id" => tag.id,
-          "input" => %{"label" => "Greeting"}
+          "input" => %{"label" => "Greeting", "shortcode" => "greeting", }
         }
       )
 
@@ -205,6 +205,7 @@ defmodule GlificWeb.Schema.TagTest do
         variables: %{
           "input" => %{
             "label" => "Keyword tag",
+            "shortcode" => "keyword-tag",
             "languageId" => language_id,
             "keywords" => keywords
           }

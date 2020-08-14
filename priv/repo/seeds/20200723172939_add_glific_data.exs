@@ -81,43 +81,47 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     {_hi, en_us} = languages
 
     # seed tags
-    message_tags_mt = Repo.insert!(%Tag{label: "Messages", is_reserved: true, language: en_us})
-    message_tags_ct = Repo.insert!(%Tag{label: "Contacts", is_reserved: true, language: en_us})
+    message_tags_mt = Repo.insert!(%Tag{label: "Messages", shortcode: "messages", is_reserved: true, language: en_us})
+    message_tags_ct = Repo.insert!(%Tag{label: "Contacts", shortcode: "contacts", is_reserved: true, language: en_us})
 
     tags = [
       # Intent of message
       %{
         label: "Good Bye",
+        shortcode: "good-bye",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["bye", "byebye", "goodbye", "goodnight", "goodnite"]
       },
       %{
         label: "Greeting",
+        shortcode: "greeting",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["hello", "goodmorning", "hi", "hey"]
       },
       %{
         label: "Thank You",
+        shortcode: "thank-you",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["thanks", "thankyou", "awesome", "great"]
       },
 
       # Status of Message
-      %{label: "Important", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "New Contact", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Not replied", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Unread", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Important", shortcode: "important", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "New Contact", shortcode: "new-contact", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Not replied", shortcode: "not-replied", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Spam", shortcode: "spam", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Unread", shortcode: "unread", language_id: en_us.id, parent_id: message_tags_mt.id},
 
       # Status of outbound Message
-      %{label: "Not Responded", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{label: "Not Responded", shortcode: "not-responded", language_id: en_us.id, parent_id: message_tags_mt.id},
 
       # Languages
       %{
         label: "Language",
+        shortcode: "language",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["hindi", "english", "हिंदी", "अंग्रेज़ी"]
@@ -126,6 +130,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       # Optout
       %{
         label: "Optout",
+        shortcode: "optout",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["stop", "unsubscribe", "halt", "सदस्यता समाप्त"]
@@ -134,19 +139,20 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       # Help
       %{
         label: "Help",
+        shortcode: "help",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["help", "मदद"]
       },
 
       # Tags with Value
-      %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
+      %{label: "Numeric", shortcode: "numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
 
       # Type of Contact
-      %{label: "Child", language_id: en_us.id, parent_id: message_tags_ct.id},
-      %{label: "Parent", language_id: en_us.id, parent_id: message_tags_ct.id},
-      %{label: "Participant", language_id: en_us.id, parent_id: message_tags_ct.id},
-      %{label: "Staff", language_id: en_us.id, parent_id: message_tags_ct.id}
+      %{label: "Child", shortcode: "child", language_id: en_us.id, parent_id: message_tags_ct.id},
+      %{label: "Parent", shortcode: "parent", language_id: en_us.id, parent_id: message_tags_ct.id},
+      %{label: "Participant", shortcode: "participant", language_id: en_us.id, parent_id: message_tags_ct.id},
+      %{label: "Staff", shortcode: "staff", language_id: en_us.id, parent_id: message_tags_ct.id}
     ]
 
     tags =
