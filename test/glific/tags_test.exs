@@ -212,8 +212,8 @@ defmodule Glific.TagsTest do
       tag2 = tag_fixture(%{label: "New Contact", shortcode: "new-contact"})
       status_map = Tags.status_map()
       assert is_map(status_map)
-      assert status_map["Unread"] == tag.id
-      assert status_map["New Contact"] == tag2.id
+      assert status_map["unread"] == tag.id
+      assert status_map["new-contact"] == tag2.id
     end
   end
 
@@ -338,13 +338,13 @@ defmodule Glific.TagsTest do
           receiver_id: message_1.receiver_id
         })
 
-      {:ok, tag} = Repo.fetch_by(Tag, %{label: "Unread"})
+      {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "unread"})
 
       {:ok, message1_tag} = Tags.create_message_tag(%{message_id: message_1.id, tag_id: tag.id})
       {:ok, message2_tag} = Tags.create_message_tag(%{message_id: message_2.id, tag_id: tag.id})
       {:ok, message3_tag} = Tags.create_message_tag(%{message_id: message_3.id, tag_id: tag.id})
 
-      untag_message_id = Tags.remove_tag_from_all_message(message_1.contact_id, "Unread")
+      untag_message_id = Tags.remove_tag_from_all_message(message_1.contact_id, "unread")
 
       assert message_1.id in untag_message_id
       assert message_2.id in untag_message_id

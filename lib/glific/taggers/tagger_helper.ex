@@ -37,8 +37,8 @@ defmodule Glific.Taggers.TaggerHelper do
   end
 
   @spec add_tag(Message.t(), String.t()) :: Message.t()
-  defp add_tag(message, tag_label) do
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: tag_label})
+  defp add_tag(message, tag_shortcode) do
+    {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: tag_shortcode})
 
     {:ok, _} =
       Tags.create_message_tag(%{
@@ -51,24 +51,24 @@ defmodule Glific.Taggers.TaggerHelper do
 
   @spec add_unread_tag(Message.t()) :: Message.t()
   defp add_unread_tag(message) do
-    add_tag(message, "Unread")
+    add_tag(message, "unread")
   end
 
   @spec add_not_replied_tag(Message.t()) :: Message.t()
   defp add_not_replied_tag(message) do
-    Tags.remove_tag_from_all_message(message.contact_id, "Not replied")
-    add_tag(message, "Not replied")
+    Tags.remove_tag_from_all_message(message.contact_id, "not-replied")
+    add_tag(message, "not-replied")
   end
 
   @spec remove_not_responded_tag(Message.t()) :: Message.t()
   defp remove_not_responded_tag(message) do
-    Tags.remove_tag_from_all_message(message.contact_id, "Not Responded")
+    Tags.remove_tag_from_all_message(message.contact_id, "not-responded")
     message
   end
 
   @spec add_not_responded_tag(Message.t()) :: Message.t()
   defp add_not_responded_tag(message) do
-    Tags.remove_tag_from_all_message(message.contact_id, "Not Responded")
-    add_tag(message, "Not Responded")
+    Tags.remove_tag_from_all_message(message.contact_id, "not-responded")
+    add_tag(message, "not-responded")
   end
 end

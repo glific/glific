@@ -149,7 +149,7 @@ defmodule Glific.Tags do
   """
   @spec status_map() :: %{String.t() => integer}
   def status_map,
-    do: tags_map(["Language", "New Contact", "Not replied", "Unread"])
+    do: tags_map(["language", "new-contact", "not-replied", "unread"])
 
   @doc """
   Generic function to build a tag map for easy queries. Suspect we'll need it
@@ -158,10 +158,10 @@ defmodule Glific.Tags do
   @spec tags_map([String.t()]) :: %{String.t() => integer}
   def tags_map(tags) do
     Tag
-    |> where([t], t.label in ^tags)
-    |> select([:id, :label])
+    |> where([t], t.shortcode in ^tags)
+    |> select([:id, :shortcode])
     |> Repo.all()
-    |> Enum.reduce(%{}, fn tag, acc -> Map.put(acc, tag.label, tag.id) end)
+    |> Enum.reduce(%{}, fn tag, acc -> Map.put(acc, tag.shortcode, tag.id) end)
   end
 
   @doc """
@@ -395,17 +395,17 @@ defmodule Glific.Tags do
     Remove a specific tag from contact messages
   """
   @spec remove_tag_from_all_message(integer(), String.t()) :: list()
-  def remove_tag_from_all_message(contact_id, tag_label) when is_binary(tag_label) do
-    remove_tag_from_all_message(contact_id, [tag_label])
+  def remove_tag_from_all_message(contact_id, tag_shortcode) when is_binary(tag_shortcode) do
+    remove_tag_from_all_message(contact_id, [tag_shortcode])
   end
 
   @spec remove_tag_from_all_message(integer(), [String.t()]) :: list()
-  def remove_tag_from_all_message(contact_id, tag_label_list) do
+  def remove_tag_from_all_message(contact_id, tag_shortcode_list) do
     query =
       from mt in MessageTag,
         join: m in assoc(mt, :message),
         join: t in assoc(mt, :tag),
-        where: m.contact_id == ^contact_id and t.label in ^tag_label_list,
+        where: m.contact_id == ^contact_id and t.shortcode in ^tag_shortcode_list,
         select: [mt.message_id]
 
     {_, deleted_rows} = Repo.delete_all(query)

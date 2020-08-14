@@ -66,7 +66,7 @@ defmodule Glific.Communications.Message do
       sent_at: DateTime.truncate(DateTime.utc_now(), :second)
     })
 
-    Tags.remove_tag_from_all_message(message["contact_id"], ["Not replied", "Unread"])
+    Tags.remove_tag_from_all_message(message["contact_id"], ["not-replied", "unread"])
 
     Taggers.TaggerHelper.tag_outbound_message(message)
 

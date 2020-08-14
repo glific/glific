@@ -267,7 +267,7 @@ defmodule GlificWeb.Schema.TagTest do
         receiver_id: message_1.receiver_id
       })
 
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: "Unread"})
+    {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "unread"})
 
     message1_tag = Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
     message2_tag = Fixtures.message_tag_fixture(%{message_id: message_2.id, tag_id: tag.id})
