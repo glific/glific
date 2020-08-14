@@ -169,6 +169,7 @@ mutation createTag($input:TagInput!) {
 {
   "input": {
     "label": "This is a new tag for this example",
+    "shortcode": "new-tag",
     "description": "This is a cool description",
     "languageId": "1"
   }
@@ -415,6 +416,13 @@ Parameter | Type | Default | Description
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>shortcode</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+
 <tr>
 <td colspan="2" valign="top"><strong>language</strong></td>
 <td valign="top"><a href="#language">Language</a></td>

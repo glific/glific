@@ -27,8 +27,8 @@ defmodule Glific.Seeds.SeedsDev do
     [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
-    Repo.insert!(%Tag{label: "This is for testing", language: en_us})
-    Repo.insert!(%Tag{label: "यह परीक्षण के लिए है", language: hi_in})
+    Repo.insert!(%Tag{label: "This is for testing", shortcode: "testing-only", language: en_us})
+    Repo.insert!(%Tag{label: "यह परीक्षण के लिए है", shortcode: "testing-only", language: hi_in})
   end
 
   @doc false
