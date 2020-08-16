@@ -74,7 +74,7 @@ defmodule Glific.Tags.Tag do
       false -> add_error(changeset, :shortcode, "Enter a valid shortcode, valid shortcode #{valid_shortcode}")
     end
   end
-  
+
   defp lowercase_keywords(changeset, keywords) do
     case keywords do
       nil -> changeset
