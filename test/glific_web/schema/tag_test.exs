@@ -145,7 +145,7 @@ defmodule GlificWeb.Schema.TagTest do
         variables: %{
           "input" => %{
             "label" => "Test Tag",
-            "shortcode" => "test-tag",
+            "shortcode" => "testtag",
             "languageId" => language_id
           }
         }
@@ -226,7 +226,7 @@ defmodule GlificWeb.Schema.TagTest do
         variables: %{
           "input" => %{
             "label" => "Keyword tag",
-            "shortcode" => "keyword-tag",
+            "shortcode" => "keywordtag",
             "languageId" => language_id,
             "keywords" => keywords
           }
