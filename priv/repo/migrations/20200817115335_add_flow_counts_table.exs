@@ -10,7 +10,7 @@ defmodule Glific.Repo.Migrations.AddFlowCountsTable do
       # Options are: node, exit case
       add :type, :string
 
-      add :count, :integer, default: 0
+      add :count, :integer, default: 1
 
       timestamps(type: :utc_datetime)
     end

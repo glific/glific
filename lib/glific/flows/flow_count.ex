@@ -14,7 +14,7 @@ defmodule Glific.Flows.FlowCount do
     Repo
   }
 
-  @required_fields [:uuid, :flow_id, :type, :count]
+  @required_fields [:uuid, :flow_id, :type]
   @optional_fields []
 
   @type t() :: %__MODULE__{
@@ -48,30 +48,19 @@ defmodule Glific.Flows.FlowCount do
     |> validate_required(@required_fields)
   end
 
-  @doc false
-  @spec create_flow_count(map()) :: {:ok, FlowCount.t()} | {:error, Ecto.Changeset.t()}
-  def create_flow_count(attrs \\ %{}) do
-    {:ok, flow} = Glific.Repo.fetch_by(Flow, %{uuid: attrs.flow_uuid})
-
-    attrs = Map.merge(attrs, %{flow_id: flow.id})
-
-    %FlowCount{}
-    |> FlowCount.changeset(attrs)
-    |> Repo.insert()
-  end
-
   @doc """
   Update count
   """
-  @spec update_flow_count(map()) :: {:ok, FlowCount.t()}
-  def update_flow_count(attrs) do
+  @spec upsert_flow_count(map()) :: {:ok, FlowCount.t()}
+  def upsert_flow_count(attrs) do
     {:ok, flow} = Repo.fetch_by(Flow, %{uuid: attrs.flow_uuid})
 
-    query =
-      from fc in FlowCount,
-        update: [inc: [count: 1]],
-        where: fc.flow_id == ^flow.id and fc.uuid == ^attrs.uuid and fc.type == ^attrs.type
+    attrs = Map.merge(attrs, %{flow_id: flow.id})
 
-    Repo.update_all(query, [])
+    Repo.insert!(
+      FlowCount.changeset(%FlowCount{}, attrs),
+      on_conflict: [inc: [count: 1]],
+      conflict_target: [:flow_id, :uuid, :type]
+    )
   end
 end

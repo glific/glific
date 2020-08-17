@@ -79,14 +79,6 @@ defmodule Glific.Flows.Node do
         {node, uuid_map}
       end
 
-    {:ok, _flow_count} =
-      FlowCount.create_flow_count(%{
-        uuid: node.uuid,
-        flow_uuid: node.flow_uuid,
-        type: "node",
-        count: 0
-      })
-
     uuid_map = Map.put(uuid_map, node.uuid, {:node, node})
     {node, uuid_map}
   end
@@ -98,7 +90,7 @@ defmodule Glific.Flows.Node do
   @spec execute(Node.t(), FlowContext.t(), [String.t()]) ::
           {:ok | :wait, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(node, context, message_stream) do
-    FlowCount.update_flow_count(%{
+    FlowCount.upsert_flow_count(%{
       uuid: node.uuid,
       flow_uuid: node.flow_uuid,
       type: "node"
