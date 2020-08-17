@@ -40,7 +40,7 @@ defmodule Glific do
     shortcode = Map.get(changeset.changes, :shortcode)
     valid_shortcode = Glific.string_clean(shortcode)
 
-    if Glific.string_clean(shortcode) == shortcode,
+    if string_clean(shortcode) == shortcode,
       do: changeset,
       else:
         add_error(
