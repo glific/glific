@@ -228,20 +228,18 @@ defmodule GlificWeb.Flows.FlowEditorController do
     ## Hardcoded data to see how the activity count works for help flow.
     activity = %{
       nodes: %{
-        "3ea030e9-41c4-4c6c-8880-68bc2828d67b" =>  10,
-        "6f68083e-2340-449e-9fca-ac57c6835876" =>  20
+        "3ea030e9-41c4-4c6c-8880-68bc2828d67b" => 10,
+        "6f68083e-2340-449e-9fca-ac57c6835876" => 20
       },
       segments: %{
         "77cd0e42-6a13-4122-a5fc-84b2e2daa1d4:85e897d2-49e4-42b7-8574-8dc2aee97121" => 10
       },
-
       recentMessages: %{
         "77cd0e42-6a13-4122-a5fc-84b2e2daa1d4:85e897d2-49e4-42b7-8574-8dc2aee97121" => [
           %{
             "sent" => "2020-08-15",
             "text" => "Hii, How are you update."
           },
-
           %{
             "sent" => "2020-08-17",
             "text" => "Hii, What is this."
