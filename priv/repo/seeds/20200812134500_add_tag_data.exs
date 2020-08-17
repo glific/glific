@@ -33,7 +33,7 @@ defmodule Glific.Repo.Seeds.AddTagData do
     {_hi, {:ok, en_us}} = languages
 
     # seed tags
-    {:ok, message_tags_mt } = Repo.fetch_by(Tag, %{label: "Messages"})
+    {:ok, message_tags_mt} = Repo.fetch_by(Tag, %{label: "Messages"})
 
     tags = [
       # Intent of message

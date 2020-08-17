@@ -142,9 +142,9 @@ defmodule Glific.Processor.ConsumerTagger do
         message.body,
         state.dialogflow_session_id
       )
-      Helper.add_dialogflow_tag(message, response["queryResult"])
-      {message, state}
 
+    Helper.add_dialogflow_tag(message, response["queryResult"])
+    {message, state}
   end
 
   defp dialogflow_tagger({message, state}), do: {message, state}

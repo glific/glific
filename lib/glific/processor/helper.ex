@@ -62,15 +62,20 @@ defmodule Glific.Processor.Helper do
       |> Enum.at(1)
 
     with {:ok, tag} <- Repo.fetch_by(Tags.Tag, %{label: tag_label}),
-      do: add_tag(message, tag.id)
+         do: add_tag(message, tag.id)
 
     process_dialogflow_response(response["fulfillmentText"], message)
-
   end
 
+  # Send the response (reacived from the dialogflow API) to the contact
+  @spec process_dialogflow_response(String.t(), map()) :: any()
   defp process_dialogflow_response(nil, _), do: nil
   defp process_dialogflow_response("", _), do: nil
-  defp process_dialogflow_response(response_message, message),
-    do: Glific.Messages.create_and_send_message(%{ body: response_message,receiver_id: message.sender_id})
 
+  defp process_dialogflow_response(response_message, message),
+    do:
+      Glific.Messages.create_and_send_message(%{
+        body: response_message,
+        receiver_id: message.sender_id
+      })
 end
