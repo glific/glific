@@ -215,6 +215,12 @@ defmodule Glific.TagsTest do
       assert status_map["unread"] == tag.id
       assert status_map["newcontact"] == tag2.id
     end
+
+    test "invalid shortcode will throw an error" do
+      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
+      attrs = Map.merge(@valid_attrs, %{language_id: language.id, shortcode: "invalid-tag"})
+      assert {:error, %Ecto.Changeset{}} = Tags.create_tag(attrs)
+    end
   end
 
   setup do
