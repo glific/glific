@@ -63,6 +63,7 @@ defmodule Glific.Tags.Tag do
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
     |> unique_constraint([:shortcode, :language_id])
+    |> Glific.validate_shortcode()
   end
 
   defp lowercase_keywords(changeset, keywords) do
