@@ -63,16 +63,7 @@ defmodule Glific.Tags.Tag do
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
     |> unique_constraint([:shortcode, :language_id])
-    |> validate_shortcode
-  end
-
-  defp validate_shortcode(%Ecto.Changeset{} = changeset) do
-    shortcode = Map.get(changeset.changes, :shortcode)
-    valid_shortcode = Glific.string_clean(shortcode)
-    case Glific.string_clean(shortcode) == shortcode do
-      true -> changeset
-      false -> add_error(changeset, :shortcode, "Enter a valid shortcode, valid shortcode #{valid_shortcode}")
-    end
+    |> Glific.validate_shortcode
   end
 
   defp lowercase_keywords(changeset, keywords) do

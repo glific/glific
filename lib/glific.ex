@@ -1,4 +1,5 @@
 defmodule Glific do
+  import Ecto.Changeset
   @moduledoc """
   Glific keeps the contexts that define your domain
   and business logic.
@@ -22,6 +23,20 @@ defmodule Glific do
       {n, ""} -> {:ok, n}
       {_num, _rest} -> :error
       :error -> :error
+    end
+  end
+
+  @doc """
+  Validates inputed shortcode, if shortcode is invalid it returns message that the shortcode is invalid 
+  along with the valid shortcode
+  """
+  @spec validate_shortcode(Ecto.Changeset.t()) :: Ecto.Changeset.t() | Ecto.Changeset.t(), atom(), String.t()
+  def validate_shortcode(%Ecto.Changeset{} = changeset) do
+    shortcode = Map.get(changeset.changes, :shortcode)
+    valid_shortcode = Glific.string_clean(shortcode)
+    case Glific.string_clean(shortcode) == shortcode do
+      true -> changeset
+      false -> add_error(changeset, :shortcode, "Enter a valid shortcode, valid shortcode #{valid_shortcode}")
     end
   end
 
