@@ -26,6 +26,20 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :users, list_of(:user) do
       resolve(dataloader(Repo))
     end
+
+    # number of contacts in the group
+    field :contacts_count, :integer do
+      resolve(fn group, resolution, context ->
+        Resolvers.Groups.contacts_count(resolution, %{id: group.id}, context)
+      end)
+    end
+
+    # number of users in the group
+    field :users_count, :integer do
+      resolve(fn group, resolution, context ->
+        Resolvers.Groups.users_count(resolution, %{id: group.id}, context)
+      end)
+    end
   end
 
   @desc "Filtering options for groups"

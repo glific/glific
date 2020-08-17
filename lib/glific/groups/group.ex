@@ -5,6 +5,7 @@ defmodule Glific.Groups.Group do
 
   use Ecto.Schema
   import Ecto.Changeset
+
   alias Glific.{
     Contacts.Contact,
     Groups.Group,

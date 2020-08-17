@@ -284,7 +284,7 @@ defmodule Glific.Seeds.SeedsDev do
   end
 
   @doc false
-  @spec seed_groups :: {Group.t()}
+  @spec seed_groups :: nil
   def seed_groups do
     Repo.insert!(%Group{
       label: "Default Group",
@@ -298,7 +298,7 @@ defmodule Glific.Seeds.SeedsDev do
   end
 
   @doc false
-  @spec seed_group_contacts :: {Group.t()}
+  @spec seed_group_contacts :: nil
   def seed_group_contacts do
     [c1, c2 | _] = Contacts.list_contacts()
     [g1, g2 | _] = Groups.list_groups()
@@ -320,7 +320,7 @@ defmodule Glific.Seeds.SeedsDev do
   end
 
   @doc false
-  @spec seed_group_users :: {Group.t()}
+  @spec seed_group_users :: nil
   def seed_group_users do
     [u1, u2 | _] = Users.list_users()
     [g1, g2 | _] = Groups.list_groups()
