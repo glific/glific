@@ -15,7 +15,7 @@ defmodule Glific.Flows.FlowCount do
   }
 
   @required_fields [:uuid, :flow_id, :type]
-  @optional_fields []
+  @optional_fields [:destination_uuid, :recent_messages]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -25,6 +25,8 @@ defmodule Glific.Flows.FlowCount do
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           type: String.t() | nil,
           count: integer() | nil,
+          destination_uuid: Ecto.UUID.t() | nil,
+          recent_messages: [map()] | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -34,6 +36,8 @@ defmodule Glific.Flows.FlowCount do
     belongs_to :flow, Flow
     field :type, :string
     field :count, :integer
+    field :destination_uuid, Ecto.UUID
+    field :recent_messages, {:array, :string}, default: []
 
     timestamps(type: :utc_datetime)
   end

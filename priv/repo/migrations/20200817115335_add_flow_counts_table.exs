@@ -7,10 +7,14 @@ defmodule Glific.Repo.Migrations.AddFlowCountsTable do
 
       add :flow_id, references(:flows, on_delete: :delete_all), null: false
 
-      # Options are: node, exit case
+      # Options are: node, exit, case
       add :type, :string
 
       add :count, :integer, default: 1
+
+      add :destination_uuid, :uuid, null: true
+
+      add :recent_messages, {:array, :map}, default: []
 
       timestamps(type: :utc_datetime)
     end
