@@ -33,37 +33,50 @@ defmodule Glific.Providers.Glifproxy.Worker do
     :ok
   end
 
-  @doc """
-  We transform a payload that has been set for sending to a payload that has been
-  tailored for receiving. We need to generate a few random ids for various messages ids
-  """
   @prefix "000"
   @prefix_len 3
+  @trigger "proxy"
+  @trigger_len 5
 
+  @doc """
+  Proxy the message from a number to a fake proxy contact. Do it one way only
+  Don't do the reverse, to avoid infinite loops in automation.
+  For a workaroung, the "faker" message is processed in the reverse direction to
+  create the contact
+  """
   @spec proxy_message(map(), Oban.Job.t()) :: any()
-  def proxy_message(message, payload) do
-    destination = payload["destination"]
+  def proxy_message(message, %{"destination" => destination} = _payload)
+    when binary_part(destination, 0, @prefix_len) == @prefix do
+    name = String.slice(destination, @prefix_len..-1)
 
-    {new_destination, name} =
-      if String.slice(destination, 0, @prefix_len) == @prefix do
-        # we dont have the name with us, so for now, we just
-        # use the phone as the name
-        name = String.slice(destination, @prefix_len..-1)
-        {name, name}
-      else
-        {@prefix <> destination, "PROXY " <> destination}
-      end
+    # we dont have the name with us, so for now, we just
+    # use the phone as the name
+    {new_destination, name} = {name, name}
 
-    new_payload = generate_payload(new_destination, name, message)
+    handle_message(new_destination, name, message)
+  end
+
+    def proxy_message(%{"body" => body} = message, %{"destination" => destination} = _payload)
+    when binary_part(body, 0, @trigger_len) == @trigger do
+    {new_destination, name} = {@prefix <> destination, "PROXY " <> destination}
+
+    handle_message(new_destination, name, message)
+  end
+
+  def proxy_message(message, _payload), do: {:ok, message}
+
+  @spec handle_message(String.t(), String.t(), map()) :: any()
+  defp handle_message(destination, name, message) do
+    payload = generate_payload(destination, name, message)
 
     # lets sleep for 1 seconds before posting, to avoid race
     # conditions with flows et al
     :timer.sleep(1000)
 
-    ApiClient.post("/gupshup", new_payload)
+    ApiClient.post("/gupshup", payload)
     |> handle_response(message)
-  end
 
+  end
   @spec generate_payload(String.t(), String.t(), map()) :: map()
   defp generate_payload(destination, name, message) do
     %{

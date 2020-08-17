@@ -79,13 +79,10 @@ defmodule Glific.Processor.ConsumerFlow do
 
     message = message |> Repo.preload(:contact)
 
-    case Map.has_key?(state.flow_keywords, body) do
-      false ->
-        check_contexts(message, body, state)
+    if Map.has_key?(state.flow_keywords, body),
+      do: check_flows(message, body, state),
+      else: check_contexts(message, body, state)
 
-      true ->
-        check_flows(message, body, state)
-    end
   end
 
   @doc """
@@ -104,7 +101,7 @@ defmodule Glific.Processor.ConsumerFlow do
   Check contexts
   """
   @spec check_contexts(atom() | Message.t(), String.t(), map()) :: Message.t()
-  def check_contexts(message, _body, _state) do
+  def check_contexts(message, body, _state) do
     context = FlowContext.active_context(message.contact_id)
 
     if context do
@@ -112,7 +109,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
       context
       |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward(message.body)
+      |> FlowContext.step_forward(body)
     else
       # lets  check if we should initiate the out of office flow
       # lets do this only if we've not sent them the out of office flow
