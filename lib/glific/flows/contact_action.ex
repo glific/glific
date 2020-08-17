@@ -32,7 +32,7 @@ defmodule Glific.Flows.ContactAction do
 
     {type, media_id} = get_media_from_attachment(action.attachments, action.text)
 
-    {:ok, _message} =
+    result =
       Messages.create_and_send_message(%{
         uuid: action.uuid,
         body: body,
@@ -42,8 +42,15 @@ defmodule Glific.Flows.ContactAction do
         send_at: DateTime.add(DateTime.utc_now(), context.delay)
       })
 
+    case result do
+      {:ok, _message} -> %{context | delay: context.delay + @min_delay}
+      # we need to do something here to progress the flow
+      # maybe set something in the context for the downstream node to detect and move on
+      {:error, :loop_detected} -> %{context | delay: context.delay + @min_delay}
+      _ -> raise FunctionClauseError, message: "Could not send message. Aborting for now"
+    end
+
     # increment the delay
-    %{context | delay: context.delay + @min_delay}
   end
 
   @doc """
@@ -82,9 +89,11 @@ defmodule Glific.Flows.ContactAction do
     [type | _tail] = Map.keys(attachment)
     url = attachment[type]
 
+    type = String.to_existing_atom(type)
+
     {:ok, message_media} =
       %{
-        type: String.to_existing_atom(type),
+        type: type,
         url: url,
         source_url: url,
         thumbnail: url,
@@ -92,7 +101,7 @@ defmodule Glific.Flows.ContactAction do
       }
       |> Messages.create_message_media()
 
-    {String.to_existing_atom(type), message_media.id}
+    {type, message_media.id}
   end
 
   @doc """

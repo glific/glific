@@ -194,7 +194,7 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, String.t()}
+  @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
@@ -204,7 +204,7 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()}
+  @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
   defp create_and_send_message(true = _is_valid_contact, attrs) do
     {:ok, message} =
       attrs
@@ -486,24 +486,29 @@ defmodule Glific.Messages do
     MessageMedia.changeset(message_media, attrs)
   end
 
+  @doc """
+  Go back in history and see the past few messages sent. ensure we are not sending the same
+  message a few too many times
+  """
   @spec is_message_loop?(Message.t(), integer, integer) :: boolean
-  def is_message_loop?(message, past_messages \\ 6, repeat_percent \\ 33)
+  def is_message_loop?(message, past_messages \\ 7, past_count \\ 3)
 
-  def is_message_loop?(%{uuid: uuid, type: "text"} = _message, past_messages, repeat_percent)
+  def is_message_loop?(%{uuid: uuid, type: :text} = message, past_messages, past_count)
       when not is_nil(uuid) do
     count =
       Message
+      |> where([m], m.contact_id == ^message.contact_id and m.id != ^message.id)
+      |> where([m], m.message_number <= ^past_messages)
       |> where([m], m.uuid == ^uuid and m.flow == "outbound")
       |> where([m], m.type == "text" and m.status in ["enqueued", "delivered"])
-      |> where([m], m.message_number <= ^past_messages)
       |> Repo.aggregate(:count)
 
-    if count >= past_messages * repeat_percent / 100.0,
+    if count >= past_count,
       do: true,
       else: false
   end
 
-  def is_message_loop?(_message, _past, _repeat), do: true
+  def is_message_loop?(_message, _past, _repeat), do: false
 
   defp do_list_conversations(query, args, false = _count) do
     query
