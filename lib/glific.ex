@@ -28,7 +28,7 @@ defmodule Glific do
 
   @doc """
   Validates inputed shortcode, if shortcode is invalid it returns message that the shortcode is invalid 
-  along with the valid shortcode
+  along with the valid shortcode.
   """
   @spec validate_shortcode(Ecto.Changeset.t()) :: Ecto.Changeset.t() | Ecto.Changeset.t(), atom(), String.t()
   def validate_shortcode(%Ecto.Changeset{} = changeset) do
