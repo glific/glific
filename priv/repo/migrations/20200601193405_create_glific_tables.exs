@@ -82,6 +82,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # The tag label
       add :label, :string, null: false
 
+      add :shortcode, :string, null: false
+
       # An optional description
       add :description, :string, null: true
 
@@ -109,7 +111,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:tags, [:label, :language_id])
+    create unique_index(:tags, [:shortcode, :language_id])
   end
 
   @doc """
@@ -414,8 +416,6 @@ defmodule Glific.Repo.Migrations.GlificCore do
     create table(:groups) do
       # Label of the group
       add :label, :string, null: false
-      # Description of the group
-      add :description, :string, null: true
       # visibility of conversations to the other groups
       add :is_restricted, :boolean, default: false
 

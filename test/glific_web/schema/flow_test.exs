@@ -33,6 +33,14 @@ defmodule GlificWeb.Schema.FlowTest do
     assert get_in(flow, ["id"]) > 0
   end
 
+  test "flows field returns list of flows filtered by keyword" do
+    result = query_gql_by(:list, variables: %{"filter" => %{"keyword" => "timed"}})
+    assert {:ok, query_data} = result
+
+    flows = get_in(query_data, [:data, "flows"])
+    assert length(flows) == 1
+  end
+
   test "flow field id returns one flow or nil" do
     name = "Test Workflow"
     {:ok, flow} = Repo.fetch_by(Flow, %{name: name})
@@ -53,11 +61,12 @@ defmodule GlificWeb.Schema.FlowTest do
   test "create a flow and test possible scenarios and errors" do
     name = "Flow Test Name"
     shortcode = "test shortcode"
+    keywords = ["test_keyword", "test_keyword_2"]
 
     result =
       query_gql_by(:create,
         variables: %{
-          "input" => %{"name" => name, "shortcode" => shortcode}
+          "input" => %{"name" => name, "shortcode" => shortcode, "keywords" => keywords}
         }
       )
 
@@ -75,6 +84,25 @@ defmodule GlificWeb.Schema.FlowTest do
     assert {:ok, query_data} = result
 
     assert "can't be blank" =
+             get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
+
+    # create flow with existing keyword
+    result =
+      query_gql_by(:create,
+        variables: %{
+          "input" => %{
+            "name" => "name_2",
+            "shortcode" => "shortcode_2",
+            "keywords" => ["test_keyword"]
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert "keywords" = get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "key"])
+
+    assert "keywords [test_keyword] are already taken" =
              get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
   end
 

@@ -21,8 +21,8 @@ defmodule Glific.Flows.Flow do
 
   alias Glific.Enums.FlowType
 
-  @required_fields [:name, :uuid, :shortcode]
-  @optional_fields [:flow_type, :version_number, :uuid_map, :nodes]
+  @required_fields [:name, :uuid, :shortcode, :keywords]
+  @optional_fields [:flow_type, :version_number, :uuid_map, :nodes, :ignore_keywords]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -31,6 +31,8 @@ defmodule Glific.Flows.Flow do
           shortcode: String.t() | nil,
           uuid: Ecto.UUID.t() | nil,
           uuid_map: map() | nil,
+          keywords: [String.t()] | nil,
+          ignore_keywords: boolean() | nil,
           flow_type: String.t() | nil,
           definition: map() | nil,
           localization: Localization.t() | nil,
@@ -53,6 +55,9 @@ defmodule Glific.Flows.Flow do
     field :nodes, :map, virtual: true
     field :localization, :map, virtual: true
 
+    field :keywords, {:array, :string}, default: []
+    field :ignore_keywords, :boolean, default: false
+
     # we use this to store the latest definition for this flow
     field :definition, :map, virtual: true
 
@@ -66,9 +71,57 @@ defmodule Glific.Flows.Flow do
   """
   @spec changeset(Flow.t(), map()) :: Ecto.Changeset.t()
   def changeset(flow, attrs) do
-    flow
-    |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_required(@required_fields)
+    changeset =
+      flow
+      |> cast(attrs, @required_fields ++ @optional_fields)
+      |> validate_required(@required_fields)
+      |> unique_constraint(:shortcode)
+      |> unique_constraint(:name)
+
+    validate_keywords(changeset, get_change(changeset, :keywords))
+  end
+
+  @doc """
+  Changeset helper for keywords
+  """
+  @spec validate_keywords(Ecto.Changeset.t(), []) :: Ecto.Changeset.t()
+  def validate_keywords(changeset, nil), do: changeset
+
+  def validate_keywords(changeset, keywords) do
+    id = get_field(changeset, :id)
+    query = if is_nil(id), do: Flows.Flow, else: Flows.Flow |> where([f], f.id != ^id)
+
+    keywords_list =
+      query
+      |> select([f], f.keywords)
+      |> Repo.all()
+      |> Enum.reduce([], fn keywords, acc -> keywords ++ acc end)
+
+    # get list of existing keywords
+    existing_keywords =
+      Enum.filter(keywords, fn keyword ->
+        if keyword in keywords_list, do: keyword
+      end)
+
+    if existing_keywords != [] do
+      changeset
+      |> add_error(
+        :keywords,
+        create_keywords_error_message(existing_keywords)
+      )
+    else
+      changeset
+    end
+  end
+
+  @spec create_keywords_error_message([]) :: String.t()
+  defp create_keywords_error_message(existing_keywords) do
+    existing_keywords_string =
+      existing_keywords
+      |> Enum.map(&to_string/1)
+      |> Enum.join(", ")
+
+    "keywords [#{existing_keywords_string}] are already taken"
   end
 
   @doc """
@@ -178,7 +231,13 @@ defmodule Glific.Flows.Flow do
       from f in Flow,
         join: fr in assoc(f, :revisions),
         where: fr.flow_id == f.id and fr.revision_number == 0,
-        select: %Flow{id: f.id, uuid: f.uuid, shortcode: f.shortcode, definition: fr.definition}
+        select: %Flow{
+          id: f.id,
+          uuid: f.uuid,
+          shortcode: f.shortcode,
+          keywords: f.keywords,
+          definition: fr.definition
+        }
 
     flow =
       query
@@ -200,6 +259,9 @@ defmodule Glific.Flows.Flow do
 
   defp args_clause(query, %{shortcode: shortcode}),
     do: query |> where([f, _fr], f.shortcode == ^shortcode)
+
+  defp args_clause(query, %{keyword: keyword}),
+    do: query |> where([f, _fr], ^keyword in f.keywords)
 
   defp args_clause(query, _args), do: query
 

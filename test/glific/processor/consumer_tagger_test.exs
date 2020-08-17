@@ -9,16 +9,16 @@ defmodule TestProducer do
   }
 
   @checks %{
-    0 => {"shunya", "Numeric", "0"},
-    1 => {"12", "Numeric", "12"},
-    2 => {"hindi", "Language", nil},
-    3 => {"english", "Language", nil},
-    4 => {"hello", "Greeting", nil},
-    5 => {"bye", "Good Bye", nil},
-    6 => {"thanks", "Thank You", nil},
-    7 => {"ek", "Numeric", "1"},
-    8 => {"हिंदी", "Language", nil},
-    9 => {to_string(['\u0039', 65_039, 8419]), "Numeric", "9"}
+    0 => {"shunya", "numeric", "0"},
+    1 => {"12", "numeric", "12"},
+    2 => {"hindi", "language", nil},
+    3 => {"english", "language", nil},
+    4 => {"hello", "greeting", nil},
+    5 => {"bye", "good-bye", nil},
+    6 => {"thanks", "thank-you", nil},
+    7 => {"ek", "numeric", "1"},
+    8 => {"हिंदी", "language", nil},
+    9 => {to_string(['\u0039', 65_039, 8419]), "numeric", "9"}
   }
 
   @doc false
@@ -78,7 +78,7 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     assert Repo.aggregate(MessageTag, :count) > 0
 
     # check the message tags
-    tags = ["Language", "Unread", "Greeting", "Thank You", "Numeric", "Good Bye"]
+    tags = ["language", "unread", "greeting", "thank-you", "numeric", "good-bye"]
     tag_ids = Tags.tags_map(tags)
 
     Enum.map(

@@ -81,43 +81,85 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     {_hi, en_us} = languages
 
     # seed tags
-    message_tags_mt = Repo.insert!(%Tag{label: "Messages", is_reserved: true, language: en_us})
-    message_tags_ct = Repo.insert!(%Tag{label: "Contacts", is_reserved: true, language: en_us})
+    message_tags_mt =
+      Repo.insert!(%Tag{
+        label: "Messages",
+        shortcode: "messages",
+        is_reserved: true,
+        language: en_us
+      })
+
+    message_tags_ct =
+      Repo.insert!(%Tag{
+        label: "Contacts",
+        shortcode: "contacts",
+        is_reserved: true,
+        language: en_us
+      })
 
     tags = [
       # Intent of message
       %{
         label: "Good Bye",
+        shortcode: "good-bye",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["bye", "byebye", "goodbye", "goodnight", "goodnite"]
       },
       %{
         label: "Greeting",
+        shortcode: "greeting",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["hello", "goodmorning", "hi", "hey"]
       },
       %{
         label: "Thank You",
+        shortcode: "thank-you",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["thanks", "thankyou", "awesome", "great"]
       },
 
       # Status of Message
-      %{label: "Important", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "New Contact", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Not replied", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Spam", language_id: en_us.id, parent_id: message_tags_mt.id},
-      %{label: "Unread", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{
+        label: "Important",
+        shortcode: "important",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id
+      },
+      %{
+        label: "New Contact",
+        shortcode: "newcontact",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id
+      },
+      %{
+        label: "Not replied",
+        shortcode: "notreplied",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id
+      },
+      %{label: "Spam", shortcode: "spam", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{
+        label: "Unread",
+        shortcode: "unread",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id
+      },
 
       # Status of outbound Message
-      %{label: "Not Responded", language_id: en_us.id, parent_id: message_tags_mt.id},
+      %{
+        label: "Not Responded",
+        shortcode: "notresponded",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id
+      },
 
       # Languages
       %{
         label: "Language",
+        shortcode: "language",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["hindi", "english", "हिंदी", "अंग्रेज़ी"]
@@ -126,6 +168,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       # Optout
       %{
         label: "Optout",
+        shortcode: "optout",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["stop", "unsubscribe", "halt", "सदस्यता समाप्त"]
@@ -134,19 +177,36 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       # Help
       %{
         label: "Help",
+        shortcode: "help",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["help", "मदद"]
       },
 
       # Tags with Value
-      %{label: "Numeric", language_id: en_us.id, parent_id: message_tags_mt.id, is_value: true},
+      %{
+        label: "Numeric",
+        shortcode: "numeric",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        is_value: true
+      },
 
       # Type of Contact
-      %{label: "Child", language_id: en_us.id, parent_id: message_tags_ct.id},
-      %{label: "Parent", language_id: en_us.id, parent_id: message_tags_ct.id},
-      %{label: "Participant", language_id: en_us.id, parent_id: message_tags_ct.id},
-      %{label: "Staff", language_id: en_us.id, parent_id: message_tags_ct.id}
+      %{label: "Child", shortcode: "child", language_id: en_us.id, parent_id: message_tags_ct.id},
+      %{
+        label: "Parent",
+        shortcode: "parent",
+        language_id: en_us.id,
+        parent_id: message_tags_ct.id
+      },
+      %{
+        label: "Participant",
+        shortcode: "participant",
+        language_id: en_us.id,
+        parent_id: message_tags_ct.id
+      },
+      %{label: "Staff", shortcode: "staff", language_id: en_us.id, parent_id: message_tags_ct.id}
     ]
 
     tags =
@@ -418,26 +478,29 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   def flows() do
     data = [
-      {"Help Workflow", "help", "3fa22108-f464-41e5-81d9-d8a298854429", "help.json"},
-      {"Language Workflow", "language", "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf", "language.json"},
-      {"Preferences Workflow", "preference", "63397051-789d-418d-9388-2ef7eb1268bb",
-       "preference.json"},
-      {"New Contact Workflow", "newcontact", "6fe8fda9-2df6-4694-9fd6-45b9e724f545",
-       "new_contact.json"},
-      {"Registration Workflow", "registration", "f4f38e00-3a50-4892-99ce-a281fe24d040",
-       "registration.json"},
-      {"Out of Office Workflow", "outofoffice", "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7",
-       "out_of_office.json"}
+      {"Help Workflow", "help", ["help", "मदद"], "3fa22108-f464-41e5-81d9-d8a298854429",
+       "help.json"},
+      {"Language Workflow", "language", ["language", "भाषा"],
+       "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf", "language.json"},
+      {"Preferences Workflow", "preference", ["preference"],
+       "63397051-789d-418d-9388-2ef7eb1268bb", "preference.json"},
+      {"New Contact Workflow", "newcontact", ["newcontact"],
+       "6fe8fda9-2df6-4694-9fd6-45b9e724f545", "new_contact.json"},
+      {"Registration Workflow", "registration", ["registration"],
+       "f4f38e00-3a50-4892-99ce-a281fe24d040", "registration.json"},
+      {"Out of Office Workflow", "outofoffice", ["outofoffice"],
+       "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7", "out_of_office.json"}
     ]
 
     Enum.map(data, &flow(&1))
   end
 
-  defp flow({name, shortcode, uuid, file}) do
+  defp flow({name, shortcode, keywords, uuid, file}) do
     f =
       Repo.insert!(%Flow{
         name: name,
         shortcode: shortcode,
+        keywords: keywords,
         version_number: "13.1.0",
         uuid: uuid
       })
