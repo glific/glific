@@ -16,7 +16,7 @@ defmodule Glific.Dialogflow do
   def request(method, path, body) do
     %{id: id, email: email} = project_info()
 
-    url = "#{host()}/v2/projects/#{id}/agent/#{path}"
+    url = "#{host()}/v2beta1/projects/#{id}/locations/global/agent/#{path}"
 
     case HTTPoison.request(method, url, body(body), headers(email)) do
       {:ok, %HTTPoison.Response{status_code: status, body: body}} when status in 200..299 ->
