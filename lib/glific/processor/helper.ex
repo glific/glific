@@ -55,7 +55,7 @@ defmodule Glific.Processor.Helper do
   @spec add_dialogflow_tag(Message.t(), map()) :: any()
   def add_dialogflow_tag(_message, %{"intent" => %{"isFallback" => true}}), do: nil
 
-  def add_dialogflow_tag(message, %{"intent" => intent}) do
+  def add_dialogflow_tag(message, %{"intent" => intent, "fulfillmentText" => response_message}) do
     tag_label =
       intent["displayName"]
       |> String.split(".")
@@ -63,6 +63,11 @@ defmodule Glific.Processor.Helper do
 
     with {:ok, tag} <- Repo.fetch_by(Tags.Tag, %{label: tag_label}),
       do: add_tag(message, tag.id)
+
+    Glific.Messages.create_and_send_message(%{
+      body: response_message,
+      receiver_id: message.sender_id
+    })
 
   end
 
