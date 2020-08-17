@@ -82,7 +82,6 @@ defmodule Glific.Processor.ConsumerFlow do
     if Map.has_key?(state.flow_keywords, body),
       do: check_flows(message, body, state),
       else: check_contexts(message, body, state)
-
   end
 
   @doc """

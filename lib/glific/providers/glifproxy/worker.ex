@@ -46,7 +46,7 @@ defmodule Glific.Providers.Glifproxy.Worker do
   """
   @spec proxy_message(map(), Oban.Job.t()) :: any()
   def proxy_message(message, %{"destination" => destination} = _payload)
-    when binary_part(destination, 0, @prefix_len) == @prefix do
+      when binary_part(destination, 0, @prefix_len) == @prefix do
     name = String.slice(destination, @prefix_len..-1)
 
     # we dont have the name with us, so for now, we just
@@ -56,8 +56,8 @@ defmodule Glific.Providers.Glifproxy.Worker do
     handle_message(new_destination, name, message)
   end
 
-    def proxy_message(%{"body" => body} = message, %{"destination" => destination} = _payload)
-    when binary_part(body, 0, @trigger_len) == @trigger do
+  def proxy_message(%{"body" => body} = message, %{"destination" => destination} = _payload)
+      when binary_part(body, 0, @trigger_len) == @trigger do
     {new_destination, name} = {@prefix <> destination, "PROXY " <> destination}
 
     handle_message(new_destination, name, message)
@@ -75,8 +75,8 @@ defmodule Glific.Providers.Glifproxy.Worker do
 
     ApiClient.post("/gupshup", payload)
     |> handle_response(message)
-
   end
+
   @spec generate_payload(String.t(), String.t(), map()) :: map()
   defp generate_payload(destination, name, message) do
     %{

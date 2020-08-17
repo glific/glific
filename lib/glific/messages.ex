@@ -205,7 +205,7 @@ defmodule Glific.Messages do
 
   @doc false
   @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()}
-  defp create_and_send_message(is_valid_contact, attrs) when is_valid_contact == true do
+  defp create_and_send_message(true = _is_valid_contact, attrs) do
     {:ok, message} =
       attrs
       |> Map.merge(%{
@@ -215,11 +215,13 @@ defmodule Glific.Messages do
       })
       |> create_message()
 
-    Communications.Message.send_message(message)
+    if is_message_loop?(message),
+      do: {:error, :loop_detected},
+      else: Communications.Message.send_message(message)
   end
 
   @doc false
-  defp create_and_send_message(_, _) do
+  defp create_and_send_message(false, _) do
     {:error, "Cannot send the message to the contact."}
   end
 
@@ -484,7 +486,26 @@ defmodule Glific.Messages do
     MessageMedia.changeset(message_media, attrs)
   end
 
-  defp do_list_conversations(query, args, false) do
+  @spec is_message_loop?(Message.t(), integer, integer) :: boolean
+  def is_message_loop?(message, past_messages \\ 6, repeat_percent \\ 33)
+
+  def is_message_loop?(%{uuid: uuid, type: "text"} = _message, past_messages, repeat_percent)
+      when not is_nil(uuid) do
+    count =
+      Message
+      |> where([m], m.uuid == ^uuid and m.flow == "outbound")
+      |> where([m], m.type == "text" and m.status in ["enqueued", "delivered"])
+      |> where([m], m.message_number <= ^past_messages)
+      |> Repo.aggregate(:count)
+
+    if count >= past_messages * repeat_percent / 100.0,
+      do: true,
+      else: false
+  end
+
+  def is_message_loop?(_message, _past, _repeat), do: true
+
+  defp do_list_conversations(query, args, false = _count) do
     query
     |> Repo.all()
     |> Repo.preload([:contact, :tags])
@@ -492,7 +513,7 @@ defmodule Glific.Messages do
     |> add_empty_conversations(args)
   end
 
-  defp do_list_conversations(query, _args, true) do
+  defp do_list_conversations(query, _args, true = _count) do
     query
     |> select([m], m.contact_id)
     |> distinct(true)
