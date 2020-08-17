@@ -1,9 +1,10 @@
-query {
-  flows {
+query flows($filter: FlowFilter) {
+  flows(filter: $filter) {
     id
     name
     shortcode
     versionNumber
     flowType
+    keywords
   }
 }

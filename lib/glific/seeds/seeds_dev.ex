@@ -348,6 +348,7 @@ defmodule Glific.Seeds.SeedsDev do
       Repo.insert!(%Flow{
         name: "Test Workflow",
         shortcode: "test",
+        keywords: ["test"],
         version_number: "13.1.0",
         uuid: "defda715-c520-499d-851e-4428be87def6"
       })
@@ -361,6 +362,7 @@ defmodule Glific.Seeds.SeedsDev do
       Repo.insert!(%Flow{
         name: "Timed Workflow",
         shortcode: "timed",
+        keywords: ["timed"],
         version_number: "13.1.0",
         uuid: "8390ded3-06c3-4df4-b428-064666f085c7"
       })
@@ -384,6 +386,7 @@ defmodule Glific.Seeds.SeedsDev do
       Repo.insert!(%Flow{
         name: "SoL Activity",
         shortcode: "solactivity",
+        keywords: ["solactivity"],
         version_number: "13.1.0",
         uuid: "b050c652-65b5-4ccf-b62b-1e8b3f328676"
       })
@@ -407,6 +410,7 @@ defmodule Glific.Seeds.SeedsDev do
       Repo.insert!(%Flow{
         name: "SoL Feedback",
         shortcode: "solfeedback",
+        keywords: ["solfeedback"],
         version_number: "13.1.0",
         uuid: "6c21af89-d7de-49ac-9848-c9febbf737a5"
       })

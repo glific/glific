@@ -11,6 +11,7 @@ query flows($filter: FlowFilter, $opts: Opts) {
     shortcode
     versionNumber
     flowType
+    keywords
   }
 }
 
@@ -35,6 +36,10 @@ query flows($filter: FlowFilter, $opts: Opts) {
       {
         "flowType": "MESSAGE",
         "id": "1",
+        "keywords": [
+          "help",
+          "मदद"
+        ],
         "name": "Help Workflow",
         "shortcode": "help",
         "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
@@ -43,6 +48,9 @@ query flows($filter: FlowFilter, $opts: Opts) {
       {
         "flowType": "MESSAGE",
         "id": "2",
+        "keywords": [
+          "language"
+        ],
         "name": "Language Workflow",
         "shortcode": "language",
         "uuid": "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
@@ -140,6 +148,7 @@ mutation ($input: FlowInput!) {
       id
       name
       shortcode
+      keywords
     }
     errors {
       key
@@ -150,8 +159,12 @@ mutation ($input: FlowInput!) {
 
 {
   "input": {
+    "keywords": [
+      "tests",
+      "testing"
+    ],
     "name": "test workflow",
-    "shortcode": "test"
+    "shortcode": "test_workflow"
   }
 }
 ```
@@ -165,7 +178,12 @@ mutation ($input: FlowInput!) {
       "errors": null,
       "flow": {
         "id": "12",
-        "name": "test workflow"
+        "keywords": [
+          "tests",
+          "testing"
+        ],
+        "name": "test workflow",
+        "shortcode": "test_workflow"
       }
     }
   }
@@ -209,6 +227,7 @@ mutation updateFlow($id: ID!, $input:FlowInput!) {
     flow {
       id
       name
+      keywords
     }
     errors {
       key
@@ -220,7 +239,8 @@ mutation updateFlow($id: ID!, $input:FlowInput!) {
 {
   "id": "1",
   "input": {
-    "name": "updated name"
+    "name": "updated name",
+    "keywords": ["test", "testing"]
   }
 }
 ```
@@ -234,8 +254,30 @@ mutation updateFlow($id: ID!, $input:FlowInput!) {
       "errors": null,
       "flow": {
         "id": "1",
-        "name": "updated name"
+        "name": "updated name",
+        "keywords": [
+          "test",
+          "testing"
+        ]
       }
+    }
+  }
+}
+```
+
+In case of errors, above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "updateFlow": {
+      "errors": [
+        {
+          "key": "keywords",
+          "message": "global keywords [test, testing] are already taken"
+        }
+      ],
+      "flow": null
     }
   }
 }
@@ -361,6 +403,16 @@ Type | Description
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>keywords</strong></td>
+<td valign="top">[<a href="#string">String</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>ignoreKeywords</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
@@ -413,6 +465,16 @@ Type | Description
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>keywords</strong></td>
+<td valign="top">[<a href="#string">String</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>ignoreKeywords</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
@@ -430,9 +492,14 @@ Filtering options for flows
 </thead>
 <tbody>
 <tr>
-  <td colspan="2" valign="top"><strong>Name</strong></td>
+  <td colspan="2" valign="top"><strong>name</strong></td>
   <td valign="top"><a href="#string">String</a></td>
   <td>Match the flow name</td>
+</tr>
+<tr>
+  <td colspan="2" valign="top"><strong>keyword</strong></td>
+  <td valign="top"><a href="#string">String</a></td>
+  <td>Match the flow keyword</td>
 </tr>
 </tbody>
 </table>

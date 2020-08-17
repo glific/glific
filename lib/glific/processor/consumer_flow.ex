@@ -7,6 +7,8 @@ defmodule Glific.Processor.ConsumerFlow do
 
   use GenStage
 
+  import Ecto.Query, warn: false
+
   alias Glific.{
     Flows,
     Flows.FlowContext,
@@ -50,7 +52,19 @@ defmodule Glific.Processor.ConsumerFlow do
     }
   end
 
-  defp reload(state), do: state
+  defp reload(state) do
+    flow_keywords_map =
+      Flows.Flow
+      |> select([:keywords, :id])
+      |> Repo.all()
+      |> Enum.reduce(%{}, fn flow, acc ->
+        Enum.reduce(flow.keywords, acc, fn keyword, acc ->
+          Map.put(acc, keyword, flow.id)
+        end)
+      end)
+
+    Map.put(state, :flow_keywords, flow_keywords_map)
+  end
 
   @doc false
   def handle_events(messages, _from, state) do
@@ -63,9 +77,15 @@ defmodule Glific.Processor.ConsumerFlow do
   defp process_message(message, state) do
     body = Glific.string_clean(message.body)
 
-    message
-    |> Repo.preload(:contact)
-    |> check_flows(body, state)
+    message = message |> Repo.preload(:contact)
+
+    case Map.has_key?(state.flow_keywords, body) do
+      false ->
+        check_contexts(message, body, state)
+
+      true ->
+        check_flows(message, body, state)
+    end
   end
 
   @doc """
@@ -73,23 +93,18 @@ defmodule Glific.Processor.ConsumerFlow do
   trigger mechanism once we have that under control.
   """
   @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
-  def check_flows(message, body, _state)
-      when body in [
-             "help",
-             "language",
-             "preference",
-             "newcontact",
-             "registration",
-             "timed",
-             "solworkflow"
-           ] do
+  def check_flows(message, body, _state) do
     message = Repo.preload(message, :contact)
-    {:ok, flow} = Flows.get_cached_flow(body, %{shortcode: body})
+    {:ok, flow} = Flows.get_cached_flow(body, %{keyword: body})
     FlowContext.init_context(flow, message.contact)
     message
   end
 
-  def check_flows(message, _body, _state) do
+  @doc """
+  Check contexts
+  """
+  @spec check_contexts(atom() | Message.t(), String.t(), map()) :: Message.t()
+  def check_contexts(message, _body, _state) do
     context = FlowContext.active_context(message.contact_id)
 
     if context do
