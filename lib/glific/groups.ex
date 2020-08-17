@@ -33,6 +33,26 @@ defmodule Glific.Groups do
     do: Repo.count_filter(args, Group, &Repo.filter_with/2)
 
   @doc """
+  Return the count of group contacts
+  """
+  @spec contacts_count(map()) :: integer
+  def contacts_count(%{id: group_id}) do
+    ContactGroup
+    |> where([cg], cg.group_id == ^group_id)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
+  Return the count of group users
+  """
+  @spec users_count(map()) :: integer
+  def users_count(%{id: group_id}) do
+    UserGroup
+    |> where([cg], cg.group_id == ^group_id)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
   Gets a single group.
 
   Raises `Ecto.NoResultsError` if the Group does not exist.
