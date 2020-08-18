@@ -210,7 +210,8 @@ defmodule Glific.Messages do
       attrs
       |> Map.merge(%{
         sender_id: Partners.organization_contact_id(),
-        flow: :outbound
+        flow: :outbound,
+        type: :text
       })
       |> update_message_attrs()
       |> create_message()

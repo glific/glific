@@ -38,7 +38,6 @@ defmodule Glific.Searches.SavedSearch do
     search
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:label])
     |> unique_constraint([:shortcode])
   end
 end

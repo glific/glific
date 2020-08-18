@@ -14,7 +14,7 @@ defmodule Glific.Flows.Exit do
     Repo
   }
 
-  @required_fields [:uuid, :destination_uuid]
+  @required_fields [:uuid]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,

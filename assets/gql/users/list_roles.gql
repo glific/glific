@@ -1,0 +1,6 @@
+query roles {
+  roles {
+    id
+    label
+  }
+}
