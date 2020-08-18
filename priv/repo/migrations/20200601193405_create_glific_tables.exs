@@ -405,7 +405,6 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:saved_searches, :label)
     create unique_index(:saved_searches, :shortcode)
   end
 
