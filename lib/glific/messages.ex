@@ -218,6 +218,7 @@ defmodule Glific.Messages do
       |> create_message()
 
     critical = is_message_loop?(message)
+
     cond do
       critical > 60 -> {:error, :loop_infinite}
       critical > 0 -> {:error, :loop_detected}
