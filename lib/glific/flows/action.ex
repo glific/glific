@@ -167,17 +167,17 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, message_stream) do
-    context = Repo.preload(context, :flow)
+    # context = Repo.preload(context, :flow)
 
-    # update the flow count
-    FlowCount.upsert_flow_count(%{
-      uuid: action.uuid,
-      flow_uuid: context.flow.uuid,
-      type: "action",
-      recent_message: %{
-        "text" => action.text
-      }
-    })
+    # # update the flow count
+    # FlowCount.upsert_flow_count(%{
+    #   uuid: action.uuid,
+    #   flow_uuid: context.flow.uuid,
+    #   type: "action",
+    #   recent_message: %{
+    #     "text" => action.text
+    #   }
+    # })
 
     context = ContactAction.send_message(context, action)
     {:ok, context, message_stream}
