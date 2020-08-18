@@ -3,7 +3,10 @@
 ## Get All Roles
 ```graphql
 query {
-  roles
+  roles {
+    id
+    label
+  }
 }
 ```
 
@@ -14,10 +17,22 @@ query {
 {
   "data": {
     "roles": [
-      "none",
-      "staff",
-      "manager",
-      "admin"
+      {
+        "id": "none",
+        "label": "None"
+      },
+      {
+        "id": "staff",
+        "label": "Staff"
+      },
+      {
+        "id": "manager",
+        "label": "Manager"
+      },
+      {
+        "id": "admin",
+        "label": "Admin"
+      }
     ]
   }
 }

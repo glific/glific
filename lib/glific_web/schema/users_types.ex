@@ -45,9 +45,14 @@ defmodule GlificWeb.Schema.UserTypes do
     field :roles, list_of(:string)
   end
 
+  object :role do
+    field :id, :string
+    field :label, :string
+  end
+
   object :user_queries do
     @desc "get list of roles"
-    field :roles, list_of(:string) do
+    field :roles, list_of(:role) do
       resolve(fn _, _, _ ->
         {:ok, User.get_roles_list()}
       end)
