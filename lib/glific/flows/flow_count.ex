@@ -37,7 +37,7 @@ defmodule Glific.Flows.FlowCount do
     field :type, :string
     field :count, :integer
     field :destination_uuid, Ecto.UUID
-    field :recent_messages, {:array, :string}, default: []
+    field :recent_messages, {:array, :map}, default: []
 
     timestamps(type: :utc_datetime)
   end
@@ -55,7 +55,7 @@ defmodule Glific.Flows.FlowCount do
   @doc """
   Upsert flow count
   """
-  @spec upsert_flow_count(map()) :: {:ok, FlowCount.t()}
+  @spec upsert_flow_count(map()) :: :error | FlowCount.t()
   def upsert_flow_count(%{flow_uuid: nil} = _attrs), do: :error
 
   def upsert_flow_count(%{flow_uuid: flow_uuid} = attrs) do
@@ -68,5 +68,17 @@ defmodule Glific.Flows.FlowCount do
       on_conflict: [inc: [count: 1]],
       conflict_target: [:flow_id, :uuid, :type]
     )
+    |> update_recent_messages(attrs)
   end
+
+  @spec update_recent_messages(FlowCount.t(), map()) :: :error | FlowCount.t()
+  defp update_recent_messages(flow_count, %{recent_message: recent_message}) do
+    recent_messages = [recent_message | flow_count.recent_messages]
+
+    flow_count
+    |> FlowCount.changeset(%{recent_messages: recent_messages})
+    |> Repo.update()
+  end
+
+  defp update_recent_messages(flow_count, _), do: flow_count
 end
