@@ -31,10 +31,11 @@ defmodule Glific.Flows.CategoryTest do
 
   test "test category execute with exit node with null destination" do
     node = %Node{uuid: "Test UUID"}
-    json = %{"uuid" => "Exit UUID", "destination_uuid" => nil}
+    exit_uuid = Ecto.UUID.generate()
+    json = %{"uuid" => exit_uuid, "destination_uuid" => nil}
     {_exit, uuid_map} = Exit.process(json, %{}, node)
 
-    json = %{"uuid" => "Cat UUID", "exit_uuid" => "Exit UUID", "name" => "Default Category"}
+    json = %{"uuid" => "Cat UUID", "exit_uuid" => exit_uuid, "name" => "Default Category"}
     {category, uuid_map} = Category.process(json, uuid_map)
 
     # create a simple flow context

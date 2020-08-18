@@ -39,8 +39,9 @@ defmodule Glific.Flows.ExitTest do
   end
 
   test "execute when the destination node is nil" do
+    exit_uuid = Ecto.UUID.generate()
     node = %Node{uuid: "Test UUID"}
-    json = %{"uuid" => "UUID 1", "destination_uuid" => nil}
+    json = %{"uuid" => exit_uuid, "destination_uuid" => nil}
 
     # create a simple flow context
     {:ok, context} =
@@ -63,9 +64,10 @@ defmodule Glific.Flows.ExitTest do
   # lets set up a node where the execute fails. A lot easier for us to test that
   # exit works as normal and sends it to the right place
   test "execute when the destination node is valid " do
+    exit_uuid = Ecto.UUID.generate()
     node_uuid = Ecto.UUID.generate()
     node = %Node{uuid: node_uuid, actions: [], router: nil}
-    json = %{"uuid" => "UUID 1", "destination_uuid" => node_uuid}
+    json = %{"uuid" => exit_uuid, "destination_uuid" => node_uuid}
     uuid_map = %{node_uuid => {:node, node}}
 
     {exit, uuid_map} = Exit.process(json, uuid_map, node)

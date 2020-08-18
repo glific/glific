@@ -94,13 +94,14 @@ defmodule Glific.Flows.RouterTest do
 
   test "router with switch and one case, category" do
     flow = %Flow{uuid: "Flow UUID 1"}
+    exit_uuid = Ecto.UUID.generate()
     uuid_map = %{}
 
     json = %{
       "uuid" => "Node UUID",
       "actions" => [],
       "exits" => [
-        %{"uuid" => "Exit UUID", "destination_uuid" => nil}
+        %{"uuid" => exit_uuid, "destination_uuid" => nil}
       ]
     }
 
@@ -112,10 +113,10 @@ defmodule Glific.Flows.RouterTest do
       "default_category_uuid" => "Default Cat UUID",
       "result_name" => "Language",
       "categories" => [
-        %{"uuid" => "UUID Cat 1", "exit_uuid" => "Exit UUID", "name" => "Category Uno"},
+        %{"uuid" => "UUID Cat 1", "exit_uuid" => exit_uuid, "name" => "Category Uno"},
         %{
           "uuid" => "Default Cat UUID",
-          "exit_uuid" => "Exit UUID",
+          "exit_uuid" => exit_uuid,
           "name" => "Default Category"
         }
       ],
@@ -162,13 +163,14 @@ defmodule Glific.Flows.RouterTest do
 
   test "router with switch and two cases, category" do
     flow = %Flow{uuid: "Flow UUID 1"}
+    exit_uuid = Ecto.UUID.generate()
     uuid_map = %{}
 
     json = %{
       "uuid" => "Node UUID",
       "actions" => [],
       "exits" => [
-        %{"uuid" => "Exit UUID", "destination_uuid" => nil}
+        %{"uuid" => exit_uuid, "destination_uuid" => nil}
       ]
     }
 
@@ -180,10 +182,10 @@ defmodule Glific.Flows.RouterTest do
       "default_category_uuid" => "Default Cat UUID",
       "result_name" => "Language",
       "categories" => [
-        %{"uuid" => "UUID Cat 1", "exit_uuid" => "Exit UUID", "name" => "Category Uno"},
+        %{"uuid" => "UUID Cat 1", "exit_uuid" => exit_uuid, "name" => "Category Uno"},
         %{
           "uuid" => "Default Cat UUID",
-          "exit_uuid" => "Exit UUID",
+          "exit_uuid" => exit_uuid,
           "name" => "Default Category"
         }
       ],

@@ -91,6 +91,7 @@ defmodule Glific.Flows.NodeTest do
   test "execute a node having actions and without exit" do
     [flow | _tail] = Glific.Flows.list_flows()
     node_uuid_1 = Ecto.UUID.generate()
+    exit_uuid_1 = Ecto.UUID.generate()
 
     json = %{
       "uuid" => node_uuid_1,
@@ -107,7 +108,7 @@ defmodule Glific.Flows.NodeTest do
         }
       ],
       "exits" => [
-        %{"uuid" => "UUID Exit 1", "destination_uuid" => nil}
+        %{"uuid" => exit_uuid_1, "destination_uuid" => nil}
       ]
     }
 
