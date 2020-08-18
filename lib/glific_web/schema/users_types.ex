@@ -25,6 +25,11 @@ defmodule GlificWeb.Schema.UserTypes do
     end
   end
 
+  object :role do
+    field :id, :string
+    field :label, :string
+  end
+
   @desc "Filtering options for users"
   input_object :user_filter do
     @desc "Match the name"
@@ -43,11 +48,6 @@ defmodule GlificWeb.Schema.UserTypes do
   input_object :user_input do
     field :name, :string
     field :roles, list_of(:string)
-  end
-
-  object :role do
-    field :id, :string
-    field :label, :string
   end
 
   object :user_queries do
