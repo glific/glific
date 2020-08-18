@@ -11,11 +11,13 @@ defmodule Glific.Flags do
   @hours_of_day 9..18
 
   @doc false
-  @spec init :: nil
+  @spec init :: {:ok, boolean()}
   def init do
     FunWithFlags.enable(:enable_out_of_office)
 
     out_of_office_update()
+
+    dialogflow()
   end
 
   defp business_day?(time),
@@ -59,5 +61,17 @@ defmodule Glific.Flags do
         # lets make sure that out_of_office_active is disabled
         # if we dont want this functionality
         else: disable_out_of_office()
+      )
+
+  @doc """
+  See if we have valid dialogflow credentials, if so, enable dialogflow
+  else disable it
+  """
+  @spec dialogflow() :: {:ok, boolean()}
+  def dialogflow,
+    do:
+      if(File.exists?("config/.dialogflow.credentials.json"),
+        do: FunWithFlags.enable(:dialogflow),
+        else: FunWithFlags.disable(:dialogflow)
       )
 end

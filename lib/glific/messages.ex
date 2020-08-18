@@ -211,6 +211,7 @@ defmodule Glific.Messages do
       |> Map.merge(%{
         sender_id: Partners.organization_contact_id(),
         flow: :outbound,
+        type: :text,
         body: parse_message_body(attrs)
       })
       |> create_message()

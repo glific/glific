@@ -37,16 +37,18 @@ npm-debug.log
 # We should explore valult for production level secrets
 **/*.secret.exs
 .*credentials.json
+ # for vapor style config
+*.env
+
 
 # Ignore the dialyzer cache files
 /priv/plts/*.plt
 /priv/plts/*.plt.hash
 
-# dont commit apple temp file
-.DS_Store
-
+# ignore visual studio and macos temp files
 .vscode/
 .vscode
+.DS_Store
 
 # don't commit mnesia files
 /Mnesia.nonode@nohost

@@ -14,8 +14,8 @@ defmodule TestProducer do
     2 => {"hindi", "language", nil},
     3 => {"english", "language", nil},
     4 => {"hello", "greeting", nil},
-    5 => {"bye", "good-bye", nil},
-    6 => {"thanks", "thank-you", nil},
+    5 => {"bye", "goodbye", nil},
+    6 => {"thanks", "thankyou", nil},
     7 => {"ek", "numeric", "1"},
     8 => {"हिंदी", "language", nil},
     9 => {to_string(['\u0039', 65_039, 8419]), "numeric", "9"}
@@ -78,7 +78,7 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     assert Repo.aggregate(MessageTag, :count) > 0
 
     # check the message tags
-    tags = ["language", "unread", "greeting", "thank-you", "numeric", "good-bye"]
+    tags = ["language", "unread", "greeting", "thankyou", "numeric", "goodbye"]
     tag_ids = Tags.tags_map(tags)
 
     Enum.map(
