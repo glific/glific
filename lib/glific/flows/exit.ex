@@ -61,6 +61,7 @@ defmodule Glific.Flows.Exit do
     # update the flow count
     FlowCount.upsert_flow_count(%{
       uuid: exit.uuid,
+      destination_uuid: exit.destination_node_uuid,
       flow_uuid: context.flow.uuid,
       type: "exit"
     })
