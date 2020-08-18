@@ -101,7 +101,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       # Intent of message
       %{
         label: "Good Bye",
-        shortcode: "good-bye",
+        shortcode: "goodbye",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["bye", "byebye", "goodbye", "goodnight", "goodnite"]
@@ -115,7 +115,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       },
       %{
         label: "Thank You",
-        shortcode: "thank-you",
+        shortcode: "thankyou",
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         keywords: ["thanks", "thankyou", "awesome", "great"]

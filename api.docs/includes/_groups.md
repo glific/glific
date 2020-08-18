@@ -8,6 +8,8 @@ query groups($filter: GroupFilter, $opts: Opts) {
     id
     label
     isRestricted
+    contactsCount
+    usersCount
   }
 }
 
@@ -30,9 +32,18 @@ query groups($filter: GroupFilter, $opts: Opts) {
   "data": {
     "groups": [
       {
+        "contactsCount": 2,
         "id": "1",
         "isRestricted": false,
-        "label": "My First Group"
+        "label": "Default Group",
+        "usersCount": 2
+      },
+      {
+        "contactsCount": 1,
+        "id": "2",
+        "isRestricted": true,
+        "label": "Restricted Group",
+        "usersCount": 1
       }
     ]
   }
@@ -56,6 +67,12 @@ query group($id: ID!) {
       id
       label
       isRestricted
+      contacts{
+        name
+      }
+      users{
+        name
+      }
     }
   }
 }
@@ -71,9 +88,22 @@ query group($id: ID!) {
   "data": {
     "group": {
       "group": {
+        "contacts": [
+          {
+            "name": "Glific Admin"
+          },
+          {
+            "name": "Adelle Cavin"
+          }
+        ],
         "id": "1",
         "isRestricted": false,
-        "label": "My First Group"
+        "label": "Default Group",
+        "users": [
+          {
+            "name": "Glific Admin"
+          }
+        ]
       }
     }
   }
@@ -275,6 +305,24 @@ Type | Description
 <td colspan="2" valign="top"><strong>description</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>contacts</strong></td>
+<td valign="top">[<a href="#user">Contact</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>users</strong></td>
+<td valign="top">[<a href="#user">User</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>contactsCount</strong></td>
+<td valign="top"><a href="#integer">Integer</a></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>usersCount</strong></td>
+<td valign="top"><a href="#integer">Integer</a></td>
 </tr>
 </tbody>
 </table>

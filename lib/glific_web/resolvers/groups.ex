@@ -69,6 +69,18 @@ defmodule GlificWeb.Resolvers.Groups do
   end
 
   @doc """
+  Get count of group contacts
+  """
+  @spec contacts_count(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def contacts_count(_, params, _), do: {:ok, Groups.contacts_count(params)}
+
+  @doc """
+  Get count of group users
+  """
+  @spec users_count(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def users_count(_, params, _), do: {:ok, Groups.users_count(params)}
+
+  @doc """
   Creates an contact group entry
   """
   @spec create_contact_group(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::

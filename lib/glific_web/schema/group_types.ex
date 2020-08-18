@@ -3,7 +3,9 @@ defmodule GlificWeb.Schema.GroupTypes do
   GraphQL Representation of Glific's Group DataType
   """
   use Absinthe.Schema.Notation
+  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
+  alias Glific.Repo
   alias GlificWeb.Resolvers
 
   object :group_result do
@@ -16,6 +18,30 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :label, :string
     field :description, :string
     field :is_restricted, :boolean
+
+    field :contacts, list_of(:contact) do
+      resolve(dataloader(Repo))
+    end
+
+    field :users, list_of(:user) do
+      resolve(dataloader(Repo))
+    end
+
+    # number of contacts in the group
+    # this is an expensive operation we can come back and optimise it later
+    field :contacts_count, :integer do
+      resolve(fn group, resolution, context ->
+        Resolvers.Groups.contacts_count(resolution, %{id: group.id}, context)
+      end)
+    end
+
+    # number of users in the group
+    # this is an expensive operation we can come back and optimise it later
+    field :users_count, :integer do
+      resolve(fn group, resolution, context ->
+        Resolvers.Groups.users_count(resolution, %{id: group.id}, context)
+      end)
+    end
   end
 
   @desc "Filtering options for groups"

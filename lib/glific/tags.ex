@@ -68,7 +68,7 @@ defmodule Glific.Tags do
   # immediately, will remove this very soon
   @spec check_shortcode(map()) :: map()
   defp check_shortcode(%{label: label} = attrs) when label != nil,
-    do: Map.update(attrs, :shortcode, Slug.slugify(label), & &1)
+    do: Map.update(attrs, :shortcode, Glific.string_clean(label), & &1)
 
   defp check_shortcode(attrs), do: attrs
 

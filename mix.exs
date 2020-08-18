@@ -117,7 +117,7 @@ defmodule Glific.MixProject do
       {:fun_with_flags, "~> 1.5"},
       {:fun_with_flags_ui, "~> 0.7"},
       {:phil_columns, "~> 3.1"},
-      {:passwordless_auth, git: "https://github.com/glific/passwordless_auth.git"}
+      {:passwordless_auth, "~> 0.3.0"}
     ]
   end
 
