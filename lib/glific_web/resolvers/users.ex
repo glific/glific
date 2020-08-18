@@ -67,10 +67,10 @@ defmodule GlificWeb.Resolvers.Users do
   """
   @spec update_user(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_user(_, %{id: id, input: params, group_ids: group_ids}, _) do
+  def update_user(_, %{id: id, input: params}, _) do
     with {:ok, user} <- Repo.fetch(User, id),
          {:ok, user} <- Users.update_user(user, params),
-         :ok <- Groups.update_user_groups(%{user_id: user.id, group_ids: group_ids}) do
+         :ok <- Groups.update_user_groups(%{user_id: user.id, group_ids: params.group_ids}) do
       {:ok, %{user: user}}
     end
   end

@@ -230,12 +230,12 @@ mutation updateUser($id: ID!, $input: UserInput!, $groupIds: [ID]!) {
     "name": "Updated Name",
     "roles": [
       "admin"
+    ],
+    "groupIds": [
+      1,
+      2
     ]
-  },
-  "groupIds": [
-    1,
-    2
-  ]
+  }
 }
 ```
 

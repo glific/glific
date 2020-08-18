@@ -48,6 +48,7 @@ defmodule GlificWeb.Schema.UserTypes do
   input_object :user_input do
     field :name, :string
     field :roles, list_of(:string)
+    field :group_ids, non_null(list_of(:id))
   end
 
   object :user_queries do
@@ -93,7 +94,6 @@ defmodule GlificWeb.Schema.UserTypes do
     field :update_user, :user_result do
       arg(:id, non_null(:id))
       arg(:input, non_null(:user_input))
-      arg(:group_ids, non_null(list_of(:id)))
       resolve(&Resolvers.Users.update_user/3)
     end
   end

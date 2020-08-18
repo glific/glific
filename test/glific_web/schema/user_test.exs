@@ -195,8 +195,11 @@ defmodule GlificWeb.Schema.UserTest do
       query_gql_by(:update,
         variables: %{
           "id" => user.id,
-          "input" => %{"name" => name, "roles" => roles},
-          "groupIds" => [group.id]
+          "input" => %{
+            "name" => name,
+            "roles" => roles,
+            "groupIds" => [group.id]
+          }
         }
       )
 
@@ -215,8 +218,11 @@ defmodule GlificWeb.Schema.UserTest do
       query_gql_by(:update,
         variables: %{
           "id" => user.id,
-          "input" => %{"name" => name, "roles" => roles},
-          "groupIds" => []
+          "input" => %{
+            "name" => name,
+            "roles" => roles,
+            "groupIds" => []
+          }
         }
       )
 
@@ -232,8 +238,11 @@ defmodule GlificWeb.Schema.UserTest do
       query_gql_by(:update,
         variables: %{
           "id" => user.id,
-          "input" => %{"name" => name, "roles" => roles},
-          "groupIds" => [group_2.id]
+          "input" => %{
+            "name" => name,
+            "roles" => roles,
+            "groupIds" => [group_2.id]
+          }
         }
       )
 
