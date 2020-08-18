@@ -142,7 +142,13 @@ defmodule GlificWeb.Schema.TagTest do
 
     result =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "Test Tag", "languageId" => language_id}}
+        variables: %{
+          "input" => %{
+            "label" => "Test Tag",
+            "shortcode" => "testtag",
+            "languageId" => language_id
+          }
+        }
       )
 
     assert {:ok, query_data} = result
@@ -152,12 +158,24 @@ defmodule GlificWeb.Schema.TagTest do
     # try creating the same tag twice
     _ =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "Klingon", "languageId" => language_id}}
+        variables: %{
+          "input" => %{
+            "label" => "Klingon",
+            "shortcode" => "klingon",
+            "languageId" => language_id
+          }
+        }
       )
 
     result =
       query_gql_by(:create,
-        variables: %{"input" => %{"label" => "Klingon", "languageId" => language_id}}
+        variables: %{
+          "input" => %{
+            "label" => "Klingon",
+            "shortcode" => "klingon",
+            "languageId" => language_id
+          }
+        }
       )
 
     assert {:ok, query_data} = result
@@ -172,7 +190,10 @@ defmodule GlificWeb.Schema.TagTest do
 
     result =
       query_gql_by(:update,
-        variables: %{"id" => tag.id, "input" => %{"label" => "New Test Tag Label"}}
+        variables: %{
+          "id" => tag.id,
+          "input" => %{"label" => "New Test Tag Label", "shortcode" => "newtesttaglabel"}
+        }
       )
 
     assert {:ok, query_data} = result
@@ -184,7 +205,7 @@ defmodule GlificWeb.Schema.TagTest do
       query_gql_by(:update,
         variables: %{
           "id" => tag.id,
-          "input" => %{"label" => "Greeting"}
+          "input" => %{"label" => "Greeting", "shortcode" => "greeting"}
         }
       )
 
@@ -205,6 +226,7 @@ defmodule GlificWeb.Schema.TagTest do
         variables: %{
           "input" => %{
             "label" => "Keyword tag",
+            "shortcode" => "keywordtag",
             "languageId" => language_id,
             "keywords" => keywords
           }
@@ -245,7 +267,7 @@ defmodule GlificWeb.Schema.TagTest do
         receiver_id: message_1.receiver_id
       })
 
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: "Unread"})
+    {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "unread"})
 
     message1_tag = Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
     message2_tag = Fixtures.message_tag_fixture(%{message_id: message_2.id, tag_id: tag.id})

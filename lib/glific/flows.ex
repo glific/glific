@@ -4,11 +4,14 @@ defmodule Glific.Flows do
   """
 
   import Ecto.Query, warn: false
-  alias Glific.Repo
 
-  alias Glific.Caches
-  alias Glific.Flows.Flow
-  alias Glific.Flows.FlowRevision
+  alias Glific.{
+    Caches,
+    Flows.Flow,
+    Flows.FlowContext,
+    Flows.FlowRevision,
+    Repo
+  }
 
   @doc """
   Returns the list of flows.
@@ -21,7 +24,21 @@ defmodule Glific.Flows do
   """
   @spec list_flows(map()) :: [Flow.t()]
   def list_flows(args \\ %{}),
-    do: Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &Repo.filter_with/2)
+    do: Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:keyword, keyword}, query ->
+        from f in query,
+          where: ^keyword in f.keywords
+
+      _, query ->
+        query
+    end)
+  end
 
   @doc """
   Return the count of tags, using the same filter as list_tags
@@ -234,25 +251,46 @@ defmodule Glific.Flows do
   end
 
   @doc """
-    A helper function to intract with the Caching API and get the cached flow.
-    It will also set the loaded flow to cache in case it does not exists.
+  A helper function to interact with the Caching API and get the cached flow.
+  It will also set the loaded flow to cache in case it does not exists.
   """
-
   @spec get_cached_flow(any, any) :: {atom, any}
   def get_cached_flow(key, args) do
     with {:ok, false} <- Caches.get(key) do
       flow = Flow.get_loaded_flow(args)
-      Caches.set([flow.uuid, flow.shortcode], flow)
+      Caches.set([flow.uuid | flow.keywords], flow)
     end
   end
 
   @doc """
-    Remove the flow from cache and add a new one.
+  Update the cached flow from db. This typically happens when the flow definition is updated
+  via the UI
   """
   @spec update_cached_flow(Flow.t()) :: {atom, any}
   def update_cached_flow(flow_uuid) do
     flow = Flow.get_loaded_flow(%{uuid: flow_uuid})
     Caches.remove([flow.uuid, flow.shortcode])
     Caches.set([flow.uuid, flow.shortcode], flow)
+  end
+
+  @doc """
+  Check if a flow has been activated for a specific contact id in the
+  past N minutes
+  """
+  @spec flow_activated(non_neg_integer, non_neg_integer, integer) :: boolean
+  def flow_activated(flow_id, contact_id, go_back \\ 24 * 60) do
+    # we are asking for time in minutes, we need to convert to seconds
+    since = DateTime.add(DateTime.utc_now(), -1 * go_back * 60)
+
+    results =
+      FlowContext
+      |> where([fc], fc.id == ^flow_id)
+      |> where([fc], fc.contact_id == ^contact_id)
+      |> where([fc], fc.inserted_at >= ^since)
+      |> Repo.all()
+
+    if results != [],
+      do: true,
+      else: false
   end
 end

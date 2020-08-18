@@ -45,16 +45,17 @@ defmodule Glific.MessagesTest do
     @sender_attrs %{
       name: "some sender",
       optin_time: ~U[2010-04-17 14:00:00Z],
-      optout_time: ~U[2010-04-17 14:00:00Z],
+      optout_time: nil,
       phone: "12345671",
       last_message_at: DateTime.utc_now()
     }
 
     @receiver_attrs %{
       name: "some receiver",
-      optin_time: ~U[2010-04-17 14:00:00Z],
-      optout_time: ~U[2010-04-17 14:00:00Z],
+      optin_time: DateTime.utc_now(),
+      optout_time: nil,
       phone: "101013131",
+      provider_status: :session_and_hsm,
       last_message_at: DateTime.utc_now()
     }
 
@@ -332,10 +333,7 @@ defmodule Glific.MessagesTest do
     end
 
     test "send hsm message incorrect parameters" do
-      name = "Default receiver"
-      {:ok, contact} = Repo.fetch_by(Contacts.Contact, %{name: name})
-
-      Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
+      contact = Fixtures.contact_fixture()
 
       shortcode = "otp"
       {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{shortcode: shortcode})

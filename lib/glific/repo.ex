@@ -197,6 +197,20 @@ defmodule Glific.Repo do
   # codebeat:enable[ABC, LOC]
 
   @doc """
+  In Join tables we rarely use the table id. We always know the object ids
+  and hence more convenient to delete an entry via its object ids.
+  """
+  @spec delete_relationships_by_ids(atom(), {{atom(), integer}, {atom(), [integer]}}) ::
+          {integer(), nil | [term()]}
+  def delete_relationships_by_ids(object, fields) do
+    {{key_1, value_1}, {key_2, values_2}} = fields
+
+    object
+    |> where([m], field(m, ^key_1) == ^value_1 and field(m, ^key_2) in ^values_2)
+    |> Repo.delete_all()
+  end
+
+  @doc """
   Need to figure out what this function does. Still learning Dataloader and its magic.
   Seems l
   ike it is not used currently, so commenting it out

@@ -26,7 +26,7 @@ defmodule Glific.Fixtures do
       last_message_at: DateTime.backward(0),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      provider_status: :valid
+      provider_status: :session_and_hsm
     }
 
     {:ok, contact} =
@@ -85,6 +85,7 @@ defmodule Glific.Fixtures do
   def tag_fixture(attrs \\ %{}) do
     valid_attrs = %{
       label: "some label",
+      shortcode: "somelabel",
       description: "some description",
       locale: "en_US",
       is_active: true,
@@ -182,6 +183,18 @@ defmodule Glific.Fixtures do
       attrs
       |> Enum.into(valid_attrs)
       |> Groups.create_group()
+
+    %{
+      label: "Default Group",
+      is_restricted: false
+    }
+    |> Groups.create_group()
+
+    %{
+      label: "Restricted Group",
+      is_restricted: true
+    }
+    |> Groups.create_group()
 
     group
   end

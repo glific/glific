@@ -9,9 +9,8 @@ defmodule Glific.Processor.ConsumerTagger do
 
   alias Glific.{
     Communications,
-    Flows,
-    Flows.FlowContext,
     Messages.Message,
+    Processor.ConsumerFlow,
     Processor.Helper,
     Repo,
     Taggers,
@@ -22,7 +21,6 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @min_demand 0
   @max_demand 1
-  @wakeup_timeout_ms 1 * 60 * 1000
 
   @doc false
   @spec start_link([]) :: GenServer.on_start()
@@ -43,9 +41,6 @@ defmodule Glific.Processor.ConsumerTagger do
       }
       |> reload
 
-    # process the wakeup queue every 1 minute
-    Process.send_after(self(), :wakeup_timeout, @wakeup_timeout_ms)
-
     {
       :consumer,
       state,
@@ -60,7 +55,7 @@ defmodule Glific.Processor.ConsumerTagger do
   end
 
   defp reload(%{numeric_tag_id: numeric_tag_id} = state) when numeric_tag_id == 0 do
-    case Repo.fetch_by(Tag, %{label: "Numeric"}) do
+    case Repo.fetch_by(Tag, %{shortcode: "numeric"}) do
       {:ok, tag} -> Map.put(state, :numeric_tag_id, tag.id)
       _ -> state
     end
@@ -74,7 +69,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @doc false
   def handle_events(messages, _from, state) do
-    _ = Enum.map(messages, &process_message(&1, state))
+    Enum.each(messages, &process_message(&1, state))
 
     {:noreply, [], state}
   end
@@ -86,45 +81,9 @@ defmodule Glific.Processor.ConsumerTagger do
     message
     |> numeric_tagger(body, state)
     |> keyword_tagger(body, state)
-    # we do this before, so it will not pick up the potential flow
-    # started by new contact tagger
-    |> check_flows(body, state)
     |> new_contact_tagger(state)
     |> Repo.preload(:tags)
     |> Communications.publish_data(:created_message_tag)
-  end
-
-  @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
-  defp check_flows(message, body, _state)
-       when body in [
-              "help",
-              "language",
-              "preference",
-              "newcontact",
-              "registration",
-              "timed",
-              "solworkflow"
-            ] do
-    message = Repo.preload(message, :contact)
-    {:ok, flow} = Flows.get_cached_flow(body, %{shortcode: body})
-    FlowContext.init_context(flow, message.contact)
-    message
-  end
-
-  defp check_flows(message, _body, _state) do
-    context = FlowContext.active_context(message.contact_id)
-
-    if context do
-      {:ok, flow} = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
-
-      context
-      |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward(message.body)
-    end
-
-    # we can potentially save the {contact_id, context} map here in the flow state,
-    # to avoid hitting the DB again. We'll do this after we get this working
-    message
   end
 
   @spec numeric_tagger(atom() | Message.t(), String.t(), map()) :: Message.t()
@@ -147,8 +106,10 @@ defmodule Glific.Processor.ConsumerTagger do
   defp new_contact_tagger(message, state) do
     if Status.is_new_contact(message.sender_id) do
       message
-      |> add_status_tag("New Contact", state)
-      |> check_flows("newcontact", state)
+      |> add_status_tag("newcontact", state)
+      # We make a cross module function call which is its own genserver
+      # but should be fine for now
+      |> ConsumerFlow.check_flows("newcontact", state)
     end
 
     message
@@ -157,34 +118,4 @@ defmodule Glific.Processor.ConsumerTagger do
   @spec add_status_tag(Message.t(), String.t(), map()) :: Message.t()
   defp add_status_tag(message, status, state),
     do: Helper.add_tag(message, state.status_map[status])
-
-  @doc """
-  This callback handles the nudges in the system. It processes the jobs and then sets a timer to invoke itself when
-  done
-  """
-  def handle_info(:wakeup_timeout, state) do
-    # check DB and process all flows that need to be woken update_in
-    _ =
-      FlowContext.wakeup()
-      |> Enum.map(fn fc -> wakeup(fc, state) end)
-
-    Process.send_after(self(), :wakeup_timeout, @wakeup_timeout_ms)
-    {:noreply, [], state}
-  end
-
-  # Process one context at a time
-  @spec wakeup(FlowContext.t(), map()) ::
-          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
-  defp wakeup(context, _state) do
-    {:ok, flow} = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
-
-    {:ok, context} =
-      context
-      |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward("No Response")
-
-    # update the context woken up time
-    {:ok, context} = FlowContext.update_flow_context(context, %{wakeup_at: nil})
-    {:ok, context, []}
-  end
 end

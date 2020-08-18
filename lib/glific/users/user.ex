@@ -32,6 +32,13 @@ defmodule Glific.Users.User do
   end
 
   @doc """
+  A constant function to get list of roles
+  """
+  def get_roles_list do
+    @user_roles
+  end
+
+  @doc """
   Overriding the changeset for PoW and switch phone and email. At some later point, we will
   send an SMS message to the user with a new code to change their password
   """

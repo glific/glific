@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.GlificTables do
+defmodule Glific.Repo.Migrations.GlificCore do
   @moduledoc """
   To simplify things, lets create the bulk of the tables in one migration file for v0.1.
   This gives new developers a good view of the schema in one place.
@@ -82,6 +82,8 @@ defmodule Glific.Repo.Migrations.GlificTables do
       # The tag label
       add :label, :string, null: false
 
+      add :shortcode, :string, null: false
+
       # An optional description
       add :description, :string, null: true
 
@@ -109,7 +111,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:tags, [:label, :language_id])
+    create unique_index(:tags, [:shortcode, :language_id])
   end
 
   @doc """
@@ -414,7 +416,7 @@ defmodule Glific.Repo.Migrations.GlificTables do
     create table(:groups) do
       # Label of the group
       add :label, :string, null: false
-      # visibility of conversations with to the other groups
+      # visibility of conversations to the other groups
       add :is_restricted, :boolean, default: false
 
       timestamps(type: :utc_datetime)

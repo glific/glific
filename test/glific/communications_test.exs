@@ -58,7 +58,8 @@ defmodule Glific.CommunicationsTest do
       name: "some receiver",
       optin_time: ~U[2010-04-17 14:00:00Z],
       phone: "101013131",
-      last_message_at: DateTime.utc_now()
+      last_message_at: DateTime.utc_now(),
+      provider_status: :session_and_hsm
     }
 
     @valid_attrs %{
@@ -126,8 +127,8 @@ defmodule Glific.CommunicationsTest do
 
       assert message_2.contact_id == message_1.contact_id
 
-      {:ok, tag} = Repo.fetch_by(Tag, %{label: "Not replied"})
-      {:ok, unread_tag} = Repo.fetch_by(Tag, %{label: "Unread"})
+      {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "notreplied"})
+      {:ok, unread_tag} = Repo.fetch_by(Tag, %{shortcode: "unread"})
 
       message1_tag = Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
 
@@ -233,10 +234,10 @@ defmodule Glific.CommunicationsTest do
       assert message.provider_status == nil
     end
 
-    test "sending message to contact having invalid provider status will return error" do
+    test "sending message to contact having incorrect provider status will return error" do
       {:ok, receiver} =
         @receiver_attrs
-        |> Map.merge(%{provider_status: :invalid, phone: Phone.EnUs.phone()})
+        |> Map.merge(%{provider_status: :none, phone: Phone.EnUs.phone()})
         |> Contacts.create_contact()
 
       message = message_fixture(%{receiver_id: receiver.id})
@@ -248,7 +249,8 @@ defmodule Glific.CommunicationsTest do
         @receiver_attrs
         |> Map.merge(%{
           phone: Phone.EnUs.phone(),
-          last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
+          last_message_at: Timex.shift(DateTime.utc_now(), days: -2),
+          provider_status: :none
         })
         |> Contacts.create_contact()
 

@@ -2,10 +2,10 @@ defmodule GlificWeb.Schema.GroupTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
-  alias Glific.Seeds.SeedsDev
+  alias Glific.Fixtures
 
   setup do
-    SeedsDev.seed_groups()
+    Fixtures.group_fixture()
     :ok
   end
 
@@ -25,6 +25,8 @@ defmodule GlificWeb.Schema.GroupTest do
 
     [group | _] = groups
     assert get_in(group, ["label"]) == "Default Group"
+    assert get_in(query_data, [:data, "groups", Access.at(0), "contacts_count"]) == 0
+    assert get_in(query_data, [:data, "groups", Access.at(0), "users_count"]) == 0
   end
 
   test "groups field returns list of groups in desc order" do
@@ -78,15 +80,17 @@ defmodule GlificWeb.Schema.GroupTest do
     assert get_in(query_data, [:data, "countGroups"]) == 1
   end
 
-  test "group id returns one group or nil" do
+  test "group by id returns one group or nil" do
     label = "Default Group"
     {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
 
     result = query_gql_by(:by_id, variables: %{"id" => group.id})
     assert {:ok, query_data} = result
 
-    group_label = get_in(query_data, [:data, "group", "group", "label"])
-    assert group_label == label
+    group = get_in(query_data, [:data, "group", "group"])
+    assert group["label"] == label
+    assert group["contacts"] == []
+    assert group["users"] == []
 
     result = query_gql_by(:by_id, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
@@ -102,8 +106,8 @@ defmodule GlificWeb.Schema.GroupTest do
       )
 
     assert {:ok, query_data} = result
-    label = get_in(query_data, [:data, "createGroup", "group", "label"])
-    assert label == "Test Group"
+    assert query_data[:data]["createGroup"]["errors"] == nil
+    assert query_data[:data]["createGroup"]["group"]["label"] == "Test Group"
 
     # try creating the same group twice
     _ =
@@ -119,6 +123,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createGroup", "errors", Access.at(0), "message"])
+    assert query_data[:data]["createGroup"]["errors"] != nil
     assert message == "has already been taken"
   end
 

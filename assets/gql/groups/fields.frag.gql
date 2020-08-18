@@ -3,6 +3,14 @@ fragment GroupFields on GroupResult {
     id
     label
     is_restricted
+    contacts {
+      id
+      name
+    }
+    users {
+      id
+      name
+    }
   }
 }
 

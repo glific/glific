@@ -6,7 +6,8 @@ defmodule Glific.Search.Full do
   import Ecto.Query
 
   alias Glific.{
-    Tags.MessageTag
+    Contacts.Contact,
+    Groups.ContactGroup
   }
 
   @doc """
@@ -27,7 +28,7 @@ defmodule Glific.Search.Full do
     quote do
       fragment(
         """
-        SELECT search_messages.contact_id AS id,
+        SELECT search_messages.contact_id,
         ts_rank(
         search_messages.document, plainto_tsquery(unaccent(?))
         ) AS rank
@@ -50,42 +51,95 @@ defmodule Glific.Search.Full do
     end
   end
 
-  @spec run_include_tags(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
-  defp run_include_tags(query, %{filter: %{include_tags: [tag_id]}}) do
-    {:ok, tag_id} = Glific.parse_maybe_integer(tag_id)
+  @spec run_include_groups(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp run_include_groups(query, group_ids) when is_list(group_ids) do
+    group_ids =
+      Enum.map(group_ids, fn group_id ->
+        {:ok, group_id} = Glific.parse_maybe_integer(group_id)
+        group_id
+      end)
 
     query
-    |> join(:inner, [m], mt in MessageTag, on: mt.message_id == m.id)
-    |> where([_m, mt], mt.tag_id == ^tag_id)
+    |> join(:inner, [m], cg in ContactGroup, as: :cg, on: cg.contact_id == m.contact_id)
+    |> where([cg: cg], cg.group_id in ^group_ids)
   end
 
-  defp run_include_tags(query, _args), do: query
+  defp run_include_groups(query, _args), do: query
+
+  @spec run_date_range(Ecto.Queryable.t(), any()) :: Ecto.Queryable.t()
+  defp run_date_range(query, dates) do
+    query
+    |> join(:inner, [m], c1 in Contact, as: :contact, on: m.contact_id == c1.id)
+    |> date_query(dates[:from], dates[:to])
+  end
 
   @spec run_helper(Ecto.Queryable.t(), String.t(), map()) :: Ecto.Queryable.t()
-  defp run_helper(query, "", args) do
+  defp run_helper(query, term, args) when term != nil and term != "" do
     query
-    |> run_include_tags(args)
+    |> join(:inner, [m], id_and_rank in matching_contact_ids_and_ranks(term, args),
+      as: :id_and_rank,
+      on: id_and_rank.contact_id == m.contact_id
+    )
+    # eliminate any previous order by, since this takes precedence
+    |> apply_filters(args.filter)
+    |> exclude(:order_by)
+    |> order_by([_m, id_and_rank], desc: id_and_rank.rank)
+  end
+
+  defp run_helper(query, _, args) do
+    query
+    |> apply_filters(args.filter)
     |> offset(^args.contact_opts.offset)
     |> limit(^args.contact_opts.limit)
   end
 
-  defp run_helper(query, term, args) do
-    query
-    |> join(:inner, [m], id_and_rank in matching_contact_ids_and_ranks(term, args),
-      on: id_and_rank.id == m.contact_id
-    )
-    # eliminate any previous order by, since this takes precedence
-    |> exclude(:order_by)
-    |> order_by([_m, id_and_rank], desc: id_and_rank.rank)
-    |> run_include_tags(args)
+  @spec apply_filters(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp apply_filters(query, filter) when is_nil(filter), do: query
+
+  defp apply_filters(query, filter) do
+    Enum.reduce(filter, query, fn
+      {:include_groups, group_ids}, query ->
+        query |> run_include_groups(group_ids)
+
+      {:date_range, dates}, query ->
+        query |> run_date_range(dates)
+
+      {_key, _value}, query ->
+        query
+    end)
   end
 
   @spec normalize(String.t()) :: String.t()
-  defp normalize(term) do
+  defp normalize(term) when term != "" and term != nil do
     term
     |> String.downcase()
     |> String.replace(~r/[\n|\t]/, " ")
     |> String.replace(~r/\s+/, " ")
     |> String.trim()
+  end
+
+  defp normalize(term), do: term
+
+  # Filter based on the date range
+  @spec date_query(Ecto.Queryable.t(), DateTime.t(), DateTime.t()) :: Ecto.Queryable.t()
+  defp date_query(query, nil, nil), do: query
+
+  defp date_query(query, nil, to) do
+    query
+    |> where([contact: c1], c1.last_message_at <= ^Timex.to_datetime(to))
+  end
+
+  defp date_query(query, from, nil) do
+    query
+    |> where([contact: c1], c1.last_message_at >= ^Timex.to_datetime(from))
+  end
+
+  defp date_query(query, from, to) do
+    query
+    |> where(
+      [contact: c1],
+      c1.last_message_at >= ^Timex.to_datetime(from) and
+        c1.last_message_at <= ^Timex.to_datetime(to)
+    )
   end
 end

@@ -3,9 +3,11 @@ defmodule Glific.Seeds.SeedsDev do
   Script for populating the database. We can call this from tests and/or /priv/repo
   """
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Flows.Flow,
     Flows.FlowRevision,
+    Groups,
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
@@ -27,8 +29,8 @@ defmodule Glific.Seeds.SeedsDev do
     [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
-    Repo.insert!(%Tag{label: "This is for testing", language: en_us})
-    Repo.insert!(%Tag{label: "यह परीक्षण के लिए है", language: hi_in})
+    Repo.insert!(%Tag{label: "This is for testing", shortcode: "testing-only", language: en_us})
+    Repo.insert!(%Tag{label: "यह परीक्षण के लिए है", shortcode: "testing-only", language: hi_in})
   end
 
   @doc false
@@ -37,8 +39,16 @@ defmodule Glific.Seeds.SeedsDev do
     [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
+    inserted_time = DateTime.utc_now() |> DateTime.truncate(:second)
+
     contacts = [
-      %{phone: "917834811231", name: "Default receiver", language_id: hi_in.id},
+      %{
+        phone: "917834811231",
+        name: "Default receiver",
+        language_id: hi_in.id,
+        optin_time: inserted_time,
+        provider_status: :session_and_hsm
+      },
       %{
         name: "Adelle Cavin",
         phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
@@ -56,14 +66,15 @@ defmodule Glific.Seeds.SeedsDev do
       }
     ]
 
-    inserted_time = DateTime.utc_now() |> DateTime.truncate(:second)
-
     contact_entries =
       for contact_entry <- contacts do
-        contact_entry
-        |> Map.put(:inserted_at, inserted_time)
-        |> Map.put(:updated_at, inserted_time)
-        |> Map.put(:last_message_at, inserted_time)
+        %{
+          inserted_at: inserted_time,
+          updated_at: inserted_time,
+          last_message_at: inserted_time,
+          provider_status: :session
+        }
+        |> Map.merge(contact_entry)
       end
 
     # seed contacts
@@ -273,7 +284,7 @@ defmodule Glific.Seeds.SeedsDev do
   end
 
   @doc false
-  @spec seed_groups :: {Group.t()}
+  @spec seed_groups :: nil
   def seed_groups do
     Repo.insert!(%Group{
       label: "Default Group",
@@ -287,12 +298,57 @@ defmodule Glific.Seeds.SeedsDev do
   end
 
   @doc false
+  @spec seed_group_contacts :: nil
+  def seed_group_contacts do
+    [c1, c2 | _] = Contacts.list_contacts()
+    [g1, g2 | _] = Groups.list_groups()
+
+    Repo.insert!(%Groups.ContactGroup{
+      contact_id: c1.id,
+      group_id: g1.id
+    })
+
+    Repo.insert!(%Groups.ContactGroup{
+      contact_id: c2.id,
+      group_id: g1.id
+    })
+
+    Repo.insert!(%Groups.ContactGroup{
+      contact_id: c1.id,
+      group_id: g2.id
+    })
+  end
+
+  @doc false
+  @spec seed_group_users :: nil
+  def seed_group_users do
+    [u1, u2 | _] = Users.list_users()
+    [g1, g2 | _] = Groups.list_groups()
+
+    Repo.insert!(%Groups.UserGroup{
+      user_id: u1.id,
+      group_id: g1.id
+    })
+
+    Repo.insert!(%Groups.UserGroup{
+      user_id: u2.id,
+      group_id: g1.id
+    })
+
+    Repo.insert!(%Groups.UserGroup{
+      user_id: u1.id,
+      group_id: g2.id
+    })
+  end
+
+  @doc false
   @spec seed_flows :: nil
   def seed_flows do
     test_flow =
       Repo.insert!(%Flow{
         name: "Test Workflow",
         shortcode: "test",
+        keywords: ["test"],
         version_number: "13.1.0",
         uuid: "defda715-c520-499d-851e-4428be87def6"
       })
@@ -306,6 +362,7 @@ defmodule Glific.Seeds.SeedsDev do
       Repo.insert!(%Flow{
         name: "Timed Workflow",
         shortcode: "timed",
+        keywords: ["timed"],
         version_number: "13.1.0",
         uuid: "8390ded3-06c3-4df4-b428-064666f085c7"
       })
@@ -329,6 +386,7 @@ defmodule Glific.Seeds.SeedsDev do
       Repo.insert!(%Flow{
         name: "SoL Activity",
         shortcode: "solactivity",
+        keywords: ["solactivity"],
         version_number: "13.1.0",
         uuid: "b050c652-65b5-4ccf-b62b-1e8b3f328676"
       })
@@ -352,6 +410,7 @@ defmodule Glific.Seeds.SeedsDev do
       Repo.insert!(%Flow{
         name: "SoL Feedback",
         shortcode: "solfeedback",
+        keywords: ["solfeedback"],
         version_number: "13.1.0",
         uuid: "6c21af89-d7de-49ac-9848-c9febbf737a5"
       })
@@ -393,5 +452,11 @@ defmodule Glific.Seeds.SeedsDev do
     seed_messages_media()
 
     seed_flows()
+
+    seed_groups()
+
+    seed_group_contacts()
+
+    seed_group_users()
   end
 end

@@ -188,7 +188,7 @@ defmodule Glific.Contacts do
       last_message_at: utc_time,
       optout_time: nil,
       status: :valid,
-      provider_status: :valid,
+      provider_status: :session_and_hsm,
       updated_at: DateTime.utc_now()
     })
 
@@ -205,7 +205,7 @@ defmodule Glific.Contacts do
       optout_time: utc_time,
       optin_time: nil,
       status: :invalid,
-      provider_status: :invalid,
+      provider_status: :none,
       updated_at: DateTime.utc_now()
     })
 
@@ -223,7 +223,7 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t(), boolean()) :: boolean()
   def can_send_message_to?(contact, is_hsm) when is_hsm == true do
     with :valid <- contact.status,
-         :valid <- contact.provider_status,
+         true <- contact.provider_status == :session_and_hsm || contact.provider_status == :hsm,
          true <- contact.optin_time != nil do
       true
     else
@@ -236,7 +236,8 @@ defmodule Glific.Contacts do
   """
   def can_send_message_to?(contact, _is_hsm) do
     with :valid <- contact.status,
-         :valid <- contact.provider_status,
+         true <-
+           contact.provider_status == :session_and_hsm || contact.provider_status == :session,
          true <- Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours) < 24 do
       true
     else
@@ -273,5 +274,30 @@ defmodule Glific.Contacts do
     %Location{}
     |> Location.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Set session status for opted in and opted out contacts
+  """
+  @spec set_session_status(Contact.t(), atom()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  def set_session_status(contact, status) when status == :none do
+    case contact.optin_time == nil do
+      true ->
+        update_contact(contact, %{provider_status: :none})
+
+      false ->
+        update_contact(contact, %{provider_status: :hsm})
+    end
+  end
+
+  def set_session_status(contact, status) when status == :session do
+    case contact.optin_time == nil do
+      true ->
+        update_contact(contact, %{provider_status: :session})
+
+      false ->
+        update_contact(contact, %{provider_status: :session_and_hsm})
+    end
   end
 end

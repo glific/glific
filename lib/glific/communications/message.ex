@@ -66,7 +66,7 @@ defmodule Glific.Communications.Message do
       sent_at: DateTime.truncate(DateTime.utc_now(), :second)
     })
 
-    Tags.remove_tag_from_all_message(message["contact_id"], ["Not replied", "Unread"])
+    Tags.remove_tag_from_all_message(message["contact_id"], ["notreplied", "unread"])
 
     Taggers.TaggerHelper.tag_outbound_message(message)
 
@@ -108,6 +108,8 @@ defmodule Glific.Communications.Message do
       message_params.sender
       |> Map.put(:last_message_at, DateTime.utc_now())
       |> Contacts.upsert()
+
+    {:ok, _} = Contacts.set_session_status(contact, :session)
 
     message_params =
       message_params

@@ -15,18 +15,21 @@ defmodule Glific.TagsTest do
     # language id needs to be added dynamically for all the below actions
     @valid_attrs %{
       label: "some label",
+      shortcode: "somelabel",
       description: "some fixed description",
       is_active: true,
       is_reserved: true
     }
     @valid_more_attrs %{
       label: "hindi some label",
+      shortcode: "hindisomelabel",
       description: "some fixed description",
       is_active: true,
       is_reserved: true
     }
     @update_attrs %{
       label: "some updated label",
+      shortcode: "someupdatedlabel",
       description: "some updated description",
       is_active: false,
       is_reserved: false
@@ -191,7 +194,7 @@ defmodule Glific.TagsTest do
 
     test "keyword_map/0 returns a keyword map with ids" do
       tag = tag_fixture()
-      tag2 = tag_fixture(%{label: "tag 2"})
+      tag2 = tag_fixture(%{label: "tag 2", shortcode: "tag2"})
 
       Tags.update_tag(tag, %{
         keywords: ["Hello foobar", "hi example", "hola test", "namaste saab"]
@@ -205,12 +208,18 @@ defmodule Glific.TagsTest do
     end
 
     test "status_map/0 returns a keyword map with ids" do
-      tag = tag_fixture(%{label: "Unread"})
-      tag2 = tag_fixture(%{label: "New Contact"})
+      tag = tag_fixture(%{label: "Unread", shortcode: "unread"})
+      tag2 = tag_fixture(%{label: "New Contact", shortcode: "newcontact"})
       status_map = Tags.status_map()
       assert is_map(status_map)
-      assert status_map["Unread"] == tag.id
-      assert status_map["New Contact"] == tag2.id
+      assert status_map["unread"] == tag.id
+      assert status_map["newcontact"] == tag2.id
+    end
+
+    test "invalid shortcode will throw an error" do
+      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
+      attrs = Map.merge(@valid_attrs, %{language_id: language.id, shortcode: "invalid-tag"})
+      assert {:error, %Ecto.Changeset{}} = Tags.create_tag(attrs)
     end
   end
 
@@ -335,13 +344,13 @@ defmodule Glific.TagsTest do
           receiver_id: message_1.receiver_id
         })
 
-      {:ok, tag} = Repo.fetch_by(Tag, %{label: "Unread"})
+      {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "unread"})
 
       {:ok, message1_tag} = Tags.create_message_tag(%{message_id: message_1.id, tag_id: tag.id})
       {:ok, message2_tag} = Tags.create_message_tag(%{message_id: message_2.id, tag_id: tag.id})
       {:ok, message3_tag} = Tags.create_message_tag(%{message_id: message_3.id, tag_id: tag.id})
 
-      untag_message_id = Tags.remove_tag_from_all_message(message_1.contact_id, "Unread")
+      untag_message_id = Tags.remove_tag_from_all_message(message_1.contact_id, "unread")
 
       assert message_1.id in untag_message_id
       assert message_2.id in untag_message_id

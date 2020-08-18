@@ -9,13 +9,14 @@ defmodule Glific.Tags.Tag do
   alias Glific.{Settings.Language, Tags.Tag}
   alias Glific.{Contacts.Contact, Messages.Message}
 
-  @required_fields [:label, :language_id]
+  @required_fields [:label, :language_id, :shortcode]
   @optional_fields [:description, :is_active, :is_reserved, :is_value, :parent_id, :keywords]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           label: String.t() | nil,
+          shortcode: String.t() | nil,
           description: String.t() | nil,
           is_active: boolean(),
           is_reserved: boolean(),
@@ -31,6 +32,7 @@ defmodule Glific.Tags.Tag do
 
   schema "tags" do
     field :label, :string
+    field :shortcode, :string
     field :description, :string
 
     field :is_active, :boolean, default: false
@@ -60,7 +62,8 @@ defmodule Glific.Tags.Tag do
     |> lowercase_keywords(attrs[:keywords])
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
-    |> unique_constraint([:label, :language_id])
+    |> unique_constraint([:shortcode, :language_id])
+    |> Glific.validate_shortcode()
   end
 
   defp lowercase_keywords(changeset, keywords) do

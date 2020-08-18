@@ -254,10 +254,7 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "send hsm message to an opted in contact" do
-    name = "Default receiver"
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
-
-    Contacts.update_contact(contact, %{optin_time: DateTime.utc_now()})
+    contact = Glific.Fixtures.contact_fixture()
 
     label = "OTP Message"
     {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{label: label})

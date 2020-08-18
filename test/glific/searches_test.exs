@@ -27,6 +27,17 @@ defmodule Glific.SearchesTest do
       assert saved_search in Searches.list_saved_searches()
     end
 
+    test "count_saved_searches/0 returns count of all saved_searches" do
+      saved_searches_count = Repo.aggregate(Searches.SavedSearch, :count)
+
+      saved_search_fixture()
+      assert Searches.count_saved_searches() == saved_searches_count + 1
+
+      assert Searches.count_saved_searches(%{
+               filter: %{label: "Conversations read but not replied"}
+             }) == 1
+    end
+
     test "get_saved_search!/1 returns the search with given id" do
       saved_search = saved_search_fixture()
       assert Searches.get_saved_search!(saved_search.id) == saved_search

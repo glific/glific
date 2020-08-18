@@ -7,7 +7,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "0.2.0",
+      version: "0.3.0",
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -112,8 +112,10 @@ defmodule Glific.MixProject do
       {:timex, "~> 3.0"},
       {:slugify, "~> 1.3"},
       {:cachex, "~> 3.2"},
-      {:passwordless_auth, "~> 0.3.0"},
-      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"}
+      {:fun_with_flags, "~> 1.5"},
+      {:fun_with_flags_ui, "~> 0.7.2"},
+      {:phil_columns, "~> 3.1"},
+      {:passwordless_auth, "~> 0.3.0"}
     ]
   end
 
