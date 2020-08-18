@@ -3,7 +3,10 @@
 ## Get All Roles
 ```graphql
 query {
-  roles
+  roles {
+    id
+    label
+  }
 }
 ```
 
@@ -14,10 +17,22 @@ query {
 {
   "data": {
     "roles": [
-      "none",
-      "staff",
-      "manager",
-      "admin"
+      {
+        "id": 1,
+        "label": "none"
+      },
+      {
+        "id": 2,
+        "label": "staff"
+      },
+      {
+        "id": 3,
+        "label": "manager"
+      },
+      {
+        "id": 4,
+        "label": "admin"
+      }
     ]
   }
 }
@@ -215,12 +230,12 @@ mutation updateUser($id: ID!, $input: UserInput!, $groupIds: [ID]!) {
     "name": "Updated Name",
     "roles": [
       "admin"
+    ],
+    "groupIds": [
+      1,
+      2
     ]
-  },
-  "groupIds": [
-    1,
-    2
-  ]
+  }
 }
 ```
 
@@ -529,6 +544,31 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>user</strong></td>
 <td valign="top"><a href="#user">User</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### Role
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>id</strong></td>
+<td valign="top"><a href="#ID">ID</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>label</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 </tbody>

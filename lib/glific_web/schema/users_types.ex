@@ -25,6 +25,11 @@ defmodule GlificWeb.Schema.UserTypes do
     end
   end
 
+  object :role do
+    field :id, :id
+    field :label, :string
+  end
+
   @desc "Filtering options for users"
   input_object :user_filter do
     @desc "Match the name"
@@ -43,11 +48,12 @@ defmodule GlificWeb.Schema.UserTypes do
   input_object :user_input do
     field :name, :string
     field :roles, list_of(:string)
+    field :group_ids, non_null(list_of(:id))
   end
 
   object :user_queries do
     @desc "get list of roles"
-    field :roles, list_of(:string) do
+    field :roles, list_of(:role) do
       resolve(fn _, _, _ ->
         {:ok, User.get_roles_list()}
       end)
@@ -88,7 +94,6 @@ defmodule GlificWeb.Schema.UserTypes do
     field :update_user, :user_result do
       arg(:id, non_null(:id))
       arg(:input, non_null(:user_input))
-      arg(:group_ids, non_null(list_of(:id)))
       resolve(&Resolvers.Users.update_user/3)
     end
   end
