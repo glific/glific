@@ -28,9 +28,6 @@ defmodule Glific.Flows.ExitTest do
     assert uuid_map[exit.uuid] == {:exit, exit}
 
     # ensure that not sending either of the required fields, raises an error
-    json = %{"uuid" => "UUID 1"}
-    assert_raise ArgumentError, fn -> Exit.process(json, %{}, node) end
-
     json = %{"destination_uuid" => "UUID 1"}
     assert_raise ArgumentError, fn -> Exit.process(json, %{}, node) end
 
