@@ -79,13 +79,9 @@ defmodule Glific.Processor.ConsumerFlow do
 
     message = message |> Repo.preload(:contact)
 
-    case Map.has_key?(state.flow_keywords, body) do
-      false ->
-        check_contexts(message, body, state)
-
-      true ->
-        check_flows(message, body, state)
-    end
+    if Map.has_key?(state.flow_keywords, body),
+      do: check_flows(message, body, state),
+      else: check_contexts(message, body, state)
   end
 
   @doc """
@@ -104,7 +100,7 @@ defmodule Glific.Processor.ConsumerFlow do
   Check contexts
   """
   @spec check_contexts(atom() | Message.t(), String.t(), map()) :: Message.t()
-  def check_contexts(message, _body, _state) do
+  def check_contexts(message, body, _state) do
     context = FlowContext.active_context(message.contact_id)
 
     if context do
@@ -112,7 +108,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
       context
       |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward(message.body)
+      |> FlowContext.step_forward(body)
     else
       # lets  check if we should initiate the out of office flow
       # lets do this only if we've not sent them the out of office flow
@@ -150,6 +146,10 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec wakeup(FlowContext.t(), map()) ::
           {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
   defp wakeup(context, _state) do
+    # update the context woken up time as soon as possible to avoid someone else
+    # grabbing this context
+    {:ok, context} = FlowContext.update_flow_context(context, %{wakeup_at: nil})
+
     {:ok, flow} = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
 
     {:ok, context} =
@@ -157,8 +157,6 @@ defmodule Glific.Processor.ConsumerFlow do
       |> FlowContext.load_context(flow)
       |> FlowContext.step_forward("No Response")
 
-    # update the context woken up time
-    {:ok, context} = FlowContext.update_flow_context(context, %{wakeup_at: nil})
     {:ok, context, []}
   end
 end

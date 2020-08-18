@@ -284,7 +284,7 @@ defmodule Glific.Flows do
 
     results =
       FlowContext
-      |> where([fc], fc.id == ^flow_id)
+      |> where([fc], fc.flow_id == ^flow_id)
       |> where([fc], fc.contact_id == ^contact_id)
       |> where([fc], fc.inserted_at >= ^since)
       |> Repo.all()

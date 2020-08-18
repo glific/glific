@@ -19,9 +19,9 @@ defmodule Glific.Flows.ContactAction do
   @doc """
   If the template is not define for the message send text messages
   """
-  @spec send_message(FlowContext.t(), Action.t()) :: FlowContext.t()
-  def send_message(context, %Action{templating: templating, text: _text} = action)
-      when is_nil(templating) do
+  @spec send_message(FlowContext.t(), Action.t(), [String.t()]) ::
+          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
+  def send_message(context, %Action{templating: nil, text: _text} = action, message_stream) do
     # get the test translation if needed
     text = Localization.get_translation(context, action)
 
@@ -32,7 +32,7 @@ defmodule Glific.Flows.ContactAction do
 
     {type, media_id} = get_media_from_attachment(action.attachments, action.text)
 
-    {:ok, _message} =
+    result =
       Messages.create_and_send_message(%{
         uuid: action.uuid,
         body: body,
@@ -42,15 +42,34 @@ defmodule Glific.Flows.ContactAction do
         send_at: DateTime.add(DateTime.utc_now(), context.delay)
       })
 
-    # increment the delay
-    %{context | delay: context.delay + @min_delay}
+    case result do
+      # increment the delay
+      {:ok, _message} ->
+        {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
+
+      # inject an exit message for the downstream flow object to process
+      {:error, :loop_detected} ->
+        {:ok, %{context | delay: context.delay + @min_delay}, ["Exit" | message_stream]}
+
+      # for now we just ignore this error, and stay put
+      # we might want to reset the context
+      {:error, :loop_infinite} ->
+        {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
+
+      _ ->
+        {:error, "Could not send message. Aborting for now"}
+    end
   end
 
   @doc """
   Given a shortcode and a context, send the right session template message
   to the contact
   """
-  def send_message(context, %Action{templating: templating, attachments: attachments}) do
+  def send_message(
+        context,
+        %Action{templating: templating, attachments: attachments},
+        message_stream
+      ) do
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
     session_template = Messages.parse_template_vars(templating.template, vars)
@@ -71,7 +90,7 @@ defmodule Glific.Flows.ContactAction do
       )
 
     # increment the delay
-    %{context | delay: context.delay + @min_delay}
+    {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
   end
 
   @spec get_media_from_attachment(map(), any()) :: {atom(), nil | integer()}
@@ -82,9 +101,11 @@ defmodule Glific.Flows.ContactAction do
     [type | _tail] = Map.keys(attachment)
     url = attachment[type]
 
+    type = String.to_existing_atom(type)
+
     {:ok, message_media} =
       %{
-        type: String.to_existing_atom(type),
+        type: type,
         url: url,
         source_url: url,
         thumbnail: url,
@@ -92,7 +113,7 @@ defmodule Glific.Flows.ContactAction do
       }
       |> Messages.create_message_media()
 
-    {String.to_existing_atom(type), message_media.id}
+    {type, message_media.id}
   end
 
   @doc """

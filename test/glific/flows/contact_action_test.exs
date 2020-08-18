@@ -40,7 +40,7 @@ defmodule Glific.Flows.ContactActionTest do
 
     action = %Action{text: "This is test message"}
 
-    ContactAction.send_message(context, action)
+    ContactAction.send_message(context, action, [])
 
     message =
       Message
@@ -69,7 +69,7 @@ defmodule Glific.Flows.ContactActionTest do
 
     action = %Action{templating: templating}
 
-    ContactAction.send_message(context, action)
+    ContactAction.send_message(context, action, [])
 
     message =
       Message

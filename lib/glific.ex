@@ -63,4 +63,11 @@ defmodule Glific do
       |> String.replace(~r/[\p{P}\p{S}\p{Z}\p{C}]+/u, "")
       |> String.downcase()
       |> String.trim()
+
+  @doc """
+  See if the current time is within the past time units
+  """
+  @spec in_past_time(DateTime.t(), atom(), integer) :: boolean
+  def in_past_time(time, units \\ :hours, back \\ 24),
+    do: Timex.diff(DateTime.utc_now(), time, units) < back
 end

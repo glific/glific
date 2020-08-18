@@ -1,4 +1,43 @@
 {
+  "uuid" : "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7",
+  "_ui" : {
+    "nodes" : {
+      "5a60660e-30ca-4e95-901d-2f1f77bea840" : {
+        "position" : {
+          "top" : 0,
+          "left" : 200
+        },
+        "type" : "execute_actions"
+      }
+    }
+  },
+  "spec_version" : "13.1.0",
+  "expire_after_minutes" : 10080,
+  "nodes" : [
+    {
+      "uuid" : "5a60660e-30ca-4e95-901d-2f1f77bea840",
+      "actions" : [
+        {
+          "text" : "We are currently not in the office to respond to this message. Our working hours are typically Monday - Friday from 9:00 am - 6:00 pm. We will get back to you as soon as possible.\n\nAs a reminder, we can only send you a message within 24 hours. If you have not heard from us by the next working day, please send us the message again. This will enable us to respond. \n\nYou can use our automated help system to get more information and do our activities.",
+          "uuid" : "740eff58-5d34-4bd5-b7ff-ae3eef46b006",
+          "type" : "send_msg",
+          "quick_replies" : [
+
+          ],
+          "attachments" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : null,
+          "uuid" : "246ce1a1-5a06-4c8d-9985-2b189b992e16"
+        }
+      ]
+    }
+  ],
+  "language" : "base",
   "localization" : {
     "hi" : {
       "740eff58-5d34-4bd5-b7ff-ae3eef46b006" : {
@@ -8,116 +47,9 @@
       }
     }
   },
-  "language" : "base",
   "vars" : [
     "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7"
   ],
   "type" : "messaging",
-  "expire_after_minutes" : 10080,
-  "uuid" : "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7",
-  "spec_version" : "13.1.0",
-  "name" : "Out Of Office",
-  "_ui" : {
-    "nodes" : {
-      "5a60660e-30ca-4e95-901d-2f1f77bea840" : {
-        "type" : "execute_actions",
-        "position" : {
-          "left" : 200,
-          "top" : 0
-        }
-      },
-      "ee977be2-8e4c-4e5b-be2b-be5467f00369" : {
-        "config" : {
-
-        },
-        "position" : {
-          "left" : 580,
-          "top" : 340
-        },
-        "type" : "split_by_subflow"
-      }
-    }
-  },
-  "nodes" : [
-    {
-      "exits" : [
-        {
-          "destination_uuid" : "ee977be2-8e4c-4e5b-be2b-be5467f00369",
-          "uuid" : "246ce1a1-5a06-4c8d-9985-2b189b992e16"
-        }
-      ],
-      "uuid" : "5a60660e-30ca-4e95-901d-2f1f77bea840",
-      "actions" : [
-        {
-          "quick_replies" : [
-
-          ],
-          "uuid" : "740eff58-5d34-4bd5-b7ff-ae3eef46b006",
-          "text" : "We are currently not in the office to respond to this message. Our working hours are typically Monday - Friday from 9:00 am - 6:00 pm. We will get back to you as soon as possible.\n\nAs a reminder, we can only send you a message within 24 hours. If you have not heard from us by the next working day, please send us the message again. This will enable us to respond. \n\nYou can use our automated help system to get more information and do our activities.",
-          "type" : "send_msg",
-          "attachments" : [
-
-          ]
-        }
-      ]
-    },
-    {
-      "router" : {
-        "type" : "switch",
-        "default_category_uuid" : "90045e53-8b60-4783-974e-c3c9251dd72f",
-        "cases" : [
-          {
-            "category_uuid" : "97abf4d4-da29-4a04-a2f6-d62c778a21b8",
-            "type" : "has_only_text",
-            "arguments" : [
-              "completed"
-            ],
-            "uuid" : "7320a46f-7ed6-4c35-a3a4-f654e0f1b766"
-          },
-          {
-            "category_uuid" : "90045e53-8b60-4783-974e-c3c9251dd72f",
-            "type" : "has_only_text",
-            "arguments" : [
-              "expired"
-            ],
-            "uuid" : "479831ec-774e-42c7-98bd-e6465feeacba"
-          }
-        ],
-        "operand" : "@child.run.status",
-        "categories" : [
-          {
-            "name" : "Complete",
-            "uuid" : "97abf4d4-da29-4a04-a2f6-d62c778a21b8",
-            "exit_uuid" : "0b8cfe3e-4197-4b9a-8e19-edb571c0e7da"
-          },
-          {
-            "name" : "Expired",
-            "uuid" : "90045e53-8b60-4783-974e-c3c9251dd72f",
-            "exit_uuid" : "7466e17c-6f0b-48b3-9e44-e1df453e08ea"
-          }
-        ]
-      },
-      "exits" : [
-        {
-          "destination_uuid" : null,
-          "uuid" : "0b8cfe3e-4197-4b9a-8e19-edb571c0e7da"
-        },
-        {
-          "destination_uuid" : null,
-          "uuid" : "7466e17c-6f0b-48b3-9e44-e1df453e08ea"
-        }
-      ],
-      "actions" : [
-        {
-          "flow" : {
-            "uuid" : "3fa22108-f464-41e5-81d9-d8a298854429",
-            "name" : "Help Workflow"
-          },
-          "type" : "enter_flow",
-          "uuid" : "69bce51d-d3a1-4eaf-a0dd-08efb7729d36"
-        }
-      ],
-      "uuid" : "ee977be2-8e4c-4e5b-be2b-be5467f00369"
-    }
-  ]
+  "name" : "Out of Office Workflow"
 }
