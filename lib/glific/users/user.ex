@@ -36,10 +36,11 @@ defmodule Glific.Users.User do
   """
   def get_roles_list do
     @user_roles
-    |> Enum.map(fn role ->
+    |> Enum.with_index(1)
+    |> Enum.map(fn {role, id} ->
       %{
-        id: role,
-        label: String.capitalize(role)
+        id: id,
+        label: role
       }
     end)
   end

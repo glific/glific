@@ -36,9 +36,9 @@ defmodule GlificWeb.Schema.UserTest do
     roles = get_in(query_data, [:data, "roles"])
     assert length(roles) >= 4
 
-    res = roles |> get_in([Access.all(), "id"]) |> Enum.find(fn x -> x == "admin" end)
+    res = roles |> Enum.find(fn v -> v["label"] == "admin" end)
 
-    assert res == "admin"
+    assert res["label"] == "admin"
   end
 
   test "users returns list of users" do

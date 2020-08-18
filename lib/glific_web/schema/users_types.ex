@@ -26,7 +26,7 @@ defmodule GlificWeb.Schema.UserTypes do
   end
 
   object :role do
-    field :id, :string
+    field :id, :id
     field :label, :string
   end
 

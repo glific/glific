@@ -18,20 +18,20 @@ query {
   "data": {
     "roles": [
       {
-        "id": "none",
-        "label": "None"
+        "id": 1,
+        "label": "none"
       },
       {
-        "id": "staff",
-        "label": "Staff"
+        "id": 2,
+        "label": "staff"
       },
       {
-        "id": "manager",
-        "label": "Manager"
+        "id": 3,,
+        "label": "manager"
       },
       {
-        "id": "admin",
-        "label": "Admin"
+        "id": 4,
+        "label": "admin"
       }
     ]
   }
@@ -563,7 +563,7 @@ Type | Description
 <tbody>
 <tr>
 <td colspan="2" valign="top"><strong>id</strong></td>
-<td valign="top"><a href="#string">String</a></td>
+<td valign="top"><a href="#ID">ID</a></td>
 <td></td>
 </tr>
 <tr>
