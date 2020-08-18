@@ -245,8 +245,6 @@ defmodule Glific.Messages do
     })
   end
 
-  defp update_message_attrs(attrs), do: attrs
-
   @doc """
   Create and send verification message
   Using session template of shortcode 'verification'
