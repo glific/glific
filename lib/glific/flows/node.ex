@@ -13,7 +13,6 @@ defmodule Glific.Flows.Node do
     Exit,
     Flow,
     FlowContext,
-    FlowCount,
     Router
   }
 
