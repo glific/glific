@@ -90,14 +90,12 @@ defmodule Glific.Flows.Node do
   @spec execute(Node.t(), FlowContext.t(), [String.t()]) ::
           {:ok | :wait, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(node, context, message_stream) do
-    # if node has uuid and flow_uuid update the flow count
-    if !is_nil(node.uuid) && !is_nil(node.flow_uuid) do
-      FlowCount.upsert_flow_count(%{
-        uuid: node.uuid,
-        flow_uuid: node.flow_uuid,
-        type: "node"
-      })
-    end
+    # update the flow count
+    FlowCount.upsert_flow_count(%{
+      uuid: node.uuid,
+      flow_uuid: node.flow_uuid,
+      type: "node"
+    })
 
     # if node has an action, execute the first action
     cond do

@@ -53,11 +53,13 @@ defmodule Glific.Flows.FlowCount do
   end
 
   @doc """
-  Update count
+  Upsert flow count
   """
   @spec upsert_flow_count(map()) :: {:ok, FlowCount.t()}
-  def upsert_flow_count(attrs) do
-    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: attrs.flow_uuid})
+  def upsert_flow_count(%{flow_uuid: nil} = _attrs), do: :error
+
+  def upsert_flow_count(%{flow_uuid: flow_uuid} = attrs) do
+    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
 
     attrs = Map.merge(attrs, %{flow_id: flow.id})
 
