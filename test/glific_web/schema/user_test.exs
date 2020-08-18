@@ -21,12 +21,25 @@ defmodule GlificWeb.Schema.UserTest do
     :ok
   end
 
+  load_gql(:list_roles, GlificWeb.Schema, "assets/gql/users/list_roles.gql")
   load_gql(:count, GlificWeb.Schema, "assets/gql/users/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/users/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/users/by_id.gql")
   load_gql(:update_current, GlificWeb.Schema, "assets/gql/users/update_current.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/users/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/users/delete.gql")
+
+  test "roles returns list of roles" do
+    result = query_gql_by(:list_roles)
+    assert {:ok, query_data} = result
+
+    roles = get_in(query_data, [:data, "roles"])
+    assert length(roles) >= 4
+
+    res = roles |> get_in([Access.all(), "id"]) |> Enum.find(fn x -> x == "admin" end)
+
+    assert res == "admin"
+  end
 
   test "users returns list of users" do
     result = query_gql_by(:list)
