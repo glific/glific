@@ -21,12 +21,25 @@ defmodule GlificWeb.Schema.UserTest do
     :ok
   end
 
+  load_gql(:list_roles, GlificWeb.Schema, "assets/gql/users/list_roles.gql")
   load_gql(:count, GlificWeb.Schema, "assets/gql/users/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/users/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/users/by_id.gql")
   load_gql(:update_current, GlificWeb.Schema, "assets/gql/users/update_current.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/users/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/users/delete.gql")
+
+  test "roles returns list of roles" do
+    result = query_gql_by(:list_roles)
+    assert {:ok, query_data} = result
+
+    roles = get_in(query_data, [:data, "roles"])
+    assert length(roles) >= 4
+
+    res = roles |> Enum.find(fn v -> v["label"] == "admin" end)
+
+    assert res["label"] == "admin"
+  end
 
   test "users returns list of users" do
     result = query_gql_by(:list)
@@ -195,8 +208,11 @@ defmodule GlificWeb.Schema.UserTest do
       query_gql_by(:update,
         variables: %{
           "id" => user.id,
-          "input" => %{"name" => name, "roles" => roles},
-          "groupIds" => [group.id]
+          "input" => %{
+            "name" => name,
+            "roles" => roles,
+            "groupIds" => [group.id]
+          }
         }
       )
 
@@ -215,8 +231,11 @@ defmodule GlificWeb.Schema.UserTest do
       query_gql_by(:update,
         variables: %{
           "id" => user.id,
-          "input" => %{"name" => name, "roles" => roles},
-          "groupIds" => []
+          "input" => %{
+            "name" => name,
+            "roles" => roles,
+            "groupIds" => []
+          }
         }
       )
 
@@ -232,8 +251,11 @@ defmodule GlificWeb.Schema.UserTest do
       query_gql_by(:update,
         variables: %{
           "id" => user.id,
-          "input" => %{"name" => name, "roles" => roles},
-          "groupIds" => [group_2.id]
+          "input" => %{
+            "name" => name,
+            "roles" => roles,
+            "groupIds" => [group_2.id]
+          }
         }
       )
 
