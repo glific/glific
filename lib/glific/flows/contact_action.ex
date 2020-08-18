@@ -19,9 +19,9 @@ defmodule Glific.Flows.ContactAction do
   @doc """
   If the template is not define for the message send text messages
   """
-  @spec send_message(FlowContext.t(), Action.t()) :: FlowContext.t()
-  def send_message(context, %Action{templating: templating, text: _text} = action)
-      when is_nil(templating) do
+  @spec send_message(FlowContext.t(), Action.t(), [String.t()])
+  :: {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
+  def send_message(context, %Action{templating: nil, text: _text} = action, message_stream) do
     # get the test translation if needed
     text = Localization.get_translation(context, action)
 
@@ -43,21 +43,24 @@ defmodule Glific.Flows.ContactAction do
       })
 
     case result do
-      {:ok, _message} -> %{context | delay: context.delay + @min_delay}
+      # increment the delay
+      {:ok, _message} ->
+        {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
+
       # we need to do something here to progress the flow
       # maybe set something in the context for the downstream node to detect and move on
-      {:error, :loop_detected} -> %{context | delay: context.delay + @min_delay}
-      _ -> raise FunctionClauseError, message: "Could not send message. Aborting for now"
-    end
+      {:error, :loop_detected} ->
+        {:ok, %{context | delay: context.delay + @min_delay}, ["Exit" | message_stream]}
 
-    # increment the delay
+      _ -> {:error, "Could not send message. Aborting for now"}
+    end
   end
 
   @doc """
   Given a shortcode and a context, send the right session template message
   to the contact
   """
-  def send_message(context, %Action{templating: templating, attachments: attachments}) do
+  def send_message(context, %Action{templating: templating, attachments: attachments}, message_stream) do
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
     session_template = Messages.parse_template_vars(templating.template, vars)
@@ -78,7 +81,7 @@ defmodule Glific.Flows.ContactAction do
       )
 
     # increment the delay
-    %{context | delay: context.delay + @min_delay}
+    {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
   end
 
   @spec get_media_from_attachment(map(), any()) :: {atom(), nil | integer()}
