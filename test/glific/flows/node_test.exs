@@ -18,6 +18,7 @@ defmodule Glific.Flows.NodeTest do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
+    SeedsDev.seed_flows()
     :ok
   end
 
@@ -88,10 +89,12 @@ defmodule Glific.Flows.NodeTest do
   end
 
   test "execute a node having actions and without exit" do
-    flow = %Flow{uuid: "Flow UUID 1"}
+    [flow | _tail] = Glific.Flows.list_flows()
+    node_uuid_1 = Ecto.UUID.generate()
+    exit_uuid_1 = Ecto.UUID.generate()
 
     json = %{
-      "uuid" => "UUID 1",
+      "uuid" => node_uuid_1,
       "actions" => [
         %{
           "uuid" => "UUID Act 1",
@@ -105,7 +108,7 @@ defmodule Glific.Flows.NodeTest do
         }
       ],
       "exits" => [
-        %{"uuid" => "UUID Exit 1", "destination_uuid" => nil}
+        %{"uuid" => exit_uuid_1, "destination_uuid" => nil}
       ]
     }
 
@@ -145,10 +148,11 @@ defmodule Glific.Flows.NodeTest do
   end
 
   test "execute a node having router without cases should fail" do
-    flow = %Flow{uuid: "Flow UUID 1"}
+    [flow | _tail] = Glific.Flows.list_flows()
+    node_uuid_1 = Ecto.UUID.generate()
 
     json = %{
-      "uuid" => "UUID 1",
+      "uuid" => node_uuid_1,
       "actions" => [
         %{
           "uuid" => "UUID Act 1",

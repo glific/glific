@@ -211,9 +211,9 @@ defmodule Glific.Messages do
       |> Map.merge(%{
         sender_id: Partners.organization_contact_id(),
         flow: :outbound,
-        type: :text,
-        body: parse_message_body(attrs)
+        type: :text
       })
+      |> update_message_attrs()
       |> create_message()
 
     Communications.Message.send_message(message)
@@ -232,6 +232,17 @@ defmodule Glific.Messages do
     }
 
     MessageVarParser.parse(attrs.body, message_vars)
+  end
+
+  @spec update_message_attrs(map()) :: map()
+  defp update_message_attrs(%{type: :text} = attrs) do
+    {:ok, msg_uuid} = Ecto.UUID.cast(:crypto.hash(:md5, attrs.body))
+
+    attrs
+    |> Map.merge(%{
+      uuid: attrs[:uuid] || msg_uuid,
+      body: parse_message_body(attrs)
+    })
   end
 
   @doc """

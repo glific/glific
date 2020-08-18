@@ -9,7 +9,9 @@ defmodule Glific.Flows.Exit do
   alias Glific.{
     Flows,
     Flows.FlowContext,
-    Flows.Node
+    Flows.FlowCount,
+    Flows.Node,
+    Repo
   }
 
   @required_fields [:uuid]
@@ -54,6 +56,16 @@ defmodule Glific.Flows.Exit do
   @spec execute(Exit.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
   def execute(exit, context, message_stream) do
+    context = Repo.preload(context, :flow)
+
+    # update the flow count
+    FlowCount.upsert_flow_count(%{
+      uuid: exit.uuid,
+      destination_uuid: exit.destination_node_uuid,
+      flow_uuid: context.flow.uuid,
+      type: "exit"
+    })
+
     if is_nil(exit.destination_node_uuid) do
       FlowContext.reset_context(context)
       {:ok, nil, []}
