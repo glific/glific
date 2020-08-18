@@ -90,12 +90,6 @@ defmodule Glific.Flows.Node do
   @spec execute(Node.t(), FlowContext.t(), [String.t()]) ::
           {:ok | :wait, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(node, context, message_stream) do
-    FlowCount.upsert_flow_count(%{
-      uuid: node.uuid,
-      flow_uuid: node.flow_uuid,
-      type: "node"
-    })
-
     # if node has an action, execute the first action
     cond do
       # if both are non-empty, it means that we have either a
