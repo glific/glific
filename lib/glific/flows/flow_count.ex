@@ -33,7 +33,7 @@ defmodule Glific.Flows.FlowCount do
 
   schema "flow_counts" do
     field :uuid, Ecto.UUID
-    belongs_to :flow, Flow, foreign_key: :flow_uuid
+    belongs_to :flow, Flow, foreign_key: :flow_uuid, references: :uuid
     field :type, :string
     field :count, :integer
     field :destination_uuid, Ecto.UUID
