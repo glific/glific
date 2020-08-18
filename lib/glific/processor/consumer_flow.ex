@@ -144,7 +144,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
   # Process one context at a time
   @spec wakeup(FlowContext.t(), map()) ::
-  {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
+          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
   defp wakeup(context, _state) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context

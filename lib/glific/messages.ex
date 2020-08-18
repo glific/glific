@@ -204,7 +204,8 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
+  @spec create_and_send_message(boolean(), map()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
   defp create_and_send_message(true = _is_valid_contact, attrs) do
     {:ok, message} =
       attrs
@@ -216,9 +217,12 @@ defmodule Glific.Messages do
       })
       |> create_message()
 
-    if is_message_loop?(message),
-      do: {:error, :loop_detected},
-      else: Communications.Message.send_message(message)
+    critical = is_message_loop?(message)
+    cond do
+      critical > 60 -> {:error, :loop_infinite}
+      critical > 0 -> {:error, :loop_detected}
+      true -> Communications.Message.send_message(message)
+    end
   end
 
   @doc false
@@ -491,25 +495,32 @@ defmodule Glific.Messages do
   Go back in history and see the past few messages sent. ensure we are not sending the same
   message a few too many times
   """
-  @spec is_message_loop?(Message.t(), integer, integer) :: boolean
-  def is_message_loop?(message, past_messages \\ 7, past_count \\ 3)
+  @spec is_message_loop?(Message.t(), integer, integer, integer) :: integer
+  def is_message_loop?(message, past_messages \\ 7, past_count \\ 3, go_back \\ 1 * 60)
 
-  def is_message_loop?(%{uuid: uuid, type: :text} = message, past_messages, past_count)
+  def is_message_loop?(%{uuid: uuid, type: :text} = message, past_messages, past_count, go_back)
       when not is_nil(uuid) do
+    since = DateTime.add(DateTime.utc_now(), -1 * go_back * 60)
+
     count =
       Message
       |> where([m], m.contact_id == ^message.contact_id and m.id != ^message.id)
-      |> where([m], m.message_number <= ^past_messages)
+      # lets assume for every outbound there is an inbound reply which might not be valid
+      # this makes the query a bit efficient and approximately right
+      |> where([m], m.message_number <= ^past_messages * 2)
+      # lets do it only for the last GO_BACK hours (we'll keep it short to begin with)
+      |> where([m], m.inserted_at >= ^since)
       |> where([m], m.uuid == ^uuid and m.flow == "outbound")
       |> where([m], m.type == "text" and m.status in ["enqueued", "delivered"])
       |> Repo.aggregate(:count)
 
+    # note that this allows count to be greater than 100 which is OK!
     if count >= past_count,
-      do: true,
-      else: false
+      do: count * 100 / past_messages,
+      else: 0
   end
 
-  def is_message_loop?(_message, _past, _repeat), do: false
+  def is_message_loop?(_message, _past, _repeat, _go_back), do: 0
 
   defp do_list_conversations(query, args, false = _count) do
     query

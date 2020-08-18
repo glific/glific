@@ -163,7 +163,7 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, message_stream) do
-            ContactAction.send_message(context, action, message_stream)
+    ContactAction.send_message(context, action, message_stream)
   end
 
   def execute(%{type: "set_contact_language"} = action, context, message_stream) do

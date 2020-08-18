@@ -19,8 +19,8 @@ defmodule Glific.Flows.ContactAction do
   @doc """
   If the template is not define for the message send text messages
   """
-  @spec send_message(FlowContext.t(), Action.t(), [String.t()])
-  :: {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
+  @spec send_message(FlowContext.t(), Action.t(), [String.t()]) ::
+          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def send_message(context, %Action{templating: nil, text: _text} = action, message_stream) do
     # get the test translation if needed
     text = Localization.get_translation(context, action)
@@ -47,12 +47,17 @@ defmodule Glific.Flows.ContactAction do
       {:ok, _message} ->
         {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
 
-      # we need to do something here to progress the flow
-      # maybe set something in the context for the downstream node to detect and move on
+      # inject an exit message for the downstream flow object to process
       {:error, :loop_detected} ->
         {:ok, %{context | delay: context.delay + @min_delay}, ["Exit" | message_stream]}
 
-      _ -> {:error, "Could not send message. Aborting for now"}
+      # for now we just ignore this error, and stay put
+      # we might want to reset the context
+      {:error, :loop_infinite} ->
+        {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
+
+      _ ->
+        {:error, "Could not send message. Aborting for now"}
     end
   end
 
@@ -60,7 +65,11 @@ defmodule Glific.Flows.ContactAction do
   Given a shortcode and a context, send the right session template message
   to the contact
   """
-  def send_message(context, %Action{templating: templating, attachments: attachments}, message_stream) do
+  def send_message(
+        context,
+        %Action{templating: templating, attachments: attachments},
+        message_stream
+      ) do
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
     session_template = Messages.parse_template_vars(templating.template, vars)
