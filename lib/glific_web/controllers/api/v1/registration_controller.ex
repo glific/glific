@@ -99,7 +99,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
     with true <- can_send_otp_to_phone?(phone),
          true <- send_otp_allowed?(phone, registration),
-         {:ok, _otp} <- PasswordlessAuth.create_and_send_verification_code(phone) do
+         {:ok, _otp} <- create_and_send_verification_code(phone) do
       json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
     else
       _ ->
@@ -107,6 +107,16 @@ defmodule GlificWeb.API.V1.RegistrationController do
         |> put_status(400)
         |> json(%{error: %{status: 400, message: "Cannot send the otp to #{phone}"}})
     end
+  end
+
+  @doc """
+  Function for generating verification code and sending otp verification message
+  """
+  @spec create_and_send_verification_code(String.t()) :: {:ok, String.t()}
+  def create_and_send_verification_code(phone) do
+    code = PasswordlessAuth.generate_code(phone)
+    Glific.Messages.create_and_send_otp_verification_message(phone, code)
+    {:ok, code}
   end
 
   @spec can_send_otp_to_phone?(String.t()) :: boolean

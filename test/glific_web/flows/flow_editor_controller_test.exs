@@ -103,7 +103,9 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
 
     test "activity", %{conn: conn} do
       conn = get(conn, "/flow-editor/activity", %{})
-      assert json_response(conn, 200) == %{"nodes" => %{}, "segments" => %{}}
+      response = json_response(conn, 200)
+      assert Map.has_key?(response, "nodes")
+      assert Map.has_key?(response, "segments")
     end
 
     test "get all the flows", %{conn: conn} do

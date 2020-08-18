@@ -5,7 +5,12 @@ defmodule Glific.Groups.Group do
 
   use Ecto.Schema
   import Ecto.Changeset
-  alias Glific.Groups.Group
+
+  alias Glific.{
+    Contacts.Contact,
+    Groups.Group,
+    Users.User
+  }
 
   @required_fields [:label]
   @optional_fields [:is_restricted, :description]
@@ -24,6 +29,9 @@ defmodule Glific.Groups.Group do
     field :label, :string
     field :description, :string
     field :is_restricted, :boolean, default: false
+
+    many_to_many :contacts, Contact, join_through: "contacts_groups", on_replace: :delete
+    many_to_many :users, User, join_through: "users_groups", on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end
