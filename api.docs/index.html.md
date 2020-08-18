@@ -24,7 +24,6 @@ includes:
   - messages_media
   - messages_tags
   - session_templates
-  - conversations
   - groups
   - contact_group
   - message_group
