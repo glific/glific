@@ -38,9 +38,9 @@ defmodule Glific do
   )
   def validate_shortcode(%Ecto.Changeset{} = changeset) do
     shortcode = Map.get(changeset.changes, :shortcode)
-    valid_shortcode = Glific.string_clean(shortcode)
+    valid_shortcode = string_clean(shortcode)
 
-    if string_clean(shortcode) == shortcode,
+    if valid_shortcode == shortcode,
       do: changeset,
       else:
         add_error(
