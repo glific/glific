@@ -8,10 +8,14 @@
 use Mix.Config
 
 config :glific,
-  ecto_repos: [Glific.Repo],
+  ecto_repos: [Glific.Repo]
+
+# Settings for gupshup, this should actually go in Provider database table or something
+# similar
+config :glific,
   provider: Glific.Providers.Gupshup.Message,
   provider_worker: Glific.Providers.Gupshup.Worker,
-  provider_id: "gupshup-provider-23",
+  provider_id: "gupshup",
   provider_limit: 10
 
 # Configures the endpoint
@@ -99,6 +103,10 @@ config :fun_with_flags, :cache_bust_notifications,
   enabled: true,
   adapter: FunWithFlags.Notifications.PhoenixPubSub,
   client: Glific.PubSub
+
+# import the dialogflow config, splitting it up into a seperate file
+# since we have some code in there to handle credentials
+import_config "dialogflow.exs"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
