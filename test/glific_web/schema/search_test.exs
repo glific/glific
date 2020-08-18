@@ -128,7 +128,7 @@ defmodule GlificWeb.Schema.SearchTest do
       query_gql_by(:update,
         variables: %{
           "id" => saved_search.id,
-          "input" => %{"label" => saved_search2.label}
+          "input" => %{"shortcode" => saved_search2.shortcode}
         }
       )
 

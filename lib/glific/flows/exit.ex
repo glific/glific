@@ -12,7 +12,7 @@ defmodule Glific.Flows.Exit do
     Flows.Node
   }
 
-  @required_fields [:uuid, :destination_uuid]
+  @required_fields [:uuid]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
