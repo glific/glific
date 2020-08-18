@@ -26,7 +26,7 @@ query {
         "label": "staff"
       },
       {
-        "id": 3,,
+        "id": 3,
         "label": "manager"
       },
       {
