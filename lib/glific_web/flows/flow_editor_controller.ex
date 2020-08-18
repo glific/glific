@@ -132,7 +132,6 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc """
     We are not using this for now but this is required for flow editor config.
   """
-
   @spec resthooks(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def resthooks(conn, _params) do
     resthooks = %{results: []}
@@ -215,9 +214,38 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec activity(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def activity(conn, _params) do
+    # Activity Format
+    # activity = %{
+    #   nodes: %{
+    #     "NODE_UUID" =>  COUNT,
+    #     "NODE_2_UUID" => COUNT
+    #   },
+    #   segments: %{
+    #     "EXIT.uuid:EXIT.destination_node_uuid" => 10
+    #   }
+    # }
+
+    ## Hardcoded data to see how the activity count works for help flow.
     activity = %{
-      nodes: %{},
-      segments: %{}
+      nodes: %{
+        "3ea030e9-41c4-4c6c-8880-68bc2828d67b" => 10,
+        "6f68083e-2340-449e-9fca-ac57c6835876" => 20
+      },
+      segments: %{
+        "77cd0e42-6a13-4122-a5fc-84b2e2daa1d4:85e897d2-49e4-42b7-8574-8dc2aee97121" => 10
+      },
+      recentMessages: %{
+        "77cd0e42-6a13-4122-a5fc-84b2e2daa1d4:85e897d2-49e4-42b7-8574-8dc2aee97121" => [
+          %{
+            "sent" => "2020-08-15",
+            "text" => "Hii, How are you update."
+          },
+          %{
+            "sent" => "2020-08-17",
+            "text" => "Hii, What is this."
+          }
+        ]
+      }
     }
 
     json(conn, activity)
