@@ -62,8 +62,9 @@ defmodule Glific.Flows.Exit do
     FlowCount.upsert_flow_count(%{
       uuid: exit.uuid,
       destination_uuid: exit.destination_node_uuid,
-      flow_uuid: context.flow.uuid,
-      type: "exit"
+      flow_uuid: context.flow_uuid,
+      type: "exit",
+      recent_message: get_recent_messages(message_stream)
     })
 
     if is_nil(exit.destination_node_uuid) do
@@ -79,4 +80,10 @@ defmodule Glific.Flows.Exit do
       )
     end
   end
+
+  @spec get_recent_messages(list()) :: map()
+  defp get_recent_messages([]), do: %{}
+
+  defp get_recent_messages(message_stream),
+    do: %{text: hd(message_stream), sent: DateTime.utc_now()}
 end

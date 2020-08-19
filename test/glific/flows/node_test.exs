@@ -97,7 +97,7 @@ defmodule Glific.Flows.NodeTest do
       "uuid" => node_uuid_1,
       "actions" => [
         %{
-          "uuid" => "UUID Act 1",
+          "uuid" => Ecto.UUID.generate(),
           "type" => "set_contact_language",
           "language" => "English (United States)"
         },
