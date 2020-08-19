@@ -7,6 +7,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   alias Glific.Flows
   alias Glific.Flows.Flow
+  alias Glific.Flows.FlowCount
 
   @doc false
   @spec globals(Plug.Conn.t(), map) :: Plug.Conn.t()
@@ -213,41 +214,36 @@ defmodule GlificWeb.Flows.FlowEditorController do
     This is used to checking if the connection between frontend and backend is established or not.
   """
   @spec activity(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
-  def activity(conn, _params) do
-    # Activity Format
-    # activity = %{
-    #   nodes: %{
-    #     "NODE_UUID" =>  COUNT,
-    #     "NODE_2_UUID" => COUNT
-    #   },
-    #   segments: %{
-    #     "EXIT.uuid:EXIT.destination_node_uuid" => 10
-    #   }
-    # }
+  def activity(conn, params) do
+    {nodes, segments, recent_messages} =
+      FlowCount.get_flow_count_list(params["flow"])
+      |> Enum.reduce(
+        {%{}, %{}, %{}},
+        fn fc, acc ->
+          {nodes, segments, recent_messages} = acc
 
-    ## Hardcoded data to see how the activity count works for help flow.
-    activity = %{
-      nodes: %{
-        "3ea030e9-41c4-4c6c-8880-68bc2828d67b" => 10,
-        "6f68083e-2340-449e-9fca-ac57c6835876" => 20
-      },
-      segments: %{
-        "77cd0e42-6a13-4122-a5fc-84b2e2daa1d4:85e897d2-49e4-42b7-8574-8dc2aee97121" => 10
-      },
-      recentMessages: %{
-        "77cd0e42-6a13-4122-a5fc-84b2e2daa1d4:85e897d2-49e4-42b7-8574-8dc2aee97121" => [
-          %{
-            "sent" => "2020-08-15",
-            "text" => "Hii, How are you update."
-          },
-          %{
-            "sent" => "2020-08-17",
-            "text" => "Hii, What is this."
-          }
-        ]
-      }
-    }
+          case fc.type do
+            "node" ->
+              {Map.put(nodes, fc.uuid, fc.count), segments, recent_messages}
 
+            "exit" ->
+              key = "#{fc.uuid}:#{fc.destination_uuid}"
+
+              {
+                nodes,
+                Map.put(segments, key, fc.count),
+                Map.put(recent_messages, key, [
+                  %{text: "The recent messages will appear here soon.", sent: DateTime.utc_now()}
+                ])
+              }
+
+            _ ->
+              acc
+          end
+        end
+      )
+
+    activity = %{nodes: nodes, segments: segments, recentMessages: recent_messages}
     json(conn, activity)
   end
 
