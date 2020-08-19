@@ -227,15 +227,18 @@ defmodule GlificWeb.Flows.FlowEditorController do
               {Map.put(nodes, fc.uuid, fc.count), segments, recent_messages}
 
             "exit" ->
-              {nodes, Map.put(segments, "#{fc.uuid}:#{fc.destination_uuid}", fc.count),
-               fc.recent_messages}
+              key = "#{fc.uuid}:#{fc.destination_uuid}"
+              {
+                nodes,
+                Map.put(segments, key, fc.count),
+                Map.put(recent_messages, key, [%{text: "The recent messages will appear here soon.", sent: DateTime.utc_now()}])
+              }
 
             _ ->
               acc
           end
         end
       )
-
     activity = %{nodes: nodes, segments: segments, recentMessages: recent_messages}
     json(conn, activity)
   end

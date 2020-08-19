@@ -37,7 +37,7 @@ defmodule Glific.Caches do
   @spec get(String.t() | atom()) :: {:ok, any()} | {:ok, false}
   def get(key) do
     case Cachex.exists?(@cache_bucket, key) do
-      {:ok, true} -> Cachex.get(@cache_bucket, key),
+      {:ok, true} -> Cachex.get(@cache_bucket, key)
       _ -> {:ok, false}
     end
   end
