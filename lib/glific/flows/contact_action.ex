@@ -32,32 +32,32 @@ defmodule Glific.Flows.ContactAction do
 
     {type, media_id} = get_media_from_attachment(action.attachments, action.text)
 
-    result =
-      Messages.create_and_send_message(%{
-        uuid: action.uuid,
-        body: body,
-        type: type,
-        media_id: media_id,
-        receiver_id: context.contact_id,
-        send_at: DateTime.add(DateTime.utc_now(), context.delay)
-      })
+    attrs = %{
+      uuid: action.uuid,
+      body: body,
+      type: type,
+      media_id: media_id,
+      receiver_id: context.contact_id,
+      send_at: DateTime.add(DateTime.utc_now(), context.delay)
+    }
 
-    case result do
-      # increment the delay
-      {:ok, _message} ->
+    critical = Messages.is_message_loop?(attrs)
+
+    cond do
+      critical >= 50 ->
+        # :loop_infinite, for now we just ignore this error, and stay put
+        # we might want to reset the context
+        # this typically will happen when there is no Exit pathway out of the loop
+        {:ok, context, message_stream}
+
+      critical > 0 ->
+        # :loop_detected
+        {:ok, context, ["Exit Loop" | message_stream]}
+
+      true ->
+        {:ok, _message} = Messages.create_and_send_message(attrs)
+        # increment the delay
         {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
-
-      # inject an exit message for the downstream flow object to process
-      {:error, :loop_detected} ->
-        {:ok, %{context | delay: context.delay + @min_delay}, ["Exit" | message_stream]}
-
-      # for now we just ignore this error, and stay put
-      # we might want to reset the context
-      {:error, :loop_infinite} ->
-        {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
-
-      _ ->
-        {:error, "Could not send message. Aborting for now"}
     end
   end
 
