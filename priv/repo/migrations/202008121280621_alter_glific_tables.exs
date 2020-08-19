@@ -23,5 +23,12 @@ defmodule Glific.Repo.Migrations.AlterGlificTables do
       # List of keywords to trigger the flow
       add :keywords, {:array, :string}, default: []
     end
+
+    alter table(:flow_contexts) do
+      # Add list of recent messages for both inbound and outbound
+      # for outbound we store the uuid
+      add :recent_inbound, :jsonb, default: "[]"
+      add :recent_outbound, :jsonb, default: "[]"
+    end
   end
 end

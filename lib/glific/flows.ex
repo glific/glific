@@ -275,12 +275,11 @@ defmodule Glific.Flows do
 
   @doc """
   Check if a flow has been activated for a specific contact id in the
-  past N minutes
+  past N hours
   """
   @spec flow_activated(non_neg_integer, non_neg_integer, integer) :: boolean
-  def flow_activated(flow_id, contact_id, go_back \\ 24 * 60) do
-    # we are asking for time in minutes, we need to convert to seconds
-    since = DateTime.add(DateTime.utc_now(), -1 * go_back * 60)
+  def flow_activated(flow_id, contact_id, go_back \\ 24) do
+    since = Glific.go_back_time(go_back)
 
     results =
       FlowContext

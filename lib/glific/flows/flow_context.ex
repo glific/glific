@@ -25,8 +25,13 @@ defmodule Glific.Flows.FlowContext do
     :wakeup_at,
     :completed_at,
     :delay,
-    :uuid_map
+    :uuid_map,
+    :recent_inbound,
+    :recent_outbound
   ]
+
+  # we store one more than the number of messages specified here
+  @max_message_len 9
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -42,6 +47,8 @@ defmodule Glific.Flows.FlowContext do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           delay: integer,
+          recent_inbound: [map()] | [],
+          recent_outbound: [map()] | [],
           wakeup_at: :utc_datetime | nil,
           completed_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
@@ -61,6 +68,9 @@ defmodule Glific.Flows.FlowContext do
     field :completed_at, :utc_datetime, default: nil
 
     field :delay, :integer, default: 0, virtual: true
+
+    field :recent_inbound, {:array, :map}, default: []
+    field :recent_outbound, {:array, :map}, default: []
 
     belongs_to :contact, Contact
     belongs_to :flow, Flow
@@ -123,6 +133,23 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Update the recent_* state as we consume or send a message
+  """
+  @spec update_recent(FlowContext.t(), String.t(), atom()) :: FlowContext.t()
+  def update_recent(context, body, type) do
+    now = DateTime.utc_now()
+
+    # since we are storing in DB and want to avoid hassle of atom <-> string conversion
+    # we'll always use strings as keys
+    messages =
+      [%{"message" => body, "date" => now} | Map.get(context, type)]
+      |> Enum.slice(0..@max_message_len)
+
+    {:ok, context} = update_flow_context(context, %{type => messages})
+    context
+  end
+
+  @doc """
   Update the contact results state as we step through the flow
   """
   @spec update_results(FlowContext.t(), String.t(), String.t(), String.t()) :: FlowContext.t()
@@ -133,12 +160,7 @@ defmodule Glific.Flows.FlowContext do
         else: context.results
 
     results = Map.put(results, key, %{"input" => input, "category" => category})
-
-    {:ok, context} =
-      context
-      |> FlowContext.changeset(%{results: results})
-      |> Repo.update()
-
+    {:ok, context} = update_flow_context(context, %{results: results})
     context
   end
 
@@ -154,6 +176,33 @@ defmodule Glific.Flows.FlowContext do
         update_results(context, key <> "_" <> k, v, key)
       end
     )
+  end
+
+  @doc """
+  Count the number of times we have sent the same message in the recent past
+  """
+  @spec match_outbound(FlowContext.t(), Ecto.UUID.t(), integer) :: integer
+  def match_outbound(context, uuid, go_back \\ 6) do
+    since = Glific.go_back_time(go_back)
+
+    Enum.filter(
+      context.recent_outbound,
+      fn item ->
+        # sometime we get this from memory, and its not retrived from DB
+        # in which case its already in a valid date format
+        date =
+          if is_binary(item["date"]),
+            do:
+              (
+                {:ok, date, _} = DateTime.from_iso8601(item["date"])
+                date
+              ),
+            else: item["date"]
+
+        item["message"] == uuid and DateTime.compare(date, since) in [:gt, :eq]
+      end
+    )
+    |> length()
   end
 
   @doc """

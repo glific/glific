@@ -502,7 +502,7 @@ defmodule Glific.Messages do
   message a few too many times
   """
   @spec is_message_loop?(map(), integer, integer, integer) :: integer
-  def is_message_loop?(message, past_messages \\ 7, past_count \\ 3, go_back \\ 1 * 60)
+  def is_message_loop?(message, past_messages \\ 7, past_count \\ 3, go_back \\ 1)
 
   def is_message_loop?(
         %{uuid: uuid, type: :text, receiver_id: receiver_id} = _message,
@@ -511,7 +511,7 @@ defmodule Glific.Messages do
         go_back
       )
       when not is_nil(uuid) do
-    since = DateTime.add(DateTime.utc_now(), -1 * go_back * 60)
+    since = Glific.go_back_time(go_back)
 
     sub_query =
       Message

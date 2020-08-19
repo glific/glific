@@ -41,16 +41,22 @@ defmodule Glific.Flows.ContactAction do
       send_at: DateTime.add(DateTime.utc_now(), context.delay)
     }
 
-    critical = Messages.is_message_loop?(attrs)
+    # we'll mark that we came here and are planning to send it, even if
+    # we dont end up sending it. This allows us to detect and abort infinite loops
+    context = FlowContext.update_recent(context, action.uuid, :recent_outbound)
+
+    # count the number of times we sent the same message in the recent list
+    # in the past 6 hours
+    count = FlowContext.match_outbound(context, action.uuid)
 
     cond do
-      critical >= 50 ->
+      count >= 5 ->
         # :loop_infinite, for now we just ignore this error, and stay put
         # we might want to reset the context
         # this typically will happen when there is no Exit pathway out of the loop
         {:ok, context, message_stream}
 
-      critical > 0 ->
+      count >= 3 ->
         # :loop_detected
         {:ok, context, ["Exit Loop" | message_stream]}
 

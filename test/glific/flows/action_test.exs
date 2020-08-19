@@ -136,7 +136,15 @@ defmodule Glific.Flows.ActionTest do
     [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
 
     # preload contact
-    context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id
+    }
+
+    # preload contact
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, :contact)
 
     action = %Action{type: "send_msg", text: "This is a test message"}
 

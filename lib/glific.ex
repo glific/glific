@@ -70,4 +70,21 @@ defmodule Glific do
   @spec in_past_time(DateTime.t(), atom(), integer) :: boolean
   def in_past_time(time, units \\ :hours, back \\ 24),
     do: Timex.diff(DateTime.utc_now(), time, units) < back
+
+  @doc """
+  Return a time object where you go back x units. We introduce the notion
+  of hour and minute
+  """
+  @spec go_back_time(integer, DateTime.t(), atom()) :: DateTime.t()
+  def go_back_time(go_back, time \\ DateTime.utc_now(), unit \\ :hour) do
+    # convert hours to second
+    {unit, go_back} =
+      case unit do
+        :hour -> {:second, go_back * 60 * 60}
+        :minute -> {:second, go_back * 60}
+        _ -> {unit, go_back}
+      end
+
+    DateTime.add(time, -1 * go_back, unit)
+  end
 end
