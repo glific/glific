@@ -14,7 +14,7 @@ defmodule Glific.Flows.FlowCount do
     Repo
   }
 
-  @required_fields [:uuid, :flow_id, :type]
+  @required_fields [:uuid, :flow_id, :type, :flow_uuid]
   @optional_fields [:destination_uuid, :recent_messages]
 
   @type t() :: %__MODULE__{
@@ -22,6 +22,7 @@ defmodule Glific.Flows.FlowCount do
           id: non_neg_integer | nil,
           uuid: Ecto.UUID.t() | nil,
           flow_id: non_neg_integer | nil,
+          flow_uuid: Ecto.UUID.t() | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           type: String.t() | nil,
           count: integer() | nil,
@@ -33,6 +34,7 @@ defmodule Glific.Flows.FlowCount do
 
   schema "flow_counts" do
     field :uuid, Ecto.UUID
+    field :flow_uuid, Ecto.UUID
     belongs_to :flow, Flow
     field :type, :string
     field :count, :integer
@@ -53,22 +55,36 @@ defmodule Glific.Flows.FlowCount do
   end
 
   @doc """
+  Get a list of flow count
+  """
+  @spec get_flow_count_list(Ecto.UUID.t()) :: :error | list()
+  def get_flow_count_list(nil), do: []
+
+  def get_flow_count_list(flow_uuid) do
+    FlowCount
+    |> where([fc], fc.flow_uuid == ^flow_uuid)
+    |> Repo.all()
+  end
+
+  @doc """
   Upsert flow count
   """
   @spec upsert_flow_count(map()) :: :error | FlowCount.t()
   def upsert_flow_count(%{flow_uuid: nil} = _attrs), do: :error
 
   def upsert_flow_count(%{flow_uuid: flow_uuid} = attrs) do
-    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
+    case Repo.fetch_by(Flow, %{uuid: flow_uuid}) do
+      {:ok, flow} ->
+        attrs = Map.merge(attrs, %{flow_id: flow.id})
+        Repo.insert!(
+          FlowCount.changeset(%FlowCount{}, attrs),
+          on_conflict: [inc: [count: 1]],
+          conflict_target: [:flow_id, :uuid, :type]
+        ) |> update_recent_messages(attrs)
 
-    attrs = Map.merge(attrs, %{flow_id: flow.id})
+      {status, flow} -> {status, flow}
+    end
 
-    Repo.insert!(
-      FlowCount.changeset(%FlowCount{}, attrs),
-      on_conflict: [inc: [count: 1]],
-      conflict_target: [:flow_id, :uuid, :type]
-    )
-    |> update_recent_messages(attrs)
   end
 
   @spec update_recent_messages(FlowCount.t(), map()) :: :error | FlowCount.t()

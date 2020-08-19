@@ -9,6 +9,8 @@ defmodule Glific.Repo.Migrations.AddFlowCountsTable do
 
       add :flow_id, references(:flows, on_delete: :delete_all), null: false
 
+      add :flow_uuid, :uuid, null: false
+
       # Options are: node, exit, case
       add :type, :string
 
