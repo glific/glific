@@ -54,6 +54,12 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   @desc "Filtering options for search contacts"
   input_object :search_contacts_filter do
+    @desc "Match the name"
+    field :name, :string
+
+    @desc "Match the phone"
+    field :phone, :string
+
     @desc "Include contacts with these tags"
     field :include_tags, list_of(:id)
 
