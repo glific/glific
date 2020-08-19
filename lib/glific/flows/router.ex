@@ -133,12 +133,13 @@ defmodule Glific.Flows.Router do
     do: raise(UndefinedFunctionError, message: "Unimplemented router type and/or wait type")
 
   @spec find_category(Router.t(), FlowContext.t(), String.t()) :: Ecto.UUID.t()
-  defp find_category(router, _context, "No Response" = msg) do
-    # Find the category with name == "No Response"
+  defp find_category(router, _context, msg)
+       when msg in ["No Response", "Exit Loop"] do
+    # Find the category with name == "No Response" or "Exit Loop"
     category = Enum.find(router.categories, fn c -> c.name == msg end)
 
     if is_nil(category),
-      do: raise(MatchError, message: "Did not find a no response category"),
+      do: raise(ArgumentError, message: "Did not find a #{msg} category"),
       else: category.uuid
   end
 

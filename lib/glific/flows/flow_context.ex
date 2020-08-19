@@ -17,8 +17,16 @@ defmodule Glific.Flows.FlowContext do
     Repo
   }
 
-  @required_fields [:contact_id, :flow_id, :flow_uuid, :uuid_map]
-  @optional_fields [:node_uuid, :parent_id, :results, :wakeup_at, :completed_at, :delay]
+  @required_fields [:contact_id, :flow_id, :flow_uuid]
+  @optional_fields [
+    :node_uuid,
+    :parent_id,
+    :results,
+    :wakeup_at,
+    :completed_at,
+    :delay,
+    :uuid_map
+  ]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
