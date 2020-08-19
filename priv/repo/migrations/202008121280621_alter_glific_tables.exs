@@ -23,5 +23,10 @@ defmodule Glific.Repo.Migrations.AlterGlificTables do
       # List of keywords to trigger the flow
       add :keywords, {:array, :string}, default: []
     end
+
+    alter table(:flow_contexts) do
+      # Add list of recent messages
+      add :recent_messages, {:array, :map}, default: []
+    end
   end
 end
