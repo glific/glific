@@ -52,6 +52,15 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :provider_status, :contact_provider_status_enum
   end
 
+  @desc "Filtering options for search contacts"
+  input_object :search_contacts_filter do
+    @desc "Include contacts with these tags"
+    field :include_tags, list_of(:id)
+
+    @desc "Include contacts with in these groups"
+    field :include_groups, list_of(:id)
+  end
+
   input_object :contact_input do
     field :name, :string
     field :phone, :string
@@ -71,6 +80,13 @@ defmodule GlificWeb.Schema.ContactTypes do
       arg(:filter, :contact_filter)
       arg(:opts, :opts)
       resolve(&Resolvers.Contacts.contacts/3)
+    end
+
+    @desc "Get a list of all contacts searched by filters"
+    field :search_contacts, list_of(:contact) do
+      arg(:filter, :search_contacts_filter)
+      arg(:opts, :opts)
+      resolve(&Resolvers.Contacts.search_contacts/3)
     end
 
     @desc "Get a count of all contacts filtered by various criteria"

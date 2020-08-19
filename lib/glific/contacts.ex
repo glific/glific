@@ -6,6 +6,7 @@ defmodule Glific.Contacts do
 
   alias Glific.{
     Contacts.Contact,
+    Groups.ContactGroup,
     Contacts.Location,
     Repo
   }
@@ -22,6 +23,24 @@ defmodule Glific.Contacts do
   @spec list_contacts(map()) :: [Contact.t()]
   def list_contacts(args \\ %{}),
     do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &filter_with/2)
+
+  @spec search_contacts(map()) :: [Contact.t()]
+  def search_contacts(args \\ %{}),
+    do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &search_filter/2)
+
+  @spec search_filter(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp search_filter(query, filter) do
+    Enum.reduce(filter, Contact, fn
+      {:include_groups, group_ids}, query ->
+        query
+        |> join(:left, [c], cg in ContactGroup, on: c.id == cg.contact_id)
+        |> where([c, cg], cg.group_id in ^group_ids)
+        |> distinct(true)
+
+      _, query ->
+        query
+    end)
+  end
 
   @doc """
   Return the count of contacts, using the same filter as list_contacts
