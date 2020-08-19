@@ -134,7 +134,7 @@ defmodule Glific.Flows.Router do
 
   @spec find_category(Router.t(), FlowContext.t(), String.t()) :: Ecto.UUID.t()
   defp find_category(router, _context, msg)
-    when msg in ["No Response", "Exit Loop"] do
+       when msg in ["No Response", "Exit Loop"] do
     # Find the category with name == "No Response" or "Exit Loop"
     category = Enum.find(router.categories, fn c -> c.name == msg end)
 

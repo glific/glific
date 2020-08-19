@@ -217,7 +217,7 @@ defmodule Glific.Messages do
       |> update_message_attrs()
       |> create_message()
 
-      Communications.Message.send_message(message)
+    Communications.Message.send_message(message)
   end
 
   @doc false
@@ -504,8 +504,12 @@ defmodule Glific.Messages do
   @spec is_message_loop?(map(), integer, integer, integer) :: integer
   def is_message_loop?(message, past_messages \\ 7, past_count \\ 3, go_back \\ 1 * 60)
 
-  def is_message_loop?(%{uuid: uuid, type: :text, receiver_id: receiver_id} = _message,
-    past_messages, past_count, go_back)
+  def is_message_loop?(
+        %{uuid: uuid, type: :text, receiver_id: receiver_id} = _message,
+        past_messages,
+        past_count,
+        go_back
+      )
       when not is_nil(uuid) do
     since = DateTime.add(DateTime.utc_now(), -1 * go_back * 60)
 
@@ -520,7 +524,7 @@ defmodule Glific.Messages do
           m.status in ["enqueued", "delivered"]
       )
       |> limit(^past_messages)
-      |> order_by([m], [asc: m.message_number])
+      |> order_by([m], asc: m.message_number)
       |> select([m], m.uuid)
 
     query = from m in subquery(sub_query), where: m.uuid == ^uuid
