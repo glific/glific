@@ -23,7 +23,9 @@ defmodule Glific.Flows.ContactActionTest do
     [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
 
     # preload contact
-    context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
+    context =
+      %FlowContext{contact_id: contact.id}
+      |> Repo.preload(:contact)
 
     ContactAction.optout(context)
 
@@ -35,8 +37,15 @@ defmodule Glific.Flows.ContactActionTest do
   test "send message text" do
     [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
 
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id
+    }
+
     # preload contact
-    context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, :contact)
 
     action = %Action{text: "This is test message"}
 
@@ -55,7 +64,13 @@ defmodule Glific.Flows.ContactActionTest do
     [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
 
     # preload contact
-    context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
+    context =
+      %FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id
+      }
+      |> Repo.preload(:contact)
 
     [template | _] =
       Templates.list_session_templates(%{

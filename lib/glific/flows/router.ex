@@ -115,7 +115,7 @@ defmodule Glific.Flows.Router do
       when type == "switch" do
     [msg | rest] = message_stream
 
-    context = FlowContext.update_recent_message(context, msg, :recent_inbound)
+    context = FlowContext.update_recent(context, msg, :recent_inbound)
 
     category_uuid = find_category(router, context, msg)
 

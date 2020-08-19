@@ -27,7 +27,7 @@ defmodule Glific.Flows.FlowContext do
     :delay,
     :uuid_map,
     :recent_inbound,
-    :recent_outbound,
+    :recent_outbound
   ]
 
   # we store one more than the number of messages specified here
@@ -135,12 +135,14 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Update the recent_* state as we consume or send a message
   """
-  @spec update_recent_message(FlowContext.t(), String.t(), atom()) :: FlowContext.t()
-  def update_recent_message(context, body, type) do
+  @spec update_recent(FlowContext.t(), String.t(), atom()) :: FlowContext.t()
+  def update_recent(context, body, type) do
     now = DateTime.utc_now()
 
+    # since we are storing in DB and want to avoid hassle of atom <-> string conversion
+    # we'll always use strings as keys
     messages =
-      [ %{message: body, date: now} | Map.get(context, type) ]
+      [%{"message" => body, "date" => now} | Map.get(context, type)]
       |> Enum.slice(0..@max_message_len)
 
     {:ok, context} = update_flow_context(context, %{type => messages})
@@ -158,8 +160,8 @@ defmodule Glific.Flows.FlowContext do
         else: context.results
 
     results = Map.put(results, key, %{"input" => input, "category" => category})
-  {:ok, context} = update_flow_context(context, %{results: results})
-  context
+    {:ok, context} = update_flow_context(context, %{results: results})
+    context
   end
 
   @doc """
@@ -174,6 +176,33 @@ defmodule Glific.Flows.FlowContext do
         update_results(context, key <> "_" <> k, v, key)
       end
     )
+  end
+
+  @doc """
+  Count the number of times we have sent the same message in the recent past
+  """
+  @spec match_outbound(FlowContext.t(), Ecto.UUID.t(), integer) :: integer
+  def match_outbound(context, uuid, go_back \\ 6) do
+    since = Glific.go_back_time(go_back)
+
+    Enum.filter(
+      context.recent_outbound,
+      fn item ->
+        # sometime we get this from memory, and its not retrived from DB
+        # in which case its already in a valid date format
+        date =
+          if is_binary(item["date"]),
+            do:
+              (
+                {:ok, date, _} = DateTime.from_iso8601(item["date"])
+                date
+              ),
+            else: item["date"]
+
+        item["message"] == uuid and DateTime.compare(date, since) in [:gt, :eq]
+      end
+    )
+    |> length()
   end
 
   @doc """
