@@ -1,0 +1,13 @@
+query searchContacts($searchContactsFilter: SearchContactsFilter, $opts: Opts) {
+  searchContacts(filter: $searchContactsFilter, opts: $opts) {
+    id
+    name
+    phone
+    groups {
+      id
+    }
+    tags {
+      id
+    }
+  }
+}
