@@ -37,7 +37,12 @@ defmodule Glific.Flows.CategoryTest do
     json = %{"uuid" => exit_uuid, "destination_uuid" => nil}
     {_exit, uuid_map} = Exit.process(json, %{}, node)
 
-    json = %{"uuid" => Ecto.UUID.generate(), "exit_uuid" => exit_uuid, "name" => "Default Category"}
+    json = %{
+      "uuid" => Ecto.UUID.generate(),
+      "exit_uuid" => exit_uuid,
+      "name" => "Default Category"
+    }
+
     {category, uuid_map} = Category.process(json, uuid_map)
 
     # create a simple flow context

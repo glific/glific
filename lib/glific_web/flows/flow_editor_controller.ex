@@ -228,7 +228,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
             "exit" ->
               {nodes, Map.put(segments, "#{fc.uuid}:#{fc.destination_uuid}", fc.count),
-              fc.recent_messages}
+               fc.recent_messages}
 
             _ ->
               acc
