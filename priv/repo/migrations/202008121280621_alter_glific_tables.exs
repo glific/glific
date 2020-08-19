@@ -25,8 +25,10 @@ defmodule Glific.Repo.Migrations.AlterGlificTables do
     end
 
     alter table(:flow_contexts) do
-      # Add list of recent messages
-      add :recent_messages, {:array, :map}, default: []
+      # Add list of recent messages for both inbound and outbound
+      # for outbound we store the uuid
+      add :recent_inbound, :jsonb, default: "[]"
+      add :recent_outbound, :jsonb, default: "[]"
     end
   end
 end

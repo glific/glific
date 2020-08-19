@@ -56,6 +56,7 @@ defmodule Glific.Flows.ContactAction do
 
       true ->
         {:ok, _message} = Messages.create_and_send_message(attrs)
+        context = FlowContext.update_recent_message(context, action.uuid, :recent_outbound)
         # increment the delay
         {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
     end
