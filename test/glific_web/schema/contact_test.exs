@@ -232,25 +232,41 @@ defmodule GlificWeb.Schema.ContactTest do
   test "search contacts field obeys group filters" do
     [cg1, _cg2, cg3] = Fixtures.group_contacts_fixture()
 
-    result = query_gql_by(:search, variables: %{"searchContactsFilter" => %{
-      "includeGroups" => ["#{cg1.group_id}"]
-    }})
+    result =
+      query_gql_by(:search,
+        variables: %{
+          "searchContactsFilter" => %{
+            "includeGroups" => ["#{cg1.group_id}"]
+          }
+        }
+      )
 
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "searchContacts"])) == 2
 
-    result = query_gql_by(:search, variables: %{"searchContactsFilter" => %{
-      "includeGroups" => ["99999"]
-    }})
+    result =
+      query_gql_by(:search,
+        variables: %{
+          "searchContactsFilter" => %{
+            "includeGroups" => ["99999"]
+          }
+        }
+      )
+
     assert {:ok, query_data} = result
 
     contacts = get_in(query_data, [:data, "searchContacts"])
-    assert length(contacts) == 0
+    assert contacts == []
 
     # contact should not be repeated in the search list
-    result = query_gql_by(:search, variables: %{"searchContactsFilter" => %{
-      "includeGroups" => ["#{cg1.group_id}", "#{cg3.group_id}"]
-    }})
+    result =
+      query_gql_by(:search,
+        variables: %{
+          "searchContactsFilter" => %{
+            "includeGroups" => ["#{cg1.group_id}", "#{cg3.group_id}"]
+          }
+        }
+      )
 
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "searchContacts"])) == 2
@@ -259,28 +275,30 @@ defmodule GlificWeb.Schema.ContactTest do
   test "search contacts field obeys tag filters" do
     [ct1, _ct2, ct3] = Fixtures.contact_tags_fixture()
 
-    result = query_gql_by(:search, variables: %{"searchContactsFilter" => %{
-      "includeTags" => ["#{ct1.tag_id}"]
-    }})
+    result =
+      query_gql_by(:search,
+        variables: %{
+          "searchContactsFilter" => %{
+            "includeTags" => ["#{ct1.tag_id}"]
+          }
+        }
+      )
 
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "searchContacts"])) == 2
 
-    result = query_gql_by(:search, variables: %{"searchContactsFilter" => %{
-      "includeTags" => ["99999"]
-    }})
-    assert {:ok, query_data} = result
-
-    contacts = get_in(query_data, [:data, "searchContacts"])
-    assert length(contacts) == 0
-
     # search a contact with in a group and having multiple tags
     [_cg1, _cg2, cg3] = Fixtures.group_contacts_fixture()
 
-    result = query_gql_by(:search, variables: %{"searchContactsFilter" => %{
-      "includeTags" => ["#{ct1.tag_id}", "#{ct3.tag_id}"],
-      "includeGroups" => ["#{cg3.group_id}"]
-    }})
+    result =
+      query_gql_by(:search,
+        variables: %{
+          "searchContactsFilter" => %{
+            "includeTags" => ["#{ct1.tag_id}", "#{ct3.tag_id}"],
+            "includeGroups" => ["#{cg3.group_id}"]
+          }
+        }
+      )
 
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "searchContacts"])) == 1

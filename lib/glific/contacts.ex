@@ -6,8 +6,8 @@ defmodule Glific.Contacts do
 
   alias Glific.{
     Contacts.Contact,
-    Groups.ContactGroup,
     Contacts.Location,
+    Groups.ContactGroup,
     Tags.ContactTag,
     Repo
   }
@@ -25,6 +25,11 @@ defmodule Glific.Contacts do
   def list_contacts(args \\ %{}),
     do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &filter_with/2)
 
+  @doc """
+  Get the list of contacts filtered by various search options
+  Include contacts only if within list of groups
+  Include contacts only if have list of tags
+  """
   @spec search_contacts(map()) :: [Contact.t()]
   def search_contacts(args \\ %{}),
     do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &search_filter/2)

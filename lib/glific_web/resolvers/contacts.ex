@@ -21,6 +21,9 @@ defmodule GlificWeb.Resolvers.Contacts do
     {:ok, Contacts.list_contacts(args)}
   end
 
+  @doc """
+  Get the list of contacts filtered by args
+  """
   @spec search_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [any]}
   def search_contacts(_, args, _) do

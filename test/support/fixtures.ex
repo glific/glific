@@ -208,22 +208,22 @@ defmodule Glific.Fixtures do
     [g1, g2 | _] = Groups.list_groups()
 
     {:ok, cg1} =
-    Groups.create_contact_group(%{
-      contact_id: c1.id,
-      group_id: g1.id
-    })
+      Groups.create_contact_group(%{
+        contact_id: c1.id,
+        group_id: g1.id
+      })
 
     {:ok, cg2} =
-    Groups.create_contact_group(%{
-      contact_id: c2.id,
-      group_id: g1.id
-    })
+      Groups.create_contact_group(%{
+        contact_id: c2.id,
+        group_id: g1.id
+      })
 
     {:ok, cg3} =
-    Groups.create_contact_group(%{
-      contact_id: c1.id,
-      group_id: g2.id
-    })
+      Groups.create_contact_group(%{
+        contact_id: c1.id,
+        group_id: g2.id
+      })
 
     [cg1, cg2, cg3]
   end
@@ -237,22 +237,22 @@ defmodule Glific.Fixtures do
     [t1, t2 | _] = Tags.list_tags()
 
     {:ok, ct1} =
-    Tags.create_contact_tag(%{
-      contact_id: c1.id,
-      tag_id: t1.id
-    })
+      Tags.create_contact_tag(%{
+        contact_id: c1.id,
+        tag_id: t1.id
+      })
 
     {:ok, ct2} =
-    Tags.create_contact_tag(%{
-      contact_id: c2.id,
-      tag_id: t1.id
-    })
+      Tags.create_contact_tag(%{
+        contact_id: c2.id,
+        tag_id: t1.id
+      })
 
     {:ok, ct3} =
-    Tags.create_contact_tag(%{
-      contact_id: c1.id,
-      tag_id: t2.id
-    })
+      Tags.create_contact_tag(%{
+        contact_id: c1.id,
+        tag_id: t2.id
+      })
 
     [ct1, ct2, ct3]
   end
