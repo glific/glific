@@ -8,6 +8,7 @@ defmodule Glific.Contacts do
     Contacts.Contact,
     Groups.ContactGroup,
     Contacts.Location,
+    Tags.ContactTag,
     Repo
   }
 
@@ -30,16 +31,24 @@ defmodule Glific.Contacts do
 
   @spec search_filter(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp search_filter(query, filter) do
-    Enum.reduce(filter, Contact, fn
-      {:include_groups, group_ids}, query ->
-        query
-        |> join(:left, [c], cg in ContactGroup, on: c.id == cg.contact_id)
-        |> where([c, cg], cg.group_id in ^group_ids)
-        |> distinct(true)
+    query =
+      Enum.reduce(filter, Contact, fn
+        {:include_groups, group_ids}, query ->
+          query
+          |> join(:left, [c], cg in ContactGroup, on: c.id == cg.contact_id)
+          |> where([c, cg], cg.group_id in ^group_ids)
 
-      _, query ->
-        query
-    end)
+        {:include_tags, tag_ids}, query ->
+          query
+          |> join(:left, [c], ct in ContactTag, on: c.id == ct.contact_id)
+          |> where([c, ..., ct], ct.tag_id in ^tag_ids)
+
+        _, query ->
+          query
+      end)
+
+    query
+    |> distinct(true)
   end
 
   @doc """
