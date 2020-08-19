@@ -22,7 +22,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   end
 
   @doc """
-  Get the list of contacts filtered by args
+  Get the list of searched contacts
   """
   @spec search_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [any]}

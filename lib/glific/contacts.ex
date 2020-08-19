@@ -49,9 +49,6 @@ defmodule Glific.Contacts do
           query
           |> join(:left, [c], ct in ContactTag, on: c.id == ct.contact_id)
           |> where([c, ..., ct], ct.tag_id in ^tag_ids)
-
-        _, query ->
-          query
       end)
 
     query
