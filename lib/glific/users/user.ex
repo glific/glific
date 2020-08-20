@@ -63,6 +63,7 @@ defmodule Glific.Users.User do
     |> glific_phone_field_changeset(attrs, @pow_config)
     |> current_password_changeset(attrs, @pow_config)
     |> password_changeset(attrs, @pow_config)
+    |> Changeset.unique_constraint(:contact_id)
   end
 
   @doc """
@@ -89,6 +90,7 @@ defmodule Glific.Users.User do
     |> Changeset.validate_required([:name, :roles])
     |> Changeset.validate_subset(:roles, @user_roles)
     |> password_changeset(params, @pow_config)
+    |> Changeset.unique_constraint(:contact_id)
   end
 
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),

@@ -1,7 +1,10 @@
 defmodule Glific.UsersTest do
   use Glific.DataCase, async: true
 
-  alias Glific.Users
+  alias Glific.{
+    Fixtures,
+    Users
+  }
 
   describe "users" do
     alias Glific.Users.User
@@ -60,9 +63,12 @@ defmodule Glific.UsersTest do
     }
 
     def user_fixture(attrs \\ %{}) do
+      contact = Fixtures.contact_fixture()
+
       {:ok, user} =
         attrs
         |> Enum.into(@valid_attrs)
+        |> Map.put(:contact_id, contact.id)
         |> Users.create_user()
 
       user
@@ -90,7 +96,11 @@ defmodule Glific.UsersTest do
     end
 
     test "create_user/1 with valid data creates a user" do
-      assert {:ok, %User{} = user} = Users.create_user(@valid_attrs)
+      contact = Fixtures.contact_fixture()
+
+      valid_attrs = @valid_attrs |> Map.put(:contact_id, contact.id)
+
+      assert {:ok, %User{} = user} = Users.create_user(valid_attrs)
       assert user.name == "some name"
       assert user.phone == "some phone"
       assert user.roles == ["admin"]
@@ -169,8 +179,22 @@ defmodule Glific.UsersTest do
     end
 
     test "ensure that creating users with same phone give an error" do
-      user_fixture(@valid_attrs)
-      assert {:error, %Ecto.Changeset{}} = Users.create_user(@valid_attrs)
+      contact1 = Fixtures.contact_fixture()
+      contact2 = Fixtures.contact_fixture()
+      valid_attrs1 = @valid_attrs |> Map.put(:contact_id, contact1.id)
+      valid_attrs2 = @valid_attrs |> Map.put(:contact_id, contact2.id)
+
+      Users.create_user(valid_attrs1)
+      assert {:error, %Ecto.Changeset{}} = Users.create_user(valid_attrs2)
+    end
+
+    test "ensure that creating users with same contact_id gives an error" do
+      contact = Fixtures.contact_fixture()
+      valid_attrs1 = @valid_attrs |> Map.put(:contact_id, contact.id)
+      valid_attrs2 = @valid_attrs_2 |> Map.put(:contact_id, contact.id)
+
+      Users.create_user(valid_attrs1)
+      assert {:error, %Ecto.Changeset{}} = Users.create_user(valid_attrs2)
     end
   end
 end

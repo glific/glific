@@ -269,21 +269,23 @@ defmodule Glific.Seeds.SeedsDev do
 
     {:ok, en_us} = Repo.fetch_by(Language, %{label_locale: "English"})
 
-    contact1 = Repo.insert!(%Contact{
-      phone: "919820112345",
-      name: "NGO Basic User 1",
-      language_id: en_us.id,
-      optin_time: @now,
-      last_message_at: @now
-    })
+    contact1 =
+      Repo.insert!(%Contact{
+        phone: "919820112345",
+        name: "NGO Basic User 1",
+        language_id: en_us.id,
+        optin_time: @now,
+        last_message_at: @now
+      })
 
-    contact2 = Repo.insert!(%Contact{
-      phone: "919876543210",
-      name: "NGO Admin",
-      language_id: en_us.id,
-      optin_time: @now,
-      last_message_at: @now
-    })
+    contact2 =
+      Repo.insert!(%Contact{
+        phone: "919876543210",
+        name: "NGO Admin",
+        language_id: en_us.id,
+        optin_time: @now,
+        last_message_at: @now
+      })
 
     Users.create_user(%{
       name: "NGO Basic User 1",
