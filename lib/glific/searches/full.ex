@@ -52,7 +52,7 @@ defmodule Glific.Search.Full do
   end
 
   @spec run_include_groups(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
-  defp run_include_groups(query, group_ids) when is_list(group_ids) do
+  defp run_include_groups(query, group_ids) when is_list(group_ids) and group_ids != [] do
     group_ids =
       Enum.map(group_ids, fn group_id ->
         {:ok, group_id} = Glific.parse_maybe_integer(group_id)

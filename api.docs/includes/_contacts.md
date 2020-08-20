@@ -70,6 +70,93 @@ Type | Description
 | ---- | -----------
 [<a href="#contact">Contact</a>] | List of contacts
 
+
+## Get All Searched Contacts
+
+```graphql
+query searchContacts($searchContactsFilter: SearchContactsFilter, $opts: Opts) {
+  searchContacts(filter: $searchContactsFilter, opts: $opts) {
+    id
+    name
+    groups {
+      id
+    }
+    tags {
+      id
+    }
+  }
+}
+
+{
+  "searchContactsFilter": {
+    "includeGroups": [
+      1,
+      2
+    ],
+    "includeTags": [
+      1
+    ]
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "searchContacts": [
+      {
+        "groups": [
+          {
+            "id": "1"
+          },
+          {
+            "id": "2"
+          }
+        ],
+        "id": "1",
+        "name": "Glific Admin",
+        "phone": "917834811114",
+        "tags": [
+          {
+            "id": "1"
+          }
+        ]
+      },
+      {
+        "groups": [
+          {
+            "id": "1"
+          }
+        ],
+        "id": "2",
+        "name": "Default receiver",
+        "phone": "917834811231",
+        "tags": [
+          {
+            "id": "1"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+This returns all the contacts filtered by the input <a href="#searchcontactsfilter">SearchContactsFilter</a>
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+filter | <a href="#searchcontactsfilter">SearchContactsFilter</a> | nil | filter the list
+opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+[<a href="#contact">Contact</a>] | List of contacts
+
 ## Get a specific Contact by ID
 
 ```graphql
@@ -552,6 +639,46 @@ Match the status
 
 </td>
 </tr>
+</tbody>
+</table>
+
+### ContactFilter
+
+Filtering options for contacts
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>name</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>Match the name</td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>phone</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>Match the phone</td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>includeTags</strong></td>
+<td valign="top">[<a href="#id">id</a>]</td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>includeGroups</strong></td>
+<td valign="top">[<a href="#id">id</a>]</td>
+<td></td>
+</tr>
+
 </tbody>
 </table>
 
