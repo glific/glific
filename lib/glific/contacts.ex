@@ -8,8 +8,8 @@ defmodule Glific.Contacts do
     Contacts.Contact,
     Contacts.Location,
     Groups.ContactGroup,
-    Tags.ContactTag,
-    Repo
+    Repo,
+    Tags.ContactTag
   }
 
   @doc """
