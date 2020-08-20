@@ -269,7 +269,7 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "contacts"])) == 3
+    assert length(get_in(query_data, [:data, "contacts"])) == 2
   end
 
   test "search contacts field obeys tag filters" do
@@ -301,6 +301,7 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "contacts"])) == 2
+    assert length(get_in(query_data, [:data, "contacts"])) == 1
+    assert get_in(query_data, [:data, "contacts", Access.at(0), "id"]) == "#{cg3.contact_id}"
   end
 end

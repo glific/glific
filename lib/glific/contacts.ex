@@ -40,32 +40,35 @@ defmodule Glific.Contacts do
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
 
-    Enum.reduce(filter, query, fn
-      {:status, status}, query ->
-        from q in query, where: q.status == ^status
+    query =
+      Enum.reduce(filter, query, fn
+        {:status, status}, query ->
+          from q in query, where: q.status == ^status
 
-      {:provider_status, provider_status}, query ->
-        from q in query, where: q.provider_status == ^provider_status
+        {:provider_status, provider_status}, query ->
+          from q in query, where: q.provider_status == ^provider_status
 
-      {:include_groups, []}, query ->
-        query
+        {:include_groups, []}, query ->
+          query
 
-      {:include_groups, group_ids}, query ->
-        query
-        |> join(:left, [c], cg in ContactGroup, on: c.id == cg.contact_id)
-        |> where([c, cg], cg.group_id in ^group_ids)
+        {:include_groups, group_ids}, query ->
+          query
+          |> join(:left, [c], cg in ContactGroup, as: :cg, on: c.id == cg.contact_id)
+          |> where([cg: cg], cg.group_id in ^group_ids)
 
-      {:include_tags, []}, query ->
-        query
+        {:include_tags, []}, query ->
+          query
 
-      {:include_tags, tag_ids}, query ->
-        query
-        |> join(:left, [c], ct in ContactTag, on: c.id == ct.contact_id)
-        |> where([c, ..., ct], ct.tag_id in ^tag_ids)
+        {:include_tags, tag_ids}, query ->
+          query
+          |> join(:left, [c], ct in ContactTag, as: :ct, on: c.id == ct.contact_id)
+          |> where([ct: ct], ct.tag_id in ^tag_ids)
 
-      _, query ->
-        query
-    end)
+        _, query ->
+          query
+      end)
+
+    query |> distinct([c], c.id)
   end
 
   # codebeat:enable[ABC]
