@@ -26,9 +26,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
   def create(conn, %{"user" => user_params}) do
-    %{"phone" => phone, "otp" => otp} = user_params
-
-    with {:ok, _message} <- verify_otp(phone, otp),
+    with {:ok, _message} <- verify_otp(user_params["phone"], user_params["otp"]),
          {:ok, response_data} <- create_user(conn, user_params) do
       json(conn, response_data)
     else
@@ -55,12 +53,17 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @spec create_user(Conn.t(), map()) :: {:ok, map()} | {:error, []}
   defp create_user(conn, user_params) do
-    user_params_with_password_confirmation =
+    {:ok, contact} = Repo.fetch_by(Contact, %{phone: user_params["phone"]})
+
+    updated_user_params =
       user_params
-      |> Map.merge(%{"password_confirmation" => user_params["password"]})
+      |> Map.merge(%{
+        "password_confirmation" => user_params["password"],
+        "contact_id" => contact.id
+      })
 
     conn
-    |> Pow.Plug.create_user(user_params_with_password_confirmation)
+    |> Pow.Plug.create_user(updated_user_params)
     |> case do
       {:ok, user, conn} ->
         {:ok, _} = add_staff_tag_to_user_contact(user)

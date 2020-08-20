@@ -178,7 +178,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           "phone" => receiver.phone,
           "name" => receiver.name,
           "password" => @password,
-          "password_confirmation" => @password
+          "password_confirmation" => @password,
+          "contact_id" => receiver.id
         }
         |> Users.create_user()
 
@@ -202,7 +203,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         "phone" => receiver.phone,
         "name" => receiver.name,
         "password" => @password,
-        "password_confirmation" => @password
+        "password_confirmation" => @password,
+        "contact_id" => receiver.id
       }
 
       {:ok, user} =

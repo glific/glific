@@ -1,18 +1,25 @@
 defmodule GlificWeb.API.V1.SessionControllerTest do
   use GlificWeb.ConnCase
 
-  alias Glific.{Repo, Users.User}
+  alias Glific.{
+    Fixtures,
+    Repo,
+    Users.User
+  }
 
   @password "secret1234"
 
   setup do
+    contact = Fixtures.contact_fixture()
+
     user =
       %User{}
       |> User.changeset(%{
         phone: "+919820198765",
         name: "Jane Jana",
         password: @password,
-        password_confirmation: @password
+        password_confirmation: @password,
+        contact_id: contact.id
       })
       |> Repo.insert!()
 

@@ -3,7 +3,10 @@ defmodule Glific.Users.User do
   use Ecto.Schema
   use Pow.Ecto.Schema, user_id_field: :phone
 
-  alias Glific.{Groups.Group}
+  alias Glific.{
+    Contacts.Contact,
+    Groups.Group
+  }
 
   alias Ecto.Changeset
   import Pow.Ecto.Schema.Changeset, only: [password_changeset: 3, current_password_changeset: 3]
@@ -12,17 +15,20 @@ defmodule Glific.Users.User do
           __meta__: Ecto.Schema.Metadata.t(),
           phone: String.t() | nil,
           password_hash: String.t() | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
-  @required_fields [:phone, :name, :password]
+  @required_fields [:phone, :name, :password, :contact_id]
   @optional_fields [:name, :roles]
   @user_roles ~w(none staff manager admin)
 
   schema "users" do
     field :name, :string
     field :roles, {:array, :string}, default: ["none"]
+
+    belongs_to :contact, Contact
 
     pow_user_fields()
 
@@ -57,6 +63,7 @@ defmodule Glific.Users.User do
     |> glific_phone_field_changeset(attrs, @pow_config)
     |> current_password_changeset(attrs, @pow_config)
     |> password_changeset(attrs, @pow_config)
+    |> Changeset.unique_constraint(:contact_id)
   end
 
   @doc """
@@ -83,6 +90,7 @@ defmodule Glific.Users.User do
     |> Changeset.validate_required([:name, :roles])
     |> Changeset.validate_subset(:roles, @user_roles)
     |> password_changeset(params, @pow_config)
+    |> Changeset.unique_constraint(:contact_id)
   end
 
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),
