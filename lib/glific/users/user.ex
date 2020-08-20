@@ -20,8 +20,8 @@ defmodule Glific.Users.User do
           updated_at: :utc_datetime | nil
         }
 
-  @required_fields [:phone, :name, :password]
-  @optional_fields [:name, :roles, :contact_id]
+  @required_fields [:phone, :name, :password, :contact_id]
+  @optional_fields [:name, :roles]
   @user_roles ~w(none staff manager admin)
 
   schema "users" do
