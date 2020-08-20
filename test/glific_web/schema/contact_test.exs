@@ -210,20 +210,20 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "search contacts field returns list of contacts with options set" do
-    result = query_gql_by(:search, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
     assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "searchContacts"])) == 1
+    assert length(get_in(query_data, [:data, "contacts"])) == 1
 
-    result = query_gql_by(:search, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
     assert {:ok, query_data} = result
 
-    contacts = get_in(query_data, [:data, "searchContacts"])
+    contacts = get_in(query_data, [:data, "contacts"])
     assert length(contacts) == 3
 
-    result = query_gql_by(:search, variables: %{"opts" => %{"order" => "ASC"}})
+    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
-    contacts = get_in(query_data, [:data, "searchContacts"])
+    contacts = get_in(query_data, [:data, "contacts"])
     assert length(contacts) >= 1
     [contact | _] = contacts
     assert get_in(contact, ["name"]) == "Adelle Cavin"
@@ -233,21 +233,21 @@ defmodule GlificWeb.Schema.ContactTest do
     [cg1, _cg2, cg3] = Fixtures.group_contacts_fixture()
 
     result =
-      query_gql_by(:search,
+      query_gql_by(:list,
         variables: %{
-          "searchContactsFilter" => %{
+          "filter" => %{
             "includeGroups" => ["#{cg1.group_id}"]
           }
         }
       )
 
     assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "searchContacts"])) == 2
+    assert length(get_in(query_data, [:data, "contacts"])) == 2
 
     result =
-      query_gql_by(:search,
+      query_gql_by(:list,
         variables: %{
-          "searchContactsFilter" => %{
+          "filter" => %{
             "includeGroups" => ["99999"]
           }
         }
@@ -255,45 +255,45 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, query_data} = result
 
-    contacts = get_in(query_data, [:data, "searchContacts"])
+    contacts = get_in(query_data, [:data, "contacts"])
     assert contacts == []
 
     # contact should not be repeated in the search list
     result =
-      query_gql_by(:search,
+      query_gql_by(:list,
         variables: %{
-          "searchContactsFilter" => %{
+          "filter" => %{
             "includeGroups" => ["#{cg1.group_id}", "#{cg3.group_id}"]
           }
         }
       )
 
     assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "searchContacts"])) == 2
+    assert length(get_in(query_data, [:data, "contacts"])) == 3
   end
 
   test "search contacts field obeys tag filters" do
     [ct1, _ct2, ct3] = Fixtures.contact_tags_fixture()
 
     result =
-      query_gql_by(:search,
+      query_gql_by(:list,
         variables: %{
-          "searchContactsFilter" => %{
+          "filter" => %{
             "includeTags" => ["#{ct1.tag_id}"]
           }
         }
       )
 
     assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "searchContacts"])) == 2
+    assert length(get_in(query_data, [:data, "contacts"])) == 2
 
     # search a contact with in a group and having multiple tags
     [_cg1, _cg2, cg3] = Fixtures.group_contacts_fixture()
 
     result =
-      query_gql_by(:search,
+      query_gql_by(:list,
         variables: %{
-          "searchContactsFilter" => %{
+          "filter" => %{
             "includeTags" => ["#{ct1.tag_id}", "#{ct3.tag_id}"],
             "includeGroups" => ["#{cg3.group_id}"]
           }
@@ -301,6 +301,6 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, query_data} = result
-    assert length(get_in(query_data, [:data, "searchContacts"])) == 1
+    assert length(get_in(query_data, [:data, "contacts"])) == 2
   end
 end
