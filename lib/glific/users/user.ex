@@ -3,7 +3,10 @@ defmodule Glific.Users.User do
   use Ecto.Schema
   use Pow.Ecto.Schema, user_id_field: :phone
 
-  alias Glific.{Groups.Group}
+  alias Glific.{
+    Contacts.Contact,
+    Groups.Group
+  }
 
   alias Ecto.Changeset
   import Pow.Ecto.Schema.Changeset, only: [password_changeset: 3, current_password_changeset: 3]
@@ -12,17 +15,20 @@ defmodule Glific.Users.User do
           __meta__: Ecto.Schema.Metadata.t(),
           phone: String.t() | nil,
           password_hash: String.t() | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
   @required_fields [:phone, :name, :password]
-  @optional_fields [:name, :roles]
+  @optional_fields [:name, :roles, :contact_id]
   @user_roles ~w(none staff manager admin)
 
   schema "users" do
     field :name, :string
     field :roles, {:array, :string}, default: ["none"]
+
+    belongs_to :contact, Contact
 
     pow_user_fields()
 

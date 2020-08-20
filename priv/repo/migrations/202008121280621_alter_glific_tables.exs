@@ -30,5 +30,11 @@ defmodule Glific.Repo.Migrations.AlterGlificTables do
       add :recent_inbound, :jsonb, default: "[]"
       add :recent_outbound, :jsonb, default: "[]"
     end
+
+    alter table(:users) do
+      add :contact_id, references(:contacts, on_delete: :nilify_all), null: true
+    end
+
+    create unique_index(:users, :contact_id)
   end
 end
