@@ -71,11 +71,11 @@ Type | Description
 [<a href="#contact">Contact</a>] | List of contacts
 
 
-## Get All Searched Contacts
+## Other filters on Contacts
 
 ```graphql
-query searchContacts($searchContactsFilter: SearchContactsFilter, $opts: Opts) {
-  searchContacts(filter: $searchContactsFilter, opts: $opts) {
+query contacts($filter: ContactFilter, $opts: Opts) {
+  contacts(filter: $filter, opts: $opts) {
     id
     name
     groups {
@@ -88,7 +88,7 @@ query searchContacts($searchContactsFilter: SearchContactsFilter, $opts: Opts) {
 }
 
 {
-  "searchContactsFilter": {
+  "filter": {
     "includeGroups": [
       1,
       2
@@ -105,7 +105,7 @@ query searchContacts($searchContactsFilter: SearchContactsFilter, $opts: Opts) {
 ```json
 {
   "data": {
-    "searchContacts": [
+    "contacts": [
       {
         "groups": [
           {
@@ -143,14 +143,7 @@ query searchContacts($searchContactsFilter: SearchContactsFilter, $opts: Opts) {
   }
 }
 ```
-This returns all the contacts filtered by the input <a href="#searchcontactsfilter">SearchContactsFilter</a>
 
-### Query Parameters
-
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#searchcontactsfilter">SearchContactsFilter</a> | nil | filter the list
-opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
 
 ### Return Parameters
 Type | Description

@@ -28,7 +28,6 @@ defmodule Glific.Contacts do
   def list_contacts(args \\ %{}),
     do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &filter_with/2)
 
-
   @doc """
   Return the count of contacts, using the same filter as list_contacts
   """
@@ -48,19 +47,21 @@ defmodule Glific.Contacts do
       {:provider_status, provider_status}, query ->
         from q in query, where: q.provider_status == ^provider_status
 
-      {:include_groups, []}, query -> query
+      {:include_groups, []}, query ->
+        query
 
       {:include_groups, group_ids}, query ->
-          query
-          |> join(:left, [c], cg in ContactGroup, on: c.id == cg.contact_id)
-          |> where([c, cg], cg.group_id in ^group_ids)
+        query
+        |> join(:left, [c], cg in ContactGroup, on: c.id == cg.contact_id)
+        |> where([c, cg], cg.group_id in ^group_ids)
 
-      {:include_tags, []}, query -> query
+      {:include_tags, []}, query ->
+        query
 
       {:include_tags, tag_ids}, query ->
-          query
-          |> join(:left, [c], ct in ContactTag, on: c.id == ct.contact_id)
-          |> where([c, ..., ct], ct.tag_id in ^tag_ids)
+        query
+        |> join(:left, [c], ct in ContactTag, on: c.id == ct.contact_id)
+        |> where([c, ..., ct], ct.tag_id in ^tag_ids)
 
       _, query ->
         query

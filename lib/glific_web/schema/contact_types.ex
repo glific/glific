@@ -56,7 +56,6 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     @desc "Include contacts with in these groups"
     field :include_groups, list_of(:id)
-
   end
 
   @desc "Filtering options for search contacts"
