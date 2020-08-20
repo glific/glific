@@ -684,12 +684,14 @@ defmodule Glific.Messages do
   end
 
 
+  # apply filter for message tags
+  @spec include_tag_filter(Ecto.Queryable.t(), []) :: Ecto.Queryable.t()
   defp include_tag_filter(query, tag_ids)
     when is_list(tag_ids) and tag_ids != [],
     do:
     query
-      |> join(:left, [m], mt in MessageTag, on: m.id == mt.message_id)
-      |> where([m, mt], mt.tag_id in ^tag_ids)
+      |> join(:left, [m], mt in MessageTag, as: :it, on: m.id == mt.message_id)
+      |> where([it: it], it.tag_id in ^tag_ids)
 
 
   defp include_tag_filter(query, _tag_ids), do: query
