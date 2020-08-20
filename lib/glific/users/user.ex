@@ -89,9 +89,9 @@ defmodule Glific.Users.User do
   end
 
   @spec validate_roles(Ecto.Schema.t() | Changeset.t(), map()) :: Changeset.t()
-  defp validate_roles(changeset, params) do
+  defp validate_roles(changeset, %{roles: roles}) do
     roles =
-      params.roles
+      roles
       |> Enum.map(fn role_map ->
         role_map.label
       end)
@@ -102,6 +102,8 @@ defmodule Glific.Users.User do
       Changeset.add_error(changeset, :roles, "has an invalid entry")
     end
   end
+
+  defp validate_roles(changeset, _), do: changeset
 
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),
     do: Pow.Ecto.Schema.normalize_user_id_field_value(value)
