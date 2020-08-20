@@ -52,7 +52,7 @@ defmodule GlificWeb.Schema.UserTypes do
   input_object :user_input do
     field :name, :string
     field :roles, list_of(:string)
-    field :group_ids, non_null(list_of(:id))
+    field :group_ids, list_of(:id)
   end
 
   object :user_queries do

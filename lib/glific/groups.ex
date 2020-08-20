@@ -252,6 +252,9 @@ defmodule Glific.Groups do
   Updates user groups entries
   """
   @spec update_user_groups(map()) :: :ok
+  def update_user_groups(%{group_ids: nil}), do: :ok
+  def update_user_groups(%{group_ids: []}), do: :ok
+
   def update_user_groups(%{user_id: user_id, group_ids: group_ids}) do
     user_group_ids =
       UserGroup

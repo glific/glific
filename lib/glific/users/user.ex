@@ -4,8 +4,8 @@ defmodule Glific.Users.User do
   use Pow.Ecto.Schema, user_id_field: :phone
 
   alias Glific.{
-    EctoRoles,
     Contacts.Contact,
+    EctoRoles,
     Groups.Group
   }
 
@@ -96,12 +96,6 @@ defmodule Glific.Users.User do
 
   @spec validate_roles(Ecto.Schema.t() | Changeset.t(), map()) :: Changeset.t()
   defp validate_roles(changeset, %{roles: roles}) do
-    roles =
-      roles
-      |> Enum.map(fn role_map ->
-        role_map.label
-      end)
-
     if roles -- @user_roles == [] do
       changeset
     else

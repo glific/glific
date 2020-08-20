@@ -1,5 +1,12 @@
 defmodule Glific.EctoRoles do
+  @moduledoc """
+  Convert and parse the user roles
+  """
+
   use Ecto.Type
+
+  alias Glific.Users.User
+
   def type, do: :map
 
   # Provide custom casting rules.
@@ -9,17 +16,11 @@ defmodule Glific.EctoRoles do
   # we just put the data into a list of maps to be stored in
   # the loaded schema struct.
   def load(data) when is_list(data) do
-    roles_map_list =
-      data
-      |> Enum.with_index(1)
-      |> Enum.map(fn {role, id} ->
-        %{
-          id: id,
-          label: role
-        }
-      end)
+    list =
+      User.get_roles_list()
+      |> Enum.filter(fn role -> role.label in data end)
 
-    {:ok, roles_map_list}
+    {:ok, list}
   end
 
   # When dumping data to the database, we *expect* a list of maps

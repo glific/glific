@@ -5,7 +5,7 @@ defmodule GlificWeb.Resolvers.Users do
   """
 
   alias Glific.Repo
-  alias Glific.{Groups, Users, Users.User}
+  alias Glific.{Users, Users.User}
 
   @doc false
   @spec user(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -70,9 +70,7 @@ defmodule GlificWeb.Resolvers.Users do
   def update_user(_, %{id: id, input: params}, _) do
     with {:ok, user} <- Repo.fetch(User, id),
          {:ok, user} <- Users.update_user(user, params),
-         :ok <- Groups.update_user_groups(%{user_id: user.id, group_ids: params.group_ids}) do
-      {:ok, %{user: user}}
-    end
+         do: {:ok, %{user: user}}
   end
 
   @doc false

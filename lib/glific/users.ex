@@ -4,8 +4,7 @@ defmodule Glific.Users do
   """
   import Ecto.Query, warn: false
 
-  alias Glific.Repo
-  alias Glific.Users.User
+  alias Glific.{Groups, Repo, Users.User}
 
   @doc """
   Returns the list of filtered users.
@@ -77,9 +76,16 @@ defmodule Glific.Users do
   """
   @spec update_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user(%User{} = user, attrs) do
-    user
-    |> User.update_fields_changeset(attrs)
-    |> Repo.update()
+    {:ok, user} =
+      user
+      |> User.update_fields_changeset(attrs)
+      |> Repo.update()
+
+    Groups.update_user_groups(%{user_id: user.id, group_ids: attrs[:group_ids]})
+
+    ### Need to make a query again to load and cast the roles.
+    ### We will figure out a way and clean this in the future.
+    {:ok, get_user!(user.id)}
   end
 
   @doc """
