@@ -17,7 +17,7 @@ defmodule Glific.Repo.Migrations.AlterGlificTables do
     end
 
     alter table(:users) do
-      add :contact_id, references(:contacts, on_delete: :nilify_all), null: true
+      add :contact_id, references(:contacts, on_delete: :nilify_all), null: false
     end
 
     create unique_index(:users, :contact_id)
