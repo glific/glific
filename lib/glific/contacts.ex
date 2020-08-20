@@ -20,40 +20,13 @@ defmodule Glific.Contacts do
       iex> list_contacts()
       [%Contact{}, ...]
 
-  """
-  @spec list_contacts(map()) :: [Contact.t()]
-  def list_contacts(args \\ %{}),
-    do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &filter_with/2)
-
-  @doc """
   Get the list of contacts filtered by various search options
   Include contacts only if within list of groups
   Include contacts only if have list of tags
   """
-  @spec search_contacts(map()) :: [Contact.t()]
-  def search_contacts(args \\ %{}),
-    do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &search_filter/2)
-
-  @spec search_filter(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
-  defp search_filter(query, filter) do
-    query = Repo.filter_with(query, filter)
-
-    query =
-      Enum.reduce(filter, query, fn
-        {:include_groups, group_ids}, query ->
-          query
-          |> join(:left, [c], cg in ContactGroup, on: c.id == cg.contact_id)
-          |> where([c, cg], cg.group_id in ^group_ids)
-
-        {:include_tags, tag_ids}, query ->
-          query
-          |> join(:left, [c], ct in ContactTag, on: c.id == ct.contact_id)
-          |> where([c, ..., ct], ct.tag_id in ^tag_ids)
-      end)
-
-    query
-    |> distinct([c], c.id)
-  end
+  @spec list_contacts(map()) :: [Contact.t()]
+  def list_contacts(args \\ %{}),
+    do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &filter_with/2)
 
   @doc """
   Return the count of contacts, using the same filter as list_contacts
@@ -73,6 +46,22 @@ defmodule Glific.Contacts do
 
       {:provider_status, provider_status}, query ->
         from q in query, where: q.provider_status == ^provider_status
+
+      {:include_groups, []}, query ->
+        query
+
+      {:include_groups, group_ids}, query ->
+        query
+        |> join(:left, [c], cg in ContactGroup, on: c.id == cg.contact_id)
+        |> where([c, cg], cg.group_id in ^group_ids)
+
+      {:include_tags, []}, query ->
+        query
+
+      {:include_tags, tag_ids}, query ->
+        query
+        |> join(:left, [c], ct in ContactTag, on: c.id == ct.contact_id)
+        |> where([c, ..., ct], ct.tag_id in ^tag_ids)
 
       _, query ->
         query

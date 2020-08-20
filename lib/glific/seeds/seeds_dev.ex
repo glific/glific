@@ -14,11 +14,14 @@ defmodule Glific.Seeds.SeedsDev do
     Partners.Provider,
     Repo,
     Settings,
+    Settings.Language,
     Tags.Tag,
     Users
   }
 
   alias Faker.Lorem.Shakespeare
+
+  @now DateTime.utc_now() |> DateTime.truncate(:second)
 
   @doc """
   Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
@@ -39,14 +42,12 @@ defmodule Glific.Seeds.SeedsDev do
     [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
-    inserted_time = DateTime.utc_now() |> DateTime.truncate(:second)
-
     contacts = [
       %{
         phone: "917834811231",
         name: "Default receiver",
         language_id: hi_in.id,
-        optin_time: inserted_time,
+        optin_time: @now,
         provider_status: :session_and_hsm
       },
       %{
@@ -69,9 +70,9 @@ defmodule Glific.Seeds.SeedsDev do
     contact_entries =
       for contact_entry <- contacts do
         %{
-          inserted_at: inserted_time,
-          updated_at: inserted_time,
-          last_message_at: inserted_time,
+          inserted_at: @now,
+          updated_at: @now,
+          last_message_at: @now,
           provider_status: :session
         }
         |> Map.merge(contact_entry)
@@ -266,12 +267,33 @@ defmodule Glific.Seeds.SeedsDev do
   def seed_users do
     password = "12345678"
 
+    {:ok, en_us} = Repo.fetch_by(Language, %{label_locale: "English"})
+
+    contact1 =
+      Repo.insert!(%Contact{
+        phone: "919820112345",
+        name: "NGO Basic User 1",
+        language_id: en_us.id,
+        optin_time: @now,
+        last_message_at: @now
+      })
+
+    contact2 =
+      Repo.insert!(%Contact{
+        phone: "919876543210",
+        name: "NGO Admin",
+        language_id: en_us.id,
+        optin_time: @now,
+        last_message_at: @now
+      })
+
     Users.create_user(%{
       name: "NGO Basic User 1",
       phone: "919820112345",
       password: password,
       confirm_password: password,
-      roles: [%{id: 1, label: "staff"}]
+      roles: ["staff"],
+      contact_id: contact1.id
     })
 
     Users.create_user(%{
@@ -279,7 +301,8 @@ defmodule Glific.Seeds.SeedsDev do
       phone: "919876543210",
       password: password,
       confirm_password: password,
-      roles: [%{id: 1, label: "admin"}]
+      roles: ["admin"],
+      contact_id: contact2.id
     })
   end
 

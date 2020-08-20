@@ -33,7 +33,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     organization(admin, provider, languages)
 
-    users()
+    users(admin)
 
     hsm_templates(languages)
 
@@ -259,13 +259,14 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     })
   end
 
-  def users do
+  def users(admin) do
     Users.create_user(%{
       name: "Glific Admin",
       phone: @admin_phone,
       password: @password,
       confirm_password: @password,
-      roles: [%{id: 1, label: "admin"}]
+      roles: ["admin"],
+      contact_id: admin.id
     })
   end
 

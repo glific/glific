@@ -20,6 +20,10 @@ defmodule GlificWeb.Schema.UserTypes do
     field :phone, :string
     field :roles, list_of(:role)
 
+    field :contact, :contact do
+      resolve(dataloader(Repo))
+    end
+
     field :groups, list_of(:group) do
       resolve(dataloader(Repo))
     end
@@ -45,14 +49,9 @@ defmodule GlificWeb.Schema.UserTypes do
     field :otp, :string
   end
 
-  input_object :role_input do
-    field :id, :id
-    field :label, :string
-  end
-
   input_object :user_input do
     field :name, :string
-    field :roles, list_of(:role_input)
+    field :roles, list_of(:string)
     field :group_ids, non_null(list_of(:id))
   end
 

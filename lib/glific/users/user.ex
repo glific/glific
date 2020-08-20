@@ -5,6 +5,7 @@ defmodule Glific.Users.User do
 
   alias Glific.{
     EctoRoles,
+    Contacts.Contact,
     Groups.Group
   }
 
@@ -15,17 +16,20 @@ defmodule Glific.Users.User do
           __meta__: Ecto.Schema.Metadata.t(),
           phone: String.t() | nil,
           password_hash: String.t() | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
-  @required_fields [:phone, :name, :password]
+  @required_fields [:phone, :name, :password, :contact_id]
   @optional_fields [:name, :roles]
   @user_roles ~w(none staff manager admin)
 
   schema "users" do
     field :name, :string
     field :roles, EctoRoles
+
+    belongs_to :contact, Contact
 
     pow_user_fields()
 
@@ -60,6 +64,7 @@ defmodule Glific.Users.User do
     |> glific_phone_field_changeset(attrs, @pow_config)
     |> current_password_changeset(attrs, @pow_config)
     |> password_changeset(attrs, @pow_config)
+    |> Changeset.unique_constraint(:contact_id)
   end
 
   @doc """
@@ -86,6 +91,7 @@ defmodule Glific.Users.User do
     |> Changeset.validate_required([:name, :roles])
     |> validate_roles(params)
     |> password_changeset(params, @pow_config)
+    |> Changeset.unique_constraint(:contact_id)
   end
 
   @spec validate_roles(Ecto.Schema.t() | Changeset.t(), map()) :: Changeset.t()

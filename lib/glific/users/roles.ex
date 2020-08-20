@@ -26,13 +26,7 @@ defmodule Glific.EctoRoles do
   # but any value could be inserted into the schema struct at runtime,
   # so we need to guard against them.
   def dump(roles_map_list) when is_list(roles_map_list) do
-    roles =
-      roles_map_list
-      |> Enum.map(fn role_map ->
-        role_map.label
-      end)
-
-    {:ok, roles}
+    {:ok, roles_map_list}
   end
 
   def dump(_), do: :error

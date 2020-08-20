@@ -143,7 +143,8 @@ defmodule GlificWeb.Schema.UserTest do
       "phone" => receiver.phone,
       "name" => receiver.name,
       "password" => "password",
-      "password_confirmation" => "password"
+      "password_confirmation" => "password",
+      "contact_id" => receiver.id
     }
 
     {:ok, user} =
