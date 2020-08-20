@@ -265,7 +265,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       phone: @admin_phone,
       password: @password,
       confirm_password: @password,
-      roles: ["admin"]
+      roles: [%{id: 1, label: "admin"}]
     })
   end
 

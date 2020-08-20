@@ -271,7 +271,7 @@ defmodule Glific.Seeds.SeedsDev do
       phone: "919820112345",
       password: password,
       confirm_password: password,
-      roles: ["staff"]
+      roles: [%{id: 1, label: "staff"}]
     })
 
     Users.create_user(%{
@@ -279,7 +279,7 @@ defmodule Glific.Seeds.SeedsDev do
       phone: "919876543210",
       password: password,
       confirm_password: password,
-      roles: ["admin"]
+      roles: [%{id: 1, label: "admin"}]
     })
   end
 
