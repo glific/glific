@@ -16,6 +16,16 @@ defmodule Glific.Repo.Migrations.AlterGlificTables do
       add :description, :string, null: true
     end
 
+    alter table(:users) do
+      add :contact_id, references(:contacts, on_delete: :nilify_all), null: true
+    end
+
+    create unique_index(:users, :contact_id)
+
+    alter_flow_tables()
+  end
+
+  def alter_flow_tables do
     alter table(:flows) do
       # Enable ignore keywords while in the flow
       add :ignore_keywords, :boolean, default: false
@@ -30,11 +40,5 @@ defmodule Glific.Repo.Migrations.AlterGlificTables do
       add :recent_inbound, :jsonb, default: "[]"
       add :recent_outbound, :jsonb, default: "[]"
     end
-
-    alter table(:users) do
-      add :contact_id, references(:contacts, on_delete: :nilify_all), null: true
-    end
-
-    create unique_index(:users, :contact_id)
   end
 end
