@@ -676,15 +676,23 @@ defmodule Glific.Messages do
       {:ids, ids}, query ->
         query |> where([m], m.contact_id in ^ids)
 
-      {:include_tags, tag_ids}, query ->
-        query
-        |> join(:left, [m], mt in MessageTag, on: m.id == mt.message_id)
-        |> where([m, mt], mt.tag_id in ^tag_ids)
+      {:include_tags, tag_ids}, query -> include_tag_filter(query, tag_ids)
 
       _filter, query ->
         query
     end)
   end
+
+
+  defp include_tag_filter(query, tag_ids)
+    when is_list(tag_ids) and tag_ids != [],
+    do:
+    query
+      |> join(:left, [m], mt in MessageTag, on: m.id == mt.message_id)
+      |> where([m, mt], mt.tag_id in ^tag_ids)
+
+
+  defp include_tag_filter(query, _tag_ids), do: query
 
   defp add(element, map) do
     Map.update(

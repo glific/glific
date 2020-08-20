@@ -485,4 +485,20 @@ defmodule GlificWeb.Schema.SearchTest do
     assert get_in(result, [:data, "search"]) |> length == length(contact_ids)
     assert get_in(result, [:data, "search", Access.at(0), "contact", "id"]) in contact_ids
   end
+
+  test "search with the empty tag filter will return the conversation " do
+    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+    receiver_id = to_string(receiver.id)
+    result =
+      query_gql_by(:search,
+        variables: %{
+          "filter" => %{"term" => "", "includeTags" => []},
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==  receiver_id
+  end
 end
