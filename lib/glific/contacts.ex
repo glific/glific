@@ -50,6 +50,8 @@ defmodule Glific.Contacts do
       {:include_groups, []}, query ->
         query
 
+      # using subquery instead of join, so that distict query expression can be avoided
+      # we can come back and decide, which one is more expensive in this scenario.
       {:include_groups, group_ids}, query ->
         sub_query =
           ContactGroup
