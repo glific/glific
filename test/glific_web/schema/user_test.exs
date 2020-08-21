@@ -35,10 +35,6 @@ defmodule GlificWeb.Schema.UserTest do
 
     roles = get_in(query_data, [:data, "roles"])
     assert length(roles) >= 4
-
-    res = roles |> Enum.find(fn v -> v["label"] == "admin" end)
-
-    assert res["label"] == "admin"
   end
 
   test "users returns list of users" do
@@ -142,6 +138,7 @@ defmodule GlificWeb.Schema.UserTest do
     valid_user_attrs = %{
       "phone" => receiver.phone,
       "name" => receiver.name,
+      "roles" => [],
       "password" => "password",
       "password_confirmation" => "password",
       "contact_id" => receiver.id
@@ -201,7 +198,7 @@ defmodule GlificWeb.Schema.UserTest do
     {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
 
     name = "User Test Name New"
-    roles = ["staff", "admin"]
+    roles = ["Staff", "Admin"]
 
     group = Fixtures.group_fixture()
 
