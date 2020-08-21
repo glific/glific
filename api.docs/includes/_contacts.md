@@ -632,44 +632,25 @@ Match the status
 
 </td>
 </tr>
-</tbody>
-</table>
-
-### ContactFilter
-
-Filtering options for contacts
-
-<table>
-<thead>
-<tr>
-<th colspan="2" align="left">Field</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="2" valign="top"><strong>name</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td>Match the name</td>
-</tr>
-
-<tr>
-<td colspan="2" valign="top"><strong>phone</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td>Match the phone</td>
-</tr>
 
 <tr>
 <td colspan="2" valign="top"><strong>includeTags</strong></td>
 <td valign="top">[<a href="#id">id</a>]</td>
-<td></td>
+<td>
+
+Match if contact has a tag of includeTags list
+
+</td>
 </tr>
 
 <tr>
 <td colspan="2" valign="top"><strong>includeGroups</strong></td>
 <td valign="top">[<a href="#id">id</a>]</td>
-<td></td>
+<td>
+
+Match if contact is mapped in a group of includeGroups list
+
+</td>
 </tr>
 
 </tbody>

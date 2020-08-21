@@ -50,18 +50,30 @@ defmodule Glific.Contacts do
       {:include_groups, []}, query ->
         query
 
+      # We need distinct query expression with join,
+      # in case if filter requires contacts added to multiple groups
+      # Using subquery instead of join, so that distict query expression can be avoided
+      # We can come back and decide, which one is more expensive in this scenario.
       {:include_groups, group_ids}, query ->
+        sub_query =
+          ContactGroup
+          |> where([cg], cg.group_id in ^group_ids)
+          |> select([cg], cg.contact_id)
+
         query
-        |> join(:left, [c], cg in ContactGroup, on: c.id == cg.contact_id)
-        |> where([c, cg], cg.group_id in ^group_ids)
+        |> where([c], c.id in subquery(sub_query))
 
       {:include_tags, []}, query ->
         query
 
       {:include_tags, tag_ids}, query ->
+        sub_query =
+          ContactTag
+          |> where([ct], ct.tag_id in ^tag_ids)
+          |> select([ct], ct.contact_id)
+
         query
-        |> join(:left, [c], ct in ContactTag, on: c.id == ct.contact_id)
-        |> where([c, ..., ct], ct.tag_id in ^tag_ids)
+        |> where([c], c.id in subquery(sub_query))
 
       _, query ->
         query
