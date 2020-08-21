@@ -22,7 +22,7 @@ defmodule Glific.Users.User do
 
   @required_fields [:phone, :name, :password, :contact_id]
   @optional_fields [:name, :roles]
-  @user_roles ~w(none staff manager admin)
+  @user_roles ~w(None Staff Manager Admin)
 
   schema "users" do
     field :name, :string
@@ -42,13 +42,6 @@ defmodule Glific.Users.User do
   """
   def get_roles_list do
     @user_roles
-    |> Enum.with_index(1)
-    |> Enum.map(fn {role, id} ->
-      %{
-        id: id,
-        label: role
-      }
-    end)
   end
 
   @doc """

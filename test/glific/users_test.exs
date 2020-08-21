@@ -103,7 +103,7 @@ defmodule Glific.UsersTest do
       assert {:ok, %User{} = user} = Users.create_user(valid_attrs)
       assert user.name == "some name"
       assert user.phone == "some phone"
-      assert user.roles == ["admin"]
+      assert user.roles == ["Admin"]
     end
 
     test "create_user/1 with invalid data returns error changeset" do
@@ -115,7 +115,7 @@ defmodule Glific.UsersTest do
 
       assert {:ok, %User{} = user} = Users.update_user(user, @update_attrs)
       assert user.name == "some updated name"
-      assert user.roles == ["staff", "admin"]
+      assert user.roles == ["Staff", "Admin"]
 
       # Check phone doesn't get updated
       assert user.phone == "some phone"
