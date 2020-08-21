@@ -59,7 +59,7 @@ defmodule Glific.Users do
   @spec create_user(map()) :: %User{}
   def create_user(attrs \\ %{}) do
     attrs =
-      if(attrs[:roles]) do
+      if attrs[:roles] do
         Map.put(attrs, :roles, format_roles(attrs[:roles]))
       else
         attrs
@@ -85,7 +85,7 @@ defmodule Glific.Users do
   @spec update_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user(%User{} = user, attrs) do
     attrs =
-      if(attrs[:roles]) do
+      if attrs[:roles] do
         Map.put(attrs, :roles, format_roles(attrs[:roles]))
       else
         attrs
@@ -131,6 +131,4 @@ defmodule Glific.Users do
     roles
     |> Enum.map(&String.capitalize/1)
   end
-
-
 end
