@@ -13,7 +13,8 @@ db_database = System.get_env("DATABASE_DB") || "glific_prod"
 db_username = System.get_env("DATABASE_USER") || "postgres"
 db_password = System.get_env("DATABASE_PASSWORD") || "postgres"
 db_url = "ecto://#{db_username}:#{db_password}@#{db_host}/#{db_database}"
-ssl_port = System.get_env("SSL_PORT") || 444
+ssl_port = System.get_env("SSL_PORT") || 443
+http_port = System.get_env("HTTP_PORT") || 4000
 
 config :glific, Glific.Repo,
   url: db_url,
@@ -29,13 +30,18 @@ secret_key_base =
 
 config :glific, GlificWeb.Endpoint,
   server: true,
-  http: [:inet6, port: 4000],
-  https: [
-    port: ssl_port,
-    cipher_suite: :strong,
-    keyfile: '/etc/letsencrypt/live/tides.coloredcow.com/privkey.pem',
-    certfile: '/etc/letsencrypt/live/tides.coloredcow.com/cert.pem',
-    cacertfile: '/etc/letsencrypt/live/tides.coloredcow.com/fullchain.pem'
-  ],
+  http: [:inet6, port: http_port],
+  # Uncomment line below if need to use ssl
+  # https: [
+  #   port: ssl_port,
+  #   cipher_suite: :strong,
+  #   keyfile: System.get_env("KEY_FILE"),
+  #   certfile: System.get_env("CERT_FILE"),
+  #   cacertfile: System.get_env("CACERT_FILE")
+  # ],
   secret_key_base: secret_key_base,
   url: [host: System.get_env("BASE_URL")]
+
+config :glific,
+  provider_url: System.get_env("PROVIDER_URL"),
+  provider_key: System.get_env("PROVIDER_KEY")
