@@ -18,7 +18,7 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/flows/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/flows/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/flows/delete.gql")
-  load_gql(:done_edit, GlificWeb.Schema, "assets/gql/flows/done_edit.gql")
+  load_gql(:publish, GlificWeb.Schema, "assets/gql/flows/publish.gql")
 
   test "flows field returns list of flows" do
     result = query_gql_by(:list)
@@ -144,12 +144,12 @@ defmodule GlificWeb.Schema.FlowTest do
   test "Publish flow" do
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
 
-    result = query_gql_by(:done_edit, variables: %{"id" => flow.id})
+    result = query_gql_by(:publish, variables: %{"id" => flow.id})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "publishFlow", "errors"]) == nil
     assert get_in(query_data, [:data, "publishFlow", "success"]) == true
 
-    result = query_gql_by(:done_edit, variables: %{"id" => 123_456_789})
+    result = query_gql_by(:publish, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "publishFlow", "errors", Access.at(0), "message"])
