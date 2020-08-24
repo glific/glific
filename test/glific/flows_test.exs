@@ -108,7 +108,6 @@ defmodule Glific.FLowsTest do
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
       assert [revision] = flow.revisions
-      assert revision.status == "done"
       assert length(flow.revisions) > 0
     end
 
@@ -216,6 +215,8 @@ defmodule Glific.FLowsTest do
 
     test "publish_flow/1 updates the latest flow revision status" do
       flow = flow_fixture()
+
+      # should reset previously published flow revision and set status of recent one as "done"
       assert {:ok, %Flow{}} = Flows.publish_flow(flow)
 
       {:ok, revision} =
