@@ -64,4 +64,14 @@ defmodule GlificWeb.Resolvers.Flows do
       {:ok, flow}
     end
   end
+
+  @doc false
+  @spec done_edit_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def done_edit_flow(_, %{id: id}, _) do
+    with {:ok, flow} <- Repo.fetch(Flow, id),
+         {:ok, flow} <- Flows.done_edit_flow(flow) do
+      {:ok, %{flow: flow}}
+    end
+  end
 end

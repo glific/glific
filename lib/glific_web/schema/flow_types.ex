@@ -75,5 +75,10 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:id, non_null(:id))
       resolve(&Resolvers.Flows.delete_flow/3)
     end
+
+    field :done_edit_flow, :flow_result do
+      arg(:id, non_null(:id))
+      resolve(&Resolvers.Flows.done_edit_flow/3)
+    end
   end
 end
