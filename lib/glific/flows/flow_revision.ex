@@ -21,6 +21,7 @@ defmodule Glific.Flows.FlowRevision do
           id: non_neg_integer | nil,
           definition: map() | nil,
           revision_number: integer() | nil,
+          status: String.t() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -30,6 +31,7 @@ defmodule Glific.Flows.FlowRevision do
   schema "flow_revisions" do
     field :definition, :map
     field :revision_number, :integer
+    field :status, :string
     belongs_to :flow, Flow
     timestamps(type: :utc_datetime)
   end
