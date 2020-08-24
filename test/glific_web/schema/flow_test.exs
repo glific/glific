@@ -141,7 +141,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert message == "Resource not found"
   end
 
-  test "done edit flow" do
+  test "Publish flow" do
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
 
     result = query_gql_by(:done_edit, variables: %{"id" => flow.id})

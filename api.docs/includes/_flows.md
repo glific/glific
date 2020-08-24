@@ -359,7 +359,7 @@ Type | Description
 --------- | ---- | ------- | -----------
 <a href="#flowresult">FlowResult</a> | An error object or empty
 
-## Done Edit a Flow
+## Publish a Flow
 
 ```graphql
 mutation publishFlow($id: ID!) {
@@ -395,7 +395,7 @@ In case of errors, all the above functions return an error object like the below
 ```json
 {
   "data": {
-    "deleteFlow": {
+    "publishFlow": {
       "errors": [
         {
           "key": "Elixir.Glific.Flows.Flow 3",
