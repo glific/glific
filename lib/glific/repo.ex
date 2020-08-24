@@ -181,10 +181,10 @@ defmodule Glific.Repo do
       {:language_id, language_id}, query ->
         from q in query, where: q.language_id == ^language_id
 
-      {:parent, label}, query ->
+      {:parent, shortcode}, query ->
         from q in query,
           join: t in assoc(q, :parent),
-          where: ilike(t.label, ^"%#{label}%")
+          where: ilike(t.shortcode, ^"%#{shortcode}%")
 
       {:parent_id, parent_id}, query ->
         from q in query, where: q.parent_id == ^parent_id

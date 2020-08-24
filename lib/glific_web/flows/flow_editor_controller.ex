@@ -74,7 +74,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec labels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels(conn, _params) do
-    json(conn, %{results: []})
+    tag_list =
+    Glific.Tags.list_tags(%{filter: %{parent: "contacts"}})
+    |> Enum.reduce([], fn tag, acc ->
+      [%{uuid: "#{tag.id}", name: tag.label} | acc]
+    end)
+
+    json(conn, %{results: tag_list})
   end
 
   @doc """
