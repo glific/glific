@@ -12,7 +12,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :errors, list_of(:input_error)
   end
 
-  object :edit_flow_result do
+  object :publish_flow_result do
     field :success, :boolean
     field :errors, list_of(:input_error)
   end
@@ -81,7 +81,7 @@ defmodule GlificWeb.Schema.FlowTypes do
       resolve(&Resolvers.Flows.delete_flow/3)
     end
 
-    field :publish_flow, :edit_flow_result do
+    field :publish_flow, :publish_flow_result do
       arg(:id, non_null(:id))
       resolve(&Resolvers.Flows.publish_flow/3)
     end

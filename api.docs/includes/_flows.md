@@ -417,7 +417,7 @@ id | <a href="#id">ID</a>! | required ||
 ### Return Parameters
 Type | Description
 --------- | ---- | ------- | -----------
-<a href="#floweditresult">FlowEditResult</a> | An error object or response true
+<a href="#publishflowresult">PublishFlowResult</a> | An error object or response true
 
 ## Flow Objects
 
@@ -501,7 +501,7 @@ Type | Description
 </tbody>
 </table>
 
-### FlowEditResult
+### PublishFlowResult
 
 <table>
 <thead>
