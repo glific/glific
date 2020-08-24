@@ -8,6 +8,8 @@ defmodule Glific.Flows.Action do
   use Ecto.Schema
 
   alias Glific.Flows
+  alias Glific.Groups
+  alias Glific.Tags
 
   alias Glific.Flows.{
     ContactAction,
@@ -29,6 +31,8 @@ defmodule Glific.Flows.Action do
   @required_fields_set_contact_name [:name | @required_field_common]
   @required_fields_webook [:url, :headers, :method, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
+  @required_fields_label [:labels | @required_field_common]
+  @required_fields_group [:groups | @required_field_common]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -44,6 +48,9 @@ defmodule Glific.Flows.Action do
           field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
+          attachments: list() | nil,
+          labels: list() | nil,
+          groups: list() | nil,
           enter_flow: Flow.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
@@ -72,6 +79,9 @@ defmodule Glific.Flows.Action do
     field :quick_replies, {:array, :string}, default: []
 
     field :attachments, :map
+
+    field :labels, :map
+    field :groups, :map
 
     field :node_uuid, Ecto.UUID
     embeds_one :node, Node
@@ -138,6 +148,16 @@ defmodule Glific.Flows.Action do
       body: json["body"],
       headers: json["headers"]
     })
+  end
+
+  def process(%{"type" => "add_input_labels"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_label)
+    process(json, uuid_map, node, %{labels: json["labels"]})
+  end
+
+  def process(%{"type" => "add_contact_groups"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_group)
+    process(json, uuid_map, node, %{groups: json["groups"]})
   end
 
   def process(json, uuid_map, node) do
@@ -223,6 +243,37 @@ defmodule Glific.Flows.Action do
         ["Success" | message_stream]
       }
     end
+  end
+
+  def execute(%{type: "add_input_labels"} = action, context, message_stream) do
+    ## We will soon figure out how we will manage the UUID with tags
+    _list =
+      Enum.reduce(
+        action.labels,
+        [],
+        fn label, _acc ->
+          {:ok, tag_id} = Glific.parse_maybe_integer(label["uuid"])
+          Tags.create_contact_tag(%{contact_id: context.contact_id, tag_id: tag_id})
+        end
+      )
+
+    {:ok, context, message_stream}
+  end
+
+  def execute(%{type: "add_contact_groups"} = action, context, message_stream) do
+    ## We will soon figure out how we will manage the UUID with tags
+    _list =
+      Enum.reduce(
+        action.groups,
+        [],
+        fn group, _acc ->
+          {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
+          Groups.create_contact_group(%{contact_id: context.contact_id, group_id: group_id})
+          {:ok, group_id}
+        end
+      )
+
+    {:ok, context, message_stream}
   end
 
   def execute(action, _context, _message_stream),
