@@ -11,7 +11,6 @@ defmodule Glific.Flows.Action do
   alias Glific.Groups
   alias Glific.Tags
 
-
   alias Glific.Flows.{
     ContactAction,
     ContactField,
@@ -81,8 +80,8 @@ defmodule Glific.Flows.Action do
 
     field :attachments, :map
 
-    field :labels,  :map
-    field :groups,  :map
+    field :labels, :map
+    field :groups, :map
 
     field :node_uuid, Ecto.UUID
     embeds_one :node, Node
@@ -153,12 +152,12 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => "add_input_labels"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_label)
-    process(json, uuid_map, node, %{ labels: json["labels"]})
+    process(json, uuid_map, node, %{labels: json["labels"]})
   end
 
   def process(%{"type" => "add_contact_groups"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_group)
-    process(json, uuid_map, node, %{ groups: json["groups"]})
+    process(json, uuid_map, node, %{groups: json["groups"]})
   end
 
   def process(json, uuid_map, node) do
@@ -248,15 +247,13 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "add_input_labels"} = action, context, message_stream) do
     ## We will soon figure out how we will manage the UUID with tags
-    Enum.reduce( action.labels,
-        [],
-        fn label, acc ->
-          {:ok, tag_id} =  Glific.parse_maybe_integer(label["uuid"])
-          case Tags.create_contact_tag(%{contact_id: context.contact_id, tag_id: tag_id}) do
-            {:ok, contact_tag} -> [contact_tag | acc]
-             _ -> acc
-          end
-        end
+    _list = Enum.reduce(
+      action.labels,
+      [],
+      fn label, _acc ->
+        {:ok, tag_id} = Glific.parse_maybe_integer(label["uuid"])
+        Tags.create_contact_tag(%{contact_id: context.contact_id, tag_id: tag_id})
+      end
     )
 
     {:ok, context, message_stream}
@@ -264,15 +261,14 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "add_contact_groups"} = action, context, message_stream) do
     ## We will soon figure out how we will manage the UUID with tags
-    Enum.reduce( action.groups,
-        [],
-        fn group, acc ->
-          {:ok, group_id} =  Glific.parse_maybe_integer(group["uuid"])
-          case Groups.create_contact_group(%{contact_id: context.contact_id, group_id: group_id}) do
-            {:ok, contact_group} -> [contact_group | acc]
-             _ -> acc
-          end
-        end
+    _list = Enum.reduce(
+      action.groups,
+      [],
+      fn group, _acc ->
+        {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
+        Groups.create_contact_group(%{contact_id: context.contact_id, group_id: group_id})
+        {:ok, group_id}
+      end
     )
 
     {:ok, context, message_stream}

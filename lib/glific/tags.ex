@@ -337,7 +337,7 @@ defmodule Glific.Tags do
     # Merge default values if not present in attributes
     %ContactTag{}
     |> ContactTag.changeset(attrs)
-    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:contact_id, :tag_id])
+    |> Repo.insert()
   end
 
   @doc """
