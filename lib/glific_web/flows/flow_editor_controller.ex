@@ -19,8 +19,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec groups(Plug.Conn.t(), map) :: Plug.Conn.t()
   def groups(conn, _params) do
+    group_list =
+    Glific.Groups.list_groups()
+    |> Enum.reduce([], fn group, acc ->
+      [%{uuid: "#{group.id}", name: group.label} | acc]
+    end)
+
     conn
-    |> json(%{results: []})
+    |> json(%{results: group_list})
   end
 
   @doc false

@@ -8,7 +8,9 @@ defmodule Glific.Flows.Action do
   use Ecto.Schema
 
   alias Glific.Flows
+  alias Glific.Groups
   alias Glific.Tags
+
 
   alias Glific.Flows.{
     ContactAction,
@@ -49,6 +51,7 @@ defmodule Glific.Flows.Action do
           enter_flow_uuid: Ecto.UUID.t() | nil,
           attachments: list() | nil,
           labels: list() | nil,
+          groups: list() | nil,
           enter_flow: Flow.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
@@ -79,6 +82,7 @@ defmodule Glific.Flows.Action do
     field :attachments, :map
 
     field :labels,  :map
+    field :groups,  :map
 
     field :node_uuid, Ecto.UUID
     embeds_one :node, Node
@@ -150,6 +154,11 @@ defmodule Glific.Flows.Action do
   def process(%{"type" => "add_input_labels"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_label)
     process(json, uuid_map, node, %{ labels: json["labels"]})
+  end
+
+  def process(%{"type" => "add_contact_groups"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_group)
+    process(json, uuid_map, node, %{ groups: json["groups"]})
   end
 
   def process(json, uuid_map, node) do
@@ -239,9 +248,6 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "add_input_labels"} = action, context, message_stream) do
     ## We will soon figure out how we will manage the UUID with tags
-    IO.inspect("We will soon figure out how we will manage the UUID with tags")
-    IO.inspect(action.labels)
-
     Enum.reduce( action.labels,
         [],
         fn label, acc ->
@@ -253,19 +259,21 @@ defmodule Glific.Flows.Action do
         end
     )
 
+    {:ok, context, message_stream}
+  end
 
-    # Enum.reduce(
-    #     action.labels,
-    #     fn label, acc ->
-    #       {:ok, tag_id} = Glific.parse_maybe_integer(label["uuid"])
-    #       IO.inspect("tag_id")
-    #       IO.inspect(tag_id)
-    #       case Tags.create_contact_tag(%{contact_id: context.contact_id, tag_id: tag_id}) do
-    #         {:ok, contact_tag} -> [contact_tag | acc]
-    #         _ -> acc
-    #       end
-    #     end
-    # )
+  def execute(%{type: "add_contact_groups"} = action, context, message_stream) do
+    ## We will soon figure out how we will manage the UUID with tags
+    Enum.reduce( action.groups,
+        [],
+        fn group, acc ->
+          {:ok, group_id} =  Glific.parse_maybe_integer(group["uuid"])
+          case Groups.create_contact_group(%{contact_id: context.contact_id, group_id: group_id}) do
+            {:ok, contact_group} -> [contact_group | acc]
+             _ -> acc
+          end
+        end
+    )
 
     {:ok, context, message_stream}
   end
