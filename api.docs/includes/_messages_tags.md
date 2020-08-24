@@ -298,6 +298,56 @@ Parameter | Type | Default | Description
 <a href="#messagetag">MessageTag</a> | An error or object
 
 
+## Subscription for Create Message Tag
+
+```graphql
+subscription {
+  createdMessageTag {
+    id
+    body
+    flow
+    type
+    tags{
+      label
+    }
+   
+  }
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createdMessageTag": {
+      "body": "1\n",
+      "flow": "INBOUND",
+      "id": "56",
+      "tags": [
+        {
+          "label": "Unread"
+        },
+        {
+          "label": "Not replied"
+        },
+        {
+          "label": "Numeric"
+        }
+      ],
+      "type": "TEXT"
+    }
+  }
+}
+```
+
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#message">Message</a> | An error or object
+
+
 ## Message Tag Objects
 
 ### MessageTag
