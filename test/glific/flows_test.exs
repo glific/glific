@@ -219,7 +219,7 @@ defmodule Glific.FLowsTest do
       assert {:ok, %Flow{}} = Flows.done_edit_flow(flow)
 
       {:ok, revision} =
-        Flows.FlowRevision
+        FlowRevision
         |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})
 
       assert revision.status == "done"

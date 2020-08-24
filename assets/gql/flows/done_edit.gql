@@ -1,0 +1,9 @@
+mutation doneEditFlow($id: ID!) {
+  doneEditFlow(id: $id) {
+    success
+    errors {
+      key
+      message
+    }
+  }
+}

@@ -364,10 +364,7 @@ Type | Description
 ```graphql
 mutation doneEditFlow($id: ID!) {
   doneEditFlow(id: $id) {
-    flow {
-      id
-      name
-    }
+    success
     errors {
       key
       message
@@ -387,14 +384,7 @@ mutation doneEditFlow($id: ID!) {
   "data": {
     "doneEditFlow": {
       "errors": null,
-      "flow": {
-        "id": "1",
-        "keywords": [
-          "help",
-          "मदद"
-        ],
-        "name": "Help Workflow"
-      }
+      "success": true
     }
   }
 }
@@ -412,7 +402,7 @@ In case of errors, all the above functions return an error object like the below
           "message": "Resource not found"
         }
       ],
-      "flow": null
+      "success": null
     }
   }
 }
@@ -427,7 +417,7 @@ id | <a href="#id">ID</a>! | required ||
 ### Return Parameters
 Type | Description
 --------- | ---- | ------- | -----------
-<a href="#flowresult">FlowResult</a> | An error object or empty
+<a href="#floweditresult">FlowEditResult</a> | An error object or response true
 
 ## Flow Objects
 
@@ -506,6 +496,31 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>flow</strong></td>
 <td valign="top"><a href="#flow">Flow</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### FlowEditResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>success</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
 </tbody>

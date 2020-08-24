@@ -70,8 +70,8 @@ defmodule GlificWeb.Resolvers.Flows do
           {:ok, any} | {:error, any}
   def done_edit_flow(_, %{id: id}, _) do
     with {:ok, flow} <- Repo.fetch(Flow, id),
-         {:ok, flow} <- Flows.done_edit_flow(flow) do
-      {:ok, %{flow: flow}}
+         {:ok, _flow} <- Flows.done_edit_flow(flow) do
+      {:ok, %{success: true}}
     end
   end
 end
