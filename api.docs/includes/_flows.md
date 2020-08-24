@@ -359,6 +359,76 @@ Type | Description
 --------- | ---- | ------- | -----------
 <a href="#flowresult">FlowResult</a> | An error object or empty
 
+## Done Edit a Flow
+
+```graphql
+mutation doneEditFlow($id: ID!) {
+  doneEditFlow(id: $id) {
+    flow {
+      id
+      name
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "id": "3"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "doneEditFlow": {
+      "errors": null,
+      "flow": {
+        "id": "1",
+        "keywords": [
+          "help",
+          "मदद"
+        ],
+        "name": "Help Workflow"
+      }
+    }
+  }
+}
+```
+
+In case of errors, all the above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "deleteFlow": {
+      "errors": [
+        {
+          "key": "Elixir.Glific.Flows.Flow 3",
+          "message": "Resource not found"
+        }
+      ],
+      "flow": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+id | <a href="#id">ID</a>! | required ||
+
+### Return Parameters
+Type | Description
+--------- | ---- | ------- | -----------
+<a href="#flowresult">FlowResult</a> | An error object or empty
+
 ## Flow Objects
 
 ### Flow

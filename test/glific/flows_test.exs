@@ -1,7 +1,11 @@
 defmodule Glific.FLowsTest do
   use Glific.DataCase
 
-  alias Glific.{Flows, Flows.Flow}
+  alias Glific.{
+    Flows,
+    Flows.Flow,
+    Flows.FlowRevision
+  }
 
   describe "flows" do
     @valid_attrs %{
@@ -104,6 +108,7 @@ defmodule Glific.FLowsTest do
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
       assert [revision] = flow.revisions
+      assert revision.status == "done"
       assert length(flow.revisions) > 0
     end
 
@@ -207,6 +212,17 @@ defmodule Glific.FLowsTest do
       {:ok, loaded_flow_new} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
       assert loaded_flow.shortcode == flow.shortcode
       assert loaded_flow_new.shortcode != loaded_flow.shortcode
+    end
+
+    test "done_edit_flow/1 updates the latest flow revision status" do
+      flow = flow_fixture()
+      assert {:ok, %Flow{}} = Flows.done_edit_flow(flow)
+
+      {:ok, revision} =
+        Flows.FlowRevision
+        |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})
+
+      assert revision.status == "done"
     end
   end
 end

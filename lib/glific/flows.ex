@@ -294,6 +294,9 @@ defmodule Glific.Flows do
       else: false
   end
 
+  @doc """
+  Update flow revision status as done
+  """
   @spec done_edit_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def done_edit_flow(%Flow{} = flow) do
     {:ok, revision} =
