@@ -87,7 +87,8 @@ defmodule Glific.Flows do
       {:ok, _} =
         FlowRevision.create_flow_revision(%{
           definition: FlowRevision.default_definition(flow),
-          flow_id: flow.id
+          flow_id: flow.id,
+          status: "done"
         })
 
       {:ok, flow}
