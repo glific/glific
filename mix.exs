@@ -82,7 +82,6 @@ defmodule Glific.MixProject do
       {:gettext, "~> 0.18"},
       {:decimal, "~> 1.8"},
       {:jason, "~> 1.2"},
-      {:sentry, "~> 7.2"},
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
       {:pow, "~> 1.0"},
@@ -117,7 +116,8 @@ defmodule Glific.MixProject do
       {:fun_with_flags, "~> 1.5"},
       {:fun_with_flags_ui, "~> 0.7"},
       {:phil_columns, "~> 3.1"},
-      {:passwordless_auth, "~> 0.3.0"}
+      {:passwordless_auth, "~> 0.3.0"},
+      {:appsignal, "~> 1.0"},
     ]
   end
 

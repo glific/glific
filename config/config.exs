@@ -67,22 +67,6 @@ config :passwordless_auth,
   # seconds, optional (defaults to 300 if not provided)
   verification_code_ttl: 300
 
-# Sentry configuration
-
-# configure sentry's logger
-config :logger,
-  backends: [:console, Sentry.LoggerBackend]
-
-config :sentry,
-  dsn: "https://4ae43f4bc3c14881aace7956eb4a0b64@o412613.ingest.sentry.io/5290153",
-  environment_name: Mix.env(),
-  enable_source_code_context: true,
-  root_source_code_path: File.cwd!(),
-  tags: %{
-    env: "dev"
-  },
-  included_environments: [:prod]
-
 # phil columns to seed production data
 config :phil_columns,
   ensure_all_started: ~w(timex)a
