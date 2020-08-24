@@ -108,7 +108,7 @@ defmodule Glific.Flows.ContactAction do
 
     type = String.to_existing_atom(type)
 
-     {:ok, message_media} =
+    {:ok, message_media} =
       %{
         type: type,
         url: url,

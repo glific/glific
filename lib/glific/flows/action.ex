@@ -247,29 +247,31 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "add_input_labels"} = action, context, message_stream) do
     ## We will soon figure out how we will manage the UUID with tags
-    _list = Enum.reduce(
-      action.labels,
-      [],
-      fn label, _acc ->
-        {:ok, tag_id} = Glific.parse_maybe_integer(label["uuid"])
-        Tags.create_contact_tag(%{contact_id: context.contact_id, tag_id: tag_id})
-      end
-    )
+    _list =
+      Enum.reduce(
+        action.labels,
+        [],
+        fn label, _acc ->
+          {:ok, tag_id} = Glific.parse_maybe_integer(label["uuid"])
+          Tags.create_contact_tag(%{contact_id: context.contact_id, tag_id: tag_id})
+        end
+      )
 
     {:ok, context, message_stream}
   end
 
   def execute(%{type: "add_contact_groups"} = action, context, message_stream) do
     ## We will soon figure out how we will manage the UUID with tags
-    _list = Enum.reduce(
-      action.groups,
-      [],
-      fn group, _acc ->
-        {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
-        Groups.create_contact_group(%{contact_id: context.contact_id, group_id: group_id})
-        {:ok, group_id}
-      end
-    )
+    _list =
+      Enum.reduce(
+        action.groups,
+        [],
+        fn group, _acc ->
+          {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
+          Groups.create_contact_group(%{contact_id: context.contact_id, group_id: group_id})
+          {:ok, group_id}
+        end
+      )
 
     {:ok, context, message_stream}
   end
