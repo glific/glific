@@ -214,9 +214,21 @@ defmodule Glific.FLowsTest do
     end
 
     test "publish_flow/1 updates the latest flow revision status" do
-      flow = flow_fixture()
+      flow = flow_fixture() |> Repo.preload([:revisions])
+
+      # should set status of recent flow revision as "done"
+      assert {:ok, %Flow{}} = Flows.publish_flow(flow)
+
+      {:ok, revision} =
+        FlowRevision
+        |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})
+
+      assert revision.status == "done"
 
       # should reset previously published flow revision and set status of recent one as "done"
+      [revision] = flow.revisions
+      Flows.create_flow_revision(revision.definition)
+
       assert {:ok, %Flow{}} = Flows.publish_flow(flow)
 
       {:ok, revision} =
