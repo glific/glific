@@ -214,9 +214,9 @@ defmodule Glific.FLowsTest do
       assert loaded_flow_new.shortcode != loaded_flow.shortcode
     end
 
-    test "done_edit_flow/1 updates the latest flow revision status" do
+    test "publish_flow/1 updates the latest flow revision status" do
       flow = flow_fixture()
-      assert {:ok, %Flow{}} = Flows.done_edit_flow(flow)
+      assert {:ok, %Flow{}} = Flows.publish_flow(flow)
 
       {:ok, revision} =
         FlowRevision

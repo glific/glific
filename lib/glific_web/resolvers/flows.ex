@@ -66,11 +66,11 @@ defmodule GlificWeb.Resolvers.Flows do
   end
 
   @doc false
-  @spec done_edit_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  @spec publish_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def done_edit_flow(_, %{id: id}, _) do
+  def publish_flow(_, %{id: id}, _) do
     with {:ok, flow} <- Repo.fetch(Flow, id),
-         {:ok, _flow} <- Flows.done_edit_flow(flow) do
+         {:ok, _flow} <- Flows.publish_flow(flow) do
       {:ok, %{success: true}}
     end
   end

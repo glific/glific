@@ -1,5 +1,5 @@
-mutation doneEditFlow($id: ID!) {
-  doneEditFlow(id: $id) {
+mutation publishFlow($id: ID!) {
+  publishFlow(id: $id) {
     success
     errors {
       key

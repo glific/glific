@@ -87,8 +87,7 @@ defmodule Glific.Flows do
       {:ok, _} =
         FlowRevision.create_flow_revision(%{
           definition: FlowRevision.default_definition(flow),
-          flow_id: flow.id,
-          status: "done"
+          flow_id: flow.id
         })
 
       {:ok, flow}
@@ -297,8 +296,8 @@ defmodule Glific.Flows do
   @doc """
   Update flow revision status as done
   """
-  @spec done_edit_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
-  def done_edit_flow(%Flow{} = flow) do
+  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
+  def publish_flow(%Flow{} = flow) do
     {:ok, revision} =
       FlowRevision
       |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})

@@ -362,8 +362,8 @@ Type | Description
 ## Done Edit a Flow
 
 ```graphql
-mutation doneEditFlow($id: ID!) {
-  doneEditFlow(id: $id) {
+mutation publishFlow($id: ID!) {
+  publishFlow(id: $id) {
     success
     errors {
       key
@@ -382,7 +382,7 @@ mutation doneEditFlow($id: ID!) {
 ```json
 {
   "data": {
-    "doneEditFlow": {
+    "publishFlow": {
       "errors": null,
       "success": true
     }

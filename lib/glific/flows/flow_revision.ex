@@ -31,7 +31,7 @@ defmodule Glific.Flows.FlowRevision do
   schema "flow_revisions" do
     field :definition, :map
     field :revision_number, :integer
-    field :status, :string
+    field :status, :string, default: "draft"
     belongs_to :flow, Flow
     timestamps(type: :utc_datetime)
   end
