@@ -209,13 +209,4 @@ defmodule Glific.Repo do
     |> where([m], field(m, ^key_1) == ^value_1 and field(m, ^key_2) in ^values_2)
     |> Repo.delete_all()
   end
-
-  @doc """
-  Need to figure out what this function does. Still learning Dataloader and its magic.
-  Seems l
-  ike it is not used currently, so commenting it out
-  @spec data() :: Dataloader.Ecto.t()
-  def data,
-    do: Dataloader.Ecto.new(Repo, query: &query/2)
-  """
 end
