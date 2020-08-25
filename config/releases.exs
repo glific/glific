@@ -44,5 +44,4 @@ config :glific, GlificWeb.Endpoint,
 
 config :glific,
   provider_url: System.get_env("PROVIDER_URL"),
-  provider_key: System.get_env("PROVIDER_KEY"),
-  provider_worker: System.get_env("PROVIDER_WORKER")
+  provider_key: System.get_env("PROVIDER_KEY")
