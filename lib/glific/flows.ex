@@ -274,13 +274,12 @@ defmodule Glific.Flows do
   end
 
   @doc """
-  Check if a flow has been activated for a specific contact id in the
-  past N hours
+  Check if a flow has been activated since the time sent as a parameter
+  e.g. outofoffice will check if that flow was activated in the last 24 hours
+  daily/weekly will check since start of day/week, etc
   """
-  @spec flow_activated(non_neg_integer, non_neg_integer, integer) :: boolean
-  def flow_activated(flow_id, contact_id, go_back \\ 24) do
-    since = Glific.go_back_time(go_back)
-
+  @spec flow_activated(non_neg_integer, non_neg_integer, DateTime.t()) :: boolean
+  def flow_activated(flow_id, contact_id, since) do
     results =
       FlowContext
       |> where([fc], fc.flow_id == ^flow_id)

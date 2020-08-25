@@ -39,15 +39,15 @@ defmodule Glific.Repo do
   end
 
   @doc """
-  Get map of label to ids for easier lookup for various system objects - language, tag
+  Get map of field (typically label) to ids for easier lookup for various system objects - language, tag
   """
-  @spec label_id_map(Ecto.Queryable.t(), [String.t()]) :: %{String.t() => integer}
-  def label_id_map(queryable, labels) do
+  @spec label_id_map(Ecto.Queryable.t(), [String.t()], atom()) :: %{String.t() => integer}
+  def label_id_map(queryable, values, field \\ :label) do
     queryable
-    |> where([q], q.label in ^labels)
-    |> select([:id, :label])
+    |> where([q], field(q, ^field) in ^values)
+    |> select([:id, field])
     |> Repo.all()
-    |> Enum.reduce(%{}, fn tag, acc -> Map.put(acc, tag.label, tag.id) end)
+    |> Enum.reduce(%{}, fn table, acc -> Map.put(acc, Map.get(table, field), table.id) end)
   end
 
   @doc """

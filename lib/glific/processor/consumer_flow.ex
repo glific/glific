@@ -96,9 +96,7 @@ defmodule Glific.Processor.ConsumerFlow do
     message
   end
 
-  @doc """
-  Check contexts
-  """
+  @doc false
   @spec check_contexts(atom() | Message.t(), String.t(), map()) :: Message.t()
   def check_contexts(message, body, _state) do
     context = FlowContext.active_context(message.contact_id)
@@ -110,18 +108,9 @@ defmodule Glific.Processor.ConsumerFlow do
       |> FlowContext.load_context(flow)
       |> FlowContext.step_forward(body)
     else
-      # lets  check if we should initiate the out of office flow
-      # lets do this only if we've not sent them the out of office flow
-      # in the past 12 hours
-      if FunWithFlags.enabled?(:out_of_office_active) do
-        {:ok, flow} = Flows.get_cached_flow("outofoffice", %{shortcode: "outofoffice"})
-
-        if !Flows.flow_activated(flow.id, message.contact_id) do
-          FlowContext.init_context(flow, message.contact)
-        end
-      end
-
-      message
+      # lets do the periodic flow routine and send those out
+      # in a priority order
+      Periodic.check_and_send_flows()
     end
 
     # we can potentially save the {contact_id, context} map here in the flow state,
