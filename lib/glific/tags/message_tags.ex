@@ -6,6 +6,7 @@ defmodule Glific.Tags.MessageTags do
   alias __MODULE__
 
   alias Glific.{
+    Communications,
     Tags,
     Tags.MessageTag
   }
