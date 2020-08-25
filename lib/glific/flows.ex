@@ -203,7 +203,6 @@ defmodule Glific.Flows do
       |> FlowRevision.changeset(%{definition: definition, flow_id: flow.id})
       |> Repo.insert()
 
-    update_cached_flow(flow.uuid)
     revision
   end
 
@@ -268,9 +267,16 @@ defmodule Glific.Flows do
   """
   @spec update_cached_flow(Flow.t()) :: {atom, any}
   def update_cached_flow(flow_uuid) do
+    # IO.inspect(flow_uuid)
+    # {:ok, flow1} = Caches.get(flow_uuid)
     flow = Flow.get_loaded_flow(%{uuid: flow_uuid})
     Caches.remove([flow.uuid, flow.shortcode])
     Caches.set([flow.uuid, flow.shortcode], flow)
+    # IO.inspect(flow_uuid)
+    # {:ok, flow2} = Caches.get(flow_uuid)
+    # IO.inspect flow1.revisions
+    # IO.inspect Map.keys(flow1)
+    # IO.inspect (flow2 |> Repo.preload([:revisions])).revisions
   end
 
   @doc """
@@ -315,6 +321,8 @@ defmodule Glific.Flows do
       latest_revision
       |> FlowRevision.changeset(%{status: "done"})
       |> Repo.update()
+
+    update_cached_flow(flow.uuid)
 
     {:ok, flow}
   end
