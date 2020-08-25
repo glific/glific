@@ -217,13 +217,11 @@ defmodule Glific.Tags do
       |> MessageTag.changeset(attrs)
       |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])
 
-    case {status, response} do
-      {:ok, message_tag} ->
-        Communications.publish_data({:ok, message_tag}, :created_message_tag)
-        {:ok, message_tag}
-
-      {:error, changeset} ->
-        {:error, changeset}
+    if status == :ok do
+      Communications.publish_data({status, response}, :created_message_tag)
+      {:ok, response}
+    else
+      {:error, response}
     end
   end
 
@@ -261,7 +259,9 @@ defmodule Glific.Tags do
   """
   @spec delete_message_tag(MessageTag.t()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def delete_message_tag(%MessageTag{} = message_tag) do
-    Repo.delete(message_tag)
+    {status, response} = Repo.delete(message_tag)
+    Communications.publish_data({status, response}, :deleted_message_tag)
+    {status, response}
   end
 
   @doc """
