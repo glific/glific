@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.MessageTagTypes do
   end
 
   object :message_tag_subscriptions do
-    field :created_message_tag, :message do
+    field :created_message_tag, :message_tag do
       config(fn _args, _info ->
         {:ok, topic: :glific}
       end)
@@ -71,7 +71,8 @@ defmodule GlificWeb.Schema.MessageTagTypes do
         :glific
       )
 
-      resolve(fn message, _, _ -> {:ok, message} end)
+      resolve(fn %{message_tag: message_tag }, _, _ -> {:ok, message_tag} end)
+
     end
 
     field :deleted_message_tag, :message_tag do

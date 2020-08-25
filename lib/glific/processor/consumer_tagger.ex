@@ -89,7 +89,6 @@ defmodule Glific.Processor.ConsumerTagger do
     # get the first element which is the message
     |> elem(0)
     |> Repo.preload(:tags)
-    |> Communications.publish_data(:created_message_tag)
   end
 
   @spec numeric_tagger({atom() | Message.t(), map()}, String.t()) :: {Message.t(), map()}
