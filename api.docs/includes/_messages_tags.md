@@ -250,17 +250,13 @@ Parameter | Type | Default | Description
 
 ```graphql
 subscription {
-  deletedMessageTag() {
-    id
-    message {
-        id
+  updateMessageTags() {
+    messageTags{
+      message{
         body
+      }
     }
-
-    tag {
-        id
-        label
-    }
+    numberDeleted
   }
 }
 
@@ -270,16 +266,9 @@ subscription {
 ```json
 {
   "data": {
-    "deletedMessageTag": {
-      "body": 11,
-      "message": {
-          "id" : 10,
-          "body" : "Hello Sir"
-      },
-      "tag": {
-          "id" : 10,
-          "label" : "Greeting"
-      }
+    "updateMessageTags": {
+      "messageTags": [],
+      "numberDeleted": 1
     }
   }
 }
@@ -287,7 +276,7 @@ subscription {
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#messagetag">MessageTag</a> | An error or object
+<a href="#messagetag">MessageTags</a> | An error or object
 
 
 
