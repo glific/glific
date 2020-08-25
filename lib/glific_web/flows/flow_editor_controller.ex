@@ -19,8 +19,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec groups(Plug.Conn.t(), map) :: Plug.Conn.t()
   def groups(conn, _params) do
+    group_list =
+      Glific.Groups.list_groups()
+      |> Enum.reduce([], fn group, acc ->
+        [%{uuid: "#{group.id}", name: group.label} | acc]
+      end)
+
     conn
-    |> json(%{results: []})
+    |> json(%{results: group_list})
   end
 
   @doc false
@@ -74,7 +80,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec labels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels(conn, _params) do
-    json(conn, %{results: []})
+    tag_list =
+      Glific.Tags.list_tags(%{filter: %{parent: "Contacts"}})
+      |> Enum.reduce([], fn tag, acc ->
+        [%{uuid: "#{tag.id}", name: tag.label} | acc]
+      end)
+
+    json(conn, %{results: tag_list})
   end
 
   @doc """

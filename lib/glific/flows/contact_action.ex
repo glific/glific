@@ -19,8 +19,7 @@ defmodule Glific.Flows.ContactAction do
   @doc """
   If the template is not define for the message send text messages
   """
-  @spec send_message(FlowContext.t(), Action.t(), [String.t()]) ::
-          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
+  @spec send_message(FlowContext.t(), Action.t(), [String.t()]) :: {:ok, map(), any()}
   def send_message(context, %Action{templating: nil, text: _text} = action, message_stream) do
     # get the test translation if needed
     text = Localization.get_translation(context, action)
@@ -99,7 +98,7 @@ defmodule Glific.Flows.ContactAction do
     {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
   end
 
-  @spec get_media_from_attachment(map(), any()) :: {atom(), nil | integer()}
+  @spec get_media_from_attachment(any(), any()) :: any()
   defp get_media_from_attachment(attachment, _) when attachment == %{} or is_nil(attachment),
     do: {:text, nil}
 

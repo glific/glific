@@ -359,6 +359,66 @@ Type | Description
 --------- | ---- | ------- | -----------
 <a href="#flowresult">FlowResult</a> | An error object or empty
 
+## Publish a Flow
+
+```graphql
+mutation publishFlow($id: ID!) {
+  publishFlow(id: $id) {
+    success
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "id": "3"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "publishFlow": {
+      "errors": null,
+      "success": true
+    }
+  }
+}
+```
+
+In case of errors, all the above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "publishFlow": {
+      "errors": [
+        {
+          "key": "Elixir.Glific.Flows.Flow 3",
+          "message": "Resource not found"
+        }
+      ],
+      "success": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+id | <a href="#id">ID</a>! | required ||
+
+### Return Parameters
+Type | Description
+--------- | ---- | ------- | -----------
+<a href="#publishflowresult">PublishFlowResult</a> | An error object or response true
+
 ## Flow Objects
 
 ### Flow
@@ -436,6 +496,31 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>flow</strong></td>
 <td valign="top"><a href="#flow">Flow</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### PublishFlowResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>success</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
 </tbody>

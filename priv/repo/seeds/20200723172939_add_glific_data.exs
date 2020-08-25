@@ -516,7 +516,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     Repo.insert(%FlowRevision{
       definition: definition,
-      flow_id: f.id
+      flow_id: f.id,
+      status: "done"
     })
   end
 

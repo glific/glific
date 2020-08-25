@@ -378,7 +378,8 @@ defmodule Glific.Seeds.SeedsDev do
 
     Repo.insert!(%FlowRevision{
       definition: FlowRevision.default_definition(test_flow),
-      flow_id: test_flow.id
+      flow_id: test_flow.id,
+      status: "done"
     })
 
     timed_flow =
@@ -402,7 +403,8 @@ defmodule Glific.Seeds.SeedsDev do
 
     Repo.insert!(%FlowRevision{
       definition: timed_flow_definition,
-      flow_id: timed_flow.id
+      flow_id: timed_flow.id,
+      status: "done"
     })
 
     sol_activity =
@@ -426,7 +428,8 @@ defmodule Glific.Seeds.SeedsDev do
 
     Repo.insert!(%FlowRevision{
       definition: sol_activity_definition,
-      flow_id: sol_activity.id
+      flow_id: sol_activity.id,
+      status: "done"
     })
 
     sol_feedback =
@@ -450,7 +453,8 @@ defmodule Glific.Seeds.SeedsDev do
 
     Repo.insert!(%FlowRevision{
       definition: sol_feedback_definition,
-      flow_id: sol_feedback.id
+      flow_id: sol_feedback.id,
+      status: "done"
     })
   end
 

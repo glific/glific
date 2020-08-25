@@ -205,21 +205,16 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#messagetagresult">MessageTagResult</a> | An error object or empty
 
-
 ## Subscription for Create Message Tag
 
 ```graphql
 subscription {
-  createdMessageTag() {
-    id
-    message {
-        id
-        body
+  createdMessageTag {
+    message{
+      id
     }
-
-    tag {
-        id
-        label
+    tag{
+      id
     }
   }
 }
@@ -231,25 +226,22 @@ subscription {
 {
   "data": {
     "createdMessageTag": {
-      "body": 11,
       "message": {
-          "id" : 10,
-          "body" : "Hello Sir"
+        "id": "194"
       },
       "tag": {
-          "id" : 10,
-          "label" : "Greeting"
+        "id": "194"
       }
     }
   }
 }
 ```
+
+
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#messagetag">MessageTag</a> | An error or object
-
-
+<a href="#message">Message</a> | An error or object
 
 
 
@@ -296,6 +288,7 @@ subscription {
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#messagetag">MessageTag</a> | An error or object
+
 
 
 ## Message Tag Objects

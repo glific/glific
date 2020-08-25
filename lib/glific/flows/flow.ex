@@ -230,7 +230,7 @@ defmodule Glific.Flows.Flow do
     query =
       from f in Flow,
         join: fr in assoc(f, :revisions),
-        where: fr.flow_id == f.id and fr.revision_number == 0,
+        where: fr.flow_id == f.id and fr.status == "done",
         select: %Flow{
           id: f.id,
           uuid: f.uuid,
