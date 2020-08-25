@@ -8,6 +8,7 @@ defmodule Glific.Partners.Organization do
   alias __MODULE__
 
   alias Glific.Contacts.Contact
+  alias Glific.Partners.OutOfOffice
   alias Glific.Partners.Provider
   alias Glific.Settings.Language
 
@@ -58,16 +59,19 @@ defmodule Glific.Partners.Organization do
     belongs_to :contact, Contact
     belongs_to :default_language, Language
 
+    embeds_one :out_of_office, OutOfOffice, on_replace: :update
+
     timestamps(type: :utc_datetime)
   end
 
   @doc """
-  Standard changeset pattern we use for all datat types
+  Standard changeset pattern we use for all data types
   """
   @spec changeset(Organization.t(), map()) :: Ecto.Changeset.t()
   def changeset(organization, attrs) do
     organization
     |> cast(attrs, @required_fields ++ @optional_fields)
+    |> cast_embed(:out_of_office, with: &OutOfOffice.out_of_office_changeset/2)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:contact_id)
     |> unique_constraint(:name)

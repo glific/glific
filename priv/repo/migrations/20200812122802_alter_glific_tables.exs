@@ -1,6 +1,5 @@
 defmodule Glific.Repo.Migrations.AlterGlificTables do
   use Ecto.Migration
-
   @moduledoc """
   Alter Glific tables
   """
@@ -21,6 +20,10 @@ defmodule Glific.Repo.Migrations.AlterGlificTables do
     end
 
     create unique_index(:users, :contact_id)
+
+    alter table(:organizations) do
+      add :out_of_office, :map
+    end
 
     alter_flow_tables()
   end

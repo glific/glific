@@ -14,6 +14,24 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :enabled_days do
+    field :monday, :boolean
+    field :tuesday, :boolean
+    field :wednesday, :boolean
+    field :thursday, :boolean
+    field :friday, :boolean
+    field :saturday, :boolean
+    field :sunday, :boolean
+  end
+
+  object :out_of_office do
+    field :enabled, :boolean
+    field :start_time, :datetime
+    field :end_time, :datetime
+    field :enabled_days, :enabled_days
+    field :flow_id, :id
+  end
+
   object :organization do
     field :id, :id
     field :name, :string
@@ -34,6 +52,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :default_language, :language do
       resolve(dataloader(Repo))
     end
+
+    field :out_of_office, :out_of_office
   end
 
   @desc "Filtering options for organizations"
@@ -60,6 +80,24 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :default_language, :string
   end
 
+  input_object :enabled_days_input do
+    field :monday, :boolean
+    field :tuesday, :boolean
+    field :wednesday, :boolean
+    field :thursday, :boolean
+    field :friday, :boolean
+    field :saturday, :boolean
+    field :sunday, :boolean
+  end
+
+  input_object :out_of_office_input do
+    field :enabled, :boolean
+    field :start_time, :datetime
+    field :end_time, :datetime
+    field :enabled_days, :enabled_days_input
+    field :flow_id, :id
+  end
+
   input_object :organization_input do
     field :name, :string
     field :display_name, :string
@@ -71,6 +109,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :provider_id, :id
     field :contact_id, :id
     field :default_language_id, :id
+
+    field :out_of_office, :out_of_office_input
   end
 
   object :organization_queries do
