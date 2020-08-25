@@ -31,7 +31,8 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
           start_time: :utc_datetime | nil,
           end_time: :utc_datetime | nil,
           enabled_days: map() | nil,
-          flow_id: non_neg_integer | nil
+          flow_id: non_neg_integer | nil,
+          flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   embedded_schema do
