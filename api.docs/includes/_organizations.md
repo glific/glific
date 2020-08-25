@@ -244,6 +244,21 @@ mutation updateOrganization($id: ID!, $input:OrganizationInput!) {
       id
       name
       displayName
+      outOfOffice {
+        enabled
+        startTime
+        endTime
+        flowId
+        enabledDays {
+          monday
+          tuesday
+          wednesday
+          thursday
+          friday
+          saturday
+          sunday
+        }
+      }
     }
     errors {
       key
@@ -255,7 +270,22 @@ mutation updateOrganization($id: ID!, $input:OrganizationInput!) {
 {
   "id": "1",
   "input": {
-    "display_name": "updated organization display name"
+    "displayName": "updated organization display name",
+    "outOfOffice": {
+      "enabled": true,
+      "enabledDays": {
+        "friday": true,
+        "monday": true,
+        "saturday": true,
+        "sunday": false,
+        "thursday": true,
+        "tuesday": true,
+        "wednesday": true
+      },
+      "endTime": "T10:00:00",
+      "flowId": 1,
+      "startTime": "T09:00:00"
+    }
   }
 }
 ```
@@ -270,7 +300,22 @@ mutation updateOrganization($id: ID!, $input:OrganizationInput!) {
       "organization": {
         "displayName": "updated organization display name",
         "id": "1",
-        "name": "Default Organization"
+        "name": "Glific",
+        "outOfOffice": {
+          "enabled": true,
+          "enabledDays": {
+            "friday": true,
+            "monday": true,
+            "saturday": true,
+            "sunday": false,
+            "thursday": true,
+            "tuesday": true,
+            "wednesday": true
+          },
+          "endTime": "10:00:00",
+          "flowId": "1",
+          "startTime": "09:00:00"
+        }
       }
     }
   }
@@ -411,6 +456,11 @@ Type | Description
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>outOfOffice</strong></td>
+<td valign="top"><a href="#outofoffice">OutOfOffice</a></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
@@ -438,6 +488,98 @@ Type | Description
 </tr>
 </tbody>
 </table>
+
+### OutOfOffice
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>enabled</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>startTime</strong></td>
+<td valign="top"><a href="#time">Time</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>endTime</strong></td>
+<td valign="top"><a href="#time">Time</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>enabledDays</strong></td>
+<td valign="top"><a href="#enableddays">EnabledDays</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>flow_id</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### EnabledDays
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>monday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>tuesday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>wednesday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>thursday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>friday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>saturday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>sunday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
 
 ## Organization Inputs ##
 
@@ -584,6 +726,103 @@ Unique
 <tr>
 <td colspan="2" valign="top"><strong>providerNumber</strong></td>
 <td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>outOfOfficeInput</strong></td>
+<td valign="top"><a href="#outofofficeinput">OutOfOfficeInput</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+
+### OutOfOfficeInput
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>enabled</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>startTime</strong></td>
+<td valign="top"><a href="#time">Time</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>endTime</strong></td>
+<td valign="top"><a href="#time">Time</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>enabledDaysInput</strong></td>
+<td valign="top"><a href="#enableddaysinput">EnabledDaysInput</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>flow_id</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### EnabledDaysInput
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>monday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>tuesday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>wednesday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>thursday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>friday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>saturday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>sunday</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
 </tbody>
