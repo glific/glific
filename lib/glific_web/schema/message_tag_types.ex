@@ -66,11 +66,6 @@ defmodule GlificWeb.Schema.MessageTagTypes do
         {:ok, topic: :glific}
       end)
 
-      trigger(
-        [:create_message_tag],
-        :glific
-      )
-
       resolve(fn message_tag, _, _ -> {:ok, message_tag} end)
     end
 

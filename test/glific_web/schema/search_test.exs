@@ -493,7 +493,7 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       query_gql_by(:search,
         variables: %{
-          "filter" => %{"term" => "", "includeTags" => []},
+          "filter" => %{"term" => "Def", "includeTags" => []},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
