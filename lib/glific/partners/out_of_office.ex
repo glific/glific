@@ -28,8 +28,8 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
 
   @type t() :: %__MODULE__{
           enabled: boolean | nil,
-          start_time: :utc_datetime | nil,
-          end_time: :utc_datetime | nil,
+          start_time: :time | nil,
+          end_time: :time | nil,
           enabled_days: map() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil
@@ -37,8 +37,8 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
 
   embedded_schema do
     field :enabled, :boolean
-    field :start_time, :utc_datetime
-    field :end_time, :utc_datetime
+    field :start_time, :time
+    field :end_time, :time
     belongs_to :flow, Flow
 
     embeds_one :enabled_days, EnabledDays, on_replace: :update do
@@ -52,6 +52,9 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
     end
   end
 
+  @doc """
+  Standard changeset pattern for embedded schema
+  """
   @spec out_of_office_changeset(OutOfOffice.t(), map()) :: Ecto.Changeset.t()
   def out_of_office_changeset(out_of_office, attrs) do
     out_of_office
@@ -59,6 +62,9 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
     |> cast_embed(:enabled_days, with: &enabled_days_changeset/2)
   end
 
+  @doc """
+  Standard changeset pattern for embedded schema
+  """
   @spec enabled_days_changeset(Ecto.Schema.t(), map()) :: Ecto.Changeset.t()
   def enabled_days_changeset(enabled_days, attrs) do
     enabled_days

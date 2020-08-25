@@ -26,8 +26,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   object :out_of_office do
     field :enabled, :boolean
-    field :start_time, :datetime
-    field :end_time, :datetime
+    field :start_time, :time
+    field :end_time, :time
     field :enabled_days, :enabled_days
     field :flow_id, :id
 
@@ -96,8 +96,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   input_object :out_of_office_input do
     field :enabled, :boolean
-    field :start_time, :datetime
-    field :end_time, :datetime
+    field :start_time, :time
+    field :end_time, :time
     field :enabled_days, :enabled_days_input
     field :flow_id, :id
   end
