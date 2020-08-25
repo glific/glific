@@ -13,17 +13,8 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
     :enabled,
     :start_time,
     :end_time,
-    :flow_id
-  ]
-
-  @enabled_days_optional_fields [
-    :monday,
-    :tuesday,
-    :wednesday,
-    :thursday,
-    :friday,
-    :saturday,
-    :sunday
+    :flow_id,
+    :enabled_days
   ]
 
   @type t() :: %__MODULE__{
@@ -31,8 +22,7 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
           start_time: :time | nil,
           end_time: :time | nil,
           enabled_days: map() | nil,
-          flow_id: non_neg_integer | nil,
-          flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil
+          flow_id: non_neg_integer | nil
         }
 
   embedded_schema do
@@ -40,16 +30,7 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
     field :start_time, :time
     field :end_time, :time
     belongs_to :flow, Flow
-
-    embeds_one :enabled_days, EnabledDays, on_replace: :update do
-      field :monday, :boolean
-      field :tuesday, :boolean
-      field :wednesday, :boolean
-      field :thursday, :boolean
-      field :friday, :boolean
-      field :saturday, :boolean
-      field :sunday, :boolean
-    end
+    field :enabled_days, {:array, :map}
   end
 
   @doc """
@@ -59,15 +40,5 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
   def out_of_office_changeset(out_of_office, attrs) do
     out_of_office
     |> cast(attrs, @optional_fields)
-    |> cast_embed(:enabled_days, with: &enabled_days_changeset/2)
-  end
-
-  @doc """
-  Standard changeset pattern for embedded schema
-  """
-  @spec enabled_days_changeset(Ecto.Schema.t(), map()) :: Ecto.Changeset.t()
-  def enabled_days_changeset(enabled_days, attrs) do
-    enabled_days
-    |> cast(attrs, @enabled_days_optional_fields)
   end
 end

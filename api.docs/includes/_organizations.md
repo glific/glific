@@ -238,7 +238,7 @@ Type | Description
 ## Update an Organization
 
 ```graphql
-mutation updateOrganization($id: ID!, $input:OrganizationInput!) {
+mutation updateOrganization($id: ID!, $input: OrganizationInput!) {
   updateOrganization(id: $id, input: $input) {
     organization {
       id
@@ -250,13 +250,8 @@ mutation updateOrganization($id: ID!, $input:OrganizationInput!) {
         endTime
         flowId
         enabledDays {
-          monday
-          tuesday
-          wednesday
-          thursday
-          friday
-          saturday
-          sunday
+          id
+          enabled
         }
       }
     }
@@ -273,15 +268,36 @@ mutation updateOrganization($id: ID!, $input:OrganizationInput!) {
     "displayName": "updated organization display name",
     "outOfOffice": {
       "enabled": true,
-      "enabledDays": {
-        "friday": true,
-        "monday": true,
-        "saturday": true,
-        "sunday": false,
-        "thursday": true,
-        "tuesday": true,
-        "wednesday": true
-      },
+      "enabledDays": [
+        {
+          "enabled": true,
+          "id": 1
+        },
+        {
+          "enabled": true,
+          "id": 2
+        },
+        {
+          "enabled": true,
+          "id": 3
+        },
+        {
+          "enabled": true,
+          "id": 4
+        },
+        {
+          "enabled": true,
+          "id": 5
+        },
+        {
+          "enabled": false,
+          "id": 6
+        },
+        {
+          "enabled": false,
+          "id": 7
+        }
+      ],
       "endTime": "T10:00:00",
       "flowId": 1,
       "startTime": "T09:00:00"
@@ -303,15 +319,36 @@ mutation updateOrganization($id: ID!, $input:OrganizationInput!) {
         "name": "Glific",
         "outOfOffice": {
           "enabled": true,
-          "enabledDays": {
-            "friday": true,
-            "monday": true,
-            "saturday": true,
-            "sunday": false,
-            "thursday": true,
-            "tuesday": true,
-            "wednesday": true
-          },
+          "enabledDays": [
+            {
+              "enabled": true,
+              "id": 1
+            },
+            {
+              "enabled": true,
+              "id": 2
+            },
+            {
+              "enabled": true,
+              "id": 3
+            },
+            {
+              "enabled": true,
+              "id": 4
+            },
+            {
+              "enabled": true,
+              "id": 5
+            },
+            {
+              "enabled": false,
+              "id": 6
+            },
+            {
+              "enabled": false,
+              "id": 7
+            }
+          ],
           "endTime": "10:00:00",
           "flowId": "1",
           "startTime": "09:00:00"
@@ -518,7 +555,7 @@ Type | Description
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>enabledDays</strong></td>
-<td valign="top"><a href="#enableddays">EnabledDays</a></td>
+<td valign="top">[<a href="#enabledday">EnabledDay</a>]</td>
 <td></td>
 </tr>
 <tr>
@@ -529,7 +566,7 @@ Type | Description
 </tbody>
 </table>
 
-### EnabledDays
+### EnabledDay
 
 <table>
 <thead>
@@ -542,37 +579,12 @@ Type | Description
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>monday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
+<td colspan="2" valign="top"><strong>id</strong></td>
+<td valign="top"><a href="#integer">Integer</a></td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>tuesday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>wednesday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>thursday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>friday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>saturday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>sunday</strong></td>
+<td colspan="2" valign="top"><strong>enabled</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
@@ -766,8 +778,8 @@ Unique
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>enabledDaysInput</strong></td>
-<td valign="top"><a href="#enableddaysinput">EnabledDaysInput</a></td>
+<td colspan="2" valign="top"><strong>enabledDays</strong></td>
+<td valign="top">[<a href="#enableddayinput">EnabledDayInput</a>]</td>
 <td></td>
 </tr>
 <tr>
@@ -778,7 +790,7 @@ Unique
 </tbody>
 </table>
 
-### EnabledDaysInput
+### EnabledDayInput
 
 <table>
 <thead>
@@ -791,38 +803,13 @@ Unique
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>monday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
+<td colspan="2" valign="top"><strong>id</strong></td>
+<td valign="top"><a href="#integer">Integer</a>!</td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>tuesday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>wednesday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>thursday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>friday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>saturday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>sunday</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
+<td colspan="2" valign="top"><strong>enabled</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a>!</td>
 <td></td>
 </tr>
 </tbody>
