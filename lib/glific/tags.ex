@@ -3,6 +3,7 @@ defmodule Glific.Tags do
   The Tags Context, which encapsulates and manages tags and the related join tables.
   """
 
+  alias Glific.Communications
   alias Glific.Repo
   alias Glific.Tags.{ContactTag, MessageTag, Tag}
 
@@ -211,9 +212,18 @@ defmodule Glific.Tags do
   """
   @spec create_message_tag(map()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def create_message_tag(attrs \\ %{}) do
-    %MessageTag{}
-    |> MessageTag.changeset(attrs)
-    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])
+    {status, response} =
+      %MessageTag{}
+      |> MessageTag.changeset(attrs)
+      |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])
+
+    case {status, response} do
+      {:ok, message_tag} ->
+        Communications.publish_data({:ok, message_tag}, :created_message_tag)
+        {:ok, message_tag}
+
+      {:error, changeset} -> {:error, changeset}
+    end
   end
 
   @doc """

@@ -210,14 +210,12 @@ Parameter | Type | Default | Description
 ```graphql
 subscription {
   createdMessageTag {
-    id
-    body
-    flow
-    type
-    tags{
-      label
+    message{
+      id
     }
-   
+    tag{
+      id
+    }
   }
 }
 
@@ -228,21 +226,12 @@ subscription {
 {
   "data": {
     "createdMessageTag": {
-      "body": "1\n",
-      "flow": "INBOUND",
-      "id": "56",
-      "tags": [
-        {
-          "label": "Unread"
-        },
-        {
-          "label": "Not replied"
-        },
-        {
-          "label": "Numeric"
-        }
-      ],
-      "type": "TEXT"
+      "message": {
+        "id": "194"
+      },
+      "tag": {
+        "id": "194"
+      }
     }
   }
 }
