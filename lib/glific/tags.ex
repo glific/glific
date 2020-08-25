@@ -222,7 +222,8 @@ defmodule Glific.Tags do
         Communications.publish_data({:ok, message_tag}, :created_message_tag)
         {:ok, message_tag}
 
-      {:error, changeset} -> {:error, changeset}
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
 

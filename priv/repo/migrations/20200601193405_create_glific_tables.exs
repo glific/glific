@@ -102,6 +102,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # keywords assosiacted with tags.
       add :keywords, {:array, :string}
 
+      # define a color code for tags
+      add :colorcode, :string
+
       # foreign key to  option_value:value column with the option_group.name being "language"
       add :language_id, references(:languages, on_delete: :restrict), null: false
 
