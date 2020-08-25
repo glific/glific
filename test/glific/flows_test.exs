@@ -1,7 +1,11 @@
 defmodule Glific.FLowsTest do
   use Glific.DataCase
 
-  alias Glific.{Flows, Flows.Flow}
+  alias Glific.{
+    Flows,
+    Flows.Flow,
+    Flows.FlowRevision
+  }
 
   describe "flows" do
     @valid_attrs %{
@@ -207,6 +211,31 @@ defmodule Glific.FLowsTest do
       {:ok, loaded_flow_new} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
       assert loaded_flow.shortcode == flow.shortcode
       assert loaded_flow_new.shortcode != loaded_flow.shortcode
+    end
+
+    test "publish_flow/1 updates the latest flow revision status" do
+      flow = flow_fixture() |> Repo.preload([:revisions])
+
+      # should set status of recent flow revision as "done"
+      assert {:ok, %Flow{}} = Flows.publish_flow(flow)
+
+      {:ok, revision} =
+        FlowRevision
+        |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})
+
+      assert revision.status == "done"
+
+      # should reset previously published flow revision and set status of recent one as "done"
+      [revision] = flow.revisions
+      Flows.create_flow_revision(revision.definition)
+
+      assert {:ok, %Flow{}} = Flows.publish_flow(flow)
+
+      {:ok, revision} =
+        FlowRevision
+        |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})
+
+      assert revision.status == "done"
     end
   end
 end

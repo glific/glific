@@ -292,4 +292,30 @@ defmodule Glific.Flows do
       do: true,
       else: false
   end
+
+  @doc """
+  Update latest flow revision status as done
+  Reset old published flow revision status as draft
+  """
+  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
+  def publish_flow(%Flow{} = flow) do
+    with {:ok, old_published_revision} <-
+           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "done"}) do
+      {:ok, _} =
+        old_published_revision
+        |> FlowRevision.changeset(%{status: "draft"})
+        |> Repo.update()
+    end
+
+    {:ok, latest_revision} =
+      FlowRevision
+      |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})
+
+    {:ok, _} =
+      latest_revision
+      |> FlowRevision.changeset(%{status: "done"})
+      |> Repo.update()
+
+    {:ok, flow}
+  end
 end
