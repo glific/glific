@@ -26,6 +26,14 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
     :sunday
   ]
 
+  @type t() :: %__MODULE__{
+          enabled: boolean | nil,
+          start_time: :utc_datetime | nil,
+          end_time: :utc_datetime | nil,
+          enabled_days: map() | nil,
+          flow_id: non_neg_integer | nil
+        }
+
   embedded_schema do
     field :enabled, :boolean
     field :start_time, :utc_datetime
@@ -43,12 +51,14 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
     end
   end
 
+  @spec out_of_office_changeset(OutOfOffice.t(), map()) :: Ecto.Changeset.t()
   def out_of_office_changeset(out_of_office, attrs) do
     out_of_office
     |> cast(attrs, @optional_fields)
     |> cast_embed(:enabled_days, with: &enabled_days_changeset/2)
   end
 
+  @spec enabled_days_changeset(Ecto.Schema.t(), map()) :: Ecto.Changeset.t()
   def enabled_days_changeset(enabled_days, attrs) do
     enabled_days
     |> cast(attrs, @enabled_days_optional_fields)

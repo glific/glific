@@ -1,5 +1,6 @@
 defmodule Glific.Repo.Migrations.AlterGlificTables do
   use Ecto.Migration
+
   @moduledoc """
   Alter Glific tables
   """
