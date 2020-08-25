@@ -1,6 +1,6 @@
-defmodule Glific.Partners.OutOfOffice do
+defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
   @moduledoc """
-  The Glific Abstraction to represent the organization settings of out of office
+  The Glific abstraction to represent the organization settings of out of office
   """
   alias __MODULE__
 
@@ -9,30 +9,48 @@ defmodule Glific.Partners.OutOfOffice do
 
   alias Glific.Flows.Flow
 
-  @required_fields [
-    :enabled
-  ]
-
   @optional_fields [
+    :enabled,
     :start_time,
     :end_time,
-    :enabled_days,
     :flow_id
   ]
 
-  @type t() :: %__MODULE__{
-        }
+  @enabled_days_optional_fields [
+    :monday,
+    :tuesday,
+    :wednesday,
+    :thursday,
+    :friday,
+    :saturday,
+    :sunday
+  ]
 
   embedded_schema do
     field :enabled, :boolean
     field :start_time, :utc_datetime
     field :end_time, :utc_datetime
-    field :enabled_days, :map
     belongs_to :flow, Flow
+
+    embeds_one :enabled_days, EnabledDays, on_replace: :update do
+      field :monday, :boolean
+      field :tuesday, :boolean
+      field :wednesday, :boolean
+      field :thursday, :boolean
+      field :friday, :boolean
+      field :saturday, :boolean
+      field :sunday, :boolean
+    end
   end
 
   def out_of_office_changeset(out_of_office, attrs) do
     out_of_office
-    |> cast(attrs, @required_fields ++ @optional_fields)
+    |> cast(attrs, @optional_fields)
+    |> cast_embed(:enabled_days, with: &enabled_days_changeset/2)
+  end
+
+  def enabled_days_changeset(enabled_days, attrs) do
+    enabled_days
+    |> cast(attrs, @enabled_days_optional_fields)
   end
 end

@@ -8,7 +8,7 @@ defmodule Glific.Partners.Organization do
   alias __MODULE__
 
   alias Glific.Contacts.Contact
-  alias Glific.Partners.OutOfOffice
+  alias Glific.Partners.OrganizationSettings.OutOfOffice
   alias Glific.Partners.Provider
   alias Glific.Settings.Language
 
@@ -44,6 +44,7 @@ defmodule Glific.Partners.Organization do
           provider_number: String.t() | nil,
           default_language_id: non_neg_integer | nil,
           default_language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          out_of_office: map() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
