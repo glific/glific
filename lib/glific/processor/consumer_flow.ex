@@ -12,6 +12,7 @@ defmodule Glific.Processor.ConsumerFlow do
   alias Glific.{
     Flows,
     Flows.FlowContext,
+    Flows.Periodic,
     Messages.Message,
     Repo
   }
@@ -68,13 +69,21 @@ defmodule Glific.Processor.ConsumerFlow do
 
   @doc false
   def handle_events(messages, _from, state) do
-    Enum.each(messages, &process_message(&1, state))
+    state =
+      Enum.reduce(
+        messages,
+        state,
+        fn message, state ->
+          {state, _message} = process_message(state, message)
+          state
+        end
+      )
 
     {:noreply, [], state}
   end
 
-  @spec process_message(atom() | Message.t(), map()) :: Message.t()
-  defp process_message(message, state) do
+  @spec process_message(map(), Message.t()) :: {map(), Message.t()}
+  defp process_message(state, message) do
     body = Glific.string_clean(message.body)
 
     message = message |> Repo.preload(:contact)
@@ -88,19 +97,17 @@ defmodule Glific.Processor.ConsumerFlow do
   Start a flow or reactivate a flow if needed. This will be linked to the entire
   trigger mechanism once we have that under control.
   """
-  @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
-  def check_flows(message, body, _state) do
+  @spec check_flows(atom() | Message.t(), String.t(), map()) :: {map(), Message.t()}
+  def check_flows(message, body, state) do
     message = Repo.preload(message, :contact)
     {:ok, flow} = Flows.get_cached_flow(body, %{keyword: body})
     FlowContext.init_context(flow, message.contact)
-    message
+    {state, message}
   end
 
-  @doc """
-  Check contexts
-  """
-  @spec check_contexts(atom() | Message.t(), String.t(), map()) :: Message.t()
-  def check_contexts(message, body, _state) do
+  @doc false
+  @spec check_contexts(atom() | Message.t(), String.t(), map()) :: {map(), Message.t()}
+  def check_contexts(message, body, state) do
     context = FlowContext.active_context(message.contact_id)
 
     if context do
@@ -109,24 +116,14 @@ defmodule Glific.Processor.ConsumerFlow do
       context
       |> FlowContext.load_context(flow)
       |> FlowContext.step_forward(body)
+
+      {state, message}
     else
-      # lets  check if we should initiate the out of office flow
-      # lets do this only if we've not sent them the out of office flow
-      # in the past 12 hours
-      if FunWithFlags.enabled?(:out_of_office_active) do
-        {:ok, flow} = Flows.get_cached_flow("outofoffice", %{shortcode: "outofoffice"})
-
-        if !Flows.flow_activated(flow.id, message.contact_id) do
-          FlowContext.init_context(flow, message.contact)
-        end
-      end
-
-      message
+      # lets do the periodic flow routine and send those out
+      # in a priority order
+      state = Periodic.run_flows(state, message)
+      {state, message}
     end
-
-    # we can potentially save the {contact_id, context} map here in the flow state,
-    # to avoid hitting the DB again. We'll do this after we get this working
-    message
   end
 
   @doc """

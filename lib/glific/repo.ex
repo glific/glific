@@ -39,15 +39,18 @@ defmodule Glific.Repo do
   end
 
   @doc """
-  Get map of label to ids for easier lookup for various system objects - language, tag
+  Get map of field (typically label) to ids for easier lookup for various system objects - language, tag
   """
-  @spec label_id_map(Ecto.Queryable.t(), [String.t()]) :: %{String.t() => integer}
-  def label_id_map(queryable, labels) do
+  @spec label_id_map(Ecto.Queryable.t(), [String.t()], atom()) :: %{String.t() => integer}
+  def label_id_map(queryable, values, field \\ :label) do
     queryable
-    |> where([q], q.label in ^labels)
-    |> select([:id, :label])
+    |> where([q], field(q, ^field) in ^values)
+    |> select([q], [q.id, field(q, ^field)])
     |> Repo.all()
-    |> Enum.reduce(%{}, fn tag, acc -> Map.put(acc, tag.label, tag.id) end)
+    |> Enum.reduce(%{}, fn row, acc ->
+      [id, value] = row
+      Map.put(acc, value, id)
+    end)
   end
 
   @doc """
@@ -209,13 +212,4 @@ defmodule Glific.Repo do
     |> where([m], field(m, ^key_1) == ^value_1 and field(m, ^key_2) in ^values_2)
     |> Repo.delete_all()
   end
-
-  @doc """
-  Need to figure out what this function does. Still learning Dataloader and its magic.
-  Seems l
-  ike it is not used currently, so commenting it out
-  @spec data() :: Dataloader.Ecto.t()
-  def data,
-    do: Dataloader.Ecto.new(Repo, query: &query/2)
-  """
 end

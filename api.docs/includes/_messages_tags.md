@@ -205,112 +205,17 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#messagetagresult">MessageTagResult</a> | An error object or empty
 
-
-## Subscription for Create Message Tag
-
-```graphql
-subscription {
-  createdMessageTag() {
-    id
-    message {
-        id
-        body
-    }
-
-    tag {
-        id
-        label
-    }
-  }
-}
-
-```
-> The above query returns JSON structured like this:
-
-```json
-{
-  "data": {
-    "createdMessageTag": {
-      "body": 11,
-      "message": {
-          "id" : 10,
-          "body" : "Hello Sir"
-      },
-      "tag": {
-          "id" : 10,
-          "label" : "Greeting"
-      }
-    }
-  }
-}
-```
-### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#messagetag">MessageTag</a> | An error or object
-
-
-
-
-
-
-## Subscription for Delete Message Tag
-
-```graphql
-subscription {
-  deletedMessageTag() {
-    id
-    message {
-        id
-        body
-    }
-
-    tag {
-        id
-        label
-    }
-  }
-}
-
-```
-> The above query returns JSON structured like this:
-
-```json
-{
-  "data": {
-    "deletedMessageTag": {
-      "body": 11,
-      "message": {
-          "id" : 10,
-          "body" : "Hello Sir"
-      },
-      "tag": {
-          "id" : 10,
-          "label" : "Greeting"
-      }
-    }
-  }
-}
-```
-### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#messagetag">MessageTag</a> | An error or object
-
-
 ## Subscription for Create Message Tag
 
 ```graphql
 subscription {
   createdMessageTag {
-    id
-    body
-    flow
-    type
-    tags{
-      label
+    message{
+      id
     }
-   
+    tag{
+      id
+    }
   }
 }
 
@@ -321,21 +226,12 @@ subscription {
 {
   "data": {
     "createdMessageTag": {
-      "body": "1\n",
-      "flow": "INBOUND",
-      "id": "56",
-      "tags": [
-        {
-          "label": "Unread"
-        },
-        {
-          "label": "Not replied"
-        },
-        {
-          "label": "Numeric"
-        }
-      ],
-      "type": "TEXT"
+      "message": {
+        "id": "194"
+      },
+      "tag": {
+        "id": "194"
+      }
     }
   }
 }
@@ -346,6 +242,42 @@ subscription {
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#message">Message</a> | An error or object
+
+
+
+
+## Subscription for Delete Message Tag
+
+```graphql
+subscription {
+  updateMessageTags() {
+    messageTags{
+      message{
+        body
+      }
+    }
+    numberDeleted
+  }
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "updateMessageTags": {
+      "messageTags": [],
+      "numberDeleted": 1
+    }
+  }
+}
+```
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#messagetag">MessageTags</a> | An error or object
+
 
 
 ## Message Tag Objects
