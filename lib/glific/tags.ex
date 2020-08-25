@@ -219,7 +219,7 @@ defmodule Glific.Tags do
 
     case {status, response} do
       {:ok, message_tag} ->
-        Communications.publish_data(%{message_tag: message_tag}, :created_message_tag)
+        Communications.publish_data({:ok, message_tag}, :created_message_tag)
         {:ok, message_tag}
 
       {:error, changeset} -> {:error, changeset}
