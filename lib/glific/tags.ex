@@ -212,18 +212,17 @@ defmodule Glific.Tags do
   """
   @spec create_message_tag(map()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def create_message_tag(attrs \\ %{}) do
-    {status, message_tag} =
+    {status, response} =
       %MessageTag{}
       |> MessageTag.changeset(attrs)
       |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])
 
-    case {status, message_tag} do
+    case {status, response} do
       {:ok, message_tag} ->
         Communications.publish_data(%{message_tag: message_tag}, :created_message_tag)
         {:ok, message_tag}
 
-      _ ->
-        {:error, message_tag}
+      {:error, changeset} -> {:error, changeset}
     end
   end
 
