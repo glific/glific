@@ -295,8 +295,9 @@ defmodule Glific.Flows do
   @doc """
   Update latest flow revision status as done
   Reset old published flow revision status as draft
+  Update cached flow definition
   """
-  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
+  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {atom, any}
   def publish_flow(%Flow{} = flow) do
     with {:ok, old_published_revision} <-
            Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "done"}) do
