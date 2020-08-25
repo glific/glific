@@ -84,7 +84,7 @@ defmodule GlificWeb.Schema.MessageTagTypes do
         :glific
       )
 
-      resolve(fn message_tag , _, _ -> {:ok, message_tag} end)
+      resolve(fn message_tag, _, _ -> {:ok, message_tag} end)
     end
 
     field :update_message_tags, :message_tags do
