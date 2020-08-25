@@ -12,6 +12,7 @@ defmodule Glific.Processor.ConsumerFlow do
   alias Glific.{
     Flows,
     Flows.FlowContext,
+    Flows.Periodic,
     Messages.Message,
     Repo
   }
@@ -97,8 +98,8 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   @doc false
-  @spec check_contexts(atom() | Message.t(), String.t(), map()) :: Message.t()
-  def check_contexts(message, body, _state) do
+  @spec check_contexts(atom() | Message.t(), String.t(), map()) :: {map(), Message.t()}
+  def check_contexts(message, body, state) do
     context = FlowContext.active_context(message.contact_id)
 
     if context do
@@ -107,15 +108,14 @@ defmodule Glific.Processor.ConsumerFlow do
       context
       |> FlowContext.load_context(flow)
       |> FlowContext.step_forward(body)
+
+      {state, message}
     else
       # lets do the periodic flow routine and send those out
       # in a priority order
-      Periodic.check_and_send_flows()
+      state = Periodic.run_flows(state, message)
+      {state, message}
     end
-
-    # we can potentially save the {contact_id, context} map here in the flow state,
-    # to avoid hitting the DB again. We'll do this after we get this working
-    message
   end
 
   @doc """

@@ -45,9 +45,12 @@ defmodule Glific.Repo do
   def label_id_map(queryable, values, field \\ :label) do
     queryable
     |> where([q], field(q, ^field) in ^values)
-    |> select([:id, field])
+    |> select([q], [q.id, field(q, ^field)])
     |> Repo.all()
-    |> Enum.reduce(%{}, fn table, acc -> Map.put(acc, Map.get(table, field), table.id) end)
+    |> Enum.reduce(%{}, fn row, acc ->
+      [id, value] = row
+      Map.put(acc, value, id)
+    end)
   end
 
   @doc """
