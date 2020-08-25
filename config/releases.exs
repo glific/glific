@@ -31,6 +31,7 @@ secret_key_base =
 config :glific, GlificWeb.Endpoint,
   server: true,
   http: [:inet6, port: http_port],
+  check_origin: [System.get_env("REQUEST_ORIGIN")],
   # Uncomment line below if need to use ssl
   # https: [
   #   port: ssl_port,
