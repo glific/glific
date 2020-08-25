@@ -69,13 +69,20 @@ defmodule Glific.Processor.ConsumerFlow do
 
   @doc false
   def handle_events(messages, _from, state) do
-    Enum.each(messages, &process_message(&1, state))
+    Enum.reduce(
+      messages,
+      state,
+      fn state, message ->
+        {state, _message} = process_message(state, message)
+        state
+      end
+    )
 
     {:noreply, [], state}
   end
 
-  @spec process_message(atom() | Message.t(), map()) :: Message.t()
-  defp process_message(message, state) do
+  @spec process_message(map(), Message.t()) :: {map(), Message.t()}
+  defp process_message(state, message) do
     body = Glific.string_clean(message.body)
 
     message = message |> Repo.preload(:contact)
@@ -89,12 +96,12 @@ defmodule Glific.Processor.ConsumerFlow do
   Start a flow or reactivate a flow if needed. This will be linked to the entire
   trigger mechanism once we have that under control.
   """
-  @spec check_flows(atom() | Message.t(), String.t(), map()) :: Message.t()
-  def check_flows(message, body, _state) do
+  @spec check_flows(atom() | Message.t(), String.t(), map()) :: {map(), Message.t()}
+  def check_flows(message, body, state) do
     message = Repo.preload(message, :contact)
     {:ok, flow} = Flows.get_cached_flow(body, %{keyword: body})
     FlowContext.init_context(flow, message.contact)
-    message
+    {state, message}
   end
 
   @doc false
