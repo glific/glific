@@ -69,14 +69,15 @@ defmodule Glific.Processor.ConsumerFlow do
 
   @doc false
   def handle_events(messages, _from, state) do
-    Enum.reduce(
-      messages,
-      state,
-      fn message, state ->
-        {state, _message} = process_message(state, message)
-        state
-      end
-    )
+    state =
+      Enum.reduce(
+        messages,
+        state,
+        fn message, state ->
+          {state, _message} = process_message(state, message)
+          state
+        end
+      )
 
     {:noreply, [], state}
   end
