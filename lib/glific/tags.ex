@@ -221,9 +221,10 @@ defmodule Glific.Tags do
       {:ok, message_tag} ->
         Communications.publish_data(%{message_tag: message_tag}, :created_message_tag)
         {:ok, message_tag}
-      _ -> {:error, message_tag}
-    end
 
+      _ ->
+        {:error, message_tag}
+    end
   end
 
   @doc """

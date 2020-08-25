@@ -8,7 +8,6 @@ defmodule Glific.Processor.ConsumerTagger do
   use GenStage
 
   alias Glific.{
-    Communications,
     Dialogflow.Sessions,
     Messages.Message,
     Processor.ConsumerFlow,
