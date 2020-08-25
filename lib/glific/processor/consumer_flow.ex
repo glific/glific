@@ -72,7 +72,7 @@ defmodule Glific.Processor.ConsumerFlow do
     Enum.reduce(
       messages,
       state,
-      fn state, message ->
+      fn message, state ->
         {state, _message} = process_message(state, message)
         state
       end
