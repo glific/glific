@@ -80,6 +80,7 @@ defmodule Glific.Flows.FlowCount do
         Repo.insert!(
           FlowCount.changeset(%FlowCount{}, attrs),
           on_conflict: [inc: [count: 1]],
+          returning: true,
           conflict_target: [:flow_id, :uuid, :type]
         )
         |> update_recent_messages(attrs)
@@ -90,9 +91,8 @@ defmodule Glific.Flows.FlowCount do
   end
 
   @spec update_recent_messages(FlowCount.t(), map()) :: :error | FlowCount.t()
-  defp update_recent_messages(flow_count, %{recent_message: []}), do: flow_count
-
-  defp update_recent_messages(flow_count, %{recent_message: recent_message}) do
+  defp update_recent_messages(flow_count, %{recent_message: recent_message})
+       when recent_message != %{} do
     recent_messages = [recent_message | flow_count.recent_messages]
 
     flow_count
