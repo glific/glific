@@ -25,10 +25,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :end_time, :time
     field :enabled_days, list_of(:enabled_day)
     field :flow_id, :id
-
-    field :flow, :flow do
-      resolve(dataloader(Repo))
-    end
   end
 
   object :organization do
