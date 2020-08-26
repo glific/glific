@@ -72,6 +72,7 @@ defmodule Glific.Partners.Organization do
   def changeset(organization, attrs) do
     organization
     |> cast(attrs, @required_fields ++ @optional_fields)
+    |> add_out_of_office_if_missing()
     |> cast_embed(:out_of_office, with: &OutOfOffice.out_of_office_changeset/2)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:contact_id)
@@ -79,5 +80,20 @@ defmodule Glific.Partners.Organization do
     |> unique_constraint(:email)
     |> unique_constraint(:provider_number)
     |> unique_constraint([:contact_id])
+  end
+
+  defp add_out_of_office_if_missing(%Ecto.Changeset{changes: %{out_of_office: _}} = changeset) do
+    changeset
+  end
+
+  defp add_out_of_office_if_missing(
+         %Ecto.Changeset{data: %Organization{out_of_office: nil}} = changeset
+       ) do
+    changeset
+    |> put_change(:out_of_office, %{enabled: false})
+  end
+
+  defp add_out_of_office_if_missing(changeset) do
+    changeset
   end
 end
