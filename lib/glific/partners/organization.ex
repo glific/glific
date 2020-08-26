@@ -8,6 +8,7 @@ defmodule Glific.Partners.Organization do
   alias __MODULE__
 
   alias Glific.Contacts.Contact
+  alias Glific.Partners.OrganizationSettings.OutOfOffice
   alias Glific.Partners.Provider
   alias Glific.Settings.Language
 
@@ -43,6 +44,7 @@ defmodule Glific.Partners.Organization do
           provider_number: String.t() | nil,
           default_language_id: non_neg_integer | nil,
           default_language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          out_of_office: OutOfOffice.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -58,21 +60,49 @@ defmodule Glific.Partners.Organization do
     belongs_to :contact, Contact
     belongs_to :default_language, Language
 
+    embeds_one :out_of_office, OutOfOffice, on_replace: :update
+
     timestamps(type: :utc_datetime)
   end
 
   @doc """
-  Standard changeset pattern we use for all datat types
+  Standard changeset pattern we use for all data types
   """
   @spec changeset(Organization.t(), map()) :: Ecto.Changeset.t()
   def changeset(organization, attrs) do
     organization
     |> cast(attrs, @required_fields ++ @optional_fields)
+    |> add_out_of_office_if_missing()
+    |> cast_embed(:out_of_office, with: &OutOfOffice.out_of_office_changeset/2)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:contact_id)
     |> unique_constraint(:name)
     |> unique_constraint(:email)
     |> unique_constraint(:provider_number)
     |> unique_constraint([:contact_id])
+  end
+
+  defp add_out_of_office_if_missing(
+         %Ecto.Changeset{data: %Organization{out_of_office: nil}} = changeset
+       ) do
+    out_of_office_default_data = %{
+      enabled: false,
+      enabled_days: [
+        %{enabled: false, id: 1},
+        %{enabled: false, id: 2},
+        %{enabled: false, id: 3},
+        %{enabled: false, id: 4},
+        %{enabled: false, id: 5},
+        %{enabled: false, id: 6},
+        %{enabled: false, id: 7}
+      ]
+    }
+
+    changeset
+    |> put_change(:out_of_office, out_of_office_default_data)
+  end
+
+  defp add_out_of_office_if_missing(changeset) do
+    changeset
   end
 end

@@ -203,7 +203,6 @@ defmodule Glific.Flows do
       |> FlowRevision.changeset(%{definition: definition, flow_id: flow.id})
       |> Repo.insert()
 
-    update_cached_flow(flow.uuid)
     revision
   end
 
@@ -274,13 +273,12 @@ defmodule Glific.Flows do
   end
 
   @doc """
-  Check if a flow has been activated for a specific contact id in the
-  past N hours
+  Check if a flow has been activated since the time sent as a parameter
+  e.g. outofoffice will check if that flow was activated in the last 24 hours
+  daily/weekly will check since start of day/week, etc
   """
-  @spec flow_activated(non_neg_integer, non_neg_integer, integer) :: boolean
-  def flow_activated(flow_id, contact_id, go_back \\ 24) do
-    since = Glific.go_back_time(go_back)
-
+  @spec flow_activated(non_neg_integer, non_neg_integer, DateTime.t()) :: boolean
+  def flow_activated(flow_id, contact_id, since) do
     results =
       FlowContext
       |> where([fc], fc.flow_id == ^flow_id)
@@ -296,8 +294,9 @@ defmodule Glific.Flows do
   @doc """
   Update latest flow revision status as done
   Reset old published flow revision status as draft
+  Update cached flow definition
   """
-  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
+  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()}
   def publish_flow(%Flow{} = flow) do
     with {:ok, old_published_revision} <-
            Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "done"}) do
@@ -307,14 +306,16 @@ defmodule Glific.Flows do
         |> Repo.update()
     end
 
-    {:ok, latest_revision} =
-      FlowRevision
-      |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})
+    with {:ok, latest_revision} <-
+           FlowRevision
+           |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0}) do
+      {:ok, _} =
+        latest_revision
+        |> FlowRevision.changeset(%{status: "done"})
+        |> Repo.update()
 
-    {:ok, _} =
-      latest_revision
-      |> FlowRevision.changeset(%{status: "done"})
-      |> Repo.update()
+      update_cached_flow(flow.uuid)
+    end
 
     {:ok, flow}
   end

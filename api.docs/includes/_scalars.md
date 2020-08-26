@@ -11,6 +11,10 @@ timezone. The DateTime appears in a JSON response as an ISO8601 formatted
 string, including UTC timezone ("Z"). The parsed date and time string will
 be converted to UTC if there is an offset.
 
+### Time
+
+The `Time` scalar type represents a time without microseconds precision. The Time appears in a JSON response as an ISO8601 formatted string.
+
 ### Gid
 
 The `gid` scalar appears in JSON as a String. The string appears to

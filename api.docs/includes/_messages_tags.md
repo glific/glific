@@ -210,14 +210,12 @@ Parameter | Type | Default | Description
 ```graphql
 subscription {
   createdMessageTag {
-    id
-    body
-    flow
-    type
-    tags{
-      label
+    message{
+      id
     }
-   
+    tag{
+      id
+    }
   }
 }
 
@@ -228,21 +226,12 @@ subscription {
 {
   "data": {
     "createdMessageTag": {
-      "body": "1\n",
-      "flow": "INBOUND",
-      "id": "56",
-      "tags": [
-        {
-          "label": "Unread"
-        },
-        {
-          "label": "Not replied"
-        },
-        {
-          "label": "Numeric"
-        }
-      ],
-      "type": "TEXT"
+      "message": {
+        "id": "194"
+      },
+      "tag": {
+        "id": "194"
+      }
     }
   }
 }
@@ -262,15 +251,11 @@ Parameter | Type | Default | Description
 ```graphql
 subscription {
   deletedMessageTag() {
-    id
-    message {
-        id
-        body
+    message{
+      id
     }
-
-    tag {
-        id
-        label
+    tag{
+      id
     }
   }
 }
@@ -282,14 +267,11 @@ subscription {
 {
   "data": {
     "deletedMessageTag": {
-      "body": 11,
       "message": {
-          "id" : 10,
-          "body" : "Hello Sir"
+        "id": "194"
       },
       "tag": {
-          "id" : 10,
-          "label" : "Greeting"
+        "id": "194"
       }
     }
   }
@@ -298,7 +280,7 @@ subscription {
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#messagetag">MessageTag</a> | An error or object
+<a href="#messagetag">MessageTags</a> | An error or object
 
 
 
