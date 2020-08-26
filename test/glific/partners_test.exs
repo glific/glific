@@ -244,6 +244,18 @@ defmodule Glific.PartnersTest do
       assert {:error, %Ecto.Changeset{}} = Partners.create_organization(@invalid_org_attrs)
     end
 
+    test "create_organization/1 should add default values for organization settings" do
+      {:ok, %Organization{} = organization} =
+        @valid_org_attrs
+        |> Map.merge(%{provider_id: provider_fixture().id})
+        |> Map.merge(%{default_language_id: default_language_fixture().id})
+        |> Partners.create_organization()
+
+      assert organization.out_of_office.enabled == false
+      day1 = get_in(organization.out_of_office.enabled_days, [Access.at(0)])
+      assert day1.enabled == false
+    end
+
     test "update_organization/2 with valid data updates the organization" do
       organization = organization_fixture()
 

@@ -82,15 +82,24 @@ defmodule Glific.Partners.Organization do
     |> unique_constraint([:contact_id])
   end
 
-  defp add_out_of_office_if_missing(%Ecto.Changeset{changes: %{out_of_office: _}} = changeset) do
-    changeset
-  end
-
   defp add_out_of_office_if_missing(
          %Ecto.Changeset{data: %Organization{out_of_office: nil}} = changeset
        ) do
+    out_of_office_default_data = %{
+      enabled: false,
+      enabled_days: [
+        %{enabled: false, id: 1},
+        %{enabled: false, id: 2},
+        %{enabled: false, id: 3},
+        %{enabled: false, id: 4},
+        %{enabled: false, id: 5},
+        %{enabled: false, id: 6},
+        %{enabled: false, id: 7}
+      ]
+    }
+
     changeset
-    |> put_change(:out_of_office, %{enabled: false})
+    |> put_change(:out_of_office, out_of_office_default_data)
   end
 
   defp add_out_of_office_if_missing(changeset) do
