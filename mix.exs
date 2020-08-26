@@ -117,7 +117,7 @@ defmodule Glific.MixProject do
       {:fun_with_flags_ui, "~> 0.7"},
       {:phil_columns, "~> 3.1"},
       {:passwordless_auth, "~> 0.3.0"},
-      {:appsignal, "~> 1.0"},
+      {:appsignal, "~> 1.0"}
     ]
   end
 

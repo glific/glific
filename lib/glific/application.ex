@@ -46,13 +46,14 @@ defmodule Glific.Application do
         do: children,
         else: children ++ glific_children
 
-  # Add this :telemetry.attach/4 call:
-  :telemetry.attach(
-    "appsignal-ecto",
-    [:glific, :repo, :query],
-    &Appsignal.Ecto.handle_event/4,
-    nil
-  )
+    # Add this :telemetry.attach/4 call:
+    :telemetry.attach(
+      "appsignal-ecto",
+      [:glific, :repo, :query],
+      &Appsignal.Ecto.handle_event/4,
+      nil
+    )
+
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
