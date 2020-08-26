@@ -27,19 +27,15 @@ secret_key_base =
     environment variable SECRET_KEY_BASE is missing.
     You can generate one by calling: mix phx.gen.secret
     """
+check_origin = [System.get_env("REQUEST_ORIGIN"), System.get_env("REQUEST_ORIGIN_WILDCARD")] || 
+    raise """
+    environment variable REQUEST_ORIGIN/REQUEST_ORIGIN_WILDCARD is missing.
+    """
 
 config :glific, GlificWeb.Endpoint,
   server: true,
   http: [:inet6, port: http_port],
-  check_origin: [System.get_env("REQUEST_ORIGIN")],
-  # Uncomment line below if need to use ssl
-  # https: [
-  #   port: ssl_port,
-  #   cipher_suite: :strong,
-  #   keyfile: System.get_env("KEY_FILE"),
-  #   certfile: System.get_env("CERT_FILE"),
-  #   cacertfile: System.get_env("CACERT_FILE")
-  # ],
+  check_origin: check_origin,
   secret_key_base: secret_key_base,
   url: [host: System.get_env("BASE_URL")]
 
