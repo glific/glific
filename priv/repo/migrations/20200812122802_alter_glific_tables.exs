@@ -23,7 +23,7 @@ defmodule Glific.Repo.Migrations.AlterGlificTables do
     create unique_index(:users, :contact_id)
 
     alter table(:organizations) do
-      add :out_of_office, :map
+      add :out_of_office, :map, default: %{enabled: false}
     end
 
     alter_flow_tables()
