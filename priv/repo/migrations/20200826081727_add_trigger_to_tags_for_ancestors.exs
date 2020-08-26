@@ -21,12 +21,27 @@ defmodule Glific.Repo.Migrations.AddTriggerToTagsForAncestors do
     """
 
     execute "DROP TRIGGER IF EXISTS update_tag_ancestors_trigger ON tags;"
+    execute "DROP TRIGGER IF EXISTS insert_tag_ancestors_trigger ON tags;"
+    execute "DROP TRIGGER IF EXISTS delete_tag_ancestors_trigger ON tags;"
 
     execute """
     CREATE TRIGGER update_tag_ancestors_trigger
-    AFTER INSERT
-    ON tags
-    FOR EACH ROW
+    AFTER UPDATE OF parent_id ON tags
+    FOR EACH STATEMENT
+    EXECUTE PROCEDURE update_tag_ancestors();
+    """
+
+    execute """
+    CREATE TRIGGER insert_tag_ancestors_trigger
+    AFTER INSERT ON tags
+    FOR EACH STATEMENT
+    EXECUTE PROCEDURE update_tag_ancestors();
+    """
+
+    execute """
+    CREATE TRIGGER delete_tag_ancestors_trigger
+    AFTER DELETE ON tags
+    FOR EACH STATEMENT
     EXECUTE PROCEDURE update_tag_ancestors();
     """
   end
