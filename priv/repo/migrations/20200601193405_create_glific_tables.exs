@@ -44,6 +44,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
     flow_revisions()
 
     flow_contexts()
+
+    flow_counts()
   end
 
   @doc """
@@ -190,7 +192,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       # whatsapp status
       # the current options are: processing, valid, invalid, failed
-      add :provider_status, :contact_status_enum, null: false, default: "valid"
+      add :provider_status, :contact_provider_status_enum, null: false, default: "none"
 
       # Is this contact active (for some definition of active)
       add :is_active, :boolean, default: true
@@ -256,6 +258,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
   """
   def messages do
     create table(:messages) do
+      # Message uuid, primarly needed for flow editor
+      add :uuid, :uuid, null: true
+
       # The body of the message
       add :body, :text
 
@@ -380,6 +385,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # organization default language
       add :default_language_id, references(:languages, on_delete: :restrict), null: false
 
+      # jsonb object of out_of_office data which is a bit convoluted to represent as columns
+      add :out_of_office, :jsonb
+
       timestamps(type: :utc_datetime)
     end
 
@@ -419,6 +427,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
     create table(:groups) do
       # Label of the group
       add :label, :string, null: false
+
+      # Description of the group
+      add :description, :string, null: true
+
       # visibility of conversations to the other groups
       add :is_restricted, :boolean, default: false
 
@@ -448,10 +460,13 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :name, :string
       add :roles, {:array, :string}, default: ["none"]
 
+      add :contact_id, references(:contacts, on_delete: :nilify_all), null: false
+
       timestamps(type: :utc_datetime)
     end
 
     create unique_index(:users, [:phone])
+    create unique_index(:users, :contact_id)
   end
 
   @doc """
@@ -497,6 +512,13 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :uuid, :uuid, null: false
       add :version_number, :string, default: "13.1.0"
       add :flow_type, :flow_type_enum, null: false, default: "message"
+
+      # Enable ignore keywords while in the flow
+      add :ignore_keywords, :boolean, default: false
+
+      # List of keywords to trigger the flow
+      add :keywords, {:array, :string}, default: []
+
       timestamps(type: :utc_datetime)
     end
 
@@ -512,6 +534,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :definition, :map
       add :flow_id, references(:flows, on_delete: :delete_all), null: false
       add :revision_number, :integer, default: 0
+
+      # Status of flow revision draft or done
+      add :status, :string, default: "draft"
 
       timestamps(type: :utc_datetime)
     end
@@ -534,7 +559,39 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :wakeup_at, :utc_datetime, null: true, default: nil
       add :completed_at, :utc_datetime, null: true, default: nil
 
+      # Add list of recent messages for both inbound and outbound
+      # for outbound we store the uuid
+      add :recent_inbound, :jsonb, default: "[]"
+      add :recent_outbound, :jsonb, default: "[]"
+
       timestamps(type: :utc_datetime)
     end
+  end
+
+  @doc """
+  Keep track of the number of times we pass through either a node or an exit
+  to display to the staff via the floweditor interface.
+  """
+  def flow_counts do
+    create table(:flow_counts) do
+      add :uuid, :uuid, null: false
+
+      add :destination_uuid, :uuid, null: true
+
+      add :flow_id, references(:flows, on_delete: :delete_all), null: false
+
+      add :flow_uuid, :uuid, null: false
+
+      # Options are: node, exit
+      add :type, :string
+
+      add :count, :integer, default: 1
+
+      add :recent_messages, {:array, :map}, default: []
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:flow_counts, [:uuid, :flow_id, :type])
   end
 end
