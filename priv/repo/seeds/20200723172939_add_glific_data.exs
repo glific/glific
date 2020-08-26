@@ -25,6 +25,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def up(_repo) do
     languages = languages()
 
+    # calling it gtags, since tags is a macro in philcolumns
     gtags(languages)
 
     provider = providers()
@@ -72,6 +73,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         label: "English (United States)",
         label_locale: "English",
         locale: "en_US"
+      })
+
+    ta =
+      Repo.insert!(%Language{
+        label: "Tamil",
+        label_locale: "தமிழ்",
+        locale: "ta"
       })
 
     {hi, en_us}
@@ -190,6 +198,22 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
         is_value: true
+      },
+
+      # Intent of message
+      %{
+        label: "Yes",
+        shortcode: "yes",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["yes", "yeah", "okay", "ok"]
+      },
+      %{
+        label: "No",
+        shortcode: "no",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["no", "nope", "nay"]
       },
 
       # Type of Contact
