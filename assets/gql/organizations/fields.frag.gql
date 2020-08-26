@@ -17,6 +17,17 @@ fragment OrganizationFields on OrganizationResult {
       url
       api_end_point   
     }
+
+    out_of_office {
+      enabled
+      start_time
+      end_time
+      flow_id
+      enabled_days {
+        id
+        enabled
+      }
+    }
   }
 }
 
