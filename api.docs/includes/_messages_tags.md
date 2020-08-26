@@ -250,13 +250,13 @@ Parameter | Type | Default | Description
 
 ```graphql
 subscription {
-  updateMessageTags() {
-    messageTags{
-      message{
-        body
-      }
+  deletedMessageTag() {
+    message{
+      id
     }
-    numberDeleted
+    tag{
+      id
+    }
   }
 }
 
@@ -266,9 +266,13 @@ subscription {
 ```json
 {
   "data": {
-    "updateMessageTags": {
-      "messageTags": [],
-      "numberDeleted": 1
+    "deletedMessageTag": {
+      "message": {
+        "id": "194"
+      },
+      "tag": {
+        "id": "194"
+      }
     }
   }
 }
