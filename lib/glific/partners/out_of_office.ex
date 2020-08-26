@@ -89,9 +89,9 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice.EnabledDay do
   ]
 
   @type t() :: %__MODULE__{
-    id: integer | nil,
-    enabled: boolean | nil
-  }
+          id: integer | nil,
+          enabled: boolean | nil
+        }
 
   @primary_key false
   embedded_schema do
