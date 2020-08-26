@@ -298,7 +298,7 @@ mutation updateOrganization($id: ID!, $input: OrganizationInput!) {
           "id": 7
         }
       ],
-      "endTime": "T10:00:00",
+      "endTime": "T19:00:00",
       "flowId": 1,
       "startTime": "T09:00:00"
     }
@@ -349,9 +349,9 @@ mutation updateOrganization($id: ID!, $input: OrganizationInput!) {
               "id": 7
             }
           ],
-          "endTime": "10:00:00",
+          "endTime": "19:00:00",
           "flowId": "1",
-          "startTime": "09:00:00"
+          "startTime": "9:00:00"
         }
       }
     }

@@ -223,6 +223,40 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "has already been taken"
   end
 
+  test "update an organization with organization settings" do
+    {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
+
+    result =
+      query_gql_by(:update,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{
+            "out_of_office" => %{
+              "enabled" => true,
+              "enabled_days" => [
+                %{
+                  "id" => 1,
+                  "enabled" => true
+                }
+              ],
+              "start_time" => "T10:00:00",
+              "end_time" => "T20:00:00",
+              "flow_id" => 1
+            }
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    out_of_office =
+      get_in(query_data, [:data, "updateOrganization", "organization", "out_of_office"])
+
+    assert out_of_office["enabled"] == true
+    assert get_in(out_of_office, ["enabled_days", Access.at(0), "enabled"]) == true
+    assert get_in(out_of_office, ["enabled_days", Access.at(1), "enabled"]) == false
+  end
+
   test "delete an organization" do
     {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
 
