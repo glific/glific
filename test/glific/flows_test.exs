@@ -225,9 +225,15 @@ defmodule Glific.FLowsTest do
 
       assert revision.status == "done"
 
-      # should reset previously published flow revision and set status of recent one as "done"
       [revision] = flow.revisions
-      Flows.create_flow_revision(revision.definition)
+      # should update the cached flow definition
+      {:ok, loaded_flow} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
+      assert loaded_flow.definition == revision.definition
+
+      # If a flow revision is already published
+      # should reset previously published flow revision and set status of recent one as "done"
+      new_definition = revision.definition |> Map.merge(%{"revision" => 2})
+      Flows.create_flow_revision(new_definition)
 
       assert {:ok, %Flow{}} = Flows.publish_flow(flow)
 
@@ -236,6 +242,10 @@ defmodule Glific.FLowsTest do
         |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})
 
       assert revision.status == "done"
+
+      # should update the cached flow definition
+      {:ok, loaded_flow} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
+      assert loaded_flow.definition == new_definition
     end
   end
 end
