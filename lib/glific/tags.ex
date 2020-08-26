@@ -50,7 +50,7 @@ defmodule Glific.Tags do
 
   ## Examples
 
-      iex> Glific.Tags.create_tag(%{label: "Speed", language_id: 1, shortcode: "speed"})
+      iex> Glific.Tags.create_tag(%{label: "dogs", language_id: 1, shortcode: "dogs", parent_id: 1})
       {:ok, %Tag{}}
 
       iex> create_tag(%{field: bad_value})
