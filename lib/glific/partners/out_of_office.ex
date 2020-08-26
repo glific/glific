@@ -40,9 +40,39 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
   """
   @spec out_of_office_changeset(OutOfOffice.t(), map()) :: Ecto.Changeset.t()
   def out_of_office_changeset(out_of_office, attrs) do
+    attrs =
+      if Map.has_key?(attrs, :enabled_days),
+        do: Map.put(attrs, :enabled_days, prepare_enabled_days_list(attrs.enabled_days)),
+        else: attrs
+
     out_of_office
     |> cast(attrs, @optional_fields)
     |> cast_embed(:enabled_days, with: &EnabledDay.enabled_day_changeset/2)
+  end
+
+  @spec prepare_enabled_days_list(map()) :: map()
+  defp prepare_enabled_days_list(enabled_days) do
+    enabled_days_default_list = [
+      %{enabled: false, id: 1},
+      %{enabled: false, id: 2},
+      %{enabled: false, id: 3},
+      %{enabled: false, id: 4},
+      %{enabled: false, id: 5},
+      %{enabled: false, id: 6},
+      %{enabled: false, id: 7}
+    ]
+
+    enabled_days
+    |> Enum.reduce(enabled_days_default_list, fn x, acc ->
+      acc
+      |> Enum.map(fn y ->
+        if y.id == x.id do
+          %{enabled: x.enabled, id: x.id}
+        else
+          %{enabled: y.enabled, id: y.id}
+        end
+      end)
+    end)
   end
 end
 
