@@ -28,8 +28,10 @@ defmodule Glific.Seeds.SeedsDev do
   Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
   In the next phase we will also add unseeder functions as we learn more of the test capabilities
   """
-  @spec seed_tag(Organization.t()) :: nil
-  def seed_tag(organization) do
+  @spec seed_tag(Organization.t() | nil) :: nil
+  def seed_tag(organization \\ nil) do
+    organization = get_organization(organization)
+
     [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
@@ -49,8 +51,10 @@ defmodule Glific.Seeds.SeedsDev do
   end
 
   @doc false
-  @spec seed_contacts(Organization.t()) :: {integer(), nil}
-  def seed_contacts(organization) do
+  @spec seed_contacts(Organization.t() | nil) :: {integer(), nil}
+  def seed_contacts(organization \\ nil) do
+    organization = get_organization(organization)
+
     [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
@@ -115,14 +119,16 @@ defmodule Glific.Seeds.SeedsDev do
   end
 
   @doc false
-  @spec seed_organizations(Provider.t()) :: Organization.t()
-  def seed_organizations(_default_provider) do
-    Organization |> Ecto.Query.first |> Repo.one()
+  @spec seed_organizations(any() | nil) :: Organization.t() | nil
+  def seed_organizations(_unused \\ nil) do
+    Organization |> Ecto.Query.first() |> Repo.one()
   end
 
   @doc false
-  @spec seed_messages(Organization.t()) :: nil
-  def seed_messages(organization) do
+  @spec seed_messages(Organization.t() | nil) :: nil
+  def seed_messages(organization \\ nil) do
+    organization = get_organization(organization)
+
     {:ok, sender} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
     {:ok, receiver2} = Repo.fetch_by(Contact, %{name: "Adelle Cavin"})
@@ -138,7 +144,7 @@ defmodule Glific.Seeds.SeedsDev do
       sender_id: sender.id,
       receiver_id: receiver.id,
       contact_id: receiver.id,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
 
     Repo.insert!(%Message{
@@ -150,7 +156,7 @@ defmodule Glific.Seeds.SeedsDev do
       sender_id: sender.id,
       receiver_id: receiver.id,
       contact_id: receiver.id,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
 
     Repo.insert!(%Message{
@@ -162,7 +168,7 @@ defmodule Glific.Seeds.SeedsDev do
       sender_id: sender.id,
       receiver_id: receiver.id,
       contact_id: receiver.id,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
 
     Repo.insert!(%Message{
@@ -174,7 +180,7 @@ defmodule Glific.Seeds.SeedsDev do
       sender_id: sender.id,
       receiver_id: receiver.id,
       contact_id: receiver.id,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
 
     Repo.insert!(%Message{
@@ -186,7 +192,7 @@ defmodule Glific.Seeds.SeedsDev do
       sender_id: receiver.id,
       receiver_id: sender.id,
       contact_id: receiver.id,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
 
     Repo.insert!(%Message{
@@ -198,7 +204,7 @@ defmodule Glific.Seeds.SeedsDev do
       sender_id: receiver.id,
       receiver_id: sender.id,
       contact_id: receiver.id,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
 
     Repo.insert!(%Message{
@@ -210,7 +216,7 @@ defmodule Glific.Seeds.SeedsDev do
       sender_id: receiver.id,
       receiver_id: sender.id,
       contact_id: receiver.id,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
 
     Repo.insert!(%Message{
@@ -222,7 +228,7 @@ defmodule Glific.Seeds.SeedsDev do
       sender_id: receiver2.id,
       receiver_id: sender.id,
       contact_id: receiver2.id,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
 
     Repo.insert!(%Message{
@@ -234,7 +240,7 @@ defmodule Glific.Seeds.SeedsDev do
       sender_id: receiver3.id,
       receiver_id: sender.id,
       contact_id: receiver3.id,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
 
     Repo.insert!(%Message{
@@ -246,7 +252,7 @@ defmodule Glific.Seeds.SeedsDev do
       sender_id: receiver4.id,
       receiver_id: sender.id,
       contact_id: receiver4.id,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
   end
 
@@ -287,8 +293,10 @@ defmodule Glific.Seeds.SeedsDev do
   end
 
   @doc false
-  @spec seed_users(Organization.t()) :: Users.User.t()
-  def seed_users(organization) do
+  @spec seed_users(Organization.t() | nil) :: Users.User.t()
+  def seed_users(organization \\ nil) do
+    organization = get_organization(organization)
+
     password = "12345678"
 
     {:ok, en_us} = Repo.fetch_by(Language, %{label_locale: "English"})
@@ -300,7 +308,7 @@ defmodule Glific.Seeds.SeedsDev do
         language_id: en_us.id,
         optin_time: @now,
         last_message_at: @now,
-        organization_id: organization.id,
+        organization_id: organization.id
       })
 
     contact2 =
@@ -310,7 +318,7 @@ defmodule Glific.Seeds.SeedsDev do
         language_id: en_us.id,
         optin_time: @now,
         last_message_at: @now,
-        organization_id: organization.id,
+        organization_id: organization.id
       })
 
     Users.create_user(%{
@@ -320,7 +328,7 @@ defmodule Glific.Seeds.SeedsDev do
       confirm_password: password,
       roles: ["staff"],
       contact_id: contact1.id,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
 
     Users.create_user(%{
@@ -330,23 +338,25 @@ defmodule Glific.Seeds.SeedsDev do
       confirm_password: password,
       roles: ["admin"],
       contact_id: contact2.id,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
   end
 
   @doc false
-  @spec seed_groups(Organization.t()) :: nil
-  def seed_groups(organization) do
+  @spec seed_groups(Organization.t() | nil) :: nil
+  def seed_groups(organization \\ nil) do
+    organization = get_organization(organization)
+
     Repo.insert!(%Group{
       label: "Default Group",
       is_restricted: false,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
 
     Repo.insert!(%Group{
       label: "Restricted Group",
       is_restricted: true,
-      organization_id: organization.id,
+      organization_id: organization.id
     })
   end
 
@@ -395,8 +405,10 @@ defmodule Glific.Seeds.SeedsDev do
   end
 
   @doc false
-  @spec seed_flows(Organization.t()) :: nil
-  def seed_flows(organization) do
+  @spec seed_flows(Organization.t() | nil) :: nil
+  def seed_flows(organization \\ nil) do
+    organization = get_organization(organization)
+
     test_flow =
       Repo.insert!(%Flow{
         name: "Test Workflow",
@@ -404,7 +416,7 @@ defmodule Glific.Seeds.SeedsDev do
         keywords: ["test"],
         version_number: "13.1.0",
         uuid: "defda715-c520-499d-851e-4428be87def6",
-        organization_id: organization.id,
+        organization_id: organization.id
       })
 
     Repo.insert!(%FlowRevision{
@@ -420,7 +432,7 @@ defmodule Glific.Seeds.SeedsDev do
         keywords: ["solactivity"],
         version_number: "13.1.0",
         uuid: "b050c652-65b5-4ccf-b62b-1e8b3f328676",
-        organization_id: organization.id,
+        organization_id: organization.id
       })
 
     sol_activity_definition =
@@ -446,7 +458,7 @@ defmodule Glific.Seeds.SeedsDev do
         keywords: ["solfeedback"],
         version_number: "13.1.0",
         uuid: "6c21af89-d7de-49ac-9848-c9febbf737a5",
-        organization_id: organization.id,
+        organization_id: organization.id
       })
 
     sol_feedback_definition =
@@ -466,15 +478,24 @@ defmodule Glific.Seeds.SeedsDev do
     })
   end
 
+  @spec get_organization(Organization.t() | nil) :: Organization.t()
+  defp get_organization(organization \\ nil) do
+    organization = get_organization(organization)
+
+    if is_nil(organization),
+      do: seed_organizations(),
+    else: organization
+  end
+
   @doc """
   Function to populate some basic data that we need for the system to operate. We will
   split this function up into multiple different ones for test, dev and production
   """
   @spec seed :: nil
   def seed do
-    default_provider = seed_providers()
+    organization = get_organization()
 
-    organization = seed_organizations(default_provider)
+    seed_providers()
 
     seed_contacts(organization)
 

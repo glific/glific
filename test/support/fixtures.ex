@@ -12,10 +12,17 @@ defmodule Glific.Fixtures do
     Contacts,
     Groups,
     Messages,
+    Partners.Organization,
+    Repo,
     Settings,
     Tags,
     Templates
   }
+
+  defp get_org_id() do
+    organization = Organization |> Ecto.Query.first() |> Repo.one()
+    organization.id
+  end
 
   @doc false
   @spec contact_fixture(map()) :: Contacts.Contact.t()
@@ -26,7 +33,8 @@ defmodule Glific.Fixtures do
       last_message_at: DateTime.backward(0),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      provider_status: :session_and_hsm
+      provider_status: :session_and_hsm,
+      organization_id: get_org_id(),
     }
 
     {:ok, contact} =
@@ -51,7 +59,8 @@ defmodule Glific.Fixtures do
       provider_status: :enqueued,
       sender_id: sender.id,
       receiver_id: receiver.id,
-      contact_id: receiver.id
+      contact_id: receiver.id,
+      organization_id: get_org_id(),
     }
 
     {:ok, message} =
@@ -89,7 +98,8 @@ defmodule Glific.Fixtures do
       description: "some description",
       locale: "en_US",
       is_active: true,
-      is_reserved: true
+      is_reserved: true,
+      organization_id: get_org_id(),
     }
 
     language = language_fixture()
@@ -146,7 +156,8 @@ defmodule Glific.Fixtures do
       body: "Default Template",
       type: :text,
       language_id: language.id,
-      uuid: Ecto.UUID.generate()
+      uuid: Ecto.UUID.generate(),
+      organization_id: get_org_id(),
     }
 
     {:ok, session_template} =
@@ -161,7 +172,8 @@ defmodule Glific.Fixtures do
       type: :text,
       language_id: language.id,
       parent_id: session_template.id,
-      uuid: "53008c3d-e619-4ec6-80cd-b9b2c89386dc"
+      uuid: "53008c3d-e619-4ec6-80cd-b9b2c89386dc",
+      organization_id: get_org_id(),
     }
 
     {:ok, _session_template} =
@@ -176,7 +188,8 @@ defmodule Glific.Fixtures do
   def group_fixture(attrs \\ %{}) do
     valid_attrs = %{
       label: "Poetry group",
-      description: "default description"
+      description: "default description",
+      organization_id: get_org_id(),
     }
 
     {:ok, group} =
@@ -186,13 +199,15 @@ defmodule Glific.Fixtures do
 
     %{
       label: "Default Group",
-      is_restricted: false
+      is_restricted: false,
+      organization_id: get_org_id(),
     }
     |> Groups.create_group()
 
     %{
       label: "Restricted Group",
-      is_restricted: true
+      is_restricted: true,
+      organization_id: get_org_id(),
     }
     |> Groups.create_group()
 
