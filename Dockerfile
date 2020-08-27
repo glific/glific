@@ -41,8 +41,6 @@ WORKDIR /app
 # copy release to app container
 COPY --from=build /app/_build/prod/rel/prod .
 COPY build_scripts/entrypoint.sh .
-# RUN chown -R nobody: /app Need to revisit
-# USER nobody
 
 ENV HOME=/app
 CMD ["bash", "/app/entrypoint.sh"]

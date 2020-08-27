@@ -13,7 +13,8 @@ db_database = System.get_env("DATABASE_DB") || "glific_prod"
 db_username = System.get_env("DATABASE_USER") || "postgres"
 db_password = System.get_env("DATABASE_PASSWORD") || "postgres"
 db_url = "ecto://#{db_username}:#{db_password}@#{db_host}/#{db_database}"
-ssl_port = System.get_env("SSL_PORT") || 444
+ssl_port = System.get_env("SSL_PORT") || 443
+http_port = System.get_env("HTTP_PORT") || 4000
 
 config :glific, Glific.Repo,
   url: db_url,
@@ -27,15 +28,19 @@ secret_key_base =
     You can generate one by calling: mix phx.gen.secret
     """
 
+check_origin =
+  [System.get_env("REQUEST_ORIGIN"), System.get_env("REQUEST_ORIGIN_WILDCARD")] ||
+    raise """
+    environment variable REQUEST_ORIGIN/REQUEST_ORIGIN_WILDCARD is missing.
+    """
+
 config :glific, GlificWeb.Endpoint,
   server: true,
-  http: [:inet6, port: 4000],
-  https: [
-    port: ssl_port,
-    cipher_suite: :strong,
-    keyfile: '/etc/letsencrypt/live/tides.coloredcow.com/privkey.pem',
-    certfile: '/etc/letsencrypt/live/tides.coloredcow.com/cert.pem',
-    cacertfile: '/etc/letsencrypt/live/tides.coloredcow.com/fullchain.pem'
-  ],
+  http: [:inet6, port: http_port],
+  check_origin: check_origin,
   secret_key_base: secret_key_base,
   url: [host: System.get_env("BASE_URL")]
+
+config :glific,
+  provider_url: System.get_env("PROVIDER_URL"),
+  provider_key: System.get_env("PROVIDER_KEY")
