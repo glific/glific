@@ -5,7 +5,6 @@ defmodule GlificWeb.Router do
   use GlificWeb, :router
   @dialyzer {:nowarn_function, __checks__: 0}
   use Plug.ErrorHandler
-  use Sentry.Plug
 
   pipeline :browser do
     plug :accepts, ["html"]
