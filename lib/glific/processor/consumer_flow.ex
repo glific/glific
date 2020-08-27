@@ -90,22 +90,15 @@ defmodule Glific.Processor.ConsumerFlow do
 
     context = FlowContext.active_context(message.contact_id)
 
-    if context do
-      {:ok, flow} = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
-
-      if flow.ignore_keywords == true do
-        check_contexts(message, body, state)
-      else
-        if Map.has_key?(state.flow_keywords, body) do
-          check_flows(message, body, state)
-        else
-          check_contexts(message, body, state)
-        end
-      end
+    with false <- is_nil(context),
+         {:ok, flow} <- Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid}),
+         true <- flow.ignore_keywords do
+      check_contexts(message, body, state)
     else
-      if Map.has_key?(state.flow_keywords, body),
-        do: check_flows(message, body, state),
-        else: check_contexts(message, body, state)
+      _ ->
+        if Map.has_key?(state.flow_keywords, body),
+          do: check_flows(message, body, state),
+          else: check_contexts(message, body, state)
     end
   end
 
