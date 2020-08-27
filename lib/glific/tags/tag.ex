@@ -17,6 +17,7 @@ defmodule Glific.Tags.Tag do
     :is_value,
     :parent_id,
     :keywords,
+    :ancestors,
     :colorcode
   ]
 
@@ -36,13 +37,15 @@ defmodule Glific.Tags.Tag do
           parent_id: non_neg_integer | nil,
           parent: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          ancestors: list() | []
         }
 
   schema "tags" do
     field :label, :string
     field :shortcode, :string
     field :description, :string
+    field :ancestors, {:array, :integer}, default: []
     field :colorcode, :string
 
     field :is_active, :boolean, default: false
