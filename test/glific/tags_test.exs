@@ -360,5 +360,18 @@ defmodule Glific.TagsTest do
       assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message2_tag.id) end
       assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message3_tag.id) end
     end
+
+    test "creating tag with parent id will add the ancestors" do
+      [tag1 | [tag2 | _tail]] = Tags.list_tags()
+      {:ok, tag2} = Tags.update_tag(tag2, %{parent_id: tag1.id})
+      tag3 = tag_fixture(%{parent_id: tag2.id})
+
+      tag2_ancestors = Tags.get_tag!(tag2.id).ancestors
+      tag3_ancestors = Tags.get_tag!(tag3.id).ancestors
+
+      assert tag1.id in tag2_ancestors
+      assert tag1.id in tag3_ancestors
+      assert tag2.id in tag3_ancestors
+    end
   end
 end

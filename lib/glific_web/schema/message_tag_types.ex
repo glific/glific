@@ -66,14 +66,7 @@ defmodule GlificWeb.Schema.MessageTagTypes do
         {:ok, topic: :glific}
       end)
 
-      trigger(
-        [:create_message_tag],
-        :glific
-      )
-
-      resolve(fn %{message_tag: message_tag}, _, _ ->
-        {:ok, message_tag}
-      end)
+      resolve(fn message_tag, _, _ -> {:ok, message_tag} end)
     end
 
     field :deleted_message_tag, :message_tag do
@@ -86,9 +79,18 @@ defmodule GlificWeb.Schema.MessageTagTypes do
         :glific
       )
 
-      resolve(fn %{message_tag: message_tag}, _, _ ->
-        {:ok, message_tag}
+      resolve(fn message_tag, _, _ -> {:ok, message_tag} end)
+    end
+
+    field :update_message_tags, :message_tags do
+      config(fn _args, _info ->
+        {:ok, topic: :glific}
       end)
+
+      trigger(
+        [:update_message_tags],
+        :glific
+      )
     end
   end
 end

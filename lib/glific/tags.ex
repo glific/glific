@@ -3,6 +3,7 @@ defmodule Glific.Tags do
   The Tags Context, which encapsulates and manages tags and the related join tables.
   """
 
+  alias Glific.Communications
   alias Glific.Repo
   alias Glific.Tags.{ContactTag, MessageTag, Tag}
 
@@ -211,9 +212,17 @@ defmodule Glific.Tags do
   """
   @spec create_message_tag(map()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def create_message_tag(attrs \\ %{}) do
-    %MessageTag{}
-    |> MessageTag.changeset(attrs)
-    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])
+    {status, response} =
+      %MessageTag{}
+      |> MessageTag.changeset(attrs)
+      |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])
+
+    if status == :ok do
+      Communications.publish_data({status, response}, :created_message_tag)
+      {:ok, response}
+    else
+      {:error, response}
+    end
   end
 
   @doc """
@@ -250,6 +259,7 @@ defmodule Glific.Tags do
   """
   @spec delete_message_tag(MessageTag.t()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def delete_message_tag(%MessageTag{} = message_tag) do
+    publish_delete_message([message_tag])
     Repo.delete(message_tag)
   end
 
@@ -261,16 +271,28 @@ defmodule Glific.Tags do
   """
   @spec delete_message_tag_by_ids(integer, integer) :: {integer(), nil | [term()]}
   def delete_message_tag_by_ids(message_id, tag_id) when is_integer(tag_id) do
-    %MessageTag{}
-    |> where([m], m.message_id == ^message_id and m.tag_id == ^tag_id)
-    |> Repo.delete_all()
+    query =
+      MessageTag
+      |> where([m], m.message_id == ^message_id and m.tag_id == ^tag_id)
+
+    ## We need to come back on this one and fix it.
+    Repo.all(query)
+    |> publish_delete_message
+
+    Repo.delete_all(query)
   end
 
   @spec delete_message_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
   def delete_message_tag_by_ids(message_id, tag_ids) when is_list(tag_ids) do
-    MessageTag
-    |> where([m], m.message_id == ^message_id and m.tag_id in ^tag_ids)
-    |> Repo.delete_all()
+    query =
+      MessageTag
+      |> where([m], m.message_id == ^message_id and m.tag_id in ^tag_ids)
+
+    ## We need to come back on this one and fix it.
+    Repo.all(query)
+    |> publish_delete_message
+
+    Repo.delete_all(query)
   end
 
   @doc """
@@ -405,11 +427,29 @@ defmodule Glific.Tags do
       from mt in MessageTag,
         join: m in assoc(mt, :message),
         join: t in assoc(mt, :tag),
-        where: m.contact_id == ^contact_id and t.shortcode in ^tag_shortcode_list,
-        select: [mt.message_id]
+        where: m.contact_id == ^contact_id and t.shortcode in ^tag_shortcode_list
 
-    {_, deleted_rows} = Repo.delete_all(query)
+    ## We need to come back on this one and fix it.
+    Repo.all(query)
+    |> publish_delete_message
+
+    {_, deleted_rows} =
+      select(query, [mt], [mt.message_id])
+      |> Repo.delete_all()
 
     List.flatten(deleted_rows)
+  end
+
+  @spec publish_delete_message(list) :: {:ok}
+  defp publish_delete_message([]), do: {:ok}
+
+  defp publish_delete_message(message_tags) do
+    _list =
+      message_tags
+      |> Enum.reduce([], fn message_tag, _acc ->
+        Communications.publish_data({:ok, message_tag}, :deleted_message_tag)
+      end)
+
+    {:ok}
   end
 end

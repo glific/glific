@@ -10,7 +10,16 @@ defmodule Glific.Tags.Tag do
   alias Glific.{Contacts.Contact, Messages.Message}
 
   @required_fields [:label, :language_id, :shortcode]
-  @optional_fields [:description, :is_active, :is_reserved, :is_value, :parent_id, :keywords]
+  @optional_fields [
+    :description,
+    :is_active,
+    :is_reserved,
+    :is_value,
+    :parent_id,
+    :keywords,
+    :ancestors,
+    :colorcode
+  ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -18,6 +27,7 @@ defmodule Glific.Tags.Tag do
           label: String.t() | nil,
           shortcode: String.t() | nil,
           description: String.t() | nil,
+          colorcode: String.t() | nil,
           is_active: boolean(),
           is_reserved: boolean(),
           is_value: boolean(),
@@ -27,13 +37,16 @@ defmodule Glific.Tags.Tag do
           parent_id: non_neg_integer | nil,
           parent: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          ancestors: list() | []
         }
 
   schema "tags" do
     field :label, :string
     field :shortcode, :string
     field :description, :string
+    field :ancestors, {:array, :integer}, default: []
+    field :colorcode, :string
 
     field :is_active, :boolean, default: false
     field :is_reserved, :boolean, default: false

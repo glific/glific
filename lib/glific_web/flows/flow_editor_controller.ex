@@ -19,8 +19,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec groups(Plug.Conn.t(), map) :: Plug.Conn.t()
   def groups(conn, _params) do
+    group_list =
+      Glific.Groups.list_groups()
+      |> Enum.reduce([], fn group, acc ->
+        [%{uuid: "#{group.id}", name: group.label} | acc]
+      end)
+
     conn
-    |> json(%{results: []})
+    |> json(%{results: group_list})
   end
 
   @doc false
@@ -74,7 +80,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec labels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels(conn, _params) do
-    json(conn, %{results: []})
+    tag_list =
+      Glific.Tags.list_tags(%{filter: %{parent: "Contacts"}})
+      |> Enum.reduce([], fn tag, acc ->
+        [%{uuid: "#{tag.id}", name: tag.label} | acc]
+      end)
+
+    json(conn, %{results: tag_list})
   end
 
   @doc """
@@ -232,9 +244,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
               {
                 nodes,
                 Map.put(segments, key, fc.count),
-                Map.put(recent_messages, key, [
-                  %{text: "The recent messages will appear here soon.", sent: DateTime.utc_now()}
-                ])
+                Map.put(recent_messages, key, get_recent_message(fc))
               }
 
             _ ->
@@ -247,10 +257,16 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, activity)
   end
 
+  defp get_recent_message(flow_count) do
+    # flow editor shows only last 3 messages. We are just tacking 5 for the safe side.
+    flow_count.recent_messages
+    |> Enum.map(fn msg -> %{text: msg["message"], sent: msg["date"]} end)
+    |> Enum.take(5)
+  end
+
   @doc """
     Let's get all the flows or a latest flow revision
   """
-
   @spec flows(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def flows(conn, %{"vars" => vars}) do
     results =

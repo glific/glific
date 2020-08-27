@@ -2,6 +2,8 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
   use GlificWeb.ConnCase
 
   alias Glific.Flows
+  alias Glific.Groups
+  alias Glific.Tags
 
   describe "flow_editor_routes" do
     test "globals", %{conn: conn} do
@@ -10,8 +12,9 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     end
 
     test "groups", %{conn: conn} do
+      groups = Groups.list_groups()
       conn = get(conn, "/flow-editor/groups", %{})
-      assert json_response(conn, 200) == %{"results" => []}
+      assert length(json_response(conn, 200)["results"]) == length(groups)
     end
 
     test "groups_post", %{conn: conn} do
@@ -38,8 +41,9 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     end
 
     test "labels", %{conn: conn} do
+      tags = Tags.list_tags(%{filter: %{parent: "Contacts"}})
       conn = get(conn, "/flow-editor/labels", %{})
-      assert json_response(conn, 200)["results"] == []
+      assert length(json_response(conn, 200)["results"]) == length(tags)
     end
 
     test "labels_post", %{conn: conn} do

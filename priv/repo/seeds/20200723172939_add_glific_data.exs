@@ -25,6 +25,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def up(_repo) do
     languages = languages()
 
+    # calling it gtags, since tags is a macro in philcolumns
     gtags(languages)
 
     provider = providers()
@@ -72,6 +73,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         label: "English (United States)",
         label_locale: "English",
         locale: "en_US"
+      })
+
+    ta =
+      Repo.insert!(%Language{
+        label: "Tamil",
+        label_locale: "தமிழ்",
+        locale: "ta"
       })
 
     {hi, en_us}
@@ -192,6 +200,22 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         is_value: true
       },
 
+      # Intent of message
+      %{
+        label: "Yes",
+        shortcode: "yes",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["yes", "yeah", "okay", "ok"]
+      },
+      %{
+        label: "No",
+        shortcode: "no",
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        keywords: ["no", "nope", "nay"]
+      },
+
       # Type of Contact
       %{label: "Child", shortcode: "child", language_id: en_us.id, parent_id: message_tags_ct.id},
       %{
@@ -246,6 +270,19 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def organization(admin, provider, languages) do
     {_hi, en_us} = languages
 
+    out_of_office_default_data = %{
+      enabled: false,
+      enabled_days: [
+        %{enabled: false, id: 1},
+        %{enabled: false, id: 2},
+        %{enabled: false, id: 3},
+        %{enabled: false, id: 4},
+        %{enabled: false, id: 5},
+        %{enabled: false, id: 6},
+        %{enabled: false, id: 7}
+      ]
+    }
+
     Repo.insert!(%Organization{
       name: "Glific",
       display_name: "Glific",
@@ -255,7 +292,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       provider_id: provider.id,
       provider_key: "ADD_PROVIDER_API_KEY",
       provider_number: "ADD_MY_PHONE_NUMBER",
-      default_language_id: en_us.id
+      default_language_id: en_us.id,
+      out_of_office: out_of_office_default_data
     })
   end
 
@@ -516,7 +554,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     Repo.insert(%FlowRevision{
       definition: definition,
-      flow_id: f.id
+      flow_id: f.id,
+      status: "done"
     })
   end
 

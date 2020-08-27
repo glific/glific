@@ -244,6 +244,18 @@ defmodule Glific.PartnersTest do
       assert {:error, %Ecto.Changeset{}} = Partners.create_organization(@invalid_org_attrs)
     end
 
+    test "create_organization/1 should add default values for organization settings" do
+      {:ok, %Organization{} = organization} =
+        @valid_org_attrs
+        |> Map.merge(%{provider_id: provider_fixture().id})
+        |> Map.merge(%{default_language_id: default_language_fixture().id})
+        |> Partners.create_organization()
+
+      assert organization.out_of_office.enabled == false
+      day1 = get_in(organization.out_of_office.enabled_days, [Access.at(0)])
+      assert day1.enabled == false
+    end
+
     test "update_organization/2 with valid data updates the organization" do
       organization = organization_fixture()
 
@@ -261,6 +273,52 @@ defmodule Glific.PartnersTest do
                Partners.update_organization(organization, @invalid_org_attrs)
 
       assert organization == Partners.get_organization!(organization.id)
+    end
+
+    test "update_organization/2 with oraganization settings" do
+      organization = organization_fixture()
+
+      update_org_attrs =
+        @update_org_attrs
+        |> Map.merge(%{
+          out_of_office: %{
+            enabled: true,
+            start_time: ~T[10:00:00],
+            end_time: ~T[20:00:00],
+            enabled_days: [
+              %{
+                id: 1,
+                enabled: true
+              }
+            ],
+            flow_id: 1
+          }
+        })
+
+      assert {:ok, %Organization{} = organization} =
+               Partners.update_organization(organization, update_org_attrs)
+
+      assert organization.out_of_office.enabled == true
+      assert organization.out_of_office.start_time == ~T[10:00:00]
+      day1 = get_in(organization.out_of_office.enabled_days, [Access.at(0)])
+      assert day1.enabled == true
+      # Days in the input should be updated accordingly, other days should be disabled
+      day2 = get_in(organization.out_of_office.enabled_days, [Access.at(1)])
+      assert day2.enabled == false
+
+      # disable out_of_office setting
+      update_org_attrs =
+        @update_org_attrs
+        |> Map.merge(%{
+          out_of_office: %{
+            enabled: false
+          }
+        })
+
+      assert {:ok, %Organization{} = organization} =
+               Partners.update_organization(organization, update_org_attrs)
+
+      assert organization.out_of_office.enabled == false
     end
 
     test "delete_organization/1 deletes the organization" do
@@ -323,6 +381,8 @@ defmodule Glific.PartnersTest do
                Partners.list_organizations(%{filter: %{name: "Organization Name"}})
 
       assert [] == Partners.list_organizations(%{filter: %{provider: "RandomString"}})
+
+      assert [] == Partners.list_organizations(%{filter: %{default_language: "Hindi"}})
     end
 
     test "ensure that creating organization with out provider give an error" do
