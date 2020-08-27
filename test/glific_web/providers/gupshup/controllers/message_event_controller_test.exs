@@ -65,6 +65,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
       json_response(conn, 200)
       message = Messages.get_message!(setup_config.message.id)
       assert message.provider_status == :error
+      assert message.errors != nil
+      assert message.errors != %{}
 
       # when message sent
       message_params = put_in(setup_config.message_params, ["payload", "type"], "sent")

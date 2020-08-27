@@ -265,7 +265,7 @@ defmodule Glific.CommunicationsTest do
           provider_status: :enqueued
         })
 
-      Communications.Message.update_provider_status(message.provider_message_id, :read)
+      Communications.Message.update_provider_status(message.provider_message_id, :read, nil)
       message = Messages.get_message!(message.id)
       assert message.provider_status == :read
     end

@@ -49,7 +49,7 @@ defmodule Glific.Messages.Message do
     :media_id,
     :send_at,
     :sent_at,
-    :user_id,
+    :user_id
   ]
 
   schema "messages" do
