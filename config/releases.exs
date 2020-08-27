@@ -27,7 +27,9 @@ secret_key_base =
     environment variable SECRET_KEY_BASE is missing.
     You can generate one by calling: mix phx.gen.secret
     """
-check_origin = [System.get_env("REQUEST_ORIGIN"), System.get_env("REQUEST_ORIGIN_WILDCARD")] || 
+
+check_origin =
+  [System.get_env("REQUEST_ORIGIN"), System.get_env("REQUEST_ORIGIN_WILDCARD")] ||
     raise """
     environment variable REQUEST_ORIGIN/REQUEST_ORIGIN_WILDCARD is missing.
     """
