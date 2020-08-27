@@ -236,6 +236,7 @@ defmodule Glific.Flows.Flow do
           uuid: f.uuid,
           shortcode: f.shortcode,
           keywords: f.keywords,
+          ignore_keywords: f.ignore_keywords,
           definition: fr.definition
         }
 
