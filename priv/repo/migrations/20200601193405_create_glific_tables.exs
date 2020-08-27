@@ -283,6 +283,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # options: sent, delivered, read
       add :provider_status, :message_status_enum
 
+      # options: sent, delivered, read
+      add :errors, :map
+
       # message number for a contact
       add :message_number, :bigint
 
