@@ -217,7 +217,7 @@ defmodule GlificWeb.Schema.MessageTest do
     result = query_gql_by(:delete, variables: %{"id" => message.id})
     assert {:ok, query_data} = result
 
-    assert get_in(query_data, [:data, "deleteMessage", "errors"]) == nil
+    assert get_in(query_data, [:data, "deleteMessage", "errors"]) == [nil]
 
     result = query_gql_by(:delete, variables: %{"id" => message.id})
     assert {:ok, query_data} = result

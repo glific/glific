@@ -92,8 +92,15 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback to update the provider status for a message
   """
-  @spec update_provider_status(String.t(), atom()) :: {:ok, Message.t()}
-  def update_provider_status(provider_message_id, provider_status) do
+  @spec update_provider_status(String.t(), atom(), map()) :: {:ok, Message.t()}
+  def update_provider_status(provider_message_id, :error, errors) do
+    from(m in Message, where: m.provider_message_id == ^provider_message_id)
+    |> Repo.update_all(
+      set: [provider_status: :error, errors: errors, updated_at: DateTime.utc_now()]
+    )
+  end
+
+  def update_provider_status(provider_message_id, provider_status, _params) do
     from(m in Message, where: m.provider_message_id == ^provider_message_id)
     |> Repo.update_all(set: [provider_status: provider_status, updated_at: DateTime.utc_now()])
   end

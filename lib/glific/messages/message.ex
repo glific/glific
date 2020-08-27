@@ -16,6 +16,7 @@ defmodule Glific.Messages.Message do
           flow: String.t() | nil,
           status: String.t() | nil,
           provider_status: String.t() | nil,
+          errors: map() | nil,
           message_number: integer(),
           sender: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           receiver: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -44,6 +45,7 @@ defmodule Glific.Messages.Message do
     :status,
     :provider_status,
     :provider_message_id,
+    :errors,
     :media_id,
     :send_at,
     :sent_at,
@@ -61,6 +63,7 @@ defmodule Glific.Messages.Message do
 
     field :provider_message_id, :string
     field :provider_status, MessageStatus
+    field :errors, :map, default: %{}
     field :send_at, :utc_datetime
     field :sent_at, :utc_datetime
     field :message_number, :integer, default: 0
