@@ -270,6 +270,19 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def organization(admin, provider, languages) do
     {_hi, en_us} = languages
 
+    out_of_office_default_data = %{
+      enabled: false,
+      enabled_days: [
+        %{enabled: false, id: 1},
+        %{enabled: false, id: 2},
+        %{enabled: false, id: 3},
+        %{enabled: false, id: 4},
+        %{enabled: false, id: 5},
+        %{enabled: false, id: 6},
+        %{enabled: false, id: 7}
+      ]
+    }
+
     Repo.insert!(%Organization{
       name: "Glific",
       display_name: "Glific",
@@ -279,7 +292,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       provider_id: provider.id,
       provider_key: "ADD_PROVIDER_API_KEY",
       provider_number: "ADD_MY_PHONE_NUMBER",
-      default_language_id: en_us.id
+      default_language_id: en_us.id,
+      out_of_office: out_of_office_default_data
     })
   end
 
