@@ -6,10 +6,15 @@ defmodule Glific.Tags.Tag do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.{Settings.Language, Tags.Tag}
-  alias Glific.{Contacts.Contact, Messages.Message}
+  alias Glific.{
+    Contacts.Contact,
+    Messages.Message,
+    Partners.Organization,
+    Settings.Language,
+    Tags.Tag
+  }
 
-  @required_fields [:label, :language_id, :shortcode]
+  @required_fields [:label, :language_id, :organization_id, :shortcode]
   @optional_fields [
     :description,
     :is_active,
@@ -34,6 +39,8 @@ defmodule Glific.Tags.Tag do
           keywords: list(),
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           parent_id: non_neg_integer | nil,
           parent: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -54,6 +61,7 @@ defmodule Glific.Tags.Tag do
     field :keywords, {:array, :string}, default: []
 
     belongs_to :language, Language
+    belongs_to :organization, Organization
 
     belongs_to :parent, Tag, foreign_key: :parent_id
     has_many :child, Tag, foreign_key: :parent_id

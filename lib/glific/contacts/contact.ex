@@ -10,13 +10,15 @@ defmodule Glific.Contacts.Contact do
     Enums.ContactProviderStatus,
     Enums.ContactStatus,
     Groups.Group,
+    Partners.Organization,
     Settings.Language,
     Tags.Tag
   }
 
   @required_fields [
     :phone,
-    :language_id
+    :language_id,
+    :organization_id
   ]
   @optional_fields [
     :name,
@@ -38,6 +40,8 @@ defmodule Glific.Contacts.Contact do
           provider_status: ContactProviderStatus | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           optin_time: :utc_datetime | nil,
           optout_time: :utc_datetime | nil,
           last_message_at: :utc_datetime | nil,
@@ -55,6 +59,7 @@ defmodule Glific.Contacts.Contact do
     field :provider_status, ContactProviderStatus
 
     belongs_to :language, Language
+    belongs_to :organization, Organization
 
     field :optin_time, :utc_datetime
     field :optout_time, :utc_datetime
