@@ -34,7 +34,7 @@ defmodule Glific.Fixtures do
       phone: Phone.EnUs.phone(),
       status: :valid,
       provider_status: :session_and_hsm,
-      organization_id: get_org_id(),
+      organization_id: get_org_id()
     }
 
     {:ok, contact} =
@@ -60,7 +60,7 @@ defmodule Glific.Fixtures do
       sender_id: sender.id,
       receiver_id: receiver.id,
       contact_id: receiver.id,
-      organization_id: get_org_id(),
+      organization_id: get_org_id()
     }
 
     {:ok, message} =
@@ -99,7 +99,7 @@ defmodule Glific.Fixtures do
       locale: "en_US",
       is_active: true,
       is_reserved: true,
-      organization_id: get_org_id(),
+      organization_id: get_org_id()
     }
 
     language = language_fixture()
@@ -157,7 +157,7 @@ defmodule Glific.Fixtures do
       type: :text,
       language_id: language.id,
       uuid: Ecto.UUID.generate(),
-      organization_id: get_org_id(),
+      organization_id: get_org_id()
     }
 
     {:ok, session_template} =
@@ -173,7 +173,7 @@ defmodule Glific.Fixtures do
       language_id: language.id,
       parent_id: session_template.id,
       uuid: "53008c3d-e619-4ec6-80cd-b9b2c89386dc",
-      organization_id: get_org_id(),
+      organization_id: get_org_id()
     }
 
     {:ok, _session_template} =
@@ -189,7 +189,7 @@ defmodule Glific.Fixtures do
     valid_attrs = %{
       label: "Poetry group",
       description: "default description",
-      organization_id: get_org_id(),
+      organization_id: get_org_id()
     }
 
     {:ok, group} =
@@ -200,14 +200,14 @@ defmodule Glific.Fixtures do
     %{
       label: "Default Group",
       is_restricted: false,
-      organization_id: get_org_id(),
+      organization_id: get_org_id()
     }
     |> Groups.create_group()
 
     %{
       label: "Restricted Group",
       is_restricted: true,
-      organization_id: get_org_id(),
+      organization_id: get_org_id()
     }
     |> Groups.create_group()
 

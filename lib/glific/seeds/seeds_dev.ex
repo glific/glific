@@ -482,7 +482,7 @@ defmodule Glific.Seeds.SeedsDev do
   defp get_organization(organization \\ nil) do
     if is_nil(organization),
       do: seed_organizations(),
-    else: organization
+      else: organization
   end
 
   @doc """

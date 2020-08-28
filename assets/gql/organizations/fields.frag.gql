@@ -3,19 +3,17 @@ fragment OrganizationFields on OrganizationResult {
     id
     name
     display_name
-    contact_name
     contact {
       name
     }
     email
     provider_key
-    provider_number 
-   
+    provider_phone
     provider {
       id
       name
       url
-      api_end_point   
+      api_end_point
     }
 
     out_of_office {

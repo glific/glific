@@ -126,7 +126,7 @@ defmodule Glific.Communications.Message do
         flow: :inbound,
         provider_status: :delivered,
         status: :delivered,
-        organization_id: contact.organization_id,
+        organization_id: contact.organization_id
       })
 
     cond do

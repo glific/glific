@@ -166,9 +166,6 @@ defmodule Glific.Partners do
       {:display_name, display_name}, query ->
         from q in query, where: ilike(q.display_name, ^"%#{display_name}%")
 
-      {:contact_name, contact_name}, query ->
-        from q in query, where: ilike(q.contact_name, ^"%#{contact_name}%")
-
       {:email, email}, query ->
         from q in query, where: ilike(q.email, ^"%#{email}%")
 
@@ -177,8 +174,8 @@ defmodule Glific.Partners do
           join: c in assoc(q, :provider),
           where: ilike(c.name, ^"%#{provider}%")
 
-      {:provider_number, provider_number}, query ->
-        from q in query, where: ilike(q.provider_number, ^"%#{provider_number}%")
+      {:provider_phone, provider_phone}, query ->
+        from q in query, where: ilike(q.provider_phone, ^"%#{provider_phone}%")
 
       {:default_language, default_language}, query ->
         from q in query,
@@ -308,9 +305,9 @@ defmodule Glific.Partners do
         contact_id =
           Contact
           |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
-        |> select([c, _o], c.id)
-        |> limit(1)
-        |> Repo.one()
+          |> select([c, _o], c.id)
+          |> limit(1)
+          |> Repo.one()
 
         Caches.set("organization_contact_id", contact_id)
         contact_id

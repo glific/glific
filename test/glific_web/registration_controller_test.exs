@@ -67,7 +67,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with password less than minimum characters should give error",
-      %{conn: conn, organization_id: organization_id} do
+         %{conn: conn, organization_id: organization_id} do
       {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
       {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver.phone)
@@ -185,7 +185,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           "password" => @password,
           "password_confirmation" => @password,
           "contact_id" => receiver.id,
-          "organization_id" => receiver.organization_id,
+          "organization_id" => receiver.organization_id
         }
         |> Users.create_user()
 
@@ -211,7 +211,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         "password" => @password,
         "password_confirmation" => @password,
         "contact_id" => receiver.id,
-        "organization_id" => Fixtures.get_org_id(),
+        "organization_id" => Fixtures.get_org_id()
       }
 
       {:ok, user} =

@@ -27,8 +27,8 @@ defmodule Glific.Partners.Organization do
 
   # define all the optional fields for organization
   @optional_fields [
-    :contact_id,
-    :out_of_office
+    :contact_id
+    # :out_of_office
   ]
 
   @type t() :: %__MODULE__{
@@ -81,7 +81,7 @@ defmodule Glific.Partners.Organization do
     |> foreign_key_constraint(:contact_id)
     |> unique_constraint(:name)
     |> unique_constraint(:email)
-    |> unique_constraint(:provider_number)
+    |> unique_constraint(:provider_phone)
     |> unique_constraint([:contact_id])
   end
 

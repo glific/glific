@@ -32,9 +32,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :name, :string
     field :display_name, :string
     field :provider_key, :string
-    field :contact_name, :string
     field :email, :string
-    field :provider_number, :string
+    field :provider_phone, :string
 
     field :provider, :provider do
       resolve(dataloader(Repo))
@@ -62,11 +61,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     @desc "Match the email"
     field :email, :string
 
-    @desc "Match the contact name"
-    field :contact_name, :string
-
     @desc "Match the whatsapp number of organization"
-    field :provider_number, :string
+    field :provider_phone, :string
 
     @desc "Match the provider"
     field :provider, :string
@@ -91,10 +87,9 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   input_object :organization_input do
     field :name, :string
     field :display_name, :string
-    field :contact_name, :string
     field :email, :string
     field :provider_key, :string
-    field :provider_number, :string
+    field :provider_phone, :string
 
     field :provider_id, :id
     field :contact_id, :id

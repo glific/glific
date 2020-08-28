@@ -20,7 +20,8 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
     "user" => %{
       "phone" => "+919820198765",
       "name" => "Jane Doe",
-      "password" => "invalid", # less that 8 characters
+      # less that 8 characters
+      "password" => "invalid"
     }
   }
 
@@ -30,16 +31,16 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
     user =
       %User{}
       |> User.changeset(%{
-          phone: "+919820198765",
-          name: "Jane Jana",
-          password: @password,
-          password_confirmation: @password,
-          contact_id: contact.id,
-          organization_id: organization_id
-                        })
-                        |> Repo.insert!()
+        phone: "+919820198765",
+        name: "Jane Jana",
+        password: @password,
+        password_confirmation: @password,
+        contact_id: contact.id,
+        organization_id: organization_id
+      })
+      |> Repo.insert!()
 
-      {:ok, user: user}
+    {:ok, user: user}
   end
 
   describe "create/2" do

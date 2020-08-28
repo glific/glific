@@ -55,13 +55,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "type"], "text")
         |> put_in(["payload", "id"], Faker.String.base64(36))
         |> put_in(["payload", "payload"], message_payload)
-        |> put_in(["payload", "sender", "organization_id"], organization_id)
 
       %{message_params: message_params}
     end
 
     test "Incoming text message should be stored in the database",
-      %{conn: conn, message_params: message_params} do
+         %{conn: conn, message_params: message_params} do
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
       provider_message_id = get_in(message_params, ["payload", "id"])
