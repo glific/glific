@@ -305,15 +305,31 @@ defmodule Glific.Partners do
         contact_id =
           Contact
           |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
-          |> select([c, _o], c.id)
-          |> limit(1)
-          |> Repo.one()
+        |> select([c, _o], c.id)
+        |> limit(1)
+        |> Repo.one()
 
         Caches.set("organization_contact_id", contact_id)
         contact_id
 
       {:ok, contact_id} ->
         contact_id
+    end
+  end
+
+  @doc """
+  Get the default language id
+  """
+  @spec organization_languageid() :: integer()
+  def organization_language_id do
+    case Caches.get("organization_language_id") do
+      {:ok, false} ->
+        organization = Organization |> Ecto.Query.first() |> Repo.one()
+        Caches.set("organization_language_id", organization.default_language_id)
+        organization.default_language_id
+
+      {:ok, organization_language_id} ->
+        organization_language__id
     end
   end
 end

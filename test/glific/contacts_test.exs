@@ -92,7 +92,7 @@ defmodule Glific.ContactsTest do
       fields: %{}
     }
 
-    def contact_fixture(attrs \\ %{}) do
+    def contact_fixture(attrs) do
       {:ok, contact} =
         attrs
         |> Enum.into(@valid_attrs)
@@ -101,29 +101,30 @@ defmodule Glific.ContactsTest do
       contact
     end
 
-    test "list_contacts/0 returns all contacts" do
+    test "list_contacts/1 returns all contacts", %{organization_id: _organization_id} = attrs  do
       contacts_count = Repo.aggregate(Contact, :count)
 
-      _contact = contact_fixture()
-      assert length(Contacts.list_contacts()) == contacts_count + 1
+      _contact = contact_fixture(attrs)
+      assert length(Contacts.list_contacts(%{filter: attrs})) == contacts_count + 1
     end
 
-    test "count_contacts/0 returns count of all contacts" do
+    test "count_contacts/0 returns count of all contacts", %{organization_id: _organization_id} = attrs do
       contacts_count = Repo.aggregate(Contact, :count)
 
-      _ = contact_fixture()
-      assert Contacts.count_contacts() == contacts_count + 1
+      _ = contact_fixture(attrs)
+      assert Contacts.count_contacts(%{filter: attrs}) == contacts_count + 1
 
-      assert Contacts.count_contacts(%{filter: %{name: "some name"}}) == 1
+      assert Contacts.count_contacts(%{filter: Map.merge(attrs, %{name: "some name"})}) == 1
     end
 
-    test "get_contact!/1 returns the contact with given id" do
-      contact = contact_fixture()
+    test "get_contact!/1 returns the contact with given id", %{organization_id: _organization_id} = attrs do
+      contact = contact_fixture(attrs)
       assert Contacts.get_contact!(contact.id) == contact
     end
 
-    test "create_contact/1 with valid data creates a contact" do
-      assert {:ok, %Contact{} = contact} = Contacts.create_contact(@valid_attrs)
+    test "create_contact/1 with valid data creates a contact", %{organization_id: _organization_id} = attrs do
+      attrs = Map.merge(attrs, @valid_attrs)
+      assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs)
       assert contact.name == "some name"
       assert contact.optin_time == ~U[2010-04-17 14:00:00Z]
       assert contact.optout_time == nil
@@ -137,11 +138,12 @@ defmodule Glific.ContactsTest do
       assert contact.language_id == organization.default_language_id
     end
 
-    test "create_contact/1 with language id creates a contact" do
+    test "create_contact/1 with language id creates a contact", %{organization_id: _organization_id} = attrs do
       {:ok, language} = Repo.fetch_by(Language, %{locale: "hi"})
 
       attrs =
-        @valid_attrs
+        attrs
+        |> Map.merge(@valid_attrs)
         |> Map.merge(%{language_id: language.id})
 
       assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs)
@@ -158,8 +160,8 @@ defmodule Glific.ContactsTest do
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(@invalid_attrs)
     end
 
-    test "update_contact/2 with valid data updates the contact" do
-      contact = contact_fixture()
+    test "update_contact/2 with valid data updates the contact", %{organization_id: _organization_id} = attrs do
+      contact = contact_fixture(attrs)
       assert {:ok, %Contact{} = contact} = Contacts.update_contact(contact, @update_attrs)
       assert contact.name == "some updated name"
       assert contact.optin_time == ~U[2011-05-18 15:01:01Z]
@@ -169,68 +171,71 @@ defmodule Glific.ContactsTest do
       assert contact.provider_status == :hsm
     end
 
-    test "update_contact/2 with invalid data returns error changeset" do
-      contact = contact_fixture()
+    test "update_contact/2 with invalid data returns error changeset", %{organization_id: _organization_id} = attrs do
+      contact = contact_fixture(attrs)
       assert {:error, %Ecto.Changeset{}} = Contacts.update_contact(contact, @invalid_attrs)
       assert contact == Contacts.get_contact!(contact.id)
     end
 
-    test "delete_contact/1 deletes the contact" do
-      contact = contact_fixture()
+    test "delete_contact/1 deletes the contact", %{organization_id: _organization_id} = attrs do
+      contact = contact_fixture(attrs)
       assert {:ok, %Contact{}} = Contacts.delete_contact(contact)
       assert_raise Ecto.NoResultsError, fn -> Contacts.get_contact!(contact.id) end
     end
 
-    test "change_contact/1 returns a contact changeset" do
-      contact = contact_fixture()
+    test "change_contact/1 returns a contact changeset", %{organization_id: _organization_id} = attrs do
+      contact = contact_fixture(attrs)
       assert %Ecto.Changeset{} = Contacts.change_contact(contact)
     end
 
-    test "list_contacts/1 with multiple contacts" do
+    test "list_contacts/1 with multiple contacts", %{organization_id: _organization_id} = attrs do
       contacts_count = Repo.aggregate(Contact, :count)
 
-      _c0 = contact_fixture(@valid_attrs)
-      _c1 = contact_fixture(@valid_attrs_1)
-      _c2 = contact_fixture(@valid_attrs_2)
-      _c3 = contact_fixture(@valid_attrs_3)
+      _c0 = contact_fixture(Map.merge(attrs, @valid_attrs))
+      _c1 = contact_fixture(Map.merge(attrs, @valid_attrs_1))
+      _c2 = contact_fixture(Map.merge(attrs, @valid_attrs_2))
+        _c3 = contact_fixture(Map.merge(attrs, @valid_attrs_3))
 
-      assert length(Contacts.list_contacts()) == contacts_count + 4
+      assert length(Contacts.list_contacts(%{filter: attrs})) == contacts_count + 4
     end
 
-    test "list_contacts/1 with multiple contacts sorted" do
+    test "list_contacts/1 with multiple contacts sorted", %{organization_id: _organization_id} = attrs do
       contacts_count = Repo.aggregate(Contact, :count)
 
-      c0 = contact_fixture(@valid_attrs_to_test_order_1)
-      c1 = contact_fixture(@valid_attrs_to_test_order_2)
+      c0 = contact_fixture(Map.merge(attrs, @valid_attrs_to_test_order_1))
+      c1 = contact_fixture(Map.merge(attrs, @valid_attrs_to_test_order_2))
 
-      assert length(Contacts.list_contacts()) == contacts_count + 2
+      assert length(Contacts.list_contacts(%{filter: attrs})) == contacts_count + 2
 
-      [ordered_c0 | _] = Contacts.list_contacts(%{opts: %{order: :asc}})
+      [ordered_c0 | _] = Contacts.list_contacts(%{opts: %{order: :asc}, filter: attrs})
       assert c0 == ordered_c0
 
-      [ordered_c1 | _] = Contacts.list_contacts(%{opts: %{order: :desc}})
+      [ordered_c1 | _] = Contacts.list_contacts(%{opts: %{order: :desc}, filter: attrs})
       assert c1 == ordered_c1
     end
 
-    test "list_contacts/1 with multiple contacts filtered" do
-      c0 = contact_fixture(@valid_attrs)
-      c1 = contact_fixture(@valid_attrs_1)
-      c2 = contact_fixture(@valid_attrs_2)
-      c3 = contact_fixture(@valid_attrs_3)
+    test "list_contacts/1 with multiple contacts filtered", %{organization_id: _organization_id} = attrs do
+      c0 = contact_fixture(Map.merge(attrs, @valid_attrs))
+      c1 = contact_fixture(Map.merge(attrs, @valid_attrs_1))
+      c2 = contact_fixture(Map.merge(attrs, @valid_attrs_2))
+      c3 = contact_fixture(Map.merge(attrs, @valid_attrs_3))
 
-      cs = Contacts.list_contacts(%{opts: %{order: :asc}, filter: %{phone: "some phone 3"}})
+      cs = Contacts.list_contacts(%{
+            opts: %{order: :asc},
+            filter: Map.merge(attrs, %{phone: "some phone 3"})})
       assert cs == [c3]
 
-      cs = Contacts.list_contacts(%{filter: %{phone: "some phone"}})
+      cs = Contacts.list_contacts(%{filter: Map.merge(attrs, %{phone: "some phone"})})
       assert length(cs) == 4
 
-      cs = Contacts.list_contacts(%{opts: %{order: :asc}, filter: %{name: "some name 1"}})
+      cs = Contacts.list_contacts(%{opts: %{order: :asc},
+                                    filter: Map.merge(attrs, %{name: "some name 1"})})
       assert cs == [c1]
 
       cs =
         Contacts.list_contacts(%{
           opts: %{order: :asc},
-          filter: %{status: :valid, provider_status: :hsm}
+          filter: Map.merge(attrs, %{status: :valid, provider_status: :hsm})
         })
 
       assert cs == [c0, c2]

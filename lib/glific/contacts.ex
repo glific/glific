@@ -9,6 +9,7 @@ defmodule Glific.Contacts do
     Contacts.Location,
     Groups.ContactGroup,
     Partners,
+    Partners.Organization,
     Repo,
     Tags.ContactTag
   }
@@ -113,12 +114,8 @@ defmodule Glific.Contacts do
 
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def create_contact(%{organization_id: organization_id} = attrs) do
-    # Get the organization
-    # Need to cache this soon
-    organization = Partners.get_organization!(organization_id)
-
-    attrs = Map.put(attrs, :language_id, attrs[:language_id] || organization.default_language_id)
+  def create_contact(attrs) do
+    attrs = Map.put(attrs, :language_id, attrs[:language_id] || Organization.get_default_language_id())
 
     %Contact{}
     |> Contact.changeset(attrs)
