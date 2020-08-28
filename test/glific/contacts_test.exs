@@ -6,6 +6,7 @@ defmodule Glific.ContactsTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Partners,
     Partners.Organization,
     Seeds.SeedsDev,
     Settings,
@@ -241,96 +242,117 @@ defmodule Glific.ContactsTest do
       assert cs == [c0, c2]
     end
 
-    test "upsert contacts" do
-      org = Organization |> Ecto.Query.first() |> Repo.one()
-      c0 = contact_fixture(@valid_attrs)
+    test "upsert contacts", %{organization_id: organization_id} = attrs do
+      c0 = contact_fixture(Map.merge(attrs, @valid_attrs))
 
       # check if the defualt language is set
-      assert org.default_language_id == c0.language_id
+      assert Partners.organization_language_id() == c0.language_id
 
-      {:ok, contact} = Contacts.upsert(%{phone: c0.phone, name: c0.name})
+      {:ok, contact} = Contacts.upsert(%{
+            phone: c0.phone,
+            name: c0.name,
+            organization_id: organization_id
+                                       })
       assert contact.id == c0.id
     end
 
-    test "ensure that upsert contacts overrides the language id" do
-      c0 = contact_fixture(@valid_attrs)
-      org = Organization |> Ecto.Query.first() |> Repo.one()
+    test "ensure that upsert contacts overrides the language id", %{organization_id: organization_id} = attrs do
+      c0 = contact_fixture(Map.merge(attrs, @valid_attrs))
 
+      org_language_id = Partners.organization_language_id()
       language =
         Settings.list_languages()
-        |> Enum.find(fn ln -> ln.id != org.default_language_id end)
+        |> Enum.find(fn ln -> ln.id != org_language_id end)
 
       {:ok, contact} =
         Contacts.upsert(%{
           phone: c0.phone,
           name: c0.name,
-          language_id: language.id
+          language_id: language.id,
+          organization_id: organization_id
         })
 
       assert contact.language_id == language.id
     end
 
-    test "ensure that creating contacts with same name/phone give an error" do
-      contact_fixture(@valid_attrs)
-      assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(@valid_attrs)
+    test "ensure that creating contacts with same name/phone give an error",
+      %{organization_id: _organization_id} = attrs do
+      contact_fixture(Map.merge(attrs, @valid_attrs))
+      assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(Map.merge(attrs, @valid_attrs))
     end
 
-    test "ensure that contact returns the valid state for sending the message" do
+    test "ensure that contact returns the valid state for sending the message",
+      %{organization_id: _organization_id} = attrs do
       contact =
-        contact_fixture(%{
-          provider_status: :session_and_hsm,
-          last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
-        })
+        contact_fixture(Map.merge(
+              attrs,
+              %{
+                provider_status: :session_and_hsm,
+                last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
+              }))
 
       contact2 =
-        contact_fixture(%{
-          phone: Phone.EnUs.phone(),
-          provider_status: :none,
-          last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
-        })
+        contact_fixture(Map.merge(
+              attrs,
+              %{
+                phone: Phone.EnUs.phone(),
+                provider_status: :none,
+                last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
+              }))
 
       contact3 =
-        contact_fixture(%{
-          phone: Phone.EnUs.phone(),
-          provider_status: :none,
-          last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
-        })
+        contact_fixture(Map.merge(
+              attrs,
+              %{
+                phone: Phone.EnUs.phone(),
+                provider_status: :none,
+                last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
+              }))
 
       assert true == Contacts.can_send_message_to?(contact)
       assert false == Contacts.can_send_message_to?(contact2)
       assert false == Contacts.can_send_message_to?(contact3)
     end
 
-    test "ensure that contact returns the valid state for sending the hsm message" do
+    test "ensure that contact returns the valid state for sending the hsm message",
+      %{organization_id: _organization_id} = attrs do
       contact1 =
-        contact_fixture(%{
-          phone: Phone.EnUs.phone(),
-          provider_status: :none
-        })
+        contact_fixture(Map.merge(
+              attrs,
+              %{
+                phone: Phone.EnUs.phone(),
+                provider_status: :none
+              }))
 
       # When contact opts in, optout_time should be set to nil
       contact2 =
-        contact_fixture(%{
-          phone: Phone.EnUs.phone(),
-          provider_status: :session_and_hsm,
-          optin_time: DateTime.utc_now(),
-          optout_time: nil
-        })
+        contact_fixture(Map.merge(
+              attrs,
+              %{
+                phone: Phone.EnUs.phone(),
+                provider_status: :session_and_hsm,
+                optin_time: DateTime.utc_now(),
+                optout_time: nil
+              }))
 
       contact3 =
-        contact_fixture(%{
-          phone: Phone.EnUs.phone(),
-          provider_status: :session_and_hsm,
-          optin_time: nil
-        })
+        contact_fixture(Map.merge(
+              attrs,
+              %{
+                phone: Phone.EnUs.phone(),
+                provider_status: :session_and_hsm,
+                optin_time: nil
+              }))
 
       contact4 =
-        contact_fixture(%{
-          phone: Phone.EnUs.phone(),
-          provider_status: :session_and_hsm,
-          optin_time: nil,
-          optout_time: DateTime.utc_now()
-        })
+        contact_fixture(Map.merge(
+              attrs,
+              %{
+                phone: Phone.EnUs.phone(),
+                provider_status: :session_and_hsm,
+                optin_time: nil,
+                optout_time: DateTime.utc_now()
+              }))
 
       assert false == Contacts.can_send_message_to?(contact1, true)
       assert true == Contacts.can_send_message_to?(contact2, true)
@@ -338,10 +360,11 @@ defmodule Glific.ContactsTest do
       assert false == Contacts.can_send_message_to?(contact4, true)
     end
 
-    test "contact_opted_in/2 will setup the contact as valid contact for message" do
-      contact = contact_fixture(%{status: :invalid})
+    test "contact_opted_in/2 will setup the contact as valid contact for message",
+      %{organization_id: organization_id} do
+      contact = contact_fixture(%{organization_id: organization_id, status: :invalid})
 
-      Contacts.contact_opted_in(contact.phone, DateTime.utc_now())
+      Contacts.contact_opted_in(contact.phone, organization_id, DateTime.utc_now())
       {:ok, contact} = Repo.fetch_by(Contact, %{phone: contact.phone})
 
       assert contact.status == :valid
@@ -349,18 +372,20 @@ defmodule Glific.ContactsTest do
       assert contact.optout_time == nil
     end
 
-    test "contact_opted_out/2 will setup the contact as valid contact for message" do
-      contact = contact_fixture(%{status: :valid})
+    test "contact_opted_out/2 will setup the contact as valid contact for message",
+      %{organization_id: organization_id} do
+      contact = contact_fixture(%{organization_id: organization_id, status: :valid})
 
-      Contacts.contact_opted_out(contact.phone, DateTime.utc_now())
+      Contacts.contact_opted_out(contact.phone, organization_id, DateTime.utc_now())
       {:ok, contact} = Repo.fetch_by(Contact, %{phone: contact.phone})
 
       assert contact.status == :invalid
       assert contact.optout_time != nil
     end
 
-    test "set_session_status/2 will set provider status of not opted in contact" do
-      contact = contact_fixture(%{provider_status: :none, optin_time: nil})
+    test "set_session_status/2 will set provider status of not opted in contact",
+      %{organization_id: organization_id} do
+      contact = contact_fixture(%{organization_id: organization_id, provider_status: :none, optin_time: nil})
 
       {:ok, contact} = Contacts.set_session_status(contact, :none)
       assert contact.provider_status == :none
@@ -369,8 +394,13 @@ defmodule Glific.ContactsTest do
       assert contact.provider_status == :session
     end
 
-    test "set_session_status/2 will set provider status opted in contact" do
-      contact = contact_fixture(%{provider_status: :none, optin_time: DateTime.utc_now()})
+    test "set_session_status/2 will set provider status opted in contact",
+      %{organization_id: organization_id} do
+      contact = contact_fixture(%{
+            organization_id: organization_id,
+            provider_status: :none,
+            optin_time: DateTime.utc_now()
+                                })
 
       {:ok, contact} = Contacts.set_session_status(contact, :none)
       assert contact.provider_status == :hsm

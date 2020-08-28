@@ -320,7 +320,7 @@ defmodule Glific.Partners do
   @doc """
   Get the default language id
   """
-  @spec organization_languageid() :: integer()
+  @spec organization_language_id() :: integer()
   def organization_language_id do
     case Caches.get("organization_language_id") do
       {:ok, false} ->
@@ -329,7 +329,7 @@ defmodule Glific.Partners do
         organization.default_language_id
 
       {:ok, organization_language_id} ->
-        organization_language__id
+        organization_language_id
     end
   end
 end

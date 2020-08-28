@@ -9,7 +9,6 @@ defmodule Glific.Contacts do
     Contacts.Location,
     Groups.ContactGroup,
     Partners,
-    Partners.Organization,
     Repo,
     Tags.ContactTag
   }
@@ -27,14 +26,14 @@ defmodule Glific.Contacts do
   Include contacts only if have list of tags
   """
   @spec list_contacts(map()) :: [Contact.t()]
-  def list_contacts(%{organization_id: _organization_id} = args),
+  def list_contacts(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &filter_with/2)
 
   @doc """
   Return the count of contacts, using the same filter as list_contacts
   """
   @spec count_contacts(map()) :: integer
-  def count_contacts(%{organization_id: _organization_id} = args),
+  def count_contacts(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.count_filter(args, Contact, &filter_with/2)
 
   # codebeat:disable[ABC]
@@ -115,7 +114,7 @@ defmodule Glific.Contacts do
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(attrs) do
-    attrs = Map.put(attrs, :language_id, attrs[:language_id] || Organization.get_default_language_id())
+    attrs = Map.put(attrs, :language_id, attrs[:language_id] || Partners.organization_language_id())
 
     %Contact{}
     |> Contact.changeset(attrs)
@@ -178,21 +177,17 @@ defmodule Glific.Contacts do
   """
   @spec upsert(map()) :: {:ok, Contact.t()}
   def upsert(%{organization_id: organization_id} = attrs) do
-    # Get the organization
-    organization = Partners.get_organization!(organization_id)
-
     # we keep this separate to avoid overwriting the language if already set by a contact
     # this will not appear in the set field of the on_conflict: clause below
-    language =
-      Map.put(
-        %{organization_id: organization.id},
-        :language_id,
-        attrs[:language_id] || organization.default_language_id
-      )
+    other_attrs =
+      %{
+        organization_id: organization_id,
+        language_id: attrs[:language_id] || Partners.organization_language_id()
+      }
 
     contact =
       Repo.insert!(
-        change_contact(%Contact{}, Map.merge(language, attrs)),
+        change_contact(%Contact{}, Map.merge(other_attrs, attrs)),
         returning: true,
         on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
         conflict_target: :phone
@@ -219,8 +214,8 @@ defmodule Glific.Contacts do
   @doc """
   Update DB fields when contact opted in
   """
-  @spec contact_opted_in(String.t(), DateTime.t()) :: {:ok}
-  def contact_opted_in(phone, utc_time) do
+  @spec contact_opted_in(String.t(), non_neg_integer, DateTime.t()) :: {:ok}
+  def contact_opted_in(phone, organization_id, utc_time) do
     upsert(%{
       phone: phone,
       optin_time: utc_time,
@@ -228,6 +223,7 @@ defmodule Glific.Contacts do
       optout_time: nil,
       status: :valid,
       provider_status: :session_and_hsm,
+      organization_id: organization_id,
       updated_at: DateTime.utc_now()
     })
 
@@ -237,14 +233,15 @@ defmodule Glific.Contacts do
   @doc """
   Update DB fields when contact opted out
   """
-  @spec contact_opted_out(String.t(), DateTime.t()) :: {:ok}
-  def contact_opted_out(phone, utc_time) do
+  @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t()) :: {:ok}
+  def contact_opted_out(phone, organization_id, utc_time) do
     upsert(%{
       phone: phone,
       optout_time: utc_time,
       optin_time: nil,
       status: :invalid,
       provider_status: :none,
+      organization_id: organization_id,
       updated_at: DateTime.utc_now()
     })
 
