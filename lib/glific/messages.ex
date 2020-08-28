@@ -299,7 +299,8 @@ defmodule Glific.Messages do
       media_id: session_template.message_media_id,
       sender_id: Partners.organization_contact_id(),
       receiver_id: args[:receiver_id],
-      send_at: args[:send_at]
+      send_at: args[:send_at],
+      organization_id: session_template.organization_id
     }
 
     create_and_send_message(message_params)
@@ -320,6 +321,7 @@ defmodule Glific.Messages do
         body: updated_template.body,
         type: updated_template.type,
         is_hsm: updated_template.is_hsm,
+        organization_id: session_template.organization_id,
         sender_id: Partners.organization_contact_id(),
         receiver_id: receiver_id
       }

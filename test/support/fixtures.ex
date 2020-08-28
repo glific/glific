@@ -19,7 +19,7 @@ defmodule Glific.Fixtures do
     Templates
   }
 
-  defp get_org_id() do
+  def get_org_id() do
     organization = Organization |> Ecto.Query.first() |> Repo.one()
     organization.id
   end

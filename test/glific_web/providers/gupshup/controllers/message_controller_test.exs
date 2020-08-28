@@ -30,11 +30,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
   setup do
     default_provider = SeedsDev.seed_providers()
-    SeedsDev.seed_organizations(default_provider)
+    organization = SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_tag()
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
-    :ok
+    {:ok, %{organization_id: organization.id}}
   end
 
   describe "handler" do
@@ -45,7 +45,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   end
 
   describe "text" do
-    setup do
+    setup %{organization_id: organization_id} do
       message_payload = %{
         "text" => "Inbound Message"
       }
@@ -55,14 +55,16 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "type"], "text")
         |> put_in(["payload", "id"], Faker.String.base64(36))
         |> put_in(["payload", "payload"], message_payload)
+        |> put_in(["payload", "sender", "organization_id"], organization_id)
 
       %{message_params: message_params}
     end
 
-    test "Incoming text message should be stored in the database", setup_config = %{conn: conn} do
-      conn = post(conn, "/gupshup", setup_config.message_params)
+    test "Incoming text message should be stored in the database",
+      %{conn: conn, message_params: message_params} do
+      conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
-      provider_message_id = get_in(setup_config.message_params, ["payload", "id"])
+      provider_message_id = get_in(message_params, ["payload", "id"])
       {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
       message = Repo.preload(message, [:receiver, :sender, :media])
 
@@ -74,7 +76,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       # Sender should be stored into the db
       assert message.sender.phone ==
-               get_in(setup_config.message_params, ["payload", "sender", "phone"])
+               get_in(message_params, ["payload", "sender", "phone"])
     end
   end
 

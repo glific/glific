@@ -480,8 +480,6 @@ defmodule Glific.Seeds.SeedsDev do
 
   @spec get_organization(Organization.t() | nil) :: Organization.t()
   defp get_organization(organization \\ nil) do
-    organization = get_organization(organization)
-
     if is_nil(organization),
       do: seed_organizations(),
     else: organization

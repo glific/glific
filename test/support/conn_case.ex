@@ -18,7 +18,10 @@ defmodule GlificWeb.ConnCase do
   use ExUnit.CaseTemplate
 
   alias Ecto.Adapters.SQL.Sandbox
-  alias Glific.Repo
+  alias Glific.{
+    Repo,
+    Fixtures,
+  }
 
   using do
     quote do
@@ -41,6 +44,10 @@ defmodule GlificWeb.ConnCase do
       Sandbox.mode(Repo, {:shared, self()})
     end
 
-    {:ok, conn: Phoenix.ConnTest.build_conn()}
+    {
+      :ok,
+      conn: Phoenix.ConnTest.build_conn(),
+      organization_id: Fixtures.get_org_id()
+    }
   end
 end

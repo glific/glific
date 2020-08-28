@@ -6,6 +6,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Fixtures,
     Repo,
     Seeds.SeedsDev,
     Tags.ContactTag,
@@ -32,7 +33,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       }
     }
 
-    test "with valid params", %{conn: conn} do
+    test "with valid params", %{conn: conn, organization_id: organization_id} do
       {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
       {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver.phone)
@@ -42,7 +43,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           "phone" => receiver.phone,
           "name" => receiver.name,
           "password" => @password,
-          "otp" => otp
+          "otp" => otp,
+          "organization_id" => organization_id
         }
       }
 
@@ -64,7 +66,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
                })
     end
 
-    test "with password less than minimum characters should give error", %{conn: conn} do
+    test "with password less than minimum characters should give error",
+      %{conn: conn, organization_id: organization_id} do
       {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
       {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver.phone)
@@ -74,7 +77,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           "phone" => receiver.phone,
           "name" => receiver.name,
           "password" => "1234567",
-          "otp" => otp
+          "otp" => otp,
+          "organization_id" => organization_id
         }
       }
 
@@ -97,7 +101,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json["error"]["status"] == 500
     end
 
-    test "with invalid params", %{conn: conn} do
+    test "with invalid params", %{conn: conn, organization_id: organization_id} do
       {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
       {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver.phone)
@@ -107,7 +111,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           "phone" => "incorrect_phone",
           "name" => receiver.name,
           "password" => @password,
-          "otp" => otp
+          "otp" => otp,
+          "organization_id" => organization_id
         }
       }
 
@@ -179,7 +184,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           "name" => receiver.name,
           "password" => @password,
           "password_confirmation" => @password,
-          "contact_id" => receiver.id
+          "contact_id" => receiver.id,
+          "organization_id" => receiver.organization_id,
         }
         |> Users.create_user()
 
@@ -204,7 +210,8 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         "name" => receiver.name,
         "password" => @password,
         "password_confirmation" => @password,
-        "contact_id" => receiver.id
+        "contact_id" => receiver.id,
+        "organization_id" => Fixtures.get_org_id(),
       }
 
       {:ok, user} =
