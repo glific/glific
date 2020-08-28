@@ -155,7 +155,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def templates(conn, _params) do
     results =
-      Glific.Templates.list_session_templates()
+      Glific.Templates.list_session_templates(%{filter: %{organization_id: conn.assigns[:organization_id]}})
       |> Enum.reduce([], fn template, acc ->
         template = Glific.Repo.preload(template, :language)
         language = template.language

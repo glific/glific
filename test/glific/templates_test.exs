@@ -70,7 +70,7 @@ defmodule Glific.TemplatesTest do
       language
     end
 
-    def session_template_fixture(attrs \\ %{}) do
+    def session_template_fixture(attrs) do
       language = language_fixture()
 
       {:ok, session_template} =
@@ -82,86 +82,91 @@ defmodule Glific.TemplatesTest do
       session_template
     end
 
-    test "list_session_templates/0 returns all session_templates" do
+    test "list_session_templates/1 returns all session_templates", attrs do
       templates_count = Repo.aggregate(SessionTemplate, :count)
 
-      _session_template = session_template_fixture()
-      assert length(Templates.list_session_templates()) == templates_count + 1
+      _session_template = session_template_fixture(attrs)
+      assert length(Templates.list_session_templates(%{filter: attrs})) == templates_count + 1
     end
 
-    test "count_session_templates/0 returns count of all session templates" do
+    test "count_session_templates/0 returns count of all session templates", attrs do
       templates_count = Repo.aggregate(SessionTemplate, :count)
 
-      session_template_fixture()
-      assert Templates.count_session_templates() == templates_count + 1
+      session_template_fixture(attrs)
+      assert Templates.count_session_templates(%{filter: attrs}) == templates_count + 1
 
-      session_template_fixture(@valid_attrs_1)
-      assert Templates.count_session_templates() == templates_count + 2
+      session_template_fixture(Map.merge(attrs, @valid_attrs_1))
+      assert Templates.count_session_templates(%{filter: attrs}) == templates_count + 2
 
-      assert Templates.count_session_templates(%{filter: %{label: "Another label"}}) == 1
+      assert Templates.count_session_templates(
+        %{filter: Map.merge(attrs, %{label: "Another label"})}
+      ) == 1
     end
 
-    test "list_session_templates/1 with multiple session_templates filteres" do
-      _session_template = session_template_fixture()
-      session_template1 = session_template_fixture(@valid_attrs_1)
+    test "list_session_templates/1 with multiple session_templates filteres", attrs do
+      _session_template = session_template_fixture(attrs)
+      session_template1 = session_template_fixture(Map.merge(attrs, @valid_attrs_1))
 
       session_template_list =
-        Templates.list_session_templates(%{filter: %{label: session_template1.label}})
+        Templates.list_session_templates(%{filter: Map.merge(attrs, %{label: session_template1.label})})
 
       assert session_template_list == [session_template1]
 
       session_template_list =
-        Templates.list_session_templates(%{filter: %{body: session_template1.body}})
+        Templates.list_session_templates(%{filter: Map.merge(attrs, %{body: session_template1.body})})
 
       assert session_template_list == [session_template1]
 
       session_template_list =
-        Templates.list_session_templates(%{filter: %{shortcode: session_template1.shortcode}})
+        Templates.list_session_templates(%{filter: Map.merge(attrs, %{shortcode: session_template1.shortcode})})
 
       assert session_template_list == [session_template1]
 
-      session_template_fixture(%{label: "term_filter"})
-      session_template_fixture(%{label: "label2", body: "term_filter"})
-      session_template_fixture(%{label: "label3", shortcode: "term_filter"})
+      session_template_fixture(Map.merge(attrs, %{label: "term_filter"}))
+      session_template_fixture(Map.merge(attrs, %{label: "label2", body: "term_filter"}))
+      session_template_fixture(Map.merge(attrs, %{label: "label3", shortcode: "term_filter"}))
 
-      session_template_list = Templates.list_session_templates(%{filter: %{term: "term_filter"}})
+      session_template_list = Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "term_filter"})})
 
       assert length(session_template_list) == 3
     end
 
-    test "list_session_templates/1 with multiple items" do
+    test "list_session_templates/1 with multiple items", attrs do
       templates_count = Repo.aggregate(SessionTemplate, :count)
 
-      session_template_fixture()
-      session_template_fixture(@valid_attrs_1)
+      session_template_fixture(attrs)
+      session_template_fixture(Map.merge(attrs, @valid_attrs_1))
 
-      session_templates = Templates.list_session_templates()
+      session_templates = Templates.list_session_templates(%{filter: attrs})
       assert length(session_templates) == templates_count + 2
     end
 
-    test "list_session_templates/1 with multiple items sorted" do
+    test "list_session_templates/1 with multiple items sorted", attrs do
       session_templates_count = Repo.aggregate(SessionTemplate, :count)
 
-      s0 = session_template_fixture(@valid_attrs_to_test_order_1)
-      s1 = session_template_fixture(@valid_attrs_to_test_order_2)
+      s0 = session_template_fixture(Map.merge(attrs, @valid_attrs_to_test_order_1))
+      s1 = session_template_fixture(Map.merge(attrs, @valid_attrs_to_test_order_2))
 
-      assert length(Templates.list_session_templates()) == session_templates_count + 2
+      assert length(Templates.list_session_templates(%{filter: attrs})) == session_templates_count + 2
 
-      [ordered_s0 | _] = Templates.list_session_templates(%{opts: %{order: :asc}})
+      [ordered_s0 | _] = Templates.list_session_templates(%{opts: %{order: :asc}, filter: attrs})
       assert s0 == ordered_s0
 
-      [ordered_s1 | _] = Templates.list_session_templates(%{opts: %{order: :desc}})
+      [ordered_s1 | _] = Templates.list_session_templates(%{opts: %{order: :desc}, filter: attrs})
       assert s1 == ordered_s1
     end
 
-    test "get_session_template!/1 returns the session_template with given id" do
-      session_template = session_template_fixture()
+    test "get_session_template!/1 returns the session_template with given id", attrs do
+      session_template = session_template_fixture(attrs)
       assert Templates.get_session_template!(session_template.id) == session_template
     end
 
-    test "create_session_template/1 with valid data creates a message" do
+    test "create_session_template/1 with valid data creates a message", attrs do
       language = language_fixture()
-      attrs = Map.merge(@valid_attrs, %{language_id: language.id})
+      attrs =
+        attrs
+        |> Map.merge(@valid_attrs)
+        |> Map.merge(%{language_id: language.id})
 
       assert {:ok, %SessionTemplate{} = session_template} =
                Templates.create_session_template(attrs)
@@ -175,13 +180,17 @@ defmodule Glific.TemplatesTest do
       assert session_template.language_id == language.id
     end
 
-    test "create_session_template/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Templates.create_session_template(@invalid_attrs)
+    test "create_session_template/1 with invalid data returns error changeset", attrs do
+      assert {:error, %Ecto.Changeset{}} =
+        Templates.create_session_template(Map.merge(attrs, @invalid_attrs))
     end
 
-    test "create session template with media type and without media id returns error changeset" do
+    test "create session template with media type and without media id returns error changeset", attrs do
       language = language_fixture()
-      attrs = Map.merge(@valid_attrs, %{language_id: language.id})
+      attrs =
+        attrs
+        |> Map.merge(@valid_attrs)
+        |> Map.merge(%{language_id: language.id})
 
       assert {:error, %Ecto.Changeset{}} =
                attrs
@@ -189,8 +198,8 @@ defmodule Glific.TemplatesTest do
                |> Templates.create_session_template()
     end
 
-    test "update_session_template/2 with valid data updates the session_template" do
-      session_template = session_template_fixture()
+    test "update_session_template/2 with valid data updates the session_template", attrs do
+      session_template = session_template_fixture(attrs)
       language = language_fixture(@valid_language_attrs_1)
       attrs = Map.merge(@update_attrs, %{language_id: language.id})
 
@@ -202,8 +211,8 @@ defmodule Glific.TemplatesTest do
       assert session_template.language_id == language.id
     end
 
-    test "update_session_template/2 with invalid data returns error changeset" do
-      session_template = session_template_fixture()
+    test "update_session_template/2 with invalid data returns error changeset", attrs do
+      session_template = session_template_fixture(attrs)
 
       assert {:error, %Ecto.Changeset{}} =
                Templates.update_session_template(session_template, @invalid_attrs)
@@ -211,8 +220,8 @@ defmodule Glific.TemplatesTest do
       assert session_template == Templates.get_session_template!(session_template.id)
     end
 
-    test "delete_session_template/1 deletes the session_template" do
-      session_template = session_template_fixture()
+    test "delete_session_template/1 deletes the session_template", attrs do
+      session_template = session_template_fixture(attrs)
       assert {:ok, %SessionTemplate{}} = Templates.delete_session_template(session_template)
 
       assert_raise Ecto.NoResultsError, fn ->
@@ -220,12 +229,12 @@ defmodule Glific.TemplatesTest do
       end
     end
 
-    test "change_session_template/1 returns a session_template changeset" do
-      session_template = session_template_fixture()
+    test "change_session_template/1 returns a session_template changeset", attrs do
+      session_template = session_template_fixture(attrs)
       assert %Ecto.Changeset{} = Templates.change_session_template(session_template)
     end
 
-    test "ensure that creating session template with out language give an error" do
+    test "ensure that creating session template with out language and/or org_id give an error" do
       assert {:error, %Ecto.Changeset{}} = Templates.create_session_template(@valid_attrs)
     end
   end
