@@ -95,21 +95,19 @@ defmodule Glific.Fixtures do
     valid_attrs = %{
       label: "some label",
       shortcode: "somelabel",
-      description: "some description",
+      description: "some fixed description",
       locale: "en_US",
       is_active: true,
       is_reserved: true,
       organization_id: get_org_id()
     }
 
+    attrs = Map.merge(valid_attrs, attrs)
     language = language_fixture()
-
     {:ok, tag} =
       attrs
-      |> Map.put(:language_id, language.id)
-      |> Enum.into(valid_attrs)
+      |> Map.put_new(:language_id, language.id)
       |> Tags.create_tag()
-
     tag
   end
 

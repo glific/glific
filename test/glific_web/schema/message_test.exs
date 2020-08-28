@@ -288,7 +288,7 @@ defmodule GlificWeb.Schema.MessageTest do
     {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: DateTime.utc_now()})
 
     result =
-      query_gql_by(:create_and_send_message,
+      auth_query_gql_by(:create_and_send_message,
         variables: %{
           "input" => %{
             "body" => "Message body",
@@ -311,7 +311,7 @@ defmodule GlificWeb.Schema.MessageTest do
     {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: DateTime.utc_now()})
 
     result =
-      query_gql_by(:create_and_send_message,
+      auth_query_gql_by(:create_and_send_message,
         variables: %{
           "input" => %{
             "body" => "A message for @contact.name",
@@ -334,7 +334,7 @@ defmodule GlificWeb.Schema.MessageTest do
     message_body = Faker.Lorem.sentence()
 
     result =
-      query_gql_by(:create_and_send_message,
+      auth_query_gql_by(:create_and_send_message,
         variables: %{
           "input" => %{
             "body" => message_body,

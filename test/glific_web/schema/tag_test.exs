@@ -28,6 +28,12 @@ defmodule GlificWeb.Schema.TagTest do
     "assets/gql/tags/mark_contact_messages_as_read.gql"
   )
 
+  def auth_query_gql_by(query, options) do
+    [user | _] =  Glific.Users.list_users()
+    options = Keyword.put_new(options, :context, %{:current_user => user})
+    query_gql_by(query, options)
+  end
+
   test "tags field returns list of tags" do
     result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
@@ -141,7 +147,7 @@ defmodule GlificWeb.Schema.TagTest do
     language_id = tag.language_id
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{
           "input" => %{
             "label" => "Test Tag",
@@ -157,7 +163,7 @@ defmodule GlificWeb.Schema.TagTest do
 
     # try creating the same tag twice
     _ =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{
           "input" => %{
             "label" => "Klingon",
@@ -168,7 +174,7 @@ defmodule GlificWeb.Schema.TagTest do
       )
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{
           "input" => %{
             "label" => "Klingon",
@@ -222,7 +228,7 @@ defmodule GlificWeb.Schema.TagTest do
     keywords = ["Hii", "Hello"]
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{
           "input" => %{
             "label" => "Keyword tag",
