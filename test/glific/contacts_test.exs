@@ -26,7 +26,7 @@ defmodule Glific.ContactsTest do
       phone: "some phone",
       status: :valid,
       provider_status: :hsm,
-      fileds: %{}
+      fields: %{}
     }
     @valid_attrs_1 %{
       name: "some name 1",
@@ -35,7 +35,7 @@ defmodule Glific.ContactsTest do
       phone: "some phone 1",
       status: :invalid,
       provider_status: :none,
-      fileds: %{}
+      fields: %{}
     }
     @valid_attrs_2 %{
       name: "some name 2",
@@ -44,7 +44,7 @@ defmodule Glific.ContactsTest do
       phone: "some phone 2",
       status: :valid,
       provider_status: :hsm,
-      fileds: %{}
+      fields: %{}
     }
     @valid_attrs_3 %{
       name: "some name 3",
@@ -53,7 +53,7 @@ defmodule Glific.ContactsTest do
       phone: "some phone 3",
       status: :invalid,
       provider_status: :session_and_hsm,
-      fileds: %{}
+      fields: %{}
     }
     @valid_attrs_to_test_order_1 %{
       name: "aaaa name",
@@ -62,7 +62,7 @@ defmodule Glific.ContactsTest do
       phone: "some phone 4",
       status: :valid,
       provider_status: :none,
-      fileds: %{}
+      fields: %{}
     }
     @valid_attrs_to_test_order_2 %{
       name: "zzzz name",
@@ -71,7 +71,7 @@ defmodule Glific.ContactsTest do
       phone: "some phone 5",
       status: :valid,
       provider_status: :none,
-      fileds: %{}
+      fields: %{}
     }
     @update_attrs %{
       name: "some updated name",
@@ -80,7 +80,7 @@ defmodule Glific.ContactsTest do
       phone: "some updated phone",
       status: :invalid,
       provider_status: :hsm,
-      fileds: %{}
+      fields: %{}
     }
     @invalid_attrs %{
       name: nil,
@@ -89,7 +89,7 @@ defmodule Glific.ContactsTest do
       phone: nil,
       status: nil,
       provider_status: nil,
-      fileds: %{}
+      fields: %{}
     }
 
     def contact_fixture(attrs \\ %{}) do

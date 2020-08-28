@@ -8,6 +8,7 @@ defmodule Glific.Contacts do
     Contacts.Contact,
     Contacts.Location,
     Groups.ContactGroup,
+    Partners,
     Repo,
     Tags.ContactTag
   }
@@ -25,14 +26,14 @@ defmodule Glific.Contacts do
   Include contacts only if have list of tags
   """
   @spec list_contacts(map()) :: [Contact.t()]
-  def list_contacts(args \\ %{}),
+  def list_contacts(%{organization_id: _organization_id} = args),
     do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &filter_with/2)
 
   @doc """
   Return the count of contacts, using the same filter as list_contacts
   """
   @spec count_contacts(map()) :: integer
-  def count_contacts(args \\ %{}),
+  def count_contacts(%{organization_id: _organization_id} = args),
     do: Repo.count_filter(args, Contact, &filter_with/2)
 
   # codebeat:disable[ABC]
@@ -112,9 +113,10 @@ defmodule Glific.Contacts do
 
   """
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def create_contact(attrs \\ %{}) do
+  def create_contact(%{organization_id: organization_id} = attrs) do
     # Get the organization
-    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+    # Need to cache this soon
+    organization = Partners.get_organization!(organization_id)
 
     attrs = Map.put(attrs, :language_id, attrs[:language_id] || organization.default_language_id)
 
@@ -178,9 +180,10 @@ defmodule Glific.Contacts do
   it returns the existing contact, else it creates a new one
   """
   @spec upsert(map()) :: {:ok, Contact.t()}
-  def upsert(attrs) do
+  def upsert(%{organization_id: organization_id} = attrs) do
     # Get the organization
-    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
+    organization = Partners.get_organization!(organization_id)
+
     # we keep this separate to avoid overwriting the language if already set by a contact
     # this will not appear in the set field of the on_conflict: clause below
     language =

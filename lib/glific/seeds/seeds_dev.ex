@@ -361,10 +361,10 @@ defmodule Glific.Seeds.SeedsDev do
   end
 
   @doc false
-  @spec seed_group_contacts :: nil
-  def seed_group_contacts do
-    [c1, c2 | _] = Contacts.list_contacts()
-    [g1, g2 | _] = Groups.list_groups()
+  @spec seed_group_contacts(Organization.t()) :: nil
+  def seed_group_contacts(organization) do
+    [c1, c2 | _] = Contacts.list_contacts(%{organization_id: organization.id})
+    [g1, g2 | _] = Groups.list_groups(%{organization_id: organization.id})
 
     Repo.insert!(%Groups.ContactGroup{
       contact_id: c1.id,
@@ -509,7 +509,7 @@ defmodule Glific.Seeds.SeedsDev do
 
     seed_groups(organization)
 
-    seed_group_contacts()
+    seed_group_contacts(organization)
 
     seed_group_users()
   end

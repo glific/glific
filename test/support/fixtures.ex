@@ -92,7 +92,7 @@ defmodule Glific.Fixtures do
 
   @doc false
   @spec tag_fixture(map()) :: Tags.Tag.t()
-  def tag_fixture(attrs \\ %{}) do
+  def tag_fixture(attrs) do
     valid_attrs = %{
       label: "some label",
       shortcode: "somelabel",
@@ -184,7 +184,7 @@ defmodule Glific.Fixtures do
 
   @doc false
   @spec group_fixture(map()) :: Groups.Group.t()
-  def group_fixture(attrs \\ %{}) do
+  def group_fixture(attrs) do
     valid_attrs = %{
       label: "Poetry group",
       description: "default description",
@@ -216,10 +216,12 @@ defmodule Glific.Fixtures do
   @doc false
   @spec group_contacts_fixture :: [Groups.ContactGroup.t(), ...]
   def group_contacts_fixture do
-    group_fixture()
+    attrs = %{organization_id: get_org_id()}
 
-    [c1, c2 | _] = Contacts.list_contacts()
-    [g1, g2 | _] = Groups.list_groups()
+    group_fixture(attrs)
+
+    [c1, c2 | _] = Contacts.list_contacts(attrs)
+    [g1, g2 | _] = Groups.list_groups(attrs)
 
     {:ok, cg1} =
       Groups.create_contact_group(%{
@@ -245,10 +247,12 @@ defmodule Glific.Fixtures do
   @doc false
   @spec contact_tags_fixture :: [Tags.ContactTag.t(), ...]
   def contact_tags_fixture do
-    tag_fixture()
+    attrs = %{organization_id: get_org_id()}
 
-    [c1, c2 | _] = Contacts.list_contacts()
-    [t1, t2 | _] = Tags.list_tags()
+    tag_fixture(attrs)
+
+    [c1, c2 | _] = Contacts.list_contacts(attrs)
+      [t1, t2 | _] = Tags.list_tags(attrs)
 
     {:ok, ct1} =
       Tags.create_contact_tag(%{

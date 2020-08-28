@@ -160,10 +160,9 @@ defmodule Glific.PartnersTest do
     @update_org_attrs %{
       name: "Updated Name",
       display_name: "Updated Display Name 1",
-      contact_name: "Updated Contact"
     }
 
-    @invalid_org_attrs %{provider_id: nil, name: nil, contact_name: nil}
+    @invalid_org_attrs %{provider_id: nil, name: nil}
 
     @valid_default_language_attrs %{
       label: "English (United States)",
@@ -261,7 +260,6 @@ defmodule Glific.PartnersTest do
                Partners.update_organization(organization, @update_org_attrs)
 
       assert organization.name == @update_org_attrs.name
-      assert organization.contact_name == @update_org_attrs.contact_name
     end
 
     test "update_organization/2 with invalid data returns error changeset" do
@@ -345,9 +343,6 @@ defmodule Glific.PartnersTest do
       assert org_list == [org1]
 
       org_list = Partners.list_organizations(%{filter: %{display_name: org1.display_name}})
-      assert org_list == [org1]
-
-      org_list = Partners.list_organizations(%{filter: %{contact_name: org1.contact_name}})
       assert org_list == [org1]
 
       org_list = Partners.list_organizations(%{filter: %{email: org1.email}})

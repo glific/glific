@@ -50,26 +50,26 @@ defmodule Glific.TagsTest do
 
 
 
-    test "list_tags/0 returns all tags", %{organization_id: organization_id} do
-      tag = tag_fixture(%{organization_id: organization_id})
+    test "list_tags/1 returns all tags", %{organization_id: _organization_id} = attrs do
+      tag = tag_fixture(attrs)
 
       assert Enum.filter(
-               Tags.list_tags(),
+               Tags.list_tags(%{filter: attrs}),
                fn t -> t.label == tag.label end
              ) ==
                [tag]
     end
 
-    test "count_tags/0 returns count of all tags", %{organization_id: organization_id} do
+    test "count_tags/1 returns count of all tags", %{organization_id: _organization_id} = attrs do
       tag_count = Repo.aggregate(Tag, :count)
 
-      _ = tag_fixture( %{organization_id: organization_id})
-      assert Tags.count_tags() == tag_count + 1
+      _ = tag_fixture(attrs)
+      assert Tags.count_tags(%{filter: attrs}) == tag_count + 1
 
-      _ = tag_fixture(Map.merge(%{organization_id: organization_id}, @valid_more_attrs))
-      assert Tags.count_tags() == tag_count + 2
+      _ = tag_fixture(Map.merge(attrs, @valid_more_attrs))
+      assert Tags.count_tags(%{filter: attrs}) == tag_count + 2
 
-      assert Tags.count_tags(%{filter: %{label: "hindi some label"}}) == 1
+      assert Tags.count_tags(%{filter: Map.merge(attrs, %{label: "hindi some label"})}) == 1
     end
 
     test "get_tag!/1 returns the tag with given id", %{organization_id: organization_id} do
@@ -124,12 +124,12 @@ defmodule Glific.TagsTest do
       assert %Ecto.Changeset{} = Tags.change_tag(tag)
     end
 
-    test "list_tags/1 with multiple items", %{organization_id: organization_id} do
+    test "list_tags/1 with multiple items", %{organization_id: _organization_id} = attrs do
       tag_count = Repo.aggregate(Tag, :count)
 
-      tag1 = tag_fixture(%{organization_id: organization_id})
-      tag2 = tag_fixture(@valid_more_attrs)
-      tags = Tags.list_tags()
+      tag1 = tag_fixture(attrs)
+      tag2 = tag_fixture(Map.merge(@valid_more_attrs, attrs))
+      tags = Tags.list_tags(%{filter: attrs})
 
       assert length(tags) == tag_count + 2
 
@@ -137,30 +137,32 @@ defmodule Glific.TagsTest do
       assert tag2 in tags
     end
 
-    test "list_tags/1 with multiple items sorted", %{organization_id: organization_id} do
+    test "list_tags/1 with multiple items sorted", %{organization_id: _organization_id} = attrs do
       tag_count = Repo.aggregate(Tag, :count)
 
-      tag1 = tag_fixture(%{organization_id: organization_id})
-      tag2 = tag_fixture(@valid_more_attrs)
-      tags = Tags.list_tags(%{opts: %{order: :asc}})
+      tag1 = tag_fixture(attrs)
+      tag2 = tag_fixture(Map.merge(attrs, @valid_more_attrs))
+      tags = Tags.list_tags(%{opts: %{order: :asc}, filter: attrs})
 
       assert length(tags) == tag_count + 2
       assert [tag2, tag1] == Enum.filter(tags, fn t -> t.description == "some fixed description" end)
     end
 
-    test "list_tags/1 with items filtered", %{organization_id: organization_id} do
-      _tag1 = tag_fixture(%{organization_id: organization_id})
-      tag2 = tag_fixture(@valid_more_attrs)
-      tags = Tags.list_tags(%{opts: %{order: :asc}, filter: %{label: "hindi some label"}})
+    test "list_tags/1 with items filtered", %{organization_id: _organization_id} = attrs do
+      _tag1 = tag_fixture(attrs)
+      tag2 = tag_fixture(Map.merge(@valid_more_attrs, attrs))
+        tags = Tags.list_tags(%{opts: %{order: :asc},
+                                filter: Map.merge(%{label: "hindi some label"}, attrs)})
       assert length(tags) == 1
       [h] = tags
       assert h == tag2
     end
 
-    test "list_tags/1 with language filtered", %{organization_id: organization_id} do
-      tag1 = tag_fixture(%{organization_id: organization_id})
-      tag2 = tag_fixture(@valid_more_attrs)
-      tags = Tags.list_tags(%{opts: %{order: :asc}, filter: %{language: "hindi"}})
+    test "list_tags/1 with language filtered", %{organization_id: _organization_id} = attrs do
+      tag1 = tag_fixture(attrs)
+      tag2 = tag_fixture(Map.merge(@valid_more_attrs, attrs))
+        tags = Tags.list_tags(%{opts: %{order: :asc},
+                                filter: Map.merge(%{language: "hindi"}, attrs)})
       assert length(tags) == 2
       assert tag1 in tags
       assert tag2 in tags
@@ -190,8 +192,8 @@ defmodule Glific.TagsTest do
       assert tag.keywords == ["hello", "hi", "hola", "namaste"]
     end
 
-    test "keyword_map/0 returns a keyword map with ids", %{organization_id: organization_id} do
-      tag = tag_fixture(%{organization_id: organization_id})
+    test "keyword_map/1 returns a keyword map with ids", %{organization_id: _organization_id} = attrs do
+      tag = tag_fixture(attrs)
       tag2 = tag_fixture(%{label: "tag 2", shortcode: "tag2"})
 
       Tags.update_tag(tag, %{
@@ -199,16 +201,16 @@ defmodule Glific.TagsTest do
       })
 
       Tags.update_tag(tag2, %{keywords: ["Tag2", "Tag21", "Tag22", "Tag23"]})
-      keyword_map = Tags.keyword_map()
+      keyword_map = Tags.keyword_map(attrs)
       assert is_map(keyword_map)
       assert keyword_map["hello foobar"] == tag.id
       assert keyword_map["tag2"] == tag2.id
     end
 
-    test "status_map/0 returns a keyword map with ids", %{organization_id: organization_id} do
+    test "status_map/0 returns a keyword map with ids", %{organization_id: organization_id} = attrs do
       tag = tag_fixture(%{label: "Unread", shortcode: "unread"})
       tag2 = tag_fixture(%{label: "New Contact", shortcode: "newcontact", organization_id: organization_id})
-      status_map = Tags.status_map()
+      status_map = Tags.status_map(attrs)
       assert is_map(status_map)
       assert status_map["unread"] == tag.id
       assert status_map["newcontact"] == tag2.id
@@ -359,8 +361,8 @@ defmodule Glific.TagsTest do
       assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message3_tag.id) end
     end
 
-    test "creating tag with parent id will add the ancestors", %{organization_id: organization_id} do
-      [tag1 | [tag2 | _tail]] = Tags.list_tags()
+    test "creating tag with parent id will add the ancestors", %{organization_id: organization_id} = attrs do
+      [tag1 | [tag2 | _tail]] = Tags.list_tags(%{filter: attrs})
       {:ok, tag2} = Tags.update_tag(tag2, %{parent_id: tag1.id})
       tag3 = tag_fixture(%{parent_id: tag2.id, organization_id: organization_id})
 
