@@ -323,15 +323,24 @@ defmodule Glific.Flows do
     {:ok, flow}
   end
 
-  @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()}
+  @doc """
+  Start flow for a contact
+  """
+  @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, true} | {:error, String.t()}
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
     {:ok, flow} = get_cached_flow(flow.id, %{id: flow.id})
 
-    FlowContext.init_context(flow, contact)
-
-    {:ok, flow}
+    if Contacts.can_send_message_to?(contact) do
+      FlowContext.init_context(flow, contact)
+      {:ok, true}
+    else
+      {:error, "Cannot send the message to the contact."}
+    end
   end
 
+  @doc """
+  Start flow for contacts of a group
+  """
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, integer}
   def start_group_flow(%Flow{} = flow, %Group{} = group) do
     {:ok, flow} = get_cached_flow(flow.id, %{id: flow.id})

@@ -1,0 +1,9 @@
+mutation startGroupFlow($id: ID!, $groupId: ID!) {
+  startGroupFlow(id: $id, groupId: $groupId) {
+  	successCount
+  	errors {
+    	key
+  		message
+  	}
+  }
+}

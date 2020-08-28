@@ -1,0 +1,9 @@
+mutation startContactFlow($id: ID!, $contactId: ID!) {
+  startContactFlow(id: $id, contactId: $contactId) {
+  	success
+  	errors {
+    	key
+  		message
+  	}
+  }
+}

@@ -419,6 +419,131 @@ Type | Description
 --------- | ---- | ------- | -----------
 <a href="#publishflowresult">PublishFlowResult</a> | An error object or response true
 
+## Start flow for a contact
+
+```graphql
+mutation startContactFlow($id: ID!, $contactId: ID!) {
+  startContactFlow(id: $id, contactId: $contactId) {
+  	successCount
+  	errors {
+    	key
+  		message
+  	}
+  }
+}
+
+{
+  "id": "1",
+  "contactId": "1"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "startContactFlow": {
+      "errors": null,
+      "successCount": 1
+    }
+  }
+}
+```
+
+In case of errors, all the above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "startContactFlow": {
+      "errors": [
+        {
+          "key": "Elixir.Glific.Flows.Flow 11",
+          "message": "Resource not found"
+        }
+      ],
+      "successCount": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+id | <a href="#id">ID</a>! | required ||
+contactId | <a href="#id">ID</a>! | required ||
+
+### Return Parameters
+Type | Description
+--------- | ---- | ------- | -----------
+<a href="#startcontactflowresult">StartContactFlowResult</a> | An error object or count of contacts with successfully started flow
+
+
+## Start flow for a group contacts
+
+```graphql
+mutation startGroupFlow($id: ID!, $groupId: ID!) {
+  startGroupFlow(id: $id, groupId: $groupId) {
+  	successCount
+  	errors {
+    	key
+  		message
+  	}
+  }
+}
+
+{
+  "id": "1",
+  "groupId": "1"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "startGroupFlow": {
+      "errors": null,
+      "successCount": 1
+    }
+  }
+}
+```
+
+In case of errors, all the above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "startGroupFlow": {
+      "errors": [
+        {
+          "key": "Elixir.Glific.Flows.Flow 11",
+          "message": "Resource not found"
+        }
+      ],
+      "successCount": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+id | <a href="#id">ID</a>! | required ||
+groupId | <a href="#id">ID</a>! | required ||
+
+### Return Parameters
+Type | Description
+--------- | ---- | ------- | -----------
+<a href="#startgroupflowresult">StartGroupFlowResult</a> | An error object or count of contacts with successfully started flow
+
 ## Flow Objects
 
 ### Flow
@@ -521,6 +646,56 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>success</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### StartContactFlowResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>success</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### StartGroupFlowResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>successCount</strong></td>
+<td valign="top"><a href="#integer">Integer</a></td>
 <td></td>
 </tr>
 </tbody>
