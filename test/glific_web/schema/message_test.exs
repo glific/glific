@@ -47,6 +47,13 @@ defmodule GlificWeb.Schema.MessageTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/messages/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/messages/delete.gql")
 
+  def auth_query_gql_by(query, options) do
+    [user | _] =  Glific.Users.list_users()
+    options = Keyword.put_new(options, :context, %{:current_user => user})
+    query_gql_by(query, options)
+  end
+
+
   test "messages field returns list of messages" do
     result = query_gql_by(:list)
     assert {:ok, query_data} = result
@@ -152,7 +159,7 @@ defmodule GlificWeb.Schema.MessageTest do
     [message | _] = Messages.list_messages()
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{
           "input" => %{
             "body" => "Message body",
@@ -169,7 +176,7 @@ defmodule GlificWeb.Schema.MessageTest do
 
     # create message without required atributes
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{
           "input" => %{
             "body" => "Message body",

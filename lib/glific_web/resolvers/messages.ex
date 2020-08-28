@@ -41,8 +41,9 @@ defmodule GlificWeb.Resolvers.Messages do
   @doc false
   @spec create_message(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_message(_, %{input: params}, _) do
-    with {:ok, message} <- Messages.create_message(params) do
+  def create_message(_, %{input: params}, %{context: %{current_user: current_user}}) do
+    with params <- Map.put_new(params, :organization_id, current_user.organization_id ),
+      {:ok, message} <- Messages.create_message(params) do
       {:ok, %{message: message}}
     end
   end

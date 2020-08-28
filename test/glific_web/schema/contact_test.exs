@@ -19,6 +19,7 @@ defmodule GlificWeb.Schema.ContactTest do
     :ok
   end
 
+
   load_gql(:count, GlificWeb.Schema, "assets/gql/contacts/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/contacts/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/contacts/by_id.gql")
@@ -27,6 +28,13 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contacts/delete.gql")
   load_gql(:contact_location, GlificWeb.Schema, "assets/gql/contacts/contact_location.gql")
   load_gql(:search, GlificWeb.Schema, "assets/gql/contacts/search.gql")
+
+  def auth_query_gql_by(query, options) do
+    [user | _] =  Glific.Users.list_users()
+    options = Keyword.put_new(options, :context, %{:current_user => user})
+    query_gql_by(query, options)
+  end
+
 
   test "contacts field returns list of contacts" do
     result = query_gql_by(:list)
@@ -112,7 +120,7 @@ defmodule GlificWeb.Schema.ContactTest do
     phone = "1-415-555-1212"
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{"input" => %{"name" => name, "phone" => phone}}
       )
 
@@ -123,12 +131,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     # try creating the same contact twice
     _ =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{"input" => %{"name" => name, "phone" => phone}}
       )
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{"input" => %{"name" => name, "phone" => phone}}
       )
 
@@ -156,7 +164,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     # create a temp contact with a new phone number
     _ =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{"input" => %{"name" => "Yet another name", "phone" => phone <> " New"}}
       )
 
