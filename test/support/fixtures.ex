@@ -10,6 +10,7 @@ defmodule Glific.Fixtures do
 
   alias Glific.{
     Contacts,
+    Flows,
     Groups,
     Messages,
     Partners.Organization,
@@ -95,21 +96,19 @@ defmodule Glific.Fixtures do
     valid_attrs = %{
       label: "some label",
       shortcode: "somelabel",
-      description: "some description",
+      description: "some fixed description",
       locale: "en_US",
       is_active: true,
       is_reserved: true,
       organization_id: get_org_id()
     }
 
+    attrs = Map.merge(valid_attrs, attrs)
     language = language_fixture()
-
     {:ok, tag} =
       attrs
-      |> Map.put(:language_id, language.id)
-      |> Enum.into(valid_attrs)
+      |> Map.put_new(:language_id, language.id)
       |> Tags.create_tag()
-
     tag
   end
 
@@ -270,5 +269,25 @@ defmodule Glific.Fixtures do
       })
 
     [ct1, ct2, ct3]
+  end
+
+  @doc false
+  @spec flow_fixture(map()) :: Flows.Flow.t()
+  def flow_fixture(attrs \\ %{}) do
+    valid_attrs = %{
+      name: "Test Flow",
+      shortcode: "test_short_code",
+      keywords: ["test_keyword"],
+      flow_type: :message,
+      version_number: "13.1.0",
+      organization_id: get_org_id()
+    }
+
+    {:ok, flow} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Flows.create_flow()
+
+    flow
   end
 end
