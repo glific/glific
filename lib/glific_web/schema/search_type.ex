@@ -70,6 +70,9 @@ defmodule GlificWeb.Schema.SearchTypes do
     @desc "Include conversations with these groups"
     field :include_groups, list_of(:gid)
 
+    @desc "Include conversations by these users"
+    field :include_users, list_of(:gid)
+
     @desc "term for saving the search"
     field :term, :string
 
