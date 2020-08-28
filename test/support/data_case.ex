@@ -17,7 +17,7 @@ defmodule Glific.DataCase do
   use ExUnit.CaseTemplate
 
   alias Ecto.Adapters.SQL.Sandbox
-  alias Glific.Repo
+  alias Glific.{Fixtures, Repo}
 
   using do
     quote do
@@ -37,7 +37,8 @@ defmodule Glific.DataCase do
       Sandbox.mode(Repo, {:shared, self()})
     end
 
-    :ok
+    %{organization_id: Fixtures.get_org_id()}
+
   end
 
   @doc """
