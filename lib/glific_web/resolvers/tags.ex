@@ -36,8 +36,9 @@ defmodule GlificWeb.Resolvers.Tags do
   @doc false
   @spec create_tag(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_tag(_, %{input: params}, _) do
-    with {:ok, tag} <- Tags.create_tag(params) do
+  def create_tag(_, %{input: params},  %{context: %{current_user: current_user}}) do
+    with params <- Map.put_new(params, :organization_id, current_user.organization_id ),
+      {:ok, tag} <- Tags.create_tag(params) do
       {:ok, %{tag: tag}}
     end
   end
@@ -65,8 +66,9 @@ defmodule GlificWeb.Resolvers.Tags do
   @doc false
   @spec create_message_tag(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_message_tag(_, %{input: params}, _) do
-    with {:ok, message_tag} <- Tags.create_message_tag(params) do
+  def create_message_tag(_, %{input: params}, %{context: %{current_user: current_user}}) do
+    with params <- Map.put_new(params, :organization_id, current_user.organization_id ),
+      {:ok, message_tag} <- Tags.create_message_tag(params) do
       {:ok, %{message_tag: message_tag}}
     end
   end
@@ -92,8 +94,9 @@ defmodule GlificWeb.Resolvers.Tags do
   @doc false
   @spec create_contact_tag(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_contact_tag(_, %{input: params}, _) do
-    with {:ok, contact_tag} <- Tags.create_contact_tag(params) do
+  def create_contact_tag(_, %{input: params}, %{context: %{current_user: current_user}}) do
+    with params <- Map.put_new(params, :organization_id, current_user.organization_id ),
+      {:ok, contact_tag} <- Tags.create_contact_tag(params) do
       {:ok, %{contact_tag: contact_tag}}
     end
   end

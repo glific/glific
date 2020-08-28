@@ -4,6 +4,9 @@ MAINTAINER opensource@coloredcow.com
 # install build dependencies
 RUN apk add --update git nodejs npm
 
+# Dependencies for the AppSignal for Elixir package version 1.7.0 and newer
+Run apk add --update alpine-sdk coreutils
+
 RUN mkdir /app
 WORKDIR /app
 

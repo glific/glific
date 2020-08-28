@@ -128,6 +128,7 @@ defmodule Glific.Messages do
       %{flow: :inbound, status: :enqueued}
       |> Map.merge(attrs)
       |> put_contact_id()
+     # |> put_organization_id()
 
     %Message{}
     |> Message.changeset(attrs)
