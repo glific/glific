@@ -7,9 +7,12 @@ defmodule Glific.Flows do
 
   alias Glific.{
     Caches,
+    Contacts,
+    Contacts.Contact,
     Flows.Flow,
     Flows.FlowContext,
     Flows.FlowRevision,
+    Groups.Group,
     Repo
   }
 
@@ -316,6 +319,40 @@ defmodule Glific.Flows do
 
       update_cached_flow(flow.uuid)
     end
+
+    {:ok, flow}
+  end
+
+  @doc """
+  Start flow for a contact
+  """
+  @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
+  def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
+    {:ok, flow} = get_cached_flow(flow.id, %{id: flow.id})
+
+    if Contacts.can_send_message_to?(contact) do
+      FlowContext.init_context(flow, contact)
+      {:ok, flow}
+    else
+      {:error, ["contact", "Cannot send the message to the contact."]}
+    end
+  end
+
+  @doc """
+  Start flow for contacts of a group
+  """
+  @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
+  def start_group_flow(%Flow{} = flow, %Group{} = group) do
+    {:ok, flow} = get_cached_flow(flow.id, %{id: flow.id})
+
+    group = group |> Repo.preload([:contacts])
+
+    group.contacts
+    |> Enum.each(fn contact ->
+      if Contacts.can_send_message_to?(contact) do
+        FlowContext.init_context(flow, contact)
+      end
+    end)
 
     {:ok, flow}
   end

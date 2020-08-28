@@ -419,6 +419,131 @@ Type | Description
 --------- | ---- | ------- | -----------
 <a href="#publishflowresult">PublishFlowResult</a> | An error object or response true
 
+## Start flow for a contact
+
+```graphql
+mutation startContactFlow($flowId: ID!, $contactId: ID!) {
+  startContactFlow(flowId: $flowId, contactId: $contactId) {
+  	success
+  	errors {
+    	key
+  		message
+  	}
+  }
+}
+
+{
+  "flowId": "1",
+  "contactId": "2"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "startContactFlow": {
+      "errors": null,
+      "success": true
+    }
+  }
+}
+```
+
+In case of errors, all the above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "startContactFlow": {
+      "errors": [
+        {
+          "key": "contact",
+          "message": "Cannot send the message to the contact."
+        }
+      ],
+      "success": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+flowId | <a href="#id">ID</a>! | required ||
+contactId | <a href="#id">ID</a>! | required ||
+
+### Return Parameters
+Type | Description
+--------- | ---- | ------- | -----------
+<a href="#startflowresult">StartFlowResult</a> | An error object or success response true
+
+
+## Start flow for a group contacts
+
+```graphql
+mutation startGroupFlow($flowId: ID!, $groupId: ID!) {
+  startGroupFlow(flowId: $flowId, groupId: $groupId) {
+  	success
+  	errors {
+    	key
+  		message
+  	}
+  }
+}
+
+{
+  "flowId": "1",
+  "groupId": "1"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "startGroupFlow": {
+      "errors": null,
+      "success": true
+    }
+  }
+}
+```
+
+In case of errors, all the above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "startGroupFlow": {
+      "errors": [
+        {
+          "key": "Elixir.Glific.Flows.Flow 11",
+          "message": "Resource not found"
+        }
+      ],
+      "success": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+flowId | <a href="#id">ID</a>! | required ||
+groupId | <a href="#id">ID</a>! | required ||
+
+### Return Parameters
+Type | Description
+--------- | ---- | ------- | -----------
+<a href="#startflowresult">StartFlowResult</a> | An error object or success response true
+
 ## Flow Objects
 
 ### Flow
@@ -526,6 +651,30 @@ Type | Description
 </tbody>
 </table>
 
+### StartFlowResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>success</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 
 ## Flow Inputs ##
 

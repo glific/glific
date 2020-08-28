@@ -3,6 +3,8 @@ defmodule GlificWeb.Schema.FlowTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Contacts,
+    Fixtures,
     Flows.Flow,
     Repo,
     Seeds.SeedsDev
@@ -19,6 +21,8 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/flows/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/flows/delete.gql")
   load_gql(:publish, GlificWeb.Schema, "assets/gql/flows/publish.gql")
+  load_gql(:contact_flow, GlificWeb.Schema, "assets/gql/flows/contact_flow.gql")
+  load_gql(:group_flow, GlificWeb.Schema, "assets/gql/flows/group_flow.gql")
 
   test "flows field returns list of flows" do
     result = query_gql_by(:list)
@@ -154,5 +158,30 @@ defmodule GlificWeb.Schema.FlowTest do
 
     message = get_in(query_data, [:data, "publishFlow", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "Start flow for a contact" do
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+    [contact | _tail] = Contacts.list_contacts()
+
+    result =
+      query_gql_by(:contact_flow, variables: %{"flowId" => flow.id, "contactId" => contact.id})
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "startContactFlow", "errors", Access.at(0), "message"]) ==
+             "Cannot send the message to the contact."
+
+    # will add test for success with integration tests
+  end
+
+  test "Start flow for contacts of a group" do
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+    group = Fixtures.group_fixture()
+
+    result = query_gql_by(:group_flow, variables: %{"flowId" => flow.id, "groupId" => group.id})
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "startGroupFlow", "success"]) == true
   end
 end
