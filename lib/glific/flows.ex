@@ -7,10 +7,12 @@ defmodule Glific.Flows do
 
   alias Glific.{
     Caches,
+    Contacts,
     Contacts.Contact,
     Flows.Flow,
     Flows.FlowContext,
     Flows.FlowRevision,
+    Groups.Group,
     Repo
   }
 
@@ -328,5 +330,25 @@ defmodule Glific.Flows do
     FlowContext.init_context(flow, contact)
 
     {:ok, flow}
+  end
+
+  @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, integer}
+  def start_group_flow(%Flow{} = flow, %Group{} = group) do
+    {:ok, flow} = get_cached_flow(flow.id, %{id: flow.id})
+
+    group = group |> Repo.preload([:contacts])
+
+    count =
+      group.contacts
+      |> Enum.reduce(0, fn contact, count ->
+        if Contacts.can_send_message_to?(contact) do
+          FlowContext.init_context(flow, contact)
+          1 + count
+        else
+          count
+        end
+      end)
+
+    {:ok, count}
   end
 end

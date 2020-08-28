@@ -8,6 +8,7 @@ defmodule GlificWeb.Resolvers.Flows do
     Contacts.Contact,
     Flows,
     Flows.Flow,
+    Groups.Group,
     Repo
   }
 
@@ -86,6 +87,19 @@ defmodule GlificWeb.Resolvers.Flows do
          {:ok, contact} <- Repo.fetch(Contact, contact_id),
          {:ok, _flow} <- Flows.start_contact_flow(flow, contact) do
       {:ok, %{success: true}}
+    end
+  end
+
+  @doc false
+  @spec start_group_flow(Absinthe.Resolution.t(), %{id: integer, group_id: integer}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def start_group_flow(_, %{id: id, group_id: group_id}, _) do
+    with {:ok, flow} <- Repo.fetch(Flow, id),
+         {:ok, group} <- Repo.fetch(Group, group_id),
+         {:ok, count} <- Flows.start_group_flow(flow, group) do
+      {:ok, %{success_count: count}}
     end
   end
 end
