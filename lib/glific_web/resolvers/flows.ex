@@ -39,9 +39,8 @@ defmodule GlificWeb.Resolvers.Flows do
   @doc false
   @spec create_flow(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_flow(_, %{input: params}, %{context: %{current_user: current_user}}) do
-    with params <- Map.put_new(params, :organization_id, current_user.organization_id ),
-      {:ok, flow} <- Flows.create_flow(params) do
+  def create_flow(_, %{input: params}, _) do
+    with {:ok, flow} <- Flows.create_flow(params) do
       {:ok, %{flow: flow}}
     end
   end
