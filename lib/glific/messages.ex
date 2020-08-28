@@ -28,23 +28,22 @@ defmodule Glific.Messages do
 
   """
   @spec list_messages(map()) :: [Message.t()]
-  def list_messages(args \\ %{}),
+  def list_messages(%{filter: %{organization_id: _org_id}} = args),
     do: Repo.list_filter(args, Message, &Repo.opts_with_body/2, &filter_with/2)
 
   @doc """
   Return the count of messages, using the same filter as list_messages
   """
   @spec count_messages(map()) :: integer
-  def count_messages(args \\ %{}),
+  def count_messages(%{filter: %{organization_id: _org_id}} = args),
     do: Repo.count_filter(args, Message, &filter_with/2)
 
   # codebeat:disable[ABC, LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
-    Enum.reduce(filter, query, fn
-      {:body, body}, query ->
-        from q in query, where: ilike(q.body, ^"%#{body}%")
+    query = Repo.filter_with(query, filter)
 
+    Enum.reduce(filter, query, fn
       {:sender, sender}, query ->
         from q in query,
           join: c in assoc(q, :sender),
@@ -79,9 +78,9 @@ defmodule Glific.Messages do
 
         query |> where([m], m.id in ^message_ids)
 
-      {:tags_excluded, tags_excluded}, query ->
+    {:tags_excluded, tags_excluded}, query ->
         message_ids =
-          MessageTag
+        MessageTag
           |> where([p], p.tag_id in ^tags_excluded)
           |> select([p], p.message_id)
           |> Repo.all()
@@ -90,6 +89,8 @@ defmodule Glific.Messages do
 
       {:provider_status, provider_status}, query ->
         from q in query, where: q.provider_status == ^provider_status
+
+      _, query -> query
     end)
   end
 
@@ -128,7 +129,6 @@ defmodule Glific.Messages do
       %{flow: :inbound, status: :enqueued}
       |> Map.merge(attrs)
       |> put_contact_id()
-     # |> put_organization_id()
 
     %Message{}
     |> Message.changeset(attrs)

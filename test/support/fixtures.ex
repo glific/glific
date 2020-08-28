@@ -114,7 +114,7 @@ defmodule Glific.Fixtures do
 
   @doc false
   @spec message_tag_fixture(map()) :: Tags.MessageTag.t()
-  def message_tag_fixture(attrs \\ %{}) do
+  def message_tag_fixture(attrs) do
     valid_attrs = %{
       message_id: message_fixture(attrs).id,
       tag_id: tag_fixture(attrs).id
