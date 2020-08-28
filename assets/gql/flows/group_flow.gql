@@ -1,6 +1,6 @@
 mutation startGroupFlow($id: ID!, $groupId: ID!) {
   startGroupFlow(id: $id, groupId: $groupId) {
-  	successCount
+  	success
   	errors {
     	key
   		message

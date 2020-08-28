@@ -166,7 +166,10 @@ defmodule GlificWeb.Schema.FlowTest do
 
     result = query_gql_by(:contact_flow, variables: %{"id" => flow.id, "contactId" => contact.id})
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:errors]) != nil
+
+    assert get_in(query_data, [:data, "startContactFlow", "errors", Access.at(0), "message"]) ==
+             "Cannot send the message to the contact."
+
     # will add test for success with integration tests
   end
 
@@ -177,7 +180,6 @@ defmodule GlificWeb.Schema.FlowTest do
     result = query_gql_by(:group_flow, variables: %{"id" => flow.id, "groupId" => group.id})
     assert {:ok, query_data} = result
 
-    assert get_in(query_data, [:data, "startGroupFlow", "successCount"]) == 0
-    # will add test for success with integration tests
+    assert get_in(query_data, [:data, "startGroupFlow", "success"]) == true
   end
 end

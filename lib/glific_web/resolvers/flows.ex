@@ -98,8 +98,8 @@ defmodule GlificWeb.Resolvers.Flows do
   def start_group_flow(_, %{id: id, group_id: group_id}, _) do
     with {:ok, flow} <- Repo.fetch(Flow, id),
          {:ok, group} <- Repo.fetch(Group, group_id),
-         {:ok, count} <- Flows.start_group_flow(flow, group) do
-      {:ok, %{success_count: count}}
+         {:ok, _flow} <- Flows.start_group_flow(flow, group) do
+      {:ok, %{success: true}}
     end
   end
 end

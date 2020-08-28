@@ -326,38 +326,34 @@ defmodule Glific.Flows do
   @doc """
   Start flow for a contact
   """
-  @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, true} | {:error, String.t()}
+  @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
     {:ok, flow} = get_cached_flow(flow.id, %{id: flow.id})
 
     if Contacts.can_send_message_to?(contact) do
       FlowContext.init_context(flow, contact)
-      {:ok, true}
+      {:ok, flow}
     else
-      {:error, "Cannot send the message to the contact."}
+      {:error, ["contact", "Cannot send the message to the contact."]}
     end
   end
 
   @doc """
   Start flow for contacts of a group
   """
-  @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, integer}
+  @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
   def start_group_flow(%Flow{} = flow, %Group{} = group) do
     {:ok, flow} = get_cached_flow(flow.id, %{id: flow.id})
 
     group = group |> Repo.preload([:contacts])
 
-    count =
-      group.contacts
-      |> Enum.reduce(0, fn contact, count ->
-        if Contacts.can_send_message_to?(contact) do
-          FlowContext.init_context(flow, contact)
-          1 + count
-        else
-          count
-        end
-      end)
+    group.contacts
+    |> Enum.each(fn contact ->
+      if Contacts.can_send_message_to?(contact) do
+        FlowContext.init_context(flow, contact)
+      end
+    end)
 
-    {:ok, count}
+    {:ok, flow}
   end
 end
