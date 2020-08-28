@@ -25,6 +25,15 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :optin_time, :datetime
     field :optout_time, :datetime
 
+    field :fields, :json
+    field :settings, :json
+
+    field :last_message_at, :datetime
+
+    field :language, :language do
+      resolve(dataloader(Repo))
+    end
+
     field :tags, list_of(:tag) do
       resolve(dataloader(Repo))
     end
