@@ -10,6 +10,7 @@ defmodule Glific.Fixtures do
 
   alias Glific.{
     Contacts,
+    Flows,
     Groups,
     Messages,
     Partners.Organization,
@@ -268,5 +269,25 @@ defmodule Glific.Fixtures do
       })
 
     [ct1, ct2, ct3]
+  end
+
+  @doc false
+  @spec flow_fixture(map()) :: Flows.Flow.t()
+  def flow_fixture(attrs \\ %{}) do
+    valid_attrs = %{
+      name: "Test Flow",
+      shortcode: "test_short_code",
+      keywords: ["test_keyword"],
+      flow_type: :message,
+      version_number: "13.1.0",
+      organization_id: get_org_id()
+    }
+
+    {:ok, flow} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Flows.create_flow()
+
+    flow
   end
 end
