@@ -30,6 +30,13 @@ defmodule GlificWeb.Resolvers.Users do
     {:ok, Users.count_users(args)}
   end
 
+  @doc false
+  @spec current_user(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def current_user(_, _, %{context: %{current_user: current_user}}) do
+    {:ok, %{user: current_user}}
+  end
+
   @doc """
   Update current user
   """
