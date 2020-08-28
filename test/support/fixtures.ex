@@ -116,8 +116,8 @@ defmodule Glific.Fixtures do
   @spec message_tag_fixture(map()) :: Tags.MessageTag.t()
   def message_tag_fixture(attrs \\ %{}) do
     valid_attrs = %{
-      message_id: message_fixture().id,
-      tag_id: tag_fixture().id
+      message_id: message_fixture(attrs).id,
+      tag_id: tag_fixture(attrs).id
     }
 
     {:ok, message_tag} =
@@ -132,8 +132,8 @@ defmodule Glific.Fixtures do
   @spec contact_tag_fixture(map()) :: Tags.ContactTag.t()
   def contact_tag_fixture(attrs \\ %{}) do
     valid_attrs = %{
-      contact_id: contact_fixture().id,
-      tag_id: tag_fixture().id
+      contact_id: contact_fixture(attrs).id,
+      tag_id: tag_fixture(attrs).id
     }
 
     {:ok, contact_tag} =
