@@ -152,6 +152,45 @@ Type | Description
 | ---- | -----------
 <a href="#userresult">UserResult</a> | Queried User
 
+## Get Current User
+
+```graphql
+query currentUser {
+  currentUser {
+    user {
+      id
+      name
+      phone
+      roles
+    }
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "user": {
+      "user": {
+        "id": "1",
+        "name": "John Doe",
+        "phone": "+919820198765",
+        "roles": [
+          "admin"
+        ]
+      }
+    }
+  }
+}
+```
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#userresult">UserResult</a> | Current User
+
 ## Count all Users
 
 ```graphql

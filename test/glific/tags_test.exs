@@ -44,15 +44,11 @@ defmodule Glific.TagsTest do
 
     def tag_fixture(attrs \\ %{}) do
       language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
-
-      {:ok, tag} =
-        attrs
-        |> Map.put(:language_id, language.id)
-        |> Enum.into(@valid_attrs)
-        |> Tags.create_tag()
-
-      tag
+      Map.put(attrs, :language_id, language.id)
+      |> Fixtures.tag_fixture()
     end
+
+
 
     test "list_tags/0 returns all tags", %{organization_id: organization_id} do
       tag = tag_fixture(%{organization_id: organization_id})
@@ -85,12 +81,14 @@ defmodule Glific.TagsTest do
       language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
 
       attrs = Map.merge(@valid_attrs, %{language_id: language.id, organization_id: organization_id})
+
       assert {:ok, %Tag{} = tag} = Tags.create_tag(attrs)
       assert tag.description == "some fixed description"
       assert tag.is_active == true
       assert tag.is_reserved == true
       assert tag.label == "some label"
       assert tag.language_id == language.id
+      assert tag.organization_id == pre_defind_tag.organization_id
     end
 
     test "create_tag/1 with invalid data returns error changeset" do
@@ -135,8 +133,8 @@ defmodule Glific.TagsTest do
 
       assert length(tags) == tag_count + 2
 
-      [h, t] = Enum.filter(tags, fn t -> t.description == "some fixed description" end)
-      assert (h == tag1 && t == tag2) || (h == tag2 && t == tag1)
+      assert tag1 in tags
+      assert tag2 in tags
     end
 
     test "list_tags/1 with multiple items sorted", %{organization_id: organization_id} do
@@ -147,9 +145,7 @@ defmodule Glific.TagsTest do
       tags = Tags.list_tags(%{opts: %{order: :asc}})
 
       assert length(tags) == tag_count + 2
-
-      [h, t] = Enum.filter(tags, fn t -> t.description == "some fixed description" end)
-      assert h == tag2 && t == tag1
+      assert [tag2, tag1] == Enum.filter(tags, fn t -> t.description == "some fixed description" end)
     end
 
     test "list_tags/1 with items filtered", %{organization_id: organization_id} do
@@ -166,8 +162,8 @@ defmodule Glific.TagsTest do
       tag2 = tag_fixture(@valid_more_attrs)
       tags = Tags.list_tags(%{opts: %{order: :asc}, filter: %{language: "hindi"}})
       assert length(tags) == 2
-      [h | [t]] = tags
-      assert (h == tag2 && t == tag1) || (h == tag1 && t == tag2)
+      assert tag1 in tags
+      assert tag2 in tags
     end
 
     test "create_tags fails with constraint violation on language", %{organization_id: organization_id} do
@@ -179,8 +175,10 @@ defmodule Glific.TagsTest do
     test "keywords can be added to tags", %{organization_id: organization_id} do
       language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
       keywords = ["Hello", "hi", "hola", "namaste", "good morning"]
+
       attrs = Map.merge(@valid_attrs, %{language_id: language.id, keywords: keywords, organization_id: organization_id})
       assert {:ok, %Tag{} = tag} = Tags.create_tag(attrs)
+
       assert tag.keywords == ["hello", "hi", "hola", "namaste", "good morning"]
     end
 

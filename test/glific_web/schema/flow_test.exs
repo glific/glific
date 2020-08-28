@@ -20,6 +20,12 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/flows/delete.gql")
   load_gql(:publish, GlificWeb.Schema, "assets/gql/flows/publish.gql")
 
+   def auth_query_gql_by(query, options) do
+    [user | _] =  Glific.Users.list_users()
+    options = Keyword.put_new(options, :context, %{:current_user => user})
+    query_gql_by(query, options)
+  end
+
   test "flows field returns list of flows" do
     result = query_gql_by(:list)
     assert {:ok, query_data} = result
@@ -35,7 +41,7 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "flows field returns list of flows filtered by keyword" do
-    result = query_gql_by(:list, variables: %{"filter" => %{"keyword" => "timed"}})
+    result = query_gql_by(:list, variables: %{"filter" => %{"keyword" => "help"}})
     assert {:ok, query_data} = result
 
     flows = get_in(query_data, [:data, "flows"])
@@ -65,7 +71,7 @@ defmodule GlificWeb.Schema.FlowTest do
     keywords = ["test_keyword", "test_keyword_2"]
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{
           "input" => %{"name" => name, "shortcode" => shortcode, "keywords" => keywords}
         }
@@ -78,7 +84,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     # create message without required atributes
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{"input" => %{"name" => name}}
       )
 
@@ -89,7 +95,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     # create flow with existing keyword
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{
           "input" => %{
             "name" => "name_2",
