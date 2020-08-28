@@ -5,6 +5,7 @@ defmodule GlificWeb.Resolvers.Flows do
   """
 
   alias Glific.{
+    Contacts.Contact,
     Flows,
     Flows.Flow,
     Repo
@@ -71,6 +72,19 @@ defmodule GlificWeb.Resolvers.Flows do
   def publish_flow(_, %{id: id}, _) do
     with {:ok, flow} <- Repo.fetch(Flow, id),
          {:ok, _flow} <- Flows.publish_flow(flow) do
+      {:ok, %{success: true}}
+    end
+  end
+
+  @doc false
+  @spec start_contact_flow(Absinthe.Resolution.t(), %{id: integer, contact_id: integer}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def start_contact_flow(_, %{id: id, contact_id: contact_id}, _) do
+    with {:ok, flow} <- Repo.fetch(Flow, id),
+         {:ok, contact} <- Repo.fetch(Contact, contact_id),
+         {:ok, _flow} <- Flows.start_contact_flow(flow, contact) do
       {:ok, %{success: true}}
     end
   end

@@ -7,6 +7,7 @@ defmodule Glific.Flows do
 
   alias Glific.{
     Caches,
+    Contacts.Contact,
     Flows.Flow,
     Flows.FlowContext,
     Flows.FlowRevision,
@@ -316,6 +317,15 @@ defmodule Glific.Flows do
 
       update_cached_flow(flow.uuid)
     end
+
+    {:ok, flow}
+  end
+
+  @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()}
+  def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
+    {:ok, flow} = get_cached_flow(flow.id, %{id: flow.id})
+
+    FlowContext.init_context(flow, contact)
 
     {:ok, flow}
   end

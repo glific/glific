@@ -17,6 +17,11 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :start_flow_result do
+    field :success, :boolean
+    field :errors, list_of(:input_error)
+  end
+
   object :flow do
     field :id, :id
     field :uuid, :uuid4
@@ -84,6 +89,12 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :publish_flow, :publish_flow_result do
       arg(:id, non_null(:id))
       resolve(&Resolvers.Flows.publish_flow/3)
+    end
+
+    field :start_contact_flow, :start_flow_result do
+      arg(:id, non_null(:id))
+      arg(:contact_id, non_null(:id))
+      resolve(&Resolvers.Flows.start_contact_flow/3)
     end
   end
 end
