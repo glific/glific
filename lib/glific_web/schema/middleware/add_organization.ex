@@ -21,7 +21,7 @@ defmodule GlificWeb.Schema.Middleware.AddOrganization do
     end
   end
 
-  def put_organization_id(%{input: input} = arguments, current_user) do
+  def put_organization_id(%{input: _input} = arguments, current_user) do
     put_in(arguments, [:input, :organization_id], current_user.organization_id)
   end
 
