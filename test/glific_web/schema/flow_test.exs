@@ -164,7 +164,9 @@ defmodule GlificWeb.Schema.FlowTest do
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
     [contact | _tail] = Contacts.list_contacts()
 
-    result = query_gql_by(:contact_flow, variables: %{"id" => flow.id, "contactId" => contact.id})
+    result =
+      query_gql_by(:contact_flow, variables: %{"flowId" => flow.id, "contactId" => contact.id})
+
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "startContactFlow", "errors", Access.at(0), "message"]) ==
@@ -177,7 +179,7 @@ defmodule GlificWeb.Schema.FlowTest do
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
     group = Fixtures.group_fixture()
 
-    result = query_gql_by(:group_flow, variables: %{"id" => flow.id, "groupId" => group.id})
+    result = query_gql_by(:group_flow, variables: %{"flowId" => flow.id, "groupId" => group.id})
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "startGroupFlow", "success"]) == true

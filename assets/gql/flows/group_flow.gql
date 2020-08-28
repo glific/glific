@@ -1,5 +1,5 @@
-mutation startGroupFlow($id: ID!, $groupId: ID!) {
-  startGroupFlow(id: $id, groupId: $groupId) {
+mutation startGroupFlow($flowId: ID!, $groupId: ID!) {
+  startGroupFlow(flowId: $flowId, groupId: $groupId) {
   	success
   	errors {
     	key

@@ -422,8 +422,8 @@ Type | Description
 ## Start flow for a contact
 
 ```graphql
-mutation startContactFlow($id: ID!, $contactId: ID!) {
-  startContactFlow(id: $id, contactId: $contactId) {
+mutation startContactFlow($flowId: ID!, $contactId: ID!) {
+  startContactFlow(flowId: $flowId, contactId: $contactId) {
   	success
   	errors {
     	key
@@ -433,8 +433,8 @@ mutation startContactFlow($id: ID!, $contactId: ID!) {
 }
 
 {
-  "id": "1",
-  "contactId": "1"
+  "flowId": "1",
+  "contactId": "2"
 }
 ```
 
@@ -456,7 +456,15 @@ In case of errors, all the above functions return an error object like the below
 ```json
 {
   "data": {
-    "startContactFlow": null
+    "startContactFlow": {
+      "errors": [
+        {
+          "key": "contact",
+          "message": "Cannot send the message to the contact."
+        }
+      ],
+      "success": null
+    }
   }
 }
 ```
@@ -465,7 +473,7 @@ In case of errors, all the above functions return an error object like the below
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
+flowId | <a href="#id">ID</a>! | required ||
 contactId | <a href="#id">ID</a>! | required ||
 
 ### Return Parameters
@@ -477,8 +485,8 @@ Type | Description
 ## Start flow for a group contacts
 
 ```graphql
-mutation startGroupFlow($id: ID!, $groupId: ID!) {
-  startGroupFlow(id: $id, groupId: $groupId) {
+mutation startGroupFlow($flowId: ID!, $groupId: ID!) {
+  startGroupFlow(flowId: $flowId, groupId: $groupId) {
   	success
   	errors {
     	key
@@ -488,7 +496,7 @@ mutation startGroupFlow($id: ID!, $groupId: ID!) {
 }
 
 {
-  "id": "1",
+  "flowId": "1",
   "groupId": "1"
 }
 ```
@@ -528,7 +536,7 @@ In case of errors, all the above functions return an error object like the below
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
+flowId | <a href="#id">ID</a>! | required ||
 groupId | <a href="#id">ID</a>! | required ||
 
 ### Return Parameters

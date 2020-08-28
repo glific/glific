@@ -92,13 +92,13 @@ defmodule GlificWeb.Schema.FlowTypes do
     end
 
     field :start_contact_flow, :start_flow_result do
-      arg(:id, non_null(:id))
+      arg(:flow_id, non_null(:id))
       arg(:contact_id, non_null(:id))
       resolve(&Resolvers.Flows.start_contact_flow/3)
     end
 
     field :start_group_flow, :start_flow_result do
-      arg(:id, non_null(:id))
+      arg(:flow_id, non_null(:id))
       arg(:group_id, non_null(:id))
       resolve(&Resolvers.Flows.start_group_flow/3)
     end
