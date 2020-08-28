@@ -88,7 +88,7 @@ defmodule Glific.TagsTest do
       assert tag.is_reserved == true
       assert tag.label == "some label"
       assert tag.language_id == language.id
-      assert tag.organization_id == pre_defind_tag.organization_id
+      assert tag.organization_id == organization_id
     end
 
     test "create_tag/1 with invalid data returns error changeset" do
