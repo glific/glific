@@ -45,9 +45,11 @@ defmodule GlificWeb.ConnCase do
       Sandbox.mode(Repo, {:shared, self()})
     end
 
+    organization_id = Fixtures.get_org_id()
     {
       :ok,
-      conn: Phoenix.ConnTest.build_conn(), organization_id: Fixtures.get_org_id()
+      conn: Phoenix.ConnTest.build_conn() |> Plug.Conn.assign(:organization_id, organization_id),
+      organization_id: organization_id,
     }
   end
 end
