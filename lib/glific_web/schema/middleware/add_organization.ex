@@ -16,8 +16,10 @@ defmodule GlificWeb.Schema.Middleware.AddOrganization do
   def call(resolution, _) do
     case resolution.context do
       %{current_user: current_user} ->
-        %{resolution | arguments: put_organization_id(resolution.arguments, current_user) }
-      _ -> resolution
+        %{resolution | arguments: put_organization_id(resolution.arguments, current_user)}
+
+      _ ->
+        resolution
     end
   end
 
@@ -26,6 +28,6 @@ defmodule GlificWeb.Schema.Middleware.AddOrganization do
   end
 
   def put_organization_id(arguments, current_user) do
-      put_in(arguments, [:organization_id], current_user.organization_id)
+    put_in(arguments, [:organization_id], current_user.organization_id)
   end
 end

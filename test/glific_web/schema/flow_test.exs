@@ -20,8 +20,8 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/flows/delete.gql")
   load_gql(:publish, GlificWeb.Schema, "assets/gql/flows/publish.gql")
 
-   def auth_query_gql_by(query, options) do
-    [user | _] =  Glific.Users.list_users()
+  def auth_query_gql_by(query, options) do
+    [user | _] = Glific.Users.list_users()
     options = Keyword.put_new(options, :context, %{:current_user => user})
     query_gql_by(query, options)
   end

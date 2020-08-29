@@ -38,7 +38,6 @@ defmodule Glific.DataCase do
     end
 
     %{organization_id: Fixtures.get_org_id()}
-
   end
 
   @doc """

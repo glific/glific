@@ -10,7 +10,8 @@ defmodule Glific.Taggers.Keyword do
 
   @doc false
   @spec get_keyword_map(map()) :: %{String.t() => integer}
-  def get_keyword_map(%{organization_id: _organization_id} = attrs), do: Glific.Tags.keyword_map(attrs)
+  def get_keyword_map(%{organization_id: _organization_id} = attrs),
+    do: Glific.Tags.keyword_map(attrs)
 
   @doc false
   @spec tag_message(Message.t(), %{String.t() => integer}) :: {:ok, String.t()} | :error

@@ -170,7 +170,8 @@ defmodule Glific.Templates do
 
     Map.merge(
       %{body: message.body, type: message.type, organization_id: message.organization_id},
-      input)
+      input
+    )
     |> create_session_template()
   end
 end

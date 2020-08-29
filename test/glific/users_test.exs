@@ -4,7 +4,7 @@ defmodule Glific.UsersTest do
   alias Glific.{
     Fixtures,
     Users,
-    Users.User,
+    Users.User
   }
 
   describe "users" do
@@ -81,7 +81,8 @@ defmodule Glific.UsersTest do
       assert length(Users.list_users(%{filter: attrs})) == users_count + 1
     end
 
-    test "count_users/1 returns count of all users",  %{organization_id: _organization_id} = attrs do
+    test "count_users/1 returns count of all users",
+         %{organization_id: _organization_id} = attrs do
       users_count = Repo.aggregate(User, :count)
 
       _ = user_fixture(attrs)
@@ -90,12 +91,14 @@ defmodule Glific.UsersTest do
       assert Users.count_users(%{filter: Map.merge(attrs, %{name: "some name"})}) == 1
     end
 
-    test "get_user!/1 returns the user with given id",  %{organization_id: _organization_id} = attrs do
+    test "get_user!/1 returns the user with given id",
+         %{organization_id: _organization_id} = attrs do
       user = user_fixture(attrs)
       assert Users.get_user!(user.id) == user |> Map.put(:password, nil)
     end
 
-    test "create_user/1 with valid data creates a user",  %{organization_id: _organization_id} = attrs do
+    test "create_user/1 with valid data creates a user",
+         %{organization_id: _organization_id} = attrs do
       contact = Fixtures.contact_fixture(attrs)
 
       valid_attrs =
@@ -171,17 +174,23 @@ defmodule Glific.UsersTest do
       _u2 = user_fixture(Map.merge(attrs, @valid_attrs_2))
       u3 = user_fixture(Map.merge(attrs, @valid_attrs_3))
 
-      cs = Users.list_users(%{
-            opts: %{order: :asc},
-            filter: Map.merge(attrs, %{phone: "some phone 3"})})
+      cs =
+        Users.list_users(%{
+          opts: %{order: :asc},
+          filter: Map.merge(attrs, %{phone: "some phone 3"})
+        })
+
       assert cs == [u3 |> Map.put(:password, nil)]
 
       cs = Users.list_users(%{filter: Map.merge(attrs, %{phone: "some phone"})})
       assert length(cs) == 4
 
-      cs = Users.list_users(%{
-            opts: %{order: :asc},
-            filter: Map.merge(attrs, %{name: "some name 1"})})
+      cs =
+        Users.list_users(%{
+          opts: %{order: :asc},
+          filter: Map.merge(attrs, %{name: "some name 1"})
+        })
+
       assert cs == [u1 |> Map.put(:password, nil)]
     end
 
@@ -205,11 +214,11 @@ defmodule Glific.UsersTest do
 
     test "ensure that creating users with same contact_id gives an error", attrs do
       contact = Fixtures.contact_fixture(attrs)
+
       valid_attrs =
         @valid_attrs
         |> Map.put(:contact_id, contact.id)
         |> Map.put(:organization_id, contact.organization_id)
-
 
       Users.create_user(valid_attrs)
       assert {:error, %Ecto.Changeset{}} = Users.create_user(valid_attrs)

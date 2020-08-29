@@ -44,11 +44,10 @@ defmodule Glific.TagsTest do
 
     def tag_fixture(attrs \\ %{}) do
       language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
+
       Map.put(attrs, :language_id, language.id)
       |> Fixtures.tag_fixture()
     end
-
-
 
     test "list_tags/1 returns all tags", %{organization_id: _organization_id} = attrs do
       tag = tag_fixture(attrs)
@@ -80,7 +79,8 @@ defmodule Glific.TagsTest do
     test "create_tag/1 with valid data creates a tag", %{organization_id: organization_id} do
       language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
 
-      attrs = Map.merge(@valid_attrs, %{language_id: language.id, organization_id: organization_id})
+      attrs =
+        Map.merge(@valid_attrs, %{language_id: language.id, organization_id: organization_id})
 
       assert {:ok, %Tag{} = tag} = Tags.create_tag(attrs)
       assert tag.description == "some fixed description"
@@ -107,7 +107,9 @@ defmodule Glific.TagsTest do
       assert tag.language_id == language.id
     end
 
-    test "update_tag/2 with invalid data returns error changeset", %{organization_id: organization_id} do
+    test "update_tag/2 with invalid data returns error changeset", %{
+      organization_id: organization_id
+    } do
       tag = tag_fixture(%{organization_id: organization_id})
       assert {:error, %Ecto.Changeset{}} = Tags.update_tag(tag, @invalid_attrs)
       assert tag == Tags.get_tag!(tag.id)
@@ -145,14 +147,21 @@ defmodule Glific.TagsTest do
       tags = Tags.list_tags(%{opts: %{order: :asc}, filter: attrs})
 
       assert length(tags) == tag_count + 2
-      assert [tag2, tag1] == Enum.filter(tags, fn t -> t.description == "some fixed description" end)
+
+      assert [tag2, tag1] ==
+               Enum.filter(tags, fn t -> t.description == "some fixed description" end)
     end
 
     test "list_tags/1 with items filtered", %{organization_id: _organization_id} = attrs do
       _tag1 = tag_fixture(attrs)
       tag2 = tag_fixture(Map.merge(@valid_more_attrs, attrs))
-        tags = Tags.list_tags(%{opts: %{order: :asc},
-                                filter: Map.merge(%{label: "hindi some label"}, attrs)})
+
+      tags =
+        Tags.list_tags(%{
+          opts: %{order: :asc},
+          filter: Map.merge(%{label: "hindi some label"}, attrs)
+        })
+
       assert length(tags) == 1
       [h] = tags
       assert h == tag2
@@ -161,16 +170,23 @@ defmodule Glific.TagsTest do
     test "list_tags/1 with language filtered", %{organization_id: _organization_id} = attrs do
       tag1 = tag_fixture(attrs)
       tag2 = tag_fixture(Map.merge(@valid_more_attrs, attrs))
-        tags = Tags.list_tags(%{opts: %{order: :asc},
-                                filter: Map.merge(%{language: "hindi"}, attrs)})
+
+      tags =
+        Tags.list_tags(%{opts: %{order: :asc}, filter: Map.merge(%{language: "hindi"}, attrs)})
+
       assert length(tags) == 2
       assert tag1 in tags
       assert tag2 in tags
     end
 
-    test "create_tags fails with constraint violation on language", %{organization_id: organization_id} do
+    test "create_tags fails with constraint violation on language", %{
+      organization_id: organization_id
+    } do
       language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
-      attrs = Map.merge(@valid_attrs, %{language_id: language.id * 10, organization_id: organization_id})
+
+      attrs =
+        Map.merge(@valid_attrs, %{language_id: language.id * 10, organization_id: organization_id})
+
       assert {:error, %Ecto.Changeset{}} = Tags.create_tag(attrs)
     end
 
@@ -178,7 +194,13 @@ defmodule Glific.TagsTest do
       language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
       keywords = ["Hello", "hi", "hola", "namaste", "good morning"]
 
-      attrs = Map.merge(@valid_attrs, %{language_id: language.id, keywords: keywords, organization_id: organization_id})
+      attrs =
+        Map.merge(@valid_attrs, %{
+          language_id: language.id,
+          keywords: keywords,
+          organization_id: organization_id
+        })
+
       assert {:ok, %Tag{} = tag} = Tags.create_tag(attrs)
 
       assert tag.keywords == ["hello", "hi", "hola", "namaste", "good morning"]
@@ -192,7 +214,8 @@ defmodule Glific.TagsTest do
       assert tag.keywords == ["hello", "hi", "hola", "namaste"]
     end
 
-    test "keyword_map/1 returns a keyword map with ids", %{organization_id: _organization_id} = attrs do
+    test "keyword_map/1 returns a keyword map with ids",
+         %{organization_id: _organization_id} = attrs do
       tag = tag_fixture(attrs)
       tag2 = tag_fixture(%{label: "tag 2", shortcode: "tag2"})
 
@@ -207,9 +230,17 @@ defmodule Glific.TagsTest do
       assert keyword_map["tag2"] == tag2.id
     end
 
-    test "status_map/0 returns a keyword map with ids", %{organization_id: organization_id} = attrs do
+    test "status_map/0 returns a keyword map with ids",
+         %{organization_id: organization_id} = attrs do
       tag = tag_fixture(%{label: "Unread", shortcode: "unread"})
-      tag2 = tag_fixture(%{label: "New Contact", shortcode: "newcontact", organization_id: organization_id})
+
+      tag2 =
+        tag_fixture(%{
+          label: "New Contact",
+          shortcode: "newcontact",
+          organization_id: organization_id
+        })
+
       status_map = Tags.status_map(attrs)
       assert is_map(status_map)
       assert status_map["unread"] == tag.id
@@ -218,7 +249,14 @@ defmodule Glific.TagsTest do
 
     test "invalid shortcode will throw an error", %{organization_id: organization_id} do
       language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
-      attrs = Map.merge(@valid_attrs, %{language_id: language.id, shortcode: "invalid-tag", organization_id: organization_id})
+
+      attrs =
+        Map.merge(@valid_attrs, %{
+          language_id: language.id,
+          shortcode: "invalid-tag",
+          organization_id: organization_id
+        })
+
       assert {:error, %Ecto.Changeset{}} = Tags.create_tag(attrs)
     end
   end
@@ -235,12 +273,16 @@ defmodule Glific.TagsTest do
       assert Tags.list_messages_tags() == [message_tag]
     end
 
-    test "get_messages_tag!/1 returns the messages_tag with given id", %{organization_id: organization_id} do
+    test "get_messages_tag!/1 returns the messages_tag with given id", %{
+      organization_id: organization_id
+    } do
       message_tag = Fixtures.message_tag_fixture(%{organization_id: organization_id})
       assert Tags.get_message_tag!(message_tag.id) == message_tag
     end
 
-    test "create_messages_tag/1 with valid data creates a tag", %{organization_id: organization_id} do
+    test "create_messages_tag/1 with valid data creates a tag", %{
+      organization_id: organization_id
+    } do
       message = Fixtures.message_fixture(%{organization_id: organization_id})
       tag = Fixtures.tag_fixture(%{organization_id: organization_id})
       message_tag = Fixtures.message_tag_fixture(%{message_id: message.id, tag_id: tag.id})
@@ -248,7 +290,9 @@ defmodule Glific.TagsTest do
       assert message_tag.tag_id == tag.id
     end
 
-    test "update_messages_tag/2 with valid data updates the tag", %{organization_id: organization_id} do
+    test "update_messages_tag/2 with valid data updates the tag", %{
+      organization_id: organization_id
+    } do
       message = Fixtures.message_fixture(%{organization_id: organization_id})
       message_tag = Fixtures.message_tag_fixture(%{organization_id: organization_id})
 
@@ -269,7 +313,9 @@ defmodule Glific.TagsTest do
       assert %Ecto.Changeset{} = Tags.change_message_tag(message_tag)
     end
 
-    test "ensure that creating message_tag with same message and tag does not give an error", %{organization_id: organization_id} do
+    test "ensure that creating message_tag with same message and tag does not give an error", %{
+      organization_id: organization_id
+    } do
       message = Fixtures.message_fixture(%{organization_id: organization_id})
       tag = Fixtures.tag_fixture(%{organization_id: organization_id})
       Fixtures.message_tag_fixture(%{message_id: message.id, tag_id: tag.id})
@@ -286,12 +332,16 @@ defmodule Glific.TagsTest do
       assert Tags.list_contacts_tags() == [contact_tag]
     end
 
-    test "get_contacts_tag!/1 returns the contacts_tag with given id", %{organization_id: organization_id} do
+    test "get_contacts_tag!/1 returns the contacts_tag with given id", %{
+      organization_id: organization_id
+    } do
       contact_tag = Fixtures.contact_tag_fixture(%{organization_id: organization_id})
       assert Tags.get_contact_tag!(contact_tag.id) == contact_tag
     end
 
-    test "create_contacts_tag/1 with valid data creates a tag", %{organization_id: organization_id} do
+    test "create_contacts_tag/1 with valid data creates a tag", %{
+      organization_id: organization_id
+    } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
       tag = Fixtures.tag_fixture(%{organization_id: organization_id})
       contact_tag = Fixtures.contact_tag_fixture(%{contact_id: contact.id, tag_id: tag.id})
@@ -299,7 +349,9 @@ defmodule Glific.TagsTest do
       assert contact_tag.tag_id == tag.id
     end
 
-    test "update_contacts_tag/2 with valid data updates the tag", %{organization_id: organization_id} do
+    test "update_contacts_tag/2 with valid data updates the tag", %{
+      organization_id: organization_id
+    } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
       contact_tag = Fixtures.contact_tag_fixture(%{organization_id: organization_id})
 
@@ -320,7 +372,9 @@ defmodule Glific.TagsTest do
       assert %Ecto.Changeset{} = Tags.change_contact_tag(contact_tag)
     end
 
-    test "ensure that creating contact_tag with same contact and tag give an error", %{organization_id: organization_id} do
+    test "ensure that creating contact_tag with same contact and tag give an error", %{
+      organization_id: organization_id
+    } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
       tag = Fixtures.tag_fixture(%{organization_id: organization_id})
       Fixtures.contact_tag_fixture(%{contact_id: contact.id, tag_id: tag.id})
@@ -329,7 +383,9 @@ defmodule Glific.TagsTest do
                Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id})
     end
 
-    test "remove_tag_from_all_message/2 removes teh tag and return the message ids ", %{organization_id: organization_id} do
+    test "remove_tag_from_all_message/2 removes teh tag and return the message ids ", %{
+      organization_id: organization_id
+    } do
       message_1 = Fixtures.message_fixture(%{organization_id: organization_id})
 
       message_2 =
@@ -361,7 +417,8 @@ defmodule Glific.TagsTest do
       assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message3_tag.id) end
     end
 
-    test "creating tag with parent id will add the ancestors", %{organization_id: organization_id} = attrs do
+    test "creating tag with parent id will add the ancestors",
+         %{organization_id: organization_id} = attrs do
       [tag1 | [tag2 | _tail]] = Tags.list_tags(%{filter: attrs})
       {:ok, tag2} = Tags.update_tag(tag2, %{parent_id: tag1.id})
       tag3 = tag_fixture(%{parent_id: tag2.id, organization_id: organization_id})

@@ -64,8 +64,7 @@ defmodule Glific.GroupsTest do
     end
 
     test "create_group/1 with invalid data returns error changeset", attrs do
-      assert {:error, %Ecto.Changeset{}} =
-        Groups.create_group(Map.merge(attrs, @invalid_attrs))
+      assert {:error, %Ecto.Changeset{}} = Groups.create_group(Map.merge(attrs, @invalid_attrs))
     end
 
     test "update_group/2 with valid data updates the group", attrs do
@@ -77,7 +76,10 @@ defmodule Glific.GroupsTest do
 
     test "update_group/2 with invalid data returns error changeset", attrs do
       group = group_fixture(attrs)
-      assert {:error, %Ecto.Changeset{}} = Groups.update_group(group, Map.merge(attrs, @invalid_attrs))
+
+      assert {:error, %Ecto.Changeset{}} =
+               Groups.update_group(group, Map.merge(attrs, @invalid_attrs))
+
       assert group == Groups.get_group!(group.id)
     end
 
@@ -113,7 +115,13 @@ defmodule Glific.GroupsTest do
     test "list_groups/1 with items filtered", attrs do
       _group1 = group_fixture(attrs)
       group2 = group_fixture(Map.merge(attrs, @valid_other_attrs))
-      groups = Groups.list_groups(%{opts: %{order: :asc}, filter: Map.merge(attrs, %{label: "other group"})})
+
+      groups =
+        Groups.list_groups(%{
+          opts: %{order: :asc},
+          filter: Map.merge(attrs, %{label: "other group"})
+        })
+
       assert length(groups) == 1
       [h] = groups
       assert h == group2

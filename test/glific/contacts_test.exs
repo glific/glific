@@ -102,14 +102,15 @@ defmodule Glific.ContactsTest do
       contact
     end
 
-    test "list_contacts/1 returns all contacts", %{organization_id: _organization_id} = attrs  do
+    test "list_contacts/1 returns all contacts", %{organization_id: _organization_id} = attrs do
       contacts_count = Repo.aggregate(Contact, :count)
 
       _contact = contact_fixture(attrs)
       assert length(Contacts.list_contacts(%{filter: attrs})) == contacts_count + 1
     end
 
-    test "count_contacts/0 returns count of all contacts", %{organization_id: _organization_id} = attrs do
+    test "count_contacts/0 returns count of all contacts",
+         %{organization_id: _organization_id} = attrs do
       contacts_count = Repo.aggregate(Contact, :count)
 
       _ = contact_fixture(attrs)
@@ -118,12 +119,14 @@ defmodule Glific.ContactsTest do
       assert Contacts.count_contacts(%{filter: Map.merge(attrs, %{name: "some name"})}) == 1
     end
 
-    test "get_contact!/1 returns the contact with given id", %{organization_id: _organization_id} = attrs do
+    test "get_contact!/1 returns the contact with given id",
+         %{organization_id: _organization_id} = attrs do
       contact = contact_fixture(attrs)
       assert Contacts.get_contact!(contact.id) == contact
     end
 
-    test "create_contact/1 with valid data creates a contact", %{organization_id: _organization_id} = attrs do
+    test "create_contact/1 with valid data creates a contact",
+         %{organization_id: _organization_id} = attrs do
       attrs = Map.merge(attrs, @valid_attrs)
       assert {:ok, %Contact{} = contact} = Contacts.create_contact(attrs)
       assert contact.name == "some name"
@@ -139,7 +142,8 @@ defmodule Glific.ContactsTest do
       assert contact.language_id == organization.default_language_id
     end
 
-    test "create_contact/1 with language id creates a contact", %{organization_id: _organization_id} = attrs do
+    test "create_contact/1 with language id creates a contact",
+         %{organization_id: _organization_id} = attrs do
       {:ok, language} = Repo.fetch_by(Language, %{locale: "hi"})
 
       attrs =
@@ -161,7 +165,8 @@ defmodule Glific.ContactsTest do
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(@invalid_attrs)
     end
 
-    test "update_contact/2 with valid data updates the contact", %{organization_id: _organization_id} = attrs do
+    test "update_contact/2 with valid data updates the contact",
+         %{organization_id: _organization_id} = attrs do
       contact = contact_fixture(attrs)
       assert {:ok, %Contact{} = contact} = Contacts.update_contact(contact, @update_attrs)
       assert contact.name == "some updated name"
@@ -172,7 +177,8 @@ defmodule Glific.ContactsTest do
       assert contact.provider_status == :hsm
     end
 
-    test "update_contact/2 with invalid data returns error changeset", %{organization_id: _organization_id} = attrs do
+    test "update_contact/2 with invalid data returns error changeset",
+         %{organization_id: _organization_id} = attrs do
       contact = contact_fixture(attrs)
       assert {:error, %Ecto.Changeset{}} = Contacts.update_contact(contact, @invalid_attrs)
       assert contact == Contacts.get_contact!(contact.id)
@@ -184,7 +190,8 @@ defmodule Glific.ContactsTest do
       assert_raise Ecto.NoResultsError, fn -> Contacts.get_contact!(contact.id) end
     end
 
-    test "change_contact/1 returns a contact changeset", %{organization_id: _organization_id} = attrs do
+    test "change_contact/1 returns a contact changeset",
+         %{organization_id: _organization_id} = attrs do
       contact = contact_fixture(attrs)
       assert %Ecto.Changeset{} = Contacts.change_contact(contact)
     end
@@ -195,12 +202,13 @@ defmodule Glific.ContactsTest do
       _c0 = contact_fixture(Map.merge(attrs, @valid_attrs))
       _c1 = contact_fixture(Map.merge(attrs, @valid_attrs_1))
       _c2 = contact_fixture(Map.merge(attrs, @valid_attrs_2))
-        _c3 = contact_fixture(Map.merge(attrs, @valid_attrs_3))
+      _c3 = contact_fixture(Map.merge(attrs, @valid_attrs_3))
 
       assert length(Contacts.list_contacts(%{filter: attrs})) == contacts_count + 4
     end
 
-    test "list_contacts/1 with multiple contacts sorted", %{organization_id: _organization_id} = attrs do
+    test "list_contacts/1 with multiple contacts sorted",
+         %{organization_id: _organization_id} = attrs do
       contacts_count = Repo.aggregate(Contact, :count)
 
       c0 = contact_fixture(Map.merge(attrs, @valid_attrs_to_test_order_1))
@@ -215,22 +223,30 @@ defmodule Glific.ContactsTest do
       assert c1 == ordered_c1
     end
 
-    test "list_contacts/1 with multiple contacts filtered", %{organization_id: _organization_id} = attrs do
+    test "list_contacts/1 with multiple contacts filtered",
+         %{organization_id: _organization_id} = attrs do
       c0 = contact_fixture(Map.merge(attrs, @valid_attrs))
       c1 = contact_fixture(Map.merge(attrs, @valid_attrs_1))
       c2 = contact_fixture(Map.merge(attrs, @valid_attrs_2))
       c3 = contact_fixture(Map.merge(attrs, @valid_attrs_3))
 
-      cs = Contacts.list_contacts(%{
-            opts: %{order: :asc},
-            filter: Map.merge(attrs, %{phone: "some phone 3"})})
+      cs =
+        Contacts.list_contacts(%{
+          opts: %{order: :asc},
+          filter: Map.merge(attrs, %{phone: "some phone 3"})
+        })
+
       assert cs == [c3]
 
       cs = Contacts.list_contacts(%{filter: Map.merge(attrs, %{phone: "some phone"})})
       assert length(cs) == 4
 
-      cs = Contacts.list_contacts(%{opts: %{order: :asc},
-                                    filter: Map.merge(attrs, %{name: "some name 1"})})
+      cs =
+        Contacts.list_contacts(%{
+          opts: %{order: :asc},
+          filter: Map.merge(attrs, %{name: "some name 1"})
+        })
+
       assert cs == [c1]
 
       cs =
@@ -248,18 +264,22 @@ defmodule Glific.ContactsTest do
       # check if the defualt language is set
       assert Partners.organization_language_id() == c0.language_id
 
-      {:ok, contact} = Contacts.upsert(%{
-            phone: c0.phone,
-            name: c0.name,
-            organization_id: organization_id
-                                       })
+      {:ok, contact} =
+        Contacts.upsert(%{
+          phone: c0.phone,
+          name: c0.name,
+          organization_id: organization_id
+        })
+
       assert contact.id == c0.id
     end
 
-    test "ensure that upsert contacts overrides the language id", %{organization_id: organization_id} = attrs do
+    test "ensure that upsert contacts overrides the language id",
+         %{organization_id: organization_id} = attrs do
       c0 = contact_fixture(Map.merge(attrs, @valid_attrs))
 
       org_language_id = Partners.organization_language_id()
+
       language =
         Settings.list_languages()
         |> Enum.find(fn ln -> ln.id != org_language_id end)
@@ -276,38 +296,47 @@ defmodule Glific.ContactsTest do
     end
 
     test "ensure that creating contacts with same name/phone give an error",
-      %{organization_id: _organization_id} = attrs do
+         %{organization_id: _organization_id} = attrs do
       contact_fixture(Map.merge(attrs, @valid_attrs))
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(Map.merge(attrs, @valid_attrs))
     end
 
     test "ensure that contact returns the valid state for sending the message",
-      %{organization_id: _organization_id} = attrs do
+         %{organization_id: _organization_id} = attrs do
       contact =
-        contact_fixture(Map.merge(
-              attrs,
-              %{
-                provider_status: :session_and_hsm,
-                last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
-              }))
+        contact_fixture(
+          Map.merge(
+            attrs,
+            %{
+              provider_status: :session_and_hsm,
+              last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
+            }
+          )
+        )
 
       contact2 =
-        contact_fixture(Map.merge(
-              attrs,
-              %{
-                phone: Phone.EnUs.phone(),
-                provider_status: :none,
-                last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
-              }))
+        contact_fixture(
+          Map.merge(
+            attrs,
+            %{
+              phone: Phone.EnUs.phone(),
+              provider_status: :none,
+              last_message_at: DateTime.utc_now() |> DateTime.truncate(:second)
+            }
+          )
+        )
 
       contact3 =
-        contact_fixture(Map.merge(
-              attrs,
-              %{
-                phone: Phone.EnUs.phone(),
-                provider_status: :none,
-                last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
-              }))
+        contact_fixture(
+          Map.merge(
+            attrs,
+            %{
+              phone: Phone.EnUs.phone(),
+              provider_status: :none,
+              last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
+            }
+          )
+        )
 
       assert true == Contacts.can_send_message_to?(contact)
       assert false == Contacts.can_send_message_to?(contact2)
@@ -315,44 +344,56 @@ defmodule Glific.ContactsTest do
     end
 
     test "ensure that contact returns the valid state for sending the hsm message",
-      %{organization_id: _organization_id} = attrs do
+         %{organization_id: _organization_id} = attrs do
       contact1 =
-        contact_fixture(Map.merge(
-              attrs,
-              %{
-                phone: Phone.EnUs.phone(),
-                provider_status: :none
-              }))
+        contact_fixture(
+          Map.merge(
+            attrs,
+            %{
+              phone: Phone.EnUs.phone(),
+              provider_status: :none
+            }
+          )
+        )
 
       # When contact opts in, optout_time should be set to nil
       contact2 =
-        contact_fixture(Map.merge(
-              attrs,
-              %{
-                phone: Phone.EnUs.phone(),
-                provider_status: :session_and_hsm,
-                optin_time: DateTime.utc_now(),
-                optout_time: nil
-              }))
+        contact_fixture(
+          Map.merge(
+            attrs,
+            %{
+              phone: Phone.EnUs.phone(),
+              provider_status: :session_and_hsm,
+              optin_time: DateTime.utc_now(),
+              optout_time: nil
+            }
+          )
+        )
 
       contact3 =
-        contact_fixture(Map.merge(
-              attrs,
-              %{
-                phone: Phone.EnUs.phone(),
-                provider_status: :session_and_hsm,
-                optin_time: nil
-              }))
+        contact_fixture(
+          Map.merge(
+            attrs,
+            %{
+              phone: Phone.EnUs.phone(),
+              provider_status: :session_and_hsm,
+              optin_time: nil
+            }
+          )
+        )
 
       contact4 =
-        contact_fixture(Map.merge(
-              attrs,
-              %{
-                phone: Phone.EnUs.phone(),
-                provider_status: :session_and_hsm,
-                optin_time: nil,
-                optout_time: DateTime.utc_now()
-              }))
+        contact_fixture(
+          Map.merge(
+            attrs,
+            %{
+              phone: Phone.EnUs.phone(),
+              provider_status: :session_and_hsm,
+              optin_time: nil,
+              optout_time: DateTime.utc_now()
+            }
+          )
+        )
 
       assert false == Contacts.can_send_message_to?(contact1, true)
       assert true == Contacts.can_send_message_to?(contact2, true)
@@ -361,7 +402,7 @@ defmodule Glific.ContactsTest do
     end
 
     test "contact_opted_in/2 will setup the contact as valid contact for message",
-      %{organization_id: organization_id} do
+         %{organization_id: organization_id} do
       contact = contact_fixture(%{organization_id: organization_id, status: :invalid})
 
       Contacts.contact_opted_in(contact.phone, organization_id, DateTime.utc_now())
@@ -373,7 +414,7 @@ defmodule Glific.ContactsTest do
     end
 
     test "contact_opted_out/2 will setup the contact as valid contact for message",
-      %{organization_id: organization_id} do
+         %{organization_id: organization_id} do
       contact = contact_fixture(%{organization_id: organization_id, status: :valid})
 
       Contacts.contact_opted_out(contact.phone, organization_id, DateTime.utc_now())
@@ -384,8 +425,13 @@ defmodule Glific.ContactsTest do
     end
 
     test "set_session_status/2 will set provider status of not opted in contact",
-      %{organization_id: organization_id} do
-      contact = contact_fixture(%{organization_id: organization_id, provider_status: :none, optin_time: nil})
+         %{organization_id: organization_id} do
+      contact =
+        contact_fixture(%{
+          organization_id: organization_id,
+          provider_status: :none,
+          optin_time: nil
+        })
 
       {:ok, contact} = Contacts.set_session_status(contact, :none)
       assert contact.provider_status == :none
@@ -395,12 +441,13 @@ defmodule Glific.ContactsTest do
     end
 
     test "set_session_status/2 will set provider status opted in contact",
-      %{organization_id: organization_id} do
-      contact = contact_fixture(%{
-            organization_id: organization_id,
-            provider_status: :none,
-            optin_time: DateTime.utc_now()
-                                })
+         %{organization_id: organization_id} do
+      contact =
+        contact_fixture(%{
+          organization_id: organization_id,
+          provider_status: :none,
+          optin_time: DateTime.utc_now()
+        })
 
       {:ok, contact} = Contacts.set_session_status(contact, :none)
       assert contact.provider_status == :hsm

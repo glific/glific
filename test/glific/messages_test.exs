@@ -110,9 +110,10 @@ defmodule Glific.MessagesTest do
       message = message_fixture(attrs)
 
       assert [message] ==
-        Messages.list_messages(%{
-              opts: %{order: :asc},
-              filter: Map.merge(attrs, %{body: message.body})})
+               Messages.list_messages(%{
+                 opts: %{order: :asc},
+                 filter: Map.merge(attrs, %{body: message.body})
+               })
 
       assert [message] ==
                Messages.list_messages(%{
@@ -125,8 +126,7 @@ defmodule Glific.MessagesTest do
       _ = message_fixture(attrs)
       assert Messages.count_messages(%{filter: attrs}) == 1
 
-      assert Messages.count_messages(
-        %{filter: Map.merge(attrs, %{body: "some body"})}) == 1
+      assert Messages.count_messages(%{filter: Map.merge(attrs, %{body: "some body"})}) == 1
     end
 
     test "list_messages/1 with foreign key filters", attrs do
@@ -135,17 +135,21 @@ defmodule Glific.MessagesTest do
 
       {:ok, message} =
         @valid_attrs
-        |> Map.merge(%{sender_id: sender.id, receiver_id: receiver.id, organization_id: sender.organization_id})
+        |> Map.merge(%{
+          sender_id: sender.id,
+          receiver_id: receiver.id,
+          organization_id: sender.organization_id
+        })
         |> Messages.create_message()
 
-      assert [message] == Messages.list_messages(
-        %{filter: Map.merge(attrs, %{sender: sender.name})})
+      assert [message] ==
+               Messages.list_messages(%{filter: Map.merge(attrs, %{sender: sender.name})})
 
-      assert [message] == Messages.list_messages(
-        %{filter: Map.merge(attrs, %{receiver: receiver.name})})
+      assert [message] ==
+               Messages.list_messages(%{filter: Map.merge(attrs, %{receiver: receiver.name})})
 
-      assert [message] == Messages.list_messages(
-        %{filter: Map.merge(attrs, %{either: sender.phone})})
+      assert [message] ==
+               Messages.list_messages(%{filter: Map.merge(attrs, %{either: sender.phone})})
 
       oid = sender.organization_id
 
@@ -155,7 +159,7 @@ defmodule Glific.MessagesTest do
     end
 
     test "list_messages/1 with tags included filters",
-      %{organization_id: organization_id} = attrs do
+         %{organization_id: organization_id} = attrs do
       message_tag = Fixtures.message_tag_fixture(attrs)
       message_tag_2 = Fixtures.message_tag_fixture(attrs)
 
@@ -164,18 +168,17 @@ defmodule Glific.MessagesTest do
       _message_3 = message_fixture(attrs)
 
       assert [message] ==
-        Messages.list_messages(
-          %{filter: %{tags_included: [message_tag.tag_id],
-                      organization_id: organization_id
-                     }})
+               Messages.list_messages(%{
+                 filter: %{tags_included: [message_tag.tag_id], organization_id: organization_id}
+               })
 
       # Search for multiple tags
       message_list =
         Messages.list_messages(%{
-              filter: %{
-                tags_included: [message_tag.tag_id, message_tag_2.tag_id],
-                organization_id: organization_id,
-              }
+          filter: %{
+            tags_included: [message_tag.tag_id, message_tag_2.tag_id],
+            organization_id: organization_id
+          }
         })
 
       assert length(message_list) == 2
@@ -192,16 +195,17 @@ defmodule Glific.MessagesTest do
 
       message_list =
         Messages.list_messages(%{
-              filter: %{
-                tags_included: [wrong_tag_id],
-                organization_id: organization_id}
+          filter: %{
+            tags_included: [wrong_tag_id],
+            organization_id: organization_id
+          }
         })
 
       assert message_list == []
     end
 
     test "list_messages/1 with tags excluded filters",
-      %{organization_id: organization_id} = attrs do
+         %{organization_id: organization_id} = attrs do
       message_tag = Fixtures.message_tag_fixture(attrs)
       message_tag_2 = Fixtures.message_tag_fixture(attrs)
 
@@ -209,19 +213,20 @@ defmodule Glific.MessagesTest do
       _message_2 = Messages.get_message!(message_tag_2.message_id)
       _message_3 = message_fixture(attrs)
 
-      message_list = Messages.list_messages(
-        %{filter: %{tags_excluded: [message_tag.tag_id],
-                    organization_id: organization_id}}
-      )
+      message_list =
+        Messages.list_messages(%{
+          filter: %{tags_excluded: [message_tag.tag_id], organization_id: organization_id}
+        })
+
       assert length(message_list) == 2
 
       # Search for multiple tags
       message_list =
         Messages.list_messages(%{
-              filter: %{
-                tags_excluded: [message_tag.tag_id, message_tag_2.tag_id],
-                organization_id: organization_id,
-              }
+          filter: %{
+            tags_excluded: [message_tag.tag_id, message_tag_2.tag_id],
+            organization_id: organization_id
+          }
         })
 
       assert length(message_list) == 1
@@ -244,60 +249,65 @@ defmodule Glific.MessagesTest do
     end
 
     test "create_message/1 with valid data will have the message number for the same contact",
-      %{organization_id: organization_id} do
-
-      message1 = message_fixture(%{
-            body: "message 1",
-            organization_id: organization_id,
+         %{organization_id: organization_id} do
+      message1 =
+        message_fixture(%{
+          body: "message 1",
+          organization_id: organization_id
         })
 
       message_fixture(%{
         body: "message 2",
         sender_id: message1.sender_id,
         receiver_id: message1.receiver_id,
-        organization_id: organization_id,
+        organization_id: organization_id
       })
 
       message_fixture(%{
         body: "message 3",
         sender_id: message1.sender_id,
         receiver_id: message1.receiver_id,
-        organization_id: organization_id,
+        organization_id: organization_id
       })
 
       message_fixture(%{
         body: "message 4",
         sender_id: message1.sender_id,
         receiver_id: message1.receiver_id,
-        organization_id: organization_id,
+        organization_id: organization_id
       })
 
       message_fixture(%{
         body: "message 5",
         sender_id: message1.sender_id,
         receiver_id: message1.receiver_id,
-        organization_id: organization_id,
+        organization_id: organization_id
       })
 
       message_fixture(%{
         body: "message 6",
         sender_id: message1.sender_id,
         receiver_id: message1.receiver_id,
-        organization_id: organization_id,
+        organization_id: organization_id
       })
 
-      {:ok, message6} = Repo.fetch_by(Message, %{body: "message 6",
-                                                 organization_id: organization_id,})
-      {:ok, message5} = Repo.fetch_by(Message, %{body: "message 5",
-                                                 organization_id: organization_id,})
-      {:ok, message4} = Repo.fetch_by(Message, %{body: "message 4",
-                                                 organization_id: organization_id,})
-      {:ok, message3} = Repo.fetch_by(Message, %{body: "message 3",
-                                                 organization_id: organization_id,})
-      {:ok, message2} = Repo.fetch_by(Message, %{body: "message 2",
-                                                 organization_id: organization_id,})
-      {:ok, message1} = Repo.fetch_by(Message, %{body: "message 1",
-                                                 organization_id: organization_id,})
+      {:ok, message6} =
+        Repo.fetch_by(Message, %{body: "message 6", organization_id: organization_id})
+
+      {:ok, message5} =
+        Repo.fetch_by(Message, %{body: "message 5", organization_id: organization_id})
+
+      {:ok, message4} =
+        Repo.fetch_by(Message, %{body: "message 4", organization_id: organization_id})
+
+      {:ok, message3} =
+        Repo.fetch_by(Message, %{body: "message 3", organization_id: organization_id})
+
+      {:ok, message2} =
+        Repo.fetch_by(Message, %{body: "message 2", organization_id: organization_id})
+
+      {:ok, message1} =
+        Repo.fetch_by(Message, %{body: "message 1", organization_id: organization_id})
 
       assert message6.message_number == 0
       assert message5.message_number == 1
@@ -338,8 +348,7 @@ defmodule Glific.MessagesTest do
     end
 
     test "create and send message to multiple contacts should update the provider_message_id field in message",
-      %{organization_id: organization_id} = attrs do
-
+         %{organization_id: organization_id} = attrs do
       {:ok, receiver_1} =
         Contacts.create_contact(
           @receiver_attrs
@@ -382,13 +391,16 @@ defmodule Glific.MessagesTest do
     end
 
     test "send hsm message incorrect parameters",
-      %{organization_id: organization_id} = attrs do
+         %{organization_id: organization_id} = attrs do
       contact = Fixtures.contact_fixture(attrs)
 
       shortcode = "otp"
-      {:ok, hsm_template} = Repo.fetch_by(
-        SessionTemplate,
-        %{shortcode: shortcode, organization_id: organization_id})
+
+      {:ok, hsm_template} =
+        Repo.fetch_by(
+          SessionTemplate,
+          %{shortcode: shortcode, organization_id: organization_id}
+        )
 
       # Incorrect number of parameters should give an error
       parameters = ["param1"]
@@ -417,12 +429,14 @@ defmodule Glific.MessagesTest do
     end
 
     test "prepare hsm template",
-      %{organization_id: organization_id} do
+         %{organization_id: organization_id} do
       shortcode = "otp"
-      {:ok, hsm_template} = Repo.fetch_by(
-        SessionTemplate,
-        %{shortcode: shortcode, organization_id: organization_id}
-      )
+
+      {:ok, hsm_template} =
+        Repo.fetch_by(
+          SessionTemplate,
+          %{shortcode: shortcode, organization_id: organization_id}
+        )
 
       parameters = ["param1", "param2", "param3"]
 

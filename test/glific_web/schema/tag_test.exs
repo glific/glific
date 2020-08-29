@@ -29,7 +29,7 @@ defmodule GlificWeb.Schema.TagTest do
   )
 
   def auth_query_gql_by(query, options) do
-    [user | _] =  Glific.Users.list_users()
+    [user | _] = Glific.Users.list_users()
     options = Keyword.put_new(options, :context, %{:current_user => user})
     query_gql_by(query, options)
   end

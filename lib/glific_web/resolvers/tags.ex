@@ -36,7 +36,7 @@ defmodule GlificWeb.Resolvers.Tags do
   @doc false
   @spec create_tag(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_tag(_, %{input: params},  _) do
+  def create_tag(_, %{input: params}, _) do
     with {:ok, tag} <- Tags.create_tag(params) do
       {:ok, %{tag: tag}}
     end

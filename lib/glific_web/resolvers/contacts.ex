@@ -33,7 +33,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   @spec create_contact(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_contact(_, %{input: params}, _) do
-    with  {:ok, contact} <- Contacts.create_contact(params) do
+    with {:ok, contact} <- Contacts.create_contact(params) do
       {:ok, %{contact: contact}}
     end
   end

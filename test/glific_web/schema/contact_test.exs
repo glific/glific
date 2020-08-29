@@ -19,7 +19,6 @@ defmodule GlificWeb.Schema.ContactTest do
     :ok
   end
 
-
   load_gql(:count, GlificWeb.Schema, "assets/gql/contacts/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/contacts/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/contacts/by_id.gql")
@@ -30,11 +29,10 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:search, GlificWeb.Schema, "assets/gql/contacts/search.gql")
 
   def auth_query_gql_by(query, options) do
-    [user | _] =  Glific.Users.list_users()
+    [user | _] = Glific.Users.list_users()
     options = Keyword.put_new(options, :context, %{:current_user => user})
     query_gql_by(query, options)
   end
-
 
   test "contacts field returns list of contacts" do
     result = query_gql_by(:list)

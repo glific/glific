@@ -305,9 +305,9 @@ defmodule Glific.Partners do
         contact_id =
           Contact
           |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
-        |> select([c, _o], c.id)
-        |> limit(1)
-        |> Repo.one()
+          |> select([c, _o], c.id)
+          |> limit(1)
+          |> Repo.one()
 
         Caches.set("organization_contact_id", contact_id)
         contact_id

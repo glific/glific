@@ -78,9 +78,9 @@ defmodule Glific.Messages do
 
         query |> where([m], m.id in ^message_ids)
 
-    {:tags_excluded, tags_excluded}, query ->
+      {:tags_excluded, tags_excluded}, query ->
         message_ids =
-        MessageTag
+          MessageTag
           |> where([p], p.tag_id in ^tags_excluded)
           |> select([p], p.message_id)
           |> Repo.all()
@@ -90,7 +90,8 @@ defmodule Glific.Messages do
       {:provider_status, provider_status}, query ->
         from q in query, where: q.provider_status == ^provider_status
 
-      _, query -> query
+      _, query ->
+        query
     end)
   end
 

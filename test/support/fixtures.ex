@@ -105,10 +105,12 @@ defmodule Glific.Fixtures do
 
     attrs = Map.merge(valid_attrs, attrs)
     language = language_fixture()
+
     {:ok, tag} =
       attrs
       |> Map.put_new(:language_id, language.id)
       |> Tags.create_tag()
+
     tag
   end
 
@@ -252,7 +254,7 @@ defmodule Glific.Fixtures do
     tag_fixture(attrs)
 
     [c1, c2 | _] = Contacts.list_contacts(attrs)
-      [t1, t2 | _] = Tags.list_tags(attrs)
+    [t1, t2 | _] = Tags.list_tags(attrs)
 
     {:ok, ct1} =
       Tags.create_contact_tag(%{

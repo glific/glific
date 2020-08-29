@@ -70,8 +70,10 @@ defmodule Glific.Tags do
   @spec check_shortcode(map()) :: map()
   defp check_shortcode(%{shortcode: _shortcode} = attrs),
     do: attrs
+
   defp check_shortcode(%{label: nil} = attrs),
     do: attrs
+
   defp check_shortcode(%{label: label} = attrs),
     do: Map.update(attrs, :shortcode, Glific.string_clean(label), & &1)
 
@@ -160,7 +162,7 @@ defmodule Glific.Tags do
   for all objects soon, and will promote this to Repo
   """
   @spec tags_map(map(), [String.t()]) :: %{String.t() => integer}
-  def tags_map((%{organization_id: organization_id}), tags) do
+  def tags_map(%{organization_id: organization_id}, tags) do
     Tag
     |> where([t], t.shortcode in ^tags)
     |> where([t], t.organization_id == ^organization_id)

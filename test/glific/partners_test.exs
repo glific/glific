@@ -159,7 +159,7 @@ defmodule Glific.PartnersTest do
 
     @update_org_attrs %{
       name: "Updated Name",
-      display_name: "Updated Display Name 1",
+      display_name: "Updated Display Name 1"
     }
 
     @invalid_org_attrs %{provider_id: nil, name: nil}

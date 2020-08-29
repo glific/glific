@@ -98,9 +98,9 @@ defmodule Glific.TemplatesTest do
       session_template_fixture(Map.merge(attrs, @valid_attrs_1))
       assert Templates.count_session_templates(%{filter: attrs}) == templates_count + 2
 
-      assert Templates.count_session_templates(
-        %{filter: Map.merge(attrs, %{label: "Another label"})}
-      ) == 1
+      assert Templates.count_session_templates(%{
+               filter: Map.merge(attrs, %{label: "Another label"})
+             }) == 1
     end
 
     test "list_session_templates/1 with multiple session_templates filteres", attrs do
@@ -108,17 +108,23 @@ defmodule Glific.TemplatesTest do
       session_template1 = session_template_fixture(Map.merge(attrs, @valid_attrs_1))
 
       session_template_list =
-        Templates.list_session_templates(%{filter: Map.merge(attrs, %{label: session_template1.label})})
+        Templates.list_session_templates(%{
+          filter: Map.merge(attrs, %{label: session_template1.label})
+        })
 
       assert session_template_list == [session_template1]
 
       session_template_list =
-        Templates.list_session_templates(%{filter: Map.merge(attrs, %{body: session_template1.body})})
+        Templates.list_session_templates(%{
+          filter: Map.merge(attrs, %{body: session_template1.body})
+        })
 
       assert session_template_list == [session_template1]
 
       session_template_list =
-        Templates.list_session_templates(%{filter: Map.merge(attrs, %{shortcode: session_template1.shortcode})})
+        Templates.list_session_templates(%{
+          filter: Map.merge(attrs, %{shortcode: session_template1.shortcode})
+        })
 
       assert session_template_list == [session_template1]
 
@@ -126,7 +132,8 @@ defmodule Glific.TemplatesTest do
       session_template_fixture(Map.merge(attrs, %{label: "label2", body: "term_filter"}))
       session_template_fixture(Map.merge(attrs, %{label: "label3", shortcode: "term_filter"}))
 
-      session_template_list = Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "term_filter"})})
+      session_template_list =
+        Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "term_filter"})})
 
       assert length(session_template_list) == 3
     end
@@ -147,7 +154,8 @@ defmodule Glific.TemplatesTest do
       s0 = session_template_fixture(Map.merge(attrs, @valid_attrs_to_test_order_1))
       s1 = session_template_fixture(Map.merge(attrs, @valid_attrs_to_test_order_2))
 
-      assert length(Templates.list_session_templates(%{filter: attrs})) == session_templates_count + 2
+      assert length(Templates.list_session_templates(%{filter: attrs})) ==
+               session_templates_count + 2
 
       [ordered_s0 | _] = Templates.list_session_templates(%{opts: %{order: :asc}, filter: attrs})
       assert s0 == ordered_s0
@@ -163,6 +171,7 @@ defmodule Glific.TemplatesTest do
 
     test "create_session_template/1 with valid data creates a message", attrs do
       language = language_fixture()
+
       attrs =
         attrs
         |> Map.merge(@valid_attrs)
@@ -182,11 +191,13 @@ defmodule Glific.TemplatesTest do
 
     test "create_session_template/1 with invalid data returns error changeset", attrs do
       assert {:error, %Ecto.Changeset{}} =
-        Templates.create_session_template(Map.merge(attrs, @invalid_attrs))
+               Templates.create_session_template(Map.merge(attrs, @invalid_attrs))
     end
 
-    test "create session template with media type and without media id returns error changeset", attrs do
+    test "create session template with media type and without media id returns error changeset",
+         attrs do
       language = language_fixture()
+
       attrs =
         attrs
         |> Map.merge(@valid_attrs)

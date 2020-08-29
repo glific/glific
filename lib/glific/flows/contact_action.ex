@@ -127,7 +127,12 @@ defmodule Glific.Flows.ContactAction do
   @spec optout(FlowContext.t()) :: FlowContext.t()
   def optout(context) do
     # We need to update the contact with optout_time and status
-    Contacts.contact_opted_out(context.contact.phone, context.contact.organization_id, DateTime.utc_now())
+    Contacts.contact_opted_out(
+      context.contact.phone,
+      context.contact.organization_id,
+      DateTime.utc_now()
+    )
+
     context
   end
 

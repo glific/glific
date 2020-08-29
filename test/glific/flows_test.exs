@@ -38,7 +38,7 @@ defmodule Glific.FLowsTest do
     }
 
     def flow_fixture(attrs \\ %{}),
-    do: Fixtures.flow_fixture(attrs)
+      do: Fixtures.flow_fixture(attrs)
 
     test "list_flows/0 returns all flows" do
       flow = flow_fixture()
@@ -80,9 +80,10 @@ defmodule Glific.FLowsTest do
       [predefine_flow | _tail] = Flows.list_flows()
 
       assert {:ok, %Flow{} = flow} =
-        @valid_attrs
-        |> Map.merge(%{organization_id: predefine_flow.organization_id})
-        |> Flows.create_flow()
+               @valid_attrs
+               |> Map.merge(%{organization_id: predefine_flow.organization_id})
+               |> Flows.create_flow()
+
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
       assert flow.shortcode == @valid_attrs.shortcode

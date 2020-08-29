@@ -59,6 +59,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   defp reload(%{numeric_tag_id: numeric_tag_id} = state) when numeric_tag_id == 0 do
     attrs = %{organization_id: state.organization_id}
+
     case Repo.fetch_by(Tag, %{shortcode: "numeric"}) do
       {:ok, tag} -> Map.put(state, :numeric_tag_id, tag.id)
       _ -> state
