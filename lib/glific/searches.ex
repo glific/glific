@@ -224,11 +224,13 @@ defmodule Glific.Searches do
 
   # Get the args map from the saved search and override the term
   @spec saved_search_args_map(integer(), map) :: map()
-  defp saved_search_args_map(id, args),
-    do:
-      get_saved_search!(id)
-      |> Map.get(:args)
-      |> add_term(Map.get(args, :term))
-      |> convert_to_atom()
-      |> put_in([:filter, :organization_id], args.filter.organization_id)
+  defp saved_search_args_map(id, args) do
+    saved_search = get_saved_search!(id)
+
+    saved_search
+    |> Map.get(:args)
+    |> add_term(Map.get(args, :term))
+    |> convert_to_atom()
+    |> put_in([:filter, :organization_id], saved_search.organization_id)
+  end
 end
