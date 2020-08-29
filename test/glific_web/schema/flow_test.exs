@@ -162,9 +162,9 @@ defmodule GlificWeb.Schema.FlowTest do
     assert message == "Resource not found"
   end
 
-  test "Start flow for a contact" do
+  test "Start flow for a contact", attrs do
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
-    [contact | _tail] = Contacts.list_contacts()
+    [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
 
     result =
       query_gql_by(:contact_flow, variables: %{"flowId" => flow.id, "contactId" => contact.id})
