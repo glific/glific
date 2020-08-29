@@ -37,6 +37,7 @@ defmodule Glific.Flows.ContactAction do
       type: type,
       media_id: media_id,
       receiver_id: context.contact_id,
+      organization_id: context.contact.organization_id,
       send_at: DateTime.add(DateTime.utc_now(), context.delay)
     }
 
