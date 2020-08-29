@@ -28,11 +28,6 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:contact_location, GlificWeb.Schema, "assets/gql/contacts/contact_location.gql")
   load_gql(:search, GlificWeb.Schema, "assets/gql/contacts/search.gql")
 
-  def auth_query_gql_by(query, user, options \\ []) do
-    options = Keyword.put_new(options, :context, %{:current_user => user})
-    query_gql_by(query, options)
-  end
-
   test "contacts field returns list of contacts", %{user: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result

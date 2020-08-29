@@ -28,11 +28,6 @@ defmodule GlificWeb.Schema.TagTest do
     "assets/gql/tags/mark_contact_messages_as_read.gql"
   )
 
-  def auth_query_gql_by(query, user, options \\ []) do
-    options = Keyword.put_new(options, :context, %{:current_user => user})
-    query_gql_by(query, options)
-  end
-
   test "tags field returns list of tags", %{user: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result

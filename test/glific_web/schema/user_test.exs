@@ -29,11 +29,6 @@ defmodule GlificWeb.Schema.UserTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/users/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/users/delete.gql")
 
-  def auth_query_gql_by(query, user, options \\ []) do
-    options = Keyword.put_new(options, :context, %{:current_user => user})
-    query_gql_by(query, options)
-  end
-
   test "roles returns list of roles", %{user: user} do
     result = auth_query_gql_by(:list_roles, user)
     assert {:ok, query_data} = result

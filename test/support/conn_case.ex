@@ -35,6 +35,15 @@ defmodule GlificWeb.ConnCase do
 
       # The default endpoint for testing
       @endpoint GlificWeb.Endpoint
+
+      defmacro auth_query_gql_by(query, user, options \\ []) do
+        quote do
+          options_user =
+            Keyword.put_new(unquote(options), :context, %{:current_user => unquote(user)})
+
+          query_gql_by(unquote(query), options_user)
+        end
+      end
     end
   end
 

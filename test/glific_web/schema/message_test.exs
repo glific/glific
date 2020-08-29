@@ -47,11 +47,6 @@ defmodule GlificWeb.Schema.MessageTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/messages/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/messages/delete.gql")
 
-  def auth_query_gql_by(query, user, options \\ []) do
-    options = Keyword.put_new(options, :context, %{:current_user => user})
-    query_gql_by(query, options)
-  end
-
   test "messages field returns list of messages", %{user: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result

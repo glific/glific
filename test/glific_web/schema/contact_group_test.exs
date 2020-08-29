@@ -35,13 +35,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     "assets/gql/contact_groups/update_contact_groups.gql"
   )
 
-  def auth_query_gql_by(query, options \\ []) do
-    user = Fixtures.user_fixture()
-    options = Keyword.put_new(options, :context, %{:current_user => user})
-    query_gql_by(query, options)
-  end
-
-  test "update group contacts" do
+  test "update group contacts", %{user: user_auth} do
     user = Fixtures.user_fixture()
     label = "Default Group"
     {:ok, group} = Repo.fetch_by(Group, %{label: label})
@@ -51,7 +45,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
     # add group contacts
     result =
-      auth_query_gql_by(:update_group_contacts,
+      auth_query_gql_by(:update_group_contacts, user_auth,
         variables: %{
           "input" => %{
             "group_id" => group.id,
@@ -67,7 +61,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
     # delete group contacts
     result =
-      auth_query_gql_by(:update_group_contacts,
+      auth_query_gql_by(:update_group_contacts, user_auth,
         variables: %{
           "input" => %{
             "group_id" => group.id,
@@ -83,7 +77,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
     # test for incorrect contact id
     result =
-      auth_query_gql_by(:update_group_contacts,
+      auth_query_gql_by(:update_group_contacts, user_auth,
         variables: %{
           "input" => %{
             "group_id" => group.id,
@@ -98,7 +92,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert group_contacts == []
   end
 
-  test "update contact groups" do
+  test "update contact groups", %{user: user_auth} do
     name = "Default receiver"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
     user = Fixtures.user_fixture()
@@ -106,7 +100,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
     # add contact groups
     result =
-      auth_query_gql_by(:update_contact_groups,
+      auth_query_gql_by(:update_contact_groups, user_auth,
         variables: %{
           "input" => %{
             "contact_id" => contact.id,
@@ -122,7 +116,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
     # delete contact groups
     result =
-      auth_query_gql_by(:update_contact_groups,
+      auth_query_gql_by(:update_contact_groups, user_auth,
         variables: %{
           "input" => %{
             "contact_id" => contact.id,
@@ -138,7 +132,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
     # test for incorrect group id
     result =
-      auth_query_gql_by(:update_contact_groups,
+      auth_query_gql_by(:update_contact_groups, user_auth,
         variables: %{
           "input" => %{
             "contact_id" => contact.id,
@@ -153,14 +147,14 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert contact_groups == []
   end
 
-  test "create a contact group and test possible scenarios and errors" do
+  test "create a contact group and test possible scenarios and errors", %{user: user_auth} do
     label = "Default Group"
     {:ok, group} = Repo.fetch_by(Group, %{label: label})
     name = "Glific Admin"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
 
     result =
-      auth_query_gql_by(:create,
+      auth_query_gql_by(:create, user_auth,
         variables: %{"input" => %{"contact_id" => contact.id, "group_id" => group.id}}
       )
 
@@ -173,7 +167,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
     # try creating the same contact group entry twice
     result =
-      auth_query_gql_by(:create,
+      auth_query_gql_by(:create, user_auth,
         variables: %{"input" => %{"contact_id" => contact.id, "group_id" => group.id}}
       )
 
@@ -183,26 +177,26 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert contact == "has already been taken"
   end
 
-  test "delete a contact group" do
+  test "delete a contact group", %{user: user_auth} do
     label = "Default Group"
     {:ok, group} = Repo.fetch_by(Group, %{label: label})
     name = "Glific Admin"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
 
     {:ok, query_data} =
-      auth_query_gql_by(:create,
+      auth_query_gql_by(:create, user_auth,
         variables: %{"input" => %{"contact_id" => contact.id, "group_id" => group.id}}
       )
 
     contact_group_id = get_in(query_data, [:data, "createContactGroup", "contact_group", "id"])
 
-    result = auth_query_gql_by(:delete, variables: %{"id" => contact_group_id})
+    result = auth_query_gql_by(:delete, user_auth, variables: %{"id" => contact_group_id})
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "deleteContactGroup", "errors"]) == nil
 
     # try to delete incorrect entry
-    result = auth_query_gql_by(:delete, variables: %{"id" => contact_group_id})
+    result = auth_query_gql_by(:delete, user_auth, variables: %{"id" => contact_group_id})
     assert {:ok, query_data} = result
 
     contact = get_in(query_data, [:data, "deleteContactGroup", "errors", Access.at(0), "message"])

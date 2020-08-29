@@ -39,11 +39,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     "assets/gql/session_templates/create_from_message.gql"
   )
 
-  def auth_query_gql_by(query, user, options \\ []) do
-    options = Keyword.put_new(options, :context, %{:current_user => user})
-    query_gql_by(query, options)
-  end
-
   test "session templates field returns list of session_templates", %{user: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result

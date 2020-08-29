@@ -35,11 +35,6 @@ defmodule GlificWeb.Schema.SearchTest do
   load_gql(:search, GlificWeb.Schema, "assets/gql/searches/search.gql")
   load_gql(:search_count, GlificWeb.Schema, "assets/gql/searches/search_count.gql")
 
-  def auth_query_gql_by(query, user, options \\ []) do
-    options = Keyword.put_new(options, :context, %{:current_user => user})
-    query_gql_by(query, options)
-  end
-
   defp get_saved_search_list(org_id) do
     Searches.list_saved_searches(%{filter: %{organization_id: org_id}})
   end

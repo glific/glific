@@ -24,11 +24,6 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:contact_flow, GlificWeb.Schema, "assets/gql/flows/contact_flow.gql")
   load_gql(:group_flow, GlificWeb.Schema, "assets/gql/flows/group_flow.gql")
 
-  def auth_query_gql_by(query, user, options \\ []) do
-    options = Keyword.put_new(options, :context, %{:current_user => user})
-    query_gql_by(query, options)
-  end
-
   test "flows field returns list of flows", %{user: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result

@@ -16,11 +16,6 @@ defmodule GlificWeb.Schema.GroupTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/groups/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/groups/delete.gql")
 
-  def auth_query_gql_by(query, user, options \\ []) do
-    options = Keyword.put_new(options, :context, %{:current_user => user})
-    query_gql_by(query, options)
-  end
-
   test "groups field returns list of groups", %{user: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
