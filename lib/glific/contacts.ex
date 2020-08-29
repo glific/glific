@@ -33,8 +33,9 @@ defmodule Glific.Contacts do
   Return the count of contacts, using the same filter as list_contacts
   """
   @spec count_contacts(map()) :: integer
-  def count_contacts(%{filter: %{organization_id: _organization_id}} = args),
-    do: Repo.count_filter(args, Contact, &filter_with/2)
+  def count_contacts(%{filter: %{organization_id: _organization_id}} = args) do
+    Repo.count_filter(args, Contact, &filter_with/2)
+  end
 
   # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()

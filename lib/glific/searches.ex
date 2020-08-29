@@ -127,6 +127,7 @@ defmodule Glific.Searches do
     Message
     |> select([m], m.contact_id)
     |> where([m], m.message_number == 0)
+    |> where([m], m.organization_id == ^args.filter.organization_id)
     |> order_by([m], desc: m.updated_at)
     |> Full.run(term, args)
   end
@@ -228,4 +229,5 @@ defmodule Glific.Searches do
       |> Map.get(:args)
       |> add_term(Map.get(args, :term))
       |> convert_to_atom()
+      |> put_in([:filter, :organization_id], args.filter.organization_id)
 end
