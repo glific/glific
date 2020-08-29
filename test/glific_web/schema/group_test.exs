@@ -16,8 +16,14 @@ defmodule GlificWeb.Schema.GroupTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/groups/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/groups/delete.gql")
 
+  def auth_query_gql_by(query, options \\ []) do
+    user = Fixtures.user_fixture()
+    options = Keyword.put_new(options, :context, %{:current_user => user})
+    query_gql_by(query, options)
+  end
+
   test "groups field returns list of groups" do
-    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
     groups = get_in(query_data, [:data, "groups"])
@@ -30,7 +36,7 @@ defmodule GlificWeb.Schema.GroupTest do
   end
 
   test "groups field returns list of groups in desc order" do
-    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "DESC"}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"order" => "DESC"}})
     assert {:ok, query_data} = result
 
     groups = get_in(query_data, [:data, "groups"])
@@ -41,7 +47,7 @@ defmodule GlificWeb.Schema.GroupTest do
   end
 
   test "groups field returns list of groups in various filters" do
-    result = query_gql_by(:list, variables: %{"filter" => %{"label" => "Restricted Group"}})
+    result = auth_query_gql_by(:list, variables: %{"filter" => %{"label" => "Restricted Group"}})
     assert {:ok, query_data} = result
 
     groups = get_in(query_data, [:data, "groups"])
@@ -52,11 +58,11 @@ defmodule GlificWeb.Schema.GroupTest do
   end
 
   test "groups field obeys limit and offset" do
-    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "groups"])) == 1
 
-    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
     assert {:ok, query_data} = result
 
     groups = get_in(query_data, [:data, "groups"])
@@ -64,18 +70,18 @@ defmodule GlificWeb.Schema.GroupTest do
   end
 
   test "count returns the number of groups" do
-    {:ok, query_data} = query_gql_by(:count)
+    {:ok, query_data} = auth_query_gql_by(:count)
     assert get_in(query_data, [:data, "countGroups"]) >= 2
 
     {:ok, query_data} =
-      query_gql_by(:count,
+      auth_query_gql_by(:count,
         variables: %{"filter" => %{"label" => "This group should never ever exist"}}
       )
 
     assert get_in(query_data, [:data, "countGroups"]) == 0
 
     {:ok, query_data} =
-      query_gql_by(:count, variables: %{"filter" => %{"label" => "Default Group"}})
+      auth_query_gql_by(:count, variables: %{"filter" => %{"label" => "Default Group"}})
 
     assert get_in(query_data, [:data, "countGroups"]) == 1
   end
@@ -84,7 +90,7 @@ defmodule GlificWeb.Schema.GroupTest do
     label = "Default Group"
     {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
 
-    result = query_gql_by(:by_id, variables: %{"id" => group.id})
+    result = auth_query_gql_by(:by_id, variables: %{"id" => group.id})
     assert {:ok, query_data} = result
 
     group = get_in(query_data, [:data, "group", "group"])
@@ -92,7 +98,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert group["contacts"] == []
     assert group["users"] == []
 
-    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
+    result = auth_query_gql_by(:by_id, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "group", "errors", Access.at(0), "message"])
@@ -101,7 +107,7 @@ defmodule GlificWeb.Schema.GroupTest do
 
   test "create a group and test possible scenarios and errors" do
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{"input" => %{"label" => "Test Group"}}
       )
 
@@ -111,12 +117,12 @@ defmodule GlificWeb.Schema.GroupTest do
 
     # try creating the same group twice
     _ =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{"input" => %{"label" => "test label"}}
       )
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{"input" => %{"label" => "test label"}}
       )
 
@@ -132,7 +138,7 @@ defmodule GlificWeb.Schema.GroupTest do
     {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update,
         variables: %{"id" => group.id, "input" => %{"label" => "New Test Group Label"}}
       )
 
@@ -142,7 +148,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert label == "New Test Group Label"
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update,
         variables: %{
           "id" => group.id,
           "input" => %{"label" => "Restricted Group"}
@@ -159,11 +165,11 @@ defmodule GlificWeb.Schema.GroupTest do
     label = "Default Group"
     {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
 
-    result = query_gql_by(:delete, variables: %{"id" => group.id})
+    result = auth_query_gql_by(:delete, variables: %{"id" => group.id})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "deleteGroup", "errors"]) == nil
 
-    result = query_gql_by(:delete, variables: %{"id" => group.id})
+    result = auth_query_gql_by(:delete, variables: %{"id" => group.id})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "deleteGroup", "errors", Access.at(0), "message"])

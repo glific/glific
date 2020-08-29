@@ -271,10 +271,12 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec flows(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def flows(conn, %{"vars" => vars}) do
+
     results =
       case vars do
         [] ->
-          Flows.list_flows()
+          ##We need to fix this before merging this branch
+          Flows.list_flows(%{filter: %{organization_id: 1}})
           |> Enum.reduce([], fn flow, acc ->
             [
               %{
