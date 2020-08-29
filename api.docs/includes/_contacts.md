@@ -25,7 +25,7 @@ query contacts($filter: ContactFilter, $opts: Opts) {
 
 {
   "filter": {
-    "name": "Default Sender"
+    "name": "Default Receiver"
   },
   "opts": {
     "order": "ASC",
@@ -43,12 +43,12 @@ query contacts($filter: ContactFilter, $opts: Opts) {
     "contacts": [
       {
         "groups": [],
-        "id": "1",
-        "name": "Default Sender",
+        "id": "2",
+        "name": "Default Receiver",
         "optinTime": null,
         "optoutTime": null,
-        "phone": "917834811114",
-        "providerStatus": "VALID",
+        "phone": "917834811231",
+        "providerStatus": "SESSION_AND_HSM",
         "status": "VALID",
         "tags": []
       }
@@ -167,12 +167,18 @@ query contact($id: ID!) {
         id
         label
       }
+      lastMessageAt
+      language {
+        label
+      }
+      fields
+      settings
     }
   }
 }
 
 {
-  "id": 1
+  "id": 5
 }
 ```
 
@@ -183,12 +189,18 @@ query contact($id: ID!) {
   "data": {
     "contact": {
       "contact": {
-        "id": "1",
-        "name": "Default Sender",
-        "optinTime": null,
+        "fields": "{\"name\":{\"value\":\"default\",\"type\":\"string\",\"inserted_at\":\"2020-08-28T15:34:49.192659Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-28T15:34:55.657740Z\"}}",
+        "id": "5",
+        "language": {
+          "label": "Hindi"
+        },
+        "lastMessageAt": "2020-08-28T13:15:19Z",
+        "name": "Default receiver",
+        "optinTime": "2020-08-28T13:15:19Z",
         "optoutTime": null,
-        "phone": "917834811114",
-        "providerStatus": "VALID",
+        "phone": "917834811231",
+        "providerStatus": "SESSION_AND_HSM",
+        "settings": null,
         "status": "VALID",
         "tags": []
       }
@@ -288,7 +300,7 @@ mutation createContact($input:ContactInput!) {
         "optinTime": null,
         "optoutTime": null,
         "phone": "9876543232",
-        "providerStatus": null,
+        "providerStatus": "SESSION",
         "status": null,
         "tags": []
       },
@@ -317,15 +329,13 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
     contact {
       id
       name
-      optinTime
-      optoutTime
-      phone
       providerStatus
       status
-      tags {
-        id
+      fields
+      settings
+      language{
         label
-      }
+      }      
     }
     errors {
       key
@@ -335,9 +345,11 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
 }
 
 {
-  "id": "2",
+  "id": "5",
   "input": {
-    "name": "This is a updated contact for this example"
+    "name": "This is a updated contact for this example",
+    "fields": "{\"name\":{\"value\":\"default\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:38.298593Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:46.623892Z\"}}",
+    "languageId": 2
   }
 }
 ```
@@ -349,14 +361,15 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
   "data": {
     "updateContact": {
       "contact": {
-        "id": "2",
+        "fields": "{\"name\":{\"value\":\"default\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:38.298593Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:46.623892Z\"}}",
+        "id": "5",
+        "language": {
+          "label": "English (United States)"
+        },
         "name": "This is a updated contact for this example",
-        "optinTime": null,
-        "optoutTime": null,
-        "phone": "917834811231",
-        "providerStatus": "VALID",
-        "status": "VALID",
-        "tags": []
+        "providerStatus": "SESSION_AND_HSM",
+        "settings": null,
+        "status": "VALID"
       },
       "errors": null
     }
@@ -514,12 +527,32 @@ Type | Description
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>providerStatus</strong></td>
-<td valign="top"><a href="#contactstatusenum">ContactStatusEnum</a></td>
+<td valign="top"><a href="#contactproviderstatusenum">ContactProviderStatusEnum</a></td>
 <td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>status</strong></td>
 <td valign="top"><a href="#contactstatusenum">ContactStatusEnum</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>fields</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>settings</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>lastMessageAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>language</strong></td>
+<td valign="top"><a href="#language">Language</a></td>
 <td></td>
 </tr>
 <tr>
@@ -620,7 +653,7 @@ Match the phone
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>providerStatus</strong></td>
-<td valign="top"><a href="#contactstatusenum">ContactStatusEnum</a></td>
+<td valign="top"><a href="#contactproviderstatusenum">ContactProviderStatusEnum</a></td>
 <td></td>
 </tr>
 <tr>
@@ -678,13 +711,28 @@ Match if contact is mapped in a group of includeGroups list
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>languageId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>providerStatus</strong></td>
-<td valign="top"><a href="#contactstatusenum">ContactStatusEnum</a></td>
+<td valign="top"><a href="#contactproviderstatusenum">ContactProviderStatusEnum</a></td>
 <td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>status</strong></td>
 <td valign="top"><a href="#contactstatusenum">ContactStatusEnum</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>fields</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>settings</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
 <td></td>
 </tr>
 </tbody>
