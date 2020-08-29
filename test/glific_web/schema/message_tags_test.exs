@@ -3,7 +3,6 @@ defmodule GlificWeb.Schema.MessageTagsTest do
   use Wormwood.GQLCase
 
   alias Glific.{
-    Fixtures,
     Messages.Message,
     Repo,
     Seeds.SeedsDev,
@@ -19,13 +18,12 @@ defmodule GlificWeb.Schema.MessageTagsTest do
 
   load_gql(:update, GlificWeb.Schema, "assets/gql/message_tags/update.gql")
 
-  def tag_status_map() do
-    user = Fixtures.user_fixture()
-    Tags.status_map(%{organization_id: user.organization_id})
+  def tag_status_map(org_id) do
+    Tags.status_map(%{organization_id: org_id})
   end
 
-  test "update a message tag with add tags" do
-    tags_map = tag_status_map()
+  test "update a message tag with add tags", %{user: user}  do
+    tags_map = tag_status_map(user.organization_id)
     body = "Default message body"
     {:ok, message} = Repo.fetch_by(Message, %{body: body})
 
@@ -76,8 +74,8 @@ defmodule GlificWeb.Schema.MessageTagsTest do
     assert message_tags == []
   end
 
-  test "update a message tag with add and delete tags" do
-    tags_map = tag_status_map()
+  test "update a message tag with add and delete tags", %{user: user}  do
+    tags_map = tag_status_map(user.organization_id)
     body = "Default message body"
     {:ok, message} = Repo.fetch_by(Message, %{body: body})
 
