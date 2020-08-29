@@ -167,7 +167,6 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
 
-  @tag :pending
   test "search for conversations", %{user: user} do
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
@@ -217,7 +216,7 @@ defmodule GlificWeb.Schema.SearchTest do
       auth_query_gql_by(:search, user,
         variables: %{
           "filter" => %{"term" => ""},
-          "contactOpts" => %{"limit" => get_contacts_count(user.organization_id)},
+          "contactOpts" => %{"limit" => get_contacts_count(user.organization_id) * 10 },
           "messageOpts" => %{"limit" => 1}
         }
       )
@@ -225,8 +224,9 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, query_data} = result
 
     # search excludes the org contact id since that is the sender of all messages
-    # TO DO:: We need to fix this test , currently it's bit in consitenat
-    assert length(get_in(query_data, [:data, "search"])) == get_contacts_count(user.organization_id) - 1
+    # we need to excluse two contacts, one is the glific admin and the other is the test user and the contact
+    # we created to emulate the user
+    assert length(get_in(query_data, [:data, "search"])) == get_contacts_count(user.organization_id) - 2
 
   end
 

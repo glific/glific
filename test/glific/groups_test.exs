@@ -184,7 +184,7 @@ defmodule Glific.GroupsTest do
     end
 
     def user_group_fixture(attrs) do
-      [user | _] = Users.list_users(attrs)
+      [user | _] = Users.list_users(%{filter: attrs})
 
       valid_attrs = %{
         user_id: user.id,

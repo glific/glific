@@ -13,6 +13,7 @@ defmodule Glific.Fixtures do
     Flows,
     Groups,
     Messages,
+    Partners,
     Partners.Organization,
     Repo,
     Settings,
@@ -89,6 +90,27 @@ defmodule Glific.Fixtures do
       |> Settings.language_upsert()
 
     language
+  end
+
+  @doc false
+  @spec organization_fixture(map()) :: Partners.Organization.t()
+  def organization_fixture(attrs \\ %{})  do
+    valid_attrs = %{
+      name: "Fixture Organization",
+      display_name: "Why do we need this?",
+      email: "replace@idk.org",
+      provider_id: 1, # lets just hope its there :)
+      provider_key: "this is not a secret key",
+      provider_phone: "and this is not a valid phone",
+      default_language_id: 1,  # lets just hope its there :)
+    }
+
+    {:ok, organization} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Partners.create_organization()
+
+    organization
   end
 
   @doc false
