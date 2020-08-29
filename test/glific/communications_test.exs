@@ -86,9 +86,12 @@ defmodule Glific.CommunicationsTest do
       # eliminating provider_status here since in this case, its meant for the
       # message and not the contact
       {_value, attrs} = Map.pop(attrs, :provider_status)
-      valid_attrs = Map.merge(
-        foreign_key_constraint(attrs),
-        @valid_attrs)
+
+      valid_attrs =
+        Map.merge(
+          foreign_key_constraint(attrs),
+          @valid_attrs
+        )
 
       {:ok, message} =
         valid_attrs
