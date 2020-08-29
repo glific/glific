@@ -4,11 +4,9 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
   alias Glific.{
     Fixtures,
-    Groups,
     Groups.Group,
     Repo,
     Seeds.SeedsDev,
-    Users,
     Users.User
   }
 
@@ -26,8 +24,8 @@ defmodule GlificWeb.Schema.UserGroupTest do
   test "update group users" do
     label = "Default Group"
     {:ok, group} = Repo.fetch_by(Group, %{label: label})
-
-    [user1, user2 | _] = Users.list_users()
+    user1 = Fixtures.user_fixture()
+    user2 = Fixtures.user_fixture()
 
     # add group users
     result =
@@ -82,7 +80,9 @@ defmodule GlificWeb.Schema.UserGroupTest do
     name = "NGO Admin"
     {:ok, user} = Repo.fetch_by(User, %{name: name})
 
-    [group1, group2 | _] = Groups.list_groups()
+    group1 = Fixtures.group_fixture(%{label: "New Group 1"})
+    group2 = Fixtures.group_fixture(%{label: "New Group 2"})
+
 
     # add user groups
     result =
