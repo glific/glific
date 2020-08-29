@@ -20,7 +20,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec groups(Plug.Conn.t(), map) :: Plug.Conn.t()
   def groups(conn, _params) do
     group_list =
-      Glific.Groups.list_groups()
+      Glific.Groups.list_groups(%{filter: %{organization_id: conn.assigns[:organization_id]}})
       |> Enum.reduce([], fn group, acc ->
         [%{uuid: "#{group.id}", name: group.label} | acc]
       end)
