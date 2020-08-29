@@ -17,7 +17,8 @@ defmodule Glific.Fixtures do
     Repo,
     Settings,
     Tags,
-    Templates
+    Templates,
+    Users
   }
 
   def get_org_id() do
@@ -186,7 +187,7 @@ defmodule Glific.Fixtures do
 
   @doc false
   @spec group_fixture(map()) :: Groups.Group.t()
-  def group_fixture(attrs) do
+  def group_fixture(attrs \\ %{}) do
     valid_attrs = %{
       label: "Poetry group",
       description: "default description",
@@ -296,4 +297,26 @@ defmodule Glific.Fixtures do
 
     flow
   end
+
+   @doc false
+  @spec user_fixture(map()) :: Users.User.t()
+  def user_fixture(attrs \\ %{}) do
+     valid_attrs = %{
+      name: "some name",
+      contact_id: contact_fixture().id,
+      phone: Phone.EnUs.phone(),
+      password: "secret1234",
+      password_confirmation: "secret1234",
+      roles: ["admin"],
+      organization_id: get_org_id()
+    }
+
+    {:ok, user} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Users.create_user()
+
+    user
+  end
+
 end
