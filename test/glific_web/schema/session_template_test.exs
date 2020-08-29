@@ -39,8 +39,14 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     "assets/gql/session_templates/create_from_message.gql"
   )
 
-  test "session_templates field returns list of session_templates" do
-    result = query_gql_by(:list)
+  def auth_query_gql_by(query, options \\ []) do
+    user = Fixtures.user_fixture()
+    options = Keyword.put_new(options, :context, %{:current_user => user})
+    query_gql_by(query, options)
+  end
+
+  test "session templates field returns list of session_templates" do
+    result = auth_query_gql_by(:list)
     assert {:ok, query_data} = result
 
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
@@ -55,18 +61,18 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   end
 
   test "count returns the number of session templates" do
-    {:ok, query_data} = query_gql_by(:count)
+    {:ok, query_data} = auth_query_gql_by(:count)
     assert get_in(query_data, [:data, "countSessionTemplates"]) > 4
 
     {:ok, query_data} =
-      query_gql_by(:count,
+      auth_query_gql_by(:count,
         variables: %{"filter" => %{"label" => "This session template should never ever exist"}}
       )
 
     assert get_in(query_data, [:data, "countSessionTemplates"]) == 0
 
     {:ok, query_data} =
-      query_gql_by(:count, variables: %{"filter" => %{"label" => "Default Template Label"}})
+      auth_query_gql_by(:count, variables: %{"filter" => %{"label" => "Default Template Label"}})
 
     assert get_in(query_data, [:data, "countSessionTemplates"]) == 1
   end
@@ -74,7 +80,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "session_templates field returns list of session_templates in desc order" do
     Fixtures.session_template_fixture(%{label: "AAA"})
 
-    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
@@ -85,7 +91,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   end
 
   test "session_templates returns list of session templates in various filters" do
-    result = query_gql_by(:list, variables: %{"filter" => %{"body" => "Default Template"}})
+    result = auth_query_gql_by(:list, variables: %{"filter" => %{"body" => "Default Template"}})
     assert {:ok, query_data} = result
 
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
@@ -99,28 +105,28 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     language_id = String.to_integer(get_in(session_template, ["language", "id"]))
 
     result =
-      query_gql_by(:list, variables: %{"filter" => %{"parent" => "Default Template Label"}})
+      auth_query_gql_by(:list, variables: %{"filter" => %{"parent" => "Default Template Label"}})
 
     assert {:ok, query_data} = result
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
     assert length(session_templates) > 0
 
-    result = query_gql_by(:list, variables: %{"filter" => %{"parentId" => parent_id}})
+    result = auth_query_gql_by(:list, variables: %{"filter" => %{"parentId" => parent_id}})
     assert {:ok, query_data} = result
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
     assert length(session_templates) > 0
 
-    result = query_gql_by(:list, variables: %{"filter" => %{"languageId" => language_id}})
+    result = auth_query_gql_by(:list, variables: %{"filter" => %{"languageId" => language_id}})
     assert {:ok, query_data} = result
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
     assert length(session_templates) > 0
 
-    result = query_gql_by(:list, variables: %{"filter" => %{"language" => "English"}})
+    result = auth_query_gql_by(:list, variables: %{"filter" => %{"language" => "English"}})
     assert {:ok, query_data} = result
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
     assert length(session_templates) > 0
 
-    result = query_gql_by(:list, variables: %{"filter" => %{"isHsm" => true}})
+    result = auth_query_gql_by(:list, variables: %{"filter" => %{"isHsm" => true}})
     assert {:ok, query_data} = result
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
     assert length(session_templates) >= 1
@@ -129,7 +135,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     Fixtures.session_template_fixture(%{label: "label2", body: "term_filter"})
     Fixtures.session_template_fixture(%{label: "label3", shortcode: "term_filter"})
 
-    result = query_gql_by(:list, variables: %{"filter" => %{"term" => "term_filter"}})
+    result = auth_query_gql_by(:list, variables: %{"filter" => %{"term" => "term_filter"}})
     assert {:ok, query_data} = result
     session_templates = get_in(query_data, [:data, "sessionTemplates"])
     assert length(session_templates) == 3
@@ -140,13 +146,13 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{body: body})
 
-    result = query_gql_by(:by_id, variables: %{"id" => session_template.id})
+    result = auth_query_gql_by(:by_id, variables: %{"id" => session_template.id})
     assert {:ok, query_data} = result
 
     session_template = get_in(query_data, [:data, "sessionTemplate", "sessionTemplate", "body"])
     assert session_template == body
 
-    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
+    result = auth_query_gql_by(:by_id, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "sessionTemplate", "errors", Access.at(0), "message"])
@@ -161,7 +167,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     language_id = session_template.language_id
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{
           "input" => %{
             "label" => "Test Label",
@@ -178,7 +184,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     # try creating the same session template of a language twice
     _ =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{
           "input" => %{
             "label" => "Test Label 2",
@@ -190,7 +196,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       )
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create,
         variables: %{
           "input" => %{
             "label" => "Test Label 2",
@@ -215,7 +221,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{label: label})
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update,
         variables: %{"id" => session_template.id, "input" => %{"label" => "New Test Label"}}
       )
 
@@ -226,7 +232,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     # Try to update a template with same label and language id
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update,
         variables: %{
           "id" => session_template.id,
           "input" => %{"label" => "Another Template Label"}
@@ -244,11 +250,11 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "delete an session_template" do
     {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{body: "Default Template"})
 
-    result = query_gql_by(:delete, variables: %{"id" => session_template.id})
+    result = auth_query_gql_by(:delete, variables: %{"id" => session_template.id})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "deleteSessionTemplate", "errors"]) == nil
 
-    result = query_gql_by(:delete, variables: %{"id" => 123_456_789})
+    result = auth_query_gql_by(:delete, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
     message =
@@ -266,7 +272,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
 
     result =
-      query_gql_by(:send_session_message,
+      auth_query_gql_by(:send_session_message,
         variables: %{"id" => session_template.id, "receiver_id" => contact.id}
       )
 
@@ -280,10 +286,11 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{label: label})
 
     language_id = session_template.language_id
-    [message | _] = Messages.list_messages()
+    user = Fixtures.user_fixture()
+    [message | _] = Messages.list_messages(%{filter: %{organization_id: user.organization_id}})
 
     result =
-      query_gql_by(:create_from_message,
+      auth_query_gql_by(:create_from_message,
         variables: %{
           "messageId" => message.id,
           "input" => %{
@@ -300,7 +307,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert label == "From Message"
 
     result =
-      query_gql_by(:create_from_message,
+      auth_query_gql_by(:create_from_message,
         variables: %{
           "messageId" => message.id,
           "input" => %{

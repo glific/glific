@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.FlowTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Fixtures,
     Flows.Flow,
     Repo,
     Seeds.SeedsDev
@@ -20,14 +21,14 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/flows/delete.gql")
   load_gql(:publish, GlificWeb.Schema, "assets/gql/flows/publish.gql")
 
-  def auth_query_gql_by(query, options) do
-    [user | _] = Glific.Users.list_users()
+  def auth_query_gql_by(query, options \\ []) do
+    user = Fixtures.user_fixture()
     options = Keyword.put_new(options, :context, %{:current_user => user})
     query_gql_by(query, options)
   end
 
   test "flows field returns list of flows" do
-    result = query_gql_by(:list)
+    result = auth_query_gql_by(:list)
     assert {:ok, query_data} = result
 
     flows = get_in(query_data, [:data, "flows"])
@@ -41,7 +42,7 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "flows field returns list of flows filtered by keyword" do
-    result = query_gql_by(:list, variables: %{"filter" => %{"keyword" => "help"}})
+    result = auth_query_gql_by(:list, variables: %{"filter" => %{"keyword" => "help"}})
     assert {:ok, query_data} = result
 
     flows = get_in(query_data, [:data, "flows"])
@@ -52,13 +53,13 @@ defmodule GlificWeb.Schema.FlowTest do
     name = "Test Workflow"
     {:ok, flow} = Repo.fetch_by(Flow, %{name: name})
 
-    result = query_gql_by(:by_id, variables: %{"id" => flow.id})
+    result = auth_query_gql_by(:by_id, variables: %{"id" => flow.id})
     assert {:ok, query_data} = result
 
     flow = get_in(query_data, [:data, "flow", "flow", "name"])
     assert flow == name
 
-    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
+    result = auth_query_gql_by(:by_id, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "flow", "errors", Access.at(0), "message"])
@@ -120,7 +121,7 @@ defmodule GlificWeb.Schema.FlowTest do
     shortcode = "Test shortcode"
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update,
         variables: %{
           "id" => flow.id,
           "input" => %{"name" => name, "shortcode" => shortcode}
@@ -136,11 +137,11 @@ defmodule GlificWeb.Schema.FlowTest do
   test "delete a flow" do
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
 
-    result = query_gql_by(:delete, variables: %{"id" => flow.id})
+    result = auth_query_gql_by(:delete, variables: %{"id" => flow.id})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "deleteFlow", "errors"]) == nil
 
-    result = query_gql_by(:delete, variables: %{"id" => 123_456_789})
+    result = auth_query_gql_by(:delete, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "deleteFlow", "errors", Access.at(0), "message"])
@@ -150,12 +151,12 @@ defmodule GlificWeb.Schema.FlowTest do
   test "Publish flow" do
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
 
-    result = query_gql_by(:publish, variables: %{"id" => flow.id})
+    result = auth_query_gql_by(:publish, variables: %{"id" => flow.id})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "publishFlow", "errors"]) == nil
     assert get_in(query_data, [:data, "publishFlow", "success"]) == true
 
-    result = query_gql_by(:publish, variables: %{"id" => 123_456_789})
+    result = auth_query_gql_by(:publish, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "publishFlow", "errors", Access.at(0), "message"])

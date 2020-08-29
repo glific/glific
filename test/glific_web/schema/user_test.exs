@@ -29,8 +29,14 @@ defmodule GlificWeb.Schema.UserTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/users/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/users/delete.gql")
 
+  def auth_query_gql_by(query, options \\ []) do
+    user = Fixtures.user_fixture()
+    options = Keyword.put_new(options, :context, %{:current_user => user})
+    query_gql_by(query, options)
+  end
+
   test "roles returns list of roles" do
-    result = query_gql_by(:list_roles)
+    result = auth_query_gql_by(:list_roles)
     assert {:ok, query_data} = result
 
     roles = get_in(query_data, [:data, "roles"])
@@ -38,7 +44,7 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "users returns list of users" do
-    result = query_gql_by(:list)
+    result = auth_query_gql_by(:list)
     assert {:ok, query_data} = result
 
     users = get_in(query_data, [:data, "users"])
@@ -54,7 +60,7 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "users returns list of users in asc order" do
-    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
     users = get_in(query_data, [:data, "users"])
@@ -66,14 +72,14 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "users obeys limit and offset" do
-    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "users"])) == 1
 
-    {:ok, query_data} = query_gql_by(:list)
+    {:ok, query_data} = auth_query_gql_by(:list)
     users_count = get_in(query_data, [:data, "users"]) |> length
 
-    result = query_gql_by(:list, variables: %{"opts" => %{"offset" => 1}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"offset" => 1}})
     assert {:ok, query_data} = result
 
     users = get_in(query_data, [:data, "users"])
@@ -81,18 +87,18 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "count returns the number of users" do
-    {:ok, query_data} = query_gql_by(:count)
+    {:ok, query_data} = auth_query_gql_by(:count)
     assert get_in(query_data, [:data, "countUsers"]) == 3
 
     {:ok, query_data} =
-      query_gql_by(:count,
+      auth_query_gql_by(:count,
         variables: %{"filter" => %{"name" => "This user should never ever exist"}}
       )
 
     assert get_in(query_data, [:data, "countUsers"]) == 0
 
     {:ok, query_data} =
-      query_gql_by(:count, variables: %{"filter" => %{"name" => "NGO Basic User 1"}})
+      auth_query_gql_by(:count, variables: %{"filter" => %{"name" => "NGO Basic User 1"}})
 
     assert get_in(query_data, [:data, "countUsers"]) == 1
   end
@@ -101,13 +107,13 @@ defmodule GlificWeb.Schema.UserTest do
     name = "NGO Basic User 1"
     {:ok, user} = Repo.fetch_by(User, %{name: name})
 
-    result = query_gql_by(:by_id, variables: %{"id" => user.id})
+    result = auth_query_gql_by(:by_id, variables: %{"id" => user.id})
     assert {:ok, query_data} = result
 
     user = get_in(query_data, [:data, "user", "user", "name"])
     assert user == name
 
-    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
+    result = auth_query_gql_by(:by_id, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "user", "errors", Access.at(0), "message"])
@@ -120,7 +126,7 @@ defmodule GlificWeb.Schema.UserTest do
     name = "User Test Name New"
 
     result =
-      query_gql_by(:update_current,
+      auth_query_gql_by(:update_current,
         variables: %{"id" => user.id, "input" => %{"name" => name}}
       )
 
@@ -153,7 +159,7 @@ defmodule GlificWeb.Schema.UserTest do
     {:ok, otp} = RegistrationController.create_and_send_verification_code(user.phone)
 
     result =
-      query_gql_by(:update_current,
+      auth_query_gql_by(:update_current,
         variables: %{
           "id" => user.id,
           "input" => %{"name" => name, "otp" => otp, "password" => "new_password"}
@@ -167,7 +173,7 @@ defmodule GlificWeb.Schema.UserTest do
 
     # update with incorrect otp should give error
     result =
-      query_gql_by(:update_current,
+      auth_query_gql_by(:update_current,
         variables: %{
           "id" => user.id,
           "input" => %{"name" => name, "otp" => "incorrect_otp", "password" => "new_password"}
@@ -181,13 +187,13 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "delete a user" do
-    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
+    user = Fixtures.user_fixture()
 
-    result = query_gql_by(:delete, variables: %{"id" => user.id})
+    result = auth_query_gql_by(:delete, variables: %{"id" => user.id})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "deleteUser", "errors"]) == nil
 
-    result = query_gql_by(:delete, variables: %{"id" => 123_456_789})
+    result = auth_query_gql_by(:delete, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "deleteUser", "errors", Access.at(0), "message"])
@@ -203,7 +209,7 @@ defmodule GlificWeb.Schema.UserTest do
     group = Fixtures.group_fixture()
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update,
         variables: %{
           "id" => user.id,
           "input" => %{
@@ -226,7 +232,7 @@ defmodule GlificWeb.Schema.UserTest do
     roles = ["admin", "incorrect_role"]
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update,
         variables: %{
           "id" => user.id,
           "input" => %{
@@ -246,7 +252,7 @@ defmodule GlificWeb.Schema.UserTest do
     roles = ["admin"]
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update,
         variables: %{
           "id" => user.id,
           "input" => %{

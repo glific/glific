@@ -2,7 +2,7 @@ defmodule GlificWeb.Schema.MessageTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
-    Messages,
+    Fixtures,
     Messages.Message,
     Partners,
     Repo,
@@ -47,14 +47,14 @@ defmodule GlificWeb.Schema.MessageTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/messages/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/messages/delete.gql")
 
-  def auth_query_gql_by(query, options) do
-    [user | _] = Glific.Users.list_users()
+  def auth_query_gql_by(query, options \\ []) do
+    user = Fixtures.user_fixture()
     options = Keyword.put_new(options, :context, %{:current_user => user})
     query_gql_by(query, options)
   end
 
   test "messages field returns list of messages" do
-    result = query_gql_by(:list)
+    result = auth_query_gql_by(:list)
     assert {:ok, query_data} = result
 
     messages = get_in(query_data, [:data, "messages"])
@@ -68,7 +68,7 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "messages field returns list of messages in various filters" do
-    result = query_gql_by(:list, variables: %{"filter" => %{"body" => "Default message body"}})
+    result = auth_query_gql_by(:list, variables: %{"filter" => %{"body" => "Default message body"}})
     assert {:ok, query_data} = result
 
     messages = get_in(query_data, [:data, "messages"])
@@ -76,7 +76,7 @@ defmodule GlificWeb.Schema.MessageTest do
     [message | _] = messages
     assert get_in(message, ["body"]) == "Default message body"
 
-    result = query_gql_by(:list, variables: %{"filter" => %{"receiver" => "Default receiver"}})
+    result = auth_query_gql_by(:list, variables: %{"filter" => %{"receiver" => "Default receiver"}})
     assert {:ok, query_data} = result
 
     messages = get_in(query_data, [:data, "messages"])
@@ -84,7 +84,7 @@ defmodule GlificWeb.Schema.MessageTest do
     [message | _] = messages
     assert get_in(message, ["receiver", "name"]) == "Default receiver"
 
-    result = query_gql_by(:list, variables: %{"filter" => %{"user" => "John"}})
+    result = auth_query_gql_by(:list, variables: %{"filter" => %{"user" => "John"}})
     assert {:ok, query_data} = result
 
     messages = get_in(query_data, [:data, "messages"])
@@ -92,7 +92,7 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "messages field returns list of messages in desc order" do
-    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "DESC"}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"order" => "DESC"}})
     assert {:ok, query_data} = result
 
     messages = get_in(query_data, [:data, "messages"])
@@ -104,11 +104,11 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "messages field obeys limit and offset" do
-    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "messages"])) == 1
 
-    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
     assert {:ok, query_data} = result
 
     messages = get_in(query_data, [:data, "messages"])
@@ -121,18 +121,18 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "count returns the number of messages" do
-    {:ok, query_data} = query_gql_by(:count)
+    {:ok, query_data} = auth_query_gql_by(:count)
     assert get_in(query_data, [:data, "countMessages"]) > 5
 
     {:ok, query_data} =
-      query_gql_by(:count,
+      auth_query_gql_by(:count,
         variables: %{"filter" => %{"body" => "This message should never ever exist"}}
       )
 
     assert get_in(query_data, [:data, "countMessages"]) == 0
 
     {:ok, query_data} =
-      query_gql_by(:count, variables: %{"filter" => %{"body" => "default message body"}})
+      auth_query_gql_by(:count, variables: %{"filter" => %{"body" => "default message body"}})
 
     assert get_in(query_data, [:data, "countMessages"]) == 1
   end
@@ -141,13 +141,13 @@ defmodule GlificWeb.Schema.MessageTest do
     body = "Default message body"
     {:ok, message} = Repo.fetch_by(Message, %{body: body})
 
-    result = query_gql_by(:by_id, variables: %{"id" => message.id})
+    result = auth_query_gql_by(:by_id, variables: %{"id" => message.id})
     assert {:ok, query_data} = result
 
     message_body = get_in(query_data, [:data, "message", "message", "body"])
     assert message_body == body
 
-    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
+    result = auth_query_gql_by(:by_id, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "message", "errors", Access.at(0), "message"])
@@ -155,7 +155,7 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "create a message and test possible scenarios and errors" do
-    [message | _] = Messages.list_messages()
+    message = Fixtures.message_fixture
 
     result =
       auth_query_gql_by(:create,
@@ -196,7 +196,7 @@ defmodule GlificWeb.Schema.MessageTest do
     {:ok, message} = Repo.fetch_by(Message, %{body: body})
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update,
         variables: %{"id" => message.id, "input" => %{"body" => "Updated body"}}
       )
 
@@ -204,7 +204,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert "Updated body" = get_in(query_data, [:data, "updateMessage", "message", "body"])
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update,
         variables: %{
           "id" => message.id,
           "input" => %{"sender_id" => ""}
@@ -220,12 +220,12 @@ defmodule GlificWeb.Schema.MessageTest do
     body = "Default message body"
     {:ok, message} = Repo.fetch_by(Message, %{body: body})
 
-    result = query_gql_by(:delete, variables: %{"id" => message.id})
+    result = auth_query_gql_by(:delete, variables: %{"id" => message.id})
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "deleteMessage", "errors"]) == [nil]
 
-    result = query_gql_by(:delete, variables: %{"id" => message.id})
+    result = auth_query_gql_by(:delete, variables: %{"id" => message.id})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "deleteMessage", "errors", Access.at(0), "message"])
@@ -240,7 +240,7 @@ defmodule GlificWeb.Schema.MessageTest do
     {:ok, contact2} = Repo.fetch_by(Contact, %{name: name})
 
     result =
-      query_gql_by(:create_and_send_message_to_contacts,
+      auth_query_gql_by(:create_and_send_message_to_contacts,
         variables: %{
           "input" => %{
             "body" => "Message body",
@@ -268,7 +268,7 @@ defmodule GlificWeb.Schema.MessageTest do
     parameters = ["param1", "param2", "param3"]
 
     result =
-      query_gql_by(:send_hsm_message,
+      auth_query_gql_by(:send_hsm_message,
         variables: %{
           "id" => hsm_template.id,
           "receiver_id" => contact.id,
@@ -282,8 +282,8 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "create and send a message to valid contact" do
-    [contact | _tail] = Contacts.list_contacts()
-    Contacts.contact_opted_in(contact.phone, DateTime.utc_now())
+    contact = Fixtures.contact_fixture()
+    Contacts.contact_opted_in(contact.phone, contact.organization_id, DateTime.utc_now())
     {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: DateTime.utc_now()})
 
     result =
@@ -305,8 +305,8 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "create and send a message should parse the message body" do
-    [contact | _tail] = Contacts.list_contacts()
-    Contacts.contact_opted_in(contact.phone, DateTime.utc_now())
+    contact = Fixtures.contact_fixture()
+    Contacts.contact_opted_in(contact.phone, contact.organization_id, DateTime.utc_now())
     {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: DateTime.utc_now()})
 
     result =
@@ -328,8 +328,8 @@ defmodule GlificWeb.Schema.MessageTest do
   end
 
   test "create and send a message to in valid contact will not create a message" do
-    [contact | _tail] = Contacts.list_contacts()
-    Contacts.contact_opted_out(contact.phone, DateTime.utc_now())
+    contact = Fixtures.contact_fixture
+    Contacts.contact_opted_out(contact.phone, contact.organization_id, DateTime.utc_now())
     message_body = Faker.Lorem.sentence()
 
     result =
