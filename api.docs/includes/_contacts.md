@@ -329,15 +329,13 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
     contact {
       id
       name
-      optinTime
-      optoutTime
-      phone
       providerStatus
       status
-      tags {
-        id
+      fields
+      settings
+      language{
         label
-      }
+      }      
     }
     errors {
       key
@@ -347,9 +345,11 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
 }
 
 {
-  "id": "2",
+  "id": "5",
   "input": {
-    "name": "This is a updated contact for this example"
+    "name": "This is a updated contact for this example",
+    "fields": "{\"name\":{\"value\":\"default\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:38.298593Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:46.623892Z\"}}",
+    "languageId": 2
   }
 }
 ```
@@ -361,14 +361,15 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
   "data": {
     "updateContact": {
       "contact": {
-        "id": "2",
+        "fields": "{\"name\":{\"value\":\"default\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:38.298593Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:46.623892Z\"}}",
+        "id": "5",
+        "language": {
+          "label": "English (United States)"
+        },
         "name": "This is a updated contact for this example",
-        "optinTime": null,
-        "optoutTime": null,
-        "phone": "917834811231",
         "providerStatus": "SESSION_AND_HSM",
-        "status": "VALID",
-        "tags": []
+        "settings": null,
+        "status": "VALID"
       },
       "errors": null
     }
@@ -710,6 +711,11 @@ Match if contact is mapped in a group of includeGroups list
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>languageId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>providerStatus</strong></td>
 <td valign="top"><a href="#contactproviderstatusenum">ContactProviderStatusEnum</a></td>
 <td></td>
@@ -717,6 +723,16 @@ Match if contact is mapped in a group of includeGroups list
 <tr>
 <td colspan="2" valign="top"><strong>status</strong></td>
 <td valign="top"><a href="#contactstatusenum">ContactStatusEnum</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>fields</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>settings</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
 <td></td>
 </tr>
 </tbody>
