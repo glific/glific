@@ -76,7 +76,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         locale: "en_US"
       })
 
-    ta =
+    _ta =
       Repo.insert!(%Language{
         label: "Tamil",
         label_locale: "தமிழ்",
@@ -301,7 +301,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def hsm_templates(organization, languages) do
-    {hi, en_us} = languages
+    {_hi, en_us} = languages
 
     Repo.insert!(%SessionTemplate{
       label: "Missed Message Apology",
