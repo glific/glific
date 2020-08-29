@@ -18,10 +18,7 @@ defmodule Glific.Users do
   """
   @spec list_users(map()) :: [User.t()]
   def list_users(%{filter: %{organization_id: _organization_id}} = args) do
-    IO.inspect(args)
-    list = Repo.list_filter(args, User, &Repo.opts_with_name/2, &Repo.filter_with/2)
-    IO.inspect(length(list))
-    list
+    Repo.list_filter(args, User, &Repo.opts_with_name/2, &Repo.filter_with/2)
   end
 
 
