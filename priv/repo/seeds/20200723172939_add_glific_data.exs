@@ -451,7 +451,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
           last_message_at: last_message_at |> DateTime.truncate(:second),
           optin_time: optin_time |> DateTime.truncate(:second),
           provider_status: check_provider_status(last_message_at),
-          organization_id: organization.id
+          organization_id: organization.id,
+          language_id: organization.default_language_id
         })
       end)
     end
