@@ -129,7 +129,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
   describe "send_otp/2" do
     test "send otp", %{conn: conn} do
       {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-      Contacts.contact_opted_in(receiver.phone, DateTime.utc_now())
+      Contacts.contact_opted_in(receiver.phone, receiver.organization_id, DateTime.utc_now())
 
       valid_params = %{"user" => %{"phone" => receiver.phone}}
 
@@ -150,7 +150,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "send otp to existing user will return an error", %{conn: conn} do
-      [user | _] = Users.list_users()
+      [user | _] = Users.list_users(%{filter: %{organization_id: conn.assigns[:organization_id]}})
       phone = user.phone
       invalid_params = %{"user" => %{"phone" => phone}}
 
@@ -162,7 +162,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "send otp to optout contact will return an error", %{conn: conn} do
       {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-      Contacts.contact_opted_out(receiver.phone, DateTime.utc_now())
+      Contacts.contact_opted_out(receiver.phone, receiver.organization_id, DateTime.utc_now())
       invalid_params = %{"user" => %{"phone" => receiver.phone}}
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
@@ -176,7 +176,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do
       # create a user for a contact
       {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-      Contacts.contact_opted_in(receiver.phone, DateTime.utc_now())
+      Contacts.contact_opted_in(receiver.phone, receiver.organization_id, DateTime.utc_now())
 
       {:ok, user} =
         %{

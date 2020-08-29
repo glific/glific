@@ -45,7 +45,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   end
 
   describe "text" do
-    setup %{organization_id: organization_id} do
+    setup do
       message_payload = %{
         "text" => "Inbound Message"
       }
