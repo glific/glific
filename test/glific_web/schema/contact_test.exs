@@ -8,7 +8,8 @@ defmodule GlificWeb.Schema.ContactTest do
     Fixtures,
     Messages.Message,
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    Settings
   }
 
   setup do
@@ -172,6 +173,46 @@ defmodule GlificWeb.Schema.ContactTest do
 
     message = get_in(query_data, [:data, "updateContact", "errors", Access.at(0), "message"])
     assert message == "has already been taken"
+  end
+
+  test "update a contact with language, fields and settings" do
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
+
+    name = "Contact Test Name New"
+    [language | _] = Settings.list_languages()
+
+    fields =
+      "{\"name\":{\"value\":\"default\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:38.298593Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:46.623892Z\"}}"
+
+    settings = "{}"
+
+    result =
+      query_gql_by(:update,
+        variables: %{
+          "id" => contact.id,
+          "input" => %{
+            "name" => name,
+            "fields" => fields,
+            "settings" => settings,
+            "language_id" => language.id
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    language_id = get_in(query_data, [:data, "updateContact", "contact", "language", "id"])
+    assert language_id == "#{language.id}"
+
+    # incorrect json value should give error
+    settings = "{"
+
+    result =
+      query_gql_by(:update, variables: %{"id" => contact.id, "input" => %{"settings" => settings}})
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:errors]) != nil
   end
 
   test "delete a contact" do
