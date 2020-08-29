@@ -25,7 +25,8 @@ defmodule GlificWeb.Schema.SearchTypes do
         Resolvers.Searches.saved_search_count(
           resolution,
           %{id: saved_search.id},
-          context)
+          context
+        )
       end)
     end
   end

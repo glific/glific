@@ -282,12 +282,26 @@ defmodule GlificWeb.Schema.TagTest do
 
     {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "unread"})
 
-    message1_tag = Fixtures.message_tag_fixture(
-      %{message_id: message_1.id, tag_id: tag.id, organization_id: user.organization_id})
-    message2_tag = Fixtures.message_tag_fixture(
-      %{message_id: message_2.id, tag_id: tag.id, organization_id: user.organization_id})
-    message3_tag = Fixtures.message_tag_fixture(
-      %{message_id: message_3.id, tag_id: tag.id, organization_id: user.organization_id})
+    message1_tag =
+      Fixtures.message_tag_fixture(%{
+        message_id: message_1.id,
+        tag_id: tag.id,
+        organization_id: user.organization_id
+      })
+
+    message2_tag =
+      Fixtures.message_tag_fixture(%{
+        message_id: message_2.id,
+        tag_id: tag.id,
+        organization_id: user.organization_id
+      })
+
+    message3_tag =
+      Fixtures.message_tag_fixture(%{
+        message_id: message_3.id,
+        tag_id: tag.id,
+        organization_id: user.organization_id
+      })
 
     result =
       auth_query_gql_by(:mark_contact_messages_as_read, user,

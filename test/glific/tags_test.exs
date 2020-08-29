@@ -276,7 +276,14 @@ defmodule Glific.TagsTest do
     } do
       message = Fixtures.message_fixture(%{organization_id: organization_id})
       tag = Fixtures.tag_fixture(%{organization_id: organization_id})
-      message_tag = Fixtures.message_tag_fixture(%{message_id: message.id, tag_id: tag.id, organization_id: organization_id})
+
+      message_tag =
+        Fixtures.message_tag_fixture(%{
+          message_id: message.id,
+          tag_id: tag.id,
+          organization_id: organization_id
+        })
+
       assert message_tag.message_id == message.id
       assert message_tag.tag_id == tag.id
     end
@@ -309,7 +316,12 @@ defmodule Glific.TagsTest do
     } do
       message = Fixtures.message_fixture(%{organization_id: organization_id})
       tag = Fixtures.tag_fixture(%{organization_id: organization_id})
-      Fixtures.message_tag_fixture(%{message_id: message.id, tag_id: tag.id, organization_id: organization_id})
+
+      Fixtures.message_tag_fixture(%{
+        message_id: message.id,
+        tag_id: tag.id,
+        organization_id: organization_id
+      })
 
       # we love upserts!
       assert {:ok, %MessageTag{}}
@@ -335,7 +347,14 @@ defmodule Glific.TagsTest do
     } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
       tag = Fixtures.tag_fixture(%{organization_id: organization_id})
-      contact_tag = Fixtures.contact_tag_fixture(%{contact_id: contact.id, tag_id: tag.id, organization_id: organization_id})
+
+      contact_tag =
+        Fixtures.contact_tag_fixture(%{
+          contact_id: contact.id,
+          tag_id: tag.id,
+          organization_id: organization_id
+        })
+
       assert contact_tag.contact_id == contact.id
       assert contact_tag.tag_id == tag.id
     end
@@ -368,7 +387,12 @@ defmodule Glific.TagsTest do
     } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
       tag = Fixtures.tag_fixture(%{organization_id: organization_id})
-      Fixtures.contact_tag_fixture(%{contact_id: contact.id, tag_id: tag.id, organization_id: organization_id})
+
+      Fixtures.contact_tag_fixture(%{
+        contact_id: contact.id,
+        tag_id: tag.id,
+        organization_id: organization_id
+      })
 
       assert {:error, %Ecto.Changeset{}} =
                Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id})

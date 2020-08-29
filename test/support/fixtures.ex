@@ -22,6 +22,10 @@ defmodule Glific.Fixtures do
     Users
   }
 
+  @doc """
+  temp function for test to get org id. use sparingly
+  """
+  @spec get_org_id :: integer
   def get_org_id do
     organization = Organization |> Ecto.Query.first() |> Repo.one()
     organization.id
@@ -124,7 +128,7 @@ defmodule Glific.Fixtures do
       description: "some fixed description",
       locale: "en_US",
       is_active: true,
-      is_reserved: true,
+      is_reserved: true
     }
 
     attrs = Map.merge(valid_attrs, attrs)
@@ -273,7 +277,6 @@ defmodule Glific.Fixtures do
   @doc false
   @spec contact_tags_fixture(map()) :: [Tags.ContactTag.t(), ...]
   def contact_tags_fixture(attrs) do
-
     tag_fixture(attrs)
 
     attrs = %{filter: attrs}
