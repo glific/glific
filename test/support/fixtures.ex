@@ -219,7 +219,7 @@ defmodule Glific.Fixtures do
   @doc false
   @spec group_contacts_fixture :: [Groups.ContactGroup.t(), ...]
   def group_contacts_fixture do
-    attrs = %{organization_id: get_org_id()}
+    attrs = %{filter: %{organization_id: get_org_id()}}
 
     group_fixture(attrs)
 
@@ -250,7 +250,8 @@ defmodule Glific.Fixtures do
   @doc false
   @spec contact_tags_fixture :: [Tags.ContactTag.t(), ...]
   def contact_tags_fixture do
-    attrs = %{organization_id: get_org_id()}
+    attrs = %{filter: %{organization_id: get_org_id()}}
+
 
     tag_fixture(attrs)
 

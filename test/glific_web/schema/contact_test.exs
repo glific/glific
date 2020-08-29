@@ -28,14 +28,14 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:contact_location, GlificWeb.Schema, "assets/gql/contacts/contact_location.gql")
   load_gql(:search, GlificWeb.Schema, "assets/gql/contacts/search.gql")
 
-  def auth_query_gql_by(query, options) do
-    [user | _] = Glific.Users.list_users()
+  def auth_query_gql_by(query, options \\ []) do
+    user = Fixtures.user_fixture()
     options = Keyword.put_new(options, :context, %{:current_user => user})
     query_gql_by(query, options)
   end
 
   test "contacts field returns list of contacts" do
-    result = query_gql_by(:list)
+    result = auth_query_gql_by(:list)
     assert {:ok, query_data} = result
 
     contacts = get_in(query_data, [:data, "contacts"])
@@ -50,7 +50,7 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "contacts field returns list of contacts in asc order" do
-    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
     contacts = get_in(query_data, [:data, "contacts"])
@@ -62,11 +62,11 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "contacts field obeys limit and offset" do
-    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "contacts"])) == 1
 
-    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
     assert {:ok, query_data} = result
 
     contacts = get_in(query_data, [:data, "contacts"])
@@ -79,19 +79,19 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "count returns the number of contacts" do
-    {:ok, query_data} = query_gql_by(:count)
+    {:ok, query_data} = auth_query_gql_by(:count)
     # we are adding 5 contacts, but we dont know intial state of DB, hence using >=
     assert get_in(query_data, [:data, "countContacts"]) >= 5
 
     {:ok, query_data} =
-      query_gql_by(:count,
+      auth_query_gql_by(:count,
         variables: %{"filter" => %{"name" => "This contact should never ever exist"}}
       )
 
     assert get_in(query_data, [:data, "countContacts"]) == 0
 
     {:ok, query_data} =
-      query_gql_by(:count, variables: %{"filter" => %{"name" => "Glific Admin"}})
+      auth_query_gql_by(:count, variables: %{"filter" => %{"name" => "Glific Admin"}})
 
     assert get_in(query_data, [:data, "countContacts"]) == 1
   end
@@ -100,13 +100,13 @@ defmodule GlificWeb.Schema.ContactTest do
     name = "Glific Admin"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
 
-    result = query_gql_by(:by_id, variables: %{"id" => contact.id})
+    result = auth_query_gql_by(:by_id, variables: %{"id" => contact.id})
     assert {:ok, query_data} = result
 
     contact = get_in(query_data, [:data, "contact", "contact", "name"])
     assert contact == name
 
-    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
+    result = auth_query_gql_by(:by_id, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "contact", "errors", Access.at(0), "message"])
@@ -151,7 +151,7 @@ defmodule GlificWeb.Schema.ContactTest do
     phone = "1-415-555-1212 New"
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update,
         variables: %{"id" => contact.id, "input" => %{"name" => name, "phone" => phone}}
       )
 
@@ -167,7 +167,7 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update,
         variables: %{
           "id" => contact.id,
           "input" => %{"name" => name, "phone" => phone <> " New"}
@@ -185,11 +185,11 @@ defmodule GlificWeb.Schema.ContactTest do
     # Delete a random contact
     {:ok, contact} = Repo.fetch_by(Contact, %{name: "Chrissy Cron"})
 
-    result = query_gql_by(:delete, variables: %{"id" => contact.id})
+    result = auth_query_gql_by(:delete, variables: %{"id" => contact.id})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "deleteContact", "errors"]) == nil
 
-    result = query_gql_by(:delete, variables: %{"id" => 123_456_789})
+    result = auth_query_gql_by(:delete, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "deleteContact", "errors", Access.at(0), "message"])
@@ -210,23 +210,23 @@ defmodule GlificWeb.Schema.ContactTest do
       })
 
     # get contact location
-    result = query_gql_by(:contact_location, variables: %{"id" => contact.id})
+    result = auth_query_gql_by(:contact_location, variables: %{"id" => contact.id})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "contactLocation", "longitude"]) == location.longitude
   end
 
   test "search contacts field returns list of contacts with options set" do
-    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "contacts"])) == 1
 
-    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
     assert {:ok, query_data} = result
 
     contacts = get_in(query_data, [:data, "contacts"])
     assert length(contacts) == 3
 
-    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
+    result = auth_query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
     contacts = get_in(query_data, [:data, "contacts"])
@@ -239,11 +239,9 @@ defmodule GlificWeb.Schema.ContactTest do
     [cg1, _cg2, cg3] = Fixtures.group_contacts_fixture()
 
     result =
-      query_gql_by(:list,
+      auth_query_gql_by(:list,
         variables: %{
-          "filter" => %{
-            "includeGroups" => ["#{cg1.group_id}"]
-          }
+          "filter" => %{ "includeGroups" => ["#{cg1.group_id}"]}
         }
       )
 
@@ -251,11 +249,9 @@ defmodule GlificWeb.Schema.ContactTest do
     assert length(get_in(query_data, [:data, "contacts"])) == 2
 
     result =
-      query_gql_by(:list,
+      auth_query_gql_by(:list,
         variables: %{
-          "filter" => %{
-            "includeGroups" => ["99999"]
-          }
+          "filter" => %{ "includeGroups" => ["99999"]}
         }
       )
 
@@ -266,7 +262,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     # contact should not be repeated in the search list
     result =
-      query_gql_by(:list,
+      auth_query_gql_by(:list,
         variables: %{
           "filter" => %{
             "includeGroups" => ["#{cg1.group_id}", "#{cg3.group_id}"]
@@ -282,7 +278,7 @@ defmodule GlificWeb.Schema.ContactTest do
     [ct1, _ct2, ct3] = Fixtures.contact_tags_fixture()
 
     result =
-      query_gql_by(:list,
+      auth_query_gql_by(:list,
         variables: %{
           "filter" => %{
             "includeTags" => ["#{ct1.tag_id}"]
@@ -297,7 +293,7 @@ defmodule GlificWeb.Schema.ContactTest do
     [_cg1, _cg2, cg3] = Fixtures.group_contacts_fixture()
 
     result =
-      query_gql_by(:list,
+      auth_query_gql_by(:list,
         variables: %{
           "filter" => %{
             "includeTags" => ["#{ct1.tag_id}", "#{ct3.tag_id}"],
