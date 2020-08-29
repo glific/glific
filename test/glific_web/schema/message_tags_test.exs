@@ -22,7 +22,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
     Tags.status_map(%{organization_id: org_id})
   end
 
-  test "update a message tag with add tags", %{user: user}  do
+  test "update a message tag with add tags", %{user: user} do
     tags_map = tag_status_map(user.organization_id)
     body = "Default message body"
     {:ok, message} = Repo.fetch_by(Message, %{body: body})
@@ -74,7 +74,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
     assert message_tags == []
   end
 
-  test "update a message tag with add and delete tags", %{user: user}  do
+  test "update a message tag with add and delete tags", %{user: user} do
     tags_map = tag_status_map(user.organization_id)
     body = "Default message body"
     {:ok, message} = Repo.fetch_by(Message, %{body: body})

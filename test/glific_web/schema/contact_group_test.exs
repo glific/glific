@@ -46,7 +46,8 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     label = "Default Group"
     {:ok, group} = Repo.fetch_by(Group, %{label: label})
 
-    [contact1, contact2 | _] = Contacts.list_contacts(%{filter: %{organization_id: user.organization_id}})
+    [contact1, contact2 | _] =
+      Contacts.list_contacts(%{filter: %{organization_id: user.organization_id}})
 
     # add group contacts
     result =

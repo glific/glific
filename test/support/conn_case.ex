@@ -20,8 +20,8 @@ defmodule GlificWeb.ConnCase do
   alias Ecto.Adapters.SQL.Sandbox
 
   alias Glific.{
-    Repo,
-    Fixtures
+    Fixtures,
+    Repo
   }
 
   using do
@@ -46,6 +46,7 @@ defmodule GlificWeb.ConnCase do
     end
 
     organization_id = Fixtures.get_org_id()
+
     {
       :ok,
       conn: Phoenix.ConnTest.build_conn() |> Plug.Conn.assign(:organization_id, organization_id),

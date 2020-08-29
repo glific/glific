@@ -133,7 +133,8 @@ defmodule Glific.Flows.ActionTest do
   end
 
   test "execute an action when type is send_msg", attrs do
-    [contact | _] = Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     attrs = %{
@@ -167,7 +168,8 @@ defmodule Glific.Flows.ActionTest do
     language_label = "English (United States)"
     [language | _] = Settings.list_languages(%{filter: %{label: language_label}})
 
-    [contact | _] = Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
@@ -183,7 +185,8 @@ defmodule Glific.Flows.ActionTest do
   end
 
   test "execute an action when type is set_contact_name", attrs do
-    [contact | _] = Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
@@ -199,7 +202,8 @@ defmodule Glific.Flows.ActionTest do
   end
 
   test "execute an action when type is set_contact_field to set contact preferences", attrs do
-    [contact | _] = Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     context =
       %FlowContext{contact_id: contact.id, results: %{"test_result" => "preference1"}}
@@ -220,7 +224,8 @@ defmodule Glific.Flows.ActionTest do
   end
 
   test "execute an action when type is set_contact_field to add contact field", attrs do
-    [contact | _] = Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     context =
       %FlowContext{contact_id: contact.id, results: %{"test_result" => "field1"}}
@@ -243,7 +248,8 @@ defmodule Glific.Flows.ActionTest do
   end
 
   test "execute an action when type is enter_flow", attrs do
-    [contact | _] = Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)

@@ -33,7 +33,6 @@ defmodule GlificWeb.Schema.ContactTest do
     query_gql_by(query, options)
   end
 
-
   test "contacts field returns list of contacts", %{user: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
@@ -62,11 +61,15 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "contacts field obeys limit and offset", %{user: user} do
-    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "contacts"])) == 1
 
-    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+
     assert {:ok, query_data} = result
 
     contacts = get_in(query_data, [:data, "contacts"])
@@ -216,11 +219,15 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "search contacts field returns list of contacts with options set", %{user: user} do
-    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "contacts"])) == 1
 
-    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+
     assert {:ok, query_data} = result
 
     contacts = get_in(query_data, [:data, "contacts"])
@@ -236,12 +243,12 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "search contacts field obeys group filters", %{user: user} do
-    [cg1, _cg2, cg3] = Fixtures.group_contacts_fixture()
+    [cg1, _cg2, cg3] = Fixtures.group_contacts_fixture(%{organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:list, user,
         variables: %{
-          "filter" => %{ "includeGroups" => ["#{cg1.group_id}"]}
+          "filter" => %{"includeGroups" => ["#{cg1.group_id}"]}
         }
       )
 
@@ -251,7 +258,7 @@ defmodule GlificWeb.Schema.ContactTest do
     result =
       auth_query_gql_by(:list, user,
         variables: %{
-          "filter" => %{ "includeGroups" => ["99999"]}
+          "filter" => %{"includeGroups" => ["99999"]}
         }
       )
 
@@ -275,7 +282,7 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "search contacts field obeys tag filters", %{user: user} do
-    [ct1, _ct2, ct3] = Fixtures.contact_tags_fixture()
+    [ct1, _ct2, ct3] = Fixtures.contact_tags_fixture(%{organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:list, user,
@@ -290,7 +297,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert length(get_in(query_data, [:data, "contacts"])) == 2
 
     # search a contact with in a group and having multiple tags
-    [_cg1, _cg2, cg3] = Fixtures.group_contacts_fixture()
+    [_cg1, _cg2, cg3] = Fixtures.group_contacts_fixture(%{organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:list, user,

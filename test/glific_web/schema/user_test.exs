@@ -71,7 +71,9 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "users obeys limit and offset", %{user: user} do
-    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "users"])) == 1
 
@@ -87,8 +89,10 @@ defmodule GlificWeb.Schema.UserTest do
 
   test "count returns the number of users", %{user: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
-    organization_id =  Fixtures.get_org_id()
-    assert get_in(query_data, [:data, "countUsers"]) == Users.count_users(%{filter: %{organization_id: organization_id}})
+    organization_id = Fixtures.get_org_id()
+
+    assert get_in(query_data, [:data, "countUsers"]) ==
+             Users.count_users(%{filter: %{organization_id: organization_id}})
 
     {:ok, query_data} =
       auth_query_gql_by(:count, user,

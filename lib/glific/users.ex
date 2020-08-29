@@ -21,7 +21,6 @@ defmodule Glific.Users do
     Repo.list_filter(args, User, &Repo.opts_with_name/2, &Repo.filter_with/2)
   end
 
-
   @doc """
   Return the count of users, using the same filter as list_users
   """

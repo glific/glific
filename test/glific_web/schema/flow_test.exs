@@ -82,10 +82,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert flow_name == name
 
     # create message without required atributes
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{"input" => %{"name" => name}}
-      )
+    result = auth_query_gql_by(:create, user, variables: %{"input" => %{"name" => name}})
 
     assert {:ok, query_data} = result
 

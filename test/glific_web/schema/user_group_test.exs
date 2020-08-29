@@ -83,7 +83,6 @@ defmodule GlificWeb.Schema.UserGroupTest do
     group1 = Fixtures.group_fixture(%{label: "New Group 1"})
     group2 = Fixtures.group_fixture(%{label: "New Group 2"})
 
-
     # add user groups
     result =
       query_gql_by(:update_user_groups,

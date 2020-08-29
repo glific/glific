@@ -46,7 +46,9 @@ defmodule GlificWeb.Schema.GroupTest do
   end
 
   test "groups field returns list of groups in various filters", %{user: user} do
-    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"label" => "Restricted Group"}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"label" => "Restricted Group"}})
+
     assert {:ok, query_data} = result
 
     groups = get_in(query_data, [:data, "groups"])
@@ -57,11 +59,15 @@ defmodule GlificWeb.Schema.GroupTest do
   end
 
   test "groups field obeys limit and offset", %{user: user} do
-    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "groups"])) == 1
 
-    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+
     assert {:ok, query_data} = result
 
     groups = get_in(query_data, [:data, "groups"])
@@ -105,25 +111,16 @@ defmodule GlificWeb.Schema.GroupTest do
   end
 
   test "create a group and test possible scenarios and errors", %{user: user} do
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{"input" => %{"label" => "Test Group"}}
-      )
+    result = auth_query_gql_by(:create, user, variables: %{"input" => %{"label" => "Test Group"}})
 
     assert {:ok, query_data} = result
     assert query_data[:data]["createGroup"]["errors"] == nil
     assert query_data[:data]["createGroup"]["group"]["label"] == "Test Group"
 
     # try creating the same group twice
-    _ =
-      auth_query_gql_by(:create, user,
-        variables: %{"input" => %{"label" => "test label"}}
-      )
+    _ = auth_query_gql_by(:create, user, variables: %{"input" => %{"label" => "test label"}})
 
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{"input" => %{"label" => "test label"}}
-      )
+    result = auth_query_gql_by(:create, user, variables: %{"input" => %{"label" => "test label"}})
 
     assert {:ok, query_data} = result
 

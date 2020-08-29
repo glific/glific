@@ -17,21 +17,22 @@ defmodule GlificWeb.Schema.Middleware.AddOrganization do
     case resolution.context do
       %{current_user: current_user} ->
         %{resolution | arguments: put_organization_id(resolution.arguments, current_user)}
+
       _ ->
         resolution
     end
   end
 
-  def put_organization_id(%{input: _input} = arguments, current_user) do
+  @spec put_organization_id(map(), Glific.Users.User.t()) :: map()
+  defp put_organization_id(%{input: _input} = arguments, current_user) do
     put_in(arguments, [:input, :organization_id], current_user.organization_id)
   end
 
-  def put_organization_id(%{filter: _filter} = arguments, current_user) do
+  defp put_organization_id(%{filter: _filter} = arguments, current_user) do
     put_in(arguments, [:filter, :organization_id], current_user.organization_id)
   end
 
-  def put_organization_id(arguments, current_user) do
-      put_in(arguments,
-        [Access.key(:filter, %{}), :organization_id], current_user.organization_id)
+  defp put_organization_id(arguments, current_user) do
+    put_in(arguments, [Access.key(:filter, %{}), :organization_id], current_user.organization_id)
   end
 end

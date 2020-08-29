@@ -7,7 +7,7 @@ defmodule Glific.Flows.TemplatingTest do
   }
 
   test "process extracts the right values from json for templating action",
-    %{organization_id: organization_id} = _attrs do
+       %{organization_id: organization_id} = _attrs do
     [template | _] =
       Templates.list_session_templates(%{
         filter: %{

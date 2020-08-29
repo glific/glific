@@ -41,7 +41,11 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     end
 
     test "labels", %{conn: conn} do
-      tags = Tags.list_tags(%{filter: %{parent: "Contacts", organization_id: conn.assigns[:organization_id]}})
+      tags =
+        Tags.list_tags(%{
+          filter: %{parent: "Contacts", organization_id: conn.assigns[:organization_id]}
+        })
+
       conn = get(conn, "/flow-editor/labels", %{})
       assert length(json_response(conn, 200)["results"]) == length(tags)
     end
@@ -76,8 +80,13 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     test "templates", %{conn: conn} do
       conn = get(conn, "/flow-editor/templates", %{})
       templates = json_response(conn, 200)["results"]
-      assert length(Glific.Templates.list_session_templates(%{filter: %{organization_id: conn.assigns[:organization_id]}}))
-      == length(templates)
+
+      assert length(
+               Glific.Templates.list_session_templates(%{
+                 filter: %{organization_id: conn.assigns[:organization_id]}
+               })
+             ) ==
+               length(templates)
     end
 
     test "languages", %{conn: conn} do
@@ -121,21 +130,27 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     end
 
     test "Flow with UUID should return the latest difination", %{conn: conn} do
-      [flow | _tail] = Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+      [flow | _tail] =
+        Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+
       conn = get(conn, "/flow-editor/flows/#{flow.uuid}", %{})
       results = json_response(conn, 200)["results"]
       assert results == Flows.Flow.get_latest_definition(flow.id)
     end
 
     test "Get a list of all flow revisions", %{conn: conn} do
-      [flow | _tail] = Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+      [flow | _tail] =
+        Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+
       conn = get(conn, "/flow-editor/revisions/#{flow.uuid}", %{})
       results = json_response(conn, 200)["results"]
       assert length(Flows.get_flow_revision_list(flow.uuid)[:results]) == length(results)
     end
 
     test "Get a specific revision for a flow", %{conn: conn} do
-      [flow | _tail] = Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+      [flow | _tail] =
+        Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+
       [revision | _tail] = Flows.get_flow_revision_list(flow.uuid)[:results]
 
       conn = get(conn, "/flow-editor/revisions/#{flow.uuid}/#{revision.id}", %{})
@@ -144,7 +159,9 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     end
 
     test "Save a revision for a flow", %{conn: conn} do
-      [flow | _tail] = Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+      [flow | _tail] =
+        Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+
       flow = Glific.Repo.preload(flow, :revisions)
       [revision | _tail] = flow.revisions
 

@@ -215,9 +215,9 @@ defmodule Glific.TagsTest do
     end
 
     test "keyword_map/1 returns a keyword map with ids",
-         %{organization_id: _organization_id} = attrs do
+         %{organization_id: organization_id} = attrs do
       tag = tag_fixture(attrs)
-      tag2 = tag_fixture(%{label: "tag 2", shortcode: "tag2"})
+      tag2 = tag_fixture(%{label: "tag 2", shortcode: "tag2", organization_id: organization_id})
 
       Tags.update_tag(tag, %{
         keywords: ["Hello foobar", "hi example", "hola test", "namaste saab"]
@@ -231,20 +231,11 @@ defmodule Glific.TagsTest do
     end
 
     test "status_map/0 returns a keyword map with ids",
-         %{organization_id: organization_id} = attrs do
-      tag = tag_fixture(%{label: "Unread", shortcode: "unread"})
-
-      tag2 =
-        tag_fixture(%{
-          label: "New Contact",
-          shortcode: "newcontact",
-          organization_id: organization_id
-        })
-
+         %{organization_id: _organization_id} = attrs do
       status_map = Tags.status_map(attrs)
       assert is_map(status_map)
-      assert status_map["unread"] == tag.id
-      assert status_map["newcontact"] == tag2.id
+      assert status_map["unread"] != nil
+      assert status_map["newcontact"] != nil
     end
 
     test "invalid shortcode will throw an error", %{organization_id: organization_id} do
@@ -285,7 +276,7 @@ defmodule Glific.TagsTest do
     } do
       message = Fixtures.message_fixture(%{organization_id: organization_id})
       tag = Fixtures.tag_fixture(%{organization_id: organization_id})
-      message_tag = Fixtures.message_tag_fixture(%{message_id: message.id, tag_id: tag.id})
+      message_tag = Fixtures.message_tag_fixture(%{message_id: message.id, tag_id: tag.id, organization_id: organization_id})
       assert message_tag.message_id == message.id
       assert message_tag.tag_id == tag.id
     end
@@ -318,7 +309,7 @@ defmodule Glific.TagsTest do
     } do
       message = Fixtures.message_fixture(%{organization_id: organization_id})
       tag = Fixtures.tag_fixture(%{organization_id: organization_id})
-      Fixtures.message_tag_fixture(%{message_id: message.id, tag_id: tag.id})
+      Fixtures.message_tag_fixture(%{message_id: message.id, tag_id: tag.id, organization_id: organization_id})
 
       # we love upserts!
       assert {:ok, %MessageTag{}}
@@ -344,7 +335,7 @@ defmodule Glific.TagsTest do
     } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
       tag = Fixtures.tag_fixture(%{organization_id: organization_id})
-      contact_tag = Fixtures.contact_tag_fixture(%{contact_id: contact.id, tag_id: tag.id})
+      contact_tag = Fixtures.contact_tag_fixture(%{contact_id: contact.id, tag_id: tag.id, organization_id: organization_id})
       assert contact_tag.contact_id == contact.id
       assert contact_tag.tag_id == tag.id
     end
@@ -377,7 +368,7 @@ defmodule Glific.TagsTest do
     } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
       tag = Fixtures.tag_fixture(%{organization_id: organization_id})
-      Fixtures.contact_tag_fixture(%{contact_id: contact.id, tag_id: tag.id})
+      Fixtures.contact_tag_fixture(%{contact_id: contact.id, tag_id: tag.id, organization_id: organization_id})
 
       assert {:error, %Ecto.Changeset{}} =
                Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id})

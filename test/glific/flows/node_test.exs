@@ -115,7 +115,8 @@ defmodule Glific.Flows.NodeTest do
     {node, uuid_map} = Node.process(json, %{}, flow)
 
     # create a simple flow context
-    [contact | _] = Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     {:ok, context} =
       FlowContext.create_flow_context(%{
@@ -182,7 +183,8 @@ defmodule Glific.Flows.NodeTest do
     {node, uuid_map} = Node.process(json, %{}, flow)
 
     # create a simple flow context
-    [contact | _] = Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     {:ok, context} =
       FlowContext.create_flow_context(%{

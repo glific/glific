@@ -20,7 +20,8 @@ defmodule Glific.Flows.ContactActionTest do
   end
 
   test "optout", attrs do
-    [contact | _] = Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     context =
@@ -35,7 +36,8 @@ defmodule Glific.Flows.ContactActionTest do
   end
 
   test "send message text", attrs do
-    [contact | _] = Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     attrs = %{
       flow_id: 1,
@@ -61,7 +63,8 @@ defmodule Glific.Flows.ContactActionTest do
   end
 
   test "send message template", attrs do
-    [contact | _] = Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     context =

@@ -47,7 +47,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
         |> put_in(["payload", "gsId"], gupshup_id)
         |> put_in(["payload", "payload"], %{"ts" => "1592311836"})
 
-      [message | _] = Messages.list_messages(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+      [message | _] =
+        Messages.list_messages(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+
       Messages.update_message(message, %{provider_message_id: gupshup_id})
       %{message_params: message_params, message: message}
     end

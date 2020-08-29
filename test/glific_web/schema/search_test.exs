@@ -83,7 +83,7 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, query_data} = result
 
     assert saved_search.label ==
-             get_in(query_data, [:data,  "savedSearch", "savedSearch", "label"])
+             get_in(query_data, [:data, "savedSearch", "savedSearch", "label"])
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
@@ -166,7 +166,6 @@ defmodule GlificWeb.Schema.SearchTest do
     assert message == "Resource not found"
   end
 
-
   test "search for conversations", %{user: user} do
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
 
@@ -216,7 +215,7 @@ defmodule GlificWeb.Schema.SearchTest do
       auth_query_gql_by(:search, user,
         variables: %{
           "filter" => %{"term" => ""},
-          "contactOpts" => %{"limit" => get_contacts_count(user.organization_id) * 10 },
+          "contactOpts" => %{"limit" => get_contacts_count(user.organization_id) * 10},
           "messageOpts" => %{"limit" => 1}
         }
       )
@@ -226,8 +225,8 @@ defmodule GlificWeb.Schema.SearchTest do
     # search excludes the org contact id since that is the sender of all messages
     # we need to excluse two contacts, one is the glific admin and the other is the test user and the contact
     # we created to emulate the user
-    assert length(get_in(query_data, [:data, "search"])) == get_contacts_count(user.organization_id) - 2
-
+    assert length(get_in(query_data, [:data, "search"])) ==
+             get_contacts_count(user.organization_id) - 2
   end
 
   test "save search will save the arguments", %{user: user} do
@@ -248,7 +247,6 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, saved_search} = Repo.fetch_by(SavedSearch, %{label: "Save with Search"})
   end
-
 
   test "search for not replied tagged messages in conversations", %{user: user} do
     {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
@@ -275,10 +273,7 @@ defmodule GlificWeb.Schema.SearchTest do
       delete_tag_ids: []
     })
 
-    result =
-      auth_query_gql_by(:search, user,
-        variables: saved_search.args
-      )
+    result = auth_query_gql_by(:search, user, variables: saved_search.args)
 
     assert {:ok, query_data} = result
 
@@ -298,7 +293,7 @@ defmodule GlificWeb.Schema.SearchTest do
     {:ok, saved_search} =
       Repo.fetch_by(SavedSearch, %{label: "Conversations read but not responded"})
 
-    message =  Fixtures.message_fixture(%{body: saved_search.args["term"]})
+    message = Fixtures.message_fixture(%{body: saved_search.args["term"]})
 
     MessageTags.update_message_tags(%{
       message_id: message.id,
@@ -306,10 +301,7 @@ defmodule GlificWeb.Schema.SearchTest do
       delete_tag_ids: []
     })
 
-    result =
-      auth_query_gql_by(:search, user,
-        variables: saved_search.args
-      )
+    result = auth_query_gql_by(:search, user, variables: saved_search.args)
 
     assert {:ok, query_data} = result
 
@@ -320,7 +312,8 @@ defmodule GlificWeb.Schema.SearchTest do
     assert %{"label" => "Not Responded"} in tags
   end
 
-  test "search and count for not replied tagged messages in conversations via a created saved search", %{user: user} do
+  test "search and count for not replied tagged messages in conversations via a created saved search",
+       %{user: user} do
     # {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
     # {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default receiver"})
     {:ok, not_replied_tag} = Repo.fetch_by(Tag, %{shortcode: "notreplied"})
@@ -328,7 +321,7 @@ defmodule GlificWeb.Schema.SearchTest do
     {:ok, saved_search} =
       Repo.fetch_by(SavedSearch, %{label: "Conversations read but not replied"})
 
-    message =  Fixtures.message_fixture(%{body: saved_search.args["term"]})
+    message = Fixtures.message_fixture(%{body: saved_search.args["term"]})
 
     MessageTags.update_message_tags(%{
       message_id: message.id,
@@ -362,10 +355,7 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) != nil
 
-    result =
-      auth_query_gql_by(:search_count, user,
-        variables: %{"id" => saved_search.id}
-      )
+    result = auth_query_gql_by(:search_count, user, variables: %{"id" => saved_search.id})
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "savedSearchCount"]) == 1
@@ -433,7 +423,7 @@ defmodule GlificWeb.Schema.SearchTest do
 
   test "conversation by id", %{user: user} do
     # lets create a new contact with no message
-    contact = Fixtures.contact_fixture
+    contact = Fixtures.contact_fixture()
 
     cid = Integer.to_string(contact.id)
 

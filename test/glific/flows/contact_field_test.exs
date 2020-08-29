@@ -17,11 +17,14 @@ defmodule Glific.Flows.ContactFieldTest do
   end
 
   test "add contact field",
-    %{organization_id: organization_id} = _attrs do
-    [contact | _] = Contacts.list_contacts(%{filter: %{
-      name: "Default receiver",
-      organization_id: organization_id
-    }})
+       %{organization_id: organization_id} = _attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{
+        filter: %{
+          name: "Default receiver",
+          organization_id: organization_id
+        }
+      })
 
     # preload contact
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
@@ -37,11 +40,14 @@ defmodule Glific.Flows.ContactFieldTest do
   end
 
   test "reset contact fields",
-    %{organization_id: organization_id} = _attrs do
-      [contact | _] = Contacts.list_contacts(%{filter: %{
-        name: "Default receiver",
-        organization_id: organization_id
-      }})
+       %{organization_id: organization_id} = _attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{
+        filter: %{
+          name: "Default receiver",
+          organization_id: organization_id
+        }
+      })
 
     # preload contact
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)

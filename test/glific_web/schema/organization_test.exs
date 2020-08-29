@@ -253,7 +253,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   test "delete an organization" do
     organization = Fixtures.organization_fixture()
 
-    #sometime This is causing a deadlock issue so we need to fix this
+    # sometime This is causing a deadlock issue so we need to fix this
     result = query_gql_by(:delete, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
 

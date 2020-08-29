@@ -33,8 +33,8 @@ defmodule GlificWeb.Schema.TagTest do
     query_gql_by(query, options)
   end
 
-  test "tags field returns list of tags", %{user: user}  do
-    result = auth_query_gql_by(:list, user,  variables: %{"opts" => %{"order" => "ASC"}})
+  test "tags field returns list of tags", %{user: user} do
+    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) > 0
@@ -80,7 +80,9 @@ defmodule GlificWeb.Schema.TagTest do
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) > 0
 
-    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"languageId" => language_id}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"languageId" => language_id}})
+
     assert {:ok, query_data} = result
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) > 0
@@ -92,11 +94,15 @@ defmodule GlificWeb.Schema.TagTest do
   end
 
   test "tags field obeys limit and offset", %{user: user} do
-    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "tags"])) == 1
 
-    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+
     assert {:ok, query_data} = result
 
     tags = get_in(query_data, [:data, "tags"])
@@ -119,7 +125,9 @@ defmodule GlificWeb.Schema.TagTest do
 
     assert get_in(query_data, [:data, "countTags"]) == 0
 
-    {:ok, query_data} = auth_query_gql_by(:count, user, variables: %{"filter" => %{"label" => "Greeting"}})
+    {:ok, query_data} =
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"label" => "Greeting"}})
+
     assert get_in(query_data, [:data, "countTags"]) == 1
   end
 
@@ -274,9 +282,12 @@ defmodule GlificWeb.Schema.TagTest do
 
     {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "unread"})
 
-    message1_tag = Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
-    message2_tag = Fixtures.message_tag_fixture(%{message_id: message_2.id, tag_id: tag.id})
-    message3_tag = Fixtures.message_tag_fixture(%{message_id: message_3.id, tag_id: tag.id})
+    message1_tag = Fixtures.message_tag_fixture(
+      %{message_id: message_1.id, tag_id: tag.id, organization_id: user.organization_id})
+    message2_tag = Fixtures.message_tag_fixture(
+      %{message_id: message_2.id, tag_id: tag.id, organization_id: user.organization_id})
+    message3_tag = Fixtures.message_tag_fixture(
+      %{message_id: message_3.id, tag_id: tag.id, organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:mark_contact_messages_as_read, user,

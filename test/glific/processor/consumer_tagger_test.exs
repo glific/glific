@@ -68,7 +68,7 @@ defmodule Glific.Processor.ConsumerTaggerTest do
   end
 
   test "should behave like consumer",
-    %{organization_id: organization_id} do
+       %{organization_id: organization_id} do
     {:ok, producer} = TestProducer.start_link(1)
     {:ok, _consumer} = ConsumerTagger.start_link(producer: producer, name: TestConsumerTagger)
 

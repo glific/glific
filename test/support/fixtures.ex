@@ -22,7 +22,7 @@ defmodule Glific.Fixtures do
     Users
   }
 
-  def get_org_id() do
+  def get_org_id do
     organization = Organization |> Ecto.Query.first() |> Repo.one()
     organization.id
   end
@@ -94,15 +94,17 @@ defmodule Glific.Fixtures do
 
   @doc false
   @spec organization_fixture(map()) :: Partners.Organization.t()
-  def organization_fixture(attrs \\ %{})  do
+  def organization_fixture(attrs \\ %{}) do
     valid_attrs = %{
       name: "Fixture Organization",
       display_name: "Why do we need this?",
       email: "replace@idk.org",
-      provider_id: 1, # lets just hope its there :)
+      # lets just hope its there :)
+      provider_id: 1,
       provider_key: "this is not a secret key",
       provider_phone: "and this is not a valid phone",
-      default_language_id: 1,  # lets just hope its there :)
+      # lets just hope its there :)
+      default_language_id: 1
     }
 
     {:ok, organization} =
@@ -123,7 +125,6 @@ defmodule Glific.Fixtures do
       locale: "en_US",
       is_active: true,
       is_reserved: true,
-      organization_id: get_org_id()
     }
 
     attrs = Map.merge(valid_attrs, attrs)
@@ -239,9 +240,9 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec group_contacts_fixture :: [Groups.ContactGroup.t(), ...]
-  def group_contacts_fixture do
-    attrs = %{filter: %{organization_id: get_org_id()}}
+  @spec group_contacts_fixture(map()) :: [Groups.ContactGroup.t(), ...]
+  def group_contacts_fixture(attrs) do
+    attrs = %{filter: attrs}
 
     group_fixture(attrs)
 
@@ -270,12 +271,12 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec contact_tags_fixture :: [Tags.ContactTag.t(), ...]
-  def contact_tags_fixture do
-    attrs = %{filter: %{organization_id: get_org_id()}}
-
+  @spec contact_tags_fixture(map()) :: [Tags.ContactTag.t(), ...]
+  def contact_tags_fixture(attrs) do
 
     tag_fixture(attrs)
+
+    attrs = %{filter: attrs}
 
     [c1, c2 | _] = Contacts.list_contacts(attrs)
     [t1, t2 | _] = Tags.list_tags(attrs)
@@ -321,17 +322,18 @@ defmodule Glific.Fixtures do
     flow
   end
 
-   @doc false
+  @doc false
   @spec user_fixture(map()) :: Users.User.t()
   def user_fixture(attrs \\ %{}) do
-     valid_attrs = %{
+    valid_attrs = %{
       name: "some name",
       contact_id: contact_fixture().id,
       phone: Phone.EnUs.phone(),
       password: "secret1234",
       password_confirmation: "secret1234",
       roles: ["admin"],
-      organization_id: get_org_id() # This should be static for all the user fixtures
+      # This should be static for all the user fixtures
+      organization_id: get_org_id()
     }
 
     {:ok, user} =
@@ -341,5 +343,4 @@ defmodule Glific.Fixtures do
 
     user
   end
-
 end

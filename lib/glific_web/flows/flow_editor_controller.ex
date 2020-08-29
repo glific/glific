@@ -81,7 +81,9 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec labels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels(conn, _params) do
     tag_list =
-      Glific.Tags.list_tags(%{filter: %{parent: "Contacts", organization_id: conn.assigns[:organization_id]}})
+      Glific.Tags.list_tags(%{
+        filter: %{parent: "Contacts", organization_id: conn.assigns[:organization_id]}
+      })
       |> Enum.reduce([], fn tag, acc ->
         [%{uuid: "#{tag.id}", name: tag.label} | acc]
       end)
@@ -271,11 +273,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec flows(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def flows(conn, %{"vars" => vars}) do
-
     results =
       case vars do
         [] ->
-          ##We need to fix this before merging this branch
+          ## We need to fix this before merging this branch
           Flows.list_flows(%{filter: %{organization_id: 1}})
           |> Enum.reduce([], fn flow, acc ->
             [
