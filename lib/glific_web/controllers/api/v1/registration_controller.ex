@@ -54,7 +54,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @spec create_user(Conn.t(), map()) :: {:ok, map()} | {:error, []}
   defp create_user(conn, user_params) do
     organization_id = conn.assigns[:organization_id]
-    {:ok, contact} = Repo.fetch_by(Contact, %{phone: user_params["phone"], organization_id: organization_id})
+
+    {:ok, contact} =
+      Repo.fetch_by(Contact, %{phone: user_params["phone"], organization_id: organization_id})
 
     updated_user_params =
       user_params
@@ -91,7 +93,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
   defp add_staff_tag_to_user_contact(organization_id, user) do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{phone: user.phone, organization_id: organization_id}),
-         {:ok, tag} <- Repo.fetch_by(Tags.Tag, %{label: "Staff", organization_id: organization_id}),
+         {:ok, tag} <-
+           Repo.fetch_by(Tags.Tag, %{label: "Staff", organization_id: organization_id}),
          {:ok, _} <- Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id}),
          do: {:ok, "Staff tag added to the user contatct"}
   end
@@ -126,7 +129,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @spec can_send_otp_to_phone?(integer, String.t()) :: boolean
   defp can_send_otp_to_phone?(organization_id, phone) do
-    with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
+    with {:ok, contact} <-
+           Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
          do: Contacts.can_send_message_to?(contact, true)
   end
 
@@ -159,7 +163,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
   defp reset_user_password(conn, %{"phone" => phone, "password" => password} = user_params) do
     update_params = %{"password" => password, "password_confirmation" => password}
 
-    {:ok, user} = Repo.fetch_by(User, %{phone: phone, organization_id: conn.assigns[:organization_id]})
+    {:ok, user} =
+      Repo.fetch_by(User, %{phone: phone, organization_id: conn.assigns[:organization_id]})
 
     user
     |> Users.reset_user_password(update_params)

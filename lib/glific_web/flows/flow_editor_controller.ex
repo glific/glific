@@ -294,7 +294,11 @@ defmodule GlificWeb.Flows.FlowEditorController do
           end)
 
         [flow_uuid] ->
-          with {:ok, flow} <- Glific.Repo.fetch_by(Flow, %{uuid: flow_uuid, organization_id: conn.assigns[:organization_id]}),
+          with {:ok, flow} <-
+                 Glific.Repo.fetch_by(Flow, %{
+                   uuid: flow_uuid,
+                   organization_id: conn.assigns[:organization_id]
+                 }),
                do: Flow.get_latest_definition(flow.id)
       end
 

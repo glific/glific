@@ -252,10 +252,12 @@ defmodule Glific.Messages do
   Create and send verification message
   Using session template of shortcode 'verification'
   """
-  @spec create_and_send_otp_verification_message(integer, String.t(), String.t()) :: {:ok, Message.t()}
+  @spec create_and_send_otp_verification_message(integer, String.t(), String.t()) ::
+          {:ok, Message.t()}
   def create_and_send_otp_verification_message(organization_id, phone, otp) do
     # fetch contact by phone number
-    {:ok, contact} = Glific.Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id})
+    {:ok, contact} =
+      Glific.Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id})
 
     # fetch session template by shortcode "verification"
     {:ok, session_template} =

@@ -109,7 +109,8 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "update a flow and test possible scenarios and errors", %{user: user} do
-    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
     name = "Flow Test Name"
     shortcode = "Test shortcode"
@@ -129,7 +130,8 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "delete a flow", %{user: user} do
-    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
     result = auth_query_gql_by(:delete, user, variables: %{"id" => flow.id})
     assert {:ok, query_data} = result
@@ -143,7 +145,8 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "Publish flow", %{user: user} do
-    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
     result = auth_query_gql_by(:publish, user, variables: %{"id" => flow.id})
     assert {:ok, query_data} = result
@@ -158,7 +161,9 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "Start flow for a contact", %{user: user} = attrs do
-    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
     [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
 
     result =
@@ -173,7 +178,9 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "Start flow for contacts of a group", %{user: user} do
-    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
     group = Fixtures.group_fixture()
 
     result = query_gql_by(:group_flow, variables: %{"flowId" => flow.id, "groupId" => group.id})

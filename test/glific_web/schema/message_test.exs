@@ -267,7 +267,9 @@ defmodule GlificWeb.Schema.MessageTest do
     contact = Glific.Fixtures.contact_fixture()
 
     label = "OTP Message"
-    {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
+
+    {:ok, hsm_template} =
+      Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
 
     parameters = ["param1", "param2", "param3"]
 
@@ -350,7 +352,11 @@ defmodule GlificWeb.Schema.MessageTest do
       )
 
     assert {:error, "Resource not found"} ==
-             Repo.fetch_by(Message, %{contact_id: contact.id, body: message_body, organization_id: user.organization_id})
+             Repo.fetch_by(Message, %{
+               contact_id: contact.id,
+               body: message_body,
+               organization_id: user.organization_id
+             })
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "createAndSendMessage"]) == nil

@@ -34,10 +34,17 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     }
 
     test "with valid params", %{conn: conn} do
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: conn.assigns[:organization_id]})
+      {:ok, receiver} =
+        Repo.fetch_by(Contact, %{
+          name: "Default receiver",
+          organization_id: conn.assigns[:organization_id]
+        })
 
-      {:ok, otp} = RegistrationController.create_and_send_verification_code(conn.assigns[:organization_id], receiver.phone)
-
+      {:ok, otp} =
+        RegistrationController.create_and_send_verification_code(
+          conn.assigns[:organization_id],
+          receiver.phone
+        )
 
       valid_params = %{
         "user" => %{
@@ -57,8 +64,14 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json["data"]["token_expiry_time"]
 
       # We will tag the user as a contact tag
-      {:ok, staff_tag} = Repo.fetch_by(Tag, %{label: "Staff", organization_id: conn.assigns[:organization_id]})
-      {:ok, contact} = Repo.fetch_by(Contact, %{phone: receiver.phone, organization_id: conn.assigns[:organization_id]})
+      {:ok, staff_tag} =
+        Repo.fetch_by(Tag, %{label: "Staff", organization_id: conn.assigns[:organization_id]})
+
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{
+          phone: receiver.phone,
+          organization_id: conn.assigns[:organization_id]
+        })
 
       assert {:ok, _contact_tag} =
                Repo.fetch_by(ContactTag, %{
@@ -69,10 +82,17 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "with password less than minimum characters should give error",
          %{conn: conn} do
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: conn.assigns[:organization_id]})
+      {:ok, receiver} =
+        Repo.fetch_by(Contact, %{
+          name: "Default receiver",
+          organization_id: conn.assigns[:organization_id]
+        })
 
-      {:ok, otp} = RegistrationController.create_and_send_verification_code(conn.assigns[:organization_id], receiver.phone)
-
+      {:ok, otp} =
+        RegistrationController.create_and_send_verification_code(
+          conn.assigns[:organization_id],
+          receiver.phone
+        )
 
       valid_params = %{
         "user" => %{
@@ -104,9 +124,17 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with invalid params", %{conn: conn} do
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: conn.assigns[:organization_id]})
+      {:ok, receiver} =
+        Repo.fetch_by(Contact, %{
+          name: "Default receiver",
+          organization_id: conn.assigns[:organization_id]
+        })
 
-      {:ok, otp} = RegistrationController.create_and_send_verification_code(conn.assigns[:organization_id], receiver.phone)
+      {:ok, otp} =
+        RegistrationController.create_and_send_verification_code(
+          conn.assigns[:organization_id],
+          receiver.phone
+        )
 
       invalid_params = %{
         "user" => %{
@@ -130,7 +158,12 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
   describe "send_otp/2" do
     test "send otp", %{conn: conn} do
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: conn.assigns[:organization_id]})
+      {:ok, receiver} =
+        Repo.fetch_by(Contact, %{
+          name: "Default receiver",
+          organization_id: conn.assigns[:organization_id]
+        })
+
       Contacts.contact_opted_in(receiver.phone, receiver.organization_id, DateTime.utc_now())
 
       valid_params = %{"user" => %{"phone" => receiver.phone}}
@@ -163,7 +196,12 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "send otp to optout contact will return an error", %{conn: conn} do
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: conn.assigns[:organization_id]})
+      {:ok, receiver} =
+        Repo.fetch_by(Contact, %{
+          name: "Default receiver",
+          organization_id: conn.assigns[:organization_id]
+        })
+
       Contacts.contact_opted_out(receiver.phone, receiver.organization_id, DateTime.utc_now())
       invalid_params = %{"user" => %{"phone" => receiver.phone}}
 
@@ -177,7 +215,12 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do
       # create a user for a contact
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: conn.assigns[:organization_id]})
+      {:ok, receiver} =
+        Repo.fetch_by(Contact, %{
+          name: "Default receiver",
+          organization_id: conn.assigns[:organization_id]
+        })
+
       Contacts.contact_opted_in(receiver.phone, receiver.organization_id, DateTime.utc_now())
 
       {:ok, user} =
@@ -227,7 +270,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       user = user_fixture()
 
       # reset password of a user
-      {:ok, otp} = RegistrationController.create_and_send_verification_code(conn.assigns[:organization_id], user.phone)
+      {:ok, otp} =
+        RegistrationController.create_and_send_verification_code(
+          conn.assigns[:organization_id],
+          user.phone
+        )
 
       valid_params = %{
         "user" => %{
@@ -264,7 +311,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     test "with incorrect phone number", %{conn: conn} do
       user = user_fixture()
 
-      {:ok, otp} = RegistrationController.create_and_send_verification_code(conn.assigns[:organization_id], user.phone)
+      {:ok, otp} =
+        RegistrationController.create_and_send_verification_code(
+          conn.assigns[:organization_id],
+          user.phone
+        )
 
       invalid_params = %{
         "user" => %{
@@ -284,7 +335,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       user = user_fixture()
 
       # reset password of user
-      {:ok, otp} = RegistrationController.create_and_send_verification_code(conn.assigns[:organization_id], user.phone)
+      {:ok, otp} =
+        RegistrationController.create_and_send_verification_code(
+          conn.assigns[:organization_id],
+          user.phone
+        )
 
       valid_params = %{
         "user" => %{

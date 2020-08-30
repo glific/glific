@@ -3,8 +3,8 @@ defmodule GlificWeb.Schema.GroupTest do
   use Wormwood.GQLCase
 
   alias Glific.{
-    Groups.Group,
     Fixtures,
+    Groups.Group,
     Repo
   }
 
