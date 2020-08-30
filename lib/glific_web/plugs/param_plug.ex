@@ -13,9 +13,10 @@ if Code.ensure_loaded?(Plug) do
     See `GlificWeb.ParamPlugConfig` to check all the allowed `config` flags.
     """
 
+    alias Plug.Conn
+
     alias GlificWeb.ParamPlugConfig
     alias GlificWeb.Plug
-    alias Plug.Conn
 
     @doc false
     @spec init(any) :: %{:__struct__ => atom, optional(atom) => any}
@@ -24,7 +25,7 @@ if Code.ensure_loaded?(Plug) do
     @doc false
     @spec call(Conn.t(), map()) :: Conn.t()
     def call(conn, config) do
-      Plug.put_organization(conn, get_param(conn, config), config)
+      GlificWeb.Plug.put_organization(conn, get_param(conn, config), config)
     end
 
     @spec get_param(any(), map() | atom | binary) :: any()
