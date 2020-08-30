@@ -11,6 +11,8 @@ defmodule GlificWeb.Resolvers.Searches do
     Searches.SavedSearch
   }
 
+  alias GlificWeb.Resolvers.Helper
+
   @doc """
   Get a specific saved_search by id
   """
@@ -25,16 +27,16 @@ defmodule GlificWeb.Resolvers.Searches do
   Get the list of saved_searches
   """
   @spec saved_searches(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [SavedSearch]}
-  def saved_searches(_, args, _) do
-    {:ok, Searches.list_saved_searches(args)}
+  def saved_searches(_, args, context) do
+    {:ok, Searches.list_saved_searches(Helper.add_org_filter(args, context))}
   end
 
   @doc """
   Get the count of saved_searches
   """
   @spec count_saved_searches(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_saved_searches(_, args, _) do
-    {:ok, Searches.count_saved_searches(args)}
+  def count_saved_searches(_, args, context) do
+    {:ok, Searches.count_saved_searches(Helper.add_org_filter(args, context))}
   end
 
   @doc false
@@ -71,12 +73,12 @@ defmodule GlificWeb.Resolvers.Searches do
   @doc false
   @spec search(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [any]}
-  def search(_, params, _) do
-    {:ok, Searches.search(params)}
+  def search(_, params, context) do
+    {:ok, Searches.search(Helper.add_org_filter(params, context))}
   end
 
   @doc false
   @spec saved_search_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [Conversation.t()] | integer}
-  def saved_search_count(_, params, _), do: {:ok, Searches.saved_search_count(params)}
+  def saved_search_count(_, params, context), do: {:ok, Searches.saved_search_count(Helper.add_org_filter(params, context))}
 end

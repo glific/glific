@@ -6,6 +6,7 @@ defmodule GlificWeb.Resolvers.Tags do
 
   alias Glific.{Repo, Tags, Tags.Tag}
   alias Glific.{Tags.ContactTag, Tags.MessageTag}
+  alias GlificWeb.Resolvers.Helper
 
   @doc """
   Get a specific tag by id
@@ -21,16 +22,16 @@ defmodule GlificWeb.Resolvers.Tags do
   Get the list of tags filtered by args
   """
   @spec tags(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Tag]}
-  def tags(_, args, _) do
-    {:ok, Tags.list_tags(args)}
+  def tags(_, args, context) do
+    {:ok, Tags.list_tags(Helper.add_org_filter(args, context))}
   end
 
   @doc """
   Get the count of tags filtered by args
   """
   @spec count_tags(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_tags(_, args, _) do
-    {:ok, Tags.count_tags(args)}
+  def count_tags(_, args, context) do
+    {:ok, Tags.count_tags(Helper.add_org_filter(args, context))}
   end
 
   @doc false

@@ -33,6 +33,6 @@ defmodule GlificWeb.Schema.Middleware.AddOrganization do
   end
 
   defp put_organization_id(arguments, current_user) do
-    put_in(arguments, [Access.key(:filter, %{}), :organization_id], current_user.organization_id)
+    Map.put_new(arguments, :organization_id,  current_user.organization_id)
   end
 end

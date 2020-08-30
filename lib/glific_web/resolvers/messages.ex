@@ -11,6 +11,7 @@ defmodule GlificWeb.Resolvers.Messages do
     Repo
   }
 
+  alias GlificWeb.Resolvers.Helper
   @doc """
   Get a specific message by id
   """
@@ -26,24 +27,23 @@ defmodule GlificWeb.Resolvers.Messages do
   """
   @spec messages(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def messages(_, args, _) do
-    {:ok, Messages.list_messages(args)}
+  def messages(_, args, context) do
+    {:ok, Messages.list_messages(Helper.add_org_filter(args, context))}
   end
 
   @doc """
   Get the count of messages filtered by args
   """
   @spec count_messages(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_messages(_, args, _) do
-    {:ok, Messages.count_messages(args)}
+  def count_messages(_, args, context) do
+    {:ok, Messages.count_messages(Helper.add_org_filter(args, context))}
   end
 
   @doc false
   @spec create_message(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_message(_, %{input: params}, %{context: %{current_user: current_user}}) do
-    with params <- Map.put_new(params, :organization_id, current_user.organization_id),
-         {:ok, message} <- Messages.create_message(params) do
+  def create_message(_, %{input: params}, _) do
+    with {:ok, message} <- Messages.create_message(params) do
       {:ok, %{message: message}}
     end
   end
