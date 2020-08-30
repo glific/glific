@@ -28,10 +28,15 @@ defmodule GlificWeb.Router do
     # plug :debug_response
   end
 
+   pipeline :triplex do
+    plug GlificWeb.SubdomainPlug
+    plug GlificWeb.ParamPlug
+    # plug :debug_response
+  end
+
   pipeline :api_protected do
     plug Pow.Plug.RequireAuthenticated, error_handler: GlificWeb.APIAuthErrorHandler
     plug GlificWeb.Context
-    plug GlificWeb.SubdomainPlug
   end
 
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
@@ -46,13 +51,12 @@ defmodule GlificWeb.Router do
 
   scope "/", GlificWeb do
     pipe_through :browser
-
     live "/", PageLive, :index
   end
 
   # Custom stack for Absinthe
   scope "/" do
-    pipe_through [:api, :api_protected]
+    pipe_through [:api, :api_protected, :triplex]
 
     forward "/api", Absinthe.Plug, schema: GlificWeb.Schema
 
@@ -67,6 +71,7 @@ defmodule GlificWeb.Router do
   end
 
   scope "/flow-editor", GlificWeb.Flows do
+    pipe_through [:triplex]
     get "/globals", FlowEditorController, :globals
 
     get "/groups", FlowEditorController, :groups
