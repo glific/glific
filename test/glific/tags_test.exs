@@ -415,7 +415,11 @@ defmodule Glific.TagsTest do
           receiver_id: message_1.receiver_id
         })
 
-      {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "unread"})
+      {:ok, tag} =
+        Repo.fetch_by(
+          Tag,
+          %{shortcode: "unread", organization_id: organization_id}
+        )
 
       {:ok, message1_tag} = Tags.create_message_tag(%{message_id: message_1.id, tag_id: tag.id})
       {:ok, message2_tag} = Tags.create_message_tag(%{message_id: message_2.id, tag_id: tag.id})

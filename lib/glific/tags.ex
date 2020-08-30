@@ -420,7 +420,7 @@ defmodule Glific.Tags do
   end
 
   @doc """
-    Remove a specific tag from contact messages
+  Remove a specific tag from contact messages
   """
   @spec remove_tag_from_all_message(integer(), String.t()) :: list()
   def remove_tag_from_all_message(contact_id, tag_shortcode) when is_binary(tag_shortcode) do

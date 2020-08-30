@@ -406,7 +406,12 @@ defmodule Glific.ContactsTest do
       contact = contact_fixture(%{organization_id: organization_id, status: :invalid})
 
       Contacts.contact_opted_in(contact.phone, organization_id, DateTime.utc_now())
-      {:ok, contact} = Repo.fetch_by(Contact, %{phone: contact.phone})
+
+      {:ok, contact} =
+        Repo.fetch_by(
+          Contact,
+          %{phone: contact.phone, organization_id: organization_id}
+        )
 
       assert contact.status == :valid
       assert contact.optin_time != nil
@@ -418,7 +423,12 @@ defmodule Glific.ContactsTest do
       contact = contact_fixture(%{organization_id: organization_id, status: :valid})
 
       Contacts.contact_opted_out(contact.phone, organization_id, DateTime.utc_now())
-      {:ok, contact} = Repo.fetch_by(Contact, %{phone: contact.phone})
+
+      {:ok, contact} =
+        Repo.fetch_by(
+          Contact,
+          %{phone: contact.phone, organization_id: organization_id}
+        )
 
       assert contact.status == :invalid
       assert contact.optout_time != nil
