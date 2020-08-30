@@ -143,7 +143,7 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "message id returns one message or nil", %{user: user} do
     body = "Default message body"
-    {:ok, message} = Repo.fetch_by(Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => message.id})
     assert {:ok, query_data} = result
@@ -197,7 +197,7 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "update a message and test possible scenarios and errors", %{user: user} do
     body = "Default message body"
-    {:ok, message} = Repo.fetch_by(Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:update, user,
@@ -222,7 +222,7 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "delete a message", %{user: user} do
     body = "Default message body"
-    {:ok, message} = Repo.fetch_by(Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:delete, user, variables: %{"id" => message.id})
     assert {:ok, query_data} = result
@@ -238,10 +238,10 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "send message to multiple contacts", %{user: user} do
     name = "Margarita Quinteros"
-    {:ok, contact1} = Repo.fetch_by(Contact, %{name: name})
+    {:ok, contact1} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     name = "Adelle Cavin"
-    {:ok, contact2} = Repo.fetch_by(Contact, %{name: name})
+    {:ok, contact2} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:create_and_send_message_to_contacts, user,
@@ -267,7 +267,7 @@ defmodule GlificWeb.Schema.MessageTest do
     contact = Glific.Fixtures.contact_fixture()
 
     label = "OTP Message"
-    {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{label: label})
+    {:ok, hsm_template} = Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
 
     parameters = ["param1", "param2", "param3"]
 
@@ -350,7 +350,7 @@ defmodule GlificWeb.Schema.MessageTest do
       )
 
     assert {:error, "Resource not found"} ==
-             Repo.fetch_by(Message, %{contact_id: contact.id, body: message_body})
+             Repo.fetch_by(Message, %{contact_id: contact.id, body: message_body, organization_id: user.organization_id})
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "createAndSendMessage"]) == nil

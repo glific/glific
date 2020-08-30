@@ -95,7 +95,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
   test "contact id returns one contact or nil", %{user: user} do
     name = "Glific Admin"
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
     assert {:ok, query_data} = result
@@ -142,7 +142,7 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "update a contact and test possible scenarios and errors", %{user: user} do
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Glific Admin", organization_id: user.organization_id})
 
     name = "Contact Test Name New"
     phone = "1-415-555-1212 New"
@@ -180,7 +180,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
   test "delete a contact", %{user: user} do
     # Delete a random contact
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Chrissy Cron"})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Chrissy Cron", organization_id: user.organization_id})
 
     result = auth_query_gql_by(:delete, user, variables: %{"id" => contact.id})
     assert {:ok, query_data} = result
@@ -194,9 +194,9 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "get contact location", %{user: user} do
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Chrissy Cron"})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: "Chrissy Cron", organization_id: user.organization_id})
 
-    {:ok, message} = Repo.fetch_by(Message, %{body: "Default message body"})
+    {:ok, message} = Repo.fetch_by(Message, %{body: "Default message body", organization_id: user.organization_id})
 
     {:ok, location} =
       Contacts.create_location(%{

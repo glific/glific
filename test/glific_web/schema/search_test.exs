@@ -162,7 +162,7 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   test "search for conversations", %{user: user} do
-    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: user.organization_id})
 
     receiver_id = to_string(receiver.id)
 
@@ -240,16 +240,16 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    assert {:ok, saved_search} = Repo.fetch_by(SavedSearch, %{label: "Save with Search"})
+    assert {:ok, saved_search} = Repo.fetch_by(SavedSearch, %{label: "Save with Search", organization_id: user.organization_id})
   end
 
   test "search for not replied tagged messages in conversations", %{user: user} do
-    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
-    {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-    {:ok, not_replied_tag} = Repo.fetch_by(Tag, %{shortcode: "notreplied"})
+    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Glific Admin", organization_id: user.organization_id})
+    {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: user.organization_id})
+    {:ok, not_replied_tag} = Repo.fetch_by(Tag, %{shortcode: "notreplied", organization_id: user.organization_id})
 
     {:ok, saved_search} =
-      Repo.fetch_by(SavedSearch, %{label: "Conversations read but not replied"})
+      Repo.fetch_by(SavedSearch, %{label: "Conversations read but not replied", organization_id: user.organization_id})
 
     {:ok, message} =
       %{
@@ -283,10 +283,10 @@ defmodule GlificWeb.Schema.SearchTest do
   test "search for not responded tagged messages in conversations", %{user: user} do
     # {:ok, sender} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
     # {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-    {:ok, not_responded_tag} = Repo.fetch_by(Tag, %{shortcode: "notresponded"})
+    {:ok, not_responded_tag} = Repo.fetch_by(Tag, %{shortcode: "notresponded", organization_id: user.organization_id})
 
     {:ok, saved_search} =
-      Repo.fetch_by(SavedSearch, %{label: "Conversations read but not responded"})
+      Repo.fetch_by(SavedSearch, %{label: "Conversations read but not responded", organization_id: user.organization_id})
 
     message = Fixtures.message_fixture(%{body: saved_search.args["term"]})
 
@@ -311,10 +311,10 @@ defmodule GlificWeb.Schema.SearchTest do
        %{user: user} do
     # {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
     # {:ok, sender} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-    {:ok, not_replied_tag} = Repo.fetch_by(Tag, %{shortcode: "notreplied"})
+    {:ok, not_replied_tag} = Repo.fetch_by(Tag, %{shortcode: "notreplied", organization_id: user.organization_id})
 
     {:ok, saved_search} =
-      Repo.fetch_by(SavedSearch, %{label: "Conversations read but not replied"})
+      Repo.fetch_by(SavedSearch, %{label: "Conversations read but not replied", organization_id: user.organization_id})
 
     message = Fixtures.message_fixture(%{body: saved_search.args["term"]})
 
@@ -472,7 +472,7 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   test "search with the empty tag filter will return the conversation", %{user: user} do
-    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: user.organization_id})
     receiver_id = to_string(receiver.id)
 
     result =

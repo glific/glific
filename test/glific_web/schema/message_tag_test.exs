@@ -21,11 +21,11 @@ defmodule GlificWeb.Schema.MessageTagTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/message_tag/create.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/message_tag/delete.gql")
 
-  test "create a message tag and test possible scenarios and errors" do
+  test "create a message tag and test possible scenarios and errors", %{user: user} do
     label = "This is for testing"
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     body = "Default message body"
-    {:ok, message} = Repo.fetch_by(Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
 
     result =
       query_gql_by(:create,
@@ -52,11 +52,11 @@ defmodule GlificWeb.Schema.MessageTagTest do
     assert get_in(message_tag, ["tag", "id"]) |> String.to_integer() == tag.id
   end
 
-  test "delete a message tag" do
+  test "delete a message tag", %{user: user} do
     label = "This is for testing"
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     body = "Default message body"
-    {:ok, message} = Repo.fetch_by(Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
 
     {:ok, query_data} =
       query_gql_by(:create,
