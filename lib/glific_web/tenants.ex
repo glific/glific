@@ -12,7 +12,7 @@ defmodule GlificWeb.Tenants do
 
   alias Glific.{
     Partners.Organization,
-    Repo,
+    Repo
   }
 
   @doc """
@@ -59,6 +59,13 @@ defmodule GlificWeb.Tenants do
     end)
   end
 
+  @doc """
+  Given a string from the connection info (subdomain), check and
+  retrieve the organization id.
+
+  For the short term, we'll default to organization id Glific, if
+  we cannot resolve the sub-domain, we'll remove this in v0.4
+  """
   @spec organization_handler(String.t()) :: integer
   def organization_handler(nil) do
     # in the normal case we'll redirect them here to glific.io
@@ -69,13 +76,14 @@ defmodule GlificWeb.Tenants do
 
   def organization_handler(name) do
     case Repo.fetch_by(Organization, %{name: name}) do
-      {:ok, organization} -> organization.id
+      {:ok, organization} ->
+        organization.id
+
       # in the normal case we'll redirect them here to glific.io
       # and halt this connection
       _ ->
-          {:ok, default} = Repo.fetch_by(Organization, %{name: "Glific"})
-          default.id
+        {:ok, default} = Repo.fetch_by(Organization, %{name: "Glific"})
+        default.id
     end
   end
-
 end

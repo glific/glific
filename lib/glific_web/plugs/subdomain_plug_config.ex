@@ -13,9 +13,7 @@ defmodule GlificWeb.SubdomainPlugConfig do
   @type t :: %__MODULE__{}
 
   @doc false
-  defstruct [
-    endpoint: GlificWeb.Endpoint,
-    organization_handler: &GlificWeb.Tenants.organization_handler/1,
-    assign: :organization_id
-  ]
+  defstruct endpoint: GlificWeb.Endpoint,
+            organization_handler: &GlificWeb.Tenants.organization_handler/1,
+            assign: :organization_id
 end
