@@ -156,8 +156,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:tags, [:shortcode, :language_id])
-    create index(:tags, [:organization_id])
+    create unique_index(:tags, [:shortcode, :language_id, :organization_id])
+    create index(:tags, :organization_id)
   end
 
   @doc """
@@ -215,9 +215,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:session_templates, [:label, :language_id])
-    create unique_index(:session_templates, [:shortcode, :language_id])
-    create index(:session_templates, [:organization_id])
+    create unique_index(:session_templates, [:label, :language_id, :organization_id])
+    create unique_index(:session_templates, [:shortcode, :language_id, :organization_id])
+    create index(:session_templates, :organization_id)
+    create unique_index(:session_templates, :uuid)
   end
 
   @doc """
@@ -274,8 +275,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:contacts, :phone)
-    create index(:contacts, [:organization_id])
+    create index(:contacts, [:name, :organization_id])
+    create unique_index(:contacts, [:phone, :organization_id])
+    create index(:contacts, :organization_id)
   end
 
   @doc """
@@ -372,7 +374,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
     create index(:messages, [:receiver_id])
     create index(:messages, [:contact_id])
     create index(:messages, [:user_id])
-    create index(:messages, [:organization_id])
+    create index(:messages, :organization_id)
   end
 
   @doc """
@@ -447,8 +449,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:saved_searches, :shortcode)
-    create index(:saved_searches, [:organization_id])
+    create unique_index(:saved_searches, [:shortcode, :organization_id])
+    create index(:saved_searches, :organization_id)
   end
 
   @doc """
@@ -471,8 +473,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:groups, :label)
-    create index(:groups, [:organization_id])
+    create unique_index(:groups, [:label, :organization_id])
+    create index(:groups, :organization_id)
   end
 
   @doc """
@@ -503,9 +505,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:users, [:phone])
+    create unique_index(:users, [:phone, :organization_id])
     create unique_index(:users, :contact_id)
-    create index(:users, [:organization_id])
+    create index(:users, :organization_id)
   end
 
   @doc """
@@ -565,10 +567,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:flows, :name)
-    create unique_index(:flows, :shortcode)
+    create unique_index(:flows, [:name, :organization_id])
+    create unique_index(:flows, [:shortcode, :organization_id])
     create unique_index(:flows, :uuid)
-    create index(:flows, [:organization_id])
+    create index(:flows, :organization_id)
   end
 
   @doc """
@@ -611,6 +613,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       timestamps(type: :utc_datetime)
     end
+
+    create index(:flow_contexts, :flow_uuid)
+    create index(:flow_contexts, [:flow_id, :contact_id])
   end
 
   @doc """

@@ -129,11 +129,35 @@ defmodule Glific.Seeds.SeedsDev do
   def seed_messages(organization \\ nil) do
     organization = get_organization(organization)
 
-    {:ok, sender} = Repo.fetch_by(Contact, %{name: "Glific Admin"})
-    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-    {:ok, receiver2} = Repo.fetch_by(Contact, %{name: "Adelle Cavin"})
-    {:ok, receiver3} = Repo.fetch_by(Contact, %{name: "Margarita Quinteros"})
-    {:ok, receiver4} = Repo.fetch_by(Contact, %{name: "Chrissy Cron"})
+    {:ok, sender} =
+      Repo.fetch_by(
+        Contact,
+        %{name: "Glific Admin", organization_id: organization.id}
+      )
+
+    {:ok, receiver} =
+      Repo.fetch_by(
+        Contact,
+        %{name: "Default receiver", organization_id: organization.id}
+      )
+
+    {:ok, receiver2} =
+      Repo.fetch_by(
+        Contact,
+        %{name: "Adelle Cavin", organization_id: organization.id}
+      )
+
+    {:ok, receiver3} =
+      Repo.fetch_by(
+        Contact,
+        %{name: "Margarita Quinteros", organization_id: organization.id}
+      )
+
+    {:ok, receiver4} =
+      Repo.fetch_by(
+        Contact,
+        %{name: "Chrissy Cron", organization_id: organization.id}
+      )
 
     Repo.insert!(%Message{
       body: "Default message body",
