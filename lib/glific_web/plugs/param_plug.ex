@@ -24,7 +24,9 @@ if Code.ensure_loaded?(Plug) do
 
     @doc false
     @spec call(Conn.t(), map()) :: Conn.t()
-    def call(conn, config), do: Plug.put_organization(conn, get_param(conn, config), config)
+    def call(conn, config) do
+      Plug.put_organization(conn, get_param(conn, config), config)
+    end
 
     @spec get_param(any(), map()) :: any()
     defp get_param(conn, %ParamPlugConfig{param: key}),
