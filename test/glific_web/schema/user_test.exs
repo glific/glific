@@ -156,7 +156,7 @@ defmodule GlificWeb.Schema.UserTest do
 
     name = "User Test Name New"
 
-    {:ok, otp} = RegistrationController.create_and_send_verification_code(user_test.phone)
+    {:ok, otp} = RegistrationController.create_and_send_verification_code(user.organization_id, user_test.phone)
 
     result =
       auth_query_gql_by(:update_current, user,
