@@ -24,7 +24,9 @@ if Code.ensure_loaded?(Plug) do
 
     @doc false
     @spec call(Conn.t(), map()) :: Conn.t()
-    def call(conn, config), do: Plug.put_organization(conn, get_subdomain(conn, config), config)
+    def call(conn, config) do
+      Plug.put_organization(conn, get_subdomain(conn, config), config)
+    end
 
     @spec get_subdomain(Conn.t(), map()) :: String.t()
     defp get_subdomain(_conn, %SubdomainPlugConfig{endpoint: nil}) do
@@ -36,7 +38,6 @@ if Code.ensure_loaded?(Plug) do
            %SubdomainPlugConfig{endpoint: endpoint}
          ) do
       root_host = endpoint.config(:url)[:host]
-
       if host in [root_host, "localhost", "127.0.0.1", "0.0.0.0"] do
         nil
       else

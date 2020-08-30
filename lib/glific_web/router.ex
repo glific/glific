@@ -29,8 +29,8 @@ defmodule GlificWeb.Router do
   end
 
    pipeline :triplex do
-    plug GlificWeb.SubdomainPlug
     plug GlificWeb.ParamPlug
+    plug GlificWeb.SubdomainPlug
     # plug :debug_response
   end
 

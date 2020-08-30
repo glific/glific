@@ -14,7 +14,7 @@ defmodule GlificWeb.SubdomainPlugConfig do
 
   @doc false
   defstruct [
-    :endpoint,
+    {:endpoint, GlificWeb.Endpoint},
     :organization_handler,
     assign: :current_organization
   ]
