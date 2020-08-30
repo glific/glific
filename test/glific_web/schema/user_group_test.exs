@@ -21,9 +21,9 @@ defmodule GlificWeb.Schema.UserGroupTest do
   load_gql(:update_group_users, GlificWeb.Schema, "assets/gql/user_groups/update_group_users.gql")
   load_gql(:update_user_groups, GlificWeb.Schema, "assets/gql/user_groups/update_user_groups.gql")
 
-  test "update group users" do
+  test "update group users", %{user: user} do
     label = "Default Group"
-    {:ok, group} = Repo.fetch_by(Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user.organization_id})
     user1 = Fixtures.user_fixture()
     user2 = Fixtures.user_fixture()
 
@@ -76,9 +76,9 @@ defmodule GlificWeb.Schema.UserGroupTest do
     assert group_users == []
   end
 
-  test "update user groups" do
+  test "update user groups", %{user: user} do
     name = "NGO Admin"
-    {:ok, user} = Repo.fetch_by(User, %{name: name})
+    {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: user.organization_id})
 
     group1 = Fixtures.group_fixture(%{label: "New Group 1"})
     group2 = Fixtures.group_fixture(%{label: "New Group 2"})
@@ -132,11 +132,11 @@ defmodule GlificWeb.Schema.UserGroupTest do
     assert user_groups == []
   end
 
-  test "create a user group and test possible scenarios and errors" do
+  test "create a user group and test possible scenarios and errors", %{user: user} do
     label = "Default Group"
-    {:ok, group} = Repo.fetch_by(Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user.organization_id})
     name = "NGO Basic User 1"
-    {:ok, user} = Repo.fetch_by(User, %{name: name})
+    {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: user.organization_id})
 
     result =
       query_gql_by(:create,
@@ -162,11 +162,11 @@ defmodule GlificWeb.Schema.UserGroupTest do
     assert user == "has already been taken"
   end
 
-  test "delete a user group" do
+  test "delete a user group", %{user: user} do
     label = "Default Group"
-    {:ok, group} = Repo.fetch_by(Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user.organization_id})
     name = "NGO Basic User 1"
-    {:ok, user} = Repo.fetch_by(User, %{name: name})
+    {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: user.organization_id})
 
     {:ok, query_data} =
       query_gql_by(:create,

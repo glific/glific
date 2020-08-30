@@ -104,7 +104,7 @@ defmodule GlificWeb.Schema.UserTest do
 
   test "user by id returns one user or nil", %{user: user_auth} do
     name = "NGO Basic User 1"
-    {:ok, user} = Repo.fetch_by(User, %{name: name})
+    {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: user_auth.organization_id})
 
     result = auth_query_gql_by(:by_id, user_auth, variables: %{"id" => user.id})
     assert {:ok, query_data} = result
@@ -120,7 +120,7 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "update current user with correct data", %{user: user_auth} do
-    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
+    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1", organization_id: user_auth.organization_id})
 
     name = "User Test Name New"
 
@@ -138,7 +138,7 @@ defmodule GlificWeb.Schema.UserTest do
 
   test "update current user password for different scenarios", %{user: user} do
     # create a user for a contact
-    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: user.organization_id})
 
     valid_user_attrs = %{
       "phone" => receiver.phone,
@@ -201,7 +201,7 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "update a user and test possible scenarios and errors", %{user: user_auth} do
-    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
+    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1", organization_id: user_auth.organization_id})
 
     name = "User Test Name New"
     roles = ["Staff", "Admin"]

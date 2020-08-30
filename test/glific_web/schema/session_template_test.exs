@@ -146,7 +146,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "session_template by id returns one session_template or nil", %{user: user} do
     body = "Default Template"
 
-    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{body: body})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{body: body, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => session_template.id})
     assert {:ok, query_data} = result
@@ -164,7 +164,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "create a session_template and test possible scenarios and errors", %{user: user} do
     label = "Default Template Label"
 
-    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{label: label})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
 
     language_id = session_template.language_id
 
@@ -220,7 +220,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "update a session template and test possible scenarios and errors", %{user: user} do
     label = "Default Template Label"
 
-    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{label: label})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:update, user,
@@ -250,7 +250,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   end
 
   test "delete an session_template", %{user: user} do
-    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{body: "Default Template"})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{body: "Default Template", organization_id: user.organization_id})
 
     result = auth_query_gql_by(:delete, user, variables: %{"id" => session_template.id})
     assert {:ok, query_data} = result
@@ -268,10 +268,10 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "send session message", %{user: user} do
     body = "Default Template"
 
-    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{body: body})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{body: body, organization_id: user.organization_id})
 
     name = "Adelle Cavin"
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:send_session_message, user,
@@ -285,7 +285,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "create a session_template from message", %{user: user} do
     label = "Default Template Label"
 
-    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{label: label})
+    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
 
     language_id = session_template.language_id
     [message | _] = Messages.list_messages(%{filter: %{organization_id: user.organization_id}})

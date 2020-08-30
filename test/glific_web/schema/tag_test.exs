@@ -128,7 +128,7 @@ defmodule GlificWeb.Schema.TagTest do
 
   test "tag id returns one tag or nil", %{user: user} do
     label = "This is for testing"
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => tag.id})
     assert {:ok, query_data} = result
@@ -145,7 +145,7 @@ defmodule GlificWeb.Schema.TagTest do
 
   test "create a tag and test possible scenarios and errors", %{user: user} do
     label = "This is for testing"
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     language_id = tag.language_id
 
     result =
@@ -194,7 +194,7 @@ defmodule GlificWeb.Schema.TagTest do
 
   test "update a tag and test possible scenarios and errors", %{user: user} do
     label = "This is for testing"
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:update, user,
@@ -225,7 +225,7 @@ defmodule GlificWeb.Schema.TagTest do
 
   test "create a tag with keywords", %{user: user} do
     label = "This is for testing"
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     language_id = tag.language_id
     keywords = ["Hii", "Hello"]
 
@@ -247,7 +247,7 @@ defmodule GlificWeb.Schema.TagTest do
 
   test "delete a tag", %{user: user} do
     label = "This is for testing"
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:delete, user, variables: %{"id" => tag.id})
     assert {:ok, query_data} = result
@@ -275,7 +275,7 @@ defmodule GlificWeb.Schema.TagTest do
         receiver_id: message_1.receiver_id
       })
 
-    {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "unread"})
+    {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "unread", organization_id: user.organization_id})
 
     message1_tag =
       Fixtures.message_tag_fixture(%{

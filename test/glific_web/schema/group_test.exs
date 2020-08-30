@@ -2,7 +2,11 @@ defmodule GlificWeb.Schema.GroupTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
 
-  alias Glific.Fixtures
+  alias Glific.{
+    Groups.Group,
+    Fixtures,
+    Repo
+  }
 
   setup do
     Fixtures.group_fixture()
@@ -88,7 +92,7 @@ defmodule GlificWeb.Schema.GroupTest do
 
   test "group by id returns one group or nil", %{user: user} do
     label = "Default Group"
-    {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => group.id})
     assert {:ok, query_data} = result
@@ -126,7 +130,7 @@ defmodule GlificWeb.Schema.GroupTest do
 
   test "update a group and test possible scenarios and errors", %{user: user} do
     label = "Default Group"
-    {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:update, user,
@@ -154,7 +158,7 @@ defmodule GlificWeb.Schema.GroupTest do
 
   test "delete a group", %{user: user} do
     label = "Default Group"
-    {:ok, group} = Glific.Repo.fetch_by(Glific.Groups.Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:delete, user, variables: %{"id" => group.id})
     assert {:ok, query_data} = result

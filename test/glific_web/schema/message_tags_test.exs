@@ -25,7 +25,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
   test "update a message tag with add tags", %{user: user} do
     tags_map = tag_status_map(user.organization_id)
     body = "Default message body"
-    {:ok, message} = Repo.fetch_by(Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
 
     result =
       query_gql_by(:update,
@@ -77,7 +77,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
   test "update a message tag with add and delete tags", %{user: user} do
     tags_map = tag_status_map(user.organization_id)
     body = "Default message body"
-    {:ok, message} = Repo.fetch_by(Message, %{body: body})
+    {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
 
     # add some tags, test bad deletion value
     result =

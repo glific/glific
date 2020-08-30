@@ -38,7 +38,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
   test "update group contacts", %{user: user_auth} do
     user = Fixtures.user_fixture()
     label = "Default Group"
-    {:ok, group} = Repo.fetch_by(Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user_auth.organization_id})
 
     [contact1, contact2 | _] =
       Contacts.list_contacts(%{filter: %{organization_id: user.organization_id}})
@@ -94,7 +94,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
   test "update contact groups", %{user: user_auth} do
     name = "Default receiver"
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user_auth.organization_id})
     user = Fixtures.user_fixture()
     [group1, group2 | _] = Groups.list_groups(%{filter: %{organization_id: user.organization_id}})
 
@@ -149,9 +149,9 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
   test "create a contact group and test possible scenarios and errors", %{user: user_auth} do
     label = "Default Group"
-    {:ok, group} = Repo.fetch_by(Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user_auth.organization_id})
     name = "Glific Admin"
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user_auth.organization_id})
 
     result =
       auth_query_gql_by(:create, user_auth,
@@ -179,9 +179,9 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
   test "delete a contact group", %{user: user_auth} do
     label = "Default Group"
-    {:ok, group} = Repo.fetch_by(Group, %{label: label})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user_auth.organization_id})
     name = "Glific Admin"
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user_auth.organization_id})
 
     {:ok, query_data} =
       auth_query_gql_by(:create, user_auth,
