@@ -19,6 +19,7 @@ defmodule GlificWeb.Tenants do
   Notice that you can use regexes, and they will be applied to the organization
   names.
   """
+  @spec reserved_organizations() :: list()
   def reserved_organizations do
     [
       nil,
@@ -36,6 +37,7 @@ defmodule GlificWeb.Tenants do
 
   The function `to_prefix/1` will be applied to the organization.
   """
+  @spec reserved_organization?(map | String.t()) :: boolean()
   def reserved_organization?(organization) when is_map(organization) do
     organization
     |> Map.get(:name)

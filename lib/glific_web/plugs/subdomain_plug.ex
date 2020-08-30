@@ -19,11 +19,14 @@ if Code.ensure_loaded?(Plug) do
     alias GlificWeb.SubdomainPlugConfig
 
     @doc false
+    @spec init(any) :: %{:__struct__ => atom, optional(atom) => any}
     def init(opts), do: struct(SubdomainPlugConfig, opts)
 
     @doc false
+    @spec call(Conn.t(), map()) :: Conn.t()
     def call(conn, config), do: Plug.put_organization(conn, get_subdomain(conn, config), config)
 
+    @spec get_subdomain(Conn.t(), map()) :: String.t()
     defp get_subdomain(_conn, %SubdomainPlugConfig{endpoint: nil}) do
       nil
     end

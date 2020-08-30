@@ -12,6 +12,7 @@ defmodule GlificWeb.Resolvers.Messages do
   }
 
   alias GlificWeb.Resolvers.Helper
+
   @doc """
   Get a specific message by id
   """

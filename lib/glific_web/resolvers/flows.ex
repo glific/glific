@@ -9,8 +9,7 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows,
     Flows.Flow,
     Groups.Group,
-    Repo,
-
+    Repo
   }
 
   alias GlificWeb.Resolvers.Helper

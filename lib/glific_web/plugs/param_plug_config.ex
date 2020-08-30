@@ -9,6 +9,7 @@ defmodule GlificWeb.ParamPlugConfig do
   - `assign`: the name of the assign where we must save the organization.
   - `param`: the param name to load the organization from.
   """
-
+  @type t :: %__MODULE__{}
+  @doc false
   defstruct [:organization_handler, assign: :current_organization, param: "organization"]
 end

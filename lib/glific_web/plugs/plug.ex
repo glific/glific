@@ -35,6 +35,7 @@ if Code.ensure_loaded?(Plug) do
     be used as the organization.
     - `assign`: the name of the assign where we must save the organization.
     """
+    @spec put_organization(Conn.t(), any(), map()) :: Conn.t()
     def put_organization(conn, organization, config) do
       if conn.assigns[config.assign] do
         conn
@@ -57,6 +58,7 @@ if Code.ensure_loaded?(Plug) do
 
     - `assign`: the name of the assign where we must save the organization.
     """
+    @spec ensure_organization(Conn.t(), map()) :: Conn.t()
     def ensure_organization(conn, config) do
       if loaded_organization = conn.assigns[config.assign] do
         callback(conn, loaded_organization, config.callback)
@@ -67,6 +69,7 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
+    @spec organization_handler(any(), any()) :: any()
     defp organization_handler(organization, nil),
       do: organization
 

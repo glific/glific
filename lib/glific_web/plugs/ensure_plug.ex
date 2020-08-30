@@ -1,5 +1,7 @@
 if Code.ensure_loaded?(Plug) do
   defmodule GlificWeb.EnsurePlug do
+    alias Plug.Conn
+
     @moduledoc """
     This is a basic plug that ensure the organization is loaded.
 
@@ -20,6 +22,7 @@ if Code.ensure_loaded?(Plug) do
     def init(opts), do: struct(EnsurePlugConfig, opts)
 
     @doc false
+    @spec call(Conn.t(), map()) :: Conn.t()
     def call(conn, config), do: Plug.ensure_organization(conn, config)
   end
 end

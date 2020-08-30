@@ -10,7 +10,9 @@ defmodule GlificWeb.SubdomainPlugConfig do
   - `endpoint`: the Phoenix.Endpoint to get the host name to dicover the
   subdomain.
   """
+  @type t :: %__MODULE__{}
 
+  @doc false
   defstruct [
     :endpoint,
     :organization_handler,
