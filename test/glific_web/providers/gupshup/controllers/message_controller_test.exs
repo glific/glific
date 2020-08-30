@@ -64,7 +64,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
       provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id, organization_id: conn.assigns[:organization_id]})
       message = Repo.preload(message, [:receiver, :sender, :media])
 
       # Provider message id should be updated
@@ -102,7 +102,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       json_response(conn, 200)
 
       provider_message_id = get_in(setup_config.message_params, ["payload", "id"])
-      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id, organization_id: conn.assigns[:organization_id]})
       message = Repo.preload(message, [:sender, :media])
 
       # Provider message id should be updated
@@ -131,7 +131,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
       provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id, organization_id: conn.assigns[:organization_id]})
       message = Repo.preload(message, [:media, :sender])
 
       # test media fields
@@ -152,7 +152,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
       provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id, organization_id: conn.assigns[:organization_id]})
       message = Repo.preload(message, [:media, :sender])
 
       # test media fields
@@ -172,7 +172,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
       provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id, organization_id: conn.assigns[:organization_id]})
       message = Repo.preload(message, [:media, :sender])
 
       # test media fields
@@ -208,7 +208,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
       provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id, organization_id: conn.assigns[:organization_id]})
       message = Repo.preload(message, [:media, :sender])
 
       {:ok, location} = Repo.fetch_by(Location, %{message_id: message.id})
