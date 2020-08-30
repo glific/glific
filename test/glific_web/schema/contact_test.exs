@@ -26,7 +26,6 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/contacts/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contacts/delete.gql")
   load_gql(:contact_location, GlificWeb.Schema, "assets/gql/contacts/contact_location.gql")
-  load_gql(:search, GlificWeb.Schema, "assets/gql/contacts/search.gql")
 
   test "contacts field returns list of contacts", %{user: user} do
     result = auth_query_gql_by(:list, user)

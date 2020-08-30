@@ -31,6 +31,7 @@ defmodule GlificWeb.Router do
   pipeline :api_protected do
     plug Pow.Plug.RequireAuthenticated, error_handler: GlificWeb.APIAuthErrorHandler
     plug GlificWeb.Context
+    plug GlificWeb.SubdomainPlug
   end
 
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
