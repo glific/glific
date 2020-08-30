@@ -15,8 +15,8 @@ if Code.ensure_loaded?(Plug) do
 
     alias Plug.Conn
 
-    alias __MODULE__
     alias GlificWeb.Plug
+    alias GlificWeb.SubdomainPlugConfig
 
     @doc false
     def init(opts), do: struct(SubdomainPlugConfig, opts)

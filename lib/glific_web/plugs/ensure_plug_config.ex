@@ -11,5 +11,5 @@ defmodule GlificWeb.EnsurePlugConfig do
   It must return a connection.
   """
 
-  defstruct [:callback, :failure_callback, assign: :current_tenant]
+  defstruct [:callback, :failure_callback, assign: :current_organization]
 end

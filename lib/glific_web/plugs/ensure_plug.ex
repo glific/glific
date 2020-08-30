@@ -12,7 +12,7 @@ if Code.ensure_loaded?(Plug) do
     See `GlificWeb.EnsurePlugConfig` to check all the allowed `config` flags.
     """
 
-    alias __MODULE__
+    alias GlificWeb.EnsurePlugConfig
     alias GlificWeb.Plug
 
     @doc false

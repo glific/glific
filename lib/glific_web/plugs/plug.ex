@@ -23,10 +23,10 @@ if Code.ensure_loaded?(Plug) do
 
     alias Plug.Conn
 
-    @raw_tenant_assign :raw_current_organization
+    @raw_organization_assign :raw_current_organization
 
     @doc """
-    Puts the given `tenantorganization` as an assign on the given `conn`, but only if the
+    Puts the given `organization` as an assign on the given `conn`, but only if the
     organization is not reserved.
 
     The `config` map/struct must have:
@@ -39,10 +39,10 @@ if Code.ensure_loaded?(Plug) do
       if conn.assigns[config.assign] do
         conn
       else
-        conn = Conn.assign(conn, @raw_organization_assign, tenant)
+        conn = Conn.assign(conn, @raw_organization_assign, organization)
         organization = organization_handler(organization, config.organization_handler)
 
-        if GlificWeb.reserved_organization?(organization) do
+        if GlificWeb.Tenants.reserved_organization?(organization) do
           conn
         else
           Conn.assign(conn, config.assign, organization)
@@ -55,7 +55,7 @@ if Code.ensure_loaded?(Plug) do
 
     The `config` map/struct must have:
 
-    - `assign`: the name of the assign where we must save the tenant.
+    - `assign`: the name of the assign where we must save the organization.
     """
     def ensure_organization(conn, config) do
       if loaded_organization = conn.assigns[config.assign] do
@@ -67,7 +67,7 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
-    defp  organization_handler(tenant, nil),
+    defp organization_handler(organization, nil),
       do: organization
 
     defp organization_handler(organization, handler) when is_function(handler),
