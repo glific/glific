@@ -23,7 +23,7 @@ if Code.ensure_loaded?(Plug) do
 
     alias Plug.Conn
 
-    @raw_organization_assign :raw_current_organization
+    @raw_organization_assign :raw_organization_name
 
     @doc """
     Puts the given `organization` as an assign on the given `conn`, but only if the

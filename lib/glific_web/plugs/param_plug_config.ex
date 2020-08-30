@@ -11,5 +11,9 @@ defmodule GlificWeb.ParamPlugConfig do
   """
   @type t :: %__MODULE__{}
   @doc false
-  defstruct [:organization_handler, assign: :current_organization, param: "organization"]
+  defstruct [
+    organization_handler: &GlificWeb.Tenants.organization_handler/1,
+    assign: :organization_id,
+    param: "organization"
+  ]
 end

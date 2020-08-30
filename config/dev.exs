@@ -23,7 +23,7 @@ config :glific, GlificWeb.Endpoint,
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
-  url: [host: "org.glific.test"],
+  url: [host: "glific.test"],
   watchers: [
     node: [
       "node_modules/webpack/bin/webpack.js",
