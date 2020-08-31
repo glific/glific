@@ -248,6 +248,7 @@ defmodule Glific.Messages do
     })
   end
 
+  @doc false
   @spec create_and_send_otp_verification_message(integer, Contact.t(), String.t()) ::
           {:ok, Message.t()}
   def create_and_send_otp_verification_message(organization_id, contact, otp) do
@@ -273,7 +274,6 @@ defmodule Glific.Messages do
   @doc """
   Send a session template to the specific contact. This is typically used in automation
   """
-
   @spec create_and_send_session_template(String.t(), integer) :: {:ok, Message.t()}
   def create_and_send_session_template(template_id, receiver_id) when is_binary(template_id),
     do: create_and_send_session_template(String.to_integer(template_id), receiver_id)
