@@ -26,6 +26,10 @@ The Contact Status enum
 <td valign="top"><strong>VALID</strong></td>
 <td></td>
 </tr>
+<tr>
+<td valign="top"><strong>BLOCKED</strong></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 

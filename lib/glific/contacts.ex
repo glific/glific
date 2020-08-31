@@ -80,7 +80,16 @@ defmodule Glific.Contacts do
       _, query ->
         query
     end)
+    |> filter_contacts_with_blocked_status(filter)
   end
+
+  # Remove contacts with blocked status unless filtered by status
+  @spec filter_contacts_with_blocked_status(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
+          Ecto.Queryable.t()
+  defp filter_contacts_with_blocked_status(query, %{status: _}), do: query
+
+  defp filter_contacts_with_blocked_status(query, _),
+    do: from(q in query, where: q.status != ^:blocked)
 
   # codebeat:enable[ABC]
 
