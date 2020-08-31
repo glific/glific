@@ -172,6 +172,23 @@ defmodule Glific.Tags do
   end
 
   @doc """
+  Given a tag id or a list of tag ids, retrieve all the ancestors for the list_tags
+  """
+  @spec include_all_ancestors(non_neg_integer | [non_neg_integer]) :: [non_neg_integer]
+  def include_all_ancestors(tag_id) when is_integer(tag_id),
+    do: include_all_ancestors([tag_id])
+
+  def include_all_ancestors(tag_ids) do
+    Tag
+    |> where([t], t.id in ^tag_ids)
+    |> select([t], t.ancestors)
+    |> Repo.all()
+    |> List.flatten()
+    |> Enum.concat(tag_ids)
+    |> Enum.uniq()
+  end
+
+  @doc """
   Gets a single message.
 
   Raises `Ecto.NoResultsError` if the Message does not exist.
