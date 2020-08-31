@@ -184,6 +184,9 @@ defmodule Glific.Repo do
       {:language_id, language_id}, query ->
         from q in query, where: q.language_id == ^language_id
 
+      {:organization_id, organization_id}, query ->
+        from q in query, where: q.organization_id == ^organization_id
+
       {:parent, label}, query ->
         from q in query,
           join: t in assoc(q, :parent),

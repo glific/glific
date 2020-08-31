@@ -53,20 +53,24 @@ defmodule GlificWeb.API.V1.RegistrationController do
 
   @spec create_user(Conn.t(), map()) :: {:ok, map()} | {:error, []}
   defp create_user(conn, user_params) do
-    {:ok, contact} = Repo.fetch_by(Contact, %{phone: user_params["phone"]})
+    organization_id = conn.assigns[:organization_id]
+
+    {:ok, contact} =
+      Repo.fetch_by(Contact, %{phone: user_params["phone"], organization_id: organization_id})
 
     updated_user_params =
       user_params
       |> Map.merge(%{
         "password_confirmation" => user_params["password"],
-        "contact_id" => contact.id
+        "contact_id" => contact.id,
+        "organization_id" => organization_id
       })
 
     conn
     |> Pow.Plug.create_user(updated_user_params)
     |> case do
       {:ok, user, conn} ->
-        {:ok, _} = add_staff_tag_to_user_contact(user)
+        {:ok, _} = add_staff_tag_to_user_contact(organization_id, user)
 
         response_data = %{
           data: %{
@@ -86,11 +90,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
   end
 
   @doc false
-  @spec add_staff_tag_to_user_contact(User.t()) :: {:ok, String.t()}
-  defp add_staff_tag_to_user_contact(user) do
+  @spec add_staff_tag_to_user_contact(integer, User.t()) :: {:ok, String.t()}
+  defp add_staff_tag_to_user_contact(organization_id, user) do
     with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{phone: user.phone}),
-         {:ok, tag} <- Repo.fetch_by(Tags.Tag, %{label: "Staff"}),
+           Repo.fetch_by(Contact, %{phone: user.phone, organization_id: organization_id}),
+         {:ok, tag} <-
+           Repo.fetch_by(Tags.Tag, %{label: "Staff", organization_id: organization_id}),
          {:ok, _} <- Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id}),
          do: {:ok, "Staff tag added to the user contatct"}
   end
@@ -98,11 +103,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @doc false
   @spec send_otp(Conn.t(), map()) :: Conn.t()
   def send_otp(conn, %{"user" => %{"phone" => phone}} = user_params) do
+    organization_id = conn.assigns[:organization_id]
     registration = user_params["user"]["registration"]
 
-    with true <- can_send_otp_to_phone?(phone),
-         true <- send_otp_allowed?(phone, registration),
-         {:ok, _otp} <- create_and_send_verification_code(phone) do
+    with {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
+         true <- send_otp_allowed?(organization_id, phone, registration),
+         {:ok, _otp} <- create_and_send_verification_code(organization_id, contact) do
       json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
     else
       _ ->
@@ -115,22 +121,24 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @doc """
   Function for generating verification code and sending otp verification message
   """
-  @spec create_and_send_verification_code(String.t()) :: {:ok, String.t()}
-  def create_and_send_verification_code(phone) do
-    code = PasswordlessAuth.generate_code(phone)
-    Glific.Messages.create_and_send_otp_verification_message(phone, code)
+  @spec create_and_send_verification_code(integer, Contact.t()) :: {:ok, String.t()}
+  def create_and_send_verification_code(organization_id, contact) do
+    code = PasswordlessAuth.generate_code(contact.phone)
+    Glific.Messages.create_and_send_otp_verification_message(organization_id, contact, code)
     {:ok, code}
   end
 
-  @spec can_send_otp_to_phone?(String.t()) :: boolean
-  defp can_send_otp_to_phone?(phone) do
-    with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}),
-         do: Contacts.can_send_message_to?(contact, true)
+  @spec can_send_otp_to_phone?(integer, String.t()) :: {:ok, Contact.t()} | {:error, any} | false
+  defp can_send_otp_to_phone?(organization_id, phone) do
+    with {:ok, contact} <-
+           Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
+         true <- Contacts.can_send_message_to?(contact, true),
+         do: {:ok, contact}
   end
 
-  @spec send_otp_allowed?(String.t(), String.t()) :: boolean
-  defp send_otp_allowed?(phone, registration) do
-    {result, _} = Repo.fetch_by(User, %{phone: phone})
+  @spec send_otp_allowed?(integer, String.t(), String.t()) :: boolean
+  defp send_otp_allowed?(organization_id, phone, registration) do
+    {result, _} = Repo.fetch_by(User, %{phone: phone, organization_id: organization_id})
     (result == :ok && registration == "false") || (result == :error && registration != "false")
   end
 
@@ -157,7 +165,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
   defp reset_user_password(conn, %{"phone" => phone, "password" => password} = user_params) do
     update_params = %{"password" => password, "password_confirmation" => password}
 
-    {:ok, user} = Repo.fetch_by(User, %{phone: phone})
+    {:ok, user} =
+      Repo.fetch_by(User, %{phone: phone, organization_id: conn.assigns[:organization_id]})
 
     user
     |> Users.reset_user_password(update_params)

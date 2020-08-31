@@ -108,10 +108,10 @@ defmodule GlificWeb.Schema do
           Absinthe.Type.Object.t()
         ) :: [Absinthe.Middleware.spec(), ...]
   def middleware(middleware, _field, %{identifier: :mutation}),
-    do: middleware ++ [Middleware.ChangesetErrors]
+    do: [Middleware.AddOrganization | middleware] ++ [Middleware.ChangesetErrors]
 
   def middleware(middleware, _field, %{identifier: :query}),
-    do: middleware ++ [Middleware.QueryErrors]
+    do: [Middleware.AddOrganization | middleware] ++ [Middleware.QueryErrors]
 
   def middleware(middleware, _field, _object),
     do: middleware

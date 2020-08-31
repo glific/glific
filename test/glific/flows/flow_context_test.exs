@@ -90,8 +90,8 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.node == node
   end
 
-  test "init_context/3 will initaite a flow context" do
-    [flow | _tail] = Glific.Flows.list_flows()
+  test "init_context/3 will initaite a flow context", attrs do
+    [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
     flow = Flow.get_loaded_flow(%{shortcode: flow.shortcode})
     contact = Fixtures.contact_fixture()
     {:ok, flow_context, _} = FlowContext.init_context(flow, contact)
@@ -103,8 +103,8 @@ defmodule Glific.Flows.FlowContextTest do
     assert {:error, _message} = FlowContext.execute(flow_context, [])
   end
 
-  test "execute an context should return ok tuple" do
-    [flow | _tail] = Glific.Flows.list_flows()
+  test "execute an context should return ok tuple", attrs do
+    [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
     flow = Flow.get_loaded_flow(%{shortcode: flow.shortcode})
     contact = Fixtures.contact_fixture()
     {:ok, flow_context, _} = FlowContext.init_context(flow, contact)

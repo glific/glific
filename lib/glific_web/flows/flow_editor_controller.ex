@@ -20,7 +20,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec groups(Plug.Conn.t(), map) :: Plug.Conn.t()
   def groups(conn, _params) do
     group_list =
-      Glific.Groups.list_groups()
+      Glific.Groups.list_groups(%{filter: %{organization_id: conn.assigns[:organization_id]}})
       |> Enum.reduce([], fn group, acc ->
         [%{uuid: "#{group.id}", name: group.label} | acc]
       end)
@@ -81,7 +81,9 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec labels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels(conn, _params) do
     tag_list =
-      Glific.Tags.list_tags(%{filter: %{parent: "Contacts"}})
+      Glific.Tags.list_tags(%{
+        filter: %{parent: "Contacts", organization_id: conn.assigns[:organization_id]}
+      })
       |> Enum.reduce([], fn tag, acc ->
         [%{uuid: "#{tag.id}", name: tag.label} | acc]
       end)
@@ -155,7 +157,9 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def templates(conn, _params) do
     results =
-      Glific.Templates.list_session_templates()
+      Glific.Templates.list_session_templates(%{
+        filter: %{organization_id: conn.assigns[:organization_id]}
+      })
       |> Enum.reduce([], fn template, acc ->
         template = Glific.Repo.preload(template, :language)
         language = template.language
@@ -272,7 +276,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
     results =
       case vars do
         [] ->
-          Flows.list_flows()
+          ## We need to fix this before merging this branch
+          Flows.list_flows(%{filter: %{organization_id: 1}})
           |> Enum.reduce([], fn flow, acc ->
             [
               %{
@@ -289,7 +294,11 @@ defmodule GlificWeb.Flows.FlowEditorController do
           end)
 
         [flow_uuid] ->
-          with {:ok, flow} <- Glific.Repo.fetch_by(Flow, %{uuid: flow_uuid}),
+          with {:ok, flow} <-
+                 Glific.Repo.fetch_by(Flow, %{
+                   uuid: flow_uuid,
+                   organization_id: conn.assigns[:organization_id]
+                 }),
                do: Flow.get_latest_definition(flow.id)
       end
 

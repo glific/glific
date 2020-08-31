@@ -67,7 +67,8 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     :ok
   end
 
-  test "should behave like consumer" do
+  test "should behave like consumer",
+       %{organization_id: organization_id} do
     {:ok, producer} = TestProducer.start_link(1)
     {:ok, _consumer} = ConsumerTagger.start_link(producer: producer, name: TestConsumerTagger)
 
@@ -79,7 +80,7 @@ defmodule Glific.Processor.ConsumerTaggerTest do
 
     # check the message tags
     tags = ["language", "unread", "greeting", "thankyou", "numeric", "goodbye"]
-    tag_ids = Tags.tags_map(tags)
+    tag_ids = Tags.tags_map(%{organization_id: organization_id}, tags)
 
     Enum.map(
       TestProducer.get_checks(),

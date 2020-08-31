@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Fixtures,
     Partners.Organization,
     Partners.Provider,
     Repo,
@@ -12,7 +13,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
   setup do
     provider = SeedsDev.seed_providers()
-    # contact = SeedsDev.seed_contacts()
     SeedsDev.seed_organizations(provider)
     :ok
   end
@@ -74,11 +74,10 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
   test "create an organization and test possible scenarios and errors" do
     name = "Organization Test Name"
-    display_name = "Organization Test Name"
-    contact_name = "Test"
+    shortcode = "org_shortcode"
     email = "test2@glific.org"
     provider_key = "random"
-    provider_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+    provider_phone = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
     provider_name = "Default Provider"
     {:ok, provider} = Repo.fetch_by(Provider, %{name: provider_name})
@@ -91,12 +90,11 @@ defmodule GlificWeb.Schema.OrganizationTest do
         variables: %{
           "input" => %{
             "name" => name,
-            "display_name" => display_name,
+            "shortcode" => shortcode,
             "email" => email,
-            "contact_name" => contact_name,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
-            "provider_number" => provider_number,
+            "provider_phone" => provider_phone,
             "default_language_id" => language.id
           }
         }
@@ -106,18 +104,18 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     organization = get_in(query_data, [:data, "createOrganization", "organization"])
     assert Map.get(organization, "name") == name
+    assert Map.get(organization, "isActive") == true
 
     # try creating the same organization twice
     query_gql_by(:create,
       variables: %{
         "input" => %{
           "name" => "test_name",
-          "display_name" => display_name,
+          "shortcode" => shortcode,
           "email" => email,
-          "contact_name" => contact_name,
           "provider_key" => provider_key,
           "provider_id" => provider.id,
-          "provider_number" => provider_number,
+          "provider_phone" => provider_phone,
           "default_language_id" => language.id
         }
       }
@@ -128,12 +126,11 @@ defmodule GlificWeb.Schema.OrganizationTest do
         variables: %{
           "input" => %{
             "name" => "test_name",
-            "display_name" => display_name,
+            "shortcode" => shortcode,
             "email" => email,
-            "contact_name" => contact_name,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
-            "provider_number" => provider_number,
+            "provider_phone" => provider_phone,
             "default_language_id" => language.id
           }
         }
@@ -146,14 +143,13 @@ defmodule GlificWeb.Schema.OrganizationTest do
   end
 
   test "update an organization and test possible scenarios and errors" do
-    {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
+    organization = Fixtures.organization_fixture()
 
     name = "Organization Test Name"
-    display_name = "Organization Test Name"
-    contact_name = "Test"
+    shortcode = "org_shortcode"
     email = "test2@glific.org"
     provider_key = "random"
-    provider_number = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+    provider_phone = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
     provider_name = "Default Provider"
     {:ok, provider} = Repo.fetch_by(Provider, %{name: provider_name})
@@ -167,12 +163,11 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "id" => organization.id,
           "input" => %{
             "name" => name,
-            "display_name" => display_name,
+            "shortcode" => shortcode,
             "email" => email,
-            "contact_name" => contact_name,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
-            "provider_number" => provider_number,
+            "provider_phone" => provider_phone,
             "default_language_id" => language.id
           }
         }
@@ -187,31 +182,29 @@ defmodule GlificWeb.Schema.OrganizationTest do
     query_gql_by(:create,
       variables: %{
         "input" => %{
-          "name" => "new organization",
-          "display_name" => display_name,
+          "name" => name,
+          "shortcode" => "new_shortcode",
           "email" => "new email",
-          "contact_name" => contact_name,
           "provider_key" => provider_key,
           "provider_id" => provider.id,
-          "provider_number" => "new provider_number",
+          "provider_phone" => "new provider_phone",
           "default_language_id" => language.id
         }
       }
     )
 
-    # ensure we cannot update an existing organization with the same name, email or provider_number
+    # ensure we cannot update an existing organization with the same name, email or provider_phone
     result =
       query_gql_by(:update,
         variables: %{
           "id" => organization.id,
           "input" => %{
             "name" => "new organization",
-            "display_name" => display_name,
+            "shortcode" => "new_shortcode",
             "email" => "new email",
-            "contact_name" => contact_name,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
-            "provider_number" => "new provider_number",
+            "provider_phone" => "new provider_phone",
             "default_language_id" => language.id
           }
         }
@@ -258,8 +251,9 @@ defmodule GlificWeb.Schema.OrganizationTest do
   end
 
   test "delete an organization" do
-    {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
+    organization = Fixtures.organization_fixture()
 
+    # sometime This is causing a deadlock issue so we need to fix this
     result = query_gql_by(:delete, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
 

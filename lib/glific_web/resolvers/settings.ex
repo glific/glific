@@ -34,16 +34,6 @@ defmodule GlificWeb.Resolvers.Settings do
   end
 
   @doc """
-  Get the list of objects in the database that match the term
-  """
-  @spec search(Absinthe.Resolution.t(), %{matching: String.t()}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def search(_, %{matching: _term}, _) do
-    # {:ok, Tags.search(term)}
-    {:ok, %{}}
-  end
-
-  @doc """
   Create a new language. Since language is a basic system data type, this operation is an upsert
   """
   @spec create_language(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::

@@ -16,8 +16,15 @@ defmodule Glific.Flows.ContactFieldTest do
     :ok
   end
 
-  test "add contact field" do
-    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+  test "add contact field",
+       %{organization_id: organization_id} = _attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{
+        filter: %{
+          name: "Default receiver",
+          organization_id: organization_id
+        }
+      })
 
     # preload contact
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
@@ -32,8 +39,15 @@ defmodule Glific.Flows.ContactFieldTest do
     assert updated_contact.fields[field]["type"] == type
   end
 
-  test "reset contact fields" do
-    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+  test "reset contact fields",
+       %{organization_id: organization_id} = _attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{
+        filter: %{
+          name: "Default receiver",
+          organization_id: organization_id
+        }
+      })
 
     # preload contact
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)

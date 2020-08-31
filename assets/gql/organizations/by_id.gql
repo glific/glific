@@ -1,6 +1,6 @@
 #import "./fields.frag.gql"
 
-query organization($id: ID!) {
+query organization($id: ID) {
   organization(id: $id) {
     ...OrganizationFields
 

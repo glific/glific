@@ -2,6 +2,7 @@ defmodule Glific.FLowsTest do
   use Glific.DataCase
 
   alias Glific.{
+    Fixtures,
     Flows,
     Flows.Flow,
     Flows.FlowRevision
@@ -36,44 +37,39 @@ defmodule Glific.FLowsTest do
       shortcode: "update shortcode"
     }
 
-    def flow_fixture(attrs \\ %{}) do
-      {:ok, flow} =
-        attrs
-        |> Enum.into(@valid_attrs)
-        |> Flows.create_flow()
+    def flow_fixture(attrs \\ %{}),
+      do: Fixtures.flow_fixture(attrs)
 
-      flow
-    end
-
-    test "list_flows/0 returns all flows" do
+    test "list_flows/0 returns all flows", attrs do
       flow = flow_fixture()
-      assert Enum.filter(Flows.list_flows(), fn fl -> fl.name == flow.name end) == [flow]
+      flows = Flows.list_flows(%{filter: attrs})
+      assert Enum.filter(flows, fn fl -> fl.name == flow.name end) == [flow]
     end
 
-    test "list_flows/1 returns flows filtered by keyword" do
+    test "list_flows/1 returns flows filtered by keyword", attrs do
       f0 = flow_fixture(@valid_attrs)
       _f1 = flow_fixture(@valid_more_attrs)
 
-      flows = Flows.list_flows(%{filter: %{keyword: "test_keyword"}})
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{keyword: "test_keyword"})})
       assert flows == [f0]
 
-      flows = Flows.list_flows(%{filter: %{keyword: "wrong_keyword"}})
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{keyword: "wrong_keyword"})})
       assert flows == []
 
-      flows = Flows.list_flows(%{filter: %{wrong_filter: "test"}})
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{wrong_filter: "test"})})
       assert length(flows) >= 2
     end
 
-    test "count_flows/0 returns count of all flows" do
+    test "count_flows/0 returns count of all flows", attrs do
       flow_count = Repo.aggregate(Flow, :count)
 
       _ = flow_fixture()
-      assert Flows.count_flows() == flow_count + 1
+      assert Flows.count_flows(%{filter: attrs}) == flow_count + 1
 
       _ = flow_fixture(@valid_more_attrs)
-      assert Flows.count_flows() == flow_count + 2
+      assert Flows.count_flows(%{filter: attrs}) == flow_count + 2
 
-      assert Flows.count_flows(%{filter: %{name: "Help Workflow"}}) == 1
+      assert Flows.count_flows(%{filter: Map.merge(attrs, %{name: "Help Workflow"})}) == 1
     end
 
     test "get_flow!/1 returns the flow with given id" do
@@ -81,8 +77,14 @@ defmodule Glific.FLowsTest do
       assert Flows.get_flow!(flow.id) == flow
     end
 
-    test "create_flow/1 with valid data creates a flow" do
-      assert {:ok, %Flow{} = flow} = Flows.create_flow(@valid_attrs)
+    test "create_flow/1 with valid data creates a flow", attrs do
+      [predefine_flow | _tail] = Flows.list_flows(%{filter: attrs})
+
+      assert {:ok, %Flow{} = flow} =
+               @valid_attrs
+               |> Map.merge(%{organization_id: predefine_flow.organization_id})
+               |> Flows.create_flow()
+
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
       assert flow.shortcode == @valid_attrs.shortcode
@@ -103,7 +105,7 @@ defmodule Glific.FLowsTest do
     end
 
     test "create_flow/1 will have a default revision" do
-      assert {:ok, %Flow{} = flow} = Flows.create_flow(@valid_attrs)
+      flow = flow_fixture(@valid_attrs)
       flow = Glific.Repo.preload(flow, [:revisions])
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
@@ -183,8 +185,8 @@ defmodule Glific.FLowsTest do
       assert length(current_revisions) == length(flow.revisions) + 1
     end
 
-    test "check_required_fields/1 check the required field in the json file" do
-      [flow | _tail] = Flows.list_flows()
+    test "check_required_fields/1 check the required field in the json file", attrs do
+      [flow | _tail] = Flows.list_flows(%{filter: attrs})
       flow = Glific.Repo.preload(flow, [:revisions])
       [revision | _tail] = flow.revisions
       assert Flows.check_required_fields(revision.definition, [:name]) == true
@@ -192,8 +194,8 @@ defmodule Glific.FLowsTest do
       assert_raise ArgumentError, fn -> Flows.check_required_fields(definition, [:name]) end
     end
 
-    test "get_cached_flow/2 save the flow to cache returns a touple and flow" do
-      [flow | _tail] = Flows.list_flows()
+    test "get_cached_flow/2 save the flow to cache returns a touple and flow", attrs do
+      [flow | _tail] = Flows.list_flows(%{filter: attrs})
       {:ok, loaded_flow} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
       assert loaded_flow.nodes != nil
 
@@ -203,8 +205,8 @@ defmodule Glific.FLowsTest do
       assert loaded_flow_2 == loaded_flow
     end
 
-    test "update_cached_flow/1 will remove the keys and update the flows" do
-      [flow | _tail] = Flows.list_flows()
+    test "update_cached_flow/1 will remove the keys and update the flows", attrs do
+      [flow | _tail] = Flows.list_flows(%{filter: attrs})
       {:ok, loaded_flow} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
       Flows.update_flow(flow, %{:shortcode => "flow_new"})
       Flows.update_cached_flow(flow.uuid)
