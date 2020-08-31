@@ -664,7 +664,11 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       # lets make this an enum with the following values
       # :text, :integer, :number, :boolean, :date
-      add :value_type, :string
+      add :value_type, :fields_enum
+
+      # scope of variable
+      # for now - contact or globals, maybe an enum also
+      add :scope, :scope_enum
 
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
