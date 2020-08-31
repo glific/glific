@@ -695,11 +695,11 @@ defmodule Glific.Messages do
     # given a list of tag_ids, build another list, which includes the tag_ids
     # and also all its parent tag_ids
     all_tag_ids = Tags.include_all_ancestors(tag_ids)
+
     query
     |> join(:left, [m], mt in MessageTag, as: :mt, on: m.id == mt.message_id)
     |> where([mt: mt], mt.tag_id in ^all_tag_ids)
   end
-
 
   # apply filter for user ids
   @spec include_user_filter(Ecto.Queryable.t(), []) :: Ecto.Queryable.t()
