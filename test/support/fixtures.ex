@@ -201,7 +201,7 @@ defmodule Glific.Fixtures do
       type: :text,
       language_id: language.id,
       parent_id: session_template.id,
-      uuid: "53008c3d-e619-4ec6-80cd-b9b2c89386dc",
+      uuid: Ecto.UUID.generate(),
       organization_id: get_org_id()
     }
 

@@ -91,7 +91,9 @@ defmodule Glific.Templates.SessionTemplate do
     |> validate_media(session_template)
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
-    |> unique_constraint([:label, :language_id])
+    |> unique_constraint([:label, :language_id, :organization_id])
+    |> unique_constraint([:shortcode, :language_id, :organization_id])
+    |> unique_constraint([:uuid])
   end
 
   @doc false

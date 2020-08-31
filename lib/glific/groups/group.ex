@@ -49,6 +49,6 @@ defmodule Glific.Groups.Group do
     contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint(:label)
+    |> unique_constraint([:label, :organization_id])
   end
 end

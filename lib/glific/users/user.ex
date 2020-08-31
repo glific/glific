@@ -74,7 +74,7 @@ defmodule Glific.Users.User do
     |> Changeset.cast(params, [:phone])
     |> Changeset.update_change(:phone, &maybe_normalize_user_id_field_value/1)
     |> Changeset.validate_required([:phone])
-    |> Changeset.unique_constraint(:phone)
+    |> Changeset.unique_constraint([:phone, :organization_id])
   end
 
   @doc """
