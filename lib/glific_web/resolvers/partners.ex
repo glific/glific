@@ -9,11 +9,16 @@ defmodule GlificWeb.Resolvers.Partners do
   @doc """
   Get a specific organization by id
   """
-  @spec organization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  @spec organization(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def organization(_, %{id: id}, _) do
     with {:ok, organization} <- Repo.fetch(Organization, id),
-         do: {:ok, %{organization: organization}}
+          do: {:ok, %{organization: organization}}
+  end
+
+  def organization(_, _, %{context: %{current_user: current_user}}) do
+    with {:ok, organization} <- Repo.fetch(Organization, current_user.organization_id),
+          do: {:ok, %{organization: organization}}
   end
 
   @doc """

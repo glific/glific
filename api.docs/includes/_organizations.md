@@ -72,7 +72,7 @@ Type | Description
 ## Get a specific Organization by ID
 
 ```graphql
-query organization($id: ID!) {
+query organization($id: ID) {
   organization(id: $id) {
     organization {
       id
@@ -111,16 +111,29 @@ query organization($id: ID!) {
 }
 ```
 
+> Get current user's organization details
+
+```graphql
+query organization {
+  organization {
+    organization {
+      id
+      name
+    }
+  }
+}
+```
+
 ### Query Parameters
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-filter | <a href="#organizationfilter">OrganizationFilter</a> | nil | filter the list
+id | <a href="#id">ID</a> ||
 
 ### Return Parameters
 Type | Description
 | ---- | -----------
-<a href="#organizationresult">OrganizationResult</a> | Queried Organization
+<a href="#organizationresult">OrganizationResult</a> | Queried organization or Current user's organization
 
 ## Count all Organizations
 
@@ -166,7 +179,9 @@ mutation createOrganization($input:OrganizationInput!) {
       id
       name
       shortcode
-      contactName
+      contact {
+        id
+      }
 			email
       provider {
         id
@@ -190,7 +205,7 @@ mutation createOrganization($input:OrganizationInput!) {
   "input": {
     "shortcode": "new_organization",
     "name": "new organization",
-    "contactName": "organization's contact",
+    "contactId": 1,
     "email": "test@test.com",
     "providerId": 1,
     "providerKey": "Key provided by provider",
@@ -208,7 +223,9 @@ mutation createOrganization($input:OrganizationInput!) {
     "createOrganization": {
       "errors": null,
       "organization": {
-        "contactName": "organization's contact",
+        "contact": {
+          "id": "1"
+        },
         "defaultLanguage": {
           "id": "1",
           "label": "Hindi"
@@ -454,11 +471,6 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>contactName</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
 <td colspan="2" valign="top"><strong>defaultLanguage</strong></td>
 <td valign="top"><a href="#language">Language</a></td>
 <td></td>
@@ -620,15 +632,6 @@ Filtering options for organizations
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>contactName</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td>
-
-Match the contact name
-
-</td>
-</tr>
-<tr>
 <td colspan="2" valign="top"><strong>defaultLanguage</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td>
@@ -714,11 +717,6 @@ Nullable
 Unique
 
 </td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>contactName</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>defaultLanguageId</strong></td>
