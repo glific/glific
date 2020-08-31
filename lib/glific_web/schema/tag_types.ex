@@ -19,7 +19,7 @@ defmodule GlificWeb.Schema.TagTypes do
     field :label, :string
     field :shortcode, :string
     field :description, :string
-    field :colorcode, :string
+    field :color_code, :string
     field :is_active, :boolean
     field :is_reserved, :boolean
     field :keywords, list_of(:string)
@@ -67,7 +67,7 @@ defmodule GlificWeb.Schema.TagTypes do
     field :label, :string
     field :shortcode, :string
     field :description, :string
-    field :colorcode, :string
+    field :color_code, :string
     field :is_active, :boolean
     field :is_reserved, :boolean
     field :language_id, :id
