@@ -239,8 +239,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     contacts = get_in(query_data, [:data, "contacts"])
     assert length(contacts) >= 1
-    [contact | _] = contacts
-    assert get_in(contact, ["name"]) == "Adelle Cavin"
+    [contact_a, contact_b | _] = contacts
+
+    # sometime the contact we create from the user is sorted before our friend
+    # adelle, hence checking the first two contact
+    assert get_in(contact_a, ["name"]) == "Adelle Cavin" or
+      get_in(contact_b, ["name"]) == "Adelle Cavin"
   end
 
   test "search contacts field obeys group filters", %{user: user} do
