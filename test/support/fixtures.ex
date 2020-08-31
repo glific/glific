@@ -339,7 +339,7 @@ defmodule Glific.Fixtures do
       organization_id: get_org_id()
     }
 
-    user =
+    {:ok, user} =
       attrs
       |> Enum.into(valid_attrs)
       |> Users.create_user()
