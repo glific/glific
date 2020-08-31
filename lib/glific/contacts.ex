@@ -191,7 +191,7 @@ defmodule Glific.Contacts do
         change_contact(%Contact{}, Map.merge(other_attrs, attrs)),
         returning: true,
         on_conflict: [set: Enum.map(attrs, fn {key, value} -> {key, value} end)],
-        conflict_target: :phone
+        conflict_target: [:phone, :organization_id]
       )
 
     {:ok, contact}

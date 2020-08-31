@@ -83,7 +83,7 @@ defmodule Glific.Contacts.Contact do
     contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint(:phone)
+    |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
   end
 end
