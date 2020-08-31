@@ -17,7 +17,7 @@ defmodule Glific.Enums do
   [:ok, :error]
 
   iex> Glific.Enums.contact_status_const()
-  [:failed, :invalid, :processing, :valid, :blocked]
+  [:blocked, :failed, :invalid, :processing, :valid]
 
   iex> Glific.Enums.contact_provider_status_const()
   [:none, :session, :session_and_hsm, :hsm]

@@ -20,7 +20,7 @@ config :glific,
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,
-  url: [host: "glific.test"],
+  url: [host: "glific.dev"],
   secret_key_base: "IN3UOAXU/FC6yPcBcC/iHg85F52QYPvjSiDkRdoydEobrrL+aNhat5I5+WA4IW0e",
   render_errors: [view: GlificWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: Glific.PubSub,
