@@ -355,15 +355,16 @@ defmodule Glific.Seeds.SeedsDev do
       organization_id: organization.id
     })
 
-    {:ok, user} =  Users.create_user(%{
-      name: "NGO Admin",
-      phone: "919876543210",
-      password: password,
-      confirm_password: password,
-      roles: ["admin"],
-      contact_id: contact2.id,
-      organization_id: organization.id
-    })
+    {:ok, user} =
+      Users.create_user(%{
+        name: "NGO Admin",
+        phone: "919876543210",
+        password: password,
+        confirm_password: password,
+        roles: ["admin"],
+        contact_id: contact2.id,
+        organization_id: organization.id
+      })
 
     user
   end
