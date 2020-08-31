@@ -105,7 +105,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   object :organization_queries do
     @desc "get the details of one organization"
     field :organization, :organization_result do
-      arg(:id, non_null(:id))
+      arg(:id, :id)
       resolve(&Resolvers.Partners.organization/3)
     end
 

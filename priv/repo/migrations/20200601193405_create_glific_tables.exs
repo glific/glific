@@ -112,6 +112,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
     create unique_index(:organizations, :shortcode)
     create unique_index(:organizations, :provider_phone)
     create unique_index(:organizations, :email)
+    create unique_index(:organizations, :contact_id)
   end
 
   @doc """
