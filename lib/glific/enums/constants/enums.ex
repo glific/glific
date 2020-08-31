@@ -11,7 +11,7 @@ defmodule Glific.Enums.Constants do
       @api_status_const [:ok, :error]
 
       # the status determines if we can send a message to the contact
-      @contact_status_const [:failed, :invalid, :processing, :valid]
+      @contact_status_const [:failed, :invalid, :processing, :valid, :blocked]
 
       # the provider status determines if we can send a message to the contact
       @contact_provider_status_const [:none, :session, :session_and_hsm, :hsm]
