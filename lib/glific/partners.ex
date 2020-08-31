@@ -153,7 +153,7 @@ defmodule Glific.Partners do
   List of organizations that are active within the system
   """
   @spec active_organizations :: map()
-  def active_organizations() do
+  def active_organizations do
     Organization
     # |> where([q], q.is_active == true)
     |> select([q], [q.id, q.name])
