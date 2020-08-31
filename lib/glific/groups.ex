@@ -22,14 +22,14 @@ defmodule Glific.Groups do
 
   """
   @spec list_groups(map()) :: [Group.t()]
-  def list_groups(args \\ %{}),
+  def list_groups(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.list_filter(args, Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
   Return the count of groups, using the same filter as list_groups
   """
   @spec count_groups(map()) :: integer
-  def count_groups(args \\ %{}),
+  def count_groups(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.count_filter(args, Group, &Repo.filter_with/2)
 
   @doc """

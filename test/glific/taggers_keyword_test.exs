@@ -31,8 +31,9 @@ defmodule Glific.TaggersKeywordTest do
     "and  a thank you in the middle"
   ]
 
-  test "ensure keyword maps has got some of the most common english (and soon hindi) phrases" do
-    keyword_map = Keyword.get_keyword_map()
+  test "ensure keyword maps has got some of the most common english (and soon hindi) phrases",
+       attrs do
+    keyword_map = Keyword.get_keyword_map(attrs)
 
     Enum.map(
       @checker,
@@ -40,8 +41,8 @@ defmodule Glific.TaggersKeywordTest do
     )
   end
 
-  test "check keyword tag body matches things in keyword map, and skips non matches" do
-    keyword_map = Keyword.get_keyword_map()
+  test "check keyword tag body matches things in keyword map, and skips non matches", attrs do
+    keyword_map = Keyword.get_keyword_map(attrs)
 
     Enum.map(
       @checker,
@@ -54,8 +55,8 @@ defmodule Glific.TaggersKeywordTest do
     )
   end
 
-  test "check keyword tag message matches things in keyword map, and skips non matches" do
-    keyword_map = Keyword.get_keyword_map()
+  test "check keyword tag message matches things in keyword map, and skips non matches", attrs do
+    keyword_map = Keyword.get_keyword_map(attrs)
 
     Enum.map(
       @checker,

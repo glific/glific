@@ -45,7 +45,6 @@ defmodule GlificWeb.Router do
 
   scope "/", GlificWeb do
     pipe_through :browser
-
     live "/", PageLive, :index
   end
 

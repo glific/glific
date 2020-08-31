@@ -38,7 +38,11 @@ defmodule Glific.Taggers.TaggerHelper do
 
   @spec add_tag(Message.t(), String.t()) :: Message.t()
   defp add_tag(message, tag_shortcode) do
-    {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: tag_shortcode})
+    {:ok, tag} =
+      Repo.fetch_by(
+        Tag,
+        %{shortcode: tag_shortcode, organization_id: message.organization_id}
+      )
 
     {:ok, _} =
       Tags.create_message_tag(%{

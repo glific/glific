@@ -88,8 +88,8 @@ defmodule Glific.Flows.NodeTest do
     assert_raise ArgumentError, fn -> Node.process(json, %{}, flow) end
   end
 
-  test "execute a node having actions and without exit" do
-    [flow | _tail] = Glific.Flows.list_flows()
+  test "execute a node having actions and without exit", attrs do
+    [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
     node_uuid_1 = Ecto.UUID.generate()
     exit_uuid_1 = Ecto.UUID.generate()
 
@@ -115,7 +115,8 @@ defmodule Glific.Flows.NodeTest do
     {node, uuid_map} = Node.process(json, %{}, flow)
 
     # create a simple flow context
-    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     {:ok, context} =
       FlowContext.create_flow_context(%{
@@ -147,8 +148,8 @@ defmodule Glific.Flows.NodeTest do
     assert updated_contact.language_id == language.id
   end
 
-  test "execute a node having router without cases should fail" do
-    [flow | _tail] = Glific.Flows.list_flows()
+  test "execute a node having router without cases should fail", attrs do
+    [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
     node_uuid_1 = Ecto.UUID.generate()
 
     json = %{
@@ -182,7 +183,8 @@ defmodule Glific.Flows.NodeTest do
     {node, uuid_map} = Node.process(json, %{}, flow)
 
     # create a simple flow context
-    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     {:ok, context} =
       FlowContext.create_flow_context(%{

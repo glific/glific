@@ -2,6 +2,6 @@ query organizations($filter: OrganizationFilter) {
   organizations(filter: $filter) {
     name
     email
-    provider_number
+    provider_phone
   }
 }

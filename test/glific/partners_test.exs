@@ -143,29 +143,26 @@ defmodule Glific.PartnersTest do
 
     @valid_org_attrs %{
       name: "Organization Name",
-      display_name: "Organization Display Name",
-      contact_name: "Organization Contact person",
+      shortcode: "organization_shortcode",
       email: "Contact person email",
       provider_key: "Provider key",
-      provider_number: "991737373"
+      provider_phone: "991737373"
     }
 
     @valid_org_attrs_1 %{
       name: "Organization Name 1",
-      display_name: "Organization Display Name 1",
-      contact_name: "Organization Contact person 1",
+      shortcode: "organization_shortcode 1",
       email: "Contact person email 1",
       provider_key: "Provider key 1",
-      provider_number: "9917373731"
+      provider_phone: "9917373731"
     }
 
     @update_org_attrs %{
       name: "Updated Name",
-      display_name: "Updated Display Name 1",
-      contact_name: "Updated Contact"
+      shortcode: "updated_shortcode"
     }
 
-    @invalid_org_attrs %{provider_id: nil, name: nil, contact_name: nil}
+    @invalid_org_attrs %{provider_id: nil, name: nil}
 
     @valid_default_language_attrs %{
       label: "English (United States)",
@@ -235,9 +232,9 @@ defmodule Glific.PartnersTest do
                |> Partners.create_organization()
 
       assert organization.name == @valid_org_attrs.name
-      assert organization.display_name == @valid_org_attrs.display_name
+      assert organization.shortcode == @valid_org_attrs.shortcode
       assert organization.email == @valid_org_attrs.email
-      assert organization.provider_number == @valid_org_attrs.provider_number
+      assert organization.provider_phone == @valid_org_attrs.provider_phone
     end
 
     test "create_organization/1 with invalid data returns error changeset" do
@@ -263,7 +260,6 @@ defmodule Glific.PartnersTest do
                Partners.update_organization(organization, @update_org_attrs)
 
       assert organization.name == @update_org_attrs.name
-      assert organization.contact_name == @update_org_attrs.contact_name
     end
 
     test "update_organization/2 with invalid data returns error changeset" do
@@ -346,16 +342,13 @@ defmodule Glific.PartnersTest do
       org_list = Partners.list_organizations(%{filter: %{name: org1.name}})
       assert org_list == [org1]
 
-      org_list = Partners.list_organizations(%{filter: %{display_name: org1.display_name}})
-      assert org_list == [org1]
-
-      org_list = Partners.list_organizations(%{filter: %{contact_name: org1.contact_name}})
+      org_list = Partners.list_organizations(%{filter: %{shortcode: org1.shortcode}})
       assert org_list == [org1]
 
       org_list = Partners.list_organizations(%{filter: %{email: org1.email}})
       assert org_list == [org1]
 
-      org_list = Partners.list_organizations(%{filter: %{provider_number: org1.provider_number}})
+      org_list = Partners.list_organizations(%{filter: %{provider_phone: org1.provider_phone}})
       assert org_list == [org1]
 
       org_list = Partners.list_organizations(%{order: :asc, filter: %{name: "ABC"}})

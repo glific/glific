@@ -9,8 +9,9 @@ defmodule Glific.Taggers.Keyword do
   # need to handle keywords in tags
 
   @doc false
-  @spec get_keyword_map :: %{String.t() => integer}
-  def get_keyword_map, do: Glific.Tags.keyword_map()
+  @spec get_keyword_map(map()) :: %{String.t() => integer}
+  def get_keyword_map(%{organization_id: _organization_id} = attrs),
+    do: Glific.Tags.keyword_map(attrs)
 
   @doc false
   @spec tag_message(Message.t(), %{String.t() => integer}) :: {:ok, String.t()} | :error

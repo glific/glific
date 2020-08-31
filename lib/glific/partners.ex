@@ -150,6 +150,21 @@ defmodule Glific.Partners do
     do: Repo.list_filter(args, Organization, &Repo.opts_with_name/2, &filter_organization_with/2)
 
   @doc """
+  List of organizations that are active within the system
+  """
+  @spec active_organizations :: map()
+  def active_organizations do
+    Organization
+    # |> where([q], q.is_active == true)
+    |> select([q], [q.id, q.name])
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn row, acc ->
+      [id, value] = row
+      Map.put(acc, id, value)
+    end)
+  end
+
+  @doc """
   Return the count of organizations, using the same filter as list_organizations
   """
   @spec count_organizations(map()) :: integer
@@ -163,12 +178,6 @@ defmodule Glific.Partners do
     query = Repo.filter_with(query, filter)
 
     Enum.reduce(filter, query, fn
-      {:display_name, display_name}, query ->
-        from q in query, where: ilike(q.display_name, ^"%#{display_name}%")
-
-      {:contact_name, contact_name}, query ->
-        from q in query, where: ilike(q.contact_name, ^"%#{contact_name}%")
-
       {:email, email}, query ->
         from q in query, where: ilike(q.email, ^"%#{email}%")
 
@@ -177,8 +186,8 @@ defmodule Glific.Partners do
           join: c in assoc(q, :provider),
           where: ilike(c.name, ^"%#{provider}%")
 
-      {:provider_number, provider_number}, query ->
-        from q in query, where: ilike(q.provider_number, ^"%#{provider_number}%")
+      {:provider_phone, provider_phone}, query ->
+        from q in query, where: ilike(q.provider_phone, ^"%#{provider_phone}%")
 
       {:default_language, default_language}, query ->
         from q in query,
@@ -281,10 +290,26 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  We will cache this soon, since this is a frequently requested item. This contact id is special
-  since it is the sender for all outbound messages and the receiver for all inbound messages
+  Temorary hack to get the organization id while we get tests to pass
   """
-  @spec organization_contact_id() :: {atom, integer()}
+  @spec organization_id() :: integer()
+  def organization_id do
+    case Caches.get("organization_id") do
+      {:ok, false} ->
+        organization = Organization |> Ecto.Query.first() |> Repo.one()
+        Caches.set("organization_id", organization.id)
+        organization.id
+
+      {:ok, organization_id} ->
+        organization_id
+    end
+  end
+
+  @doc """
+  This contact id is special since it is the sender for all outbound messages
+  and the receiver for all inbound messages
+  """
+  @spec organization_contact_id() :: integer()
   def organization_contact_id do
     # Get contact id
     case Caches.get("organization_contact_id") do
@@ -301,6 +326,22 @@ defmodule Glific.Partners do
 
       {:ok, contact_id} ->
         contact_id
+    end
+  end
+
+  @doc """
+  Get the default language id
+  """
+  @spec organization_language_id() :: integer()
+  def organization_language_id do
+    case Caches.get("organization_language_id") do
+      {:ok, false} ->
+        organization = Organization |> Ecto.Query.first() |> Repo.one()
+        Caches.set("organization_language_id", organization.default_language_id)
+        organization.default_language_id
+
+      {:ok, organization_language_id} ->
+        organization_language_id
     end
   end
 end

@@ -16,11 +16,12 @@ defmodule Glific.Flows.ContactSettingTest do
     :ok
   end
 
-  test "set contact language" do
+  test "set contact language", attrs do
     language_label = "English (United States)"
     {:ok, language} = Repo.fetch_by(Language, %{label: language_label})
 
-    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     flow_context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
@@ -38,8 +39,9 @@ defmodule Glific.Flows.ContactSettingTest do
     end
   end
 
-  test "set contact name" do
-    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+  test "set contact name", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     flow_context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
@@ -51,8 +53,9 @@ defmodule Glific.Flows.ContactSettingTest do
     assert updated_contact.name == updated_name
   end
 
-  test "add contact preference" do
-    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+  test "add contact preference", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     flow_context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
@@ -82,8 +85,9 @@ defmodule Glific.Flows.ContactSettingTest do
     assert updated_contact.settings["preferences"] == %{}
   end
 
-  test "delete contact preference" do
-    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+  test "delete contact preference", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     flow_context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
@@ -100,8 +104,9 @@ defmodule Glific.Flows.ContactSettingTest do
     assert updated_contact.settings["preferences"][preference] == false
   end
 
-  test "reset contact preference" do
-    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+  test "reset contact preference", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     flow_context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
@@ -117,8 +122,9 @@ defmodule Glific.Flows.ContactSettingTest do
     assert updated_contact.settings["preferences"] == %{}
   end
 
-  test "set contact preference" do
-    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+  test "set contact preference", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     flow_context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
@@ -139,8 +145,9 @@ defmodule Glific.Flows.ContactSettingTest do
     assert updated_contact.settings["preferences"] == %{}
   end
 
-  test "get contact preference" do
-    [contact | _] = Contacts.list_contacts(%{filter: %{name: "Default receiver"}})
+  test "get contact preference", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
     flow_context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
