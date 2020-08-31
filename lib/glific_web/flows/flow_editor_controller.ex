@@ -45,6 +45,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec fields(Plug.Conn.t(), map) :: Plug.Conn.t()
   def fields(conn, _params) do
+    # need to retrieve these from DB
     fileds = [
       %{key: "name", name: "Name", value_type: "text"},
       %{key: "age_group", name: "Age Group", value_type: "text"},
@@ -57,16 +58,18 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc """
-    Add Contact fields into the database. The response should be a map with 3 keys
-    % { Key: Field name, name: Field display name value_type: type of the value}
+  Add Contact fields into the database. The response should be a map with 3 keys
+  % { Key: Field name, name: Field display name value_type: type of the value}
 
-    We are not supporting this for now. We will add that in future
+  We are not supporting this for now. We will add that in future
   """
 
   @spec fields_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def fields_post(conn, _params) do
+    # need to store this into DB, the value_type will default to text in this case
+    # the shortcode is the name, lower cased, and camelized
     conn
-    |> json(%{})
+    |> json(%{key: "input_field", name: "Input Field", value_type: "text"})
   end
 
   @doc """
