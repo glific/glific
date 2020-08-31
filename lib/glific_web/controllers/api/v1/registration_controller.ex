@@ -128,7 +128,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
     {:ok, code}
   end
 
-  @spec can_send_otp_to_phone?(integer, String.t()) :: boolean
+  @spec can_send_otp_to_phone?(integer, String.t()) :: {:ok, Contact.t()} | {:error, any} | false
   defp can_send_otp_to_phone?(organization_id, phone) do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
