@@ -150,6 +150,21 @@ defmodule Glific.Partners do
     do: Repo.list_filter(args, Organization, &Repo.opts_with_name/2, &filter_organization_with/2)
 
   @doc """
+  List of organizations that are active within the system
+  """
+  @spec active_organizations :: map()
+  def active_organizations() do
+    Organization
+    # |> where([q], q.is_active == true)
+    |> select([q], [q.id, q.name])
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn row, acc ->
+      [id, value] = row
+      Map.put(acc, id, value)
+    end)
+  end
+
+  @doc """
   Return the count of organizations, using the same filter as list_organizations
   """
   @spec count_organizations(map()) :: integer

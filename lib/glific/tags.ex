@@ -172,20 +172,6 @@ defmodule Glific.Tags do
   end
 
   @doc """
-  Returns the list of messages tags.
-
-  ## Examples
-
-      iex> list_messages_tags()
-      [%MessageTag{}, ...]
-
-  """
-  @spec list_messages_tags(map()) :: [MessageTag.t()]
-  def list_messages_tags(_args \\ %{}) do
-    Repo.all(MessageTag)
-  end
-
-  @doc """
   Gets a single message.
 
   Raises `Ecto.NoResultsError` if the Message does not exist.
@@ -281,7 +267,6 @@ defmodule Glific.Tags do
       MessageTag
       |> where([m], m.message_id == ^message_id and m.tag_id == ^tag_id)
 
-    ## We need to come back on this one and fix it.
     Repo.all(query)
     |> publish_delete_message
 
@@ -294,7 +279,6 @@ defmodule Glific.Tags do
       MessageTag
       |> where([m], m.message_id == ^message_id and m.tag_id in ^tag_ids)
 
-    ## We need to come back on this one and fix it.
     Repo.all(query)
     |> publish_delete_message
 
@@ -313,20 +297,6 @@ defmodule Glific.Tags do
   @spec change_message_tag(MessageTag.t(), map()) :: Ecto.Changeset.t()
   def change_message_tag(%MessageTag{} = message_tag, attrs \\ %{}) do
     MessageTag.changeset(message_tag, attrs)
-  end
-
-  @doc """
-  Returns the list of contacts tags.
-
-  ## Examples
-
-      iex> list_contacts_tags()
-      [%ContactTag{}, ...]
-
-  """
-  @spec list_contacts_tags(map()) :: [ContactTag.t()]
-  def list_contacts_tags(_args \\ %{}) do
-    Repo.all(ContactTag)
   end
 
   @doc """
@@ -435,7 +405,6 @@ defmodule Glific.Tags do
         join: t in assoc(mt, :tag),
         where: m.contact_id == ^contact_id and t.shortcode in ^tag_shortcode_list
 
-    ## We need to come back on this one and fix it.
     Repo.all(query)
     |> publish_delete_message
 

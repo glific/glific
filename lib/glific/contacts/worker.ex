@@ -7,8 +7,11 @@ defmodule Glific.Contacts.Worker do
     max_attempts: 1,
     priority: 0
 
-  alias Glific.Contacts
-  alias Glific.Repo
+  alias Glific.{
+    Contacts,
+    Partners,
+    Repo
+  }
 
   import Ecto.Query, warn: false
 
@@ -18,17 +21,20 @@ defmodule Glific.Contacts.Worker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok
   def perform(_args) do
-    update_contact_status()
+    # We need to do this for all the active organizations
+    Partners.active_organizations()
+    |> Enum.each(fn {id, _name} -> update_contact_status(id) end)
   end
 
   @doc false
-  @spec update_contact_status :: :ok
-  defp update_contact_status do
+  @spec update_contact_status(non_neg_integer) :: :ok
+  defp update_contact_status(organization_id) do
     t = Glific.go_back_time(24)
 
     contacts =
       Contacts.Contact
       |> where([c], c.last_message_at <= ^t)
+      |> where([c], c.organization_id == ^organization_id)
       |> Repo.all()
 
     contacts

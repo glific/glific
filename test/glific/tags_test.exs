@@ -259,11 +259,6 @@ defmodule Glific.TagsTest do
   end
 
   describe "messages_tags" do
-    test "list_messages_tags/0 returns all message_tags", %{organization_id: organization_id} do
-      message_tag = Fixtures.message_tag_fixture(%{organization_id: organization_id})
-      assert Tags.list_messages_tags() == [message_tag]
-    end
-
     test "get_messages_tag!/1 returns the messages_tag with given id", %{
       organization_id: organization_id
     } do
@@ -330,11 +325,6 @@ defmodule Glific.TagsTest do
   end
 
   describe "contacts_tags" do
-    test "list_contacts_tags/0 returns all contact_tags", %{organization_id: organization_id} do
-      contact_tag = Fixtures.contact_tag_fixture(%{organization_id: organization_id})
-      assert Tags.list_contacts_tags() == [contact_tag]
-    end
-
     test "get_contacts_tag!/1 returns the contacts_tag with given id", %{
       organization_id: organization_id
     } do
