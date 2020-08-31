@@ -20,11 +20,11 @@ defmodule GlificWeb.Schema.ContactTagTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_tag/create.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contact_tag/delete.gql")
 
-  test "create a contact tag and test possible scenarios and errors" do
+  test "create a contact tag and test possible scenarios and errors", %{user: user} do
     label = "This is for testing"
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     name = "Glific Admin"
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     result =
       query_gql_by(:create,
@@ -50,11 +50,11 @@ defmodule GlificWeb.Schema.ContactTagTest do
     assert contact == "has already been taken"
   end
 
-  test "delete a contact tag" do
+  test "delete a contact tag", %{user: user} do
     label = "This is for testing"
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     name = "Glific Admin"
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     {:ok, query_data} =
       query_gql_by(:create,

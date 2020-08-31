@@ -76,14 +76,22 @@ defmodule Glific.CommunicationsTest do
       provider_media_id: "some provider_media_id"
     }
 
-    defp foreign_key_constraint do
-      {:ok, sender} = Contacts.create_contact(@sender_attrs)
-      {:ok, receiver} = Contacts.create_contact(@receiver_attrs)
-      %{sender_id: sender.id, receiver_id: receiver.id}
+    defp foreign_key_constraint(attrs) do
+      {:ok, sender} = Contacts.create_contact(Map.merge(attrs, @sender_attrs))
+      {:ok, receiver} = Contacts.create_contact(Map.merge(attrs, @receiver_attrs))
+      %{sender_id: sender.id, receiver_id: receiver.id, organization_id: receiver.organization_id}
     end
 
-    defp message_fixture(attrs \\ %{}) do
-      valid_attrs = Map.merge(foreign_key_constraint(), @valid_attrs)
+    defp message_fixture(attrs) do
+      # eliminating provider_status here since in this case, its meant for the
+      # message and not the contact
+      {_value, attrs} = Map.pop(attrs, :provider_status)
+
+      valid_attrs =
+        Map.merge(
+          foreign_key_constraint(attrs),
+          @valid_attrs
+        )
 
       {:ok, message} =
         valid_attrs
@@ -103,8 +111,8 @@ defmodule Glific.CommunicationsTest do
       message_media
     end
 
-    test "send message should update the provider message id" do
-      message = message_fixture()
+    test "send message should update the provider message id", attrs do
+      message = message_fixture(attrs)
       Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
@@ -115,25 +123,51 @@ defmodule Glific.CommunicationsTest do
       assert message.flow == :outbound
     end
 
-    test "send message will remove the Not replied tag from messages" do
-      message_1 = Fixtures.message_fixture(%{flow: :inbound})
+    test "send message will remove the Not replied tag from messages",
+         %{organization_id: organization_id} = attrs do
+      message_1 = Fixtures.message_fixture(Map.merge(attrs, %{flow: :inbound}))
 
       message_2 =
-        Fixtures.message_fixture(%{
-          flow: :outbound,
-          sender_id: message_1.sender_id,
-          receiver_id: message_1.contact_id
-        })
+        Fixtures.message_fixture(
+          Map.merge(
+            attrs,
+            %{
+              flow: :outbound,
+              sender_id: message_1.sender_id,
+              receiver_id: message_1.contact_id
+            }
+          )
+        )
 
       assert message_2.contact_id == message_1.contact_id
 
-      {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "notreplied"})
-      {:ok, unread_tag} = Repo.fetch_by(Tag, %{shortcode: "unread"})
+      {:ok, tag} =
+        Repo.fetch_by(
+          Tag,
+          %{shortcode: "notreplied", organization_id: organization_id}
+        )
 
-      message1_tag = Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: tag.id})
+      {:ok, unread_tag} =
+        Repo.fetch_by(
+          Tag,
+          %{shortcode: "unread", organization_id: organization_id}
+        )
+
+      message1_tag =
+        Fixtures.message_tag_fixture(
+          Map.merge(
+            attrs,
+            %{message_id: message_1.id, tag_id: tag.id}
+          )
+        )
 
       message_unread_tag =
-        Fixtures.message_tag_fixture(%{message_id: message_1.id, tag_id: unread_tag.id})
+        Fixtures.message_tag_fixture(
+          Map.merge(
+            attrs,
+            %{message_id: message_1.id, tag_id: unread_tag.id}
+          )
+        )
 
       Communications.Message.send_message(message_2)
       assert_enqueued(worker: Worker)
@@ -146,7 +180,7 @@ defmodule Glific.CommunicationsTest do
       end
     end
 
-    test "if response status code is not 200 handle the error response " do
+    test "if response status code is not 200 handle the error response", attrs do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -155,7 +189,7 @@ defmodule Glific.CommunicationsTest do
           }
       end)
 
-      message = message_fixture()
+      message = message_fixture(attrs)
       Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
@@ -166,11 +200,18 @@ defmodule Glific.CommunicationsTest do
       assert message.sent_at == nil
     end
 
-    test "send media message should update the provider message id" do
+    test "send media message should update the provider message id", attrs do
       message_media = message_media_fixture()
 
       # image message
-      message = message_fixture(%{type: :image, media_id: message_media.id})
+      message =
+        message_fixture(
+          Map.merge(
+            attrs,
+            %{type: :image, media_id: message_media.id}
+          )
+        )
+
       Communications.Message.send_message(message)
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
@@ -220,13 +261,14 @@ defmodule Glific.CommunicationsTest do
       assert message.flow == :outbound
     end
 
-    test "sending message to optout contact will return error" do
+    test "sending message to optout contact will return error", attrs do
       {:ok, receiver} =
         @receiver_attrs
         |> Map.merge(%{status: :invalid, phone: Phone.EnUs.phone()})
+        |> Map.merge(attrs)
         |> Contacts.create_contact()
 
-      message = message_fixture(%{receiver_id: receiver.id})
+      message = message_fixture(Map.merge(attrs, %{receiver_id: receiver.id}))
       assert {:error, _msg} = Communications.Message.send_message(message)
 
       message = Messages.get_message!(message.id)
@@ -234,17 +276,18 @@ defmodule Glific.CommunicationsTest do
       assert message.provider_status == nil
     end
 
-    test "sending message to contact having incorrect provider status will return error" do
+    test "sending message to contact having incorrect provider status will return error", attrs do
       {:ok, receiver} =
         @receiver_attrs
         |> Map.merge(%{provider_status: :none, phone: Phone.EnUs.phone()})
+        |> Map.merge(attrs)
         |> Contacts.create_contact()
 
-      message = message_fixture(%{receiver_id: receiver.id})
+      message = message_fixture(Map.merge(attrs, %{receiver_id: receiver.id}))
       assert {:error, _msg} = Communications.Message.send_message(message)
     end
 
-    test "sending message if last received message is more then 24 hours returns error" do
+    test "sending message if last received message is more then 24 hours returns error", attrs do
       {:ok, receiver} =
         @receiver_attrs
         |> Map.merge(%{
@@ -252,29 +295,37 @@ defmodule Glific.CommunicationsTest do
           last_message_at: Timex.shift(DateTime.utc_now(), days: -2),
           provider_status: :none
         })
+        |> Map.merge(attrs)
         |> Contacts.create_contact()
 
-      message = message_fixture(%{receiver_id: receiver.id})
+      message = message_fixture(Map.merge(attrs, %{receiver_id: receiver.id}))
       assert {:error, _msg} = Communications.Message.send_message(message)
     end
 
-    test "update_provider_status/2 will update the message status based on provider message ID" do
+    test "update_provider_status/2 will update the message status based on provider message ID",
+         attrs do
       message =
-        message_fixture(%{
-          provider_message_id: Faker.String.base64(36),
-          provider_status: :enqueued
-        })
+        message_fixture(
+          Map.merge(
+            attrs,
+            %{
+              provider_message_id: Faker.String.base64(36),
+              provider_status: :enqueued
+            }
+          )
+        )
 
-      Communications.Message.update_provider_status(message.provider_message_id, :read)
+      Communications.Message.update_provider_status(message.provider_message_id, :read, nil)
       message = Messages.get_message!(message.id)
       assert message.provider_status == :read
     end
 
-    test "send message at a specific time should not send it immediately" do
+    test "send message at a specific time should not send it immediately", attrs do
       scheduled_time = Timex.shift(DateTime.utc_now(), hours: 2)
 
       message =
         %{send_at: scheduled_time}
+        |> Map.merge(attrs)
         |> message_fixture()
 
       Communications.Message.send_message(message)

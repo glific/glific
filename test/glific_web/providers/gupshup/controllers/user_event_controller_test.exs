@@ -54,7 +54,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
       phone = get_in(setup_config.message_params, ["payload", "phone"])
       conn = post(conn, "/gupshup", setup_config.message_params)
       json_response(conn, 200)
-      {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
+
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{phone: phone, organization_id: conn.assigns[:organization_id]})
+
       assert contact.optin_time != nil
       assert contact.status == :valid
     end
@@ -78,7 +81,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
       phone = get_in(setup_config.message_params, ["payload", "phone"])
       conn = post(conn, "/gupshup", setup_config.message_params)
       json_response(conn, 200)
-      {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
+
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{phone: phone, organization_id: conn.assigns[:organization_id]})
+
       assert contact.optout_time != nil
       assert contact.status == :invalid
     end

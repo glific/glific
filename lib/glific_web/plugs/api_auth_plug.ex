@@ -31,12 +31,10 @@ defmodule GlificWeb.APIAuthPlug do
   @impl true
   @spec create(Conn.t(), map(), Config.t()) :: {Conn.t(), map()}
   def create(conn, user, config) do
-    # Setting token expiry time to 90 minutes
-    store_config =
-      store_config(config)
-      |> Keyword.put(:ttl, :timer.minutes(90))
+    store_config = store_config(config)
 
-    token_expiry_time = DateTime.utc_now() |> DateTime.add(store_config[:ttl], :millisecond)
+    # 30 mins in seconds - this is the default, we wont change it
+    token_expiry_time = DateTime.utc_now() |> DateTime.add(30 * 60, :second)
 
     access_token = Pow.UUID.generate()
     renewal_token = Pow.UUID.generate()
@@ -104,7 +102,7 @@ defmodule GlificWeb.APIAuthPlug do
   end
 
   @doc """
-    Delete all user sessions after user resets or updates the password
+  Delete all user sessions after user resets or updates the password
   """
   @spec delete_all_user_sessions(Config.t(), map()) :: :ok
   def delete_all_user_sessions(config, user) do

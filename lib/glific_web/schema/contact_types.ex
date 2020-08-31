@@ -25,6 +25,15 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :optin_time, :datetime
     field :optout_time, :datetime
 
+    field :fields, :json
+    field :settings, :json
+
+    field :last_message_at, :datetime
+
+    field :language, :language do
+      resolve(dataloader(Repo))
+    end
+
     field :tags, list_of(:tag) do
       resolve(dataloader(Repo))
     end
@@ -49,6 +58,8 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     @desc "Match the status"
     field :status, :contact_status_enum
+
+    @desc "Match the provider status"
     field :provider_status, :contact_provider_status_enum
 
     @desc "Include contacts with these tags"
@@ -78,6 +89,9 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :phone, :string
     field :status, :contact_status_enum
     field :provider_status, :contact_provider_status_enum
+    field :language_id, :id
+    field :fields, :json
+    field :settings, :json
   end
 
   object :contact_queries do
@@ -93,13 +107,6 @@ defmodule GlificWeb.Schema.ContactTypes do
       arg(:opts, :opts)
       resolve(&Resolvers.Contacts.contacts/3)
     end
-
-    # @desc "Get a list of all contacts searched by filters"
-    # field :search_contacts, list_of(:contact) do
-    #   arg(:filter, :search_contacts_filter)
-    #   arg(:opts, :opts)
-    #   resolve(&Resolvers.Contacts.search_contacts/3)
-    # end
 
     @desc "Get a count of all contacts filtered by various criteria"
     field :count_contacts, :integer do

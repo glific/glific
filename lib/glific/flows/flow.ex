@@ -11,17 +11,17 @@ defmodule Glific.Flows.Flow do
 
   alias Glific.{
     Contacts.Contact,
+    Enums.FlowType,
     Flows,
     Flows.FlowContext,
     Flows.FlowRevision,
     Flows.Localization,
     Flows.Node,
+    Partners.Organization,
     Repo
   }
 
-  alias Glific.Enums.FlowType
-
-  @required_fields [:name, :uuid, :shortcode, :keywords]
+  @required_fields [:name, :uuid, :shortcode, :keywords, :organization_id]
   @optional_fields [:flow_type, :version_number, :uuid_map, :nodes, :ignore_keywords]
 
   @type t :: %__MODULE__{
@@ -39,6 +39,8 @@ defmodule Glific.Flows.Flow do
           nodes: [Node.t()] | nil,
           version_number: String.t() | nil,
           revisions: [FlowRevision.t()] | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -60,6 +62,8 @@ defmodule Glific.Flows.Flow do
 
     # we use this to store the latest definition for this flow
     field :definition, :map, virtual: true
+
+    belongs_to :organization, Organization
 
     has_many :revisions, FlowRevision
 

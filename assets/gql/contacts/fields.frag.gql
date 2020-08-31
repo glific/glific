@@ -3,6 +3,11 @@ fragment ContactFields on ContactResult {
     id
     name
     phone
+    fields
+    settings
+    language {
+      id
+    }
   }
 }
 

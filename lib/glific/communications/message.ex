@@ -92,8 +92,15 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback to update the provider status for a message
   """
-  @spec update_provider_status(String.t(), atom()) :: {:ok, Message.t()}
-  def update_provider_status(provider_message_id, provider_status) do
+  @spec update_provider_status(String.t(), atom(), map()) :: {:ok, Message.t()}
+  def update_provider_status(provider_message_id, :error, errors) do
+    from(m in Message, where: m.provider_message_id == ^provider_message_id)
+    |> Repo.update_all(
+      set: [provider_status: :error, errors: errors, updated_at: DateTime.utc_now()]
+    )
+  end
+
+  def update_provider_status(provider_message_id, provider_status, _params) do
     from(m in Message, where: m.provider_message_id == ^provider_message_id)
     |> Repo.update_all(set: [provider_status: provider_status, updated_at: DateTime.utc_now()])
   end
@@ -105,10 +112,11 @@ defmodule Glific.Communications.Message do
   def receive_message(message_params, type \\ :text) do
     {:ok, contact} =
       message_params.sender
+      |> Map.put(:organization_id, message_params.organization_id)
       |> Map.put(:last_message_at, DateTime.utc_now())
       |> Contacts.upsert()
 
-    {:ok, _} = Contacts.set_session_status(contact, :session)
+    {:ok, contact} = Contacts.set_session_status(contact, :session)
 
     message_params =
       message_params
@@ -118,7 +126,8 @@ defmodule Glific.Communications.Message do
         receiver_id: Partners.organization_contact_id(),
         flow: :inbound,
         provider_status: :delivered,
-        status: :delivered
+        status: :delivered,
+        organization_id: contact.organization_id
       })
 
     cond do

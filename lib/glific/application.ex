@@ -21,7 +21,6 @@ defmodule Glific.Application do
 
       # Start Mnesia to be used for pow cache store
       Pow.Store.Backend.MnesiaCache,
-
       # Add Oban to process jobs
       {Oban, oban_config()},
 
@@ -45,6 +44,14 @@ defmodule Glific.Application do
       if Application.get_env(:glific, :environment) == :test,
         do: children,
         else: children ++ glific_children
+
+    # Add this :telemetry.attach/4 call:
+    :telemetry.attach(
+      "appsignal-ecto",
+      [:glific, :repo, :query],
+      &Appsignal.Ecto.handle_event/4,
+      nil
+    )
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

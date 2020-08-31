@@ -43,3 +43,7 @@ config :pow, Pow.Ecto.Schema.Password, iterations: 1
 config :glific,
   provider_url: "https://api.gupshup.io/sm/api/v1",
   provider_key: "abcdefghigklmnop"
+
+config :appsignal, :config,
+  active: false,
+  env: :test

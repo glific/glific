@@ -13,7 +13,7 @@ defmodule GlificWeb.RouterTest do
     "user" => %{"phone" => "+919820198765", "name" => "Jane Doe", "password" => @password}
   }
 
-  setup %{conn: conn} do
+  setup %{conn: conn, organization_id: organization_id} do
     SeedsDev.seed_tag()
 
     contact = Fixtures.contact_fixture()
@@ -25,7 +25,8 @@ defmodule GlificWeb.RouterTest do
         name: @valid_params["user"]["name"],
         password: @password,
         password_confirmation: @password,
-        contact_id: contact.id
+        contact_id: contact.id,
+        organization_id: organization_id
       })
       |> Repo.insert!()
 

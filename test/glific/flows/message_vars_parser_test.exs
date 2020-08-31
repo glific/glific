@@ -4,7 +4,7 @@ defmodule Glific.Flows.MessageVarParserTest do
   alias Glific.Contacts
   alias Glific.Flows.MessageVarParser
 
-  test "parse/2 will parse the string with variable" do
+  test "parse/2 will parse the string with variable", attrs do
     # binding with 1 dots will replace the variable
     parsed_test =
       MessageVarParser.parse("hello @contact.name", %{"contact" => %{"name" => "Glific"}})
@@ -34,12 +34,12 @@ defmodule Glific.Flows.MessageVarParserTest do
 
     assert parsed_test == "hello Glific"
 
-    [contact | _tail] = Contacts.list_contacts()
+    [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
     contact = Map.from_struct(contact)
     parsed_test = MessageVarParser.parse("hello @contact.name", %{"contact" => contact})
     assert parsed_test == "hello #{contact.name}"
 
-    [contact | _tail] = Contacts.list_contacts()
+    [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
 
     {:ok, contact} =
       Contacts.update_contact(contact, %{

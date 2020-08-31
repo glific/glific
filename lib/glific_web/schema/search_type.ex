@@ -22,7 +22,11 @@ defmodule GlificWeb.Schema.SearchTypes do
     # this is an expensive operation
     field :count, :integer do
       resolve(fn saved_search, resolution, context ->
-        Resolvers.Searches.saved_search_count(resolution, %{id: saved_search.id}, context)
+        Resolvers.Searches.saved_search_count(
+          resolution,
+          %{id: saved_search.id},
+          context
+        )
       end)
     end
   end
@@ -69,6 +73,9 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "Include conversations with these groups"
     field :include_groups, list_of(:gid)
+
+    @desc "Include conversations by these users"
+    field :include_users, list_of(:gid)
 
     @desc "term for saving the search"
     field :term, :string

@@ -81,6 +81,11 @@ defmodule GlificWeb.Schema.UserTypes do
       arg(:filter, :user_filter)
       resolve(&Resolvers.Users.count_users/3)
     end
+
+    @desc "Get the details of current user"
+    field :current_user, :user_result do
+      resolve(&Resolvers.Users.current_user/3)
+    end
   end
 
   object :user_mutations do
