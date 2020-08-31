@@ -13,12 +13,12 @@ defmodule GlificWeb.Resolvers.Partners do
           {:ok, any} | {:error, any}
   def organization(_, %{id: id}, _) do
     with {:ok, organization} <- Repo.fetch(Organization, id),
-          do: {:ok, %{organization: organization}}
+         do: {:ok, %{organization: organization}}
   end
 
   def organization(_, _, %{context: %{current_user: current_user}}) do
     with {:ok, organization} <- Repo.fetch(Organization, current_user.organization_id),
-          do: {:ok, %{organization: organization}}
+         do: {:ok, %{organization: organization}}
   end
 
   @doc """

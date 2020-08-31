@@ -51,8 +51,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           "phone" => receiver.phone,
           "name" => receiver.name,
           "password" => @password,
-          "otp" => otp,
-          "organization_id" => conn.assigns[:organization_id]
+          "otp" => otp
         }
       }
 
@@ -99,8 +98,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           "phone" => receiver.phone,
           "name" => receiver.name,
           "password" => "1234567",
-          "otp" => otp,
-          "organization_id" => conn.assigns[:organization_id]
+          "otp" => otp
         }
       }
 
@@ -141,8 +139,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           "phone" => "incorrect_phone",
           "name" => receiver.name,
           "password" => @password,
-          "otp" => otp,
-          "organization_id" => conn.assigns[:organization_id]
+          "otp" => otp
         }
       }
 
@@ -230,7 +227,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           "password" => @password,
           "password_confirmation" => @password,
           "contact_id" => receiver.id,
-          "organization_id" => receiver.organization_id
+          "organization_id" => Fixtures.get_org_id()
         }
         |> Users.create_user()
 
