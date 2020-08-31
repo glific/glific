@@ -571,7 +571,7 @@ Match the parent
 <tr>
 
 <tr>
-<td colspan="2" valign="top"><strong>colorcode</strong></td>
+<td colspan="2" valign="top"><strong>color_code</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
