@@ -18,7 +18,7 @@ defmodule Glific.Tags.Tag do
     :parent_id,
     :keywords,
     :ancestors,
-    :colorcode
+    :color_code
   ]
 
   @type t() :: %__MODULE__{
@@ -27,7 +27,7 @@ defmodule Glific.Tags.Tag do
           label: String.t() | nil,
           shortcode: String.t() | nil,
           description: String.t() | nil,
-          colorcode: String.t() | nil,
+          color_code: String.t() | nil,
           is_active: boolean(),
           is_reserved: boolean(),
           is_value: boolean(),
@@ -46,7 +46,7 @@ defmodule Glific.Tags.Tag do
     field :shortcode, :string
     field :description, :string
     field :ancestors, {:array, :integer}, default: []
-    field :colorcode, :string
+    field :color_code, :string
 
     field :is_active, :boolean, default: false
     field :is_reserved, :boolean, default: false
