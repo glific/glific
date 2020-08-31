@@ -106,9 +106,9 @@ defmodule GlificWeb.API.V1.RegistrationController do
     organization_id = conn.assigns[:organization_id]
     registration = user_params["user"]["registration"]
 
-    with true <- can_send_otp_to_phone?(organization_id, phone),
+    with {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
          true <- send_otp_allowed?(organization_id, phone, registration),
-         {:ok, _otp} <- create_and_send_verification_code(organization_id, phone) do
+         {:ok, _otp} <- create_and_send_verification_code(organization_id, contact) do
       json(conn, %{data: %{phone: phone, message: "OTP sent successfully to #{phone}"}})
     else
       _ ->
@@ -121,10 +121,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @doc """
   Function for generating verification code and sending otp verification message
   """
-  @spec create_and_send_verification_code(integer, String.t()) :: {:ok, String.t()}
-  def create_and_send_verification_code(organization_id, phone) do
-    code = PasswordlessAuth.generate_code(phone)
-    Glific.Messages.create_and_send_otp_verification_message(organization_id, phone, code)
+  @spec create_and_send_verification_code(integer, Contact.t()) :: {:ok, String.t()}
+  def create_and_send_verification_code(organization_id, contact) do
+    code = PasswordlessAuth.generate_code(contact.phone)
+    Glific.Messages.create_and_send_otp_verification_message(organization_id, contact, code)
     {:ok, code}
   end
 
@@ -132,7 +132,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
   defp can_send_otp_to_phone?(organization_id, phone) do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
-         do: Contacts.can_send_message_to?(contact, true)
+         true <- Contacts.can_send_message_to?(contact, true),
+         do: {:ok, contact}
   end
 
   @spec send_otp_allowed?(integer, String.t(), String.t()) :: boolean

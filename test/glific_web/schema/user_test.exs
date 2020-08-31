@@ -156,12 +156,14 @@ defmodule GlificWeb.Schema.UserTest do
       valid_user_attrs
       |> Users.create_user()
 
+    user_test = user_test |> Repo.preload(:contact)
+
     name = "User Test Name New"
 
     {:ok, otp} =
       RegistrationController.create_and_send_verification_code(
         user.organization_id,
-        user_test.phone
+        user_test.contact
       )
 
     result =

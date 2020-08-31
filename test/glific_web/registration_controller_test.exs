@@ -43,7 +43,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       {:ok, otp} =
         RegistrationController.create_and_send_verification_code(
           conn.assigns[:organization_id],
-          receiver.phone
+          receiver
         )
 
       valid_params = %{
@@ -90,7 +90,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       {:ok, otp} =
         RegistrationController.create_and_send_verification_code(
           conn.assigns[:organization_id],
-          receiver.phone
+          receiver
         )
 
       valid_params = %{
@@ -131,7 +131,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       {:ok, otp} =
         RegistrationController.create_and_send_verification_code(
           conn.assigns[:organization_id],
-          receiver.phone
+          receiver
         )
 
       invalid_params = %{
@@ -264,13 +264,13 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with valid params", %{conn: conn} do
-      user = user_fixture()
+      user = user_fixture() |> Repo.preload([:contact])
 
       # reset password of a user
       {:ok, otp} =
         RegistrationController.create_and_send_verification_code(
           conn.assigns[:organization_id],
-          user.phone
+          user.contact
         )
 
       valid_params = %{
@@ -306,12 +306,12 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with incorrect phone number", %{conn: conn} do
-      user = user_fixture()
+      user = user_fixture() |> Repo.preload([:contact])
 
       {:ok, otp} =
         RegistrationController.create_and_send_verification_code(
           conn.assigns[:organization_id],
-          user.phone
+          user.contact
         )
 
       invalid_params = %{
@@ -329,13 +329,13 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with password less than 8 characters", %{conn: conn} do
-      user = user_fixture()
+      user = user_fixture() |> Repo.preload([:contact])
 
       # reset password of user
       {:ok, otp} =
         RegistrationController.create_and_send_verification_code(
           conn.assigns[:organization_id],
-          user.phone
+          user.contact
         )
 
       valid_params = %{
