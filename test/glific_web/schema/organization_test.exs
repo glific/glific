@@ -13,7 +13,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
   setup do
     provider = SeedsDev.seed_providers()
-    # contact = SeedsDev.seed_contacts()
     SeedsDev.seed_organizations(provider)
     :ok
   end
@@ -75,7 +74,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
   test "create an organization and test possible scenarios and errors" do
     name = "Organization Test Name"
-    display_name = "Organization Test Name"
+    shortcode = "org_shortcode"
     email = "test2@glific.org"
     provider_key = "random"
     provider_phone = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
@@ -91,7 +90,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
         variables: %{
           "input" => %{
             "name" => name,
-            "display_name" => display_name,
+            "shortcode" => shortcode,
             "email" => email,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
@@ -105,13 +104,14 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     organization = get_in(query_data, [:data, "createOrganization", "organization"])
     assert Map.get(organization, "name") == name
+    assert Map.get(organization, "isActive") == true
 
     # try creating the same organization twice
     query_gql_by(:create,
       variables: %{
         "input" => %{
           "name" => "test_name",
-          "display_name" => display_name,
+          "shortcode" => shortcode,
           "email" => email,
           "provider_key" => provider_key,
           "provider_id" => provider.id,
@@ -126,7 +126,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
         variables: %{
           "input" => %{
             "name" => "test_name",
-            "display_name" => display_name,
+            "shortcode" => shortcode,
             "email" => email,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
@@ -146,7 +146,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     organization = Fixtures.organization_fixture()
 
     name = "Organization Test Name"
-    display_name = "Organization Test Name"
+    shortcode = "org_shortcode"
     email = "test2@glific.org"
     provider_key = "random"
     provider_phone = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
@@ -163,7 +163,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "id" => organization.id,
           "input" => %{
             "name" => name,
-            "display_name" => display_name,
+            "shortcode" => shortcode,
             "email" => email,
             "provider_key" => provider_key,
             "provider_id" => provider.id,
@@ -182,8 +182,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
     query_gql_by(:create,
       variables: %{
         "input" => %{
-          "name" => "new organization",
-          "display_name" => display_name,
+          "name" => name,
+          "shortcode" => "new_shortcode",
           "email" => "new email",
           "provider_key" => provider_key,
           "provider_id" => provider.id,
@@ -200,7 +200,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "id" => organization.id,
           "input" => %{
             "name" => "new organization",
-            "display_name" => display_name,
+            "shortcode" => "new_shortcode",
             "email" => "new email",
             "provider_key" => provider_key,
             "provider_id" => provider.id,

@@ -143,7 +143,7 @@ defmodule Glific.PartnersTest do
 
     @valid_org_attrs %{
       name: "Organization Name",
-      display_name: "Organization Display Name",
+      shortcode: "organization_shortcode",
       email: "Contact person email",
       provider_key: "Provider key",
       provider_phone: "991737373"
@@ -151,7 +151,7 @@ defmodule Glific.PartnersTest do
 
     @valid_org_attrs_1 %{
       name: "Organization Name 1",
-      display_name: "Organization Display Name 1",
+      shortcode: "organization_shortcode 1",
       email: "Contact person email 1",
       provider_key: "Provider key 1",
       provider_phone: "9917373731"
@@ -159,7 +159,7 @@ defmodule Glific.PartnersTest do
 
     @update_org_attrs %{
       name: "Updated Name",
-      display_name: "Updated Display Name 1"
+      shortcode: "updated_shortcode"
     }
 
     @invalid_org_attrs %{provider_id: nil, name: nil}
@@ -232,7 +232,7 @@ defmodule Glific.PartnersTest do
                |> Partners.create_organization()
 
       assert organization.name == @valid_org_attrs.name
-      assert organization.display_name == @valid_org_attrs.display_name
+      assert organization.shortcode == @valid_org_attrs.shortcode
       assert organization.email == @valid_org_attrs.email
       assert organization.provider_phone == @valid_org_attrs.provider_phone
     end
@@ -342,7 +342,7 @@ defmodule Glific.PartnersTest do
       org_list = Partners.list_organizations(%{filter: %{name: org1.name}})
       assert org_list == [org1]
 
-      org_list = Partners.list_organizations(%{filter: %{display_name: org1.display_name}})
+      org_list = Partners.list_organizations(%{filter: %{shortcode: org1.shortcode}})
       assert org_list == [org1]
 
       org_list = Partners.list_organizations(%{filter: %{email: org1.email}})

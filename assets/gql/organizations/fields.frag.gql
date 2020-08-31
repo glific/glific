@@ -2,7 +2,7 @@ fragment OrganizationFields on OrganizationResult {
   organization {
     id
     name
-    display_name
+    shortcode
     contact {
       name
     }
@@ -26,6 +26,8 @@ fragment OrganizationFields on OrganizationResult {
         enabled
       }
     }
+
+    isActive
   }
 }
 

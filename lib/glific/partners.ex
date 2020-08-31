@@ -178,9 +178,6 @@ defmodule Glific.Partners do
     query = Repo.filter_with(query, filter)
 
     Enum.reduce(filter, query, fn
-      {:display_name, display_name}, query ->
-        from q in query, where: ilike(q.display_name, ^"%#{display_name}%")
-
       {:email, email}, query ->
         from q in query, where: ilike(q.email, ^"%#{email}%")
 

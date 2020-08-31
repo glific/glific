@@ -101,7 +101,7 @@ defmodule Glific.Fixtures do
   def organization_fixture(attrs \\ %{}) do
     valid_attrs = %{
       name: "Fixture Organization",
-      display_name: "Why do we need this?",
+      shortcode: "fixture_org_shortcode",
       email: "replace@idk.org",
       # lets just hope its there :)
       provider_id: 1,

@@ -81,7 +81,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
   def organizations do
     create table(:organizations) do
       add :name, :string, null: false
-      add :display_name, :string, null: false
+      add :shortcode, :string, null: false
 
       add :email, :string, null: false
 
@@ -103,10 +103,13 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # jsonb object of out_of_office data which is a bit convoluted to represent as columns
       add :out_of_office, :jsonb
 
+      # organization can be
+      add :is_active, :boolean, default: true
+
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:organizations, :name)
+    create unique_index(:organizations, :shortcode)
     create unique_index(:organizations, :provider_phone)
     create unique_index(:organizations, :email)
   end

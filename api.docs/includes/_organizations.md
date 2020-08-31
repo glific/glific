@@ -11,6 +11,7 @@ query organizations($filter: OrganizationFilter, $opts: Opts) {
       id
       label
     }
+    isActive
   }
 }
 
@@ -38,7 +39,8 @@ query organizations($filter: OrganizationFilter, $opts: Opts) {
           "label": "Hindi"
         },
         "id": "1",
-        "name": "Default Organization"
+        "name": "Default Organization",
+        "isActive": true
       },
       {
         "defaultLanguage": {
@@ -46,7 +48,8 @@ query organizations($filter: OrganizationFilter, $opts: Opts) {
           "label": "Hindi"
         },
         "id": "2",
-        "name": "Slam Out Loud"
+        "name": "Slam Out Loud",
+        "isActive": true
       }
     ]
   }
@@ -74,6 +77,7 @@ query organization($id: ID!) {
     organization {
       id
       name
+      isActive
       defaultLanguage {
         id
         label
@@ -99,7 +103,8 @@ query organization($id: ID!) {
           "label": "Hindi"
         },
         "id": "1",
-        "name": "Default Organization"
+        "name": "Default Organization",
+        "isActive": true
       }
     }
   }
@@ -160,7 +165,7 @@ mutation createOrganization($input:OrganizationInput!) {
     organization {
       id
       name
-      displayName
+      shortcode
       contactName
 			email
       provider {
@@ -168,7 +173,7 @@ mutation createOrganization($input:OrganizationInput!) {
         name
       }
       providerKey
-      providerNumber
+      providerPhone
       defaultLanguage {
         id
         label
@@ -183,13 +188,13 @@ mutation createOrganization($input:OrganizationInput!) {
 
 {
   "input": {
-    "name": "new_organization",
-    "displayName": "new organization",
+    "shortcode": "new_organization",
+    "name": "new organization",
     "contactName": "organization's contact",
     "email": "test@test.com",
     "providerId": 1,
     "providerKey": "Key provided by provider",
-    "providerNumber": "Number",
+    "providerPhone": "Number",
     "defaultLanguageId": 1
   }
 }
@@ -208,16 +213,16 @@ mutation createOrganization($input:OrganizationInput!) {
           "id": "1",
           "label": "Hindi"
         },
-        "displayName": "new organization",
+        "name": "new organization",
         "email": "test@test.com",
         "id": "3",
-        "name": "new_organization",
+        "shortcode": "new_organization",
         "provider": {
           "id": "1",
           "name": "Default Provider"
         },
         "providerKey": "Key provided by provider",
-        "providerNumber": "Number"
+        "providerPhone": "Number"
       }
     }
   }
@@ -243,7 +248,7 @@ mutation updateOrganization($id: ID!, $input: OrganizationInput!) {
     organization {
       id
       name
-      displayName
+      shortcode
       outOfOffice {
         enabled
         startTime
@@ -265,7 +270,7 @@ mutation updateOrganization($id: ID!, $input: OrganizationInput!) {
 {
   "id": "1",
   "input": {
-    "displayName": "updated organization display name",
+    "name": "updated organization display name",
     "outOfOffice": {
       "enabled": true,
       "enabledDays": [
@@ -314,7 +319,7 @@ mutation updateOrganization($id: ID!, $input: OrganizationInput!) {
     "updateOrganization": {
       "errors": null,
       "organization": {
-        "displayName": "updated organization display name",
+        "name": "updated organization display name",
         "id": "1",
         "name": "Glific",
         "outOfOffice": {
@@ -459,7 +464,7 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>displayName</strong></td>
+<td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
@@ -489,13 +494,18 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>providerNumber</strong></td>
+<td colspan="2" valign="top"><strong>providerPhone</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>outOfOffice</strong></td>
 <td valign="top"><a href="#outofoffice">OutOfOffice</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isActive</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
 </tbody>
@@ -628,11 +638,11 @@ Match the default language
 </td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>displayName</strong></td>
+<td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td>
 
-Match the display name
+Match the shortcode
 
 </td>
 </tr>
@@ -664,7 +674,7 @@ Match the provider
 </td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>providerNumber</strong></td>
+<td colspan="2" valign="top"><strong>providerPhone</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td>
 
@@ -716,7 +726,7 @@ Unique
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>displayName</strong></td>
+<td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
@@ -736,13 +746,18 @@ Unique
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>providerNumber</strong></td>
+<td colspan="2" valign="top"><strong>providerPhone</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>outOfOfficeInput</strong></td>
 <td valign="top"><a href="#outofofficeinput">OutOfOfficeInput</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isActive</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
 </tbody>

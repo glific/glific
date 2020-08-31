@@ -278,7 +278,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     Repo.insert!(%Organization{
       name: "Glific",
-      display_name: "Glific",
+      shortcode: "Glific",
       email: "ADMIN@REPLACE_ME.NOW",
       provider_id: provider.id,
       provider_key: "ADD_PROVIDER_API_KEY",
