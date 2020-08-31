@@ -462,7 +462,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     })
 
     Repo.insert!(%SessionTemplate{
-      label: "User Regitstration",
+      label: "User Registration",
       body: """
       Please click on the link to register with the phone number @contact.phone
       @global.registration.url
