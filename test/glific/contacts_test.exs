@@ -109,6 +109,14 @@ defmodule Glific.ContactsTest do
       assert length(Contacts.list_contacts(%{filter: attrs})) == contacts_count + 1
     end
 
+    test "list_contacts/1 should remove blocked contacts unless filtered by status",
+         %{organization_id: _organization_id} = attrs do
+      contacts_count = Repo.aggregate(Contact, :count)
+
+      _contact = contact_fixture(attrs |> Map.merge(%{status: :blocked}))
+      assert length(Contacts.list_contacts(%{filter: attrs})) == contacts_count
+    end
+
     test "count_contacts/0 returns count of all contacts",
          %{organization_id: _organization_id} = attrs do
       contacts_count = Repo.aggregate(Contact, :count)

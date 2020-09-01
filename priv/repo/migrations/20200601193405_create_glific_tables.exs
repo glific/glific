@@ -149,7 +149,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :keywords, {:array, :string}
 
       # define a color code for tags
-      add :color_code, :string
+      add :color_code, :string, default: "#0C976D"
 
       # foreign key to language
       add :language_id, references(:languages, on_delete: :restrict), null: false
@@ -246,11 +246,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # the current options are: processing, valid, invalid, failed
       add :provider_status, :contact_provider_status_enum, null: false, default: "none"
 
-      # Is this contact active (for some definition of active)
-      add :is_active, :boolean, default: true
-
       # this is our status, based on what the Provider tell us
-      # the current options are: valid or invalid
+      # the current options are: valid, invalid or blocked
       add :status, :contact_status_enum, null: false, default: "valid"
 
       # contact language for templates and other communications
