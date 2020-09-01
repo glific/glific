@@ -1,0 +1,16 @@
+mutation updateTemplateTags($input:TemplateTagsInput!) {
+  updateTemplateTags(input: $input) {
+    templateTags {
+      id
+      template {
+        id
+        label
+      }
+      tag {
+        id
+        label
+      }
+    }
+    numberDeleted
+  }
+}
