@@ -37,7 +37,7 @@ defmodule Glific.Contacts do
     Repo.count_filter(args, Contact, &filter_with/2)
   end
 
-  # codebeat:disable[ABC]
+  # codebeat:disable[ABC, LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
@@ -83,6 +83,8 @@ defmodule Glific.Contacts do
     |> filter_contacts_with_blocked_status(filter)
   end
 
+  # codebeat:enable[ABC, LOC]
+
   # Remove contacts with blocked status unless filtered by status
   @spec filter_contacts_with_blocked_status(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
           Ecto.Queryable.t()
@@ -90,8 +92,6 @@ defmodule Glific.Contacts do
 
   defp filter_contacts_with_blocked_status(query, _),
     do: from(q in query, where: q.status != "blocked")
-
-  # codebeat:enable[ABC]
 
   @doc """
   Gets a single contact.
