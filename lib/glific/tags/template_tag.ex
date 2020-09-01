@@ -4,7 +4,11 @@ defmodule Glific.Tags.TemplateTag do
   """
 
   alias __MODULE__
-  alias Glific.{Templates.SessionTemplate, Tags.Tag}
+  alias Glific.{
+    Tags.Tag,
+    Templates.SessionTemplate
+  }
+
   use Ecto.Schema
   import Ecto.Changeset
 
