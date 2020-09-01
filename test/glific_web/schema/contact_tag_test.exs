@@ -39,6 +39,7 @@ defmodule GlificWeb.Schema.ContactTagTest do
     assert contact_tag["tag"]["id"] |> String.to_integer() == tag.id
 
     # try creating the same contact tag entry twice
+    # upserts come into play here and we dont return an error
     result =
       query_gql_by(:create,
         variables: %{"input" => %{"contact_id" => contact.id, "tag_id" => tag.id}}
@@ -46,8 +47,9 @@ defmodule GlificWeb.Schema.ContactTagTest do
 
     assert {:ok, query_data} = result
 
-    contact = get_in(query_data, [:data, "createContactTag", "errors", Access.at(0), "message"])
-    assert contact == "has already been taken"
+    contact_tag = get_in(query_data, [:data, "createContactTag", "contact_tag"])
+    assert get_in(contact_tag, ["contact", "id"]) |> String.to_integer() == contact.id
+    assert get_in(contact_tag, ["tag", "id"]) |> String.to_integer() == tag.id
   end
 
   test "delete a contact tag", %{user: user} do

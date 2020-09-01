@@ -369,7 +369,7 @@ Parameter | Type | Default | Description
 </tbody>
 </table>
 
-## Message Media Inputs ##
+## Message Tag Inputs ##
 
 ### MessageTagInput ###
 

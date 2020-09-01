@@ -109,6 +109,16 @@ defmodule GlificWeb.Resolvers.Tags do
     end
   end
 
+  @doc """
+  Creates and/or deletes a list of contact tags, each tag attached to the same contact
+  """
+  @spec update_contact_tags(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_contact_tags(_, %{input: params}, _) do
+    contact_tags = Tags.ContactTags.update_contact_tags(params)
+    {:ok, contact_tags}
+  end
+
   @doc false
   @spec mark_contact_messages_as_read(Absinthe.Resolution.t(), %{contact_id: integer}, %{
           context: map()

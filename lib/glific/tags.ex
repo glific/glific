@@ -349,10 +349,17 @@ defmodule Glific.Tags do
   """
   @spec create_contact_tag(map()) :: {:ok, ContactTag.t()} | {:error, Ecto.Changeset.t()}
   def create_contact_tag(attrs \\ %{}) do
-    # Merge default values if not present in attributes
-    %ContactTag{}
-    |> ContactTag.changeset(attrs)
-    |> Repo.insert()
+    {status, response} =
+      %ContactTag{}
+      |> ContactTag.changeset(attrs)
+      |> Repo.insert(on_conflict: :replace_all, conflict_target: [:contact_id, :tag_id])
+
+    if status == :ok do
+      Communications.publish_data({status, response}, :created_contact_tag)
+      {:ok, response}
+    else
+      {:error, response}
+    end
   end
 
   @doc """
@@ -440,6 +447,34 @@ defmodule Glific.Tags do
       message_tags
       |> Enum.reduce([], fn message_tag, _acc ->
         Communications.publish_data({:ok, message_tag}, :deleted_message_tag)
+      end)
+
+    {:ok}
+  end
+
+  @doc """
+  Deletes a list of contact tags, each tag attached to the same contact
+  """
+  @spec delete_contact_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_contact_tag_by_ids(contact_id, tag_ids) when is_list(tag_ids) do
+    query =
+      ContactTag
+      |> where([m], m.contact_id == ^contact_id and m.tag_id in ^tag_ids)
+
+    Repo.all(query)
+    |> publish_delete_contact
+
+    Repo.delete_all(query)
+  end
+
+  @spec publish_delete_contact(list) :: {:ok}
+  defp publish_delete_contact([]), do: {:ok}
+
+  defp publish_delete_contact(contact_tags) do
+    _list =
+      contact_tags
+      |> Enum.reduce([], fn contact_tag, _acc ->
+        Communications.publish_data({:ok, contact_tag}, :deleted_contact_tag)
       end)
 
     {:ok}
