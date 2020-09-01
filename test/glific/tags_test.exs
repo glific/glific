@@ -8,7 +8,8 @@ defmodule Glific.TagsTest do
     Tags,
     Tags.ContactTag,
     Tags.MessageTag,
-    Tags.Tag
+    Tags.Tag,
+    Tags.TemplateTag
   }
 
   describe "tags" do
@@ -438,6 +439,43 @@ defmodule Glific.TagsTest do
       assert tag1.id in tag2_ancestors
       assert tag1.id in tag3_ancestors
       assert tag2.id in tag3_ancestors
+    end
+  end
+
+  describe "templates_tags" do
+    test "create_template_tag/1 with valid data creates a tag", %{
+      organization_id: organization_id
+    } do
+      template = Fixtures.session_template_fixture(%{organization_id: organization_id})
+      tag = Fixtures.tag_fixture(%{organization_id: organization_id})
+
+      attrs = %{
+        template_id: template.id,
+        tag_id: tag.id,
+        organization_id: organization_id
+      }
+
+      {:ok, template_tag} = Tags.create_template_tag(attrs)
+
+      assert template_tag.template_id == template.id
+      assert template_tag.tag_id == tag.id
+    end
+
+    test "ensure that creating template_tag with same template and tag does not give an error", %{
+      organization_id: organization_id
+    } do
+      template = Fixtures.session_template_fixture(%{organization_id: organization_id})
+      tag = Fixtures.tag_fixture(%{organization_id: organization_id})
+
+      attrs = %{
+        template_id: template.id,
+        tag_id: tag.id,
+        organization_id: organization_id
+      }
+
+      {:ok, _template_tag} = Tags.create_template_tag(attrs)
+
+      assert {:ok, %TemplateTag{}} = Tags.create_template_tag(%{template_id: template.id, tag_id: tag.id})
     end
   end
 end

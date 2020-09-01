@@ -118,4 +118,25 @@ defmodule GlificWeb.Resolvers.Tags do
     with untag_message_ids <- Tags.remove_tag_from_all_message(contact_id, "unread"),
          do: {:ok, untag_message_ids}
   end
+
+  @doc """
+  Create entry for tag mapped to template
+  """
+  @spec create_template_tag(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_template_tag(_, %{input: params}, _) do
+    with {:ok, template_tag} <- Tags.create_template_tag(params) do
+      {:ok, %{template_tag: template_tag}}
+    end
+  end
+
+  @doc """
+  Creates and/or deletes a list of template tags, each tag attached to the same template
+  """
+  @spec update_template_tags(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_template_tags(_, %{input: params}, _) do
+    template_tags = Tags.TemplateTags.update_template_tags(params)
+    {:ok, template_tags}
+  end
 end

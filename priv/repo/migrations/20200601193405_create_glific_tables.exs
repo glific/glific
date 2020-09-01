@@ -29,6 +29,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
     contacts_tags()
 
+    templates_tags()
+
     groups()
 
     contacts_groups()
@@ -648,5 +650,20 @@ defmodule Glific.Repo.Migrations.GlificCore do
     end
 
     create unique_index(:flow_counts, [:uuid, :flow_id, :type])
+  end
+
+  @doc """
+  The relation table between session templates and tags
+  """
+  def templates_tags do
+    create table(:templates_tags) do
+      add :template_id, references(:session_templates, on_delete: :delete_all), null: false
+      add :tag_id, references(:tags, on_delete: :delete_all), null: false
+
+      # the value of the tag if applicable
+      add :value, :string
+    end
+
+    create unique_index(:templates_tags, [:template_id, :tag_id])
   end
 end
