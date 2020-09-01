@@ -4,6 +4,7 @@ defmodule Glific.Tags.TemplateTag do
   """
 
   alias __MODULE__
+
   alias Glific.{
     Tags.Tag,
     Templates.SessionTemplate
