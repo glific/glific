@@ -244,11 +244,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # the current options are: processing, valid, invalid, failed
       add :provider_status, :contact_provider_status_enum, null: false, default: "none"
 
-      # Is this contact active (for some definition of active)
-      add :is_active, :boolean, default: true
-
       # this is our status, based on what the Provider tell us
-      # the current options are: valid or invalid
+      # the current options are: valid, invalid or blocked
       add :status, :contact_status_enum, null: false, default: "valid"
 
       # contact language for templates and other communications

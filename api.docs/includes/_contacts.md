@@ -150,6 +150,46 @@ Type | Description
 | ---- | -----------
 [<a href="#contact">Contact</a>] | List of contacts
 
+## Get All Blocked Contacts
+
+```graphql
+query contacts($filter: ContactFilter, $opts: Opts) {
+  contacts(filter: $filter, opts:$opts) {
+    id
+    phone
+    status
+  }
+}
+
+{
+  "filter": {
+    "status": "BLOCKED"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "contacts": [
+      {
+        "id": "5",
+        "phone": "7739920221",
+        "status": "BLOCKED"
+      }
+    ]
+  }
+}
+```
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+[<a href="#contact">Contact</a>] | List of contacts
+
+
 ## Get a specific Contact by ID
 
 ```graphql
@@ -389,6 +429,92 @@ Type | Description
 | ---- | -----------
 <a href="#contactresult">ContactResult</a> | The updated contact object
 
+
+## Block a Contact
+
+```graphql
+mutation updateContact($id: ID!, $input:ContactInput!) {
+  updateContact(id: $id, input: $input) {
+    contact {
+      id
+      phone
+      status
+    }
+  }
+}
+
+{
+  "id": "5",
+  "input": {
+    "status": "BLOCKED"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "updateContact": {
+      "contact": {
+        "name": "This is a updated contact for this example",
+        "phone": "7739920221",
+        "status": "BLOCKED"
+      },
+      "errors": null
+    }
+  }
+}
+```
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#contactresult">ContactResult</a> | The updated contact object
+
+## UnBlock a Contact
+
+```graphql
+mutation updateContact($id: ID!, $input:ContactInput!) {
+  updateContact(id: $id, input: $input) {
+    contact {
+      id
+      phone
+      status
+    }
+  }
+}
+
+{
+  "id": "5",
+  "input": {
+    "status": "VALID"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "updateContact": {
+      "contact": {
+        "name": "This is a updated contact for this example",
+        "phone": "7739920221",
+        "status": "VALID"
+      },
+      "errors": null
+    }
+  }
+}
+```
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#contactresult">ContactResult</a> | The updated contact object
 
 ## Delete a Contact
 
