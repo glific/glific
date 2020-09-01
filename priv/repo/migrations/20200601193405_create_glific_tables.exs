@@ -661,18 +661,18 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       # lets make this an enum with the following values
       # :text, :integer, :number, :boolean, :date
-      add :value_type, :fields_enum
+      add :value_type, :string
 
       # scope of variable
       # for now - contact or globals, maybe an enum also
-      add :scope, :scope_enum
+      add :scope, :string
 
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
     end
 
-    create unique_index(:contact_fields, [:name, :organization_id])
-    create unique_index(:contact_fields, [:shortcode, :organization_id])
+    create unique_index(:contacts_fields, [:name, :organization_id])
+    create unique_index(:contacts_fields, [:shortcode, :organization_id])
   end
 
 end
