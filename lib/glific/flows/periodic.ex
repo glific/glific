@@ -76,7 +76,7 @@ defmodule Glific.Flows.Periodic do
     Enum.reduce_while(
       @periodic_flows,
       state,
-      fn state, period ->
+      fn period, state ->
         since = compute_time(now, period)
         {state, result} = periodic_flow(state, period, message, since)
 
