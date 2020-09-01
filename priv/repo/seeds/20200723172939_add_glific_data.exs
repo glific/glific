@@ -7,7 +7,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   alias Glific.{
     Contacts,
     Contacts.Contact,
-    Contacts.ContactsFields,
+    Contacts.ContactsField,
     Flows.Flow,
     Flows.FlowRevision,
     Partners.Organization,
@@ -517,7 +517,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   defp contacts_field({name, shortcode, value_type, scope}, organization) do
-    Repo.insert!(%ContactsFields{
+    Repo.insert!(%ContactsField{
       name: name,
       shortcode: shortcode,
       value_type: value_type,
