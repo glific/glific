@@ -89,7 +89,7 @@ defmodule Glific.Contacts do
   defp filter_contacts_with_blocked_status(query, %{status: _}), do: query
 
   defp filter_contacts_with_blocked_status(query, _),
-    do: from(q in query, where: q.status != ^:blocked)
+    do: from(q in query, where: q.status != "blocked")
 
   # codebeat:enable[ABC]
 
