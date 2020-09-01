@@ -119,7 +119,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{
         label: "Good Bye",
         shortcode: "goodbye",
-        description: "Marking message as good wishes when parting or at the end of a conversation",
+        description:
+          "Marking message as good wishes when parting or at the end of a conversation",
         parent_id: message_tags_mt.id,
         keywords: ["bye", "byebye", "goodbye", "goodnight", "goodnite"]
       },
@@ -157,7 +158,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         description: "Marking message as not replied",
         parent_id: message_tags_mt.id
       },
-      %{label: "Spam", shortcode: "spam", description: "Marking message as irrelevant or unsolicited message", parent_id: message_tags_mt.id},
+      %{
+        label: "Spam",
+        shortcode: "spam",
+        description: "Marking message as irrelevant or unsolicited message",
+        parent_id: message_tags_mt.id
+      },
       %{
         label: "Unread",
         shortcode: "unread",
@@ -226,7 +232,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       },
 
       # Type of Contact
-      %{label: "Child", shortcode: "child", description: "Marking message as a child of a parent", parent_id: message_tags_ct.id},
+      %{
+        label: "Child",
+        shortcode: "child",
+        description: "Marking message as a child of a parent",
+        parent_id: message_tags_ct.id
+      },
       %{
         label: "Parent",
         shortcode: "parent",
@@ -239,7 +250,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         description: "Marking message as a participant",
         parent_id: message_tags_ct.id
       },
-      %{label: "Staff", shortcode: "staff", description: "Marking message sent from a member of staff", parent_id: message_tags_ct.id}
+      %{
+        label: "Staff",
+        shortcode: "staff",
+        description: "Marking message sent from a member of staff",
+        parent_id: message_tags_ct.id
+      }
     ]
 
     tags =
@@ -501,15 +517,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   defp contacts_field({name, shortcode, value_type, scope}, organization) do
-     Repo.insert!(%ContactsFields{
-        name: name,
-        shortcode: shortcode,
-        value_type: value_type,
-        scope: scope,
-        organization_id: organization.id
-      })
+    Repo.insert!(%ContactsFields{
+      name: name,
+      shortcode: shortcode,
+      value_type: value_type,
+      scope: scope,
+      organization_id: organization.id
+    })
   end
-
-
-
 end

@@ -676,5 +676,4 @@ defmodule Glific.Repo.Migrations.GlificCore do
     create unique_index(:contacts_fields, [:name, :organization_id])
     create unique_index(:contacts_fields, [:shortcode, :organization_id])
   end
-
 end

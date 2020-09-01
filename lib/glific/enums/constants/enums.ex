@@ -59,7 +59,6 @@ defmodule Glific.Enums.Constants do
 
       # Contact fields scope types
       @contact_field_scope_const [:contact, :globals]
-
     end
   end
 end

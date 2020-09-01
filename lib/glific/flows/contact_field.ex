@@ -6,7 +6,7 @@ defmodule Glific.Flows.ContactField do
 
   alias Glific.{
     Contacts,
-    Contacts.ContactsFields,
+    Contacts.ContactsField,
     Flows.FlowContext,
     Repo
   }
@@ -49,23 +49,20 @@ defmodule Glific.Flows.ContactField do
     Map.put(context, :contact, contact)
   end
 
-
   @doc """
   list contacts fields.
   """
-  @spec list_contacts_fields(map()) :: [ContactsFields.t()]
+  @spec list_contacts_fields(map()) :: [ContactsField.t()]
   def list_contacts_fields(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.list_filter(args, ContactsFields, &Repo.opts_with_label/2, &Repo.filter_with/2)
-
 
   @doc """
   Create contact field
   """
-  @spec create_contact_field(map()) :: {:ok, ContactsFields.t()} | {:error, Ecto.Changeset.t()}
-  def create_contact_field(%{organization_id: _organization_id} = attrs) do
-    %ContactsFields{}
-    |> ContactsFields.changeset(attrs)
+  @spec create_contact_field(map()) :: {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
+  def create_contact_field(attrs) do
+    %ContactsField{}
+    |> ContactsField.changeset(attrs)
     |> Repo.insert()
   end
-
 end

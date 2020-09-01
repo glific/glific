@@ -1,12 +1,13 @@
-defmodule Glific.Contacts.ContactsFields do
+defmodule Glific.Contacts.ContactsField do
   @moduledoc """
   The minimal wrapper for the base Contact structure
   """
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias __MODULE__
   alias Glific.Partners.Organization
-  alias Glific.Enums.{ContactFieldValueType, ContactFieldScope}
+  alias Glific.Enums.{ContactFieldScope, ContactFieldValueType}
 
   @required_fields [
     :name,
@@ -18,7 +19,7 @@ defmodule Glific.Contacts.ContactsFields do
     :scope
   ]
 
-  @type t() :: %__MODULE__{
+  @type t() :: %ContactsField{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
@@ -44,9 +45,9 @@ defmodule Glific.Contacts.ContactsFields do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(Contact.t(), map()) :: Ecto.Changeset.t()
-  def changeset(contact, attrs) do
-    contact
+  @spec changeset(any(), map()) :: Ecto.Changeset.t()
+  def changeset(contact_field, attrs) do
+    contact_field
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:name, :organization_id])
