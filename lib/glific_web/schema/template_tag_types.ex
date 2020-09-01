@@ -18,7 +18,7 @@ defmodule GlificWeb.Schema.TemplateTagTypes do
 
     field :value, :string
 
-    field :template, :template do
+    field :template, :session_template do
       resolve(dataloader(Repo))
     end
 
