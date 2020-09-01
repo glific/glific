@@ -283,7 +283,7 @@ defmodule Glific.TagsTest do
       assert message_tag.tag_id == tag.id
     end
 
-    test "update_messages_tags/2 with valid data updates the tag", %{
+    test "update_message_tag/2 with valid data updates the tag", %{
       organization_id: organization_id
     } do
       message = Fixtures.message_fixture(%{organization_id: organization_id})
