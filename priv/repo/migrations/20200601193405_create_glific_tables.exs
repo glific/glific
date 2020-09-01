@@ -669,6 +669,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:contacts_fields, [:name, :organization_id])

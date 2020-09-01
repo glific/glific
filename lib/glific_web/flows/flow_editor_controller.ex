@@ -8,6 +8,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   alias Glific.Flows
   alias Glific.Flows.Flow
   alias Glific.Flows.FlowCount
+  alias Glific.Flows.ContactField
 
   @doc false
   @spec globals(Plug.Conn.t(), map) :: Plug.Conn.t()
@@ -45,16 +46,24 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec fields(Plug.Conn.t(), map) :: Plug.Conn.t()
   def fields(conn, _params) do
-    # need to retrieve these from DB
-    fileds = [
-      %{key: "name", name: "Name", value_type: "text"},
-      %{key: "age_group", name: "Age Group", value_type: "text"},
-      %{key: "gender", name: "Gender", value_type: "text"},
-      %{key: "dob", name: "Date of Birth", value_type: "text"},
-      %{key: "settings", name: "Settings", value_type: "text"}
-    ]
+    fields =
+      ContactField.list_contacts_fields(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+      |> Enum.reduce([], fn cf, acc -> [%{key: cf.shortcode, name: cf.name, value_type: cf.value_type} | acc]
+      end)
 
-    json(conn, %{results: fileds})
+
+    # IO.inspect("fields")
+    # IO.inspect(fields)
+
+    # fields = [
+    #   %{key: "name", name: "Name", value_type: "text"},
+    #   %{key: "age_group", name: "Age Group", value_type: "text"},
+    #   %{key: "gender", name: "Gender", value_type: "text"},
+    #   %{key: "dob", name: "Date of Birth", value_type: "text"},
+    #   %{key: "settings", name: "Settings", value_type: "text"}
+    # ]
+
+    json(conn, %{results: fields})
   end
 
   @doc """
@@ -65,11 +74,18 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
 
   @spec fields_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
-  def fields_post(conn, _params) do
+  def fields_post(conn, params) do
     # need to store this into DB, the value_type will default to text in this case
     # the shortcode is the name, lower cased, and camelized
+    {:ok, contact_field } =
+      ContactField.create_contact_field(%{
+        name: params["label"],
+        shortcode: Glific.string_clean(params["label"]),
+        organization_id: conn.assigns[:organization_id]
+      })
+
     conn
-    |> json(%{key: "input_field", name: "Input Field", value_type: "text"})
+    |> json(%{key: contact_field.shortcode, name: contact_field.name, value_type: contact_field.value_type})
   end
 
   @doc """
@@ -77,9 +93,6 @@ defmodule GlificWeb.Flows.FlowEditorController do
     We are not supporting this for now. To enable It should return a list of map having
     uuid and name as keys
     [%{uuid: tag.uuid, name: tag.label}]
-
-    We are not supporting them for now. We will come back to this in near future
-
   """
   @spec labels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels(conn, _params) do

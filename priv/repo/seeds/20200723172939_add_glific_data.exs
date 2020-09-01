@@ -7,6 +7,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ContactsFields,
     Flows.Flow,
     Flows.FlowRevision,
     Partners.Organization,
@@ -44,6 +45,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     flows(organization)
 
     opted_in_contacts(organization)
+
+    contacts_field(organization)
   end
 
   def down(_repo) do
@@ -60,7 +63,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       "TRUNCATE contacts;",
       "TRUNCATE providers;",
       "TRUNCATE tags;",
-      "TRUNCATE languages;"
+      "TRUNCATE languages;",
+      "TRUNCATE contacts_fields;"
     ]
 
     Enum.each(truncates, fn t -> Repo.query(t) end)
@@ -483,4 +487,29 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       :hsm
     end
   end
+
+  def contacts_field(organization) do
+    data = [
+      {"Name", "name", "text", "contact"},
+      {"Age Group", "age_group", "text", "contact"},
+      {"Gender", "gender", "text", "contact"},
+      {"Date of Birth", "dob", "text", "contact"},
+      {"settings", "Settings", "settings", "contact"}
+    ]
+
+    Enum.map(data, &contacts_field(&1, organization))
+  end
+
+  defp contacts_field({name, shortcode, value_type, scope}, organization) do
+     Repo.insert!(%ContactsFields{
+        name: name,
+        shortcode: shortcode,
+        value_type: value_type,
+        scope: scope,
+        organization_id: organization.id
+      })
+  end
+
+
+
 end
