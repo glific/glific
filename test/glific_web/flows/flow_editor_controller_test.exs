@@ -23,21 +23,17 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     end
 
     test "fields", %{conn: conn} do
-      fileds = [
-        %{"key" => "name", "name" => "Name", "value_type" => "text"},
-        %{"key" => "age_group", "name" => "Age Group", "value_type" => "text"},
-        %{"key" => "gender", "name" => "Gender", "value_type" => "text"},
-        %{"key" => "dob", "name" => "Date of Birth", "value_type" => "text"},
-        %{"key" => "settings", "name" => "Settings", "value_type" => "text"}
-      ]
-
       conn = get(conn, "/flow-editor/fields", %{})
-      assert json_response(conn, 200)["results"] == fileds
+      assert length(json_response(conn, 200)["results"]) > 0
     end
 
     test "fields_post", %{conn: conn} do
       conn = post(conn, "/flow-editor/fields", %{"label" => "Some Field name"})
-      assert json_response(conn, 200) == %{}
+      assert json_response(conn, 200) == %{
+              "key" => "somefieldname",
+              "name" => "Some Field name",
+              "value_type" => "text"
+            }
     end
 
     test "labels", %{conn: conn} do

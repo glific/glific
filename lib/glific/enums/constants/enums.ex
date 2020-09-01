@@ -53,6 +53,13 @@ defmodule Glific.Enums.Constants do
 
       # the possible sort direction for lists/rows, typically used in DB operations
       @sort_order_const [:asc, :desc]
+
+      # Supported types for contact field values
+      @contact_field_value_type_const [:text, :integer, :number, :boolean, :date]
+
+      # Contact fields scope types
+      @contact_field_scope_const [:contact, :globals]
+
     end
   end
 end

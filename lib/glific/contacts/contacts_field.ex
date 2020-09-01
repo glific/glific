@@ -6,6 +6,7 @@ defmodule Glific.Contacts.ContactsFields do
   import Ecto.Changeset
 
   alias Glific.Partners.Organization
+  alias Glific.Enums.{ContactFieldValueType, ContactFieldScope}
 
   @required_fields [
     :name,
@@ -33,8 +34,8 @@ defmodule Glific.Contacts.ContactsFields do
   schema "contacts_fields" do
     field :name, :string
     field :shortcode, :string
-    field :value_type, :string, default: "text"
-    field :scope, :string, default: "contact"
+    field :value_type, ContactFieldValueType, default: :text
+    field :scope, ContactFieldScope, default: :contact
 
     belongs_to :organization, Organization
     timestamps(type: :utc_datetime)
