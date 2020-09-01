@@ -5,12 +5,7 @@ defmodule Glific.Flags do
   """
 
   @timezone "Asia/Kolkata"
-
-  # mon .. fri
-  @days_of_week 1..5
-
-  # 9:00 - 18:59
-  @hours_of_day 9..18
+  # @timezone "America/Los_Angeles"
 
   @doc false
   @spec init :: {:ok, boolean()}
@@ -22,11 +17,13 @@ defmodule Glific.Flags do
     dialogflow()
   end
 
-  defp business_day?(time),
-    do: (time |> DateTime.to_date() |> Date.day_of_week()) in @days_of_week
+  defp business_day?(time, days),
+    do: (time |> DateTime.to_date() |> Date.day_of_week()) in days
 
-  defp office_hours?(time),
-    do: (time |> DateTime.to_time() |> Map.get(:hour)) in @hours_of_day
+  defp office_hours?(time, [start_time, end_time]) do
+    time = DateTime.to_time(time)
+    Time.compare(time, start_time) == :gt and Time.compare(time, end_time) == :lt
+  end
 
   defp enable_out_of_office do
     # enable only if needed
@@ -40,10 +37,13 @@ defmodule Glific.Flags do
       do: FunWithFlags.disable(:out_of_office_active)
   end
 
-  defp out_of_office_check do
-    # check if current day and time is valid
+  def out_of_office_check do
     {:ok, now} = DateTime.now(@timezone)
-    open? = business_day?(now) and office_hours?(now)
+
+    {hours, days} = Glific.Partners.organization_out_of_office_summary()
+
+    # check if current day and time is valid
+    open? = business_day?(now, days) and office_hours?(now, hours)
 
     if open?,
       # we are operating now, so ensure out_of_office flag is disabled
