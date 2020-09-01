@@ -5,8 +5,10 @@ defmodule Glific.Flags do
   """
 
   @timezone "Asia/Kolkata"
+
   # mon .. fri
   @days_of_week 1..5
+
   # 9:00 - 18:59
   @hours_of_day 9..18
 

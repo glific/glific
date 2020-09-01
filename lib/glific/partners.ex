@@ -8,7 +8,6 @@ defmodule Glific.Partners do
 
   alias Glific.{
     Caches,
-    Contacts.Contact,
     Partners.Organization,
     Partners.Provider,
     Repo
@@ -290,58 +289,82 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  Temorary hack to get the organization id while we get tests to pass
-  """
-  @spec organization_id() :: integer()
-  def organization_id do
-    case Caches.get("organization_id") do
-      {:ok, false} ->
-        organization = Organization |> Ecto.Query.first() |> Repo.one()
-        Caches.set("organization_id", organization.id)
-        organization.id
+  Cache the entire organization structure.
 
-      {:ok, organization_id} ->
-        organization_id
+  In v0.4, we should cache it based on organization id, and that should be a parameter
+  """
+  @spec organization(non_neg_integer | nil) :: Organization.t()
+  def organization(organization_id \\ nil) do
+    case Caches.get("organization") do
+      {:ok, false} ->
+        organization =
+          if !is_nil(organization_id),
+            do: get_organization!(organization_id),
+            else: Organization |> Ecto.Query.first() |> Repo.one()
+
+        Caches.set("organization", organization)
+        organization
+
+      {:ok, organization} ->
+        organization
     end
   end
+
+  @doc """
+  Temorary hack to get the organization id while we get tests to pass
+  """
+  @spec organization_id(non_neg_integer | nil) :: integer()
+  def organization_id(organization_id \\ nil),
+    do: organization(organization_id).id
 
   @doc """
   This contact id is special since it is the sender for all outbound messages
   and the receiver for all inbound messages
   """
-  @spec organization_contact_id() :: integer()
-  def organization_contact_id do
-    # Get contact id
-    case Caches.get("organization_contact_id") do
-      {:ok, false} ->
-        contact_id =
-          Contact
-          |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
-          |> select([c, _o], c.id)
-          |> limit(1)
-          |> Repo.one()
-
-        Caches.set("organization_contact_id", contact_id)
-        contact_id
-
-      {:ok, contact_id} ->
-        contact_id
-    end
-  end
+  @spec organization_contact_id(non_neg_integer | nil) :: integer()
+  def organization_contact_id(organization_id \\ nil),
+    do: organization(organization_id).contact_id
 
   @doc """
   Get the default language id
   """
-  @spec organization_language_id() :: integer()
-  def organization_language_id do
-    case Caches.get("organization_language_id") do
-      {:ok, false} ->
-        organization = Organization |> Ecto.Query.first() |> Repo.one()
-        Caches.set("organization_language_id", organization.default_language_id)
-        organization.default_language_id
+  @spec organization_language_id(non_neg_integer | nil) :: integer()
+  def organization_language_id(organization_id \\ nil),
+    do: organization(organization_id).default_language_id
 
-      {:ok, organization_language_id} ->
-        organization_language_id
+  @doc """
+  Get the out of office encoding
+  """
+  @spec organization_out_of_office(non_neg_integer | nil) :: integer()
+  def organization_out_of_office(organization_id \\ nil),
+    do: organization(organization_id).out_of_office
+
+  @doc """
+  Return the days of week and the hours for each day for this organization. At some point
+  we will unify the structures, so each day can have a different set of hours
+  """
+  @spec organization_out_of_office_summary(non_neg_integer | nil) :: {[integer], [integer]}
+  def organization_out_of_office_summary(organization_id \\ nil) do
+    out_of_office = organization_out_of_office(organization_id)
+
+    if out_of_office.enabled do
+      hours = Enum.to_list(out_of_office.start_time.hour..out_of_office.end_time.hour)
+
+      days =
+        Enum.reduce(
+          out_of_office.enabled_days,
+          [],
+          fn x, acc ->
+            if x.enabled,
+              do: [x.id | acc],
+              else: acc
+          end
+        )
+      |> Enum.reverse()
+
+      {hours, days}
+    else
+      {[], []}
     end
   end
 end
