@@ -573,7 +573,7 @@ Match the parent
 <tr>
 <td colspan="2" valign="top"><strong>color_code</strong></td>
 <td valign="top"><a href="#string">String</a></td>
-<td></td>
+<td>Default: #0C976D</td>
 </tr>
 <tr>
 

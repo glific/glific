@@ -147,7 +147,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :keywords, {:array, :string}
 
       # define a color code for tags
-      add :color_code, :string
+      add :color_code, :string, default: "#0C976D"
 
       # foreign key to language
       add :language_id, references(:languages, on_delete: :restrict), null: false
