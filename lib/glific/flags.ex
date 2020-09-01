@@ -37,7 +37,7 @@ defmodule Glific.Flags do
       do: FunWithFlags.disable(:out_of_office_active)
   end
 
-  def out_of_office_check do
+  defp out_of_office_check do
     {:ok, now} = DateTime.now(@timezone)
 
     {hours, days} = Glific.Partners.organization_out_of_office_summary()
