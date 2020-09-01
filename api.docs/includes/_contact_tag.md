@@ -114,6 +114,149 @@ Type | Description
 | ---- | -----------
 <a href="#contacttagresult">ContactTagResult</a> | An error object or empty
 
+## Update a Contact with tags to be added and tags to be deleted
+
+```graphql
+mutation updateContactTags($input: ContactTagsInput!) {
+  updateContactTags(input: $input) {
+    contactTags {
+      id
+      contact {
+        name
+      }
+      tag {
+        label
+      }
+    }
+    numberDeleted
+  }
+}
+{
+  "input": {
+    "contactId": 2,
+    "addTagIds": [3, 6],
+    "deleteTagIds": [7, 8]
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+```json
+{
+  "data": {
+    "updateContactTags": {
+      "numberDeleted": 2,
+      "contactTags": [
+        {
+          "id": "29",
+          "tag": {
+            "label": "Thank You"
+          },
+          "contact": {
+            "name": "Default receiver"
+          }
+        },
+        {
+          "id": "28",
+          "tag": {
+            "label": "Good Bye"
+          },
+          "contact": {
+            "name": "Default receiver"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#contacttagsinput">ContactTagsInput</a> | required ||
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#contacttags">contactTags</a> | The list of contact tags added
+integer | The number of contact tags deleted
+
+## Subscription for Create Contact Tag
+
+```graphql
+subscription {
+  createdContactTag {
+    message{
+      id
+    }
+    tag{
+      id
+    }
+  }
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createdContactTag": {
+      "contact": {
+        "id": "194"
+      },
+      "tag": {
+        "id": "194"
+      }
+    }
+  }
+}
+```
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#contact">Contact</a> | An error or object
+
+
+## Subscription for Delete Contact Tag
+
+```graphql
+subscription {
+  deletedContactTag() {
+    contact{
+      id
+    }
+    tag{
+      id
+    }
+  }
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "deletedContactTag": {
+      "contact": {
+        "id": "194"
+      },
+      "tag": {
+        "id": "194"
+      }
+    }
+  }
+}
+```
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#contacttag">ContactTags</a> | An error or object
+
 
 ## ContactTag Objects
 
@@ -149,6 +292,27 @@ Type | Description
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
+</tbody>
+</table>
+
+### TemplateTags
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>contactTags</strong></td>
+<td valign="top">[<a href="#contacttag">ContactTag</a>]</td>
+<td></td>
+</tr>
+
 </tbody>
 </table>
 
@@ -200,5 +364,33 @@ Type | Description
 <td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>
+</tbody>
+</table>
+
+### ContactTagsInput ###
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+
+
+<tr>
+<td colspan="2" valign="top"><strong>ContactId</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>TagsId</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+
 </tbody>
 </table>

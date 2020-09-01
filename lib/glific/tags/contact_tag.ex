@@ -35,5 +35,7 @@ defmodule Glific.Tags.ContactTag do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:contact_id, :tag_id])
+    |> foreign_key_constraint(:contact_id)
+    |> foreign_key_constraint(:tag_id)
   end
 end
