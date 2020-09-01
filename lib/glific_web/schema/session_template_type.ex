@@ -37,6 +37,10 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :parent, :session_template do
       resolve(dataloader(Repo))
     end
+
+    field :tags, list_of(:tag) do
+      resolve(dataloader(Repo))
+    end
   end
 
   @desc "Filtering options for session_templates"
