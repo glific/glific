@@ -181,7 +181,7 @@ defmodule Glific.Fixtures do
 
     valid_attrs = %{
       label: "Default Template Label",
-      shortcode: "default template",
+      shortcode: "default_template",
       body: "Default Template",
       type: :text,
       language_id: language.id,

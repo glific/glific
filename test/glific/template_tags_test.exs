@@ -40,9 +40,7 @@ defmodule Glific.TemplateTagsTest do
   test "lets check we can add all the status tags to the template", attrs do
     template = Fixtures.session_template_fixture(attrs)
     tag_1 = Fixtures.tag_fixture(attrs)
-    tag_2 = Fixtures.tag_fixture(attrs)
-    IO.inspect(tag_1)
-    IO.inspect(tag_2)
+    tag_2 = Fixtures.tag_fixture(attrs |> Map.merge(%{shortcode: "newshortcode"}))
 
     template_tags =
       TemplateTags.update_template_tags(%{
