@@ -17,6 +17,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
     contacts()
 
+    contacts_fields()
+
     messages_media()
 
     session_templates()
@@ -645,5 +647,33 @@ defmodule Glific.Repo.Migrations.GlificCore do
     end
 
     create unique_index(:flow_counts, [:uuid, :flow_id, :type])
+  end
+
+  @doc """
+  Create contact fields to support flow editor and allow the user access to NGO specific
+  fields
+  """
+  def contacts_fields do
+    create table(:contacts_fields) do
+      add :name, :string
+
+      add :shortcode, :string
+
+      # lets make this an enum with the following values
+      # :text, :integer, :number, :boolean, :date
+      add :value_type, :contact_field_value_type_enum
+
+      # scope of variable
+      # for now - contact or globals, maybe an enum also
+      add :scope, :contact_field_scope_enum
+
+      # foreign key to organization restricting scope of this table to this organization only
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:contacts_fields, [:name, :organization_id])
+    create unique_index(:contacts_fields, [:shortcode, :organization_id])
   end
 end

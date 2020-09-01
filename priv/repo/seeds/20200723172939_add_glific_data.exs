@@ -7,6 +7,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.ContactsField,
     Flows.Flow,
     Flows.FlowRevision,
     Partners.Organization,
@@ -44,6 +45,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     flows(organization)
 
     opted_in_contacts(organization)
+
+    contacts_field(organization)
   end
 
   def down(_repo) do
@@ -60,7 +63,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       "TRUNCATE contacts;",
       "TRUNCATE providers;",
       "TRUNCATE tags;",
-      "TRUNCATE languages;"
+      "TRUNCATE languages;",
+      "TRUNCATE contacts_fields;"
     ]
 
     Enum.each(truncates, fn t -> Repo.query(t) end)
@@ -115,7 +119,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{
         label: "Good Bye",
         shortcode: "goodbye",
-        description: "Marking message as good wishes when parting or at the end of a conversation",
+        description:
+          "Marking message as good wishes when parting or at the end of a conversation",
         parent_id: message_tags_mt.id,
         keywords: ["bye", "byebye", "goodbye", "goodnight", "goodnite"]
       },
@@ -153,7 +158,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         description: "Marking message as not replied",
         parent_id: message_tags_mt.id
       },
-      %{label: "Spam", shortcode: "spam", description: "Marking message as irrelevant or unsolicited message", parent_id: message_tags_mt.id},
+      %{
+        label: "Spam",
+        shortcode: "spam",
+        description: "Marking message as irrelevant or unsolicited message",
+        parent_id: message_tags_mt.id
+      },
       %{
         label: "Unread",
         shortcode: "unread",
@@ -222,7 +232,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       },
 
       # Type of Contact
-      %{label: "Child", shortcode: "child", description: "Marking message as a child of a parent", parent_id: message_tags_ct.id},
+      %{
+        label: "Child",
+        shortcode: "child",
+        description: "Marking message as a child of a parent",
+        parent_id: message_tags_ct.id
+      },
       %{
         label: "Parent",
         shortcode: "parent",
@@ -235,7 +250,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         description: "Marking message as a participant",
         parent_id: message_tags_ct.id
       },
-      %{label: "Staff", shortcode: "staff", description: "Marking message sent from a member of staff", parent_id: message_tags_ct.id}
+      %{
+        label: "Staff",
+        shortcode: "staff",
+        description: "Marking message sent from a member of staff",
+        parent_id: message_tags_ct.id
+      }
     ]
 
     tags =
@@ -482,5 +502,27 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     else
       :hsm
     end
+  end
+
+  def contacts_field(organization) do
+    data = [
+      {"Name", "name", :text, :contact},
+      {"Age Group", "age_group", :text, :contact},
+      {"Gender", "gender", :text, :contact},
+      {"Date of Birth", "dob", :text, :contact},
+      {"Settings", "settings", :text, :contact}
+    ]
+
+    Enum.map(data, &contacts_field(&1, organization))
+  end
+
+  defp contacts_field({name, shortcode, value_type, scope}, organization) do
+    Repo.insert!(%ContactsField{
+      name: name,
+      shortcode: shortcode,
+      value_type: value_type,
+      scope: scope,
+      organization_id: organization.id
+    })
   end
 end

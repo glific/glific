@@ -13,7 +13,9 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     MessageType,
     MessageStatus,
     QuestionType,
-    SortOrder
+    SortOrder,
+    ContactFieldValueType,
+    ContactFieldScope
   }
 
   def up do
@@ -29,6 +31,8 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     MessageStatus.create_type()
     QuestionType.create_type()
     SortOrder.create_type()
+    ContactFieldValueType.create_type()
+    ContactFieldScope.create_type()
   end
 
   def down do
@@ -44,5 +48,7 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     MessageType.drop_type()
     QuestionType.drop_type()
     SortOrder.drop_type()
+    ContactFieldValueType.drop_type()
+    ContactFieldScope.drop_type()
   end
 end
