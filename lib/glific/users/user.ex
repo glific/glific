@@ -5,7 +5,8 @@ defmodule Glific.Users.User do
 
   alias Glific.{
     Contacts.Contact,
-    Groups.Group
+    Groups.Group,
+    Partners.Organization
   }
 
   alias Ecto.Changeset
@@ -15,12 +16,15 @@ defmodule Glific.Users.User do
           __meta__: Ecto.Schema.Metadata.t(),
           phone: String.t() | nil,
           password_hash: String.t() | nil,
+          contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
-  @required_fields [:phone, :name, :password, :contact_id]
+  @required_fields [:phone, :name, :password, :contact_id, :organization_id]
   @optional_fields [:name, :roles]
   @user_roles ~w(None Staff Manager Admin)
 
@@ -29,6 +33,7 @@ defmodule Glific.Users.User do
     field :roles, {:array, :string}, default: ["none"]
 
     belongs_to :contact, Contact
+    belongs_to :organization, Organization
 
     pow_user_fields()
 
@@ -69,7 +74,7 @@ defmodule Glific.Users.User do
     |> Changeset.cast(params, [:phone])
     |> Changeset.update_change(:phone, &maybe_normalize_user_id_field_value/1)
     |> Changeset.validate_required([:phone])
-    |> Changeset.unique_constraint(:phone)
+    |> Changeset.unique_constraint([:phone, :organization_id])
   end
 
   @doc """

@@ -14,6 +14,7 @@ defmodule Glific.Messages do
     Messages.MessageVariables,
     Partners,
     Repo,
+    Tags,
     Tags.MessageTag,
     Templates.SessionTemplate
   }
@@ -28,23 +29,22 @@ defmodule Glific.Messages do
 
   """
   @spec list_messages(map()) :: [Message.t()]
-  def list_messages(args \\ %{}),
+  def list_messages(%{filter: %{organization_id: _org_id}} = args),
     do: Repo.list_filter(args, Message, &Repo.opts_with_body/2, &filter_with/2)
 
   @doc """
   Return the count of messages, using the same filter as list_messages
   """
   @spec count_messages(map()) :: integer
-  def count_messages(args \\ %{}),
+  def count_messages(%{filter: %{organization_id: _org_id}} = args),
     do: Repo.count_filter(args, Message, &filter_with/2)
 
   # codebeat:disable[ABC, LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
-    Enum.reduce(filter, query, fn
-      {:body, body}, query ->
-        from q in query, where: ilike(q.body, ^"%#{body}%")
+    query = Repo.filter_with(query, filter)
 
+    Enum.reduce(filter, query, fn
       {:sender, sender}, query ->
         from q in query,
           join: c in assoc(q, :sender),
@@ -90,6 +90,9 @@ defmodule Glific.Messages do
 
       {:provider_status, provider_status}, query ->
         from q in query, where: q.provider_status == ^provider_status
+
+      _, query ->
+        query
     end)
   end
 
@@ -246,20 +249,16 @@ defmodule Glific.Messages do
     })
   end
 
-  @doc """
-  Create and send verification message
-  Using session template of shortcode 'verification'
-  """
-  @spec create_and_send_otp_verification_message(String.t(), String.t()) :: {:ok, Message.t()}
-  def create_and_send_otp_verification_message(phone, otp) do
-    # fetch contact by phone number
-    {:ok, contact} = Glific.Repo.fetch_by(Contact, %{phone: phone})
-
+  @doc false
+  @spec create_and_send_otp_verification_message(integer, Contact.t(), String.t()) ::
+          {:ok, Message.t()}
+  def create_and_send_otp_verification_message(organization_id, contact, otp) do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
-      Glific.Repo.fetch_by(SessionTemplate, %{
+      Repo.fetch_by(SessionTemplate, %{
         shortcode: "otp",
-        is_hsm: true
+        is_hsm: true,
+        organization_id: organization_id
       })
 
     ttl_in_minutes = Application.get_env(:passwordless_auth, :verification_code_ttl) |> div(60)
@@ -276,7 +275,6 @@ defmodule Glific.Messages do
   @doc """
   Send a session template to the specific contact. This is typically used in automation
   """
-
   @spec create_and_send_session_template(String.t(), integer) :: {:ok, Message.t()}
   def create_and_send_session_template(template_id, receiver_id) when is_binary(template_id),
     do: create_and_send_session_template(String.to_integer(template_id), receiver_id)
@@ -299,7 +297,8 @@ defmodule Glific.Messages do
       media_id: session_template.message_media_id,
       sender_id: Partners.organization_contact_id(),
       receiver_id: args[:receiver_id],
-      send_at: args[:send_at]
+      send_at: args[:send_at],
+      organization_id: session_template.organization_id
     }
 
     create_and_send_message(message_params)
@@ -320,6 +319,7 @@ defmodule Glific.Messages do
         body: updated_template.body,
         type: updated_template.type,
         is_hsm: updated_template.is_hsm,
+        organization_id: session_template.organization_id,
         sender_id: Partners.organization_contact_id(),
         receiver_id: receiver_id
       }
@@ -502,7 +502,7 @@ defmodule Glific.Messages do
   message a few too many times
   """
   @spec is_message_loop?(map(), integer, integer, integer) :: integer
-  def is_message_loop?(message, past_messages \\ 7, past_count \\ 3, go_back \\ 1)
+  def is_message_loop?(message, past_messages \\ 7, past_count \\ 5, go_back \\ 1)
 
   def is_message_loop?(
         %{uuid: uuid, type: :text, receiver_id: receiver_id} = _message,
@@ -679,6 +679,9 @@ defmodule Glific.Messages do
       {:include_tags, tag_ids}, query ->
         include_tag_filter(query, tag_ids)
 
+      {:include_users, user_ids}, query ->
+        include_user_filter(query, user_ids)
+
       _filter, query ->
         query
     end)
@@ -686,14 +689,26 @@ defmodule Glific.Messages do
 
   # apply filter for message tags
   @spec include_tag_filter(Ecto.Queryable.t(), []) :: Ecto.Queryable.t()
-  defp include_tag_filter(query, tag_ids)
-       when is_list(tag_ids) and tag_ids != [],
-       do:
-         query
-         |> join(:left, [m], mt in MessageTag, as: :it, on: m.id == mt.message_id)
-         |> where([it: it], it.tag_id in ^tag_ids)
+  defp include_tag_filter(query, []), do: query
 
-  defp include_tag_filter(query, _tag_ids), do: query
+  defp include_tag_filter(query, tag_ids) do
+    # given a list of tag_ids, build another list, which includes the tag_ids
+    # and also all its parent tag_ids
+    all_tag_ids = Tags.include_all_ancestors(tag_ids)
+
+    query
+    |> join(:left, [m], mt in MessageTag, as: :mt, on: m.id == mt.message_id)
+    |> where([mt: mt], mt.tag_id in ^all_tag_ids)
+  end
+
+  # apply filter for user ids
+  @spec include_user_filter(Ecto.Queryable.t(), []) :: Ecto.Queryable.t()
+  defp include_user_filter(query, []), do: query
+
+  defp include_user_filter(query, user_ids) do
+    query
+    |> where([m], m.user_id in ^user_ids)
+  end
 
   defp add(element, map) do
     Map.update(

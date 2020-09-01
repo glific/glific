@@ -4,8 +4,9 @@ defmodule Glific.Taggers.Status do
   """
 
   @doc false
-  @spec get_status_map :: %{String.t() => integer}
-  def get_status_map, do: Glific.Tags.status_map()
+  @spec get_status_map(map()) :: %{String.t() => integer}
+  def get_status_map(%{organization_id: _organization_id} = attrs),
+    do: Glific.Tags.status_map(attrs)
 
   @doc false
   @spec is_new_contact(integer()) :: boolean()

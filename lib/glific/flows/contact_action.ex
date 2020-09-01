@@ -37,6 +37,7 @@ defmodule Glific.Flows.ContactAction do
       type: type,
       media_id: media_id,
       receiver_id: context.contact_id,
+      organization_id: context.contact.organization_id,
       send_at: DateTime.add(DateTime.utc_now(), context.delay)
     }
 
@@ -49,13 +50,13 @@ defmodule Glific.Flows.ContactAction do
     count = FlowContext.match_outbound(context, action.uuid)
 
     cond do
-      count >= 5 ->
+      count >= 7 ->
         # :loop_infinite, for now we just ignore this error, and stay put
         # we might want to reset the context
         # this typically will happen when there is no Exit pathway out of the loop
         {:ok, context, message_stream}
 
-      count >= 3 ->
+      count >= 5 ->
         # :loop_detected
         {:ok, context, ["Exit Loop" | message_stream]}
 
@@ -127,7 +128,12 @@ defmodule Glific.Flows.ContactAction do
   @spec optout(FlowContext.t()) :: FlowContext.t()
   def optout(context) do
     # We need to update the contact with optout_time and status
-    Contacts.contact_opted_out(context.contact.phone, DateTime.utc_now())
+    Contacts.contact_opted_out(
+      context.contact.phone,
+      context.contact.organization_id,
+      DateTime.utc_now()
+    )
+
     context
   end
 

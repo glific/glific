@@ -102,7 +102,7 @@ defmodule GlificWeb.APIAuthPlug do
   end
 
   @doc """
-    Delete all user sessions after user resets or updates the password
+  Delete all user sessions after user resets or updates the password
   """
   @spec delete_all_user_sessions(Config.t(), map()) :: :ok
   def delete_all_user_sessions(config, user) do

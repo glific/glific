@@ -23,14 +23,14 @@ defmodule Glific.Searches do
 
   """
   @spec list_saved_searches(map()) :: [SavedSearch.t()]
-  def list_saved_searches(args \\ %{}),
+  def list_saved_searches(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.list_filter(args, SavedSearch, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
   Returns the count of searches, using the same filter as list_saved_searches
   """
   @spec count_saved_searches(map()) :: integer
-  def count_saved_searches(args \\ %{}),
+  def count_saved_searches(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.count_filter(args, SavedSearch, &Repo.filter_with/2)
 
   @doc """
@@ -127,6 +127,7 @@ defmodule Glific.Searches do
     Message
     |> select([m], m.contact_id)
     |> where([m], m.message_number == 0)
+    |> where([m], m.organization_id == ^args.filter.organization_id)
     |> order_by([m], desc: m.updated_at)
     |> Full.run(term, args)
   end
@@ -138,7 +139,8 @@ defmodule Glific.Searches do
          create_saved_search(%{
            label: args.save_search_input.label,
            shortcode: args.save_search_input.shortcode,
-           args: Map.put(args, :save_search_input, nil)
+           args: Map.put(args, :save_search_input, nil),
+           organization_id: args.filter.organization_id
          })
 
   defp do_save_search(_args), do: nil
@@ -222,10 +224,13 @@ defmodule Glific.Searches do
 
   # Get the args map from the saved search and override the term
   @spec saved_search_args_map(integer(), map) :: map()
-  defp saved_search_args_map(id, args),
-    do:
-      get_saved_search!(id)
-      |> Map.get(:args)
-      |> add_term(Map.get(args, :term))
-      |> convert_to_atom()
+  defp saved_search_args_map(id, args) do
+    saved_search = get_saved_search!(id)
+
+    saved_search
+    |> Map.get(:args)
+    |> add_term(Map.get(args, :term))
+    |> convert_to_atom()
+    |> put_in([:filter, :organization_id], saved_search.organization_id)
+  end
 end

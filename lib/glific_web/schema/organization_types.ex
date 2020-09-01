@@ -30,11 +30,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   object :organization do
     field :id, :id
     field :name, :string
-    field :display_name, :string
+    field :shortcode, :string
     field :provider_key, :string
-    field :contact_name, :string
     field :email, :string
-    field :provider_number, :string
+    field :provider_phone, :string
 
     field :provider, :provider do
       resolve(dataloader(Repo))
@@ -49,24 +48,23 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     end
 
     field :out_of_office, :out_of_office
+
+    field :is_active, :boolean
   end
 
   @desc "Filtering options for organizations"
   input_object :organization_filter do
-    @desc "Match the name"
-    field :name, :string
+    @desc "Match the shortcode"
+    field :shortcode, :string
 
     @desc "Match the display name"
-    field :display_name, :string
+    field :name, :string
 
     @desc "Match the email"
     field :email, :string
 
-    @desc "Match the contact name"
-    field :contact_name, :string
-
     @desc "Match the whatsapp number of organization"
-    field :provider_number, :string
+    field :provider_phone, :string
 
     @desc "Match the provider"
     field :provider, :string
@@ -90,23 +88,24 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   input_object :organization_input do
     field :name, :string
-    field :display_name, :string
-    field :contact_name, :string
+    field :shortcode, :string
     field :email, :string
     field :provider_key, :string
-    field :provider_number, :string
+    field :provider_phone, :string
 
     field :provider_id, :id
     field :contact_id, :id
     field :default_language_id, :id
 
     field :out_of_office, :out_of_office_input
+
+    field :is_active, :boolean
   end
 
   object :organization_queries do
     @desc "get the details of one organization"
     field :organization, :organization_result do
-      arg(:id, non_null(:id))
+      arg(:id, :id)
       resolve(&Resolvers.Partners.organization/3)
     end
 

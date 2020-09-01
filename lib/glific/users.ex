@@ -17,15 +17,22 @@ defmodule Glific.Users do
 
   """
   @spec list_users(map()) :: [User.t()]
-  def list_users(args \\ %{}),
-    do: Repo.list_filter(args, User, &Repo.opts_with_name/2, &Repo.filter_with/2)
+  def list_users(%{filter: %{organization_id: _organization_id}} = args) do
+    Repo.list_filter(args, User, &Repo.opts_with_name/2, &Repo.filter_with/2)
+  end
 
   @doc """
   Return the count of users, using the same filter as list_users
   """
   @spec count_users(map()) :: integer
-  def count_users(args \\ %{}),
+  def count_users(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.count_filter(args, User, &Repo.filter_with/2)
+
+  defp fix_roles(attrs) do
+    if attrs[:roles],
+      do: Map.put(attrs, :roles, format_roles(attrs[:roles])),
+      else: attrs
+  end
 
   @doc """
   Gets a single user.
@@ -56,14 +63,9 @@ defmodule Glific.Users do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_user(map()) :: %User{}
-  def create_user(attrs \\ %{}) do
-    attrs =
-      if attrs[:roles] do
-        Map.put(attrs, :roles, format_roles(attrs[:roles]))
-      else
-        attrs
-      end
+  @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def create_user(attrs) do
+    attrs = fix_roles(attrs)
 
     %User{}
     |> User.changeset(attrs)
@@ -84,12 +86,7 @@ defmodule Glific.Users do
   """
   @spec update_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user(%User{} = user, attrs) do
-    attrs =
-      if attrs[:roles] do
-        Map.put(attrs, :roles, format_roles(attrs[:roles]))
-      else
-        attrs
-      end
+    attrs = fix_roles(attrs)
 
     user
     |> User.update_fields_changeset(attrs)
@@ -126,9 +123,5 @@ defmodule Glific.Users do
   @spec format_roles(list()) :: list()
   defp format_roles([]), do: []
   defp format_roles(nil), do: []
-
-  defp format_roles(roles) do
-    roles
-    |> Enum.map(&String.capitalize/1)
-  end
+  defp format_roles(roles), do: Enum.map(roles, &String.capitalize/1)
 end

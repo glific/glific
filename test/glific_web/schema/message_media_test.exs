@@ -106,7 +106,6 @@ defmodule GlificWeb.Schema.MessageMediaTest do
              get_in(query_data, [:data, "createMessageMedia", "errors", Access.at(0), "message"])
   end
 
-  # @tag :pending
   test "update a message media and test possible scenarios and errors" do
     caption = "default caption"
     {:ok, message_media} = Repo.fetch_by(MessageMedia, %{caption: caption})
