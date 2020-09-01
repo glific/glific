@@ -50,13 +50,13 @@ defmodule Glific.Flows.ContactAction do
     count = FlowContext.match_outbound(context, action.uuid)
 
     cond do
-      count >= 5 ->
+      count >= 7 ->
         # :loop_infinite, for now we just ignore this error, and stay put
         # we might want to reset the context
         # this typically will happen when there is no Exit pathway out of the loop
         {:ok, context, message_stream}
 
-      count >= 3 ->
+      count >= 5 ->
         # :loop_detected
         {:ok, context, ["Exit Loop" | message_stream]}
 

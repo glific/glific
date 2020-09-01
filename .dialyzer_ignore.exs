@@ -5,5 +5,7 @@
   {":0:unknown_function Function Mix.PhilColumns.seeds_path/1 does not exist."},
   {":0:unknown_function Function PhilColumns.Seeder.run/4 does not exist."},
   {":0:unknown_function Function Appsignal.Ecto.handle_event/4 does not exist."},
+  {":0:unknown_function Function Phoenix.LiveReloader.call/2 does not exist."},
+  {":0:unknown_function Function Phoenix.LiveReloader.init/1 does not exist."},
   {"lib/glific_web/live/page_live.html.leex"}
 ]

@@ -14,6 +14,7 @@ defmodule Glific.Messages do
     Messages.MessageVariables,
     Partners,
     Repo,
+    Tags,
     Tags.MessageTag,
     Templates.SessionTemplate
   }
@@ -501,7 +502,7 @@ defmodule Glific.Messages do
   message a few too many times
   """
   @spec is_message_loop?(map(), integer, integer, integer) :: integer
-  def is_message_loop?(message, past_messages \\ 7, past_count \\ 3, go_back \\ 1)
+  def is_message_loop?(message, past_messages \\ 7, past_count \\ 5, go_back \\ 1)
 
   def is_message_loop?(
         %{uuid: uuid, type: :text, receiver_id: receiver_id} = _message,
@@ -678,6 +679,9 @@ defmodule Glific.Messages do
       {:include_tags, tag_ids}, query ->
         include_tag_filter(query, tag_ids)
 
+      {:include_users, user_ids}, query ->
+        include_user_filter(query, user_ids)
+
       _filter, query ->
         query
     end)
@@ -685,14 +689,26 @@ defmodule Glific.Messages do
 
   # apply filter for message tags
   @spec include_tag_filter(Ecto.Queryable.t(), []) :: Ecto.Queryable.t()
-  defp include_tag_filter(query, tag_ids)
-       when is_list(tag_ids) and tag_ids != [],
-       do:
-         query
-         |> join(:left, [m], mt in MessageTag, as: :it, on: m.id == mt.message_id)
-         |> where([it: it], it.tag_id in ^tag_ids)
+  defp include_tag_filter(query, []), do: query
 
-  defp include_tag_filter(query, _tag_ids), do: query
+  defp include_tag_filter(query, tag_ids) do
+    # given a list of tag_ids, build another list, which includes the tag_ids
+    # and also all its parent tag_ids
+    all_tag_ids = Tags.include_all_ancestors(tag_ids)
+
+    query
+    |> join(:left, [m], mt in MessageTag, as: :mt, on: m.id == mt.message_id)
+    |> where([mt: mt], mt.tag_id in ^all_tag_ids)
+  end
+
+  # apply filter for user ids
+  @spec include_user_filter(Ecto.Queryable.t(), []) :: Ecto.Queryable.t()
+  defp include_user_filter(query, []), do: query
+
+  defp include_user_filter(query, user_ids) do
+    query
+    |> where([m], m.user_id in ^user_ids)
+  end
 
   defp add(element, map) do
     Map.update(

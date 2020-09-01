@@ -136,6 +136,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :is_reserved, :boolean, default: false
 
       add :ancestors, {:array, :bigint}
+
       # Does this tag potentially have a value associated with it
       # If so, this value will be stored in the join tables. This is applicable only
       # for Numeric and Keyword message tags for now, but also include contact tags to
