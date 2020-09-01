@@ -298,10 +298,11 @@ defmodule Glific.Partners do
     case Caches.get("organization") do
       {:ok, false} ->
         organization =
-          if !is_nil(organization_id),
-            do: get_organization!(organization_id),
-            else: Organization |> Ecto.Query.first() |> Repo.one()
+          if is_nil(organization_id),
+            do: Organization |> Ecto.Query.first() |> Repo.one(),
+            else: get_organization!(organization_id)
 
+        organization = set_out_of_office_values(organization)
         Caches.set("organization", organization)
         organization
 
@@ -333,38 +334,40 @@ defmodule Glific.Partners do
     do: organization(organization_id).default_language_id
 
   @doc """
-  Get the out of office encoding
-  """
-  @spec organization_out_of_office(non_neg_integer | nil) :: integer()
-  def organization_out_of_office(organization_id \\ nil),
-    do: organization(organization_id).out_of_office
-
-  @doc """
   Return the days of week and the hours for each day for this organization. At some point
   we will unify the structures, so each day can have a different set of hours
   """
-  @spec organization_out_of_office_summary(non_neg_integer | nil) :: {[integer], [integer]}
-  def organization_out_of_office_summary(organization_id \\ nil) do
-    out_of_office = organization_out_of_office(organization_id)
+  @spec organization_out_of_office_summary(non_neg_integer | nil) :: {[Time.t()], [integer]}
+  def organization_out_of_office_summary(organization_id \\ nil),
+    do: {organization(organization_id).hours, organization(organization_id).days}
 
-    if out_of_office.enabled do
-      hours = Enum.to_list(out_of_office.start_time.hour..out_of_office.end_time.hour)
+  @spec set_out_of_office_values(Organization.t()) :: Organization.t()
+  defp set_out_of_office_values(organization) do
+    out_of_office = organization.out_of_office
 
-      days =
-        Enum.reduce(
-          out_of_office.enabled_days,
-          [],
-          fn x, acc ->
-            if x.enabled,
-              do: [x.id | acc],
-              else: acc
-          end
-        )
-      |> Enum.reverse()
+    {hours, days} =
+      if out_of_office.enabled do
+        hours = [out_of_office.start_time, out_of_office.end_time]
 
-      {hours, days}
-    else
-      {[], []}
-    end
+        days =
+          Enum.reduce(
+            out_of_office.enabled_days,
+            [],
+            fn x, acc ->
+              if x.enabled,
+                do: [x.id | acc],
+                else: acc
+            end
+          )
+          |> Enum.reverse()
+
+        {hours, days}
+      else
+        {[], []}
+      end
+
+    organization
+    |> Map.put(:hours, hours)
+    |> Map.put(:days, days)
   end
 end
