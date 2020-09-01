@@ -94,6 +94,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       Repo.insert!(%Tag{
         label: "Messages",
         shortcode: "messages",
+        description: "A default message tag",
         is_reserved: true,
         language_id: en_us.id,
         organization_id: organization.id
@@ -103,6 +104,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       Repo.insert!(%Tag{
         label: "Contacts",
         shortcode: "contacts",
+        description: "A contact tag for users that are marked as contacts",
         is_reserved: true,
         language_id: en_us.id,
         organization_id: organization.id
@@ -113,6 +115,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{
         label: "Good Bye",
         shortcode: "goodbye",
+        description: "Marking message as good wishes when parting or at the end of a conversation",
         parent_id: message_tags_mt.id,
         keywords: ["bye", "byebye", "goodbye", "goodnight", "goodnite"]
       },
@@ -120,11 +123,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         label: "Greeting",
         shortcode: "greeting",
         parent_id: message_tags_mt.id,
+        description: "Marking message as a sign of welcome",
         keywords: ["hello", "goodmorning", "hi", "hey"]
       },
       %{
         label: "Thank You",
         shortcode: "thankyou",
+        description: "Marking message as a expression of thanks",
         parent_id: message_tags_mt.id,
         keywords: ["thanks", "thankyou", "awesome", "great"]
       },
@@ -133,22 +138,26 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{
         label: "Important",
         shortcode: "important",
+        description: "Marking message as of great significance or value",
         parent_id: message_tags_mt.id
       },
       %{
         label: "New Contact",
         shortcode: "newcontact",
+        description: "Marking message as came from a new contact",
         parent_id: message_tags_mt.id
       },
       %{
         label: "Not replied",
         shortcode: "notreplied",
+        description: "Marking message as not replied",
         parent_id: message_tags_mt.id
       },
-      %{label: "Spam", shortcode: "spam", parent_id: message_tags_mt.id},
+      %{label: "Spam", shortcode: "spam", description: "Marking message as irrelevant or unsolicited message", parent_id: message_tags_mt.id},
       %{
         label: "Unread",
         shortcode: "unread",
+        description: "Marking message as not read",
         parent_id: message_tags_mt.id
       },
 
@@ -156,6 +165,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{
         label: "Not Responded",
         shortcode: "notresponded",
+        description: "Marking message as not responded",
         parent_id: message_tags_mt.id
       },
 
@@ -163,6 +173,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{
         label: "Language",
         shortcode: "language",
+        description: "Marking message as a name of a language",
         parent_id: message_tags_mt.id,
         keywords: ["hindi", "english", "हिंदी", "अंग्रेज़ी"]
       },
@@ -171,6 +182,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{
         label: "Optout",
         shortcode: "optout",
+        description: "Marking message as a sign of opting out",
         parent_id: message_tags_mt.id,
         keywords: ["stop", "unsubscribe", "halt", "सदस्यता समाप्त"]
       },
@@ -179,6 +191,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{
         label: "Help",
         shortcode: "help",
+        description: "Marking message as a sign of requiring assistance",
         parent_id: message_tags_mt.id,
         keywords: ["help", "मदद"]
       },
@@ -187,6 +200,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{
         label: "Numeric",
         shortcode: "numeric",
+        description: "Marking message as a numeric type",
         parent_id: message_tags_mt.id,
         is_value: true
       },
@@ -195,29 +209,33 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{
         label: "Yes",
         shortcode: "yes",
+        description: "Marking message as an affirmative response",
         parent_id: message_tags_mt.id,
         keywords: ["yes", "yeah", "okay", "ok"]
       },
       %{
         label: "No",
         shortcode: "no",
+        description: "Marking message as a negative response",
         parent_id: message_tags_mt.id,
         keywords: ["no", "nope", "nay"]
       },
 
       # Type of Contact
-      %{label: "Child", shortcode: "child", parent_id: message_tags_ct.id},
+      %{label: "Child", shortcode: "child", description: "Marking message as a child of a parent", parent_id: message_tags_ct.id},
       %{
         label: "Parent",
         shortcode: "parent",
+        description: "Marking message as a parent of a child",
         parent_id: message_tags_ct.id
       },
       %{
         label: "Participant",
         shortcode: "participant",
+        description: "Marking message as a participant",
         parent_id: message_tags_ct.id
       },
-      %{label: "Staff", shortcode: "staff", parent_id: message_tags_ct.id}
+      %{label: "Staff", shortcode: "staff", description: "Marking message sent from a member of staff", parent_id: message_tags_ct.id}
     ]
 
     tags =

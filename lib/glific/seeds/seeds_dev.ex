@@ -38,6 +38,7 @@ defmodule Glific.Seeds.SeedsDev do
     Repo.insert!(%Tag{
       label: "This is for testing",
       shortcode: "testing-only",
+      description: "Marking message for testing purpose in English Language",
       language: en_us,
       organization: organization
     })
@@ -45,6 +46,7 @@ defmodule Glific.Seeds.SeedsDev do
     Repo.insert!(%Tag{
       label: "यह परीक्षण के लिए है",
       shortcode: "testing-only",
+      description: "Marking message for testing purpose in Hindi Language",
       language: hi_in,
       organization: organization
     })
