@@ -283,7 +283,7 @@ defmodule Glific.TagsTest do
       assert message_tag.tag_id == tag.id
     end
 
-    test "update_messages_tag/2 with valid data updates the tag", %{
+    test "update_messages_tags/2 with valid data updates the tag", %{
       organization_id: organization_id
     } do
       message = Fixtures.message_fixture(%{organization_id: organization_id})
@@ -372,7 +372,7 @@ defmodule Glific.TagsTest do
       assert %Ecto.Changeset{} = Tags.change_contact_tag(contact_tag)
     end
 
-    test "ensure that creating contact_tag with same contact and tag give an error", %{
+    test "ensure that creating contact_tag with same contact and tag does not give an error", %{
       organization_id: organization_id
     } do
       contact = Fixtures.contact_fixture(%{organization_id: organization_id})
@@ -384,7 +384,8 @@ defmodule Glific.TagsTest do
         organization_id: organization_id
       })
 
-      assert {:error, %Ecto.Changeset{}} =
+      # using upsert
+      assert {:ok, %ContactTag{}} =
                Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id})
     end
 
