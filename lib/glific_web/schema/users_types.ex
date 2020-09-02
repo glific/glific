@@ -90,7 +90,6 @@ defmodule GlificWeb.Schema.UserTypes do
 
   object :user_mutations do
     field :update_current_user, :user_result do
-      arg(:id, non_null(:id))
       arg(:input, non_null(:current_user_input))
       resolve(&Resolvers.Users.update_current_user/3)
     end

@@ -1,7 +1,7 @@
 #import "./fields.frag.gql"
 
-mutation updateCurrentUser($id: ID!, $input: CurrentUserInput!) {
-  updateCurrentUser(id: $id, input: $input) {
+mutation updateCurrentUser($input: CurrentUserInput!) {
+  updateCurrentUser(input: $input) {
     ...UserFields
 
     ...ErrorFields
