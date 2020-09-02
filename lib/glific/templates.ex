@@ -6,6 +6,8 @@ defmodule Glific.Templates do
 
   alias Glific.{
     Repo,
+    Tags.Tag,
+    Tags.TemplateTag,
     Templates.SessionTemplate
   }
 
@@ -39,11 +41,18 @@ defmodule Glific.Templates do
         from q in query, where: q.is_hsm == ^is_hsm
 
       {:term, term}, query ->
-        from q in query,
-          where:
-            ilike(q.label, ^"%#{term}%") or
-              ilike(q.shortcode, ^"%#{term}%") or
-              ilike(q.body, ^"%#{term}%")
+        query
+        |> join(:left, [q], tg in TemplateTag, as: :tg, on: tg.template_id == q.id)
+        |> join(:left, [tg: tg], t in Tag, as: :t, on: tg.tag_id == t.id)
+        |> where(
+          [q, t: t],
+          ilike(q.label, ^"%#{term}%") or
+            ilike(q.shortcode, ^"%#{term}%") or
+            ilike(q.body, ^"%#{term}%") or
+            ilike(t.label, ^"%#{term}%") or
+            ilike(t.shortcode, ^"%#{term}%")
+        )
+        |> distinct([q], q.id)
 
       _, query ->
         query

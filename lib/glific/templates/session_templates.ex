@@ -78,7 +78,10 @@ defmodule Glific.Templates.SessionTemplate do
     belongs_to :parent, SessionTemplate, foreign_key: :parent_id
     has_many :child, SessionTemplate, foreign_key: :parent_id
 
-    many_to_many :tags, Tag, join_through: "templates_tags", on_replace: :delete, join_keys: [template_id: :id, tag_id: :id]
+    many_to_many :tags, Tag,
+      join_through: "templates_tags",
+      on_replace: :delete,
+      join_keys: [template_id: :id, tag_id: :id]
 
     timestamps(type: :utc_datetime)
   end

@@ -498,7 +498,7 @@ Filtering options for session_templates
 <td valign="top"><a href="#string">String</a></td>
 <td>
 
-Match term with label, body or shortcode of template
+Match term with labe/body/shortcode of template or label/shortcode of associated tag
 
 </td>
 </tr>
