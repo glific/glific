@@ -49,6 +49,8 @@ defmodule Glific.Partners.Organization do
           default_language_id: non_neg_integer | nil,
           default_language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           out_of_office: OutOfOffice.t() | nil,
+          hours: list() | nil,
+          days: list() | nil,
           is_active: boolean(),
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -62,6 +64,11 @@ defmodule Glific.Partners.Organization do
 
     field :provider_phone, :string
     field :provider_key, :string
+
+    # lets cache the start/end hours in here
+    # to make it easier on the flows
+    field :hours, {:array, :time}, virtual: true
+    field :days, {:array, :integer}, virtual: true
 
     belongs_to :provider, Provider
     belongs_to :contact, Contact

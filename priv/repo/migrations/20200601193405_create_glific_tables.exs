@@ -17,6 +17,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
     contacts()
 
+    contacts_fields()
+
     messages_media()
 
     session_templates()
@@ -149,7 +151,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :keywords, {:array, :string}
 
       # define a color code for tags
-      add :color_code, :string
+      add :color_code, :string, default: "#0C976D"
 
       # foreign key to language
       add :language_id, references(:languages, on_delete: :restrict), null: false
@@ -246,11 +248,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # the current options are: processing, valid, invalid, failed
       add :provider_status, :contact_provider_status_enum, null: false, default: "none"
 
-      # Is this contact active (for some definition of active)
-      add :is_active, :boolean, default: true
-
       # this is our status, based on what the Provider tell us
-      # the current options are: valid or invalid
+      # the current options are: valid, invalid or blocked
       add :status, :contact_status_enum, null: false, default: "valid"
 
       # contact language for templates and other communications
@@ -653,7 +652,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
   end
 
   @doc """
-  The relation table between session templates and tags
+  The join table between session templates and tags
   """
   def templates_tags do
     create table(:templates_tags) do
@@ -665,5 +664,33 @@ defmodule Glific.Repo.Migrations.GlificCore do
     end
 
     create unique_index(:templates_tags, [:template_id, :tag_id])
+  end
+
+  @doc """
+  Create contact fields to support flow editor and allow the user access to NGO specific
+  fields
+  """
+  def contacts_fields do
+    create table(:contacts_fields) do
+      add :name, :string
+
+      add :shortcode, :string
+
+      # lets make this an enum with the following values
+      # :text, :integer, :number, :boolean, :date
+      add :value_type, :contact_field_value_type_enum
+
+      # scope of variable
+      # for now - contact or globals, maybe an enum also
+      add :scope, :contact_field_scope_enum
+
+      # foreign key to organization restricting scope of this table to this organization only
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:contacts_fields, [:name, :organization_id])
+    create unique_index(:contacts_fields, [:shortcode, :organization_id])
   end
 end

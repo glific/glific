@@ -5,9 +5,12 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   use GlificWeb, :controller
 
-  alias Glific.Flows
-  alias Glific.Flows.Flow
-  alias Glific.Flows.FlowCount
+  alias Glific.{
+    Flows,
+    Flows.ContactField,
+    Flows.Flow,
+    Flows.FlowCount
+  }
 
   @doc false
   @spec globals(Plug.Conn.t(), map) :: Plug.Conn.t()
@@ -45,28 +48,41 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec fields(Plug.Conn.t(), map) :: Plug.Conn.t()
   def fields(conn, _params) do
-    fileds = [
-      %{key: "name", name: "Name", value_type: "text"},
-      %{key: "age_group", name: "Age Group", value_type: "text"},
-      %{key: "gender", name: "Gender", value_type: "text"},
-      %{key: "dob", name: "Date of Birth", value_type: "text"},
-      %{key: "settings", name: "Settings", value_type: "text"}
-    ]
+    fields =
+      ContactField.list_contacts_fields(%{
+        filter: %{organization_id: conn.assigns[:organization_id]}
+      })
+      |> Enum.reduce([], fn cf, acc ->
+        [%{key: cf.shortcode, name: cf.name, value_type: cf.value_type} | acc]
+      end)
 
-    json(conn, %{results: fileds})
+    json(conn, %{results: fields})
   end
 
   @doc """
-    Add Contact fields into the database. The response should be a map with 3 keys
-    % { Key: Field name, name: Field display name value_type: type of the value}
+  Add Contact fields into the database. The response should be a map with 3 keys
+  % { Key: Field name, name: Field display name value_type: type of the value}
 
-    We are not supporting this for now. We will add that in future
+  We are not supporting this for now. We will add that in future
   """
 
-  @spec fields_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
-  def fields_post(conn, _params) do
+  @spec fields_post(Plug.Conn.t(), map) :: Plug.Conn.t()
+  def fields_post(conn, params) do
+    # need to store this into DB, the value_type will default to text in this case
+    # the shortcode is the name, lower cased, and camelized
+    {:ok, contact_field} =
+      ContactField.create_contact_field(%{
+        name: params["label"],
+        shortcode: Glific.string_clean(params["label"]),
+        organization_id: conn.assigns[:organization_id]
+      })
+
     conn
-    |> json(%{})
+    |> json(%{
+      key: contact_field.shortcode,
+      name: contact_field.name,
+      value_type: contact_field.value_type
+    })
   end
 
   @doc """
@@ -74,9 +90,6 @@ defmodule GlificWeb.Flows.FlowEditorController do
     We are not supporting this for now. To enable It should return a list of map having
     uuid and name as keys
     [%{uuid: tag.uuid, name: tag.label}]
-
-    We are not supporting them for now. We will come back to this in near future
-
   """
   @spec labels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels(conn, _params) do

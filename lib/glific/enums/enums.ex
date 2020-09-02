@@ -88,6 +88,12 @@ defmodule Glific.Enums do
   iex> Glific.Enums.SortOrder.__enum_map__()
   Glific.Enums.sort_order_const()
 
+  iex> Glific.Enums.ContactFieldValueType.__enum_map__()
+  Glific.Enums.contact_field_value_type_const()
+
+  iex> Glific.Enums.ContactFieldScope.__enum_map__()
+  Glific.Enums.contact_field_scope_const()
+
   """
 
   defmacro api_status_const,
@@ -125,4 +131,10 @@ defmodule Glific.Enums do
 
   defmacro sort_order_const,
     do: Macro.expand(@sort_order_const, __CALLER__)
+
+  defmacro contact_field_value_type_const,
+    do: Macro.expand(@contact_field_value_type_const, __CALLER__)
+
+  defmacro contact_field_scope_const,
+    do: Macro.expand(@contact_field_scope_const, __CALLER__)
 end

@@ -77,3 +77,15 @@ defenum(
   :sort_order_enum,
   Glific.Enums.sort_order_const()
 )
+
+defenum(
+  Glific.Enums.ContactFieldValueType,
+  :contact_field_value_type_enum,
+  Glific.Enums.contact_field_value_type_const()
+)
+
+defenum(
+  Glific.Enums.ContactFieldScope,
+  :contact_field_scope_enum,
+  Glific.Enums.contact_field_scope_const()
+)

@@ -76,7 +76,7 @@ defmodule Glific.Flows.Periodic do
     Enum.reduce_while(
       @periodic_flows,
       state,
-      fn state, period ->
+      fn period, state ->
         since = compute_time(now, period)
         {state, result} = periodic_flow(state, period, message, since)
 
@@ -94,7 +94,7 @@ defmodule Glific.Flows.Periodic do
 
     if !is_nil(flow_id) and
          !Flows.flow_activated(flow_id, message.contact_id, since) do
-      {:ok, flow} = Flows.get_cached_flow("outofoffice", %{shortcode: "outofoffice"})
+      {:ok, flow} = Flows.get_cached_flow(period, %{shortcode: period})
       FlowContext.init_context(flow, message.contact)
       {state, true}
     else
@@ -118,7 +118,7 @@ defmodule Glific.Flows.Periodic do
              "sunday"
            ] do
     if Date.day_of_week(since) == Timex.day_to_num(period),
-      do: periodic_flow(state, period, message, since),
+      do: common_flow(state, period, message, since),
       else: {state, false}
   end
 

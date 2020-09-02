@@ -230,8 +230,8 @@ Type | Description
 ## Update a User
 
 ```graphql
-mutation updateUser($id: ID!, $input: UserInput!, $groupIds: [ID]!) {
-  updateUser(id: $id, input: $input, groupIds: $groupIds) {
+mutation updateUser($id: ID!, $input: UserInput!) {
+  updateUser(id: $id, input: $input) {
     user {
       id
       name
@@ -658,6 +658,11 @@ Match the phone
 <tr>
 <td colspan="2" valign="top"><strong>roles</strong></td>
 <td valign="top">[<a href="#string">String</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>groupIds</strong></td>
+<td valign="top">[<a href="#id">ID</a>]</td>
 <td></td>
 </tr>
 </tbody>

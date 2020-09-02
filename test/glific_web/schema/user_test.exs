@@ -246,8 +246,7 @@ defmodule GlificWeb.Schema.UserTest do
           "id" => user.id,
           "input" => %{
             "name" => name,
-            "roles" => roles,
-            "groupIds" => []
+            "roles" => roles
           }
         }
       )

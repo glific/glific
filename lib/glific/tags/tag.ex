@@ -53,7 +53,7 @@ defmodule Glific.Tags.Tag do
     field :shortcode, :string
     field :description, :string
     field :ancestors, {:array, :integer}, default: []
-    field :color_code, :string
+    field :color_code, :string, default: "#0C976D"
 
     field :is_active, :boolean, default: false
     field :is_reserved, :boolean, default: false

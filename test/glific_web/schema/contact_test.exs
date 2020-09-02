@@ -49,9 +49,12 @@ defmodule GlificWeb.Schema.ContactTest do
     contacts = get_in(query_data, [:data, "contacts"])
     assert length(contacts) > 0
 
-    [contact | _] = contacts
+    [contact_a, contact_b | _] = contacts
 
-    assert get_in(contact, ["name"]) == "Adelle Cavin"
+    # sometime the contact we create from the user is sorted before our friend
+    # adelle, hence checking the first two contacts
+    assert get_in(contact_a, ["name"]) == "Adelle Cavin" or
+             get_in(contact_b, ["name"]) == "Adelle Cavin"
   end
 
   test "contacts field obeys limit and offset", %{user: user} do
@@ -242,7 +245,7 @@ defmodule GlificWeb.Schema.ContactTest do
     [contact_a, contact_b | _] = contacts
 
     # sometime the contact we create from the user is sorted before our friend
-    # adelle, hence checking the first two contact
+    # adelle, hence checking the first two contacts
     assert get_in(contact_a, ["name"]) == "Adelle Cavin" or
              get_in(contact_b, ["name"]) == "Adelle Cavin"
   end
