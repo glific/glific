@@ -21,7 +21,7 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
           enabled: boolean | nil,
           start_time: :time | nil,
           end_time: :time | nil,
-          enabled_days: map() | nil,
+          enabled_days: [EnabledDay.t()] | nil,
           flow_id: non_neg_integer | nil
         }
 
@@ -80,6 +80,8 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice.EnabledDay do
   @moduledoc """
   The Glific abstraction to represent the out of office enabled day schema
   """
+  alias __MODULE__
+
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -102,7 +104,7 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice.EnabledDay do
   @doc """
   Changeset pattern for embedded schema of enabled_day
   """
-  @spec enabled_day_changeset(Ecto.Schema.t(), map()) :: Ecto.Changeset.t()
+  @spec enabled_day_changeset(EnabledDay.t(), map()) :: Ecto.Changeset.t()
   def enabled_day_changeset(enabled_day, attrs) do
     enabled_day
     |> cast(attrs, @required_fields)
