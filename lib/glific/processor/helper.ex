@@ -62,16 +62,20 @@ defmodule Glific.Processor.Helper do
   def add_dialogflow_tag(_message, %{"intent" => %{"isFallback" => true}}), do: nil
 
   def add_dialogflow_tag(message, %{"intent" => intent} = response) do
+
     tag_label =
-      intent["displayName"]
-      |> String.split(".")
-      |> Enum.at(1)
+      case intent["displayName"]
+          |> String.split(".")
+          |> Enum.at(1) do
+            nil -> intent["displayName"]
+            tag_label -> tag_label
+      end
 
     with {:ok, tag} <-
            Repo.fetch_by(
              Tags.Tag,
-             %{label: tag_label, organization_id: message.organization_id}
-           ),
+             %{label: tag_label, organization_id: message.organization_id
+          }),
          do: add_tag(message, tag.id)
 
     process_dialogflow_response(response["fulfillmentText"], message)
