@@ -231,6 +231,11 @@ defmodule Glific.Partners do
   """
   @spec create_organization(map()) :: {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def create_organization(attrs \\ %{}) do
+    # first delete the cached organization
+    # at a later stage also include organization id since we store
+    # organizations keyed on that
+    Caches.remove(["organization"])
+
     %Organization{}
     |> Organization.changeset(attrs)
     |> Repo.insert()
@@ -250,8 +255,13 @@ defmodule Glific.Partners do
   """
   @spec update_organization(Organization.t(), map()) ::
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
-  def update_organization(%Organization{} = provider, attrs) do
-    provider
+  def update_organization(%Organization{} = organization, attrs) do
+    # first delete the cached organization
+    # at a later stage also include organization id since we store
+    # organizations keyed on that
+    Caches.remove(["organization"])
+
+    organization
     |> Organization.changeset(attrs)
     |> Repo.update()
   end
