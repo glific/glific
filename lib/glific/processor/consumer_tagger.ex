@@ -140,6 +140,11 @@ defmodule Glific.Processor.ConsumerTagger do
   end
 
   @spec dialogflow_tagger({Message.t(), map()}) :: {Message.t(), map()}
+  # dialog flow only accepts messages less than 255 characters for intent
+  defp dialogflow_tagger({%{body: body} = message, %{tagged: false} = state})
+       when byte_size(body) > 255,
+       do: {message, state}
+
   defp dialogflow_tagger({message, %{tagged: false} = state}) do
     {:ok, response} =
       Sessions.detect_intent(
