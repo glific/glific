@@ -90,15 +90,17 @@ defmodule Glific.Processor.ConsumerFlow do
 
     context = FlowContext.active_context(message.contact_id)
 
+    # if we are in a flow and the flow is setto ignore keywords
+    # then send control to the flow directly
     with false <- is_nil(context),
          {:ok, flow} <- Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid}),
          true <- flow.ignore_keywords do
-      check_contexts(message, body, state)
+      check_contexts(context, message, body, state)
     else
       _ ->
         if Map.has_key?(state.flow_keywords, body),
           do: check_flows(message, body, state),
-          else: check_contexts(message, body, state)
+          else: check_contexts(context, message, body, state)
     end
   end
 
@@ -115,26 +117,25 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   @doc false
-  @spec check_contexts(atom() | Message.t(), String.t(), map()) :: {map(), Message.t()}
-  def check_contexts(message, _body, state) do
-    context = FlowContext.active_context(message.contact_id)
+  @spec check_contexts(FlowContext.t(), atom() | Message.t(), String.t(), map()) ::
+          {map(), Message.t()}
+  def check_contexts(nil = _context, message, _body, state) do
+    # lets do the periodic flow routine and send those out
+    # in a priority order
+    state = Periodic.run_flows(state, message)
+    {state, message}
+  end
 
-    if context do
-      {:ok, flow} = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
+  def check_contexts(context, message, _body, state) do
+    {:ok, flow} = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
 
-      context
-      |> FlowContext.load_context(flow)
-      # we are using message.body here since we want to use the original message
-      # not the stripped version
-      |> FlowContext.step_forward(String.trim(message.body))
+    context
+    |> FlowContext.load_context(flow)
+    # we are using message.body here since we want to use the original message
+    # not the stripped version
+    |> FlowContext.step_forward(String.trim(message.body))
 
-      {state, message}
-    else
-      # lets do the periodic flow routine and send those out
-      # in a priority order
-      state = Periodic.run_flows(state, message)
-      {state, message}
-    end
+    {state, message}
   end
 
   @doc """
