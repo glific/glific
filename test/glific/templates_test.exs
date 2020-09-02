@@ -2,6 +2,7 @@ defmodule Glific.TemplatesTest do
   use Glific.DataCase
 
   alias Glific.{
+    Fixtures,
     Settings,
     Templates,
     Templates.SessionTemplate
@@ -127,15 +128,41 @@ defmodule Glific.TemplatesTest do
         })
 
       assert session_template_list == [session_template1]
+    end
 
-      session_template_fixture(Map.merge(attrs, %{label: "term_filter"}))
-      session_template_fixture(Map.merge(attrs, %{label: "label2", body: "term_filter"}))
-      session_template_fixture(Map.merge(attrs, %{label: "label3", shortcode: "term_filter"}))
+    test "list_session_templates/1 with term filter on session_templates", attrs do
+      # Match term with labe/body/shortcode of template
+      session_template_fixture(Map.merge(attrs, %{label: "filterterm"}))
+      session_template_fixture(Map.merge(attrs, %{label: "label2", body: "filterterm"}))
+      session_template_fixture(Map.merge(attrs, %{label: "label3", shortcode: "filterterm"}))
 
       session_template_list =
-        Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "term_filter"})})
+        Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "filterterm"})})
 
       assert length(session_template_list) == 3
+
+      # Match term with label/shortcode of associated tag
+      template = session_template_fixture(Map.merge(attrs, %{label: "label4"}))
+      tag_1 = Fixtures.tag_fixture(Map.merge(attrs, %{label: "filterterm"}))
+      _template_tag = Fixtures.template_tag_fixture(Map.merge(attrs, %{template_id: template.id, tag_id: tag_1.id}))
+
+      template = session_template_fixture(Map.merge(attrs, %{label: "label5"}))
+      tag_2 = Fixtures.tag_fixture(Map.merge(attrs, %{shortcode: "filterterm"}))
+      _template_tag = Fixtures.template_tag_fixture(Map.merge(attrs, %{template_id: template.id, tag_id: tag_2.id}))
+
+      session_template_list =
+        Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "filterterm"})})
+
+      assert length(session_template_list) == 5
+
+      # In case of a template tagged with multiple tags with similar label or shortcode
+      # result should not give repeated templates
+      _template_tag = Fixtures.template_tag_fixture(Map.merge(attrs, %{template_id: template.id, tag_id: tag_1.id}))
+
+      session_template_list =
+        Templates.list_session_templates(%{filter: Map.merge(attrs, %{term: "filterterm"})})
+
+      assert length(session_template_list) == 5
     end
 
     test "list_session_templates/1 with multiple items", attrs do

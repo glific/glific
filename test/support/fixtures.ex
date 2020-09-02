@@ -306,6 +306,25 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
+  @spec template_tag_fixture(map()) :: Tags.TemplateTag.t()
+  def template_tag_fixture(attrs \\ %{}) do
+    tag = tag_fixture(attrs)
+    template = session_template_fixture(attrs)
+
+    valid_attrs = %{
+      template_id: template.id,
+      tag_id: tag.id
+    }
+
+    {:ok, template_tag} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Tags.create_template_tag()
+
+    template_tag
+  end
+
+  @doc false
   @spec flow_fixture(map()) :: Flows.Flow.t()
   def flow_fixture(attrs \\ %{}) do
     valid_attrs = %{
