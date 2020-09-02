@@ -72,7 +72,7 @@ defmodule Glific.Processor.Helper do
              Tags.Tag,
              %{label: tag_label, organization_id: message.organization_id}
            ),
-         do: add_tag(message, tag.id, message.organization_id)
+         do: add_tag(message, tag.id)
 
     process_dialogflow_response(response["fulfillmentText"], message)
   end
@@ -86,6 +86,7 @@ defmodule Glific.Processor.Helper do
     do:
       Glific.Messages.create_and_send_message(%{
         body: response_message,
-        receiver_id: message.sender_id
+        receiver_id: message.sender_id,
+        organization_id: message.organization_id
       })
 end
