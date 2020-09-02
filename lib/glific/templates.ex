@@ -31,7 +31,7 @@ defmodule Glific.Templates do
   def count_session_templates(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.count_filter(args, SessionTemplate, &filter_with/2)
 
-  # codebeat:disable[ABC]
+  # codebeat:disable[ABC,LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
@@ -42,8 +42,8 @@ defmodule Glific.Templates do
 
       {:term, term}, query ->
         query
-        |> join(:left, [q], tg in TemplateTag, as: :tg, on: tg.template_id == q.id)
-        |> join(:left, [tg: tg], t in Tag, as: :t, on: tg.tag_id == t.id)
+        |> join(:left, [q], stt in TemplateTag, as: :stt, on: stt.template_id == q.id)
+        |> join(:left, [stt: stt], t in Tag, as: :t, on: stt.tag_id == t.id)
         |> where(
           [q, t: t],
           ilike(q.label, ^"%#{term}%") or
@@ -59,7 +59,7 @@ defmodule Glific.Templates do
     end)
   end
 
-  # codebeat:enable[ABC]
+  # codebeat:enable[ABC,LOC]
 
   @doc """
   Gets a single session_template.
