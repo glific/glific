@@ -42,17 +42,23 @@ defmodule Glific.Templates do
 
       {:term, term}, query ->
         query
-        |> join(:left, [q], stt in TemplateTag, as: :stt, on: stt.template_id == q.id)
-        |> join(:left, [stt: stt], t in Tag, as: :t, on: stt.tag_id == t.id)
-        |> where(
-          [q, t: t],
-          ilike(q.label, ^"%#{term}%") or
-            ilike(q.shortcode, ^"%#{term}%") or
-            ilike(q.body, ^"%#{term}%") or
-            ilike(t.label, ^"%#{term}%") or
-            ilike(t.shortcode, ^"%#{term}%")
+        |> join(:left, [template], template_tag in TemplateTag,
+          as: :template_tag,
+          on: template_tag.template_id == template.id
         )
-        |> distinct([q], q.id)
+        |> join(:left, [template_tag: template_tag], tag in Tag,
+          as: :tag,
+          on: template_tag.tag_id == tag.id
+        )
+        |> where(
+          [template, tag: tag],
+          ilike(template.label, ^"%#{term}%") or
+            ilike(template.shortcode, ^"%#{term}%") or
+            ilike(template.body, ^"%#{term}%") or
+            ilike(tag.label, ^"%#{term}%") or
+            ilike(tag.shortcode, ^"%#{term}%")
+        )
+        |> distinct([template], template.id)
 
       _, query ->
         query
