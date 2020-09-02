@@ -178,9 +178,44 @@ subscription {
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#message">Template</a> | An error or object
+<a href="#templatetag">TemplateTag</a> | An error or object
 
 
+## Subscription for Delete Template Tag
+
+```graphql
+subscription {
+  deletedTemplateTag() {
+    template{
+      id
+    }
+    tag{
+      id
+    }
+  }
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "deletedTemplateTag": {
+      "template": {
+        "id": "194"
+      },
+      "tag": {
+        "id": "194"
+      }
+    }
+  }
+}
+```
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#templatetag">TemplateTag</a> | An error or object
 
 
 
@@ -266,5 +301,70 @@ Parameter | Type | Default | Description
 <td valign="top"><a href="#templatetag">TemplateTag</a></td>
 <td></td>
 </tr>
+</tbody>
+</table>
+
+## Template Tag Inputs ##
+
+### TemplateTagInput ###
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+
+
+<tr>
+<td colspan="2" valign="top"><strong>TemplateId</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>TagId</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+
+</tbody>
+</table>
+
+
+### TemplateTagsInput ###
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+
+
+<tr>
+<td colspan="2" valign="top"><strong>TemplateId</strong></td>
+<td valign="top"><a href="#id">Id</a>!</td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>AddTagIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]!</td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>DeleteTagIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]!</td>
+<td></td>
+</tr>
+
 </tbody>
 </table>

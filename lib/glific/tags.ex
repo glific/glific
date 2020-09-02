@@ -513,7 +513,9 @@ defmodule Glific.Tags do
     end
   end
 
-  @doc false
+  @doc """
+  Deletes a list of template tags, each tag attached to the same template
+  """
   @spec delete_template_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
   def delete_template_tag_by_ids(template_id, tag_ids) when is_list(tag_ids) do
     query =

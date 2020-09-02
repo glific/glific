@@ -420,8 +420,14 @@ Parameter | Type | Default | Description
 </tr>
 
 <tr>
-<td colspan="2" valign="top"><strong>TagsId</strong></td>
-<td valign="top">[<a href="#id">Id</a>]</td>
+<td colspan="2" valign="top"><strong>AddTagIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]!</td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>DeleteTagIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]!</td>
 <td></td>
 </tr>
 

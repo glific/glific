@@ -29,7 +29,10 @@ defmodule Glific.Communications do
   For now the data types are Message and MessageTag
   """
 
-  @spec publish_data({:ok, Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t()}, atom()) ::
+  @spec publish_data(
+          {:ok, Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t()},
+          atom()
+        ) ::
           Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t()
   def publish_data({:ok, data}, topic) do
     publish_data(data, topic)

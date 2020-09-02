@@ -188,7 +188,7 @@ integer | The number of contact tags deleted
 ```graphql
 subscription {
   createdContactTag {
-    message{
+    contact{
       id
     }
     tag{
@@ -218,7 +218,7 @@ subscription {
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#contact">Contact</a> | An error or object
+<a href="#contacttag">ContactTag</a> | An error or object
 
 
 ## Subscription for Delete Contact Tag
@@ -255,7 +255,7 @@ subscription {
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#contacttag">ContactTags</a> | An error or object
+<a href="#contacttag">ContactTag</a> | An error or object
 
 
 ## ContactTag Objects
@@ -387,8 +387,14 @@ Parameter | Type | Default | Description
 </tr>
 
 <tr>
-<td colspan="2" valign="top"><strong>TagsId</strong></td>
-<td valign="top">[<a href="#id">Id</a>]</td>
+<td colspan="2" valign="top"><strong>AddTagIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]!</td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>DeleteTagIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]!</td>
 <td></td>
 </tr>
 
