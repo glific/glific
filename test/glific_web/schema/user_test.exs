@@ -5,7 +5,6 @@ defmodule GlificWeb.Schema.UserTest do
   alias GlificWeb.API.V1.RegistrationController
 
   alias Glific.{
-    Contacts.Contact,
     Fixtures,
     Repo,
     Seeds.SeedsDev,
@@ -120,15 +119,10 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "update current user with correct data", %{user: user_auth} do
-    {:ok, user} =
-      Repo.fetch_by(User, %{name: "NGO Basic User 1", organization_id: user_auth.organization_id})
-
     name = "User Test Name New"
 
     result =
-      auth_query_gql_by(:update_current, user_auth,
-        variables: %{"id" => user.id, "input" => %{"name" => name}}
-      )
+      auth_query_gql_by(:update_current, user_auth, variables: %{"input" => %{"name" => name}})
 
     assert {:ok, query_data} = result
 
@@ -138,38 +132,19 @@ defmodule GlificWeb.Schema.UserTest do
   end
 
   test "update current user password for different scenarios", %{user: user} do
-    # create a user for a contact
-    {:ok, receiver} =
-      Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: user.organization_id})
-
-    valid_user_attrs = %{
-      "phone" => receiver.phone,
-      "name" => receiver.name,
-      "roles" => [],
-      "password" => "password",
-      "password_confirmation" => "password",
-      "contact_id" => receiver.id,
-      "organization_id" => Fixtures.get_org_id()
-    }
-
-    {:ok, user_test} =
-      valid_user_attrs
-      |> Users.create_user()
-
-    user_test = user_test |> Repo.preload(:contact)
-
-    name = "User Test Name New"
+    user = user |> Repo.preload(:contact)
 
     {:ok, otp} =
       RegistrationController.create_and_send_verification_code(
         user.organization_id,
-        user_test.contact
+        user.contact
       )
+
+    name = "User Test Name New"
 
     result =
       auth_query_gql_by(:update_current, user,
         variables: %{
-          "id" => user_test.id,
           "input" => %{"name" => name, "otp" => otp, "password" => "new_password"}
         }
       )
@@ -183,15 +158,14 @@ defmodule GlificWeb.Schema.UserTest do
     result =
       auth_query_gql_by(:update_current, user,
         variables: %{
-          "id" => user_test.id,
           "input" => %{"name" => name, "otp" => "incorrect_otp", "password" => "new_password"}
         }
       )
 
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:errors, Access.at(0), :message])
-    assert is_nil(message) == false
+    key = get_in(query_data, [:data, "updateCurrentUser", "errors", Access.at(0), "key"])
+    assert key == "OTP"
   end
 
   test "delete a user", %{user: user_auth} do

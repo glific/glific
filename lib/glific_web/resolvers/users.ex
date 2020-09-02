@@ -41,15 +41,14 @@ defmodule GlificWeb.Resolvers.Users do
   @doc """
   Update current user
   """
-  @spec update_current_user(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+  @spec update_current_user(Absinthe.Resolution.t(), %{input: map()}, %{
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def update_current_user(_, %{id: id, input: params}, _) do
-    with {:ok, user} <- Repo.fetch(User, id),
-         {:ok, params} <- update_password_params(user, params),
-         {:ok, user} <- Users.update_user(user, params) do
-      {:ok, %{user: user}}
+  def update_current_user(_, %{input: params}, %{context: %{current_user: current_user}}) do
+    with {:ok, params} <- update_password_params(current_user, params),
+         {:ok, current_user} <- Users.update_user(current_user, params) do
+      {:ok, %{user: current_user}}
     end
   end
 
@@ -65,7 +64,7 @@ defmodule GlificWeb.Resolvers.Users do
         {:ok, params}
 
       {:error, error} ->
-        {:error, error}
+        {:error, ["OTP", Atom.to_string(error)]}
     end
   end
 

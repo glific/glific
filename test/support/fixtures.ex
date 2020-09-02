@@ -347,10 +347,12 @@ defmodule Glific.Fixtures do
   @doc false
   @spec user_fixture(map()) :: Users.User.t()
   def user_fixture(attrs \\ %{}) do
+    phone = Phone.EnUs.phone()
+
     valid_attrs = %{
       name: "some name",
-      contact_id: contact_fixture().id,
-      phone: Phone.EnUs.phone(),
+      contact_id: contact_fixture(%{phone: phone}).id,
+      phone: phone,
       password: "secret1234",
       password_confirmation: "secret1234",
       roles: ["admin"],
