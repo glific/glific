@@ -85,7 +85,7 @@ defmodule Glific.Providers.Glifproxy.Worker do
       version: 2,
       type: "message",
       payload: %{
-        id: Faker.String.base64(30),
+        id: Ecto.UUID.generate(),
         source: destination,
         type: "text",
         payload: %{

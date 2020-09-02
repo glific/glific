@@ -104,6 +104,7 @@ defmodule Glific.MixProject do
       {:faker, "~> 0.13", only: [:dev, :test]},
       {:mock, "~> 0.3", only: [:dev, :test]},
       {:excoveralls, "~> 0.13", only: :test},
+      {:publicist, "~> 1.1"},
       {:cors_plug, "~> 2.0"},
       {:ex_check, "~> 0.12", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.8", only: [:dev, :test]},

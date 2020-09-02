@@ -4,6 +4,10 @@ defmodule Glific.Flags do
   also put operational code on flags here, as we figure out the right structure
   """
 
+  use Publicist
+
+  # need to get this from organization table in DB
+
   @timezone "Asia/Kolkata"
   # @timezone "America/Los_Angeles"
 
@@ -17,26 +21,31 @@ defmodule Glific.Flags do
     dialogflow()
   end
 
+  @spec business_day?(DateTime.t(), [integer]) ::boolean
   defp business_day?(time, days),
     do: (time |> DateTime.to_date() |> Date.day_of_week()) in days
 
+  @spec office_hours?(DateTime.t(), [Time.t()]) :: boolean
   defp office_hours?(time, [start_time, end_time]) do
     time = DateTime.to_time(time)
     Time.compare(time, start_time) == :gt and Time.compare(time, end_time) == :lt
   end
 
+  @spec enable_out_of_office :: nil
   defp enable_out_of_office do
     # enable only if needed
     if !FunWithFlags.enabled?(:out_of_office_active),
       do: FunWithFlags.enable(:out_of_office_active)
   end
 
+  @spec disable_out_of_office :: nil
   defp disable_out_of_office do
     # disable only if needed
     if FunWithFlags.enabled?(:out_of_office_active),
       do: FunWithFlags.disable(:out_of_office_active)
   end
 
+  @spec out_of_office_check :: nil
   defp out_of_office_check do
     {:ok, now} = DateTime.now(@timezone)
 

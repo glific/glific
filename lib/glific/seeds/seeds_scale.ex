@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Faker) do
 defmodule Glific.Seeds.SeedsScale do
   @moduledoc """
   Script for populating the database at scale
@@ -268,4 +269,5 @@ defmodule Glific.Seeds.SeedsScale do
 
     nil
   end
+end
 end
