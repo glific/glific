@@ -5,7 +5,13 @@ defmodule Glific.Tags do
 
   alias Glific.Communications
   alias Glific.Repo
-  alias Glific.Tags.{ContactTag, MessageTag, Tag}
+
+  alias Glific.Tags.{
+    ContactTag,
+    MessageTag,
+    Tag,
+    TemplateTag
+  }
 
   import Ecto.Query
 
@@ -475,6 +481,61 @@ defmodule Glific.Tags do
       contact_tags
       |> Enum.reduce([], fn contact_tag, _acc ->
         Communications.publish_data({:ok, contact_tag}, :deleted_contact_tag)
+      end)
+
+    {:ok}
+  end
+
+  @doc """
+  Creates a template tag.
+
+  ## Examples
+
+      iex> create_template_tag(%{field: value})
+      {:ok, %Contact{}}
+
+      iex> create_template_tag(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec create_template_tag(map()) :: {:ok, TemplateTag.t()} | {:error, Ecto.Changeset.t()}
+  def create_template_tag(attrs \\ %{}) do
+    {status, response} =
+      %TemplateTag{}
+      |> TemplateTag.changeset(attrs)
+      |> Repo.insert(on_conflict: :replace_all, conflict_target: [:template_id, :tag_id])
+
+    if status == :ok do
+      Communications.publish_data({status, response}, :created_template_tag)
+      {:ok, response}
+    else
+      {:error, response}
+    end
+  end
+
+  @doc """
+  Deletes a list of template tags, each tag attached to the same template
+  """
+  @spec delete_template_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_template_tag_by_ids(template_id, tag_ids) when is_list(tag_ids) do
+    query =
+      TemplateTag
+      |> where([m], m.template_id == ^template_id and m.tag_id in ^tag_ids)
+
+    Repo.all(query)
+    |> publish_delete_template
+
+    Repo.delete_all(query)
+  end
+
+  @spec publish_delete_template(list) :: {:ok}
+  defp publish_delete_template([]), do: {:ok}
+
+  defp publish_delete_template(template_tags) do
+    _list =
+      template_tags
+      |> Enum.reduce([], fn template_tag, _acc ->
+        Communications.publish_data({:ok, template_tag}, :deleted_template_tag)
       end)
 
     {:ok}

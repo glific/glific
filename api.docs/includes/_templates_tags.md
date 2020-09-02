@@ -1,16 +1,16 @@
-# Messages Tags
+# Templates Tags
 
-## Create a Message Tag
+## Create a Template Tag
 
 ```graphql
-mutation createMessageTag($input:MessageTagInput!) {
-  createMessageTag(input: $input) {
-    messageTag {
+mutation createTemplateTag($input:TemplateTagInput!) {
+  createTemplateTag(input: $input) {
+    templateTag {
       id
       value
-      message {
+      template {
         id
-        body
+        label
       }
 
       tag {
@@ -27,7 +27,7 @@ mutation createMessageTag($input:MessageTagInput!) {
 
 {
   "input": {
-    "messageId": 2,
+    "templateId": 2,
     "tagId": 3
   }
 }
@@ -38,19 +38,19 @@ mutation createMessageTag($input:MessageTagInput!) {
 ```json
 {
   "data": {
-    "messageTag": {
+    "createTemplateTag": {
       "errors": null,
-      "messageTag": {
-        "id": 10,
-        "value": "1",
-        "message": {
-          "id" : 2,
-          "body": "one"
-        },
+      "templateTag": {
+        "id": "1",
         "tag": {
-          "id" : 3,
-          "label": "Numeric"
-        }
+          "id": "3",
+          "label": "Greetings"
+        },
+        "template": {
+          "id": "2",
+          "label": "Message"
+        },
+        "value": null
       }
     }
   }
@@ -61,40 +61,36 @@ mutation createMessageTag($input:MessageTagInput!) {
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-input | <a href="#messagetaginput">MessageTagInput</a> | required ||
+input | <a href="#templatetaginput">TemplateTagInput</a> | required ||
 
 ### Return Parameters
 Type | Description
 | ---- | -----------
-<a href="#messagetagresult">MessageTagResult</a> | The created message tag object
+<a href="#templatetagresult">TemplateTagResult</a> | The created template tag object
 
-## Update a Message with tags to be added and tags to be deleted
+## Update a Template with tags to be added and tags to be deleted
 
 ```graphql
-mutation updateMessageTags($input: MessageTagsInput!) {
-  updateMessageTags(input: $input) {
-    messageTags {
-       id,
-      message {
-        body
+mutation updateTemplateTags($input: TemplateTagsInput!) {
+  updateTemplateTags(input: $input) {
+    templateTags {
+      id
+      template {
+        label
       }
 
       tag {
         label
       }
-
     }
-    errors {
-      key
-      message
-    }
+    numberDeleted
   }
 }
 
 {
   "input": {
-    "messageId": 2,
-    "addTagIds": [3, 4, 5, 6]
+    "templateId": 2,
+    "addTagIds": [3, 6],
     "deleteTagIds": [7, 8]
   }
 }
@@ -105,88 +101,26 @@ mutation updateMessageTags($input: MessageTagsInput!) {
 ```json
 {
   "data": {
-    "updateMessageTags": {
-      "errors": null,
-      "messageTags": {
-         {
-          "id": "11476",
-          "message": {
-            "body": "Thank you"
-          },
+    "updateTemplateTags": {
+      "numberDeleted": 2,
+      "templateTags": [
+        {
+          "id": "29",
           "tag": {
-            "label": "Good Bye"
+            "label": "Thank You"
+          },
+          "template": {
+            "label": "OTP Message"
           }
         },
-
         {
-          "id": "11475",
-          "message": {
-            "body": "message body for order test"
-          },
+          "id": "28",
           "tag": {
-            "label": "Compliment"
+            "label": "Good Bye"
+          },
+          "template": {
+            "label": "OTP Message"
           }
-        }
-
-      },
-      numberDeleted: 2,
-    }
-  }
-}
-```
-
-### Query Parameters
-
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-input | <a href="#messagetagsinput">MessageTagsInput</a> | required ||
-
-### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#message_tags">messageTags</a> | The list of tag messages added
-integer | The number of messages deleted
-
-
-## Delete a Message Tag
-
-```graphql
-mutation deleteMessageTag($id: ID!) {
-  deleteMessageTag(id: $id) {
-    errors {
-      key
-      message
-    }
-  }
-}
-
-{
-  "id": "26"
-}
-```
-
-> The above query returns JSON structured like this:
-
-```json
-{
-  "data": {
-    "deleteMessageTag": {
-      "errors": null
-    }
-  }
-}
-```
-
-In case of errors, all the above functions return an error object like the below
-
-```json
-{
-  "data": {
-    "deleteMessageTag": {
-      "errors": [
-        {
-          "key": "Elixir.Glific.Messages.MessageTag 26",
-          "message": "Resource not found"
         }
       ]
     }
@@ -198,19 +132,22 @@ In case of errors, all the above functions return an error object like the below
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
+input | <a href="#templatetagsinput">TemplateTagsInput</a> | required ||
 
 ### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#messagetagresult">MessageTagResult</a> | An error object or empty
+Type | Description
+| ---- | -----------
+<a href="#templatetags">templateTags</a> | The list of template tags added
+integer | The number of template tags deleted
 
-## Subscription for Create Message Tag
+
+
+## Subscription for Create Template Tag
 
 ```graphql
 subscription {
-  createdMessageTag {
-    message{
+  createdTemplateTag {
+    template{
       id
     }
     tag{
@@ -225,8 +162,8 @@ subscription {
 ```json
 {
   "data": {
-    "createdMessageTag": {
-      "message": {
+    "createdTemplateTag": {
+      "template": {
         "id": "194"
       },
       "tag": {
@@ -241,17 +178,15 @@ subscription {
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#message">Message</a> | An error or object
+<a href="#templatetag">TemplateTag</a> | An error or object
 
 
-
-
-## Subscription for Delete Message Tag
+## Subscription for Delete Template Tag
 
 ```graphql
 subscription {
-  deletedMessageTag() {
-    message{
+  deletedTemplateTag() {
+    template{
       id
     }
     tag{
@@ -266,8 +201,8 @@ subscription {
 ```json
 {
   "data": {
-    "deletedMessageTag": {
-      "message": {
+    "deletedTemplateTag": {
+      "template": {
         "id": "194"
       },
       "tag": {
@@ -280,13 +215,13 @@ subscription {
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#messagetag">MessageTags</a> | An error or object
+<a href="#templatetag">TemplateTag</a> | An error or object
 
 
 
-## Message Tag Objects
+## Template Tag Objects
 
-### MessageTag
+### TemplateTag
 
 <table>
 <thead>
@@ -311,8 +246,8 @@ Parameter | Type | Default | Description
 </tr>
 
 <tr>
-<td colspan="2" valign="top"><strong>message</strong></td>
-<td valign="top"><a href="#message">Message</a></td>
+<td colspan="2" valign="top"><strong>template</strong></td>
+<td valign="top"><a href="#sessiontemplate">SessionTemplate</a></td>
 <td></td>
 </tr>
 <tr>
@@ -323,7 +258,7 @@ Parameter | Type | Default | Description
 </tbody>
 </table>
 
-### MessageTags
+### TemplateTags
 
 <table>
 <thead>
@@ -336,15 +271,15 @@ Parameter | Type | Default | Description
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>messageTags</strong></td>
-<td valign="top">[<a href="#messagetag">MessageTag</a>]</td>
+<td colspan="2" valign="top"><strong>templateTags</strong></td>
+<td valign="top">[<a href="#templatetag">TemplateTag</a>]</td>
 <td></td>
 </tr>
 
 </tbody>
 </table>
 
-### MessageTagResult ###
+### TemplateTagResult ###
 
 <table>
 <thead>
@@ -362,16 +297,16 @@ Parameter | Type | Default | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>MessageTag</strong></td>
-<td valign="top"><a href="#messagetag">MessageTag</a></td>
+<td colspan="2" valign="top"><strong>TemplateTag</strong></td>
+<td valign="top"><a href="#templatetag">TemplateTag</a></td>
 <td></td>
 </tr>
 </tbody>
 </table>
 
-## Message Tag Inputs ##
+## Template Tag Inputs ##
 
-### MessageTagInput ###
+### TemplateTagInput ###
 
 <table>
 <thead>
@@ -385,7 +320,7 @@ Parameter | Type | Default | Description
 
 
 <tr>
-<td colspan="2" valign="top"><strong>MessageId</strong></td>
+<td colspan="2" valign="top"><strong>TemplateId</strong></td>
 <td valign="top"><a href="#id">Id</a></td>
 <td></td>
 </tr>
@@ -400,7 +335,7 @@ Parameter | Type | Default | Description
 </table>
 
 
-### MessageTagsInput ###
+### TemplateTagsInput ###
 
 <table>
 <thead>
@@ -414,8 +349,8 @@ Parameter | Type | Default | Description
 
 
 <tr>
-<td colspan="2" valign="top"><strong>MessageId</strong></td>
-<td valign="top"><a href="#id">Id</a></td>
+<td colspan="2" valign="top"><strong>TemplateId</strong></td>
+<td valign="top"><a href="#id">Id</a>!</td>
 <td></td>
 </tr>
 

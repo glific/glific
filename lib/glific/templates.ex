@@ -6,6 +6,8 @@ defmodule Glific.Templates do
 
   alias Glific.{
     Repo,
+    Tags.Tag,
+    Tags.TemplateTag,
     Templates.SessionTemplate
   }
 
@@ -29,7 +31,7 @@ defmodule Glific.Templates do
   def count_session_templates(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.count_filter(args, SessionTemplate, &filter_with/2)
 
-  # codebeat:disable[ABC]
+  # codebeat:disable[ABC,LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
@@ -39,18 +41,25 @@ defmodule Glific.Templates do
         from q in query, where: q.is_hsm == ^is_hsm
 
       {:term, term}, query ->
-        from q in query,
-          where:
-            ilike(q.label, ^"%#{term}%") or
-              ilike(q.shortcode, ^"%#{term}%") or
-              ilike(q.body, ^"%#{term}%")
+        query
+        |> join(:left, [q], stt in TemplateTag, as: :stt, on: stt.template_id == q.id)
+        |> join(:left, [stt: stt], t in Tag, as: :t, on: stt.tag_id == t.id)
+        |> where(
+          [q, t: t],
+          ilike(q.label, ^"%#{term}%") or
+            ilike(q.shortcode, ^"%#{term}%") or
+            ilike(q.body, ^"%#{term}%") or
+            ilike(t.label, ^"%#{term}%") or
+            ilike(t.shortcode, ^"%#{term}%")
+        )
+        |> distinct([q], q.id)
 
       _, query ->
         query
     end)
   end
 
-  # codebeat:enable[ABC]
+  # codebeat:enable[ABC,LOC]
 
   @doc """
   Gets a single session_template.
