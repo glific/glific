@@ -5,6 +5,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   """
 
   alias Glific.{Contacts, Contacts.Contact, Repo}
+  alias GlificWeb.Resolvers.Helper
 
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -17,16 +18,16 @@ defmodule GlificWeb.Resolvers.Contacts do
   @doc false
   @spec contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [any]}
-  def contacts(_, args, _) do
-    {:ok, Contacts.list_contacts(args)}
+  def contacts(_, args, context) do
+    {:ok, Contacts.list_contacts(Helper.add_org_filter(args, context))}
   end
 
   @doc """
   Get the count of contacts filtered by args
   """
   @spec count_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_contacts(_, args, _) do
-    {:ok, Contacts.count_contacts(args)}
+  def count_contacts(_, args, context) do
+    {:ok, Contacts.count_contacts(Helper.add_org_filter(args, context))}
   end
 
   @doc false

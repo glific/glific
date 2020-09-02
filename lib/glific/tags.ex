@@ -5,7 +5,13 @@ defmodule Glific.Tags do
 
   alias Glific.Communications
   alias Glific.Repo
-  alias Glific.Tags.{ContactTag, MessageTag, Tag}
+
+  alias Glific.Tags.{
+    ContactTag,
+    MessageTag,
+    Tag,
+    TemplateTag
+  }
 
   import Ecto.Query
 
@@ -19,14 +25,14 @@ defmodule Glific.Tags do
 
   """
   @spec list_tags(map()) :: [Tag.t()]
-  def list_tags(args \\ %{}),
+  def list_tags(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.list_filter(args, Tag, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
   Return the count of tags, using the same filter as list_tags
   """
   @spec count_tags(map()) :: integer
-  def count_tags(args \\ %{}),
+  def count_tags(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.count_filter(args, Tag, &Repo.filter_with/2)
 
   @doc """
@@ -59,7 +65,7 @@ defmodule Glific.Tags do
 
   """
   @spec create_tag(map()) :: {:ok, Tag.t()} | {:error, Ecto.Changeset.t()}
-  def create_tag(attrs \\ %{}) do
+  def create_tag(attrs) do
     %Tag{}
     |> Tag.changeset(check_shortcode(attrs))
     |> Repo.insert()
@@ -68,10 +74,14 @@ defmodule Glific.Tags do
   # Adding this so that frontend does not fix it
   # immediately, will remove this very soon
   @spec check_shortcode(map()) :: map()
-  defp check_shortcode(%{label: label} = attrs) when label != nil,
-    do: Map.update(attrs, :shortcode, Glific.string_clean(label), & &1)
+  defp check_shortcode(%{shortcode: _shortcode} = attrs),
+    do: attrs
 
-  defp check_shortcode(attrs), do: attrs
+  defp check_shortcode(%{label: nil} = attrs),
+    do: attrs
+
+  defp check_shortcode(%{label: label} = attrs),
+    do: Map.update(attrs, :shortcode, Glific.string_clean(label), & &1)
 
   @doc """
   Updates a tag.
@@ -126,13 +136,14 @@ defmodule Glific.Tags do
   end
 
   @doc """
-    Converts all tag kewords into the map where keyword is the key and tag id is the value
+  Converts all tag kewords into the map where keyword is the key and tag id is the value
   """
-  @spec keyword_map() :: map()
-  def keyword_map do
+  @spec keyword_map(map()) :: map()
+  def keyword_map(%{organization_id: organization_id}) do
     Tag
     |> where([t], not is_nil(t.keywords))
     |> where([t], fragment("array_length(?, 1)", t.keywords) > 0)
+    |> where([t], t.organization_id == ^organization_id)
     |> select([:id, :keywords])
     |> Repo.all()
     |> Enum.reduce(%{}, &keyword_map(&1, &2))
@@ -148,35 +159,39 @@ defmodule Glific.Tags do
   @doc """
   Filter all the status tag and returns as a map
   """
-  @spec status_map() :: %{String.t() => integer}
-  def status_map,
-    do: tags_map(["language", "newcontact", "notreplied", "unread"])
+  @spec status_map(map()) :: %{String.t() => integer}
+  def status_map(%{organization_id: _organization_id} = attrs),
+    do: tags_map(attrs, ["language", "newcontact", "notreplied", "unread"])
 
   @doc """
   Generic function to build a tag map for easy queries. Suspect we'll need it
   for all objects soon, and will promote this to Repo
   """
-  @spec tags_map([String.t()]) :: %{String.t() => integer}
-  def tags_map(tags) do
+  @spec tags_map(map(), [String.t()]) :: %{String.t() => integer}
+  def tags_map(%{organization_id: organization_id}, tags) do
     Tag
     |> where([t], t.shortcode in ^tags)
+    |> where([t], t.organization_id == ^organization_id)
     |> select([:id, :shortcode])
     |> Repo.all()
     |> Enum.reduce(%{}, fn tag, acc -> Map.put(acc, tag.shortcode, tag.id) end)
   end
 
   @doc """
-  Returns the list of messages tags.
-
-  ## Examples
-
-      iex> list_messages_tags()
-      [%MessageTag{}, ...]
-
+  Given a tag id or a list of tag ids, retrieve all the ancestors for the list_tags
   """
-  @spec list_messages_tags(map()) :: [MessageTag.t()]
-  def list_messages_tags(_args \\ %{}) do
-    Repo.all(MessageTag)
+  @spec include_all_ancestors(non_neg_integer | [non_neg_integer]) :: [non_neg_integer]
+  def include_all_ancestors(tag_id) when is_integer(tag_id),
+    do: include_all_ancestors([tag_id])
+
+  def include_all_ancestors(tag_ids) do
+    Tag
+    |> where([t], t.id in ^tag_ids)
+    |> select([t], t.ancestors)
+    |> Repo.all()
+    |> List.flatten()
+    |> Enum.concat(tag_ids)
+    |> Enum.uniq()
   end
 
   @doc """
@@ -275,7 +290,6 @@ defmodule Glific.Tags do
       MessageTag
       |> where([m], m.message_id == ^message_id and m.tag_id == ^tag_id)
 
-    ## We need to come back on this one and fix it.
     Repo.all(query)
     |> publish_delete_message
 
@@ -288,7 +302,6 @@ defmodule Glific.Tags do
       MessageTag
       |> where([m], m.message_id == ^message_id and m.tag_id in ^tag_ids)
 
-    ## We need to come back on this one and fix it.
     Repo.all(query)
     |> publish_delete_message
 
@@ -307,20 +320,6 @@ defmodule Glific.Tags do
   @spec change_message_tag(MessageTag.t(), map()) :: Ecto.Changeset.t()
   def change_message_tag(%MessageTag{} = message_tag, attrs \\ %{}) do
     MessageTag.changeset(message_tag, attrs)
-  end
-
-  @doc """
-  Returns the list of contacts tags.
-
-  ## Examples
-
-      iex> list_contacts_tags()
-      [%ContactTag{}, ...]
-
-  """
-  @spec list_contacts_tags(map()) :: [ContactTag.t()]
-  def list_contacts_tags(_args \\ %{}) do
-    Repo.all(ContactTag)
   end
 
   @doc """
@@ -356,10 +355,17 @@ defmodule Glific.Tags do
   """
   @spec create_contact_tag(map()) :: {:ok, ContactTag.t()} | {:error, Ecto.Changeset.t()}
   def create_contact_tag(attrs \\ %{}) do
-    # Merge default values if not present in attributes
-    %ContactTag{}
-    |> ContactTag.changeset(attrs)
-    |> Repo.insert()
+    {status, response} =
+      %ContactTag{}
+      |> ContactTag.changeset(attrs)
+      |> Repo.insert(on_conflict: :replace_all, conflict_target: [:contact_id, :tag_id])
+
+    if status == :ok do
+      Communications.publish_data({status, response}, :created_contact_tag)
+      {:ok, response}
+    else
+      {:error, response}
+    end
   end
 
   @doc """
@@ -414,7 +420,7 @@ defmodule Glific.Tags do
   end
 
   @doc """
-    Remove a specific tag from contact messages
+  Remove a specific tag from contact messages
   """
   @spec remove_tag_from_all_message(integer(), String.t()) :: list()
   def remove_tag_from_all_message(contact_id, tag_shortcode) when is_binary(tag_shortcode) do
@@ -429,7 +435,6 @@ defmodule Glific.Tags do
         join: t in assoc(mt, :tag),
         where: m.contact_id == ^contact_id and t.shortcode in ^tag_shortcode_list
 
-    ## We need to come back on this one and fix it.
     Repo.all(query)
     |> publish_delete_message
 
@@ -448,6 +453,89 @@ defmodule Glific.Tags do
       message_tags
       |> Enum.reduce([], fn message_tag, _acc ->
         Communications.publish_data({:ok, message_tag}, :deleted_message_tag)
+      end)
+
+    {:ok}
+  end
+
+  @doc """
+  Deletes a list of contact tags, each tag attached to the same contact
+  """
+  @spec delete_contact_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_contact_tag_by_ids(contact_id, tag_ids) when is_list(tag_ids) do
+    query =
+      ContactTag
+      |> where([m], m.contact_id == ^contact_id and m.tag_id in ^tag_ids)
+
+    Repo.all(query)
+    |> publish_delete_contact
+
+    Repo.delete_all(query)
+  end
+
+  @spec publish_delete_contact(list) :: {:ok}
+  defp publish_delete_contact([]), do: {:ok}
+
+  defp publish_delete_contact(contact_tags) do
+    _list =
+      contact_tags
+      |> Enum.reduce([], fn contact_tag, _acc ->
+        Communications.publish_data({:ok, contact_tag}, :deleted_contact_tag)
+      end)
+
+    {:ok}
+  end
+
+  @doc """
+  Creates a template tag.
+
+  ## Examples
+
+      iex> create_template_tag(%{field: value})
+      {:ok, %Contact{}}
+
+      iex> create_template_tag(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec create_template_tag(map()) :: {:ok, TemplateTag.t()} | {:error, Ecto.Changeset.t()}
+  def create_template_tag(attrs \\ %{}) do
+    {status, response} =
+      %TemplateTag{}
+      |> TemplateTag.changeset(attrs)
+      |> Repo.insert(on_conflict: :replace_all, conflict_target: [:template_id, :tag_id])
+
+    if status == :ok do
+      Communications.publish_data({status, response}, :created_template_tag)
+      {:ok, response}
+    else
+      {:error, response}
+    end
+  end
+
+  @doc """
+  Deletes a list of template tags, each tag attached to the same template
+  """
+  @spec delete_template_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_template_tag_by_ids(template_id, tag_ids) when is_list(tag_ids) do
+    query =
+      TemplateTag
+      |> where([m], m.template_id == ^template_id and m.tag_id in ^tag_ids)
+
+    Repo.all(query)
+    |> publish_delete_template
+
+    Repo.delete_all(query)
+  end
+
+  @spec publish_delete_template(list) :: {:ok}
+  defp publish_delete_template([]), do: {:ok}
+
+  defp publish_delete_template(template_tags) do
+    _list =
+      template_tags
+      |> Enum.reduce([], fn template_tag, _acc ->
+        Communications.publish_data({:ok, template_tag}, :deleted_template_tag)
       end)
 
     {:ok}

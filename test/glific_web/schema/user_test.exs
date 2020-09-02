@@ -5,7 +5,6 @@ defmodule GlificWeb.Schema.UserTest do
   alias GlificWeb.API.V1.RegistrationController
 
   alias Glific.{
-    Contacts.Contact,
     Fixtures,
     Repo,
     Seeds.SeedsDev,
@@ -29,16 +28,16 @@ defmodule GlificWeb.Schema.UserTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/users/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/users/delete.gql")
 
-  test "roles returns list of roles" do
-    result = query_gql_by(:list_roles)
+  test "roles returns list of roles", %{user: user} do
+    result = auth_query_gql_by(:list_roles, user)
     assert {:ok, query_data} = result
 
     roles = get_in(query_data, [:data, "roles"])
     assert length(roles) >= 4
   end
 
-  test "users returns list of users" do
-    result = query_gql_by(:list)
+  test "users returns list of users", %{user: user} do
+    result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
     users = get_in(query_data, [:data, "users"])
@@ -53,8 +52,8 @@ defmodule GlificWeb.Schema.UserTest do
     assert user["groups"] == []
   end
 
-  test "users returns list of users in asc order" do
-    result = query_gql_by(:list, variables: %{"opts" => %{"order" => "ASC"}})
+  test "users returns list of users in asc order", %{user: user} do
+    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
     users = get_in(query_data, [:data, "users"])
@@ -65,64 +64,65 @@ defmodule GlificWeb.Schema.UserTest do
     assert get_in(user, ["name"]) == "Glific Admin"
   end
 
-  test "users obeys limit and offset" do
-    result = query_gql_by(:list, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+  test "users obeys limit and offset", %{user: user} do
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "users"])) == 1
 
-    {:ok, query_data} = query_gql_by(:list)
+    {:ok, query_data} = auth_query_gql_by(:list, user)
     users_count = get_in(query_data, [:data, "users"]) |> length
 
-    result = query_gql_by(:list, variables: %{"opts" => %{"offset" => 1}})
+    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"offset" => 1}})
     assert {:ok, query_data} = result
 
     users = get_in(query_data, [:data, "users"])
     assert length(users) == users_count - 1
   end
 
-  test "count returns the number of users" do
-    {:ok, query_data} = query_gql_by(:count)
-    assert get_in(query_data, [:data, "countUsers"]) == 3
+  test "count returns the number of users", %{user: user} do
+    {:ok, query_data} = auth_query_gql_by(:count, user)
+    organization_id = Fixtures.get_org_id()
+
+    assert get_in(query_data, [:data, "countUsers"]) ==
+             Users.count_users(%{filter: %{organization_id: organization_id}})
 
     {:ok, query_data} =
-      query_gql_by(:count,
+      auth_query_gql_by(:count, user,
         variables: %{"filter" => %{"name" => "This user should never ever exist"}}
       )
 
     assert get_in(query_data, [:data, "countUsers"]) == 0
 
     {:ok, query_data} =
-      query_gql_by(:count, variables: %{"filter" => %{"name" => "NGO Basic User 1"}})
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "NGO Basic User 1"}})
 
     assert get_in(query_data, [:data, "countUsers"]) == 1
   end
 
-  test "user by id returns one user or nil" do
+  test "user by id returns one user or nil", %{user: user_auth} do
     name = "NGO Basic User 1"
-    {:ok, user} = Repo.fetch_by(User, %{name: name})
+    {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: user_auth.organization_id})
 
-    result = query_gql_by(:by_id, variables: %{"id" => user.id})
+    result = auth_query_gql_by(:by_id, user_auth, variables: %{"id" => user.id})
     assert {:ok, query_data} = result
 
     user = get_in(query_data, [:data, "user", "user", "name"])
     assert user == name
 
-    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
+    result = auth_query_gql_by(:by_id, user_auth, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "user", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
   end
 
-  test "update current user with correct data" do
-    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
-
+  test "update current user with correct data", %{user: user_auth} do
     name = "User Test Name New"
 
     result =
-      query_gql_by(:update_current,
-        variables: %{"id" => user.id, "input" => %{"name" => name}}
-      )
+      auth_query_gql_by(:update_current, user_auth, variables: %{"input" => %{"name" => name}})
 
     assert {:ok, query_data} = result
 
@@ -131,31 +131,20 @@ defmodule GlificWeb.Schema.UserTest do
     assert user_result["name"] == name
   end
 
-  test "update current user password for different scenarios" do
-    # create a user for a contact
-    {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+  test "update current user password for different scenarios", %{user: user} do
+    user = user |> Repo.preload(:contact)
 
-    valid_user_attrs = %{
-      "phone" => receiver.phone,
-      "name" => receiver.name,
-      "roles" => [],
-      "password" => "password",
-      "password_confirmation" => "password",
-      "contact_id" => receiver.id
-    }
-
-    {:ok, user} =
-      valid_user_attrs
-      |> Users.create_user()
+    {:ok, otp} =
+      RegistrationController.create_and_send_verification_code(
+        user.organization_id,
+        user.contact
+      )
 
     name = "User Test Name New"
 
-    {:ok, otp} = RegistrationController.create_and_send_verification_code(user.phone)
-
     result =
-      query_gql_by(:update_current,
+      auth_query_gql_by(:update_current, user,
         variables: %{
-          "id" => user.id,
           "input" => %{"name" => name, "otp" => otp, "password" => "new_password"}
         }
       )
@@ -167,35 +156,35 @@ defmodule GlificWeb.Schema.UserTest do
 
     # update with incorrect otp should give error
     result =
-      query_gql_by(:update_current,
+      auth_query_gql_by(:update_current, user,
         variables: %{
-          "id" => user.id,
           "input" => %{"name" => name, "otp" => "incorrect_otp", "password" => "new_password"}
         }
       )
 
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:errors, Access.at(0), :message])
-    assert is_nil(message) == false
+    key = get_in(query_data, [:data, "updateCurrentUser", "errors", Access.at(0), "key"])
+    assert key == "OTP"
   end
 
-  test "delete a user" do
-    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
+  test "delete a user", %{user: user_auth} do
+    user = Fixtures.user_fixture()
 
-    result = query_gql_by(:delete, variables: %{"id" => user.id})
+    result = auth_query_gql_by(:delete, user_auth, variables: %{"id" => user.id})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "deleteUser", "errors"]) == nil
 
-    result = query_gql_by(:delete, variables: %{"id" => 123_456_789})
+    result = auth_query_gql_by(:delete, user_auth, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "deleteUser", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
   end
 
-  test "update a user and test possible scenarios and errors" do
-    {:ok, user} = Repo.fetch_by(User, %{name: "NGO Basic User 1"})
+  test "update a user and test possible scenarios and errors", %{user: user_auth} do
+    {:ok, user} =
+      Repo.fetch_by(User, %{name: "NGO Basic User 1", organization_id: user_auth.organization_id})
 
     name = "User Test Name New"
     roles = ["Staff", "Admin"]
@@ -203,7 +192,7 @@ defmodule GlificWeb.Schema.UserTest do
     group = Fixtures.group_fixture()
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user_auth,
         variables: %{
           "id" => user.id,
           "input" => %{
@@ -226,13 +215,12 @@ defmodule GlificWeb.Schema.UserTest do
     roles = ["admin", "incorrect_role"]
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user_auth,
         variables: %{
           "id" => user.id,
           "input" => %{
             "name" => name,
-            "roles" => roles,
-            "groupIds" => []
+            "roles" => roles
           }
         }
       )
@@ -246,7 +234,7 @@ defmodule GlificWeb.Schema.UserTest do
     roles = ["admin"]
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user_auth,
         variables: %{
           "id" => user.id,
           "input" => %{

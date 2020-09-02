@@ -20,7 +20,7 @@ config :glific,
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,
-  url: [host: "localhost"],
+  url: [host: "glific.test"],
   secret_key_base: "IN3UOAXU/FC6yPcBcC/iHg85F52QYPvjSiDkRdoydEobrrL+aNhat5I5+WA4IW0e",
   render_errors: [view: GlificWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: Glific.PubSub,
@@ -66,22 +66,6 @@ config :passwordless_auth,
   rate_limit_timeout_length: 60,
   # seconds, optional (defaults to 300 if not provided)
   verification_code_ttl: 300
-
-# Sentry configuration
-
-# configure sentry's logger
-config :logger,
-  backends: [:console, Sentry.LoggerBackend]
-
-config :sentry,
-  dsn: "https://4ae43f4bc3c14881aace7956eb4a0b64@o412613.ingest.sentry.io/5290153",
-  environment_name: Mix.env(),
-  enable_source_code_context: true,
-  root_source_code_path: File.cwd!(),
-  tags: %{
-    env: "dev"
-  },
-  included_environments: [:prod]
 
 # phil columns to seed production data
 config :phil_columns,

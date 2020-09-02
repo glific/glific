@@ -11,7 +11,7 @@ defmodule Glific.Enums.Constants do
       @api_status_const [:ok, :error]
 
       # the status determines if we can send a message to the contact
-      @contact_status_const [:failed, :invalid, :processing, :valid]
+      @contact_status_const [:blocked, :failed, :invalid, :processing, :valid]
 
       # the provider status determines if we can send a message to the contact
       @contact_provider_status_const [:none, :session, :session_and_hsm, :hsm]
@@ -53,6 +53,12 @@ defmodule Glific.Enums.Constants do
 
       # the possible sort direction for lists/rows, typically used in DB operations
       @sort_order_const [:asc, :desc]
+
+      # Supported types for contact field values
+      @contact_field_value_type_const [:text, :integer, :number, :boolean, :date]
+
+      # Contact fields scope types
+      @contact_field_scope_const [:contact, :globals]
     end
   end
 end

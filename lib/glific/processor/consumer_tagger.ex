@@ -39,6 +39,7 @@ defmodule Glific.Processor.ConsumerTagger do
         numeric_tag_id: 0,
         flows: %{},
         dialogflow_session_id: Ecto.UUID.generate(),
+        organization_id: 1,
         tagged: false
       }
       |> reload
@@ -57,13 +58,18 @@ defmodule Glific.Processor.ConsumerTagger do
   end
 
   defp reload(%{numeric_tag_id: numeric_tag_id} = state) when numeric_tag_id == 0 do
-    case Repo.fetch_by(Tag, %{shortcode: "numeric"}) do
+    attrs = %{organization_id: state.organization_id}
+
+    case Repo.fetch_by(
+           Tag,
+           %{shortcode: "numeric", organization_id: state.organization_id}
+         ) do
       {:ok, tag} -> Map.put(state, :numeric_tag_id, tag.id)
       _ -> state
     end
     |> Map.merge(%{
-      keyword_map: Taggers.Keyword.get_keyword_map(),
-      status_map: Status.get_status_map()
+      keyword_map: Taggers.Keyword.get_keyword_map(attrs),
+      status_map: Status.get_status_map(attrs)
     })
   end
 
@@ -134,11 +140,20 @@ defmodule Glific.Processor.ConsumerTagger do
   end
 
   @spec dialogflow_tagger({Message.t(), map()}) :: {Message.t(), map()}
+  # dialog flow only accepts messages less than 255 characters for intent
+  defp dialogflow_tagger({%{body: body} = message, %{tagged: false} = state})
+       when byte_size(body) > 255,
+       do: {message, state}
+
   defp dialogflow_tagger({message, %{tagged: false} = state}) do
+    # Since conatct and language are the required filed, we can skip some pattern checks.
+    message = Repo.preload(message, [contact: [:language]])
+
     {:ok, response} =
       Sessions.detect_intent(
         message.body,
-        state.dialogflow_session_id
+        state.dialogflow_session_id,
+        message.contact.language.locale
       )
 
     Helper.add_dialogflow_tag(message, response["queryResult"])

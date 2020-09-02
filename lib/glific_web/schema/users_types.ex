@@ -52,7 +52,7 @@ defmodule GlificWeb.Schema.UserTypes do
   input_object :user_input do
     field :name, :string
     field :roles, list_of(:string)
-    field :group_ids, non_null(list_of(:id))
+    field :group_ids, list_of(:id)
   end
 
   object :user_queries do
@@ -81,11 +81,15 @@ defmodule GlificWeb.Schema.UserTypes do
       arg(:filter, :user_filter)
       resolve(&Resolvers.Users.count_users/3)
     end
+
+    @desc "Get the details of current user"
+    field :current_user, :user_result do
+      resolve(&Resolvers.Users.current_user/3)
+    end
   end
 
   object :user_mutations do
     field :update_current_user, :user_result do
-      arg(:id, non_null(:id))
       arg(:input, non_null(:current_user_input))
       resolve(&Resolvers.Users.update_current_user/3)
     end

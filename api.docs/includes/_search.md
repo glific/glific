@@ -24,13 +24,14 @@ query search(  $saveSearchInput: SaveSearchInput,
 
 {
   "saveSearchInput": {
-      "label" => "Save with this name",
-      "shortcode" => "SaveName"
+      "label": "Save with this name",
+      "shortcode": "SaveName"
   },
 
   "searchFilter": {
     "includeTags": ["17"],
     "includeGroups": ["1"],
+    "includeUsers": ["1"],
     "term": "def",
     "dateRange": {
       "to": "2020-08-10",
@@ -250,6 +251,12 @@ term | <a href="#string">String</a> | nil | optional keyword to add to saved sea
 
 <tr>
 <td colspan="2" valign="top"><strong>IncludeGroups</strong></td>
+<td valign="top">[<a href="#gid">Gid</a>]</td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>IncludeUsers</strong></td>
 <td valign="top">[<a href="#gid">Gid</a>]</td>
 <td></td>
 </tr>

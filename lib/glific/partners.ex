@@ -8,7 +8,6 @@ defmodule Glific.Partners do
 
   alias Glific.{
     Caches,
-    Contacts.Contact,
     Partners.Organization,
     Partners.Provider,
     Repo
@@ -150,6 +149,21 @@ defmodule Glific.Partners do
     do: Repo.list_filter(args, Organization, &Repo.opts_with_name/2, &filter_organization_with/2)
 
   @doc """
+  List of organizations that are active within the system
+  """
+  @spec active_organizations :: map()
+  def active_organizations do
+    Organization
+    # |> where([q], q.is_active == true)
+    |> select([q], [q.id, q.name])
+    |> Repo.all()
+    |> Enum.reduce(%{}, fn row, acc ->
+      [id, value] = row
+      Map.put(acc, id, value)
+    end)
+  end
+
+  @doc """
   Return the count of organizations, using the same filter as list_organizations
   """
   @spec count_organizations(map()) :: integer
@@ -163,12 +177,6 @@ defmodule Glific.Partners do
     query = Repo.filter_with(query, filter)
 
     Enum.reduce(filter, query, fn
-      {:display_name, display_name}, query ->
-        from q in query, where: ilike(q.display_name, ^"%#{display_name}%")
-
-      {:contact_name, contact_name}, query ->
-        from q in query, where: ilike(q.contact_name, ^"%#{contact_name}%")
-
       {:email, email}, query ->
         from q in query, where: ilike(q.email, ^"%#{email}%")
 
@@ -177,8 +185,8 @@ defmodule Glific.Partners do
           join: c in assoc(q, :provider),
           where: ilike(c.name, ^"%#{provider}%")
 
-      {:provider_number, provider_number}, query ->
-        from q in query, where: ilike(q.provider_number, ^"%#{provider_number}%")
+      {:provider_phone, provider_phone}, query ->
+        from q in query, where: ilike(q.provider_phone, ^"%#{provider_phone}%")
 
       {:default_language, default_language}, query ->
         from q in query,
@@ -281,26 +289,85 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  We will cache this soon, since this is a frequently requested item. This contact id is special
-  since it is the sender for all outbound messages and the receiver for all inbound messages
+  Cache the entire organization structure.
+
+  In v0.4, we should cache it based on organization id, and that should be a parameter
   """
-  @spec organization_contact_id() :: {atom, integer()}
-  def organization_contact_id do
-    # Get contact id
-    case Caches.get("organization_contact_id") do
+  @spec organization(non_neg_integer | nil) :: Organization.t()
+  def organization(organization_id \\ nil) do
+    case Caches.get("organization") do
       {:ok, false} ->
-        contact_id =
-          Contact
-          |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
-          |> select([c, _o], c.id)
-          |> limit(1)
-          |> Repo.one()
+        organization =
+          if is_nil(organization_id),
+            do: Organization |> Ecto.Query.first() |> Repo.one(),
+            else: get_organization!(organization_id)
 
-        Caches.set("organization_contact_id", contact_id)
-        contact_id
+        organization = set_out_of_office_values(organization)
+        Caches.set("organization", organization)
+        organization
 
-      {:ok, contact_id} ->
-        contact_id
+      {:ok, organization} ->
+        organization
     end
+  end
+
+  @doc """
+  Temorary hack to get the organization id while we get tests to pass
+  """
+  @spec organization_id(non_neg_integer | nil) :: integer()
+  def organization_id(organization_id \\ nil),
+    do: organization(organization_id).id
+
+  @doc """
+  This contact id is special since it is the sender for all outbound messages
+  and the receiver for all inbound messages
+  """
+  @spec organization_contact_id(non_neg_integer | nil) :: integer()
+  def organization_contact_id(organization_id \\ nil),
+    do: organization(organization_id).contact_id
+
+  @doc """
+  Get the default language id
+  """
+  @spec organization_language_id(non_neg_integer | nil) :: integer()
+  def organization_language_id(organization_id \\ nil),
+    do: organization(organization_id).default_language_id
+
+  @doc """
+  Return the days of week and the hours for each day for this organization. At some point
+  we will unify the structures, so each day can have a different set of hours
+  """
+  @spec organization_out_of_office_summary(non_neg_integer | nil) :: {[Time.t()], [integer]}
+  def organization_out_of_office_summary(organization_id \\ nil),
+    do: {organization(organization_id).hours, organization(organization_id).days}
+
+  @spec set_out_of_office_values(Organization.t()) :: Organization.t()
+  defp set_out_of_office_values(organization) do
+    out_of_office = organization.out_of_office
+
+    {hours, days} =
+      if out_of_office.enabled do
+        hours = [out_of_office.start_time, out_of_office.end_time]
+
+        days =
+          Enum.reduce(
+            out_of_office.enabled_days,
+            [],
+            fn x, acc ->
+              if x.enabled,
+                do: [x.id | acc],
+                else: acc
+            end
+          )
+          |> Enum.reverse()
+
+        {hours, days}
+      else
+        {[], []}
+      end
+
+    organization
+    |> Map.put(:hours, hours)
+    |> Map.put(:days, days)
   end
 end

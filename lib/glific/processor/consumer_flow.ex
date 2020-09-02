@@ -116,7 +116,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
   @doc false
   @spec check_contexts(atom() | Message.t(), String.t(), map()) :: {map(), Message.t()}
-  def check_contexts(message, body, state) do
+  def check_contexts(message, _body, state) do
     context = FlowContext.active_context(message.contact_id)
 
     if context do
@@ -124,7 +124,9 @@ defmodule Glific.Processor.ConsumerFlow do
 
       context
       |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward(body)
+      # we are using message.body here since we want to use the original message
+      # not the stripped version
+      |> FlowContext.step_forward(String.trim(message.body))
 
       {state, message}
     else

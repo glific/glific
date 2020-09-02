@@ -1,0 +1,16 @@
+mutation updateContactTags($input:ContactTagsInput!) {
+  updateContactTags(input: $input) {
+    contactTags {
+      id
+      contact {
+        id
+        name
+      }
+      tag {
+        id
+        label
+      }
+    }
+    numberDeleted
+  }
+}

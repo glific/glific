@@ -6,6 +6,8 @@ defmodule Glific.Templates do
 
   alias Glific.{
     Repo,
+    Tags.Tag,
+    Tags.TemplateTag,
     Templates.SessionTemplate
   }
 
@@ -19,17 +21,17 @@ defmodule Glific.Templates do
 
   """
   @spec list_session_templates(map()) :: [SessionTemplate.t()]
-  def list_session_templates(args \\ %{}),
+  def list_session_templates(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.list_filter(args, SessionTemplate, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
   Return the count of session_templates, using the same filter as list_session_templates
   """
   @spec count_session_templates(map()) :: integer
-  def count_session_templates(args \\ %{}),
+  def count_session_templates(%{filter: %{organization_id: _organization_id}} = args),
     do: Repo.count_filter(args, SessionTemplate, &filter_with/2)
 
-  # codebeat:disable[ABC]
+  # codebeat:disable[ABC,LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
@@ -39,18 +41,25 @@ defmodule Glific.Templates do
         from q in query, where: q.is_hsm == ^is_hsm
 
       {:term, term}, query ->
-        from q in query,
-          where:
-            ilike(q.label, ^"%#{term}%") or
-              ilike(q.shortcode, ^"%#{term}%") or
-              ilike(q.body, ^"%#{term}%")
+        query
+        |> join(:left, [q], stt in TemplateTag, as: :stt, on: stt.template_id == q.id)
+        |> join(:left, [stt: stt], t in Tag, as: :t, on: stt.tag_id == t.id)
+        |> where(
+          [q, t: t],
+          ilike(q.label, ^"%#{term}%") or
+            ilike(q.shortcode, ^"%#{term}%") or
+            ilike(q.body, ^"%#{term}%") or
+            ilike(t.label, ^"%#{term}%") or
+            ilike(t.shortcode, ^"%#{term}%")
+        )
+        |> distinct([q], q.id)
 
       _, query ->
         query
     end)
   end
 
-  # codebeat:enable[ABC]
+  # codebeat:enable[ABC,LOC]
 
   @doc """
   Gets a single session_template.
@@ -145,7 +154,6 @@ defmodule Glific.Templates do
   Gets or Creates a template based on the unique indexes in the table. If there is a match
   it returns the existing template, else it creates a new one
   """
-
   @spec template_upsert(map()) :: {:ok, SessionTemplate.t()}
   def template_upsert(attrs) do
     template =
@@ -159,10 +167,9 @@ defmodule Glific.Templates do
   end
 
   @doc """
-    Create a session template form message
-    Body and type will be the message attributes
+  Create a session template form message
+  Body and type will be the message attributes
   """
-
   @spec create_template_from_message(%{message_id: integer, input: map}) ::
           {:ok, SessionTemplate.t()} | {:error, String.t()}
   def create_template_from_message(%{message_id: message_id, input: input}) do
@@ -170,7 +177,10 @@ defmodule Glific.Templates do
       Glific.Messages.get_message!(message_id)
       |> Repo.preload([:contact])
 
-    Map.merge(%{body: message.body, type: message.type}, input)
+    Map.merge(
+      %{body: message.body, type: message.type, organization_id: message.organization_id},
+      input
+    )
     |> create_session_template()
   end
 end

@@ -152,6 +152,45 @@ Type | Description
 | ---- | -----------
 <a href="#userresult">UserResult</a> | Queried User
 
+## Get Current User
+
+```graphql
+query currentUser {
+  currentUser {
+    user {
+      id
+      name
+      phone
+      roles
+    }
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "user": {
+      "user": {
+        "id": "1",
+        "name": "John Doe",
+        "phone": "+919820198765",
+        "roles": [
+          "admin"
+        ]
+      }
+    }
+  }
+}
+```
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#userresult">UserResult</a> | Current User
+
 ## Count all Users
 
 ```graphql
@@ -191,8 +230,8 @@ Type | Description
 ## Update a User
 
 ```graphql
-mutation updateUser($id: ID!, $input: UserInput!, $groupIds: [ID]!) {
-  updateUser(id: $id, input: $input, groupIds: $groupIds) {
+mutation updateUser($id: ID!, $input: UserInput!) {
+  updateUser(id: $id, input: $input) {
     user {
       id
       name
@@ -284,16 +323,14 @@ Type | Description
 <a href="#userresult">UserResult</a> | The updated user object
 
 
-## Update Current User
+## Update Current User Details
 
 ```graphql
-mutation updateCurrentUser($id: ID!, $input:CurrentUserInput!) {
-  updateCurrentUser(id: $id, input: $input) {
+mutation updateCurrentUser($input:CurrentUserInput!) {
+  updateCurrentUser(input: $input) {
     user {
       id
       name
-      phone
-      roles
     }
     errors {
       key
@@ -303,7 +340,6 @@ mutation updateCurrentUser($id: ID!, $input:CurrentUserInput!) {
 }
 
 {
-  "id": "2",
   "input": {
     "name": "Updated Name"
   }
@@ -319,23 +355,20 @@ mutation updateCurrentUser($id: ID!, $input:CurrentUserInput!) {
       "errors": null,
       "user": {
         "id": "2",
-        "name": "Updated Name",
-        "phone": "+918820198765",
-        "roles": [
-          "staff",
-          "admin"
-        ]
+        "name": "Updated Name"
       }
     }
   }
 }
 ```
 
+Current User can update only the name and password, but not the phone number
+
 ## Update Current User Password
 
 ```graphql
-mutation updateCurrentUser($id: ID!, $input:CurrentUserInput!) {
-  updateCurrentUser(id: $id, input: $input) {
+mutation updateCurrentUser($input:CurrentUserInput!) {
+  updateCurrentUser(input: $input) {
     user {
       id
       name
@@ -348,7 +381,6 @@ mutation updateCurrentUser($id: ID!, $input:CurrentUserInput!) {
 }
 
 {
-  "id": "2",
   "input": {
     "name": "Updated Name",
     "otp": "340606",
@@ -378,22 +410,16 @@ mutation updateCurrentUser($id: ID!, $input:CurrentUserInput!) {
 ```
 {
   "data": {
-    "updateCurrentUser": null
-  },
-  "errors": [
-    {
-      "locations": [
+    "updateCurrentUser": {
+      "errors": [
         {
-          "column": 3,
-          "line": 2
+          "key": "OTP",
+          "message": "does_not_exist"
         }
       ],
-      "message": "does_not_exist",
-      "path": [
-        "updateCurrentUser"
-      ]
+      "user": null
     }
-  ]
+  }
 }
 ```
 
@@ -619,6 +645,11 @@ Match the phone
 <tr>
 <td colspan="2" valign="top"><strong>roles</strong></td>
 <td valign="top">[<a href="#string">String</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>groupIds</strong></td>
+<td valign="top">[<a href="#id">ID</a>]</td>
 <td></td>
 </tr>
 </tbody>

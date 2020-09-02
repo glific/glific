@@ -6,10 +6,15 @@ defmodule Glific.Flows.TemplatingTest do
     Templates
   }
 
-  test "process extracts the right values from json for templating action" do
+  test "process extracts the right values from json for templating action",
+       %{organization_id: organization_id} = _attrs do
     [template | _] =
       Templates.list_session_templates(%{
-        filter: %{shortcode: "otp", is_hsm: true}
+        filter: %{
+          shortcode: "otp",
+          is_hsm: true,
+          organization_id: organization_id
+        }
       })
 
     json = %{

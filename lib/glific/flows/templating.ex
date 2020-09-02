@@ -36,11 +36,11 @@ defmodule Glific.Flows.Templating do
   def process(json, uuid_map) do
     Flows.check_required_fields(json, @required_fields)
 
-    {:ok, template} =
-      Glific.Repo.fetch_by(SessionTemplate, %{uuid: String.downcase(json["template"]["uuid"])})
+    uuid = json["template"]["uuid"]
+    {:ok, template} = Glific.Repo.fetch_by(SessionTemplate, %{uuid: uuid})
 
     templating = %Templating{
-      uuid: json["template"]["uuid"],
+      uuid: uuid,
       name: json["template"]["name"],
       template: template,
       variables: json["variables"]

@@ -1,7 +1,6 @@
 defmodule GlificWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :glific
   use Absinthe.Phoenix.Endpoint
-  use Sentry.Phoenix.Endpoint
 
   @moduledoc false
   # The session will be stored in the cookie and signed,
@@ -54,5 +53,10 @@ defmodule GlificWeb.Endpoint do
   plug Plug.Head
   plug Plug.Session, @session_options
   plug CORSPlug
+
+  # add the subdomain/domain via param routers
+  # plug GlificWeb.ParamPlug
+  plug GlificWeb.SubdomainPlug
+
   plug GlificWeb.Router
 end

@@ -11,6 +11,8 @@ defmodule GlificWeb.Resolvers.Messages do
     Repo
   }
 
+  alias GlificWeb.Resolvers.Helper
+
   @doc """
   Get a specific message by id
   """
@@ -26,16 +28,16 @@ defmodule GlificWeb.Resolvers.Messages do
   """
   @spec messages(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def messages(_, args, _) do
-    {:ok, Messages.list_messages(args)}
+  def messages(_, args, context) do
+    {:ok, Messages.list_messages(Helper.add_org_filter(args, context))}
   end
 
   @doc """
   Get the count of messages filtered by args
   """
   @spec count_messages(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_messages(_, args, _) do
-    {:ok, Messages.count_messages(args)}
+  def count_messages(_, args, context) do
+    {:ok, Messages.count_messages(Helper.add_org_filter(args, context))}
   end
 
   @doc false
@@ -87,8 +89,7 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec send_hsm_message(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def send_hsm_message(_, %{template_id: id, receiver_id: receiver_id, parameters: parameters}, _) do
-    with {:ok, message} <-
-           Messages.create_and_send_hsm_message(id, receiver_id, parameters),
+    with {:ok, message} <- Messages.create_and_send_hsm_message(id, receiver_id, parameters),
          do: {:ok, %{message: message}}
   end
 

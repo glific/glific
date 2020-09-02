@@ -20,11 +20,11 @@ defmodule GlificWeb.Schema.ContactTagTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_tag/create.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contact_tag/delete.gql")
 
-  test "create a contact tag and test possible scenarios and errors" do
+  test "create a contact tag and test possible scenarios and errors", %{user: user} do
     label = "This is for testing"
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     name = "Glific Admin"
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     result =
       query_gql_by(:create,
@@ -39,6 +39,7 @@ defmodule GlificWeb.Schema.ContactTagTest do
     assert contact_tag["tag"]["id"] |> String.to_integer() == tag.id
 
     # try creating the same contact tag entry twice
+    # upserts come into play here and we dont return an error
     result =
       query_gql_by(:create,
         variables: %{"input" => %{"contact_id" => contact.id, "tag_id" => tag.id}}
@@ -46,15 +47,16 @@ defmodule GlificWeb.Schema.ContactTagTest do
 
     assert {:ok, query_data} = result
 
-    contact = get_in(query_data, [:data, "createContactTag", "errors", Access.at(0), "message"])
-    assert contact == "has already been taken"
+    contact_tag = get_in(query_data, [:data, "createContactTag", "contact_tag"])
+    assert get_in(contact_tag, ["contact", "id"]) |> String.to_integer() == contact.id
+    assert get_in(contact_tag, ["tag", "id"]) |> String.to_integer() == tag.id
   end
 
-  test "delete a contact tag" do
+  test "delete a contact tag", %{user: user} do
     label = "This is for testing"
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: label})
+    {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     name = "Glific Admin"
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: name})
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     {:ok, query_data} =
       query_gql_by(:create,

@@ -6,6 +6,7 @@ defmodule GlificWeb.Resolvers.Users do
 
   alias Glific.Repo
   alias Glific.{Groups, Users, Users.User}
+  alias GlificWeb.Resolvers.Helper
 
   @doc false
   @spec user(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -18,30 +19,36 @@ defmodule GlificWeb.Resolvers.Users do
   @doc false
   @spec users(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [any]}
-  def users(_, args, _) do
-    {:ok, Users.list_users(args)}
+  def users(_, args, context) do
+    {:ok, Users.list_users(Helper.add_org_filter(args, context))}
   end
 
   @doc """
   Get the count of users filtered by args
   """
   @spec count_users(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_users(_, args, _) do
-    {:ok, Users.count_users(args)}
+  def count_users(_, args, context) do
+    {:ok, Users.count_users(Helper.add_org_filter(args, context))}
+  end
+
+  @doc false
+  @spec current_user(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def current_user(_, _, %{context: %{current_user: current_user}}) do
+    {:ok, %{user: current_user}}
   end
 
   @doc """
   Update current user
   """
-  @spec update_current_user(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+  @spec update_current_user(Absinthe.Resolution.t(), %{input: map()}, %{
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def update_current_user(_, %{id: id, input: params}, _) do
-    with {:ok, user} <- Repo.fetch(User, id),
-         {:ok, params} <- update_password_params(user, params),
-         {:ok, user} <- Users.update_user(user, params) do
-      {:ok, %{user: user}}
+  def update_current_user(_, %{input: params}, %{context: %{current_user: current_user}}) do
+    with {:ok, params} <- update_password_params(current_user, params),
+         {:ok, current_user} <- Users.update_user(current_user, params) do
+      {:ok, %{user: current_user}}
     end
   end
 
@@ -57,7 +64,7 @@ defmodule GlificWeb.Resolvers.Users do
         {:ok, params}
 
       {:error, error} ->
-        {:error, error}
+        {:error, ["OTP", Atom.to_string(error)]}
     end
   end
 
@@ -69,8 +76,11 @@ defmodule GlificWeb.Resolvers.Users do
           {:ok, any} | {:error, any}
   def update_user(_, %{id: id, input: params}, _) do
     with {:ok, user} <- Repo.fetch(User, id),
-         {:ok, user} <- Users.update_user(user, params),
-         :ok <- Groups.update_user_groups(%{user_id: user.id, group_ids: params.group_ids}) do
+         {:ok, user} <- Users.update_user(user, params) do
+      if Map.has_key?(params, :group_ids) do
+        Groups.update_user_groups(%{user_id: user.id, group_ids: params.group_ids})
+      end
+
       {:ok, %{user: user}}
     end
   end

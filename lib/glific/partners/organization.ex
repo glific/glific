@@ -7,60 +7,76 @@ defmodule Glific.Partners.Organization do
 
   alias __MODULE__
 
-  alias Glific.Contacts.Contact
-  alias Glific.Partners.OrganizationSettings.OutOfOffice
-  alias Glific.Partners.Provider
-  alias Glific.Settings.Language
+  alias Glific.{
+    Contacts.Contact,
+    Partners.OrganizationSettings.OutOfOffice,
+    Partners.Provider,
+    Settings.Language
+  }
 
   # define all the required fields for organization
   @required_fields [
     :name,
-    :display_name,
-    :contact_name,
+    :shortcode,
     :email,
     :provider_id,
     :provider_key,
-    :provider_number,
+    :provider_phone,
     :default_language_id
   ]
 
   # define all the optional fields for organization
   @optional_fields [
-    :contact_id
+    :contact_id,
+    :is_active
+    # commenting this out, since the tests were giving me an error
+    # about cast_embed etc
+    # :out_of_office
   ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
-          display_name: String.t() | nil,
-          contact_name: String.t() | nil,
-          contact_id: non_neg_integer | nil,
-          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          shortcode: String.t() | nil,
           email: String.t() | nil,
           provider_id: non_neg_integer | nil,
           provider: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
           provider_key: String.t() | nil,
-          provider_number: String.t() | nil,
+          provider_phone: String.t() | nil,
+          contact_id: non_neg_integer | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           default_language_id: non_neg_integer | nil,
           default_language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           out_of_office: OutOfOffice.t() | nil,
+          hours: list() | nil,
+          days: list() | nil,
+          is_active: boolean(),
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
   schema "organizations" do
     field :name, :string
-    field :display_name, :string
-    field :contact_name, :string
+    field :shortcode, :string
+
     field :email, :string
-    field :provider_number, :string
+
+    field :provider_phone, :string
     field :provider_key, :string
+
+    # lets cache the start/end hours in here
+    # to make it easier on the flows
+    field :hours, {:array, :time}, virtual: true
+    field :days, {:array, :integer}, virtual: true
+
     belongs_to :provider, Provider
     belongs_to :contact, Contact
     belongs_to :default_language, Language
 
     embeds_one :out_of_office, OutOfOffice, on_replace: :update
+
+    field :is_active, :boolean, default: true
 
     timestamps(type: :utc_datetime)
   end
@@ -75,11 +91,10 @@ defmodule Glific.Partners.Organization do
     |> add_out_of_office_if_missing()
     |> cast_embed(:out_of_office, with: &OutOfOffice.out_of_office_changeset/2)
     |> validate_required(@required_fields)
-    |> foreign_key_constraint(:contact_id)
-    |> unique_constraint(:name)
+    |> unique_constraint(:shortcode)
     |> unique_constraint(:email)
-    |> unique_constraint(:provider_number)
-    |> unique_constraint([:contact_id])
+    |> unique_constraint(:provider_phone)
+    |> unique_constraint(:contact_id)
   end
 
   defp add_out_of_office_if_missing(

@@ -17,6 +17,7 @@ defmodule Glific.Flows.Periodic do
     Flows.Flow,
     Flows.FlowContext,
     Messages.Message,
+    Partners,
     Repo
   }
 
@@ -41,6 +42,14 @@ defmodule Glific.Flows.Periodic do
 
   defp map_flow_ids(state) do
     shortcode_id_map = Repo.label_id_map(Flow, @periodic_flows, :shortcode)
+
+    organization = Partners.organization()
+
+    shortcode_id_map =
+      if organization.out_of_office.enabled,
+        do: Map.put(shortcode_id_map, "outofoffice", organization.out_of_office.flow_id),
+        else: shortcode_id_map
+
     Map.put(state, :flows, Map.merge(shortcode_id_map, %{filled: true}))
   end
 
@@ -76,7 +85,7 @@ defmodule Glific.Flows.Periodic do
     Enum.reduce_while(
       @periodic_flows,
       state,
-      fn state, period ->
+      fn period, state ->
         since = compute_time(now, period)
         {state, result} = periodic_flow(state, period, message, since)
 
@@ -94,7 +103,7 @@ defmodule Glific.Flows.Periodic do
 
     if !is_nil(flow_id) and
          !Flows.flow_activated(flow_id, message.contact_id, since) do
-      {:ok, flow} = Flows.get_cached_flow("outofoffice", %{shortcode: "outofoffice"})
+      {:ok, flow} = Flows.get_cached_flow(flow_id, %{id: flow_id})
       FlowContext.init_context(flow, message.contact)
       {state, true}
     else
@@ -118,7 +127,7 @@ defmodule Glific.Flows.Periodic do
              "sunday"
            ] do
     if Date.day_of_week(since) == Timex.day_to_num(period),
-      do: periodic_flow(state, period, message, since),
+      do: common_flow(state, period, message, since),
       else: {state, false}
   end
 

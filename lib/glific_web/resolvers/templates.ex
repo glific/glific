@@ -5,6 +5,7 @@ defmodule GlificWeb.Resolvers.Templates do
   """
 
   alias Glific.{Messages, Repo, Templates, Templates.SessionTemplate}
+  alias GlificWeb.Resolvers.Helper
 
   @doc """
   Get a specific session template by id
@@ -21,8 +22,8 @@ defmodule GlificWeb.Resolvers.Templates do
   """
   @spec session_templates(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def session_templates(_, args, _) do
-    {:ok, Templates.list_session_templates(args)}
+  def session_templates(_, args, context) do
+    {:ok, Templates.list_session_templates(Helper.add_org_filter(args, context))}
   end
 
   @doc """
@@ -30,8 +31,8 @@ defmodule GlificWeb.Resolvers.Templates do
   """
   @spec count_session_templates(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, integer}
-  def count_session_templates(_, args, _) do
-    {:ok, Templates.count_session_templates(args)}
+  def count_session_templates(_, args, context) do
+    {:ok, Templates.count_session_templates(Helper.add_org_filter(args, context))}
   end
 
   @doc false

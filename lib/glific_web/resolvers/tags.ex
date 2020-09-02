@@ -6,6 +6,7 @@ defmodule GlificWeb.Resolvers.Tags do
 
   alias Glific.{Repo, Tags, Tags.Tag}
   alias Glific.{Tags.ContactTag, Tags.MessageTag}
+  alias GlificWeb.Resolvers.Helper
 
   @doc """
   Get a specific tag by id
@@ -21,16 +22,16 @@ defmodule GlificWeb.Resolvers.Tags do
   Get the list of tags filtered by args
   """
   @spec tags(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Tag]}
-  def tags(_, args, _) do
-    {:ok, Tags.list_tags(args)}
+  def tags(_, args, context) do
+    {:ok, Tags.list_tags(Helper.add_org_filter(args, context))}
   end
 
   @doc """
   Get the count of tags filtered by args
   """
   @spec count_tags(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_tags(_, args, _) do
-    {:ok, Tags.count_tags(args)}
+  def count_tags(_, args, context) do
+    {:ok, Tags.count_tags(Helper.add_org_filter(args, context))}
   end
 
   @doc false
@@ -108,6 +109,16 @@ defmodule GlificWeb.Resolvers.Tags do
     end
   end
 
+  @doc """
+  Creates and/or deletes a list of contact tags, each tag attached to the same contact
+  """
+  @spec update_contact_tags(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_contact_tags(_, %{input: params}, _) do
+    contact_tags = Tags.ContactTags.update_contact_tags(params)
+    {:ok, contact_tags}
+  end
+
   @doc false
   @spec mark_contact_messages_as_read(Absinthe.Resolution.t(), %{contact_id: integer}, %{
           context: map()
@@ -116,5 +127,26 @@ defmodule GlificWeb.Resolvers.Tags do
   def mark_contact_messages_as_read(_, %{contact_id: contact_id}, _) do
     with untag_message_ids <- Tags.remove_tag_from_all_message(contact_id, "unread"),
          do: {:ok, untag_message_ids}
+  end
+
+  @doc """
+  Create entry for tag mapped to template
+  """
+  @spec create_template_tag(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_template_tag(_, %{input: params}, _) do
+    with {:ok, template_tag} <- Tags.create_template_tag(params) do
+      {:ok, %{template_tag: template_tag}}
+    end
+  end
+
+  @doc """
+  Creates and/or deletes a list of template tags, each tag attached to the same template
+  """
+  @spec update_template_tags(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_template_tags(_, %{input: params}, _) do
+    template_tags = Tags.TemplateTags.update_template_tags(params)
+    {:ok, template_tags}
   end
 end

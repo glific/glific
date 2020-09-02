@@ -5,7 +5,9 @@ defmodule Glific.Communications do
 
   alias Glific.{
     Messages.Message,
-    Tags.MessageTag
+    Tags.ContactTag,
+    Tags.MessageTag,
+    Tags.TemplateTag
   }
 
   @doc """
@@ -27,12 +29,17 @@ defmodule Glific.Communications do
   For now the data types are Message and MessageTag
   """
 
-  @spec publish_data({:ok, Message.t() | MessageTag.t()}, atom()) :: Message.t() | MessageTag.t()
+  @spec publish_data(
+          {:ok, Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t()},
+          atom()
+        ) ::
+          Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t()
   def publish_data({:ok, data}, topic) do
     publish_data(data, topic)
   end
 
-  @spec publish_data(Message.t() | MessageTag.t(), atom()) :: Message.t() | MessageTag.t()
+  @spec publish_data(Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t(), atom()) ::
+          Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t()
   def publish_data(data, topic) do
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,

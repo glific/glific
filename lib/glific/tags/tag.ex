@@ -6,10 +6,15 @@ defmodule Glific.Tags.Tag do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.{Settings.Language, Tags.Tag}
-  alias Glific.{Contacts.Contact, Messages.Message}
+  alias Glific.{
+    Contacts.Contact,
+    Messages.Message,
+    Partners.Organization,
+    Settings.Language,
+    Tags.Tag
+  }
 
-  @required_fields [:label, :language_id, :shortcode]
+  @required_fields [:label, :language_id, :organization_id, :shortcode]
   @optional_fields [
     :description,
     :is_active,
@@ -18,7 +23,7 @@ defmodule Glific.Tags.Tag do
     :parent_id,
     :keywords,
     :ancestors,
-    :colorcode
+    :color_code
   ]
 
   @type t() :: %__MODULE__{
@@ -27,13 +32,15 @@ defmodule Glific.Tags.Tag do
           label: String.t() | nil,
           shortcode: String.t() | nil,
           description: String.t() | nil,
-          colorcode: String.t() | nil,
+          color_code: String.t() | nil,
           is_active: boolean(),
           is_reserved: boolean(),
           is_value: boolean(),
           keywords: list(),
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           parent_id: non_neg_integer | nil,
           parent: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -46,7 +53,7 @@ defmodule Glific.Tags.Tag do
     field :shortcode, :string
     field :description, :string
     field :ancestors, {:array, :integer}, default: []
-    field :colorcode, :string
+    field :color_code, :string, default: "#0C976D"
 
     field :is_active, :boolean, default: false
     field :is_reserved, :boolean, default: false
@@ -54,6 +61,7 @@ defmodule Glific.Tags.Tag do
     field :keywords, {:array, :string}, default: []
 
     belongs_to :language, Language
+    belongs_to :organization, Organization
 
     belongs_to :parent, Tag, foreign_key: :parent_id
     has_many :child, Tag, foreign_key: :parent_id
@@ -75,7 +83,7 @@ defmodule Glific.Tags.Tag do
     |> lowercase_keywords(attrs[:keywords])
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
-    |> unique_constraint([:shortcode, :language_id])
+    |> unique_constraint([:shortcode, :language_id, :organization_id])
     |> Glific.validate_shortcode()
   end
 

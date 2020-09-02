@@ -5,11 +5,12 @@ defmodule Glific.Templates.SessionTemplate do
   alias __MODULE__
 
   alias Glific.{
+    Enums.MessageType,
     Messages.MessageMedia,
-    Settings.Language
+    Partners.Organization,
+    Settings.Language,
+    Tags.Tag
   }
-
-  alias Glific.Enums.MessageType
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -26,6 +27,8 @@ defmodule Glific.Templates.SessionTemplate do
           is_reserved: boolean(),
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           message_media_id: non_neg_integer | nil,
           message_media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
           parent_id: non_neg_integer | nil,
@@ -38,7 +41,8 @@ defmodule Glific.Templates.SessionTemplate do
     :label,
     :body,
     :type,
-    :language_id
+    :language_id,
+    :organization_id
   ]
   @optional_fields [
     :shortcode,
@@ -67,11 +71,17 @@ defmodule Glific.Templates.SessionTemplate do
     field :is_reserved, :boolean, default: false
 
     belongs_to :language, Language
+    belongs_to :organization, Organization
 
     belongs_to :message_media, MessageMedia
 
     belongs_to :parent, SessionTemplate, foreign_key: :parent_id
     has_many :child, SessionTemplate, foreign_key: :parent_id
+
+    many_to_many :tags, Tag,
+      join_through: "templates_tags",
+      on_replace: :delete,
+      join_keys: [template_id: :id, tag_id: :id]
 
     timestamps(type: :utc_datetime)
   end
@@ -87,7 +97,9 @@ defmodule Glific.Templates.SessionTemplate do
     |> validate_media(session_template)
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
-    |> unique_constraint([:label, :language_id])
+    |> unique_constraint([:label, :language_id, :organization_id])
+    |> unique_constraint([:shortcode, :language_id, :organization_id])
+    |> unique_constraint([:uuid])
   end
 
   @doc false
