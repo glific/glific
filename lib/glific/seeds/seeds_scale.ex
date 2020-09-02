@@ -5,6 +5,7 @@ defmodule Glific.Seeds.SeedsScale do
   alias Glific.{
     Contacts.Contact,
     Messages.Message,
+    Partners.Organization,
     Repo,
     Tags.MessageTag,
     Tags.Tag
@@ -18,7 +19,7 @@ defmodule Glific.Seeds.SeedsScale do
 
   import Ecto.Query
 
-  defp create_contact_entry(language_id) do
+  defp create_contact_entry(organization) do
     phone = EnUs.phone()
 
     %{
@@ -28,17 +29,15 @@ defmodule Glific.Seeds.SeedsScale do
       optin_time: DateTime.truncate(DateTime.utc_now(), :second),
       optout_time: nil,
       status: "valid",
-      language_id: language_id,
+      language_id: organization.default_language_id,
+      organization_id: organization.id,
       inserted_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.truncate(:second),
       updated_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.truncate(:second)
     }
   end
 
-  defp create_contact_entries(contacts_count) do
-    # Get the organization
-    organization = Glific.Partners.Organization |> Ecto.Query.first() |> Repo.one()
-
-    Enum.map(1..contacts_count, fn _ -> create_contact_entry(organization.default_language_id) end)
+  defp create_contact_entries(contacts_count, organization) do
+    Enum.map(1..contacts_count, fn _ -> create_contact_entry(organization) end)
   end
 
   defp create_message(1), do: Shakespeare.as_you_like_it()
@@ -49,25 +48,27 @@ defmodule Glific.Seeds.SeedsScale do
   defp create_message, do: create_message(Enum.random(1..4))
 
   @sender_id 1
-  defp create_message_entry(contact_id, "ngo", index) do
+  defp create_message_entry(contact_id, "ngo", index, organization) do
     create_message_entry(
       %{
         flow: "outbound",
         sender_id: @sender_id,
         receiver_id: contact_id,
-        contact_id: contact_id
+        contact_id: contact_id,
+        organization_id: organization.id
       },
       index
     )
   end
 
-  defp create_message_entry(contact_id, "beneficiary", index) do
+  defp create_message_entry(contact_id, "beneficiary", index, organization) do
     create_message_entry(
       %{
         flow: "inbound",
         sender_id: contact_id,
         receiver_id: @sender_id,
-        contact_id: contact_id
+        contact_id: contact_id,
+        organization_id: organization.id
       },
       index
     )
@@ -91,20 +92,20 @@ defmodule Glific.Seeds.SeedsScale do
   end
 
   @num_messages_per_conversation 40
-  defp create_conversation(contact_id) do
+  defp create_conversation(contact_id, organization) do
     num_messages = Enum.random(1..@num_messages_per_conversation)
 
     for i <- 1..num_messages do
       case rem(Enum.random(1..10), 2) do
-        0 -> create_message_entry(contact_id, "ngo", num_messages - i + 1)
-        1 -> create_message_entry(contact_id, "beneficiary", num_messages - i + 1)
+        0 -> create_message_entry(contact_id, "ngo", num_messages - i + 1, organization)
+        1 -> create_message_entry(contact_id, "beneficiary", num_messages - i + 1, organization)
       end
     end
   end
 
-  defp seed_contacts(contacts_count) do
+  defp seed_contacts(contacts_count, organization) do
     # create random contacts entries
-    contact_entries = create_contact_entries(contacts_count)
+    contact_entries = create_contact_entries(contacts_count, organization)
 
     # seed contacts
     contact_entries
@@ -112,7 +113,7 @@ defmodule Glific.Seeds.SeedsScale do
     |> Enum.map(&Repo.insert_all(Contact, &1))
   end
 
-  defp seed_messages do
+  defp seed_messages(organization) do
     Repo.query!("ALTER TABLE messages DISABLE TRIGGER update_search_message_trigger;")
     Repo.query!("TRUNCATE messages CASCADE;")
 
@@ -120,7 +121,7 @@ defmodule Glific.Seeds.SeedsScale do
     _ =
       Repo.all(from c in "contacts", select: c.id, where: c.id != 1)
       |> Enum.shuffle()
-      |> Enum.flat_map(&create_conversation(&1))
+      |> Enum.flat_map(&create_conversation(&1, organization))
       # this enables us to send smaller chunks to postgres for insert
       |> Enum.chunk_every(1000)
       |> Enum.map(&Repo.insert_all(Message, &1, timeout: 120_000))
@@ -128,23 +129,25 @@ defmodule Glific.Seeds.SeedsScale do
     Repo.query!("ALTER TABLE messages ENABLE TRIGGER update_search_message_trigger;")
   end
 
-  defp seed_message_tags do
+  defp seed_message_tags(organization) do
     Repo.query!("ALTER TABLE messages_tags DISABLE TRIGGER update_search_message_trigger;")
 
-    seed_message_tags_generic()
+    seed_message_tags_generic(organization)
 
-    seed_message_tags_unread()
+    seed_message_tags_unread(organization)
 
-    seed_message_tags_not_responded()
+    seed_message_tags_not_responded(organization)
 
     Repo.query!("ALTER TABLE messages_tags ENABLE TRIGGER update_search_message_trigger;")
   end
 
-  defp seed_message_tags_generic do
+  defp seed_message_tags_generic(organization) do
     query =
       from t in Tag,
         select: t.id,
-        where: t.shortcode not in ["unread", "notresponded", "notreplied"]
+        where:
+          t.shortcode not in ["unread", "notresponded", "notreplied"] and
+            t.organization_id == ^organization.id
 
     tag_ids = Repo.all(query) |> Enum.shuffle()
 
@@ -177,11 +180,13 @@ defmodule Glific.Seeds.SeedsScale do
     end
   end
 
-  defp seed_message_tags_unread do
+  defp seed_message_tags_unread(organization) do
     query =
       from t in Tag,
         select: t.id,
-        where: t.shortcode in ["unread", "notreplied"]
+        where:
+          t.shortcode in ["unread", "notreplied"] and
+            t.organization_id == ^organization.id
 
     tag_ids = Repo.all(query) |> Enum.shuffle()
 
@@ -212,11 +217,13 @@ defmodule Glific.Seeds.SeedsScale do
     end
   end
 
-  defp seed_message_tags_not_responded do
+  defp seed_message_tags_not_responded(organization) do
     query =
       from t in Tag,
         select: t.id,
-        where: t.shortcode in ["notresponded"]
+        where:
+          t.shortcode in ["notresponded"] and
+            t.organization_id == ^organization.id
 
     tag_ids = Repo.all(query) |> Enum.shuffle()
 
@@ -248,11 +255,13 @@ defmodule Glific.Seeds.SeedsScale do
     # create seed for deterministic random data
     :rand.seed(:exrop, {101, 102, 103})
 
-    seed_contacts(500)
+    organization = Organization |> Ecto.Query.first() |> Repo.one()
 
-    seed_messages()
+    seed_contacts(500, organization)
 
-    seed_message_tags()
+    seed_messages(organization)
+
+    seed_message_tags(organization)
 
     # now execute the stored procedure to build the search index
     Repo.query!("SELECT create_search_messages(100)")

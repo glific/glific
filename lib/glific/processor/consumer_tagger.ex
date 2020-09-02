@@ -147,7 +147,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   defp dialogflow_tagger({message, %{tagged: false} = state}) do
     # Since conatct and language are the required filed, we can skip some pattern checks.
-    message = Repo.preload(message, [contact: [:language]])
+    message = Repo.preload(message, contact: [:language])
 
     {:ok, response} =
       Sessions.detect_intent(
