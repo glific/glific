@@ -52,7 +52,7 @@ defmodule Glific.Partners.Organization do
           out_of_office: OutOfOffice.t() | nil,
           hours: list() | nil,
           days: list() | nil,
-          is_active: boolean() | nil,
+          is_active: boolean() | true,
           timezone: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil

@@ -110,7 +110,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # organization services can be changed to inactive
       add :is_active, :boolean, default: true
 
-      add :timezone, :string, default: "Asia/Kolkata"
+      add :timezone, :string
 
       timestamps(type: :utc_datetime)
     end

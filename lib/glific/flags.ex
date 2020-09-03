@@ -4,6 +4,10 @@ defmodule Glific.Flags do
   also put operational code on flags here, as we figure out the right structure
   """
 
+  alias Glific.Partners
+
+  @timezone "Asia/Kolkata"
+
   @doc false
   @spec init :: {:ok, boolean()}
   def init do
@@ -35,11 +39,18 @@ defmodule Glific.Flags do
   end
 
   defp out_of_office_check do
-    timezone = Glific.Partners.organization().timezone
+    timezone = Partners.organization().timezone
 
-    {:ok, now} = DateTime.now(timezone)
+    {:ok, now} =
+      case DateTime.now(timezone) do
+        {:ok, now} ->
+          {:ok, now}
 
-    {hours, days} = Glific.Partners.organization_out_of_office_summary()
+        {:error, _} ->
+          DateTime.now(@timezone)
+      end
+
+    {hours, days} = Partners.organization_out_of_office_summary()
 
     # check if current day and time is valid
     open? = business_day?(now, days) and office_hours?(now, hours)
