@@ -48,7 +48,8 @@ defmodule Glific.Caches do
   @impl Glific.Caches.CacheBehaviour
   @spec remove(list()) :: any()
   def remove(keys),
-    do: Enum.map(keys, fn key ->
-          {:ok, _} = Cachex.del(@cache_bucket, key)
-        end)
+    do:
+      Enum.map(keys, fn key ->
+        {:ok, _} = Cachex.del(@cache_bucket, key)
+      end)
 end
