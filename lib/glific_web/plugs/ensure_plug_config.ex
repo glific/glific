@@ -16,6 +16,6 @@ defmodule GlificWeb.EnsurePlugConfig do
   defstruct [
     :callback,
     :failure_callback,
-    assign: :current_organization
+    assign: :organization_id,
   ]
 end
