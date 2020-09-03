@@ -34,6 +34,7 @@ check_origin =
     environment variable REQUEST_ORIGIN/REQUEST_ORIGIN_WILDCARD is missing.
     """
 
+# GLific endpoint configs
 config :glific, GlificWeb.Endpoint,
   server: true,
   http: [:inet6, port: http_port],
@@ -41,6 +42,7 @@ config :glific, GlificWeb.Endpoint,
   secret_key_base: secret_key_base,
   url: [host: System.get_env("BASE_URL")]
 
+# AppSignal configs
 config :glific,
   provider_url: System.get_env("PROVIDER_URL"),
   provider_key: System.get_env("PROVIDER_KEY")
@@ -49,33 +51,11 @@ config :appsignal, :config,
   name: "Glific",
   push_api_key: System.get_env("GLIFIC_PUSH_API_KEY")
 
-# for now this is optional, so we check for file exists, need
-# a more robust solution going forward
+# Goth configs: Picking up json from env itself at run time
 goth_json = System.get_env("GOTH_JSON_CREDENTIALS") ||
   raise """
   environment variable GOTH_JSON_CREDENTIALS is missing.
   """
 
-test = System.get_env("GOTH_TYPE");
-IO.puts(test);
-
-# goth_json = """
-# {
-#   "type": "#{System.get_env("GOTH_TYPE")}",
-#   "project_id": "#{System.get_env("GOTH_PROJECT_ID")}",
-#   "private_key_id": "#{System.get_env("GOTH_PRIVATE_KEY_ID")}",
-#   "private_key": "#{System.get_env("GOTH_PRIVATE_KEY")}",
-#   "client_email": "#{System.get_env("GOTH_CLIENT_EMAIL")}",
-#   "client_id": "#{System.get_env("GOTH_CLIENT_ID")}",
-#   "auth_uri": "#{System.get_env("GOTH_AUTH_URI")}",
-#   "token_uri": "#{System.get_env("GOTH_TOKEN_URI")}",
-#   "auth_provider_x509_cert_url": "#{System.get_env("GOTH_AUTH_PROVIDER_X509_CERT_URL")}",
-#   "client_x509_cert_url": "#{System.get_env("GOTH_CLIENT_X509_CERT_URL")}"
-# }
-# """
-
-IO.puts(goth_json);
-
-# config goth
 config :goth,
   json: goth_json

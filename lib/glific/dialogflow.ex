@@ -15,7 +15,6 @@ defmodule Glific.Dialogflow do
   @spec request(atom, String.t(), String.t() | map) :: tuple
   def request(method, path, body) do
     %{id: id, email: email} = project_info()
-    IO.inspect(project_info());
 
     url = "#{host()}/v2beta1/projects/#{id}/locations/global/agent/#{path}"
 
