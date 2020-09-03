@@ -44,4 +44,12 @@ defmodule Glific.FlagsTest do
     assert Flags.office_hours?(now, [start_time, Time.add(time, 60)]) == true
     assert Flags.office_hours?(now, [Time.add(time, -1), end_time]) == true
   end
+
+  test "ensure enable/disable work as advertised" do
+    Flags.enable_out_of_office()
+    assert FunWithFlags.enabled?(:out_of_office_active) == true
+
+    Flags.disable_out_of_office()
+    assert FunWithFlags.enabled?(:out_of_office_active) == false
+  end
 end
