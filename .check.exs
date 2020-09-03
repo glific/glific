@@ -13,6 +13,7 @@
 
     ## ...or adjusted (e.g. use one-line formatter for more compact credo output)
     {:credo, "mix credo --format oneline --strict"},
+    {:ex_unit, "mix test_full", detect: [{:file, "test"}]},
 
     ## ...or reordered (e.g. to see output from ex_unit before others)
     ## {:ex_unit, order: -1},

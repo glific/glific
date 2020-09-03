@@ -50,6 +50,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :out_of_office, :out_of_office
 
     field :is_active, :boolean
+
+    field :timezone, :string
   end
 
   @desc "Filtering options for organizations"
@@ -100,6 +102,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :out_of_office, :out_of_office_input
 
     field :is_active, :boolean
+
+    field :timezone, :string
   end
 
   object :organization_queries do

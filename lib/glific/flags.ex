@@ -6,10 +6,7 @@ defmodule Glific.Flags do
 
   use Publicist
 
-  # need to get this from organization table in DB
-
-  @timezone "Asia/Kolkata"
-  # @timezone "America/Los_Angeles"
+  alias Glific.Partners
 
   @doc false
   @spec init :: {:ok, boolean()}
@@ -49,9 +46,8 @@ defmodule Glific.Flags do
 
   @spec out_of_office_check :: nil
   defp out_of_office_check do
-    {:ok, now} = DateTime.now(@timezone)
-
-    {hours, days} = Glific.Partners.organization_out_of_office_summary()
+    {:ok, now} = Partners.organization().timezone |> DateTime.now()
+    {hours, days} = Partners.organization_out_of_office_summary()
 
     # check if current day and time is valid
     open? = business_day?(now, days) and office_hours?(now, hours)

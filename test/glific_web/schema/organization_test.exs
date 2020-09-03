@@ -104,7 +104,9 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     organization = get_in(query_data, [:data, "createOrganization", "organization"])
     assert Map.get(organization, "name") == name
+    # check default values
     assert Map.get(organization, "isActive") == true
+    assert Map.get(organization, "timezone") == "Asia/Kolkata"
 
     # try creating the same organization twice
     query_gql_by(:create,
@@ -150,6 +152,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     email = "test2@glific.org"
     provider_key = "random"
     provider_phone = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
+    timezone = "America/Los_Angeles"
 
     provider_name = "Default Provider"
     {:ok, provider} = Repo.fetch_by(Provider, %{name: provider_name})
@@ -168,15 +171,17 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "provider_key" => provider_key,
             "provider_id" => provider.id,
             "provider_phone" => provider_phone,
-            "default_language_id" => language.id
+            "default_language_id" => language.id,
+            "timezone" => timezone
           }
         }
       )
 
     assert {:ok, query_data} = result
 
-    new_name = get_in(query_data, [:data, "updateOrganization", "organization", "name"])
-    assert new_name == name
+    updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
+    assert updated_organization["name"] == name
+    assert updated_organization["timezone"] == "America/Los_Angeles"
 
     # create a temp organization with a new name
     query_gql_by(:create,
@@ -193,7 +198,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
       }
     )
 
-    # ensure we cannot update an existing organization with the same name, email or provider_phone
+    # ensure we cannot update an existing organization with the same shortcode, email or provider_phone
     result =
       query_gql_by(:update,
         variables: %{
