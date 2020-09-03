@@ -138,8 +138,11 @@ defmodule Glific.PartnersTest do
   end
 
   describe "organizations" do
-    alias Glific.Partners.Organization
-    alias Glific.Settings
+    alias Glific.{
+      Caches,
+      Partners.Organization,
+      Settings
+    }
 
     @valid_org_attrs %{
       name: "Organization Name",
@@ -422,11 +425,22 @@ defmodule Glific.PartnersTest do
     test "active_organizations/0 should return list of active organizations" do
       organization = organization_fixture()
       organizations = Partners.active_organizations()
-      assert is_nil(organizations[organization.id]) == false
+      assert organizations[organization.id] != nil
 
       {:ok, _} = Partners.update_organization(organization, %{is_active: false})
       organizations = Partners.active_organizations()
-      assert is_nil(organizations[organization.id]) == true
+      assert organizations[organization.id] == nil
+    end
+
+    test "organization/1 should return cached data" do
+      assert {:ok, false} = Caches.get("organization")
+
+      organization = organization_fixture()
+      Partners.organization(organization.id)
+
+      assert {:ok, organization} = Caches.get("organization")
+      assert organization.hours != nil
+      assert organization.days != nil
     end
   end
 end
