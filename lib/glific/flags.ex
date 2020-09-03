@@ -30,6 +30,7 @@ defmodule Glific.Flags do
     time = DateTime.to_time(time)
     Time.compare(time, start_time) == :gt and Time.compare(time, end_time) == :lt
   end
+  defp office_hours?(_time, []), do: false
 
   @spec enable_out_of_office :: nil
   defp enable_out_of_office do
