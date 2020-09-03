@@ -386,6 +386,8 @@ mutation updateOrganization($id: ID!, $input: OrganizationInput!) {
 }
 ```
 
+Enabled days Ids represets weekdays starting from 1 for Monday.
+
 ### Query Parameters
 
 Parameter | Type | Default | Description
@@ -455,6 +457,35 @@ id | <a href="#id">ID</a>! | required ||
 Type | Description
 --------- | ---- | ------- | -----------
 <a href="#organizationresult">OrganizationResult</a> | An error object or empty
+
+## Get List of Timezones
+```graphql
+query timezones {
+  timezones
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+
+{
+  "data": {
+    "timezones": [
+      "Africa/Abidjan",
+      "Africa/Accra",
+      "Africa/Addis_Ababa",
+      ...
+    ]
+  }
+}
+```
+This returns list of timezones
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+[<a href="#string">String</a>] | List of timezones
 
 ## Organization Objects
 

@@ -346,7 +346,7 @@ defmodule Glific.Partners do
   @doc """
   Get the timezone
   """
-  @spec organization_timezone(non_neg_integer | nil) :: integer()
+  @spec organization_timezone(non_neg_integer | nil) :: String.t()
   def organization_timezone(organization_id \\ nil),
     do: organization(organization_id).timezone
 
