@@ -98,7 +98,7 @@ defmodule Glific.FlagsTest do
 
     organization = Partners.organization()
 
-    # when office hours includes whole day of seven days
+    # when office hours is zero
     new_organization_settings = put_in(@organization_settings, [:out_of_office, :end_time], elem(Time.new(0, 0, 0, 1), 1))
     {:ok, _} = Partners.update_organization(organization, new_organization_settings)
     Flags.out_of_office_check();
