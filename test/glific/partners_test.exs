@@ -389,5 +389,44 @@ defmodule Glific.PartnersTest do
                Map.merge(@valid_org_attrs, %{provider_id: organization.provider_id})
                |> Partners.create_organization()
     end
+
+    test "set_out_of_office_values/1 should set values for hours and days" do
+      organization = organization_fixture()
+
+      updated_organization = Partners.set_out_of_office_values(organization)
+      assert updated_organization.hours == []
+      assert updated_organization.days == []
+
+      update_org_attrs =
+        @update_org_attrs
+        |> Map.merge(%{
+          out_of_office: %{
+            enabled: true,
+            start_time: ~T[10:00:00],
+            end_time: ~T[20:00:00],
+            enabled_days: [
+              %{id: 1, enabled: true},
+              %{id: 2, enabled: true}
+            ],
+            flow_id: 1
+          }
+        })
+
+      {:ok, updated_organization} = Partners.update_organization(organization, update_org_attrs)
+
+      organization_with_set_values = Partners.set_out_of_office_values(updated_organization)
+      assert organization_with_set_values.hours == [~T[10:00:00], ~T[20:00:00]]
+      assert organization_with_set_values.days == [1, 2]
+    end
+
+    test "active_organizations/0 should return list of active organizations" do
+      organization = organization_fixture()
+      organizations = Partners.active_organizations()
+      assert is_nil(organizations[organization.id]) == false
+
+      {:ok, _} = Partners.update_organization(organization, %{is_active: false})
+      organizations = Partners.active_organizations()
+      assert is_nil(organizations[organization.id]) == true
+    end
   end
 end

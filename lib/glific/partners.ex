@@ -4,6 +4,8 @@ defmodule Glific.Partners do
   and Provider information.
   """
 
+  use Publicist
+
   import Ecto.Query, warn: false
 
   alias Glific.{
@@ -154,7 +156,7 @@ defmodule Glific.Partners do
   @spec active_organizations :: map()
   def active_organizations do
     Organization
-    # |> where([q], q.is_active == true)
+    |> where([q], q.is_active == true)
     |> select([q], [q.id, q.name])
     |> Repo.all()
     |> Enum.reduce(%{}, fn row, acc ->
