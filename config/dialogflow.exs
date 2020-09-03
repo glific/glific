@@ -8,10 +8,16 @@ config :glific,
 
 # for now this is optional, so we check for file exists, need
 # a more robust solution going forward
-goth_json =
-  if File.exists?("config/.dialogflow.credentials.json"),
-    do: File.read!("config/.dialogflow.credentials.json"),
-    else: System.get_env("GOTH_JSON_CREDENTIALS")
+
+goth_json = System.get_env("GOTH_JSON_CREDENTIALS") || 
+  raise """
+  environment variable GOTH_JSON_CREDENTIALS is missing.
+  """
+
+# goth_json = 
+#   if File.exists?("config/.dialogflow.credentials.json"),
+#     do: File.read!("config/.dialogflow.credentials.json"),
+#     else: System.get_env("GOTH_JSON_CREDENTIALS")
 
 # config goth
 config :goth,
