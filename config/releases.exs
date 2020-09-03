@@ -67,7 +67,7 @@ goth_json = """
   auth_uri: #{System.get_env("GOTH_AUTH_URI")},
   token_uri: #{System.get_env("GOTH_TOKEN_URI")},
   auth_provider_x509_cert_url: #{System.get_env("GOTH_AUTH_PROVIDER_X509_CERT_URL")},
-  client_x509_cert_url: #{System.get_env("GOTH_CLIENT_X509_CERT_URL"})
+  client_x509_cert_url: #{System.get_env("GOTH_CLIENT_X509_CERT_URL")}
 }
 """
 
