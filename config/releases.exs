@@ -56,18 +56,20 @@ config :appsignal, :config,
 #   environment variable GOTH_JSON_CREDENTIALS is missing.
 #   """
 
-goth_json = {
-  type: System.get_env("GOTH_TYPE"),
-  project_id: System.get_env("GOTH_PROJECT_ID"),
-  private_key_id: System.get_env("GOTH_PRIVATE_KEY_ID"),
-  private_key: System.get_env("GOTH_PRIVATE_KEY"),
-  client_email: System.get_env("GOTH_CLIENT_EMAIL"),
-  client_id: System.get_env("GOTH_CLIENT_ID"),
-  auth_uri: System.get_env("GOTH_AUTH_URI"),
-  token_uri: System.get_env("GOTH_TOKEN_URI"),
-  auth_provider_x509_cert_url: System.get_env("GOTH_AUTH_PROVIDER_X509_CERT_URL"),
-  client_x509_cert_url: System.get_env("GOTH_CLIENT_X509_CERT_URL")
+goth_json = """
+{
+  type: #{System.get_env("GOTH_TYPE")},
+  project_id: #{System.get_env("GOTH_PROJECT_ID")},
+  private_key_id: #{System.get_env("GOTH_PRIVATE_KEY_ID")},
+  private_key: #{System.get_env("GOTH_PRIVATE_KEY")},
+  client_email: #{System.get_env("GOTH_CLIENT_EMAIL")},
+  client_id: #{System.get_env("GOTH_CLIENT_ID")},
+  auth_uri: #{System.get_env("GOTH_AUTH_URI")},
+  token_uri: #{System.get_env("GOTH_TOKEN_URI")},
+  auth_provider_x509_cert_url: #{System.get_env("GOTH_AUTH_PROVIDER_X509_CERT_URL")},
+  client_x509_cert_url: #{System.get_env("GOTH_CLIENT_X509_CERT_URL"})
 }
+"""
 
 # config goth
 config :goth,
