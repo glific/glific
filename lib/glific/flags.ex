@@ -6,8 +6,6 @@ defmodule Glific.Flags do
 
   alias Glific.Partners
 
-  @timezone "Asia/Kolkata"
-
   @doc false
   @spec init :: {:ok, boolean()}
   def init do
@@ -39,16 +37,9 @@ defmodule Glific.Flags do
   end
 
   defp out_of_office_check do
-    timezone = Partners.organization().timezone
+    timezone = Partners.organization_timezone()
 
-    {:ok, now} =
-      case DateTime.now(timezone) do
-        {:ok, now} ->
-          {:ok, now}
-
-        {:error, _} ->
-          DateTime.now(@timezone)
-      end
+    {:ok, now} = DateTime.now(timezone)
 
     {hours, days} = Partners.organization_out_of_office_summary()
 

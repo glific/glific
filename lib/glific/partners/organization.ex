@@ -95,6 +95,7 @@ defmodule Glific.Partners.Organization do
     |> add_out_of_office_if_missing()
     |> cast_embed(:out_of_office, with: &OutOfOffice.out_of_office_changeset/2)
     |> validate_required(@required_fields)
+    |> validate_inclusion(:timezone, Tzdata.zone_list())
     |> unique_constraint(:shortcode)
     |> unique_constraint(:email)
     |> unique_constraint(:provider_phone)

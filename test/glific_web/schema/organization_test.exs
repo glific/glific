@@ -183,6 +183,22 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert updated_organization["name"] == name
     assert updated_organization["timezone"] == "America/Los_Angeles"
 
+    # Incorrect timezone should give error
+    result =
+      query_gql_by(:update,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{
+            "timezone" => "incorrent_timezone"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
+    assert message == "is invalid"
+
     # create a temp organization with a new name
     query_gql_by(:create,
       variables: %{

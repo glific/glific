@@ -344,6 +344,13 @@ defmodule Glific.Partners do
     do: organization(organization_id).default_language_id
 
   @doc """
+  Get the timezone
+  """
+  @spec organization_timezone(non_neg_integer | nil) :: integer()
+  def organization_timezone(organization_id \\ nil),
+    do: organization(organization_id).timezone
+
+  @doc """
   Return the days of week and the hours for each day for this organization. At some point
   we will unify the structures, so each day can have a different set of hours
   """
