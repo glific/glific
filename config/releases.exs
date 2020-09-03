@@ -56,6 +56,9 @@ goth_json = System.get_env("GOTH_JSON_CREDENTIALS") ||
   environment variable GOTH_JSON_CREDENTIALS is missing.
   """
 
+test = System.get_env("GOTH_TYPE");
+IO.puts(test);
+
 # goth_json = """
 # {
 #   "type": "#{System.get_env("GOTH_TYPE")}",
