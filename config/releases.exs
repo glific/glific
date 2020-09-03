@@ -71,6 +71,8 @@ goth_json = """
 }
 """
 
+IO.puts(goth_json);
+
 # config goth
 config :goth,
   json: goth_json
