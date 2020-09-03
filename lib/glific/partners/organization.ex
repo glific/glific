@@ -28,7 +28,8 @@ defmodule Glific.Partners.Organization do
   # define all the optional fields for organization
   @optional_fields [
     :contact_id,
-    :is_active
+    :is_active,
+    :timezone
     # commenting this out, since the tests were giving me an error
     # about cast_embed etc
     # :out_of_office
@@ -51,7 +52,8 @@ defmodule Glific.Partners.Organization do
           out_of_office: OutOfOffice.t() | nil,
           hours: list() | nil,
           days: list() | nil,
-          is_active: boolean(),
+          is_active: boolean() | nil,
+          timezone: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -77,6 +79,8 @@ defmodule Glific.Partners.Organization do
     embeds_one :out_of_office, OutOfOffice, on_replace: :update
 
     field :is_active, :boolean, default: true
+
+    field :timezone, :string, default: "Asia/Kolkata"
 
     timestamps(type: :utc_datetime)
   end

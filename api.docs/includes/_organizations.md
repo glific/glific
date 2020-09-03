@@ -12,6 +12,7 @@ query organizations($filter: OrganizationFilter, $opts: Opts) {
       label
     }
     isActive
+    timezone
   }
 }
 
@@ -40,7 +41,8 @@ query organizations($filter: OrganizationFilter, $opts: Opts) {
         },
         "id": "1",
         "name": "Default Organization",
-        "isActive": true
+        "isActive": true,
+        "timezone": "Asia/Kolkata"
       },
       {
         "defaultLanguage": {
@@ -49,7 +51,8 @@ query organizations($filter: OrganizationFilter, $opts: Opts) {
         },
         "id": "2",
         "name": "Slam Out Loud",
-        "isActive": true
+        "isActive": true,
+        "timezone": "Asia/Kolkata"
       }
     ]
   }
@@ -78,6 +81,7 @@ query organization($id: ID) {
       id
       name
       isActive
+      timezone
       defaultLanguage {
         id
         label
@@ -104,7 +108,8 @@ query organization($id: ID) {
         },
         "id": "1",
         "name": "Default Organization",
-        "isActive": true
+        "isActive": true,
+        "timezone": "Asia/Kolkata"
       }
     }
   }
@@ -520,6 +525,11 @@ Type | Description
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>timezone</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
@@ -756,6 +766,11 @@ Unique
 <tr>
 <td colspan="2" valign="top"><strong>isActive</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>timezone</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 </tbody>
