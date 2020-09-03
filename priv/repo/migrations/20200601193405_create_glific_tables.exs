@@ -107,8 +107,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # jsonb object of out_of_office data which is a bit convoluted to represent as columns
       add :out_of_office, :jsonb
 
-      # organization can be
+      # organization services can be changed to inactive
       add :is_active, :boolean, default: true
+
+      add :timezone, :string
 
       timestamps(type: :utc_datetime)
     end
