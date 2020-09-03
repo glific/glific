@@ -48,3 +48,14 @@ config :glific,
 config :appsignal, :config,
   name: "Glific",
   push_api_key: System.get_env("GLIFIC_PUSH_API_KEY")
+
+# for now this is optional, so we check for file exists, need
+# a more robust solution going forward
+goth_json = System.get_env("GOTH_JSON_CREDENTIALS") ||
+  raise """
+  environment variable GOTH_JSON_CREDENTIALS is missing.
+  """
+  
+# config goth
+config :goth,
+  json: goth_json
