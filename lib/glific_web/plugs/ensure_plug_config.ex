@@ -13,5 +13,9 @@ defmodule GlificWeb.EnsurePlugConfig do
 
   @type t :: %__MODULE__{}
   @doc false
-  defstruct [:callback, :failure_callback, assign: :current_organization]
+  defstruct [
+    :callback,
+    :failure_callback,
+    assign: :current_organization
+  ]
 end

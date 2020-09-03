@@ -7,8 +7,14 @@ defmodule Glific.FlagsTest do
   }
 
   setup do
+    Flags.init()
+
     :ok
   end
+
+  @start_time elem(Time.new(0, 0, 0, 0), 1)
+  @end_time elem(Time.new(23, 59, 59, 999_999), 1)
+  @start_one elem(Time.new(0, 0, 0, 1), 1)
 
   test "ensure init returns ok, and enabled out of office" do
     {status, _} = Flags.init()
@@ -30,20 +36,18 @@ defmodule Glific.FlagsTest do
 
   test "check office hours" do
     now = DateTime.utc_now()
-    {:ok, start_time} = Time.new(0, 0, 0, 0)
-    {:ok, end_time} =  Time.new(23, 59, 59, 999_999)
 
     # ensure we get the right value for either edge case
     assert Flags.office_hours?(now, []) == false
-    assert Flags.office_hours?(now, [start_time, end_time]) == true
+    assert Flags.office_hours?(now, [@start_time, @end_time]) == true
 
     time = now |> DateTime.to_time()
 
-    assert Flags.office_hours?(now, [start_time, time]) == false
-    assert Flags.office_hours?(now, [time, end_time]) == false
+    assert Flags.office_hours?(now, [@start_time, time]) == false
+    assert Flags.office_hours?(now, [time, @end_time]) == false
 
-    assert Flags.office_hours?(now, [start_time, Time.add(time, 60)]) == true
-    assert Flags.office_hours?(now, [Time.add(time, -1), end_time]) == true
+    assert Flags.office_hours?(now, [@start_time, Time.add(time, 60)]) == true
+    assert Flags.office_hours?(now, [Time.add(time, -1), @end_time]) == true
   end
 
   test "ensure enable/disable work as advertised" do
@@ -57,8 +61,8 @@ defmodule Glific.FlagsTest do
   @organization_settings %{
     out_of_office: %{
       enabled: true,
-      start_time: elem(Time.new(0, 0, 0, 0), 1),
-      end_time: elem(Time.new(23, 59, 59, 999_999), 1),
+      start_time: @start_time,
+      end_time: @end_time,
       enabled_days: [
         %{id: 1, enabled: true},
         %{id: 2, enabled: true},
@@ -71,45 +75,42 @@ defmodule Glific.FlagsTest do
     }
   }
 
-  test "check out of office should activate/deactivate out_of_office_active flag according to organization settings" do
-    FunWithFlags.enable(:enable_out_of_office)
-    FunWithFlags.disable(:out_of_office_active)
-
+  test "check out of office should activate out_of_office_active flag" do
     organization = Partners.organization()
 
     # when office hours includes whole day of seven days
     {:ok, _} = Partners.update_organization(organization, @organization_settings)
-    Flags.out_of_office_check();
+    Flags.out_of_office_check()
     assert FunWithFlags.enabled?(:out_of_office_active) == false
-
-    # when office hours is zero
-    new_organization_settings = put_in(@organization_settings, [:out_of_office, :end_time], elem(Time.new(0, 0, 0, 1), 1))
-    {:ok, _} = Partners.update_organization(organization, new_organization_settings)
-    Flags.out_of_office_check();
-    assert FunWithFlags.enabled?(:out_of_office_active) == true
-
-    FunWithFlags.disable(:enable_out_of_office)
-    FunWithFlags.disable(:out_of_office_active)
   end
 
-  test "update out of office should deactivate out of office if disabled" do
-    FunWithFlags.enable(:enable_out_of_office)
-    FunWithFlags.disable(:out_of_office_active)
-
+  test "check out of office should de-activate out_of_office_active flag" do
     organization = Partners.organization()
 
     # when office hours is zero
-    new_organization_settings = put_in(@organization_settings, [:out_of_office, :end_time], elem(Time.new(0, 0, 0, 1), 1))
+    organization_settings =
+      put_in(@organization_settings, [:out_of_office, :end_time], @start_one)
+
+    # when office hours includes just one microsecond of the day
+    {:ok, _} = Partners.update_organization(organization, organization_settings)
+    Flags.out_of_office_check()
+    assert FunWithFlags.enabled?(:out_of_office_active) == true
+  end
+
+  test "update out of office should deactivate out of office if disabled" do
+    organization = Partners.organization()
+
+    # when office hours is zero
+    new_organization_settings =
+      put_in(@organization_settings, [:out_of_office, :end_time], @start_one)
+
     {:ok, _} = Partners.update_organization(organization, new_organization_settings)
-    Flags.out_of_office_check();
+    Flags.out_of_office_check()
     assert FunWithFlags.enabled?(:out_of_office_active) == true
 
     # When flag is disabled
     FunWithFlags.disable(:enable_out_of_office)
     Flags.out_of_office_update()
     assert FunWithFlags.enabled?(:out_of_office_active) == false
-
-    FunWithFlags.disable(:enable_out_of_office)
-    FunWithFlags.disable(:out_of_office_active)
   end
 end

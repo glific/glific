@@ -1,4 +1,8 @@
 {
+    "coverage_options": {
+        "minimum_coverage": 80,
+        "treat_no_relevant_lines_as_covered": true
+    },
     "skip_files": [
         "lib/glific/application.ex",
         "lib/glific_web.ex",
@@ -15,6 +19,11 @@
         "lib/glific_web/providers/glifproxy",
         "lib/glific_web/schema",
         "lib/glific.ex",
+        "lib/glific/jobs/minute_worker.ex",
+        "lib/glific_web/plugs/param_plug.ex",
+        "lib/glific_web/plugs/param_plug_config.ex",
+        "lib/glific_web/plugs/subdomain_plug_config.ex",
+        "lib/glific_web/plugs/ensure_plug_config.ex",
         "test/support"
     ]
 }

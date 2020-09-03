@@ -21,7 +21,7 @@ defmodule Glific.Flags do
     dialogflow()
   end
 
-  @spec business_day?(DateTime.t(), [integer]) ::boolean
+  @spec business_day?(DateTime.t(), [integer]) :: boolean
   defp business_day?(time, days),
     do: (time |> DateTime.to_date() |> Date.day_of_week()) in days
 
@@ -30,6 +30,7 @@ defmodule Glific.Flags do
     time = DateTime.to_time(time)
     Time.compare(time, start_time) == :gt and Time.compare(time, end_time) == :lt
   end
+
   defp office_hours?(_time, []), do: false
 
   @spec enable_out_of_office :: nil
