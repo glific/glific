@@ -125,6 +125,12 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       arg(:filter, :organization_filter)
       resolve(&Resolvers.Partners.count_organizations/3)
     end
+
+    field :timezones, list_of(:string) do
+      resolve(fn _, _, _ ->
+        {:ok, Tzdata.zone_list()}
+      end)
+    end
   end
 
   object :organization_mutations do
