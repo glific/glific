@@ -452,7 +452,8 @@ defmodule Glific.PartnersTest do
       organization = organization_fixture()
       Partners.organization(organization.id)
 
-      assert Partners.organization_language_id(organization.id) == organization.default_language_id
+      assert Partners.organization_language_id(organization.id) ==
+               organization.default_language_id
     end
 
     test "organization_out_of_office_summary/1 by id should return cached data" do

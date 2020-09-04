@@ -1,18 +1,17 @@
-defmodule Glific.FLowsTest do
+defmodule Glific.Flows.PeriodicTest do
   use Glific.DataCase
 
   alias Glific.Flows.Periodic
 
   def setup do
-
     :ok
   end
 
   test "compute time and its various permutions" do
     # get the beginning of a month
     {:ok, month} = Timex.parse("2020-08-01T00:00:00-08:00", "{ISO:Extended}")
-    {:ok, any_day} =  Timex.parse("2020-08-13T00:00:00-08:00", "{ISO:Extended}")
-    {:ok, last_day} =  Timex.parse("2020-08-31T00:00:00-08:00", "{ISO:Extended}")
+    {:ok, any_day} = Timex.parse("2020-08-13T00:00:00-08:00", "{ISO:Extended}")
+    {:ok, last_day} = Timex.parse("2020-08-31T00:00:00-08:00", "{ISO:Extended}")
 
     assert Periodic.compute_time(month, "monthly") == month
     assert Periodic.compute_time(any_day, "monthly") == month
@@ -24,9 +23,7 @@ defmodule Glific.FLowsTest do
     assert Periodic.compute_time(any_day, "weekly") == monday
     assert Periodic.compute_time(sunday, "weekly") == monday
 
-    IO.inspect(DateTime.add(monday, 12 * 6 * 60))
     assert Periodic.compute_time(DateTime.add(monday, 125 * 6 * 60), "monday") == monday
     assert Periodic.compute_time(DateTime.add(monday, 125 * 6 * 60), "daily") == monday
-
   end
 end
