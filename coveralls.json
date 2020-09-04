@@ -20,9 +20,11 @@
         "lib/glific_web/providers/glifproxy",
         "lib/glific_web/schema",
         "lib/glific.ex",
+        "lib/glific/flows/webhook.ex",
         "lib/glific/jobs/minute_worker.ex",
         "lib/glific_web/plugs/subdomain_plug_config.ex",
         "lib/glific_web/plugs/ensure_plug_config.ex",
+        "lib/glific_web/plugs/absinthe_plug.ex",
         "test/support"
     ]
 }
