@@ -248,7 +248,7 @@ defmodule Glific.Fixtures do
   def contact_group_fixture(attrs) do
     valid_attrs = %{
       contact_id: contact_fixture(attrs).id,
-      group_id: group_fixture(attrs).id,
+      group_id: group_fixture(attrs).id
     }
 
     {:ok, contact_group} =
