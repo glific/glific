@@ -126,16 +126,13 @@ defmodule Glific.Communications.Message do
         receiver_id: Partners.organization_contact_id(),
         flow: :inbound,
         provider_status: :delivered,
-        status: :delivered,
+        status: :received,
         organization_id: contact.organization_id
       })
-
     cond do
-      type in [:video, :audio, :image, :document] -> receive_media(message_params)
       type == :text -> receive_text(message_params)
-      # For location and address messages, will add that when there will be a use case
       type == :location -> receive_location(message_params)
-      true -> {:error, "Message type not supported"}
+      true -> receive_media(message_params)
     end
   end
 
