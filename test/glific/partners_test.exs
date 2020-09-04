@@ -443,6 +443,13 @@ defmodule Glific.PartnersTest do
       assert organization.days != nil
     end
 
+    test "organization_id/1 by id should return cached organization's id" do
+      organization = organization_fixture()
+      Partners.organization(organization.id)
+
+      assert Partners.organization_id() == organization.id
+    end
+
     test "organization_contact_id/1 by id should return cached organization's contact id" do
       organization = organization_fixture()
       Partners.organization(organization.id)
@@ -459,7 +466,7 @@ defmodule Glific.PartnersTest do
     end
 
     test "organization_timezone/1 by id should return cached organization's timezone" do
-      organization = organization_fixture()
+      organization = organization_fixture(%{timezone: "Africa/Blantyre"})
       Partners.organization(organization.id)
 
       assert Partners.organization_timezone(organization.id) == organization.timezone
@@ -475,11 +482,12 @@ defmodule Glific.PartnersTest do
     end
 
     test "perform_all/2 should run handler for all active organizations" do
-      contact = Fixtures.contact_fixture(%{
-        provider_status: :session_and_hsm,
-        optin_time: Timex.shift(DateTime.utc_now(), hours: -25),
-        last_message_at: Timex.shift(DateTime.utc_now(), hours: -24)
-      })
+      contact =
+        Fixtures.contact_fixture(%{
+          provider_status: :session_and_hsm,
+          optin_time: Timex.shift(DateTime.utc_now(), hours: -25),
+          last_message_at: Timex.shift(DateTime.utc_now(), hours: -24)
+        })
 
       organization_fixture(%{contact_id: contact.id})
 
