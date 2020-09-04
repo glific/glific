@@ -140,6 +140,8 @@ defmodule Glific.PartnersTest do
   describe "organizations" do
     alias Glific.{
       Caches,
+      Contacts,
+      Fixtures,
       Partners.Organization,
       Settings
     }
@@ -441,7 +443,7 @@ defmodule Glific.PartnersTest do
       assert organization.days != nil
     end
 
-    test "organization_contact_id/1 by id should return cached organization's default langauage id" do
+    test "organization_contact_id/1 by id should return cached organization's contact id" do
       organization = organization_fixture()
       Partners.organization(organization.id)
 
@@ -456,6 +458,13 @@ defmodule Glific.PartnersTest do
                organization.default_language_id
     end
 
+    test "organization_timezone/1 by id should return cached organization's timezone" do
+      organization = organization_fixture()
+      Partners.organization(organization.id)
+
+      assert Partners.organization_timezone(organization.id) == organization.timezone
+    end
+
     test "organization_out_of_office_summary/1 by id should return cached data" do
       organization = organization_fixture()
       Partners.organization(organization.id)
@@ -463,6 +472,22 @@ defmodule Glific.PartnersTest do
       {hours, days} = Partners.organization_out_of_office_summary(organization.id)
       assert hours != nil
       assert days != nil
+    end
+
+    test "perform_all/2 should run handler for all active organizations" do
+      contact = Fixtures.contact_fixture(%{
+        provider_status: :session_and_hsm,
+        optin_time: Timex.shift(DateTime.utc_now(), hours: -25),
+        last_message_at: Timex.shift(DateTime.utc_now(), hours: -24)
+      })
+
+      organization_fixture(%{contact_id: contact.id})
+
+      Partners.active_organizations()
+      Partners.perform_all(&Contacts.update_contact_status/2, %{})
+
+      updated_contact = Contacts.get_contact!(contact.id)
+      assert updated_contact.provider_status == :hsm
     end
   end
 end

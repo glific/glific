@@ -333,25 +333,37 @@ defmodule Glific.Contacts do
   def update_contact_status(organization_id, _args) do
     t = Glific.go_back_time(24)
 
-    Contacts.Contact
+    Contact
     |> where([c], c.last_message_at <= ^t)
     |> where([c], c.organization_id == ^organization_id)
+    |> select([c], c.id)
     |> Repo.all()
-    # We really should do this as one mass update, and no individual calls
-    |> Enum.each(fn contact ->
-      set_session_status(contact, :none)
-    end)
+    |> set_session_status(:none)
   end
 
   @doc """
   Set session status for opted in and opted out contacts
   """
-  @spec set_session_status(Contact.t(), atom()) ::
-          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def set_session_status(contact, :none = _status) do
+  @spec set_session_status(Contact.t() | [non_neg_integer], atom()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | :ok
+  def set_session_status(contact, :none = _status) when is_struct(contact) do
     if is_nil(contact.optin_time),
       do: update_contact(contact, %{provider_status: :none}),
       else: update_contact(contact, %{provider_status: :hsm})
+  end
+
+  def set_session_status(contact_ids, :none = _status) when is_list(contact_ids) do
+    Contact
+    |> where([c], is_nil(c.optin_time))
+    |> where([c], c.id in ^contact_ids)
+    |> Repo.update_all(set: [provider_status: :none])
+
+    Contact
+    |> where([c], not is_nil(c.optin_time))
+    |> where([c], c.id in ^contact_ids)
+    |> Repo.update_all(set: [provider_status: :hsm])
+
+    :ok
   end
 
   def set_session_status(contact, :session = _status) do
