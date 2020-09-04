@@ -510,4 +510,29 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == receiver_id
   end
+
+  test "search with the date range filters will returns the conversations", %{user: user} do
+    message = Fixtures.message_fixture()
+
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{
+            "term" => "",
+            "dateRange" => %{
+              "from" =>
+                DateTime.utc_now() |> DateTime.to_date() |> Date.add(-2) |> Date.to_string(),
+              "to" => DateTime.utc_now() |> DateTime.to_date() |> Date.to_string()
+            }
+          },
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
+             "#{message.contact_id}"
+  end
 end
