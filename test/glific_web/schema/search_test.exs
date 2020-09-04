@@ -510,4 +510,21 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == receiver_id
   end
+
+  test "search with the group filters will return the conversation", %{user: user} do
+    message = Fixtures.message_fixture()
+    contact_group = Fixtures.contact_group_fixture(%{organization_id: user.organization_id, contact_id: message.contact_id})
+
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{"term" => "", "includeGroups" => ["#{contact_group.group_id}"]},
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == "#{contact_group.contact_id}"
+  end
 end
