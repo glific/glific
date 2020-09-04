@@ -20,8 +20,6 @@
         "lib/glific_web/schema",
         "lib/glific.ex",
         "lib/glific/jobs/minute_worker.ex",
-        "lib/glific_web/plugs/param_plug.ex",
-        "lib/glific_web/plugs/param_plug_config.ex",
         "lib/glific_web/plugs/subdomain_plug_config.ex",
         "lib/glific_web/plugs/ensure_plug_config.ex",
         "test/support"
