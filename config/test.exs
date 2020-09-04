@@ -16,6 +16,7 @@ config :glific, Glific.Repo,
 # you can enable the server option below.
 config :glific, GlificWeb.Endpoint,
   http: [port: 4002],
+  url: [host: "glific.test"],
   server: false
 
 # Print only warnings and errors during test

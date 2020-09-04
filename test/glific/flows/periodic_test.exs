@@ -57,4 +57,15 @@ defmodule Glific.Flows.PeriodicTest do
     # assert that we have one row which is th outofoffice flow
     assert length(rows) == 1
   end
+
+  test "call the periodic flow function with non-existent flows" do
+    state = Periodic.map_flow_ids(%{})
+
+    assert {state, false} == Periodic.periodic_flow(state, "doesnotexist", nil, DateTime.utc_now())
+    assert {state, false} == Periodic.periodic_flow(state, "daily", nil, DateTime.utc_now())
+
+    {:ok, monday} = Timex.parse("2020-08-10T00:00:00-08:00", "{ISO:Extended}")
+    assert {state, false} == Periodic.periodic_flow(state, "monday", nil, monday)
+    assert {state, false} == Periodic.periodic_flow(state, "wednesday", nil, monday)
+  end
 end

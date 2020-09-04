@@ -42,13 +42,7 @@ defmodule GlificWeb.Tenants do
 
   The function `to_prefix/1` will be applied to the organization.
   """
-  @spec reserved_organization?(map | String.t()) :: boolean()
-  def reserved_organization?(organization) when is_map(organization) do
-    organization
-    |> Map.get(:name)
-    |> reserved_organization?()
-  end
-
+  @spec reserved_organization?(String.t()) :: boolean()
   def reserved_organization?(prefix) do
     Enum.any?(reserved_organizations(), fn i ->
       if is_bitstring(prefix) and Regex.regex?(i) do
@@ -66,7 +60,8 @@ defmodule GlificWeb.Tenants do
   For the short term, we'll default to organization id Glific, if
   we cannot resolve the sub-domain, we'll remove this in v0.4
   """
-  @spec organization_handler(String.t()) :: integer
+  @spec organization_handler(String.t() | nil) :: integer
+  def organization_handler(name \\ nil)
   def organization_handler(nil) do
     # in the normal case we'll redirect them here to glific.io
     # and halt this connection
@@ -81,9 +76,7 @@ defmodule GlificWeb.Tenants do
 
       # in the normal case we'll redirect them here to glific.io
       # and halt this connection
-      _ ->
-        {:ok, default} = Repo.fetch_by(Organization, %{name: "Glific"})
-        default.id
+        _ -> organization_handler()
     end
   end
 end
