@@ -517,7 +517,6 @@ defmodule GlificWeb.Schema.SearchTest do
 
     contact_count = Contacts.count_contacts(%{filter: %{organization_id: user.organization_id}})
 
-
     {:ok, contact} =
         Contacts.update_contact(message.contact,
         %{last_message_at: DateTime.utc_now()}
