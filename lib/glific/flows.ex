@@ -347,9 +347,10 @@ defmodule Glific.Flows do
 
   @spec process_contact_flow(list(), Flow.t()) :: {:ok, Flow.t()}
   defp process_contact_flow(contacts, flow) do
-    _list = Enum.map(contacts, fn contact ->
-      if Contacts.can_send_message_to?(contact), do: FlowContext.init_context(flow, contact)
-    end)
+    _list =
+      Enum.map(contacts, fn contact ->
+        if Contacts.can_send_message_to?(contact), do: FlowContext.init_context(flow, contact)
+      end)
 
     {:ok, flow}
   end

@@ -5,6 +5,7 @@
     },
     "skip_files": [
         "lib/glific/application.ex",
+        "lib/glific/release.ex",
         "lib/glific_web.ex",
         "lib/glific_web/endpoint.ex",
         "lib/glific_web/views",
