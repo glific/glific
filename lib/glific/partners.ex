@@ -382,4 +382,25 @@ defmodule Glific.Partners do
     |> Map.put(:hours, hours)
     |> Map.put(:days, days)
   end
+
+  @doc """
+  Execute a function across all active organizations. This function is typically called
+  by a cron job worker process
+
+  The handler is expected to take the organization id as its first argument. The second argument
+  is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
+  """
+  @spec perform_all((non_neg_integer, map() -> nil), map()) :: :ok
+  def perform_all(handler, handler_args \\ %{}) do
+    # We need to do this for all the active organizations
+    active_organizations()
+    |> Enum.each(fn {id, name} ->
+      handler.(
+        id,
+        Map.put(handler_args, :organization_name, name)
+      )
+    end)
+
+    :ok
+  end
 end

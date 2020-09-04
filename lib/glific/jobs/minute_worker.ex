@@ -5,7 +5,11 @@ defmodule Glific.Jobs.MinuteWorker do
 
   use Oban.Worker, queue: :crontab
 
-  alias Glific.Flags
+  alias Glific.{
+    Contacts,
+    Flags,
+    Partners
+  }
 
   @doc """
   Worker to implement cron job functionality as implemented by Oban. This
@@ -14,9 +18,13 @@ defmodule Glific.Jobs.MinuteWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
-  def perform(%Oban.Job{args: %{job: :fun_with_flags}}) do
+  def perform(%Oban.Job{args: %{job: :fun_with_flags}} = _job) do
     Flags.out_of_office_update()
     :ok
+  end
+
+  def perform(%Oban.Job{args: %{job: :contact_status} = args} = _job) do
+    Partners.perform_all(&Contacts.update_contact_status/2, args)
   end
 
   def perform(_job), do: :ok

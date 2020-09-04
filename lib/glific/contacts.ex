@@ -322,6 +322,28 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Invoked from cron jobs to mass update the status of contacts belonging to
+  a specific organization
+
+  In this case, if we can, we might want to do it across the entire DB since the
+  update is across all organizations. The main issue might be the row level security
+  of postgres and how it ties in. For now, lets stick to per organization
+  """
+  @spec update_contact_status(non_neg_integer, map()) :: :ok
+  def update_contact_status(organization_id, _args) do
+    t = Glific.go_back_time(24)
+
+    Contacts.Contact
+    |> where([c], c.last_message_at <= ^t)
+    |> where([c], c.organization_id == ^organization_id)
+    |> Repo.all()
+    # We really should do this as one mass update, and no individual calls
+    |> Enum.each(fn contact ->
+      set_session_status(contact, :none)
+    end)
+  end
+
+  @doc """
   Set session status for opted in and opted out contacts
   """
   @spec set_session_status(Contact.t(), atom()) ::
