@@ -45,14 +45,12 @@ defmodule Glific.CachesTest do
       key2 = "key 2"
       value = "hel//lo"
       clean_string = "hello"
-      assert {:ok, clean_string} == Caches.set([key1, key2],&Glific.string_clean/1, value)
+      assert {:ok, clean_string} == Caches.set([key1, key2], &Glific.string_clean/1, value)
       {:ok, value1} = Caches.get(key1)
       {:ok, value2} = Caches.get(key2)
       assert value1 == value2
       assert clean_string == value1
       assert clean_string == value2
     end
-
-
   end
 end
