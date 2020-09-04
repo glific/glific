@@ -511,6 +511,25 @@ defmodule GlificWeb.Schema.SearchTest do
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == receiver_id
   end
 
+  test "search with the empty group filter will return the conversation", %{user: user} do
+    {:ok, receiver} =
+      Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: user.organization_id})
+
+    receiver_id = to_string(receiver.id)
+
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{"term" => "Def", "includeGroups" => []},
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == receiver_id
+  end
+
   test "search with the group filters will return the conversation", %{user: user} do
     message = Fixtures.message_fixture()
 
@@ -536,15 +555,17 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   test "search with the date range filters will returns the conversations", %{user: user} do
-    message = Fixtures.message_fixture()
-              |> Repo.preload([:contact])
+    message =
+      Fixtures.message_fixture()
+      |> Repo.preload([:contact])
 
     contact_count = Contacts.count_contacts(%{filter: %{organization_id: user.organization_id}})
 
     {:ok, contact} =
-        Contacts.update_contact(message.contact,
+      Contacts.update_contact(
+        message.contact,
         %{last_message_at: DateTime.utc_now()}
-    )
+      )
 
     result =
       auth_query_gql_by(:search, user,
@@ -552,7 +573,8 @@ defmodule GlificWeb.Schema.SearchTest do
           "filter" => %{
             "term" => "",
             "dateRange" => %{
-              "from" => DateTime.utc_now() |> DateTime.to_date() |> Date.add(-2) |> Date.to_string(),
+              "from" =>
+                DateTime.utc_now() |> DateTime.to_date() |> Date.add(-2) |> Date.to_string(),
               "to" => DateTime.utc_now() |> DateTime.to_date() |> Date.to_string()
             }
           },
@@ -563,8 +585,114 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    conatct_ids = Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
-      acc ++ [row["contact"]["id"]]
+    conatct_ids =
+      Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
+        acc ++ [row["contact"]["id"]]
+      end)
+
+    assert "#{contact.id}" in conatct_ids
+
+    # it should return empty list if date range doesn't have any messages
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{
+            "term" => "",
+            "dateRange" => %{
+              "from" =>
+                DateTime.utc_now() |> DateTime.to_date() |> Date.add(-2) |> Date.to_string(),
+              "to" => DateTime.utc_now() |> DateTime.to_date() |> Date.add(-1) |> Date.to_string()
+            }
+          },
+          "contactOpts" => %{"limit" => contact_count},
+          "messageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "search"]) == []
+  end
+
+  test "search with incomplete date range filters will return the conversations", %{user: user} do
+    message =
+      Fixtures.message_fixture()
+      |> Repo.preload([:contact])
+
+    contact_count = Contacts.count_contacts(%{filter: %{organization_id: user.organization_id}})
+
+    {:ok, contact} =
+      Contacts.update_contact(
+        message.contact,
+        %{last_message_at: DateTime.utc_now()}
+      )
+
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{
+            "term" => "",
+            "dateRange" => %{
+              "from" => nil,
+              "to" => nil
+            }
+          },
+          "contactOpts" => %{"limit" => contact_count},
+          "messageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    conatct_ids =
+      Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
+        acc ++ [row["contact"]["id"]]
+      end)
+
+    assert "#{contact.id}" in conatct_ids
+
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{
+            "term" => "",
+            "dateRange" => %{
+              "from" =>
+                DateTime.utc_now() |> DateTime.to_date() |> Date.add(-2) |> Date.to_string()
+            }
+          },
+          "contactOpts" => %{"limit" => contact_count},
+          "messageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    conatct_ids =
+      Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
+        acc ++ [row["contact"]["id"]]
+      end)
+
+    assert "#{contact.id}" in conatct_ids
+
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{
+            "term" => "",
+            "dateRange" => %{
+              "to" => DateTime.utc_now() |> DateTime.to_date() |> Date.to_string()
+            }
+          },
+          "contactOpts" => %{"limit" => contact_count},
+          "messageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    conatct_ids =
+      Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
+        acc ++ [row["contact"]["id"]]
       end)
 
     assert "#{contact.id}" in conatct_ids
