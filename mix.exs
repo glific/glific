@@ -3,7 +3,7 @@ defmodule Glific.MixProject do
 
   @github_url "https://github.com/glific/glific/"
   @home_url "https://glific.io"
-  @test_envs [:test, :test_quick, :test_full]
+  @test_envs [:test, :test_full]
 
   def project do
     [
@@ -35,7 +35,6 @@ defmodule Glific.MixProject do
       ],
       preferred_cli_env: [
         coveralls: :test,
-        test_quick: :test,
         test_full: :test
       ],
       # Lets add meta information on project
@@ -151,7 +150,7 @@ defmodule Glific.MixProject do
         "phil_columns.seed",
         "test"
       ],
-      test_quick: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate", "test"]
     ]
   end
 end
