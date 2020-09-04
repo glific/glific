@@ -433,14 +433,35 @@ defmodule Glific.PartnersTest do
     end
 
     test "organization/1 should return cached data" do
-      assert {:ok, false} = Caches.get("organization")
-
       organization = organization_fixture()
       Partners.organization(organization.id)
 
       assert {:ok, organization} = Caches.get("organization")
       assert organization.hours != nil
       assert organization.days != nil
+    end
+
+    test "organization_contact_id/1 by id should return cached organization's default langauage id" do
+      organization = organization_fixture()
+      Partners.organization(organization.id)
+
+      assert Partners.organization_contact_id(organization.id) == organization.contact_id
+    end
+
+    test "organization_language_id/1 by id should return cached organization's default langauage id" do
+      organization = organization_fixture()
+      Partners.organization(organization.id)
+
+      assert Partners.organization_language_id(organization.id) == organization.default_language_id
+    end
+
+    test "organization_out_of_office_summary/1 by id should return cached data" do
+      organization = organization_fixture()
+      Partners.organization(organization.id)
+
+      {hours, days} = Partners.organization_out_of_office_summary(organization.id)
+      assert hours != nil
+      assert days != nil
     end
   end
 end
