@@ -23,6 +23,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/organizations/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/organizations/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/organizations/delete.gql")
+  load_gql(:list_timezones, GlificWeb.Schema, "assets/gql/organizations/list_timezones.gql")
 
   test "organizations field returns list of organizations" do
     result = query_gql_by(:list)
@@ -183,6 +184,22 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert updated_organization["name"] == name
     assert updated_organization["timezone"] == "America/Los_Angeles"
 
+    # Incorrect timezone should give error
+    result =
+      query_gql_by(:update,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{
+            "timezone" => "incorrent_timezone"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
+    assert message == "is invalid"
+
     # create a temp organization with a new name
     query_gql_by(:create,
       variables: %{
@@ -269,5 +286,14 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     message = get_in(query_data, [:data, "deleteOrganization", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "timezones returns list of timezones", %{user: user} do
+    result = auth_query_gql_by(:list_timezones, user)
+    assert {:ok, query_data} = result
+
+    timezones = get_in(query_data, [:data, "timezones"])
+    assert timezones != []
+    assert "Asia/Kolkata" in timezones == true
   end
 end

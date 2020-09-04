@@ -47,6 +47,7 @@ defmodule Glific.Flags do
   @spec out_of_office_check :: nil
   defp out_of_office_check do
     {:ok, now} = Partners.organization().timezone |> DateTime.now()
+
     {hours, days} = Partners.organization_out_of_office_summary()
 
     # check if current day and time is valid
