@@ -454,58 +454,6 @@ if Code.ensure_loaded?(Faker) do
         flow_id: test_flow.id,
         status: "done"
       })
-
-      sol_activity =
-        Repo.insert!(%Flow{
-          name: "SoL Activity",
-          shortcode: "solactivity",
-          keywords: ["solactivity"],
-          version_number: "13.1.0",
-          uuid: "b050c652-65b5-4ccf-b62b-1e8b3f328676",
-          organization_id: organization.id
-        })
-
-      sol_activity_definition =
-        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/sol_activity.json"))
-        |> Jason.decode!()
-
-      sol_activity_definition =
-        Map.merge(sol_activity_definition, %{
-          "name" => sol_activity.name,
-          "uuid" => sol_activity.uuid
-        })
-
-      Repo.insert!(%FlowRevision{
-        definition: sol_activity_definition,
-        flow_id: sol_activity.id,
-        status: "done"
-      })
-
-      sol_feedback =
-        Repo.insert!(%Flow{
-          name: "SoL Feedback",
-          shortcode: "solfeedback",
-          keywords: ["solfeedback"],
-          version_number: "13.1.0",
-          uuid: "6c21af89-d7de-49ac-9848-c9febbf737a5",
-          organization_id: organization.id
-        })
-
-      sol_feedback_definition =
-        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/sol_feedback.json"))
-        |> Jason.decode!()
-
-      sol_feedback_definition =
-        Map.merge(sol_feedback_definition, %{
-          "name" => sol_feedback.name,
-          "uuid" => sol_feedback.uuid
-        })
-
-      Repo.insert!(%FlowRevision{
-        definition: sol_feedback_definition,
-        flow_id: sol_feedback.id,
-        status: "done"
-      })
     end
 
     @spec get_organization(Organization.t() | nil) :: Organization.t()

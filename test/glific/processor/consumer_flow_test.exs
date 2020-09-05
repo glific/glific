@@ -2,14 +2,23 @@ defmodule TestProducerFlow do
   use GenStage
 
   alias Glific.{
+    Contacts.Contact,
     Fixtures,
     Repo,
   }
 
   @checks %{
     0 => "help",
-    1 => "language",
-    2 => "newcontact",
+    1 => "does not exist",
+    2 => "still does not exist",
+    3 => "2",
+    4 => "language",
+    5 => "no language",
+    6 => "2",
+    7 => "newcontact",
+    8 => "2",
+    9 => "We are Glific",
+    10 => "4",
   }
   @num_checks length(Map.keys(@checks))
 
@@ -23,16 +32,18 @@ defmodule TestProducerFlow do
 
   def init(demand), do: {:producer, demand}
 
-  def handle_demand(demand, counter) when counter > @num_checks + 1 do
+  def handle_demand(demand, counter) when counter > @num_checks do
     send(:test, {:called_back})
     {:stop, :normal, demand}
   end
 
   def handle_demand(demand, counter) when demand > 0 do
+    sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
+
     events =
       Enum.map(
         counter..(counter + demand - 1),
-        fn c -> Fixtures.message_fixture(%{body: @checks[rem(c, @num_checks + 1)]}) end
+        fn c -> Fixtures.message_fixture(%{body: @checks[rem(c, @num_checks)], sender_id: sender.id}) end
       )
 
     {:noreply, events, demand + counter}
@@ -73,5 +84,5 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     new_message_count = Repo.aggregate(Message, :count)
     assert new_message_count > message_count
-end
+  end
 end

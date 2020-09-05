@@ -208,7 +208,7 @@ defmodule Glific.Flows.Flow do
   """
   @spec start_sub_flow(FlowContext.t(), Ecto.UUID.t()) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def start_sub_flow(context, uuid) do
+          def start_sub_flow(context, uuid) do
     # we might want to put the current one under some sort of pause status
     flow = get_flow(uuid)
 
