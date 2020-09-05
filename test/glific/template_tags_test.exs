@@ -23,6 +23,7 @@ defmodule Glific.TemplateTagsTest do
         delete_tag_ids: []
       })
 
+    assert %TemplateTags{} == template_tags
     assert template_tags.template_tags == []
     assert template_tags.number_deleted == 0
 

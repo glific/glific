@@ -25,6 +25,7 @@ defmodule Glific.MessageTagsTest do
         delete_tag_ids: []
       })
 
+    assert %MessageTags{} == message_tags
     assert message_tags.message_tags == []
     assert message_tags.number_deleted == 0
 
