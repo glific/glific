@@ -73,6 +73,14 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "Resource not found"
   end
 
+  test "organization without id returns current user's organization", %{user: user} do
+    result = auth_query_gql_by(:by_id, user)
+    assert {:ok, query_data} = result
+
+    organization_id = get_in(query_data, [:data, "organization", "organization", "id"])
+    assert organization_id == to_string(user.organization_id)
+  end
+
   test "create an organization and test possible scenarios and errors" do
     name = "Organization Test Name"
     shortcode = "org_shortcode"
