@@ -26,7 +26,9 @@ defmodule Glific.Processor.ConsumerFlow do
   def start_link(opts) do
     name = Keyword.get(opts, :name, __MODULE__)
     producer = Keyword.get(opts, :producer, Glific.Processor.Producer)
-    GenStage.start_link(__MODULE__, [producer: producer], name: name)
+    wakeup_timeout = Keyword.get(opts, :wakeup_timeout, @wakeup_timeout_ms)
+
+    GenStage.start_link(__MODULE__, [producer: producer, wakeup_timeout: wakeup_timeout], name: name)
   end
 
   @doc false
@@ -34,12 +36,13 @@ defmodule Glific.Processor.ConsumerFlow do
     state =
       %{
         producer: opts[:producer],
-        flows: %{}
+        wakeup_timeout: opts[:wakeup_timeout],
+        flows: %{},
       }
       |> reload()
 
     # process the wakeup queue every 1 minute
-    Process.send_after(self(), :wakeup_timeout, @wakeup_timeout_ms)
+    Process.send_after(self(), :wakeup_timeout, state[:wakeup_timeout])
 
     {
       :consumer,
@@ -147,7 +150,7 @@ defmodule Glific.Processor.ConsumerFlow do
     FlowContext.wakeup()
     |> Enum.each(fn fc -> wakeup(fc, state) end)
 
-    Process.send_after(self(), :wakeup_timeout, @wakeup_timeout_ms)
+    Process.send_after(self(), :wakeup_timeout, state[:wakeup_timeout])
     {:noreply, [], state}
   end
 
