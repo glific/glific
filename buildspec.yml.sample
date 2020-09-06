@@ -24,6 +24,7 @@ phases:
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
+      # The following line of code is used to deploy new docker image to ECS Fargate.
       - printf '[{"name":"glific-backend-docker-container-name","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
-  files: imagedefinitions.json
+  files: imagedefinitions.json # this image definition file will be used to create new task based on existing running task configurations and new code changes.
