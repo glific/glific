@@ -89,8 +89,8 @@ defmodule Glific.Processor.ConsumerTagger do
     {message, Map.put(state, :tagged, false)}
     |> numeric_tagger(body)
     |> keyword_tagger(body)
-    |> new_contact_tagger()
     |> dialogflow_tagger()
+    |> new_contact_tagger()
     # get the first element which is the message
     |> elem(0)
     |> Repo.preload(:tags)

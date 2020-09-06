@@ -18,8 +18,11 @@ defmodule TestProducer do
     6 => {"thanks", "thankyou", nil},
     7 => {"ek", "numeric", "1"},
     8 => {"हिंदी", "language", nil},
-    9 => {to_string(['\u0039', 65_039, 8419]), "numeric", "9"}
+    9 => {to_string(['\u0039', 65_039, 8419]), "numeric", "9"},
+    10 => {"hey there", "greeting", nil}
   }
+
+  @checks_size Enum.count(@checks)
 
   @doc false
   @spec get_checks() :: %{integer => {}}
@@ -31,7 +34,7 @@ defmodule TestProducer do
 
   def init(demand), do: {:producer, demand}
 
-  def handle_demand(demand, counter) when counter > 10 do
+  def handle_demand(demand, counter) when counter > @checks_size + 1 do
     send(:test, {:called_back})
     {:stop, :normal, demand}
   end
@@ -40,7 +43,7 @@ defmodule TestProducer do
     events =
       Enum.map(
         counter..(counter + demand - 1),
-        fn c -> Fixtures.message_fixture(%{body: elem(@checks[rem(c, 10)], 0)}) end
+        fn c -> Fixtures.message_fixture(%{body: elem(@checks[rem(c, @checks_size)], 0)}) end
       )
 
     {:noreply, events, demand + counter}

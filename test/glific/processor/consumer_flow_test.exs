@@ -20,7 +20,7 @@ defmodule TestProducerFlow do
     9 => "We are Glific",
     10 => "4",
   }
-  @num_checks length(Map.keys(@checks))
+  @checks_size Enum.count(@checks)
 
   @doc false
   @spec get_checks() :: %{integer => {}}
@@ -32,7 +32,7 @@ defmodule TestProducerFlow do
 
   def init(demand), do: {:producer, demand}
 
-  def handle_demand(demand, counter) when counter > @num_checks do
+  def handle_demand(demand, counter) when counter > @checks_size do
     send(:test, {:called_back})
     {:stop, :normal, demand}
   end
@@ -43,7 +43,7 @@ defmodule TestProducerFlow do
     events =
       Enum.map(
         counter..(counter + demand - 1),
-        fn c -> Fixtures.message_fixture(%{body: @checks[rem(c, @num_checks)], sender_id: sender.id}) end
+        fn c -> Fixtures.message_fixture(%{body: @checks[rem(c, @checks_size)], sender_id: sender.id}) end
       )
 
     {:noreply, events, demand + counter}
