@@ -28,5 +28,5 @@ defmodule Glific.Jobs.MinuteWorker do
     Partners.perform_all(&Contacts.update_contact_status/2, args)
   end
 
-  def perform(job), do: {:error, "This job is not handled"}
+  def perform(_job), do: {:error, "This job is not handled"}
 end
