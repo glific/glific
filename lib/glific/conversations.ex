@@ -10,7 +10,7 @@ defmodule Glific.Conversations do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Conversations.Conversation, Messages, Repo}
+  alias Glific.{Messages, Repo}
 
   @doc """
   Returns the last M conversations, each conversation not more than N messages
