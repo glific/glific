@@ -82,7 +82,7 @@ defmodule Glific.Flows.Flow do
       |> unique_constraint([:shortcode, :organization_id])
       |> unique_constraint([:name, :organization_id])
 
-      validate_keywords(changeset, get_change(changeset, :keywords))
+    validate_keywords(changeset, get_change(changeset, :keywords))
   end
 
   @doc """
