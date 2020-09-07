@@ -4,7 +4,7 @@ defmodule TestProducerFlow do
   alias Glific.{
     Contacts.Contact,
     Fixtures,
-    Repo,
+    Repo
   }
 
   @checks %{
@@ -18,7 +18,7 @@ defmodule TestProducerFlow do
     7 => "newcontact",
     8 => "2",
     9 => "We are Glific",
-    10 => "4",
+    10 => "4"
   }
   @checks_size Enum.count(@checks)
 
@@ -43,7 +43,9 @@ defmodule TestProducerFlow do
     events =
       Enum.map(
         counter..(counter + demand - 1),
-        fn c -> Fixtures.message_fixture(%{body: @checks[rem(c, @checks_size)], sender_id: sender.id}) end
+        fn c ->
+          Fixtures.message_fixture(%{body: @checks[rem(c, @checks_size)], sender_id: sender.id})
+        end
       )
 
     {:noreply, events, demand + counter}
@@ -57,7 +59,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
     Messages.Message,
     Processor.ConsumerFlow,
     Repo,
-    Seeds.SeedsDev,
+    Seeds.SeedsDev
   }
 
   setup do
@@ -73,11 +75,13 @@ defmodule Glific.Processor.ConsumerFlowTest do
     message_count = Repo.aggregate(Message, :count)
 
     {:ok, producer} = TestProducerFlow.start_link(1)
-    {:ok, _consumer} = ConsumerFlow.start_link(
-      producer: producer,
-      name: TestConsumerFlow,
-      wakeup_timeout: 1
-    )
+
+    {:ok, _consumer} =
+      ConsumerFlow.start_link(
+        producer: producer,
+        name: TestConsumerFlow,
+        wakeup_timeout: 1
+      )
 
     Process.register(self(), :test)
     assert_receive({:called_back}, 10_000)

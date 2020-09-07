@@ -42,7 +42,7 @@ defmodule Glific.Flows.PeriodicTest do
     assert filled_map.flows.filled == true
 
     # we know that outofoffice is a default seeded flow
-    assert ! is_nil(get_in(filled_map, [:flows, "outofoffice"]))
+    assert !is_nil(get_in(filled_map, [:flows, "outofoffice"]))
   end
 
   test "run flows and we know the outofoffice flow should get going", attrs do
@@ -51,8 +51,11 @@ defmodule Glific.Flows.PeriodicTest do
 
     message = Fixtures.message_fixture(attrs) |> Repo.preload(:contact)
     state = Periodic.run_flows(%{}, message)
+
     {:ok, %Postgrex.Result{rows: rows}} =
-      Repo.query("select id, flow_id from flow_contexts where flow_id = #{state.flows["outofoffice"]}")
+      Repo.query(
+        "select id, flow_id from flow_contexts where flow_id = #{state.flows["outofoffice"]}"
+      )
 
     # assert that we have one row which is th outofoffice flow
     assert length(rows) == 1
@@ -61,7 +64,9 @@ defmodule Glific.Flows.PeriodicTest do
   test "call the periodic flow function with non-existent flows" do
     state = Periodic.map_flow_ids(%{})
 
-    assert {state, false} == Periodic.periodic_flow(state, "doesnotexist", nil, DateTime.utc_now())
+    assert {state, false} ==
+             Periodic.periodic_flow(state, "doesnotexist", nil, DateTime.utc_now())
+
     assert {state, false} == Periodic.periodic_flow(state, "daily", nil, DateTime.utc_now())
 
     {:ok, monday} = Timex.parse("2020-08-10T00:00:00-08:00", "{ISO:Extended}")
