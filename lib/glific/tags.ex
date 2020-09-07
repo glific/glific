@@ -284,18 +284,6 @@ defmodule Glific.Tags do
   We will generalize this function and move it to Repo.ex when we get a better
   handle on how to do so :)
   """
-  @spec delete_message_tag_by_ids(integer, integer) :: {integer(), nil | [term()]}
-  def delete_message_tag_by_ids(message_id, tag_id) when is_integer(tag_id) do
-    query =
-      MessageTag
-      |> where([m], m.message_id == ^message_id and m.tag_id == ^tag_id)
-
-    Repo.all(query)
-    |> publish_delete_message
-
-    Repo.delete_all(query)
-  end
-
   @spec delete_message_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
   def delete_message_tag_by_ids(message_id, tag_ids) when is_list(tag_ids) do
     query =

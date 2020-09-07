@@ -157,22 +157,6 @@ defmodule Glific.Templates do
   end
 
   @doc """
-  Gets or Creates a template based on the unique indexes in the table. If there is a match
-  it returns the existing template, else it creates a new one
-  """
-  @spec template_upsert(map()) :: {:ok, SessionTemplate.t()}
-  def template_upsert(attrs) do
-    template =
-      Repo.insert!(
-        change_session_template(%SessionTemplate{}, attrs),
-        on_conflict: [set: [label: attrs.label]],
-        conflict_target: [:language_id, :label]
-      )
-
-    {:ok, template}
-  end
-
-  @doc """
   Create a session template form message
   Body and type will be the message attributes
   """
