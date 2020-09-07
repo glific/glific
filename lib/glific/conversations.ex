@@ -30,12 +30,6 @@ defmodule Glific.Conversations do
   defp get_message_ids(_contact_opts, message_opts, %{filter: %{ids: ids}}),
     do: get_message_ids(ids, message_opts)
 
-  defp get_message_ids(contact_opts, message_opts, _) do
-    contact_opts
-    |> get_recent_contact_ids()
-    |> get_message_ids(message_opts)
-  end
-
   @spec get_message_ids(list(), map()) :: list()
   defp get_message_ids(ids, %{limit: message_limit, offset: message_offset}) do
     query =
@@ -46,20 +40,6 @@ defmodule Glific.Conversations do
             m.message_number < ^(message_limit + message_offset),
         order_by: [{:desc, :updated_at}],
         select: m.id
-
-    Repo.all(query)
-  end
-
-  # Get the latest contact ids form messages
-  @spec get_recent_contact_ids(map()) :: list()
-  defp get_recent_contact_ids(contact_opts) do
-    query =
-      from m in Messages.Message,
-        where: m.message_number == 0,
-        order_by: [desc: m.updated_at],
-        offset: ^contact_opts.offset,
-        limit: ^contact_opts.limit,
-        select: m.contact_id
 
     Repo.all(query)
   end
