@@ -5,17 +5,6 @@ defmodule Glific.Flows.Webhook do
   """
 
   @doc """
-  Build a tesla dynamic client based on arguments in the flow
-  @spec client(String.t()) :: Tesla.Client.t()
-  def client(url) do
-    middleware = [
-      {Tesla.Middleware.BaseUrl, url},
-      Tesla.Middleware.JSON
-    ]
-
-    Tesla.client(middleware)
-  end
-
   Send a get request, and if success, sned the json map back
   """
   @spec get(String.t(), Keyword.t(), String.t() | nil) :: map() | nil

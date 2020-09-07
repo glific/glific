@@ -11,6 +11,7 @@ defmodule Glific.Flows.Periodic do
 
   At some point, we will make this fleixible and let the NGO define the periodic interval
   """
+  use Publicist
 
   alias Glific.{
     Flows,
@@ -53,27 +54,25 @@ defmodule Glific.Flows.Periodic do
     Map.put(state, :flows, Map.merge(shortcode_id_map, %{filled: true}))
   end
 
-  @doc """
-  Compute the offset for the time, so we can check if there is a flow running
-  for that specific periodic event already
-  """
+  # Compute the offset for the time, so we can check if there is a flow running
+  # for that specific periodic event already
   @spec compute_time(DateTime.t(), String.t()) :: DateTime.t()
-  def compute_time(now, "monthly"), do: Timex.beginning_of_month(now)
-  def compute_time(now, "weekly"), do: Timex.beginning_of_week(now, :mon)
-  def compute_time(now, "outofoffice"), do: Glific.go_back_time(24, now, :hour)
+  defp compute_time(now, "monthly"), do: Timex.beginning_of_month(now)
+  defp compute_time(now, "weekly"), do: Timex.beginning_of_week(now, :mon)
+  defp compute_time(now, "outofoffice"), do: Glific.go_back_time(24, now, :hour)
 
-  def compute_time(now, period)
-      when period in [
-             "monday",
-             "tuesday",
-             "wednesday",
-             "thursday",
-             "friday",
-             "saturday",
-             "sunday",
-             "daily"
-           ],
-      do: Timex.beginning_of_day(now)
+  defp compute_time(now, period)
+       when period in [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday",
+              "daily"
+            ],
+       do: Timex.beginning_of_day(now)
 
   @doc """
   Run all the periodic flows in priority order. Stop when we find the first one that we can execute
@@ -81,6 +80,7 @@ defmodule Glific.Flows.Periodic do
   @spec run_flows(map(), Message.t()) :: map()
   def run_flows(state, message) do
     now = DateTime.utc_now()
+    state = map_flow_ids(state)
 
     Enum.reduce_while(
       @periodic_flows,
@@ -98,7 +98,6 @@ defmodule Glific.Flows.Periodic do
 
   @spec common_flow(map(), String.t(), Message.t(), DateTime.t()) :: {map(), boolean}
   defp common_flow(state, period, message, since) do
-    state = map_flow_ids(state)
     flow_id = get_in(state, [:flows, period])
 
     if !is_nil(flow_id) and
@@ -111,27 +110,25 @@ defmodule Glific.Flows.Periodic do
     end
   end
 
-  @doc """
-  Run a specific flow and do flow specific checks in the local files, before we invoke the
-  common function to process all periodic flows
-  """
+  # Run a specific flow and do flow specific checks in the local files, before we invoke the
+  # common function to process all periodic flows
   @spec periodic_flow(map(), String.t(), Message.t(), DateTime.t()) :: {map(), boolean}
-  def periodic_flow(state, period, message, since)
-      when period in [
-             "monday",
-             "tuesday",
-             "wednesday",
-             "thursday",
-             "friday",
-             "saturday",
-             "sunday"
-           ] do
+  defp periodic_flow(state, period, message, since)
+       when period in [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ] do
     if Date.day_of_week(since) == Timex.day_to_num(period),
       do: common_flow(state, period, message, since),
       else: {state, false}
   end
 
-  def periodic_flow(state, "outofoffice" = period, message, since) do
+  defp periodic_flow(state, "outofoffice" = period, message, since) do
     # lets  check if we should initiate the out of office flow
     # lets do this only if we've not sent them the out of office flow
     # in the past 24 hours
@@ -140,6 +137,6 @@ defmodule Glific.Flows.Periodic do
       else: {state, false}
   end
 
-  def periodic_flow(state, period, message, since),
+  defp periodic_flow(state, period, message, since),
     do: common_flow(state, period, message, since)
 end

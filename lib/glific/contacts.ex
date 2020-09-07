@@ -322,14 +322,48 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Invoked from cron jobs to mass update the status of contacts belonging to
+  a specific organization
+
+  In this case, if we can, we might want to do it across the entire DB since the
+  update is across all organizations. The main issue might be the row level security
+  of postgres and how it ties in. For now, lets stick to per organization
+  """
+  @spec update_contact_status(non_neg_integer, map()) :: :ok
+  def update_contact_status(organization_id, _args) do
+    t = Glific.go_back_time(24)
+
+    Contact
+    |> where([c], c.last_message_at <= ^t)
+    |> where([c], c.organization_id == ^organization_id)
+    |> select([c], c.id)
+    |> Repo.all()
+    |> set_session_status(:none)
+  end
+
+  @doc """
   Set session status for opted in and opted out contacts
   """
-  @spec set_session_status(Contact.t(), atom()) ::
-          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def set_session_status(contact, :none = _status) do
+  @spec set_session_status(Contact.t() | [non_neg_integer], atom()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | :ok
+  def set_session_status(contact, :none = _status) when is_struct(contact) do
     if is_nil(contact.optin_time),
       do: update_contact(contact, %{provider_status: :none}),
       else: update_contact(contact, %{provider_status: :hsm})
+  end
+
+  def set_session_status(contact_ids, :none = _status) when is_list(contact_ids) do
+    Contact
+    |> where([c], is_nil(c.optin_time))
+    |> where([c], c.id in ^contact_ids)
+    |> Repo.update_all(set: [provider_status: :none])
+
+    Contact
+    |> where([c], not is_nil(c.optin_time))
+    |> where([c], c.id in ^contact_ids)
+    |> Repo.update_all(set: [provider_status: :hsm])
+
+    :ok
   end
 
   def set_session_status(contact, :session = _status) do

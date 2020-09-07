@@ -473,5 +473,21 @@ defmodule Glific.ContactsTest do
       {:ok, contact} = Contacts.set_session_status(contact, :session)
       assert contact.provider_status == :session_and_hsm
     end
+
+    test "update_contact_status should update the provider status",
+         %{organization_id: organization_id} do
+      contact =
+        contact_fixture(%{
+          organization_id: organization_id,
+          provider_status: :session_and_hsm,
+          optin_time: Timex.shift(DateTime.utc_now(), hours: -25),
+          last_message_at: Timex.shift(DateTime.utc_now(), hours: -24)
+        })
+
+      Contacts.update_contact_status(organization_id, nil)
+
+      updated_contact = Contacts.get_contact!(contact.id)
+      assert updated_contact.provider_status == :hsm
+    end
   end
 end

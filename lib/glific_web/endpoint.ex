@@ -54,9 +54,9 @@ defmodule GlificWeb.Endpoint do
   plug Plug.Session, @session_options
   plug CORSPlug
 
-  # add the subdomain/domain via param routers
-  # plug GlificWeb.ParamPlug
+  # add the subdomain/domain
   plug GlificWeb.SubdomainPlug
+  plug GlificWeb.EnsurePlug
 
   plug GlificWeb.Router
 end

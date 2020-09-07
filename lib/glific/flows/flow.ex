@@ -269,19 +269,4 @@ defmodule Glific.Flows.Flow do
     do: query |> where([f, _fr], ^keyword in f.keywords)
 
   defp args_clause(query, _args), do: query
-
-  @doc """
-  Store all the flows in cachex :flows_cache. At some point, we will just use this dynamically
-  """
-  @spec cachex_flows(map()) :: map()
-  def cachex_flows(flows) do
-    Enum.each(
-      flows,
-      fn {key, flow} ->
-        {:ok, true} = Cachex.put(:flows_cache, key, flow)
-      end
-    )
-
-    flows
-  end
 end

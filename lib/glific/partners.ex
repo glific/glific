@@ -4,6 +4,8 @@ defmodule Glific.Partners do
   and Provider information.
   """
 
+  use Publicist
+
   import Ecto.Query, warn: false
 
   alias Glific.{
@@ -154,7 +156,7 @@ defmodule Glific.Partners do
   @spec active_organizations :: map()
   def active_organizations do
     Organization
-    # |> where([q], q.is_active == true)
+    |> where([q], q.is_active == true)
     |> select([q], [q.id, q.name])
     |> Repo.all()
     |> Enum.reduce(%{}, fn row, acc ->
@@ -386,5 +388,26 @@ defmodule Glific.Partners do
     organization
     |> Map.put(:hours, hours)
     |> Map.put(:days, days)
+  end
+
+  @doc """
+  Execute a function across all active organizations. This function is typically called
+  by a cron job worker process
+
+  The handler is expected to take the organization id as its first argument. The second argument
+  is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
+  """
+  @spec perform_all((non_neg_integer, map() -> nil), map()) :: :ok
+  def perform_all(handler, handler_args \\ %{}) do
+    # We need to do this for all the active organizations
+    active_organizations()
+    |> Enum.each(fn {id, name} ->
+      handler.(
+        id,
+        Map.put(handler_args, :organization_name, name)
+      )
+    end)
+
+    :ok
   end
 end

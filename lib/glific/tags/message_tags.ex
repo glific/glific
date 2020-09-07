@@ -15,12 +15,13 @@ defmodule Glific.Tags.MessageTags do
   @primary_key false
 
   @type t() :: %__MODULE__{
-          message_tags: [MessageTag.t()]
+          message_tags: [MessageTag.t()],
+          number_deleted: non_neg_integer
         }
 
   embedded_schema do
     # the number of tags we deleted
-    field :number_deleted, :integer
+    field :number_deleted, :integer, default: 0
     embeds_many(:message_tags, MessageTag)
   end
 

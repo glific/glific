@@ -17,8 +17,8 @@ if Code.ensure_loaded?(Plug) do
     alias GlificWeb.EnsurePlugConfig
     alias GlificWeb.Plug
 
-    @spec init(any) :: %{:__struct__ => atom, optional(atom) => any}
     @doc false
+    @spec init(any) :: %{:__struct__ => atom, optional(atom) => any}
     def init(opts), do: struct(EnsurePlugConfig, opts)
 
     @doc false

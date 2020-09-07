@@ -7,38 +7,8 @@ defmodule Glific.Processor.Helper do
   alias Glific.{
     Messages.Message,
     Repo,
-    Tags,
-    Templates.SessionTemplate
+    Tags
   }
-
-  @doc """
-  Given a shortcode and an optional language_id, get the session template matching
-  both, and if not found, just for the shortcode
-  """
-  @spec get_session_message_template(String.t(), non_neg_integer, integer | nil) ::
-          SessionTemplate.t()
-  def get_session_message_template(shortcode, organization_id, language_id \\ nil)
-
-  def get_session_message_template(shortcode, organization_id, nil) do
-    {:ok, session_template} =
-      Repo.fetch_by(
-        SessionTemplate,
-        %{shortcode: shortcode, organization_id: organization_id}
-      )
-
-    session_template
-  end
-
-  def get_session_message_template(shortcode, organization_id, language_id) do
-    case Repo.fetch_by(SessionTemplate, %{
-           shortcode: shortcode,
-           organization_id: organization_id,
-           language_id: language_id
-         }) do
-      {:ok, session_template} -> session_template
-      _ -> get_session_message_template(shortcode, organization_id, nil)
-    end
-  end
 
   @doc """
   Helper function to add tag

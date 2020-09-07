@@ -5,7 +5,9 @@ defmodule Glific.FLowsTest do
     Fixtures,
     Flows,
     Flows.Flow,
-    Flows.FlowRevision
+    Flows.FlowRevision,
+    Groups,
+    Messages.Message
   }
 
   describe "flows" do
@@ -248,6 +250,33 @@ defmodule Glific.FLowsTest do
       # should update the cached flow definition
       {:ok, loaded_flow} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
       assert loaded_flow.definition == new_definition
+    end
+
+    test "start_contact_flow/2 will setup the flow for a contact", attrs do
+      [flow | _tail] = Flows.list_flows(%{filter: attrs})
+      contact = Fixtures.contact_fixture(attrs)
+      {:ok, flow} = Flows.start_contact_flow(flow, contact)
+      first_action = hd(hd(flow.nodes).actions)
+
+      assert {:ok, _message} =
+               Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
+    end
+
+    test "start_group_flow/2 will setup the flow for a group of contacts", attrs do
+      [flow | _tail] = Flows.list_flows(%{filter: attrs})
+      group = Fixtures.group_fixture()
+      contact = Fixtures.contact_fixture()
+      contact2 = Fixtures.contact_fixture()
+      Groups.create_contact_group(%{group_id: group.id, contact_id: contact.id})
+      Groups.create_contact_group(%{group_id: group.id, contact_id: contact2.id})
+      {:ok, flow} = Flows.start_group_flow(flow, group)
+      first_action = hd(hd(flow.nodes).actions)
+
+      assert {:ok, _message} =
+               Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
+
+      assert {:ok, _message} =
+               Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact2.id})
     end
   end
 end

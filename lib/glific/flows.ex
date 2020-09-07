@@ -330,12 +330,9 @@ defmodule Glific.Flows do
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
     {:ok, flow} = get_cached_flow(flow.id, %{id: flow.id})
 
-    if Contacts.can_send_message_to?(contact) do
-      FlowContext.init_context(flow, contact)
-      {:ok, flow}
-    else
-      {:error, ["contact", "Cannot send the message to the contact."]}
-    end
+    if Contacts.can_send_message_to?(contact),
+      do: process_contact_flow([contact], flow),
+      else: {:error, ["contact", "Cannot send the message to the contact."]}
   end
 
   @doc """
@@ -344,15 +341,16 @@ defmodule Glific.Flows do
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
   def start_group_flow(%Flow{} = flow, %Group{} = group) do
     {:ok, flow} = get_cached_flow(flow.id, %{id: flow.id})
-
     group = group |> Repo.preload([:contacts])
+    process_contact_flow(group.contacts, flow)
+  end
 
-    group.contacts
-    |> Enum.each(fn contact ->
-      if Contacts.can_send_message_to?(contact) do
-        FlowContext.init_context(flow, contact)
-      end
-    end)
+  @spec process_contact_flow(list(), Flow.t()) :: {:ok, Flow.t()}
+  defp process_contact_flow(contacts, flow) do
+    _list =
+      Enum.map(contacts, fn contact ->
+        if Contacts.can_send_message_to?(contact), do: FlowContext.init_context(flow, contact)
+      end)
 
     {:ok, flow}
   end

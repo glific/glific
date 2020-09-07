@@ -138,8 +138,13 @@ defmodule Glific.PartnersTest do
   end
 
   describe "organizations" do
-    alias Glific.Partners.Organization
-    alias Glific.Settings
+    alias Glific.{
+      Caches,
+      Contacts,
+      Fixtures,
+      Partners.Organization,
+      Settings
+    }
 
     @valid_org_attrs %{
       name: "Organization Name",
@@ -388,6 +393,108 @@ defmodule Glific.PartnersTest do
       assert {:error, %Ecto.Changeset{}} =
                Map.merge(@valid_org_attrs, %{provider_id: organization.provider_id})
                |> Partners.create_organization()
+    end
+
+    test "set_out_of_office_values/1 should set values for hours and days" do
+      organization = organization_fixture()
+
+      updated_organization = Partners.set_out_of_office_values(organization)
+      assert updated_organization.hours == []
+      assert updated_organization.days == []
+
+      update_org_attrs =
+        @update_org_attrs
+        |> Map.merge(%{
+          out_of_office: %{
+            enabled: true,
+            start_time: ~T[10:00:00],
+            end_time: ~T[20:00:00],
+            enabled_days: [
+              %{id: 1, enabled: true},
+              %{id: 2, enabled: true}
+            ],
+            flow_id: 1
+          }
+        })
+
+      {:ok, updated_organization} = Partners.update_organization(organization, update_org_attrs)
+
+      organization_with_set_values = Partners.set_out_of_office_values(updated_organization)
+      assert organization_with_set_values.hours == [~T[10:00:00], ~T[20:00:00]]
+      assert organization_with_set_values.days == [1, 2]
+    end
+
+    test "active_organizations/0 should return list of active organizations" do
+      organization = organization_fixture()
+      organizations = Partners.active_organizations()
+      assert organizations[organization.id] != nil
+
+      {:ok, _} = Partners.update_organization(organization, %{is_active: false})
+      organizations = Partners.active_organizations()
+      assert organizations[organization.id] == nil
+    end
+
+    test "organization/1 should return cached data" do
+      organization = organization_fixture()
+      Partners.organization(organization.id)
+
+      assert {:ok, organization} = Caches.get("organization")
+      assert organization.hours != nil
+      assert organization.days != nil
+    end
+
+    test "organization_id/1 by id should return cached organization's id" do
+      organization = organization_fixture()
+      Caches.set("organization", organization)
+      assert Partners.organization_id() == organization.id
+    end
+
+    test "organization_contact_id/1 by id should return cached organization's contact id" do
+      organization = organization_fixture()
+      Caches.set("organization", organization)
+      Partners.organization(organization.id)
+      assert Partners.organization_contact_id(organization.id) == organization.contact_id
+    end
+
+    test "organization_language_id/1 by id should return cached organization's default langauage id" do
+      organization = organization_fixture()
+      Partners.organization(organization.id)
+
+      assert Partners.organization_language_id(organization.id) ==
+               organization.default_language_id
+    end
+
+    test "organization_timezone/1 by id should return cached organization's timezone" do
+      organization = organization_fixture(%{timezone: "Africa/Blantyre"})
+      Caches.set("organization", organization)
+      Partners.organization(organization.id)
+      assert Partners.organization_timezone(organization.id) == organization.timezone
+    end
+
+    test "organization_out_of_office_summary/1 by id should return cached data" do
+      organization = organization_fixture()
+      Partners.organization(organization.id)
+
+      {hours, days} = Partners.organization_out_of_office_summary(organization.id)
+      assert hours != nil
+      assert days != nil
+    end
+
+    test "perform_all/2 should run handler for all active organizations" do
+      contact =
+        Fixtures.contact_fixture(%{
+          provider_status: :session_and_hsm,
+          optin_time: Timex.shift(DateTime.utc_now(), hours: -25),
+          last_message_at: Timex.shift(DateTime.utc_now(), hours: -24)
+        })
+
+      organization_fixture(%{contact_id: contact.id})
+
+      Partners.active_organizations()
+      Partners.perform_all(&Contacts.update_contact_status/2, %{})
+
+      updated_contact = Contacts.get_contact!(contact.id)
+      assert updated_contact.provider_status == :hsm
     end
   end
 end
