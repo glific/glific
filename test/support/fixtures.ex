@@ -244,7 +244,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec contact_group_fixture(map()) :: Groups.CotnactGroup.t()
+  @spec contact_group_fixture(map()) :: Groups.ContactGroup.t()
   def contact_group_fixture(attrs) do
     valid_attrs = %{
       contact_id: contact_fixture(attrs).id,
