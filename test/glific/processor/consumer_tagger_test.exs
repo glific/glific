@@ -5,7 +5,6 @@ defmodule TestProducer do
     Fixtures,
     Processor.ConsumerTagger,
     Repo,
-    Tags.Tag,
   }
 
   @checks %{
@@ -57,7 +56,6 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     Processor.ConsumerTagger,
     Repo,
     Seeds.SeedsDev,
-    Tags,
     Tags.MessageTag
   }
 
