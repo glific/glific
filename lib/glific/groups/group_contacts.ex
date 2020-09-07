@@ -15,12 +15,13 @@ defmodule Glific.Groups.GroupContacts do
   @primary_key false
 
   @type t() :: %__MODULE__{
-          group_contacts: [ContactGroup.t()]
+          group_contacts: [ContactGroup.t()],
+          number_deleted: non_neg_integer
         }
 
   embedded_schema do
     # the number of contacts we deleted
-    field :number_deleted, :integer
+    field :number_deleted, :integer, default: 0
     embeds_many(:group_contacts, ContactGroup)
   end
 
