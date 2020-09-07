@@ -445,15 +445,14 @@ defmodule Glific.PartnersTest do
 
     test "organization_id/1 by id should return cached organization's id" do
       organization = organization_fixture()
-      Partners.organization(organization.id)
-
+      Caches.set("organization", organization)
       assert Partners.organization_id() == organization.id
     end
 
     test "organization_contact_id/1 by id should return cached organization's contact id" do
       organization = organization_fixture()
+      Caches.set("organization", organization)
       Partners.organization(organization.id)
-
       assert Partners.organization_contact_id(organization.id) == organization.contact_id
     end
 
@@ -467,8 +466,8 @@ defmodule Glific.PartnersTest do
 
     test "organization_timezone/1 by id should return cached organization's timezone" do
       organization = organization_fixture(%{timezone: "Africa/Blantyre"})
+      Caches.set("organization", organization)
       Partners.organization(organization.id)
-
       assert Partners.organization_timezone(organization.id) == organization.timezone
     end
 

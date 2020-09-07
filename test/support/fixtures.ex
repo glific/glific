@@ -108,7 +108,8 @@ defmodule Glific.Fixtures do
       provider_key: "this is not a secret key",
       provider_phone: "and this is not a valid phone",
       # lets just hope its there :)
-      default_language_id: 1
+      default_language_id: 1,
+      contact_id: contact_fixture().id
     }
 
     {:ok, organization} =
@@ -244,7 +245,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec contact_group_fixture(map()) :: Groups.CotnactGroup.t()
+  @spec contact_group_fixture(map()) :: Groups.ContactGroup.t()
   def contact_group_fixture(attrs) do
     valid_attrs = %{
       contact_id: contact_fixture(attrs).id,

@@ -206,7 +206,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     results =
       Glific.Settings.list_languages()
       |> Enum.reduce([], fn language, acc ->
-        [%{iso: language.locale, name: language.label} | acc]
+        [%{iso: language.label, name: language.label} | acc]
       end)
 
     json(conn, %{results: results})
