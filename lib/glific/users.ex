@@ -65,7 +65,7 @@ defmodule Glific.Users do
   """
   @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def create_user(attrs) do
-    attrs = fix_roles(attrs)
+    # attrs = fix_roles(attrs)
 
     %User{}
     |> User.changeset(attrs)

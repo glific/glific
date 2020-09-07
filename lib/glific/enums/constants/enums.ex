@@ -61,7 +61,7 @@ defmodule Glific.Enums.Constants do
       @contact_field_scope_const [:contact, :globals]
 
       #User roles
-      @user_roles_const [:none, :staff, :admin]
+      @user_roles_const [:none, :staff, :manager, :admin]
     end
   end
 end

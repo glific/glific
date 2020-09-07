@@ -15,7 +15,8 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     QuestionType,
     SortOrder,
     ContactFieldValueType,
-    ContactFieldScope
+    ContactFieldScope,
+    UserRoles
   }
 
   def up do
@@ -33,6 +34,7 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     SortOrder.create_type()
     ContactFieldValueType.create_type()
     ContactFieldScope.create_type()
+    UserRoles.create_type()
   end
 
   def down do
@@ -50,5 +52,6 @@ defmodule Glific.Repo.Migrations.CreateEnums do
     SortOrder.drop_type()
     ContactFieldValueType.drop_type()
     ContactFieldScope.drop_type()
+    UserRoles.drop_type()
   end
 end
