@@ -546,7 +546,7 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       auth_query_gql_by(:search, user,
         variables: %{
-          "filter" => %{"term" => "", "includeGroups" => ["#{contact_group.group_id}"]},
+         "filter" => %{"term" => "", "includeGroups" => ["#{contact_group.group_id}"]},
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }

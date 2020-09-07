@@ -384,7 +384,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def saved_searches(organization) do
-    labels = Repo.label_id_map(Tag, ["Not replied", "Not Responded", "Optout", "Unread"])
+    labels =
+      Repo.label_id_map(
+        Tag,
+        ["Not replied", "Not Responded", "Optout", "Unread"],
+        organization.id,
+        :label
+      )
 
     data = [
       {"All conversations", "All"},
