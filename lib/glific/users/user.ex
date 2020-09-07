@@ -31,7 +31,7 @@ defmodule Glific.Users.User do
 
   schema "users" do
     field :name, :string
-    field :roles, {:array, UserRoles}, default: [:none]
+    field :roles, Glific.Users.RoleType, default: [:none]
 
     belongs_to :contact, Contact
     belongs_to :organization, Organization

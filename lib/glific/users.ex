@@ -86,11 +86,14 @@ defmodule Glific.Users do
   """
   @spec update_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user(%User{} = user, attrs) do
-    attrs = fix_roles(attrs)
+    # attrs = fix_roles(attrs)
 
-    user
+    res = user
     |> User.update_fields_changeset(attrs)
     |> Repo.update()
+
+    IO.inspect("res")
+    IO.inspect(res)
   end
 
   @doc """
@@ -123,5 +126,6 @@ defmodule Glific.Users do
   @spec format_roles(list()) :: list()
   defp format_roles([]), do: []
   defp format_roles(nil), do: []
-  defp format_roles(roles), do: Enum.map(roles, &String.capitalize/1)
+  defp format_roles([role | _] = roles) when is_binary(role), do: Enum.map(roles, &String.downcase/1)
+  defp format_roles(roles), do: roles
 end
