@@ -67,6 +67,10 @@ to update your codebase from the glicic repository.
   * Ensure you have not modified any files in this directory, by running: `git status`
   * Run the setup command: `mix setup`
 
+## Deploying release on ECS with CD
+1. If you are using AWS codebuild for CD, use buildspec.yml.sample file content for creating and pushing docker image.
+2. For using and alternative repository like docker hub, you just need to make some changes in the pre_build phase (REPOSITORY_URI and authentications), the rest of the phases will remains same.
+
 ## Documentation
 
   * [GraphQL API docs](https://glific.github.io/slate/)
