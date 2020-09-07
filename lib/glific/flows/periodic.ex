@@ -62,17 +62,17 @@ defmodule Glific.Flows.Periodic do
   defp compute_time(now, "outofoffice"), do: Glific.go_back_time(24, now, :hour)
 
   defp compute_time(now, period)
-      when period in [
-             "monday",
-             "tuesday",
-             "wednesday",
-             "thursday",
-             "friday",
-             "saturday",
-             "sunday",
-             "daily"
-           ],
-      do: Timex.beginning_of_day(now)
+       when period in [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday",
+              "daily"
+            ],
+       do: Timex.beginning_of_day(now)
 
   @doc """
   Run all the periodic flows in priority order. Stop when we find the first one that we can execute
@@ -110,20 +110,19 @@ defmodule Glific.Flows.Periodic do
     end
   end
 
-
   # Run a specific flow and do flow specific checks in the local files, before we invoke the
   # common function to process all periodic flows
   @spec periodic_flow(map(), String.t(), Message.t(), DateTime.t()) :: {map(), boolean}
   defp periodic_flow(state, period, message, since)
-      when period in [
-             "monday",
-             "tuesday",
-             "wednesday",
-             "thursday",
-             "friday",
-             "saturday",
-             "sunday"
-           ] do
+       when period in [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ] do
     if Date.day_of_week(since) == Timex.day_to_num(period),
       do: common_flow(state, period, message, since),
       else: {state, false}

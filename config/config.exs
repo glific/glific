@@ -47,8 +47,8 @@ config :glific, Oban,
   repo: Glific.Repo,
   queues: [default: 10, gupshup: 10, glifproxy: 10, webhook: 10, crontab: 10],
   crontab: [
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :fun_with_flags}},
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}}
+    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :fun_with_flags}},
+    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}}
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
