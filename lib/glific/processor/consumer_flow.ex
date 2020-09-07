@@ -28,7 +28,9 @@ defmodule Glific.Processor.ConsumerFlow do
     producer = Keyword.get(opts, :producer, Glific.Processor.Producer)
     wakeup_timeout = Keyword.get(opts, :wakeup_timeout, @wakeup_timeout_ms)
 
-    GenStage.start_link(__MODULE__, [producer: producer, wakeup_timeout: wakeup_timeout], name: name)
+    GenStage.start_link(__MODULE__, [producer: producer, wakeup_timeout: wakeup_timeout],
+      name: name
+    )
   end
 
   @doc false
@@ -37,7 +39,7 @@ defmodule Glific.Processor.ConsumerFlow do
       %{
         producer: opts[:producer],
         wakeup_timeout: opts[:wakeup_timeout],
-        flows: %{},
+        flows: %{}
       }
       |> reload()
 

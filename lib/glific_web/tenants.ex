@@ -62,6 +62,7 @@ defmodule GlificWeb.Tenants do
   """
   @spec organization_handler(String.t() | nil) :: integer
   def organization_handler(name \\ nil)
+
   def organization_handler(nil) do
     # in the normal case we'll redirect them here to glific.io
     # and halt this connection
@@ -76,7 +77,8 @@ defmodule GlificWeb.Tenants do
 
       # in the normal case we'll redirect them here to glific.io
       # and halt this connection
-        _ -> organization_handler()
+      _ ->
+        organization_handler()
     end
   end
 end
