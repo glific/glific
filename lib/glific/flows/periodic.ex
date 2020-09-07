@@ -44,7 +44,7 @@ defmodule Glific.Flows.Periodic do
   defp map_flow_ids(state) do
     shortcode_id_map = Repo.label_id_map(Flow, @periodic_flows, :shortcode)
 
-    organization = Partners.organization()
+    organization = Partners.organization(state.organization_id)
 
     shortcode_id_map =
       if organization.out_of_office.enabled,
@@ -80,7 +80,11 @@ defmodule Glific.Flows.Periodic do
   @spec run_flows(map(), Message.t()) :: map()
   def run_flows(state, message) do
     now = DateTime.utc_now()
-    state = map_flow_ids(state)
+
+    state =
+      state
+      |> Map.merge(%{organization_id: message.organization_id})
+      |> map_flow_ids()
 
     Enum.reduce_while(
       @periodic_flows,

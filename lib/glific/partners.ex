@@ -305,8 +305,8 @@ defmodule Glific.Partners do
 
   In v0.4, we should cache it based on organization id, and that should be a parameter
   """
-  @spec organization(non_neg_integer | nil) :: Organization.t()
-  def organization(organization_id \\ nil) do
+  @spec organization(non_neg_integer) :: Organization.t()
+  def organization(organization_id) do
     case Caches.get("organization") do
       {:ok, false} ->
         organization =
@@ -326,38 +326,38 @@ defmodule Glific.Partners do
   @doc """
   Temorary hack to get the organization id while we get tests to pass
   """
-  @spec organization_id(non_neg_integer | nil) :: integer()
-  def organization_id(organization_id \\ nil),
+  @spec organization_id(non_neg_integer) :: integer()
+  def organization_id(organization_id),
     do: organization(organization_id).id
 
   @doc """
   This contact id is special since it is the sender for all outbound messages
   and the receiver for all inbound messages
   """
-  @spec organization_contact_id(non_neg_integer | nil) :: integer()
-  def organization_contact_id(organization_id \\ nil),
+  @spec organization_contact_id(non_neg_integer) :: integer()
+  def organization_contact_id(organization_id),
     do: organization(organization_id).contact_id
 
   @doc """
   Get the default language id
   """
-  @spec organization_language_id(non_neg_integer | nil) :: integer()
-  def organization_language_id(organization_id \\ nil),
+  @spec organization_language_id(non_neg_integer) :: integer()
+  def organization_language_id(organization_id),
     do: organization(organization_id).default_language_id
 
   @doc """
   Get the timezone
   """
-  @spec organization_timezone(non_neg_integer | nil) :: String.t()
-  def organization_timezone(organization_id \\ nil),
+  @spec organization_timezone(non_neg_integer) :: String.t()
+  def organization_timezone(organization_id),
     do: organization(organization_id).timezone
 
   @doc """
   Return the days of week and the hours for each day for this organization. At some point
   we will unify the structures, so each day can have a different set of hours
   """
-  @spec organization_out_of_office_summary(non_neg_integer | nil) :: {[Time.t()], [integer]}
-  def organization_out_of_office_summary(organization_id \\ nil),
+  @spec organization_out_of_office_summary(non_neg_integer) :: {[Time.t()], [integer]}
+  def organization_out_of_office_summary(organization_id),
     do: {organization(organization_id).hours, organization(organization_id).days}
 
   @spec set_out_of_office_values(Organization.t()) :: Organization.t()

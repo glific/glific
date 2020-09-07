@@ -209,12 +209,15 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message(boolean(), map()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
-  defp create_and_send_message(true = _is_valid_contact, attrs) do
+  defp create_and_send_message(
+         true = _is_valid_contact,
+         %{organization_id: organization_id} = attrs
+       ) do
     {:ok, message} =
       attrs
       |> Map.put_new(:type, :text)
       |> Map.merge(%{
-        sender_id: Partners.organization_contact_id(),
+        sender_id: Partners.organization_contact_id(organization_id),
         flow: :outbound
       })
       |> update_message_attrs()
@@ -297,7 +300,7 @@ defmodule Glific.Messages do
       body: session_template.body,
       type: session_template.type,
       media_id: session_template.message_media_id,
-      sender_id: Partners.organization_contact_id(),
+      sender_id: Partners.organization_contact_id(session_template.organization_id),
       receiver_id: args[:receiver_id],
       send_at: args[:send_at],
       organization_id: session_template.organization_id
@@ -322,7 +325,7 @@ defmodule Glific.Messages do
         type: updated_template.type,
         is_hsm: updated_template.is_hsm,
         organization_id: session_template.organization_id,
-        sender_id: Partners.organization_contact_id(),
+        sender_id: Partners.organization_contact_id(session_template.organization_id),
         receiver_id: receiver_id
       }
 

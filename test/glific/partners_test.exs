@@ -446,7 +446,7 @@ defmodule Glific.PartnersTest do
     test "organization_id/1 by id should return cached organization's id" do
       organization = organization_fixture()
       Caches.set("organization", organization)
-      assert Partners.organization_id() == organization.id
+      assert Partners.organization_id(organization.id) == organization.id
     end
 
     test "organization_contact_id/1 by id should return cached organization's contact id" do
