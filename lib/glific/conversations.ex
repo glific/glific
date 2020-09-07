@@ -10,7 +10,7 @@ defmodule Glific.Conversations do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Conversations.Conversation, Messages, Repo}
+  alias Glific.{Messages, Repo}
 
   @doc """
   Returns the last M conversations, each conversation not more than N messages
@@ -21,22 +21,6 @@ defmodule Glific.Conversations do
       Map.put(args, :ids, get_message_ids(args.contact_opts, args.message_opts, args)),
       count
     )
-  end
-
-  @doc """
-  Returns the filtered conversation by contact id
-  """
-  @spec conversation_by_id(map()) :: Conversation.t() | nil
-  def conversation_by_id(%{contact_id: contact_id} = args) do
-    args = put_in(args, [Access.key(:filter, %{}), :id], contact_id)
-    message_opts = args.message_opts
-
-    case args
-         |> Map.put(:ids, get_message_ids(%{}, message_opts, args))
-         |> Messages.list_conversations() do
-      [conversation] -> conversation
-      _ -> nil
-    end
   end
 
   @spec get_message_ids(map(), map(), map() | nil) :: list()

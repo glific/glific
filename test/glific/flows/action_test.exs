@@ -3,6 +3,7 @@ defmodule Glific.Flows.ActionTest do
 
   alias Glific.{
     Contacts,
+    Partners,
     Seeds.SeedsDev,
     Settings
   }
@@ -133,6 +134,8 @@ defmodule Glific.Flows.ActionTest do
   end
 
   test "execute an action when type is send_msg", attrs do
+    Partners.organization(attrs.organization_id)
+
     [contact | _] =
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
@@ -248,6 +251,8 @@ defmodule Glific.Flows.ActionTest do
   end
 
   test "execute an action when type is enter_flow", attrs do
+    Partners.organization(attrs.organization_id)
+
     [contact | _] =
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
