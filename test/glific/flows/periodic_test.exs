@@ -38,7 +38,7 @@ defmodule Glific.Flows.PeriodicTest do
     filled_map = %{flows: %{filled: true}}
     assert Periodic.map_flow_ids(filled_map) == filled_map
 
-    filled_map = Periodic.map_flow_ids(%{})
+    filled_map = Periodic.map_flow_ids(%{organization_id: Fixtures.get_org_id()})
     assert filled_map.flows.filled == true
 
     # we know that outofoffice is a default seeded flow
@@ -62,7 +62,7 @@ defmodule Glific.Flows.PeriodicTest do
   end
 
   test "call the periodic flow function with non-existent flows" do
-    state = Periodic.map_flow_ids(%{})
+    state = Periodic.map_flow_ids(%{organization_id: Fixtures.get_org_id()})
 
     assert {state, false} ==
              Periodic.periodic_flow(state, "doesnotexist", nil, DateTime.utc_now())
