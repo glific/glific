@@ -139,7 +139,6 @@ defmodule Glific.PartnersTest do
 
   describe "organizations" do
     alias Glific.{
-      Caches,
       Contacts,
       Fixtures,
       Partners.Organization,
@@ -435,25 +434,18 @@ defmodule Glific.PartnersTest do
     end
 
     test "organization/1 should return cached data" do
-      organization = organization_fixture()
-      Partners.organization(organization.id)
+      organization_id = Fixtures.get_org_id()
+      organization = Partners.organization(organization_id)
 
-      assert {:ok, organization} = Caches.get("organization")
+      assert organization != nil
       assert organization.hours != nil
       assert organization.days != nil
     end
 
-    test "organization_id/1 by id should return cached organization's id" do
-      organization = organization_fixture()
-      Caches.set("organization", organization)
-      assert Partners.organization_id(organization.id) == organization.id
-    end
-
     test "organization_contact_id/1 by id should return cached organization's contact id" do
-      organization = organization_fixture()
-      Caches.set("organization", organization)
-      Partners.organization(organization.id)
-      assert Partners.organization_contact_id(organization.id) == organization.contact_id
+      organization_id = Fixtures.get_org_id()
+
+      assert Partners.organization_contact_id(organization_id) > 0
     end
 
     test "organization_language_id/1 by id should return cached organization's default langauage id" do
@@ -465,10 +457,8 @@ defmodule Glific.PartnersTest do
     end
 
     test "organization_timezone/1 by id should return cached organization's timezone" do
-      organization = organization_fixture(%{timezone: "Africa/Blantyre"})
-      Caches.set("organization", organization)
-      Partners.organization(organization.id)
-      assert Partners.organization_timezone(organization.id) == organization.timezone
+      organization_id = Fixtures.get_org_id()
+      assert Partners.organization_timezone(organization_id) != nil
     end
 
     test "organization_out_of_office_summary/1 by id should return cached data" do

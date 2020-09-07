@@ -10,6 +10,7 @@ defmodule Glific.Partners do
 
   alias Glific.{
     Caches,
+    Partners,
     Partners.Organization,
     Partners.Provider,
     Repo
@@ -308,10 +309,10 @@ defmodule Glific.Partners do
   @spec organization(non_neg_integer) :: Organization.t()
   def organization(organization_id) do
     case Caches.get("organization") do
-      {:ok, false} ->
+      {:ok, value} when value in [nil, false] ->
         organization =
           if is_nil(organization_id),
-            do: Organization |> Ecto.Query.first() |> Repo.one(),
+            do: Partners.get_organization!(1),
             else: get_organization!(organization_id)
 
         organization = set_out_of_office_values(organization)
