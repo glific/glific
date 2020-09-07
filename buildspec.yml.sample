@@ -1,0 +1,30 @@
+# Use this file in AWS code build for creating and pushing latest docker image to ECR repository.
+
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR.
+      - aws --version
+      - $(aws ecr get-login --no-include-email --region ap-south-1)
+      - REPOSITORY_URI= ECR-repo-url # For example: xxxxxxxxxxxx.dkr.ecr.ap-south-1.amazonaws.com/glific
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image... 
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Writing image definitions file...
+      # The following line of code is used to deploy new docker image to ECS Fargate.
+      - printf '[{"name":"glific-backend-docker-container-name","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+artifacts:
+  files: imagedefinitions.json # this image definition file will be used to create new task based on existing running task configurations and new code changes.
