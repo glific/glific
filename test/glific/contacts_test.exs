@@ -169,7 +169,8 @@ defmodule Glific.ContactsTest do
       assert contact.language_id == language.id
     end
 
-    test "create_contact/1 with invalid data returns error changeset", %{organization_id: _organization_id} = attrs do
+    test "create_contact/1 with invalid data returns error changeset",
+         %{organization_id: _organization_id} = attrs do
       attrs = Map.merge(attrs, @invalid_attrs)
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(attrs)
     end

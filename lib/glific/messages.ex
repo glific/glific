@@ -209,13 +209,16 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message(boolean(), map()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
-  defp create_and_send_message(true = _is_valid_contact, %{organization_id: organization_id} = attrs) do
+  defp create_and_send_message(
+         true = _is_valid_contact,
+         %{organization_id: organization_id} = attrs
+       ) do
     {:ok, message} =
       attrs
       |> Map.put_new(:type, :text)
       |> Map.merge(%{
         sender_id: Partners.organization_contact_id(organization_id),
-        flow: :outbound,
+        flow: :outbound
       })
       |> update_message_attrs()
       |> create_message()
@@ -243,6 +246,7 @@ defmodule Glific.Messages do
 
   defp update_message_attrs(attrs) do
     {:ok, msg_uuid} = Ecto.UUID.cast(:crypto.hash(:md5, attrs.body))
+
     attrs
     |> Map.merge(%{
       uuid: attrs[:uuid] || msg_uuid,

@@ -125,7 +125,11 @@ defmodule Glific.Contacts do
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(%{organization_id: organization_id} = attrs) do
     attrs =
-      Map.put(attrs, :language_id, attrs[:language_id] || Partners.organization_language_id(organization_id))
+      Map.put(
+        attrs,
+        :language_id,
+        attrs[:language_id] || Partners.organization_language_id(organization_id)
+      )
 
     %Contact{}
     |> Contact.changeset(attrs)
