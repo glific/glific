@@ -471,7 +471,7 @@ defmodule GlificWeb.Schema.SearchTest do
 
   test "conversation by ids", %{user: user} do
     # lets create a new contact with no message
-    Contacts.create_contact(%{name: "My conversation contact", phone: "+123456789"})
+    Contacts.create_contact(%{name: "My conversation contact", phone: "+123456789", organization_id: user.organization_id})
 
     contact_ids =
       from(c in Message, select: c.contact_id)

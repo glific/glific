@@ -291,12 +291,12 @@ defmodule Glific.Messages do
   end
 
   @spec create_and_send_session_template(SessionTemplate.t() | map(), map()) :: {:ok, Message.t()}
-  def create_and_send_session_template(session_template, %{organization_id: organization_id} = args) do
+  def create_and_send_session_template(session_template, args) do
     message_params = %{
       body: session_template.body,
       type: session_template.type,
       media_id: session_template.message_media_id,
-      sender_id: Partners.organization_contact_id(organization_id),
+      sender_id: Partners.organization_contact_id(session_template.organization_id),
       receiver_id: args[:receiver_id],
       send_at: args[:send_at],
       organization_id: session_template.organization_id

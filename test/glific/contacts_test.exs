@@ -169,8 +169,9 @@ defmodule Glific.ContactsTest do
       assert contact.language_id == language.id
     end
 
-    test "create_contact/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(@invalid_attrs)
+    test "create_contact/1 with invalid data returns error changeset", %{organization_id: _organization_id} = attrs do
+      attrs = Map.merge(attrs, @invalid_attrs)
+      assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(attrs)
     end
 
     test "update_contact/2 with valid data updates the contact",
@@ -270,7 +271,7 @@ defmodule Glific.ContactsTest do
       c0 = contact_fixture(Map.merge(attrs, @valid_attrs))
 
       # check if the defualt language is set
-      assert Partners.organization_language_id() == c0.language_id
+      assert Partners.organization_language_id(organization_id) == c0.language_id
 
       {:ok, contact} =
         Contacts.upsert(%{
@@ -286,7 +287,7 @@ defmodule Glific.ContactsTest do
          %{organization_id: organization_id} = attrs do
       c0 = contact_fixture(Map.merge(attrs, @valid_attrs))
 
-      org_language_id = Partners.organization_language_id()
+      org_language_id = Partners.organization_language_id(organization_id)
 
       language =
         Settings.list_languages()
