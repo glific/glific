@@ -109,10 +109,10 @@ defmodule Glific.Communications.Message do
   Callback when we receive a message from whats app
   """
   @spec receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
-  def receive_message(message_params, type \\ :text) do
+  def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
     {:ok, contact} =
       message_params.sender
-      |> Map.put(:organization_id, message_params.organization_id)
+      |> Map.put(:organization_id, organization_id)
       |> Map.put(:last_message_at, DateTime.utc_now())
       |> Contacts.upsert()
 
@@ -123,7 +123,7 @@ defmodule Glific.Communications.Message do
       |> Map.merge(%{
         type: type,
         sender_id: contact.id,
-        receiver_id: Partners.organization_contact_id(),
+        receiver_id: Partners.organization_contact_id(organization_id),
         flow: :inbound,
         provider_status: :delivered,
         status: :received,
