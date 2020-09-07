@@ -105,8 +105,10 @@ defmodule Glific.Flows.ContactAction do
 
   defp get_media_from_attachment(attachment, caption) do
     [type | _tail] = Map.keys(attachment)
-    url = attachment[type]
-          |> String.trim()
+
+    url =
+      attachment[type]
+      |> String.trim()
 
     type = String.to_existing_atom(type)
 
