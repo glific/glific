@@ -8,7 +8,6 @@ query flows($filter: FlowFilter, $opts: Opts) {
     id
     uuid
     name
-    shortcode
     versionNumber
     flowType
     keywords
@@ -41,7 +40,6 @@ query flows($filter: FlowFilter, $opts: Opts) {
           "मदद"
         ],
         "name": "Help Workflow",
-        "shortcode": "help",
         "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
         "versionNumber": "13.1.0"
       },
@@ -52,7 +50,6 @@ query flows($filter: FlowFilter, $opts: Opts) {
           "language"
         ],
         "name": "Language Workflow",
-        "shortcode": "language",
         "uuid": "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
         "versionNumber": "13.1.0"
       }
@@ -82,7 +79,6 @@ query flow($id: ID!) {
     flow {
       id
       name
-      shortcode
     }
   }
 }
@@ -100,8 +96,7 @@ query flow($id: ID!) {
     "flow": {
       "flow": {
         "id": "1",
-        "name": "Help Workflow",
-        "shortcode": "help"
+        "name": "Help Workflow"
       }
     }
   }
@@ -147,7 +142,6 @@ mutation ($input: FlowInput!) {
     flow {
       id
       name
-      shortcode
       keywords
     }
     errors {
@@ -163,8 +157,7 @@ mutation ($input: FlowInput!) {
       "tests",
       "testing"
     ],
-    "name": "test workflow",
-    "shortcode": "test_workflow"
+    "name": "test workflow"
   }
 }
 ```
@@ -182,8 +175,7 @@ mutation ($input: FlowInput!) {
           "tests",
           "testing"
         ],
-        "name": "test workflow",
-        "shortcode": "test_workflow"
+        "name": "test workflow"
       }
     }
   }
@@ -198,7 +190,7 @@ In case of errors, above functions return an error object like the below
     "createFlow": {
       "errors": [
         {
-          "key": "shortcode",
+          "key": "name",
           "message": "can't be blank"
         }
       ],
@@ -574,11 +566,6 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>shortcode</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
 <td colspan="2" valign="top"><strong>uuid</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
@@ -691,11 +678,6 @@ Type | Description
 <tbody>
 <tr>
 <td colspan="2" valign="top"><strong>name</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>

@@ -2,7 +2,7 @@ fragment FlowFields on FlowResult {
   flow {
     id
     name
-    shortcode
+    keywords
     flow_type
   }
 }

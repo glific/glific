@@ -21,14 +21,13 @@ defmodule Glific.Flows.Flow do
     Repo
   }
 
-  @required_fields [:name, :uuid, :shortcode, :keywords, :organization_id]
+  @required_fields [:name, :uuid, :keywords, :organization_id]
   @optional_fields [:flow_type, :version_number, :uuid_map, :nodes, :ignore_keywords]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
-          shortcode: String.t() | nil,
           uuid: Ecto.UUID.t() | nil,
           uuid_map: map() | nil,
           keywords: [String.t()] | nil,
@@ -47,7 +46,6 @@ defmodule Glific.Flows.Flow do
 
   schema "flows" do
     field :name, :string
-    field :shortcode, :string
 
     field :version_number, :string
     field :flow_type, FlowType
@@ -79,7 +77,6 @@ defmodule Glific.Flows.Flow do
       flow
       |> cast(attrs, @required_fields ++ @optional_fields)
       |> validate_required(@required_fields)
-      |> unique_constraint([:shortcode, :organization_id])
       |> unique_constraint([:name, :organization_id])
 
     validate_keywords(changeset, get_change(changeset, :keywords))
@@ -238,7 +235,6 @@ defmodule Glific.Flows.Flow do
         select: %Flow{
           id: f.id,
           uuid: f.uuid,
-          shortcode: f.shortcode,
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,
           organization_id: f.organization_id,
@@ -262,9 +258,6 @@ defmodule Glific.Flows.Flow do
 
   defp args_clause(query, %{uuid: uuid}),
     do: query |> where([f, _fr], f.uuid == ^uuid)
-
-  defp args_clause(query, %{shortcode: shortcode}),
-    do: query |> where([f, _fr], f.shortcode == ^shortcode)
 
   defp args_clause(query, %{keyword: keyword}),
     do: query |> where([f, _fr], ^keyword in f.keywords)
