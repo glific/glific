@@ -89,3 +89,9 @@ defenum(
   :contact_field_scope_enum,
   Glific.Enums.contact_field_scope_const()
 )
+
+defenum(
+  Glific.Enums.UserRoles,
+  :user_roles_enum,
+  Glific.Enums.user_roles_const()
+)
