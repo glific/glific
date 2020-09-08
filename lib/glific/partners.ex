@@ -10,7 +10,6 @@ defmodule Glific.Partners do
 
   alias Glific.{
     Caches,
-    Partners,
     Partners.Organization,
     Partners.Provider,
     Repo
@@ -304,11 +303,9 @@ defmodule Glific.Partners do
     case Caches.get(organization_id, "organization") do
       {:ok, value} when value in [nil, false] ->
         organization =
-          if is_nil(organization_id),
-            do: Partners.get_organization!(1),
-            else: get_organization!(organization_id)
+          get_organization!(organization_id)
+          |> set_out_of_office_values()
 
-        organization = set_out_of_office_values(organization)
         Caches.set(organization_id, "organization", organization)
         organization
 
@@ -316,13 +313,6 @@ defmodule Glific.Partners do
         organization
     end
   end
-
-  @doc """
-  Temorary hack to get the organization id while we get tests to pass
-  """
-  @spec organization_id(non_neg_integer) :: integer()
-  def organization_id(organization_id),
-    do: organization(organization_id).id
 
   @doc """
   This contact id is special since it is the sender for all outbound messages
