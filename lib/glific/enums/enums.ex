@@ -143,6 +143,4 @@ defmodule Glific.Enums do
 
   defmacro user_roles_const,
     do: Macro.expand(@user_roles_const, __CALLER__)
-
-
 end

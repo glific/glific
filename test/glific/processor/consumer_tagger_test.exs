@@ -4,7 +4,7 @@ defmodule TestProducer do
   alias Glific.{
     Fixtures,
     Processor.ConsumerTagger,
-    Repo,
+    Repo
   }
 
   @checks %{

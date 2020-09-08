@@ -60,7 +60,7 @@ defmodule Glific.Enums.Constants do
       # Contact fields scope types
       @contact_field_scope_const [:contact, :globals]
 
-      #User roles
+      # User roles
       @user_roles_const [:none, :staff, :manager, :admin]
     end
   end

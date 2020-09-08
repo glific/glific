@@ -102,7 +102,6 @@ defmodule GlificWeb.Schema.GenericTypes do
 
   defp encode_uuid4(value), do: value
 
-
   # We will move this logic somewhere else in the future because it's not generic
   scalar :role_label, name: "RoleLabel" do
     description("""
@@ -113,28 +112,25 @@ defmodule GlificWeb.Schema.GenericTypes do
     parse(&parse_label/1)
   end
 
-
-  @spec parse_label(Absinthe.Blueprint.Input.String.t) :: {:ok, String.t} | :error
-  @spec parse_label(Absinthe.Blueprint.Input.Null.t) :: {:ok, nil}
+  @spec parse_label(Absinthe.Blueprint.Input.String.t()) :: {:ok, String.t()} | :error
+  @spec parse_label(Absinthe.Blueprint.Input.Null.t()) :: {:ok, nil}
   defp parse_label(%Absinthe.Blueprint.Input.String{value: label}) do
-    cond do
-      is_binary(label) ->
-          label = label
-          |> String.downcase()
-          |> String.to_existing_atom()
-          {:ok, label}
-
-      true ->  {:ok, label}
+    if is_binary(label) do
+        label = String.downcase(label)
+            |> String.to_existing_atom()
+        {:ok, label}
+    else
+      {:ok, label}
     end
   end
 
   defp parse_label(%Absinthe.Blueprint.Input.Null{}) do
     {:ok, nil}
   end
+
   defp parse_label(_) do
     :error
   end
-
 
   defp encode_label(label) when is_atom(label) do
     label
@@ -148,5 +144,4 @@ defmodule GlificWeb.Schema.GenericTypes do
   end
 
   defp encode_label(label), do: label
-
 end
