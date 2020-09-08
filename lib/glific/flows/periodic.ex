@@ -42,9 +42,11 @@ defmodule Glific.Flows.Periodic do
   defp map_flow_ids(%{flows: %{filled: true}} = state), do: state
 
   defp map_flow_ids(state) do
-    shortcode_id_map = Repo.label_id_map(Flow, @periodic_flows, :shortcode)
+    organization_id = state.organization_id
 
-    organization = Partners.organization(state.organization_id)
+    shortcode_id_map = Repo.label_id_map(Flow, @periodic_flows, organization_id, :shortcode)
+
+    organization = Partners.organization(organization_id)
 
     shortcode_id_map =
       if organization.out_of_office.enabled,
