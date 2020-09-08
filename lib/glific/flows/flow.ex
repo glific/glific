@@ -210,7 +210,7 @@ defmodule Glific.Flows.Flow do
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def start_sub_flow(context, uuid) do
     # we might want to put the current one under some sort of pause status
-    flow = get_flow(uuid)
+    flow = get_flow(context.flow.organization_id, uuid)
 
     FlowContext.init_context(flow, context.contact, context.id, context.delay)
   end
@@ -218,9 +218,9 @@ defmodule Glific.Flows.Flow do
   @doc """
   Return a flow for a specific uuid. Cache is not present in cache
   """
-  @spec get_flow(Ecto.UUID.t()) :: map()
-  def get_flow(uuid) do
-    {:ok, flow} = Flows.get_cached_flow(uuid, %{uuid: uuid})
+  @spec get_flow(non_neg_integer, Ecto.UUID.t()) :: map()
+  def get_flow(organization_id, uuid) do
+    {:ok, flow} = Flows.get_cached_flow(organization_id, uuid, %{uuid: uuid})
 
     flow
   end
@@ -267,6 +267,9 @@ defmodule Glific.Flows.Flow do
 
   defp args_clause(query, %{keyword: keyword}),
     do: query |> where([f, _fr], ^keyword in f.keywords)
+
+  defp args_clause(query, %{organization_id: organization_id}),
+    do: query |> where([f, _fr], f.organization_id == ^organization_id)
 
   defp args_clause(query, _args), do: query
 end

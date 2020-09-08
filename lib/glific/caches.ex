@@ -26,7 +26,6 @@ defmodule Glific.Caches do
   @doc false
   @spec set_to_cache(non_neg_integer, list(), any) :: {:ok, any()}
   defp set_to_cache(organization_id, keys, value) do
-    # IO.inspect {"!!!!!!!", keys, value.id}
     keys = Enum.reduce(keys, [], fn key, acc -> [{{organization_id, key}, value} | acc] end)
     {:ok, true} = Cachex.put_many(@cache_bucket, keys)
     {:ok, value}
@@ -38,8 +37,6 @@ defmodule Glific.Caches do
   @impl Glific.Caches.CacheBehaviour
   @spec get(non_neg_integer, String.t() | atom()) :: {:ok, any()} | {:ok, false}
   def get(organization_id, key) do
-    # Cachex.clear(@cache_bucket)
-    # IO.inspect({"@@@@@@@@", key, Cachex.size(@cache_bucket)})
     case Cachex.exists?(@cache_bucket, {organization_id, key}) do
       {:ok, true} -> Cachex.get(@cache_bucket, {organization_id, key})
       _ -> {:ok, false}
