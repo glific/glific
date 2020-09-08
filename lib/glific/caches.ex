@@ -11,12 +11,14 @@ defmodule Glific.Caches do
   """
   @impl Glific.Caches.CacheBehaviour
   @spec set(non_neg_integer, list(), (any() -> any()), map()) :: {:ok, any()}
-  def set(organization_id, keys, process_fn, args), do: set_to_cache(organization_id, keys, process_fn.(args))
+  def set(organization_id, keys, process_fn, args),
+    do: set_to_cache(organization_id, keys, process_fn.(args))
 
   @doc false
   @impl Glific.Caches.CacheBehaviour
   @spec set(non_neg_integer, list(), any()) :: {:ok, any()}
-  def set(organization_id, keys, value) when is_list(keys), do: set_to_cache(organization_id, keys, value)
+  def set(organization_id, keys, value) when is_list(keys),
+    do: set_to_cache(organization_id, keys, value)
 
   @doc false
   @impl Glific.Caches.CacheBehaviour
