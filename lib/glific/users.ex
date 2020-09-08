@@ -109,10 +109,4 @@ defmodule Glific.Users do
     |> User.update_fields_changeset(attrs)
     |> Repo.update()
   end
-
-  @spec format_roles(list()) :: list()
-  defp format_roles([]), do: []
-  defp format_roles(nil), do: []
-  defp format_roles([role | _] = roles) when is_binary(role), do: Enum.map(roles, &String.downcase/1)
-  defp format_roles(roles), do: roles
 end
