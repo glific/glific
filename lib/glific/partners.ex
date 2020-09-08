@@ -235,9 +235,7 @@ defmodule Glific.Partners do
   @spec create_organization(map()) :: {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def create_organization(attrs \\ %{}) do
     # first delete the cached organization
-    # at a later stage also include organization id since we store
-    # organizations keyed on that
-    Caches.remove(["organization"])
+    Caches.remove([{organization.id, "organization"}])
 
     %Organization{}
     |> Organization.changeset(attrs)
@@ -260,9 +258,7 @@ defmodule Glific.Partners do
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def update_organization(%Organization{} = organization, attrs) do
     # first delete the cached organization
-    # at a later stage also include organization id since we store
-    # organizations keyed on that
-    Caches.remove(["organization"])
+    Caches.remove([{organization.id, "organization"}])
 
     organization
     |> Organization.changeset(attrs)
@@ -308,7 +304,7 @@ defmodule Glific.Partners do
   """
   @spec organization(non_neg_integer) :: Organization.t()
   def organization(organization_id) do
-    case Caches.get("organization") do
+    case Caches.get({organization_id, "organization"}) do
       {:ok, value} when value in [nil, false] ->
         organization =
           if is_nil(organization_id),
@@ -316,7 +312,7 @@ defmodule Glific.Partners do
             else: get_organization!(organization_id)
 
         organization = set_out_of_office_values(organization)
-        Caches.set("organization", organization)
+        Caches.set({organization_id, "organization"}, organization)
         organization
 
       {:ok, organization} ->
