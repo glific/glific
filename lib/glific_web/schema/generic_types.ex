@@ -116,9 +116,11 @@ defmodule GlificWeb.Schema.GenericTypes do
   @spec parse_label(Absinthe.Blueprint.Input.Null.t()) :: {:ok, nil}
   defp parse_label(%Absinthe.Blueprint.Input.String{value: label}) do
     if is_binary(label) do
-        label = String.downcase(label)
-            |> String.to_existing_atom()
-        {:ok, label}
+      label =
+        String.downcase(label)
+        |> String.to_existing_atom()
+
+      {:ok, label}
     else
       {:ok, label}
     end
