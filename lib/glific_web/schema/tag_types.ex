@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.TagTypes do
 
   alias Glific.Repo
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :tag_result do
     field :tag, :tag
@@ -79,6 +80,7 @@ defmodule GlificWeb.Schema.TagTypes do
     @desc "get the details of one tag"
     field :tag, :tag_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.tag/3)
     end
 
@@ -86,12 +88,14 @@ defmodule GlificWeb.Schema.TagTypes do
     field :tags, list_of(:tag) do
       arg(:filter, :tag_filter)
       arg(:opts, :opts)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.tags/3)
     end
 
     @desc "Get a count of all tags filtered by various criteria"
     field :count_tags, :integer do
       arg(:filter, :tag_filter)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.count_tags/3)
     end
   end
@@ -99,6 +103,7 @@ defmodule GlificWeb.Schema.TagTypes do
   object :tag_mutations do
     field :create_tag, :tag_result do
       arg(:input, non_null(:tag_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.create_tag/3)
     end
 
