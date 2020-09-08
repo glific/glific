@@ -196,7 +196,8 @@ defmodule Glific.FLowsTest do
       assert_raise ArgumentError, fn -> Flows.check_required_fields(definition, [:name]) end
     end
 
-    test "get_cached_flow/2 save the flow to cache returns a touple and flow", %{organization_id: organization_id} = attrs do
+    test "get_cached_flow/2 save the flow to cache returns a touple and flow",
+         %{organization_id: organization_id} = attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
       {:ok, loaded_flow} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
       assert loaded_flow.nodes != nil
@@ -213,12 +214,16 @@ defmodule Glific.FLowsTest do
       {:ok, loaded_flow} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
       Flows.update_flow(flow, %{:shortcode => "flow_new"})
       Flows.update_cached_flow(flow)
-      {:ok, loaded_flow_new} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
+
+      {:ok, loaded_flow_new} =
+        Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
+
       assert loaded_flow.shortcode == flow.shortcode
       assert loaded_flow_new.shortcode != loaded_flow.shortcode
     end
 
-    test "publish_flow/1 updates the latest flow revision status", %{organization_id: organization_id} = _attrs do
+    test "publish_flow/1 updates the latest flow revision status",
+         %{organization_id: organization_id} = _attrs do
       flow = flow_fixture() |> Repo.preload([:revisions])
 
       # should set status of recent flow revision as "done"
