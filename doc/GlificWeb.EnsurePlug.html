@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.22.2">
+    <meta name="project" content="Glific v0.3.1">
+    <title>GlificWeb.EnsurePlug — Glific v0.3.1</title>
+    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
+    <script src="dist/sidebar_items-70cc72f525.js"></script>
+      <script src="docs_config.js"></script>
+    <script async src="dist/app-0103364119015b97e56c.js"></script>
+  </head>
+  <body data-type="modules">
+    <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle">
+  <span class="icon-menu" title="Collapse/expand sidebar"></span>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button">
+      <span class="icon-search" aria-hidden="true"></span>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button">
+      <span class="icon-cross" title="Cancel search"></span>
+    </button>
+    <label class="search-label">
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectDetails">
+      <a href="https://glific.io" class="sidebar-projectName">
+Glific      </a>
+      <h2 class="sidebar-projectVersion">
+        v0.3.1
+      </h2>
+    </div>
+  </div>
+
+  <ul class="sidebar-listNav">
+    <li><a id="extras-list" href="#full-list">Pages</a></li>
+
+      <li><a id="modules-list" href="#full-list">Modules</a></li>
+
+  </ul>
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+      <h1>
+        <small class="app-vsn">Glific v0.3.1</small>
+GlificWeb.EnsurePlug          <a href="https://github.com/glific/glific/blob/master/lib/glific_web/plugs/ensure_plug.ex#L2" title="View Source" class="view-source" rel="help">
+            <span class="icon-code" aria-hidden="true"></span>
+            <span class="sr-only">View Source</span>
+          </a>
+      </h1>
+
+
+        <section id="moduledoc">
+<p>This is a basic plug that ensure the organization is loaded.</p><p>To plug it on your router, you can use:</p><pre><code class="nohighlight makeup elixir"><span class="n">plug</span><span class="w"> </span><span class="nc">GlificWeb.EnsurePlug</span><span class="p">,</span><span class="w">
+  </span><span class="ss">callback</span><span class="p">:</span><span class="w"> </span><span class="o">&amp;</span><span class="nc">OrganizationHelper</span><span class="o">.</span><span class="n">callback</span><span class="o">/</span><span class="mi">2</span><span class="w">
+  </span><span class="ss">failure_callback</span><span class="p">:</span><span class="w"> </span><span class="o">&amp;</span><span class="nc">OrganizationHelper</span><span class="o">.</span><span class="n">failure_callback</span><span class="o">/</span><span class="mi">2</span></code></pre><p>See <a href="GlificWeb.EnsurePlugConfig.html"><code class="inline">GlificWeb.EnsurePlugConfig</code></a> to check all the allowed <code class="inline">config</code> flags.</p>        </section>
+
+
+      <footer class="footer">
+        <p>
+          <span class="line">
+            Built using
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+          </span>
+          <span class="line">
+            designed by
+            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
+          </span>
+        </p>
+        <p>
+          <button class="line footer-button display-shortcuts-help">
+            Display keyboard shortcuts
+          </button>
+          <button class="line footer-button night-mode-toggle">
+            Toggle night mode
+          </button>
+          <button class="line footer-button display-quick-switch">
+            Go to a HexDocs package
+          </button>
+          <button class="line footer-button tooltips-toggle">
+            <span class="tooltips-option-disable">Disable tooltips</span>
+            <span class="tooltips-option-enable">Enable tooltips</span>
+          </button>
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+  </body>
+</html>
