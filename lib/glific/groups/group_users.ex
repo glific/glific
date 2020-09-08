@@ -15,12 +15,13 @@ defmodule Glific.Groups.GroupUsers do
   @primary_key false
 
   @type t() :: %__MODULE__{
-          group_users: [UserGroup.t()]
+          group_users: [UserGroup.t()],
+          number_deleted: non_neg_integer
         }
 
   embedded_schema do
     # the number of users we deleted
-    field :number_deleted, :integer
+    field :number_deleted, :integer, default: 0
     embeds_many(:group_users, UserGroup)
   end
 

@@ -160,22 +160,14 @@ defmodule Glific.Tags do
   Filter all the status tag and returns as a map
   """
   @spec status_map(map()) :: %{String.t() => integer}
-  def status_map(%{organization_id: _organization_id} = attrs),
-    do: tags_map(attrs, ["language", "newcontact", "notreplied", "unread"])
-
-  @doc """
-  Generic function to build a tag map for easy queries. Suspect we'll need it
-  for all objects soon, and will promote this to Repo
-  """
-  @spec tags_map(map(), [String.t()]) :: %{String.t() => integer}
-  def tags_map(%{organization_id: organization_id}, tags) do
-    Tag
-    |> where([t], t.shortcode in ^tags)
-    |> where([t], t.organization_id == ^organization_id)
-    |> select([:id, :shortcode])
-    |> Repo.all()
-    |> Enum.reduce(%{}, fn tag, acc -> Map.put(acc, tag.shortcode, tag.id) end)
-  end
+  def status_map(%{organization_id: organization_id}),
+    do:
+      Repo.label_id_map(
+        Tag,
+        ["language", "newcontact", "notreplied", "unread"],
+        organization_id,
+        :shortcode
+      )
 
   @doc """
   Given a tag id or a list of tag ids, retrieve all the ancestors for the list_tags
@@ -284,18 +276,6 @@ defmodule Glific.Tags do
   We will generalize this function and move it to Repo.ex when we get a better
   handle on how to do so :)
   """
-  @spec delete_message_tag_by_ids(integer, integer) :: {integer(), nil | [term()]}
-  def delete_message_tag_by_ids(message_id, tag_id) when is_integer(tag_id) do
-    query =
-      MessageTag
-      |> where([m], m.message_id == ^message_id and m.tag_id == ^tag_id)
-
-    Repo.all(query)
-    |> publish_delete_message
-
-    Repo.delete_all(query)
-  end
-
   @spec delete_message_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
   def delete_message_tag_by_ids(message_id, tag_ids) when is_list(tag_ids) do
     query =

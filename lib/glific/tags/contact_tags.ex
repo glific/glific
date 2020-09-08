@@ -15,12 +15,13 @@ defmodule Glific.Tags.ContactTags do
   @primary_key false
 
   @type t() :: %__MODULE__{
-          contact_tags: [ContactTag.t()]
+          contact_tags: [ContactTag.t()],
+          number_deleted: non_neg_integer
         }
 
   embedded_schema do
     # the number of tags we deleted
-    field :number_deleted, :integer
+    field :number_deleted, :integer, default: 0
     embeds_many(:contact_tags, ContactTag)
   end
 

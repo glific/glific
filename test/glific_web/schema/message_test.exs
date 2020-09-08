@@ -250,7 +250,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "type" => "TEXT",
-            "sender_id" => Partners.organization_contact_id()
+            "sender_id" => Partners.organization_contact_id(user.organization_id)
           },
           "contact_ids" => [contact1.id, contact2.id]
         }
@@ -299,7 +299,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => "Message body",
             "flow" => "OUTBOUND",
             "receiverId" => contact.id,
-            "senderId" => Partners.organization_contact_id(),
+            "senderId" => Partners.organization_contact_id(user.organization_id),
             "type" => "TEXT"
           }
         }
@@ -322,7 +322,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => "A message for @contact.name",
             "flow" => "OUTBOUND",
             "receiverId" => contact.id,
-            "senderId" => Partners.organization_contact_id(),
+            "senderId" => Partners.organization_contact_id(user.organization_id),
             "type" => "TEXT"
           }
         }
@@ -345,7 +345,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "body" => message_body,
             "flow" => "OUTBOUND",
             "receiverId" => contact.id,
-            "senderId" => Partners.organization_contact_id(),
+            "senderId" => Partners.organization_contact_id(user.organization_id),
             "type" => "TEXT"
           }
         }

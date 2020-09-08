@@ -220,24 +220,6 @@ defmodule GlificWeb.Schema.UserTest do
     assert user_result["roles"] == roles
     assert user_result["groups"] == [%{"id" => "#{group.id}"}]
 
-    # update with incorrect role should give error
-    roles = ["admin", "incorrect_role"]
-
-    result =
-      auth_query_gql_by(:update, user_auth,
-        variables: %{
-          "id" => user.id,
-          "input" => %{
-            "name" => name,
-            "roles" => roles
-          }
-        }
-      )
-
-    assert {:ok, query_data} = result
-    message = get_in(query_data, [:data, "updateUser", "errors", Access.at(0), "message"])
-    assert message == "has an invalid entry"
-
     # update user groups
     group_2 = Fixtures.group_fixture(%{label: "new group"})
     roles = ["admin"]

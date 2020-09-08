@@ -503,7 +503,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :password_hash, :string
 
       add :name, :string
-      add :roles, {:array, :string}, default: ["none"]
+      add :roles, {:array, :user_roles_enum}, default: ["none"]
 
       add :contact_id, references(:contacts, on_delete: :nilify_all), null: false
 

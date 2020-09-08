@@ -5,6 +5,7 @@ defmodule Glific.Users.User do
 
   alias Glific.{
     Contacts.Contact,
+    Enums.UserRoles,
     Groups.Group,
     Partners.Organization
   }
@@ -30,7 +31,7 @@ defmodule Glific.Users.User do
 
   schema "users" do
     field :name, :string
-    field :roles, {:array, :string}, default: ["none"]
+    field :roles, {:array, UserRoles}, default: [:none]
 
     belongs_to :contact, Contact
     belongs_to :organization, Organization
@@ -57,7 +58,6 @@ defmodule Glific.Users.User do
     user_or_changeset
     |> Changeset.cast(attrs, @required_fields ++ @optional_fields)
     |> Changeset.validate_required(@required_fields)
-    |> Changeset.validate_subset(:roles, @user_roles)
     |> glific_phone_field_changeset(attrs, @pow_config)
     |> current_password_changeset(attrs, @pow_config)
     |> password_changeset(attrs, @pow_config)
@@ -86,7 +86,6 @@ defmodule Glific.Users.User do
     user_or_changeset
     |> Changeset.cast(params, [:name, :roles, :password])
     |> Changeset.validate_required([:name, :roles])
-    |> Changeset.validate_subset(:roles, @user_roles)
     |> password_changeset(params, @pow_config)
     |> Changeset.unique_constraint(:contact_id)
   end

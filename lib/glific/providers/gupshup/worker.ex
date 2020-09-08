@@ -8,8 +8,10 @@ defmodule Glific.Providers.Gupshup.Worker do
     max_attempts: 1,
     priority: 0
 
-  alias Glific.Communications, as: Communications
-  alias Glific.Providers.Gupshup.ApiClient
+  alias Glific.{
+    Communications,
+    Providers.Gupshup.ApiClient
+  }
 
   @rate_name Application.fetch_env!(:glific, :provider_id)
   @rate_limit Application.fetch_env!(:glific, :provider_limit)

@@ -2,6 +2,7 @@ defmodule Glific.FlagsTest do
   use Glific.DataCase, async: true
 
   alias Glific.{
+    Fixtures,
     Flags,
     Partners
   }
@@ -76,7 +77,7 @@ defmodule Glific.FlagsTest do
   }
 
   test "check out of office should activate out_of_office_active flag" do
-    organization = Partners.organization()
+    organization = Partners.organization(Fixtures.get_org_id())
 
     # when office hours includes whole day of seven days
     {:ok, _} = Partners.update_organization(organization, @organization_settings)
@@ -85,7 +86,7 @@ defmodule Glific.FlagsTest do
   end
 
   test "check out of office should de-activate out_of_office_active flag" do
-    organization = Partners.organization()
+    organization = Partners.organization(Fixtures.get_org_id())
 
     # when office hours is zero
     organization_settings =
@@ -98,7 +99,7 @@ defmodule Glific.FlagsTest do
   end
 
   test "update out of office should deactivate out of office if disabled" do
-    organization = Partners.organization()
+    organization = Partners.organization(Fixtures.get_org_id())
 
     # when office hours is zero
     new_organization_settings =

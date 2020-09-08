@@ -94,6 +94,9 @@ defmodule Glific.Enums do
   iex> Glific.Enums.ContactFieldScope.__enum_map__()
   Glific.Enums.contact_field_scope_const()
 
+  iex> Glific.Enums.UserRoles.__enum_map__()
+  Glific.Enums.user_roles_const()
+
   """
 
   defmacro api_status_const,
@@ -137,4 +140,7 @@ defmodule Glific.Enums do
 
   defmacro contact_field_scope_const,
     do: Macro.expand(@contact_field_scope_const, __CALLER__)
+
+  defmacro user_roles_const,
+    do: Macro.expand(@user_roles_const, __CALLER__)
 end
