@@ -357,4 +357,26 @@ defmodule Glific.Flows do
 
     {:ok, flow}
   end
+
+  @doc """
+  Create a map of keywords that map to flow ids for each
+  active organization
+  """
+  @spec flow_keywords_map(non_neg_integer | nil) :: map()
+  def flow_keywords_map(organization_id \\ nil) do
+    flow_keywords_map =
+      Flow
+      |> select([:keywords, :id])
+      |> Repo.all()
+      |> Enum.reduce(%{}, fn flow, acc ->
+        Enum.reduce(flow.keywords, acc, fn keyword, acc ->
+          Map.put(acc, keyword, flow.id)
+        end)
+      end)
+
+    # we need to fix this and retrieve for all active organization ids
+    if is_nil(organization_id),
+      do: flow_keywords_map,
+      else: %{organization_id: flow_keywords_map}
+  end
 end

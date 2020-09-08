@@ -97,9 +97,10 @@ defmodule Glific.Processor.ConsumerFlow do
 
     # if we are in a flow and the flow is setto ignore keywords
     # then send control to the flow directly
+    # context is not nil
     with false <- is_nil(context),
          {:ok, flow} <-
-           Flows.get_cached_flow(context.flow.organization_id, context.flow_uuid, %{
+           Flows.get_cached_flow(message.organization_id, context.flow_uuid, %{
              uuid: context.flow_uuid
            }),
          true <- flow.ignore_keywords do
@@ -136,7 +137,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
   def check_contexts(context, message, _body, state) do
     {:ok, flow} =
-      Flows.get_cached_flow(context.flow.organization_id, context.flow_uuid, %{
+      Flows.get_cached_flow(message.organization_id, context.flow_uuid, %{
         uuid: context.flow_uuid
       })
 

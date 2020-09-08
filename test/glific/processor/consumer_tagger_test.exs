@@ -56,8 +56,8 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     Processor.ConsumerTagger,
     Repo,
     Seeds.SeedsDev,
-    Tags.Tag,
-    Tags.MessageTag
+    Tags.MessageTag,
+    Tags.Tag
   }
 
   setup do

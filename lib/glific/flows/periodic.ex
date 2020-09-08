@@ -15,11 +15,9 @@ defmodule Glific.Flows.Periodic do
 
   alias Glific.{
     Flows,
-    Flows.Flow,
     Flows.FlowContext,
     Messages.Message,
-    Partners,
-    Repo
+    Partners
   }
 
   @periodic_flows [
@@ -44,7 +42,7 @@ defmodule Glific.Flows.Periodic do
   defp map_flow_ids(state) do
     organization_id = state.organization_id
 
-    shortcode_id_map = Repo.label_id_map(Flow, @periodic_flows, organization_id, :keywords)
+    shortcode_id_map = Flows.flow_keywords_map()
 
     organization = Partners.organization(organization_id)
 
