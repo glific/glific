@@ -111,6 +111,9 @@ defmodule Glific.Flows do
   """
   @spec update_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def update_flow(%Flow{} = flow, attrs) do
+    # first delete the cached flow
+    Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
+
     flow
     |> Flow.changeset(attrs)
     |> Repo.update()
@@ -271,8 +274,8 @@ defmodule Glific.Flows do
   @spec update_cached_flow(Flow.t()) :: {atom, any}
   def update_cached_flow(flow) do
     flow = Flow.get_loaded_flow(%{uuid: flow.uuid})
-    Caches.remove(flow.organization_id, [flow.uuid, flow.shortcode])
-    Caches.set(flow.organization_id, [flow.uuid, flow.shortcode], flow)
+    Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
+    Caches.set(flow.organization_id, [flow.uuid | flow.keywords], flow)
   end
 
   @doc """
