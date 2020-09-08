@@ -104,7 +104,7 @@ defmodule GlificWeb.Schema.GenericTypes do
 
 
   # We will move this logic somewhere else in the future because it's not generic
-  scalar :role_lable, name: "RoleLable" do
+  scalar :role_label, name: "RoleLabel" do
     description("""
     Convert a string/atom to lable (camel case)
     """)
