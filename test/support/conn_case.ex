@@ -54,7 +54,8 @@ defmodule GlificWeb.ConnCase do
       Sandbox.mode(Repo, {:shared, self()})
     end
 
-    organization_id = Fixtures.get_org_id()
+    # organization_id = Fixtures.get_org_id()
+    organization_id = 1
 
     {
       :ok,

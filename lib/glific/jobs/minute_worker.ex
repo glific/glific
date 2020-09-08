@@ -3,7 +3,8 @@ defmodule Glific.Jobs.MinuteWorker do
   Processes the tasks that need to be handled on a minute schedule
   """
 
-  use Oban.Worker, queue: :crontab
+  use Oban.Worker,
+    queue: :crontab
 
   alias Glific.{
     Contacts,
@@ -18,14 +19,14 @@ defmodule Glific.Jobs.MinuteWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
-  def perform(%Oban.Job{args: %{job: :fun_with_flags}} = _job) do
+  def perform(%Oban.Job{args: %{"job" => "fun_with_flags"}} = _job) do
     Flags.out_of_office_update()
     :ok
   end
 
-  def perform(%Oban.Job{args: %{job: :contact_status} = args} = _job) do
+  def perform(%Oban.Job{args: %{"job" => "contact_status"} = args} = _job) do
     Partners.perform_all(&Contacts.update_contact_status/2, args)
   end
 
-  def perform(_job), do: :ok
+  def perform(_job), do: {:error, "This job is not handled"}
 end

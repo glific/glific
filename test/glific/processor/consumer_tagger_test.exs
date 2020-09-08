@@ -5,7 +5,6 @@ defmodule TestProducer do
     Fixtures,
     Processor.ConsumerTagger,
     Repo,
-    Tags
   }
 
   @checks %{
@@ -57,7 +56,6 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     Processor.ConsumerTagger,
     Repo,
     Seeds.SeedsDev,
-    Tags,
     Tags.MessageTag
   }
 
@@ -84,7 +82,14 @@ defmodule Glific.Processor.ConsumerTaggerTest do
 
     # check the message tags
     tags = ["language", "unread", "greeting", "thankyou", "numeric", "goodbye"]
-    tag_ids = Tags.tags_map(%{organization_id: organization_id}, tags)
+
+    tag_ids =
+      Repo.label_id_map(
+        Tag,
+        tags,
+        organization_id,
+        :shortcode
+      )
 
     Enum.map(
       TestProducer.get_checks(),
