@@ -97,8 +97,12 @@ defmodule Glific.Processor.ConsumerFlow do
 
     # if we are in a flow and the flow is setto ignore keywords
     # then send control to the flow directly
+    # context is not nil
     with false <- is_nil(context),
-         {:ok, flow} <- Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid}),
+         {:ok, flow} <-
+           Flows.get_cached_flow(message.organization_id, context.flow_uuid, %{
+             uuid: context.flow_uuid
+           }),
          true <- flow.ignore_keywords do
       check_contexts(context, message, body, state)
     else
@@ -116,7 +120,7 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec check_flows(atom() | Message.t(), String.t(), map()) :: {map(), Message.t()}
   def check_flows(message, body, state) do
     message = Repo.preload(message, :contact)
-    {:ok, flow} = Flows.get_cached_flow(body, %{keyword: body})
+    {:ok, flow} = Flows.get_cached_flow(message.organization_id, body, %{keyword: body})
     FlowContext.init_context(flow, message.contact)
     {state, message}
   end
@@ -132,7 +136,10 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   def check_contexts(context, message, _body, state) do
-    {:ok, flow} = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
+    {:ok, flow} =
+      Flows.get_cached_flow(message.organization_id, context.flow_uuid, %{
+        uuid: context.flow_uuid
+      })
 
     context
     |> FlowContext.load_context(flow)
@@ -164,7 +171,10 @@ defmodule Glific.Processor.ConsumerFlow do
     # grabbing this context
     {:ok, context} = FlowContext.update_flow_context(context, %{wakeup_at: nil})
 
-    {:ok, flow} = Flows.get_cached_flow(context.flow_uuid, %{uuid: context.flow_uuid})
+    {:ok, flow} =
+      Flows.get_cached_flow(context.flow.organization_id, context.flow_uuid, %{
+        uuid: context.flow_uuid
+      })
 
     {:ok, context} =
       context

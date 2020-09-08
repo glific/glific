@@ -13,7 +13,6 @@ defmodule Glific.FLowsTest do
   describe "flows" do
     @valid_attrs %{
       name: "Test Flow",
-      shortcode: "test_short_code",
       keywords: ["test_keyword"],
       flow_type: :message,
       version_number: "13.1.0"
@@ -21,7 +20,6 @@ defmodule Glific.FLowsTest do
 
     @valid_more_attrs %{
       name: "Test Flow More",
-      shortcode: "test_short_code_2",
       flow_type: :message,
       keywords: ["test_keyword_2"],
       version_number: "13.1.0"
@@ -29,14 +27,13 @@ defmodule Glific.FLowsTest do
 
     @invalid_attrs %{
       name: "Test Flow",
-      shortcode: "",
       flow_type: :message_2,
       version_number: "13.1.0"
     }
 
     @update_attrs %{
       name: "Update flow",
-      shortcode: "update shortcode"
+      keywords: ["update_keyword"]
     }
 
     def flow_fixture(attrs \\ %{}),
@@ -89,7 +86,7 @@ defmodule Glific.FLowsTest do
 
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
-      assert flow.shortcode == @valid_attrs.shortcode
+      assert flow.keywords == @valid_attrs.keywords
     end
 
     test "create_flow/1 with invalid data returns error changeset" do
@@ -196,28 +193,34 @@ defmodule Glific.FLowsTest do
       assert_raise ArgumentError, fn -> Flows.check_required_fields(definition, [:name]) end
     end
 
-    test "get_cached_flow/2 save the flow to cache returns a touple and flow", attrs do
+    test "get_cached_flow/2 save the flow to cache returns a touple and flow",
+         %{organization_id: organization_id} = attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
-      {:ok, loaded_flow} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
+      {:ok, loaded_flow} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
       assert loaded_flow.nodes != nil
 
       # Next time Flow will be picked from cache
       Flows.delete_flow(flow)
-      {:ok, loaded_flow_2} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
+      {:ok, loaded_flow_2} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
       assert loaded_flow_2 == loaded_flow
     end
 
-    test "update_cached_flow/1 will remove the keys and update the flows", attrs do
-      [flow | _tail] = Flows.list_flows(%{filter: attrs})
-      {:ok, loaded_flow} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
-      Flows.update_flow(flow, %{:shortcode => "flow_new"})
-      Flows.update_cached_flow(flow.uuid)
-      {:ok, loaded_flow_new} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
-      assert loaded_flow.shortcode == flow.shortcode
-      assert loaded_flow_new.shortcode != loaded_flow.shortcode
+    test "update_cached_flow/1 will remove the keys and update the flows" do
+      organization_id = Fixtures.get_org_id()
+      [flow | _tail] = Flows.list_flows(%{filter: %{organization_id: organization_id}})
+      {:ok, loaded_flow} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
+      Flows.update_flow(flow, %{:keywords => ["flow_new"]})
+      Flows.update_cached_flow(flow)
+
+      {:ok, loaded_flow_new} =
+        Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
+
+      assert loaded_flow.keywords == flow.keywords
+      assert loaded_flow_new.keywords != loaded_flow.keywords
     end
 
-    test "publish_flow/1 updates the latest flow revision status" do
+    test "publish_flow/1 updates the latest flow revision status",
+         %{organization_id: organization_id} = _attrs do
       flow = flow_fixture() |> Repo.preload([:revisions])
 
       # should set status of recent flow revision as "done"
@@ -231,7 +234,7 @@ defmodule Glific.FLowsTest do
 
       [revision] = flow.revisions
       # should update the cached flow definition
-      {:ok, loaded_flow} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
+      {:ok, loaded_flow} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
       assert loaded_flow.definition == revision.definition
 
       # If a flow revision is already published
@@ -248,7 +251,7 @@ defmodule Glific.FLowsTest do
       assert revision.status == "done"
 
       # should update the cached flow definition
-      {:ok, loaded_flow} = Flows.get_cached_flow(flow.uuid, %{uuid: flow.uuid})
+      {:ok, loaded_flow} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
       assert loaded_flow.definition == new_definition
     end
 

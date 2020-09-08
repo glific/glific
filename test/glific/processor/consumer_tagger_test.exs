@@ -56,7 +56,8 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     Processor.ConsumerTagger,
     Repo,
     Seeds.SeedsDev,
-    Tags.MessageTag
+    Tags.MessageTag,
+    Tags.Tag
   }
 
   setup do
@@ -68,7 +69,6 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     :ok
   end
 
-  @tag :pending
   test "should behave like consumer",
        %{organization_id: organization_id} do
     {:ok, producer} = TestProducer.start_link(1)

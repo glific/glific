@@ -433,32 +433,31 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   def flows(organization) do
     data = [
-      {"Help Workflow", "help", ["help", "मदद"], "3fa22108-f464-41e5-81d9-d8a298854429", true,
+      {"Help Workflow", ["help", "मदद"], "3fa22108-f464-41e5-81d9-d8a298854429", true,
        "help.json"},
-      {"Language Workflow", "language", ["language", "भाषा"],
-       "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf", true, "language.json"},
-      {"Preferences Workflow", "preference", ["preference"],
-       "63397051-789d-418d-9388-2ef7eb1268bb", false, "preference.json"},
-      {"New Contact Workflow", "newcontact", ["newcontact"],
-       "6fe8fda9-2df6-4694-9fd6-45b9e724f545", false, "new_contact.json"},
-      {"Registration Workflow", "registration", ["registration"],
-       "f4f38e00-3a50-4892-99ce-a281fe24d040", false, "registration.json"},
-      {"Out of Office Workflow", "outofoffice", ["outofoffice"],
-       "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7", false, "out_of_office.json"},
-      {"SoL Activity", "solactivity", ["solactivity"], "b050c652-65b5-4ccf-b62b-1e8b3f328676",
-       false, "sol_activity.json"},
-      {"sol_feedback", "solfeedback", ["solfeedback"], "6c21af89-d7de-49ac-9848-c9febbf737a5",
-       false, "sol_feedback.json"}
+      {"Language Workflow", ["language", "भाषा"], "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf", true,
+       "language.json"},
+      {"Preferences Workflow", ["preference"], "63397051-789d-418d-9388-2ef7eb1268bb", false,
+       "preference.json"},
+      {"New Contact Workflow", ["newcontact"], "6fe8fda9-2df6-4694-9fd6-45b9e724f545", false,
+       "new_contact.json"},
+      {"Registration Workflow", ["registration"], "f4f38e00-3a50-4892-99ce-a281fe24d040", false,
+       "registration.json"},
+      {"Out of Office Workflow", ["outofoffice"], "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7", false,
+       "out_of_office.json"},
+      {"SoL Activity", ["solactivity"], "b050c652-65b5-4ccf-b62b-1e8b3f328676", false,
+       "sol_activity.json"},
+      {"sol_feedback", ["solfeedback"], "6c21af89-d7de-49ac-9848-c9febbf737a5", false,
+       "sol_feedback.json"}
     ]
 
     Enum.map(data, &flow(&1, organization))
   end
 
-  defp flow({name, shortcode, keywords, uuid, ignore_keywords, file}, organization) do
+  defp flow({name, keywords, uuid, ignore_keywords, file}, organization) do
     f =
       Repo.insert!(%Flow{
         name: name,
-        shortcode: shortcode,
         keywords: keywords,
         ignore_keywords: ignore_keywords,
         version_number: "13.1.0",

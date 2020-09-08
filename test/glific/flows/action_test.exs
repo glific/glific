@@ -257,7 +257,7 @@ defmodule Glific.Flows.ActionTest do
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
-    context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
+    context = %FlowContext{contact_id: contact.id, flow_id: 1} |> Repo.preload([:contact, :flow])
 
     # using uuid of language flow
     action = %Action{

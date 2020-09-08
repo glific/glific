@@ -111,6 +111,9 @@ defmodule Glific.Flows do
   """
   @spec update_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def update_flow(%Flow{} = flow, attrs) do
+    # first delete the cached flow
+    Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
+
     flow
     |> Flow.changeset(attrs)
     |> Repo.update()
@@ -256,11 +259,11 @@ defmodule Glific.Flows do
   A helper function to interact with the Caching API and get the cached flow.
   It will also set the loaded flow to cache in case it does not exists.
   """
-  @spec get_cached_flow(any, any) :: {atom, any}
-  def get_cached_flow(key, args) do
-    with {:ok, false} <- Caches.get(key) do
-      flow = Flow.get_loaded_flow(args)
-      Caches.set([flow.uuid | flow.keywords], flow)
+  @spec get_cached_flow(non_neg_integer, any, any) :: {atom, any}
+  def get_cached_flow(organization_id, key, args) do
+    with {:ok, false} <- Caches.get(organization_id, key) do
+      flow = Flow.get_loaded_flow(args |> Map.merge(%{organization_id: organization_id}))
+      Caches.set(organization_id, [flow.uuid | flow.keywords], flow)
     end
   end
 
@@ -269,10 +272,10 @@ defmodule Glific.Flows do
   via the UI
   """
   @spec update_cached_flow(Flow.t()) :: {atom, any}
-  def update_cached_flow(flow_uuid) do
-    flow = Flow.get_loaded_flow(%{uuid: flow_uuid})
-    Caches.remove([flow.uuid, flow.shortcode])
-    Caches.set([flow.uuid, flow.shortcode], flow)
+  def update_cached_flow(flow) do
+    flow = Flow.get_loaded_flow(%{uuid: flow.uuid})
+    Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
+    Caches.set(flow.organization_id, [flow.uuid | flow.keywords], flow)
   end
 
   @doc """
@@ -317,7 +320,7 @@ defmodule Glific.Flows do
         |> FlowRevision.changeset(%{status: "done"})
         |> Repo.update()
 
-      update_cached_flow(flow.uuid)
+      update_cached_flow(flow)
     end
 
     {:ok, flow}
@@ -328,7 +331,7 @@ defmodule Glific.Flows do
   """
   @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
-    {:ok, flow} = get_cached_flow(flow.id, %{id: flow.id})
+    {:ok, flow} = get_cached_flow(contact.organization_id, flow.id, %{id: flow.id})
 
     if Contacts.can_send_message_to?(contact),
       do: process_contact_flow([contact], flow),
@@ -340,7 +343,7 @@ defmodule Glific.Flows do
   """
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
   def start_group_flow(%Flow{} = flow, %Group{} = group) do
-    {:ok, flow} = get_cached_flow(flow.id, %{id: flow.id})
+    {:ok, flow} = get_cached_flow(group.organization_id, flow.id, %{id: flow.id})
     group = group |> Repo.preload([:contacts])
     process_contact_flow(group.contacts, flow)
   end
@@ -353,5 +356,27 @@ defmodule Glific.Flows do
       end)
 
     {:ok, flow}
+  end
+
+  @doc """
+  Create a map of keywords that map to flow ids for each
+  active organization
+  """
+  @spec flow_keywords_map(non_neg_integer | nil) :: map()
+  def flow_keywords_map(organization_id \\ nil) do
+    flow_keywords_map =
+      Flow
+      |> select([:keywords, :id])
+      |> Repo.all()
+      |> Enum.reduce(%{}, fn flow, acc ->
+        Enum.reduce(flow.keywords, acc, fn keyword, acc ->
+          Map.put(acc, keyword, flow.id)
+        end)
+      end)
+
+    # we need to fix this and retrieve for all active organization ids
+    if is_nil(organization_id),
+      do: flow_keywords_map,
+      else: %{organization_id: flow_keywords_map}
   end
 end

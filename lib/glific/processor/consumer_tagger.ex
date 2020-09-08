@@ -149,14 +149,18 @@ defmodule Glific.Processor.ConsumerTagger do
     # Since conatct and language are the required filed, we can skip some pattern checks.
     message = Repo.preload(message, contact: [:language])
 
-    {:ok, response} =
+    # only do the query if we have a valid credentials file for dialogflow
+    if FunWithFlags.enabled?(:dialogflow) do
+      {:ok, response} =
       Sessions.detect_intent(
         message.body,
         state.dialogflow_session_id,
         message.contact.language.locale
       )
 
-    Helper.add_dialogflow_tag(message, response["queryResult"])
+      Helper.add_dialogflow_tag(message, response["queryResult"])
+    end
+
     {message, state}
   end
 

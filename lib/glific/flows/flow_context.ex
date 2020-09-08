@@ -127,7 +127,7 @@ defmodule Glific.Flows.FlowContext do
       parent = active_context(context.contact_id, context.parent_id)
 
       parent
-      |> load_context(Flow.get_flow(parent.flow_uuid))
+      |> load_context(Flow.get_flow(context.flow.organization_id, parent.flow_uuid))
       |> step_forward("completed")
     end
   end
