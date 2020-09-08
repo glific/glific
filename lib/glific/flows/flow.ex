@@ -241,6 +241,7 @@ defmodule Glific.Flows.Flow do
           shortcode: f.shortcode,
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,
+          organization_id: f.organization_id,
           definition: fr.definition
         }
 
