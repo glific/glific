@@ -21,14 +21,13 @@ defmodule Glific.Flows.Flow do
     Repo
   }
 
-  @required_fields [:name, :uuid, :shortcode, :keywords, :organization_id]
+  @required_fields [:name, :uuid, :keywords, :organization_id]
   @optional_fields [:flow_type, :version_number, :uuid_map, :nodes, :ignore_keywords]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
-          shortcode: String.t() | nil,
           uuid: Ecto.UUID.t() | nil,
           uuid_map: map() | nil,
           keywords: [String.t()] | nil,
@@ -47,7 +46,6 @@ defmodule Glific.Flows.Flow do
 
   schema "flows" do
     field :name, :string
-    field :shortcode, :string
 
     field :version_number, :string
     field :flow_type, FlowType
@@ -79,7 +77,6 @@ defmodule Glific.Flows.Flow do
       flow
       |> cast(attrs, @required_fields ++ @optional_fields)
       |> validate_required(@required_fields)
-      |> unique_constraint([:shortcode, :organization_id])
       |> unique_constraint([:name, :organization_id])
 
     validate_keywords(changeset, get_change(changeset, :keywords))
@@ -210,7 +207,7 @@ defmodule Glific.Flows.Flow do
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def start_sub_flow(context, uuid) do
     # we might want to put the current one under some sort of pause status
-    flow = get_flow(uuid)
+    flow = get_flow(context.flow.organization_id, uuid)
 
     FlowContext.init_context(flow, context.contact, context.id, context.delay)
   end
@@ -218,9 +215,9 @@ defmodule Glific.Flows.Flow do
   @doc """
   Return a flow for a specific uuid. Cache is not present in cache
   """
-  @spec get_flow(Ecto.UUID.t()) :: map()
-  def get_flow(uuid) do
-    {:ok, flow} = Flows.get_cached_flow(uuid, %{uuid: uuid})
+  @spec get_flow(non_neg_integer, Ecto.UUID.t()) :: map()
+  def get_flow(organization_id, uuid) do
+    {:ok, flow} = Flows.get_cached_flow(organization_id, uuid, %{uuid: uuid})
 
     flow
   end
@@ -238,9 +235,9 @@ defmodule Glific.Flows.Flow do
         select: %Flow{
           id: f.id,
           uuid: f.uuid,
-          shortcode: f.shortcode,
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,
+          organization_id: f.organization_id,
           definition: fr.definition
         }
 
@@ -262,11 +259,11 @@ defmodule Glific.Flows.Flow do
   defp args_clause(query, %{uuid: uuid}),
     do: query |> where([f, _fr], f.uuid == ^uuid)
 
-  defp args_clause(query, %{shortcode: shortcode}),
-    do: query |> where([f, _fr], f.shortcode == ^shortcode)
-
   defp args_clause(query, %{keyword: keyword}),
     do: query |> where([f, _fr], ^keyword in f.keywords)
+
+  defp args_clause(query, %{organization_id: organization_id}),
+    do: query |> where([f, _fr], f.organization_id == ^organization_id)
 
   defp args_clause(query, _args), do: query
 end

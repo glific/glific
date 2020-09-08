@@ -3,13 +3,13 @@ defmodule Glific.Caches.CacheBehaviour do
   The cache API behaviour
   """
 
-  @callback set(list(), (any() -> any()), map()) :: {:ok, any()}
+  @callback set(non_neg_integer, list(), (any() -> any()), map()) :: {:ok, any()}
 
-  @callback set(list(), any()) :: {:ok, any()}
+  @callback set(non_neg_integer, list(), any()) :: {:ok, any()}
 
-  @callback set(String.t() | atom(), any()) :: {:ok, any()}
+  @callback set(non_neg_integer, String.t() | atom(), any()) :: {:ok, any()}
 
-  @callback get(String.t() | atom()) :: {:ok, any()} | {:ok, false}
+  @callback get(non_neg_integer, String.t() | atom()) :: {:ok, any()} | {:ok, false}
 
-  @callback remove(list()) :: any()
+  @callback remove(non_neg_integer, list()) :: any()
 end

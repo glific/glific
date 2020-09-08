@@ -442,7 +442,6 @@ if Code.ensure_loaded?(Faker) do
       test_flow =
         Repo.insert!(%Flow{
           name: "Test Workflow",
-          shortcode: "test",
           keywords: ["test"],
           version_number: "13.1.0",
           uuid: "defda715-c520-499d-851e-4428be87def6",

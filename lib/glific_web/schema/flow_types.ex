@@ -26,7 +26,6 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :id, :id
     field :uuid, :uuid4
     field :name, :string
-    field :shortcode, :string
     field :keywords, list_of(:string)
     field :ignore_keywords, :boolean
     field :version_number, :string
@@ -35,7 +34,6 @@ defmodule GlificWeb.Schema.FlowTypes do
 
   input_object :flow_input do
     field :name, :string
-    field :shortcode, :string
     field :keywords, list_of(:string)
     field :ignore_keywords, :boolean
   end

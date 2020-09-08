@@ -90,9 +90,11 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.node == node
   end
 
-  test "init_context/3 will initaite a flow context", attrs do
+  test "init_context/3 will initaite a flow context",
+       %{organization_id: organization_id} = attrs do
     [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
-    flow = Flow.get_loaded_flow(%{shortcode: flow.shortcode})
+    [keyword | _] = flow.keywords
+    flow = Flow.get_loaded_flow(%{keyword: keyword, organization_id: organization_id})
     contact = Fixtures.contact_fixture()
     {:ok, flow_context, _} = FlowContext.init_context(flow, contact)
     assert flow_context.id != nil
@@ -103,9 +105,10 @@ defmodule Glific.Flows.FlowContextTest do
     assert {:error, _message} = FlowContext.execute(flow_context, [])
   end
 
-  test "execute an context should return ok tuple", attrs do
+  test "execute an context should return ok tuple", %{organization_id: organization_id} = attrs do
     [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
-    flow = Flow.get_loaded_flow(%{shortcode: flow.shortcode})
+    [keyword | _] = flow.keywords
+    flow = Flow.get_loaded_flow(%{keyword: keyword, organization_id: organization_id})
     contact = Fixtures.contact_fixture()
     {:ok, flow_context, _} = FlowContext.init_context(flow, contact)
     assert {:ok, _, _} = FlowContext.execute(flow_context, ["Test"])
@@ -117,16 +120,18 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.id == flow_context_2.id
   end
 
-  test "load_context/2 will load all the nodes and actions in memory for the context" do
-    flow = Flow.get_loaded_flow(%{keyword: "help"})
+  test "load_context/2 will load all the nodes and actions in memory for the context",
+       %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(%{keyword: "help", organization_id: organization_id})
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
     flow_context = FlowContext.load_context(flow_context, flow)
     assert flow_context.uuid_map == flow.uuid_map
   end
 
-  test "step_forward/2 will set the context to next node " do
-    flow = Flow.get_loaded_flow(%{keyword: "help"})
+  test "step_forward/2 will set the context to next node ",
+       %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(%{keyword: "help", organization_id: organization_id})
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
     flow_context = FlowContext.load_context(flow_context, flow)

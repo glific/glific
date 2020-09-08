@@ -65,13 +65,12 @@ defmodule GlificWeb.Schema.FlowTest do
 
   test "create a flow and test possible scenarios and errors", %{user: user} do
     name = "Flow Test Name"
-    shortcode = "test shortcode"
     keywords = ["test_keyword", "test_keyword_2"]
 
     result =
       auth_query_gql_by(:create, user,
         variables: %{
-          "input" => %{"name" => name, "shortcode" => shortcode, "keywords" => keywords}
+          "input" => %{"name" => name, "keywords" => keywords}
         }
       )
 
@@ -81,7 +80,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert flow_name == name
 
     # create message without required atributes
-    result = auth_query_gql_by(:create, user, variables: %{"input" => %{"name" => name}})
+    result = auth_query_gql_by(:create, user, variables: %{"input" => %{}})
 
     assert {:ok, query_data} = result
 
@@ -94,7 +93,6 @@ defmodule GlificWeb.Schema.FlowTest do
         variables: %{
           "input" => %{
             "name" => "name_2",
-            "shortcode" => "shortcode_2",
             "keywords" => ["test_keyword"]
           }
         }
@@ -113,13 +111,13 @@ defmodule GlificWeb.Schema.FlowTest do
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
     name = "Flow Test Name"
-    shortcode = "Test shortcode"
+    keywords = ["test_keyword"]
 
     result =
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => flow.id,
-          "input" => %{"name" => name, "shortcode" => shortcode}
+          "input" => %{"name" => name, "keywords" => keywords}
         }
       )
 
