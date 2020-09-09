@@ -87,7 +87,7 @@ defmodule GlificWeb.Schema.SearchTest do
     assert message == "Resource not found"
   end
 
-  test "save a search and test possible scenarios and errors", %{staff: user} do
+  test "save a search and test possible scenarios and errors", %{manager: user} do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -120,7 +120,7 @@ defmodule GlificWeb.Schema.SearchTest do
     assert message == "has already been taken"
   end
 
-  test "update a saved search and test possible scenarios and errors", %{staff: user} do
+  test "update a saved search and test possible scenarios and errors", %{manager: user} do
     [saved_search, saved_search2 | _tail] = get_saved_search_list(user.organization_id)
 
     result =
@@ -147,7 +147,7 @@ defmodule GlificWeb.Schema.SearchTest do
     assert message == "has already been taken"
   end
 
-  test "delete a saved search", %{staff: user} do
+  test "delete a saved search", %{manager: user} do
     [saved_search | _tail] = get_saved_search_list(user.organization_id)
 
     result = auth_query_gql_by(:delete, user, variables: %{"id" => saved_search.id})

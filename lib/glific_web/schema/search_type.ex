@@ -140,20 +140,20 @@ defmodule GlificWeb.Schema.SearchTypes do
   object :search_mutations do
     field :create_saved_search, :saved_search_result do
       arg(:input, non_null(:saved_search_input))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Searches.create_saved_search/3)
     end
 
     field :update_saved_search, :saved_search_result do
       arg(:id, non_null(:id))
       arg(:input, :saved_search_input)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Searches.update_saved_search/3)
     end
 
     field :delete_saved_search, :saved_search_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Searches.delete_saved_search/3)
     end
   end
