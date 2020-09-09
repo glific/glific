@@ -32,11 +32,15 @@ defmodule GlificWeb.Schema.MessageMediaTest do
   end
 
   test "messages media field obeys limit and offset", %{user: user} do
-    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "messagesMedia"])) == 1
 
-    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 3, "offset" => 1}})
+
     assert {:ok, query_data} = result
 
     messages_media = get_in(query_data, [:data, "messagesMedia"])

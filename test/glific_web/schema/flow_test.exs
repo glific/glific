@@ -167,7 +167,9 @@ defmodule GlificWeb.Schema.FlowTest do
     [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
 
     result =
-      auth_query_gql_by(:contact_flow, user, variables: %{"flowId" => flow.id, "contactId" => contact.id})
+      auth_query_gql_by(:contact_flow, user,
+        variables: %{"flowId" => flow.id, "contactId" => contact.id}
+      )
 
     assert {:ok, query_data} = result
 
@@ -183,7 +185,11 @@ defmodule GlificWeb.Schema.FlowTest do
 
     group = Fixtures.group_fixture()
 
-    result = auth_query_gql_by(:group_flow, user, variables: %{"flowId" => flow.id, "groupId" => group.id})
+    result =
+      auth_query_gql_by(:group_flow, user,
+        variables: %{"flowId" => flow.id, "groupId" => group.id}
+      )
+
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "startGroupFlow", "success"]) == true
