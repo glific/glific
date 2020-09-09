@@ -42,6 +42,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert res == "Glific"
   end
 
+  @tag :pending
   test "count returns the number of organizations", %{user: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countOrganizations"]) == 1
