@@ -219,10 +219,10 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, query_data} = result
 
     # search excludes the org contact id since that is the sender of all messages
-    # we need to excluse two contacts, one is the glific admin and the other is the test user and the contact
+    # we need to excluse four contacts, one is the glific admin and the others are the test users: admin, manager, staff contacts
     # we created to emulate the user
     assert length(get_in(query_data, [:data, "search"])) ==
-             get_contacts_count(user.organization_id) - 2
+             get_contacts_count(user.organization_id) - 4
   end
 
   test "save search will save the arguments", %{user: user} do

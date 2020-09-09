@@ -33,20 +33,20 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
     @desc "get the details of one message media"
     field :message_media, :message_media_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.message_media/3)
     end
 
     @desc "Get a list of all message_media"
     field :messages_media, list_of(:message_media) do
       arg(:opts, :opts)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.messages_media/3)
     end
 
     @desc "Get a count of all message media"
     field :count_messages_media, :integer do
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.count_messages_media/3)
     end
   end
@@ -54,20 +54,20 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
   object :message_media_mutations do
     field :create_message_media, :message_media_result do
       arg(:input, non_null(:message_media_input))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.create_message_media/3)
     end
 
     field :update_message_media, :message_media_result do
       arg(:id, non_null(:id))
       arg(:input, :message_media_input)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.update_message_media/3)
     end
 
     field :delete_message_media, :message_media_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.delete_message_media/3)
     end
   end

@@ -61,7 +61,9 @@ defmodule GlificWeb.ConnCase do
       :ok,
       conn: Phoenix.ConnTest.build_conn() |> Plug.Conn.assign(:organization_id, organization_id),
       organization_id: organization_id,
-      user: Fixtures.user_fixture()
+      user: Fixtures.user_fixture(),
+      manager: Fixtures.user_fixture(%{roles: ["manager"]}),
+      staff: Fixtures.user_fixture(%{roles: ["staff"]})
     }
   end
 end
