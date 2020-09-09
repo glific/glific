@@ -9,8 +9,8 @@ defmodule GlificWeb.Schema.LanguageTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/languages/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/languages/delete.gql")
 
-  test "languages field returns list of languages" do
-    result = query_gql_by(:list)
+  test "languages field returns list of languages", %{user: user} do
+    result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
     label_0 = get_in(query_data, [:data, "languages", Access.at(0), "label"])
@@ -20,31 +20,31 @@ defmodule GlificWeb.Schema.LanguageTest do
              (label_1 == "English (United States)" and label_0 == "Hindi")
   end
 
-  test "count returns the number of languages" do
-    {:ok, query_data} = query_gql_by(:count)
+  test "count returns the number of languages", %{user: user} do
+    {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countLanguages"]) == 3
   end
 
-  test "language id returns one language or nil" do
+  test "language id returns one language or nil", %{user: user} do
     label = "English (United States)"
     {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
 
-    result = query_gql_by(:by_id, variables: %{"id" => lang.id})
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => lang.id})
     assert {:ok, query_data} = result
 
     language = get_in(query_data, [:data, "language", "language", "label"])
     assert language == label
 
-    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "language", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
   end
 
-  test "create a language and test possible scenarios and errors" do
+  test "create a language and test possible scenarios and errors", %{user: user} do
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{"label" => "Klingon", "labelLocale" => "Klingon", "locale" => "kl_KL"}
         }
@@ -55,14 +55,14 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert language == "Klingon"
 
     _ =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{"label" => "Klingon", "labelLocale" => "Klingon", "locale" => "kl_KL"}
         }
       )
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{"label" => "Klingon", "labelLocale" => "Klingon", "locale" => "kl_KL"}
         }
@@ -74,12 +74,12 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert message == "has already been taken"
   end
 
-  test "update a language and test possible scenarios and errors" do
+  test "update a language and test possible scenarios and errors", %{user: user} do
     label = "English (United States)"
     {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => lang.id,
           "input" => %{"label" => "Klingon", "labelLocale" => "Klinfon", "locale" => "kl_KL"}
@@ -92,7 +92,7 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert language == "Klingon"
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => lang.id,
           "input" => %{"label" => "Hindi", "labelLocale" => "Hindi", "locale" => "hi"}
@@ -105,10 +105,10 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert message == "has already been taken"
   end
 
-  test "delete a language" do
+  test "delete a language", %{user: user} do
     # first create a language
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{"label" => "Klingon", "labelLocale" => "Klingon", "locale" => "kl_KL"}
         }
@@ -120,11 +120,11 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert language == "Klingon"
 
     # now lets delete it
-    result = query_gql_by(:delete, variables: %{"id" => language_id})
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => language_id})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "deleteLanguage", "errors"]) == nil
 
-    result = query_gql_by(:delete, variables: %{"id" => 123_456_789})
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "deleteLanguage", "errors", Access.at(0), "message"])
