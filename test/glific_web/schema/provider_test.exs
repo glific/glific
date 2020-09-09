@@ -20,8 +20,8 @@ defmodule GlificWeb.Schema.ProviderTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/providers/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/providers/delete.gql")
 
-  test "providers field returns list of providers" do
-    result = query_gql_by(:list)
+  test "providers field returns list of providers", %{user: user} do
+    result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
     providers = get_in(query_data, [:data, "providers"])
@@ -35,47 +35,47 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert res == "Default Provider"
   end
 
-  test "count returns the number of providers" do
-    {:ok, query_data} = query_gql_by(:count)
+  test "count returns the number of providers", %{user: user} do
+    {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countProviders"]) == 3
 
     {:ok, query_data} =
-      query_gql_by(:count,
+      auth_query_gql_by(:count, user,
         variables: %{"filter" => %{"name" => "This provider should never ever exist"}}
       )
 
     assert get_in(query_data, [:data, "countProviders"]) == 0
 
     {:ok, query_data} =
-      query_gql_by(:count, variables: %{"filter" => %{"name" => "Default Provider"}})
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Default Provider"}})
 
     assert get_in(query_data, [:data, "countProviders"]) == 1
   end
 
-  test "provider id returns one provider or nil" do
+  test "provider id returns one provider or nil", %{user: user} do
     name = "Default Provider"
     {:ok, provider} = Repo.fetch_by(Provider, %{name: name})
 
-    result = query_gql_by(:by_id, variables: %{"id" => provider.id})
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => provider.id})
     assert {:ok, query_data} = result
 
     provider = get_in(query_data, [:data, "provider", "provider", "name"])
     assert provider == name
 
-    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "provider", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
   end
 
-  test "create a provider and test possible scenarios and errors" do
+  test "create a provider and test possible scenarios and errors", %{user: user} do
     name = "Provider Test Name"
     url = "Test url"
     api_end_point = "Test end point"
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{"input" => %{"name" => name, "url" => url, "api_end_point" => api_end_point}}
       )
 
@@ -87,12 +87,12 @@ defmodule GlificWeb.Schema.ProviderTest do
 
     # try creating the same provider twice
     _ =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{"input" => %{"name" => name, "url" => url, "api_end_point" => api_end_point}}
       )
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{"input" => %{"name" => name, "url" => url, "api_end_point" => api_end_point}}
       )
 
@@ -102,7 +102,7 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert message == "has already been taken"
   end
 
-  test "update a provider and test possible scenarios and errors" do
+  test "update a provider and test possible scenarios and errors", %{user: user} do
     {:ok, provider} = Repo.fetch_by(Provider, %{name: "Default Provider"})
 
     name = "Provider Test Name"
@@ -110,7 +110,7 @@ defmodule GlificWeb.Schema.ProviderTest do
     api_end_point = "Test end point"
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => provider.id,
           "input" => %{"name" => name, "url" => url, "api_end_point" => api_end_point}
@@ -123,7 +123,7 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert new_name == name
 
     # create a temp provider with a new name
-    query_gql_by(:create,
+    auth_query_gql_by(:create, user,
       variables: %{
         "input" => %{"name" => "another provider", "url" => url, "api_end_point" => api_end_point}
       }
@@ -131,7 +131,7 @@ defmodule GlificWeb.Schema.ProviderTest do
 
     # ensure we cannot update an existing provider with the same name
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => provider.id,
           "input" => %{
@@ -147,14 +147,14 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert message == "has already been taken"
   end
 
-  test "delete a provider" do
+  test "delete a provider", %{user: user} do
     {:ok, provider} = Repo.fetch_by(Provider, %{name: "Default Provider"})
 
-    result = query_gql_by(:delete, variables: %{"id" => provider.id})
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => provider.id})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "deleteProvider", "errors"]) == nil
 
-    result = query_gql_by(:delete, variables: %{"id" => 123_456_789})
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "deleteProvider", "errors", Access.at(0), "message"])

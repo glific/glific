@@ -119,12 +119,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :organizations, list_of(:organization) do
       arg(:filter, :organization_filter)
       arg(:opts, :opts)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.organizations/3)
     end
 
     @desc "Get a count of all organizations filtered by various criteria"
     field :count_organizations, :integer do
       arg(:filter, :organization_filter)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.count_organizations/3)
     end
 
@@ -140,6 +142,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   object :organization_mutations do
     field :create_organization, :organization_result do
       arg(:input, non_null(:organization_input))
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.create_organization/3)
     end
 
@@ -152,6 +155,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :delete_organization, :organization_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.delete_organization/3)
     end
   end

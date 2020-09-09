@@ -5,6 +5,7 @@ defmodule GlificWeb.Schema.ProviderTypes do
   use Absinthe.Schema.Notation
 
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :provider_result do
     field :provider, :provider
@@ -37,6 +38,7 @@ defmodule GlificWeb.Schema.ProviderTypes do
     @desc "get the details of one provider"
     field :provider, :provider_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.provider/3)
     end
 
@@ -44,12 +46,14 @@ defmodule GlificWeb.Schema.ProviderTypes do
     field :providers, list_of(:provider) do
       arg(:filter, :provider_filter)
       arg(:opts, :opts)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.providers/3)
     end
 
     @desc "Get a count of all providers filtered by various criteria"
     field :count_providers, :integer do
       arg(:filter, :provider_filter)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.count_providers/3)
     end
   end
@@ -57,17 +61,20 @@ defmodule GlificWeb.Schema.ProviderTypes do
   object :provider_mutations do
     field :create_provider, :provider_result do
       arg(:input, non_null(:provider_input))
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.create_provider/3)
     end
 
     field :update_provider, :provider_result do
       arg(:id, non_null(:id))
       arg(:input, :provider_input)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.update_provider/3)
     end
 
     field :delete_provider, :provider_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.delete_provider/3)
     end
   end
