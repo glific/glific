@@ -47,13 +47,13 @@ defmodule GlificWeb.Schema.TemplateTagTypes do
   object :template_tag_mutations do
     field :create_template_tag, :template_tag_result do
       arg(:input, non_null(:template_tag_input))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Tags.create_template_tag/3)
     end
 
     field :update_template_tags, :template_tags do
       arg(:input, non_null(:template_tags_input))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Tags.update_template_tags/3)
     end
   end
