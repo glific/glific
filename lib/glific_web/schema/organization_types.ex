@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   alias Glific.Repo
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :organization_result do
     field :organization, :organization
@@ -110,6 +111,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     @desc "get the details of one organization"
     field :organization, :organization_result do
       arg(:id, :id)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.organization/3)
     end
 
@@ -127,6 +129,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     end
 
     field :timezones, list_of(:string) do
+      middleware(Authorize, :admin)
       resolve(fn _, _, _ ->
         {:ok, Tzdata.zone_list()}
       end)
@@ -142,6 +145,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :update_organization, :organization_result do
       arg(:id, non_null(:id))
       arg(:input, :organization_input)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.update_organization/3)
     end
 

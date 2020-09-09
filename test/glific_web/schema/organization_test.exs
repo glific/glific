@@ -14,6 +14,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
   setup do
     provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(provider)
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_users()
     :ok
   end
 
@@ -56,17 +58,17 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert get_in(query_data, [:data, "countOrganizations"]) == 1
   end
 
-  test "organization id returns one organization or nil" do
+  test "organization id returns one organization or nil", %{user: user} do
     name = "Glific"
     {:ok, organization} = Repo.fetch_by(Organization, %{name: name})
 
-    result = query_gql_by(:by_id, variables: %{"id" => organization.id})
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
 
     organization = get_in(query_data, [:data, "organization", "organization", "name"])
     assert organization == name
 
-    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "organization", "errors", Access.at(0), "message"])
@@ -153,7 +155,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "has already been taken"
   end
 
-  test "update an organization and test possible scenarios and errors" do
+  test "update an organization and test possible scenarios and errors", %{user: user} do
     organization = Fixtures.organization_fixture()
 
     name = "Organization Test Name"
@@ -170,7 +172,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => organization.id,
           "input" => %{
@@ -194,7 +196,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     # Incorrect timezone should give error
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => organization.id,
           "input" => %{
@@ -209,7 +211,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "is invalid"
 
     # create a temp organization with a new name
-    query_gql_by(:create,
+    auth_query_gql_by(:create, user,
       variables: %{
         "input" => %{
           "name" => name,
@@ -225,7 +227,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     # ensure we cannot update an existing organization with the same shortcode, email or provider_phone
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => organization.id,
           "input" => %{
@@ -246,11 +248,11 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "has already been taken"
   end
 
-  test "update an organization with organization settings" do
+  test "update an organization with organization settings", %{user: user} do
     {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => organization.id,
           "input" => %{

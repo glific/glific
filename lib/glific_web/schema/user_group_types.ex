@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.UserGroupTypes do
 
   alias Glific.Repo
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :user_group_result do
     field :user_group, :user_group

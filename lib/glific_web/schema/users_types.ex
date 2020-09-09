@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.UserTypes do
   alias Glific.Repo
   alias Glific.Users.User
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :user_result do
     field :user, :user
@@ -58,6 +59,8 @@ defmodule GlificWeb.Schema.UserTypes do
   object :user_queries do
     @desc "get list of roles"
     field :roles, list_of(:role_label) do
+      middleware(Authorize, :manager)
+
       resolve(fn _, _, _ ->
         {:ok, User.get_roles_list()}
       end)
@@ -66,6 +69,7 @@ defmodule GlificWeb.Schema.UserTypes do
     @desc "get the details of one user"
     field :user, :user_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Users.user/3)
     end
 
@@ -73,17 +77,20 @@ defmodule GlificWeb.Schema.UserTypes do
     field :users, list_of(:user) do
       arg(:filter, :user_filter)
       arg(:opts, :opts)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Users.users/3)
     end
 
     @desc "Get a count of all users filtered by various criteria"
     field :count_users, :integer do
       arg(:filter, :user_filter)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Users.count_users/3)
     end
 
     @desc "Get the details of current user"
     field :current_user, :user_result do
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Users.current_user/3)
     end
   end
@@ -91,17 +98,20 @@ defmodule GlificWeb.Schema.UserTypes do
   object :user_mutations do
     field :update_current_user, :user_result do
       arg(:input, non_null(:current_user_input))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Users.update_current_user/3)
     end
 
     field :delete_user, :user_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Users.delete_user/3)
     end
 
     field :update_user, :user_result do
       arg(:id, non_null(:id))
       arg(:input, non_null(:user_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Users.update_user/3)
     end
   end
