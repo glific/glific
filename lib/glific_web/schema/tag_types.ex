@@ -80,7 +80,7 @@ defmodule GlificWeb.Schema.TagTypes do
     @desc "get the details of one tag"
     field :tag, :tag_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Tags.tag/3)
     end
 
@@ -88,14 +88,14 @@ defmodule GlificWeb.Schema.TagTypes do
     field :tags, list_of(:tag) do
       arg(:filter, :tag_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Tags.tags/3)
     end
 
     @desc "Get a count of all tags filtered by various criteria"
     field :count_tags, :integer do
       arg(:filter, :tag_filter)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Tags.count_tags/3)
     end
   end
