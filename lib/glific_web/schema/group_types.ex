@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.GroupTypes do
 
   alias Glific.Repo
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :group_result do
     field :group, :group
@@ -60,6 +61,7 @@ defmodule GlificWeb.Schema.GroupTypes do
     @desc "get the details of one group"
     field :group, :group_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.group/3)
     end
 
@@ -67,12 +69,14 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :groups, list_of(:group) do
       arg(:filter, :group_filter)
       arg(:opts, :opts)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.groups/3)
     end
 
     @desc "Get a count of all groups filtered by various criteria"
     field :count_groups, :integer do
       arg(:filter, :group_filter)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.count_groups/3)
     end
   end
@@ -80,17 +84,20 @@ defmodule GlificWeb.Schema.GroupTypes do
   object :group_mutations do
     field :create_group, :group_result do
       arg(:input, non_null(:group_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.create_group/3)
     end
 
     field :update_group, :group_result do
       arg(:id, non_null(:id))
       arg(:input, :group_input)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.update_group/3)
     end
 
     field :delete_group, :group_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.delete_group/3)
     end
   end

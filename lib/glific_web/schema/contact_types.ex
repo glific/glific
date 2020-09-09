@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   alias Glific.Repo
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :contact_result do
     field :contact, :contact
@@ -98,6 +99,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     @desc "get the details of one contact"
     field :contact, :contact_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.contact/3)
     end
 
@@ -105,18 +107,21 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :contacts, list_of(:contact) do
       arg(:filter, :contact_filter)
       arg(:opts, :opts)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.contacts/3)
     end
 
     @desc "Get a count of all contacts filtered by various criteria"
     field :count_contacts, :integer do
       arg(:filter, :contact_filter)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.count_contacts/3)
     end
 
     @desc "Get contact's current location"
     field :contact_location, :location do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.contact_location/3)
     end
   end
@@ -124,17 +129,20 @@ defmodule GlificWeb.Schema.ContactTypes do
   object :contact_mutations do
     field :create_contact, :contact_result do
       arg(:input, non_null(:contact_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.create_contact/3)
     end
 
     field :update_contact, :contact_result do
       arg(:id, non_null(:id))
       arg(:input, :contact_input)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.update_contact/3)
     end
 
     field :delete_contact, :contact_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.delete_contact/3)
     end
   end
