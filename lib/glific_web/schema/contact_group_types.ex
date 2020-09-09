@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.ContactGroupTypes do
 
   alias Glific.Repo
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :contact_group_result do
     field :contact_group, :contact_group
@@ -57,21 +58,25 @@ defmodule GlificWeb.Schema.ContactGroupTypes do
   object :contact_group_mutations do
     field :create_contact_group, :contact_group_result do
       arg(:input, non_null(:contact_group_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.create_contact_group/3)
     end
 
     field :update_group_contacts, :group_contacts do
       arg(:input, non_null(:group_contacts_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.update_group_contacts/3)
     end
 
     field :update_contact_groups, :contact_groups do
       arg(:input, non_null(:contact_groups_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.update_contact_groups/3)
     end
 
     field :delete_contact_group, :contact_group_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.delete_contact_group/3)
     end
   end

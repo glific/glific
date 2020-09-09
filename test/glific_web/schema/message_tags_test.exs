@@ -28,7 +28,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
     {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "message_id" => message.id,
@@ -44,7 +44,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
 
     # add a known tag id not there in the DB (like a negative number?)
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "message_id" => message.id,
@@ -59,7 +59,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
     assert length(message_tags) == length(Map.values(tags_map))
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "message_id" => message.id,
@@ -81,7 +81,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
 
     # add some tags, test bad deletion value
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "message_id" => message.id,
@@ -98,7 +98,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
 
     # now delete all the added tags
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "message_id" => message.id,

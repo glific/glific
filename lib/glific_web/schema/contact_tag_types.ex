@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.ContactTagTypes do
 
   alias Glific.Repo
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :contact_tag_result do
     field :contact_tag, :contact_tag
@@ -46,16 +47,19 @@ defmodule GlificWeb.Schema.ContactTagTypes do
   object :contact_tag_mutations do
     field :create_contact_tag, :contact_tag_result do
       arg(:input, non_null(:contact_tag_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.create_contact_tag/3)
     end
 
     field :delete_contact_tag, :contact_tag_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.delete_contact_tag/3)
     end
 
     field :update_contact_tags, :contact_tags do
       arg(:input, non_null(:contact_tags_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.update_contact_tags/3)
     end
   end
