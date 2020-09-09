@@ -53,7 +53,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     assert get_in(query_data, [:data, "countOrganizations"]) == 0
 
-    {:ok, query_data} = auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Glific"}})
+    {:ok, query_data} =
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Glific"}})
 
     assert get_in(query_data, [:data, "countOrganizations"]) == 1
   end

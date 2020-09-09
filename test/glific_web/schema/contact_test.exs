@@ -322,7 +322,9 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(query_data, [:data, "contacts", Access.at(0), "id"]) == "#{cg3.contact_id}"
   end
 
-  test "search contacts should take care of empty list of group/tag filter input", %{manager: user} do
+  test "search contacts should take care of empty list of group/tag filter input", %{
+    manager: user
+  } do
     [_cg1, _cg2, _cg3] = Fixtures.group_contacts_fixture(%{organization_id: user.organization_id})
 
     result =
