@@ -19,7 +19,7 @@ defmodule GlificWeb.Schema.TemplateTagTest do
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/template_tag/create.gql")
 
-  test "create a template tag and test possible scenarios and errors", %{user: user} do
+  test "create a template tag and test possible scenarios and errors", %{staff: user} do
     template = Fixtures.session_template_fixture()
 
     label = "This is for testing"

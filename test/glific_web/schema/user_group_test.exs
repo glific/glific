@@ -21,7 +21,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
   load_gql(:update_group_users, GlificWeb.Schema, "assets/gql/user_groups/update_group_users.gql")
   load_gql(:update_user_groups, GlificWeb.Schema, "assets/gql/user_groups/update_user_groups.gql")
 
-  test "update group users", %{user: auth_user} do
+  test "update group users", %{manager: auth_user} do
     label = "Default Group"
 
     {:ok, group} =
@@ -79,7 +79,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
     assert group_users == []
   end
 
-  test "update user groups", %{user: user} do
+  test "update user groups", %{manager: user} do
     name = "NGO Admin"
     {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: user.organization_id})
 
@@ -135,7 +135,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
     assert user_groups == []
   end
 
-  test "create a user group and test possible scenarios and errors", %{user: auth_user} do
+  test "create a user group and test possible scenarios and errors", %{manager: auth_user} do
     label = "Default Group"
 
     {:ok, group} =
@@ -168,7 +168,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
     assert user == "has already been taken"
   end
 
-  test "delete a user group", %{user: auth_user} do
+  test "delete a user group", %{manager: auth_user} do
     label = "Default Group"
 
     {:ok, group} =

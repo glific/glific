@@ -27,7 +27,7 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contacts/delete.gql")
   load_gql(:contact_location, GlificWeb.Schema, "assets/gql/contacts/contact_location.gql")
 
-  test "contacts field returns list of contacts", %{user: user} do
+  test "contacts field returns list of contacts", %{manager: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
@@ -42,7 +42,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert contact["groups"] == []
   end
 
-  test "contacts field returns list of contacts in asc order", %{user: user} do
+  test "contacts field returns list of contacts in asc order", %{manager: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
@@ -57,7 +57,7 @@ defmodule GlificWeb.Schema.ContactTest do
              get_in(contact_b, ["name"]) == "Adelle Cavin"
   end
 
-  test "contacts field obeys limit and offset", %{user: user} do
+  test "contacts field obeys limit and offset", %{manager: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
 
@@ -78,7 +78,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(contacts, [Access.at(2), "name"]) != "Test"
   end
 
-  test "count returns the number of contacts", %{user: user} do
+  test "count returns the number of contacts", %{manager: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     # we are adding 5 contacts, but we dont know intial state of DB, hence using >=
     assert get_in(query_data, [:data, "countContacts"]) >= 5
@@ -96,7 +96,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(query_data, [:data, "countContacts"]) == 1
   end
 
-  test "contact id returns one contact or nil", %{user: user} do
+  test "contact id returns one contact or nil", %{manager: user} do
     name = "Glific Admin"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
@@ -113,7 +113,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert message == "Resource not found"
   end
 
-  test "create a contact and test possible scenarios and errors", %{user: user} do
+  test "create a contact and test possible scenarios and errors", %{manager: user} do
     name = "Contact Test Name Uno"
     phone = "1-415-555-1212"
 
@@ -144,7 +144,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert message == "has already been taken"
   end
 
-  test "update a contact and test possible scenarios and errors", %{user: user} do
+  test "update a contact and test possible scenarios and errors", %{manager: user} do
     {:ok, contact} =
       Repo.fetch_by(Contact, %{name: "Glific Admin", organization_id: user.organization_id})
 
@@ -182,7 +182,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert message == "has already been taken"
   end
 
-  test "delete a contact", %{user: user} do
+  test "delete a contact", %{manager: user} do
     # Delete a random contact
     {:ok, contact} =
       Repo.fetch_by(Contact, %{name: "Chrissy Cron", organization_id: user.organization_id})
@@ -198,7 +198,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert message == "Resource not found"
   end
 
-  test "get contact location", %{user: user} do
+  test "get contact location", %{manager: user} do
     {:ok, contact} =
       Repo.fetch_by(Contact, %{name: "Chrissy Cron", organization_id: user.organization_id})
 
@@ -222,7 +222,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(query_data, [:data, "contactLocation", "longitude"]) == location.longitude
   end
 
-  test "search contacts field returns list of contacts with options set", %{user: user} do
+  test "search contacts field returns list of contacts with options set", %{manager: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
 
@@ -250,7 +250,7 @@ defmodule GlificWeb.Schema.ContactTest do
              get_in(contact_b, ["name"]) == "Adelle Cavin"
   end
 
-  test "search contacts field obeys group filters", %{user: user} do
+  test "search contacts field obeys group filters", %{manager: user} do
     [cg1, _cg2, cg3] = Fixtures.group_contacts_fixture(%{organization_id: user.organization_id})
 
     result =
@@ -289,7 +289,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert length(get_in(query_data, [:data, "contacts"])) == 2
   end
 
-  test "search contacts field obeys tag filters", %{user: user} do
+  test "search contacts field obeys tag filters", %{manager: user} do
     [ct1, _ct2, ct3] = Fixtures.contact_tags_fixture(%{organization_id: user.organization_id})
 
     result =
@@ -322,7 +322,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(query_data, [:data, "contacts", Access.at(0), "id"]) == "#{cg3.contact_id}"
   end
 
-  test "search contacts should take care of empty list of group/tag filter input", %{user: user} do
+  test "search contacts should take care of empty list of group/tag filter input", %{manager: user} do
     [_cg1, _cg2, _cg3] = Fixtures.group_contacts_fixture(%{organization_id: user.organization_id})
 
     result =

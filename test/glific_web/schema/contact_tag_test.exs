@@ -20,7 +20,7 @@ defmodule GlificWeb.Schema.ContactTagTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_tag/create.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contact_tag/delete.gql")
 
-  test "create a contact tag and test possible scenarios and errors", %{user: user} do
+  test "create a contact tag and test possible scenarios and errors", %{staff: user} do
     label = "This is for testing"
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     name = "Glific Admin"
@@ -52,7 +52,7 @@ defmodule GlificWeb.Schema.ContactTagTest do
     assert get_in(contact_tag, ["tag", "id"]) |> String.to_integer() == tag.id
   end
 
-  test "delete a contact tag", %{user: user} do
+  test "delete a contact tag", %{staff: user} do
     label = "This is for testing"
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     name = "Glific Admin"

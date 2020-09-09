@@ -21,7 +21,7 @@ defmodule GlificWeb.Schema.ContactTagsTest do
     Tags.status_map(%{organization_id: org_id})
   end
 
-  test "update a contact tag with add tags", %{user: user} do
+  test "update a contact tag with add tags", %{staff: user} do
     tags_map = tag_status_map(user.organization_id)
     name = "Default receiver"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
@@ -73,7 +73,7 @@ defmodule GlificWeb.Schema.ContactTagsTest do
     assert contact_tags == []
   end
 
-  test "update a contact tag with add and delete tags", %{user: user} do
+  test "update a contact tag with add and delete tags", %{staff: user} do
     tags_map = tag_status_map(user.organization_id)
     name = "Default receiver"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})

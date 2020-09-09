@@ -21,7 +21,7 @@ defmodule GlificWeb.Schema.TemplateTagsTest do
     Tags.status_map(%{organization_id: org_id})
   end
 
-  test "update a template tag with add tags", %{user: user} do
+  test "update a template tag with add tags", %{staff: user} do
     tags_map = tag_status_map(user.organization_id)
     template = Fixtures.session_template_fixture()
 
@@ -72,7 +72,7 @@ defmodule GlificWeb.Schema.TemplateTagsTest do
     assert template_tags == []
   end
 
-  test "update a template tag with add and delete tags", %{user: user} do
+  test "update a template tag with add and delete tags", %{staff: user} do
     tags_map = tag_status_map(user.organization_id)
     template = Fixtures.session_template_fixture()
 

@@ -20,7 +20,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/messages_media/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/messages_media/delete.gql")
 
-  test "messages media field returns list of messages", %{user: user} do
+  test "messages media field returns list of messages", %{staff: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
@@ -31,7 +31,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
     assert get_in(message_media, ["caption"]) == "default caption"
   end
 
-  test "messages media field obeys limit and offset", %{user: user} do
+  test "messages media field obeys limit and offset", %{staff: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
 
@@ -50,12 +50,12 @@ defmodule GlificWeb.Schema.MessageMediaTest do
     assert get_in(messages_media, [Access.at(0), "caption"]) != "Test"
   end
 
-  test "count returns the number of messages media", %{user: user} do
+  test "count returns the number of messages media", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countMessagesMedia"]) == 4
   end
 
-  test "message media id returns one message media or nil", %{user: user} do
+  test "message media id returns one message media or nil", %{staff: user} do
     caption = "default caption"
     {:ok, message_media} = Repo.fetch_by(MessageMedia, %{caption: caption})
 
@@ -71,7 +71,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
              get_in(query_data, [:data, "messageMedia", "errors", Access.at(0), "message"])
   end
 
-  test "create a message media and test possible scenarios and errors", %{user: user} do
+  test "create a message media and test possible scenarios and errors", %{staff: user} do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -110,7 +110,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
              get_in(query_data, [:data, "createMessageMedia", "errors", Access.at(0), "message"])
   end
 
-  test "update a message media and test possible scenarios and errors", %{user: user} do
+  test "update a message media and test possible scenarios and errors", %{staff: user} do
     caption = "default caption"
     {:ok, message_media} = Repo.fetch_by(MessageMedia, %{caption: caption})
 
@@ -137,7 +137,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
     assert message == "can't be blank"
   end
 
-  test "delete a message media", %{user: user} do
+  test "delete a message media", %{staff: user} do
     caption = "default caption"
     {:ok, message_media} = Repo.fetch_by(MessageMedia, %{caption: caption})
 

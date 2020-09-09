@@ -21,7 +21,7 @@ defmodule GlificWeb.Schema.MessageTagTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/message_tag/create.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/message_tag/delete.gql")
 
-  test "create a message tag and test possible scenarios and errors", %{user: user} do
+  test "create a message tag and test possible scenarios and errors", %{manager: user} do
     label = "This is for testing"
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     body = "Default message body"
@@ -52,7 +52,7 @@ defmodule GlificWeb.Schema.MessageTagTest do
     assert get_in(message_tag, ["tag", "id"]) |> String.to_integer() == tag.id
   end
 
-  test "delete a message tag", %{user: user} do
+  test "delete a message tag", %{manager: user} do
     label = "This is for testing"
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     body = "Default message body"

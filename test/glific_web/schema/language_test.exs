@@ -9,7 +9,7 @@ defmodule GlificWeb.Schema.LanguageTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/languages/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/languages/delete.gql")
 
-  test "languages field returns list of languages", %{user: user} do
+  test "languages field returns list of languages", %{staff: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
@@ -20,12 +20,12 @@ defmodule GlificWeb.Schema.LanguageTest do
              (label_1 == "English (United States)" and label_0 == "Hindi")
   end
 
-  test "count returns the number of languages", %{user: user} do
+  test "count returns the number of languages", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countLanguages"]) == 3
   end
 
-  test "language id returns one language or nil", %{user: user} do
+  test "language id returns one language or nil", %{staff: user} do
     label = "English (United States)"
     {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
 
@@ -42,7 +42,7 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert message == "Resource not found"
   end
 
-  test "create a language and test possible scenarios and errors", %{user: user} do
+  test "create a language and test possible scenarios and errors", %{manager: user} do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -74,7 +74,7 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert message == "has already been taken"
   end
 
-  test "update a language and test possible scenarios and errors", %{user: user} do
+  test "update a language and test possible scenarios and errors", %{manager: user} do
     label = "English (United States)"
     {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
 
@@ -105,7 +105,7 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert message == "has already been taken"
   end
 
-  test "delete a language", %{user: user} do
+  test "delete a language", %{manager: user} do
     # first create a language
     result =
       auth_query_gql_by(:create, user,
