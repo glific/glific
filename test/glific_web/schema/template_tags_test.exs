@@ -26,7 +26,7 @@ defmodule GlificWeb.Schema.TemplateTagsTest do
     template = Fixtures.session_template_fixture()
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "template_id" => template.id,
@@ -42,7 +42,7 @@ defmodule GlificWeb.Schema.TemplateTagsTest do
 
     # add a known tag id not there in the DB (like a negative number?)
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "template_id" => template.id,
@@ -57,7 +57,7 @@ defmodule GlificWeb.Schema.TemplateTagsTest do
     assert length(template_tags) == length(Map.values(tags_map))
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "template_id" => template.id,
@@ -78,7 +78,7 @@ defmodule GlificWeb.Schema.TemplateTagsTest do
 
     # add some tags, test bad deletion value
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "template_id" => template.id,
@@ -95,7 +95,7 @@ defmodule GlificWeb.Schema.TemplateTagsTest do
 
     # now delete all the added tags
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "template_id" => template.id,

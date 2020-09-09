@@ -130,6 +130,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :timezones, list_of(:string) do
       middleware(Authorize, :admin)
+
       resolve(fn _, _, _ ->
         {:ok, Tzdata.zone_list()}
       end)

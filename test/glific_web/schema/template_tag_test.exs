@@ -26,7 +26,7 @@ defmodule GlificWeb.Schema.TemplateTagTest do
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{"input" => %{"templateId" => template.id, "tagId" => tag.id}}
       )
 
@@ -39,7 +39,7 @@ defmodule GlificWeb.Schema.TemplateTagTest do
     # try creating the same template tag twice
     # upserts come into play here and we dont return an error
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{"input" => %{"template_id" => template.id, "tag_id" => tag.id}}
       )
 

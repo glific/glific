@@ -23,7 +23,10 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
   test "update group users", %{user: auth_user} do
     label = "Default Group"
-    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: auth_user.organization_id})
+
+    {:ok, group} =
+      Repo.fetch_by(Group, %{label: label, organization_id: auth_user.organization_id})
+
     user1 = Fixtures.user_fixture()
     user2 = Fixtures.user_fixture()
 
@@ -134,7 +137,10 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
   test "create a user group and test possible scenarios and errors", %{user: auth_user} do
     label = "Default Group"
-    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: auth_user.organization_id})
+
+    {:ok, group} =
+      Repo.fetch_by(Group, %{label: label, organization_id: auth_user.organization_id})
+
     name = "NGO Basic User 1"
     {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: auth_user.organization_id})
 
@@ -164,7 +170,10 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
   test "delete a user group", %{user: auth_user} do
     label = "Default Group"
-    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: auth_user.organization_id})
+
+    {:ok, group} =
+      Repo.fetch_by(Group, %{label: label, organization_id: auth_user.organization_id})
+
     name = "NGO Basic User 1"
     {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: auth_user.organization_id})
 
