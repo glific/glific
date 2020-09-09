@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.SearchTypes do
   use Absinthe.Schema.Notation
 
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :saved_search_result do
     field :saved_search, :saved_search
@@ -98,12 +99,14 @@ defmodule GlificWeb.Schema.SearchTypes do
       arg(:filter, non_null(:search_filter))
       arg(:message_opts, non_null(:opts))
       arg(:contact_opts, non_null(:opts))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.search/3)
     end
 
     @desc "get the details of one saved search"
     field :saved_search, :saved_search_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.saved_search/3)
     end
 
@@ -111,12 +114,14 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :saved_searches, list_of(:saved_search) do
       arg(:filter, :saved_search_filter)
       arg(:opts, :opts)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.saved_searches/3)
     end
 
     @desc "Get a count of all searches"
     field :count_saved_searches, :integer do
       arg(:filter, :saved_search_filter)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.count_saved_searches/3)
     end
 
@@ -127,6 +132,7 @@ defmodule GlificWeb.Schema.SearchTypes do
       # if we want to add a search term
       arg(:term, :string)
 
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.saved_search_count/3)
     end
   end
@@ -134,17 +140,20 @@ defmodule GlificWeb.Schema.SearchTypes do
   object :search_mutations do
     field :create_saved_search, :saved_search_result do
       arg(:input, non_null(:saved_search_input))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.create_saved_search/3)
     end
 
     field :update_saved_search, :saved_search_result do
       arg(:id, non_null(:id))
       arg(:input, :saved_search_input)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.update_saved_search/3)
     end
 
     field :delete_saved_search, :saved_search_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.delete_saved_search/3)
     end
   end
