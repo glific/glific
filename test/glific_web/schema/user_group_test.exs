@@ -21,15 +21,15 @@ defmodule GlificWeb.Schema.UserGroupTest do
   load_gql(:update_group_users, GlificWeb.Schema, "assets/gql/user_groups/update_group_users.gql")
   load_gql(:update_user_groups, GlificWeb.Schema, "assets/gql/user_groups/update_user_groups.gql")
 
-  test "update group users", %{user: user} do
+  test "update group users", %{user: auth_user} do
     label = "Default Group"
-    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user.organization_id})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: auth_user.organization_id})
     user1 = Fixtures.user_fixture()
     user2 = Fixtures.user_fixture()
 
     # add group users
     result =
-      query_gql_by(:update_group_users,
+      auth_query_gql_by(:update_group_users, auth_user,
         variables: %{
           "input" => %{
             "group_id" => group.id,
@@ -45,7 +45,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
     # delete group users
     result =
-      query_gql_by(:update_group_users,
+      auth_query_gql_by(:update_group_users, auth_user,
         variables: %{
           "input" => %{
             "group_id" => group.id,
@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
     # test for incorrect user id
     result =
-      query_gql_by(:update_group_users,
+      auth_query_gql_by(:update_group_users, auth_user,
         variables: %{
           "input" => %{
             "group_id" => group.id,
@@ -85,7 +85,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
     # add user groups
     result =
-      query_gql_by(:update_user_groups,
+      auth_query_gql_by(:update_user_groups, user,
         variables: %{
           "input" => %{
             "user_id" => user.id,
@@ -101,7 +101,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
     # delete user groups
     result =
-      query_gql_by(:update_user_groups,
+      auth_query_gql_by(:update_user_groups, user,
         variables: %{
           "input" => %{
             "user_id" => user.id,
@@ -117,7 +117,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
     # test for incorrect group id
     result =
-      query_gql_by(:update_user_groups,
+      auth_query_gql_by(:update_user_groups, user,
         variables: %{
           "input" => %{
             "user_id" => user.id,
@@ -132,14 +132,14 @@ defmodule GlificWeb.Schema.UserGroupTest do
     assert user_groups == []
   end
 
-  test "create a user group and test possible scenarios and errors", %{user: user} do
+  test "create a user group and test possible scenarios and errors", %{user: auth_user} do
     label = "Default Group"
-    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user.organization_id})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: auth_user.organization_id})
     name = "NGO Basic User 1"
-    {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: user.organization_id})
+    {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: auth_user.organization_id})
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, auth_user,
         variables: %{"input" => %{"user_id" => user.id, "group_id" => group.id}}
       )
 
@@ -152,7 +152,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
     # try creating the same user group entry twice
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, auth_user,
         variables: %{"input" => %{"user_id" => user.id, "group_id" => group.id}}
       )
 
@@ -162,26 +162,26 @@ defmodule GlificWeb.Schema.UserGroupTest do
     assert user == "has already been taken"
   end
 
-  test "delete a user group", %{user: user} do
+  test "delete a user group", %{user: auth_user} do
     label = "Default Group"
-    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user.organization_id})
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: auth_user.organization_id})
     name = "NGO Basic User 1"
-    {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: user.organization_id})
+    {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: auth_user.organization_id})
 
     {:ok, query_data} =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, auth_user,
         variables: %{"input" => %{"user_id" => user.id, "group_id" => group.id}}
       )
 
     user_group_id = get_in(query_data, [:data, "createUserGroup", "user_group", "id"])
 
-    result = query_gql_by(:delete, variables: %{"id" => user_group_id})
+    result = auth_query_gql_by(:delete, auth_user, variables: %{"id" => user_group_id})
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "deleteUserGroup", "errors"]) == nil
 
     # try to delete incorrect entry
-    result = query_gql_by(:delete, variables: %{"id" => user_group_id})
+    result = auth_query_gql_by(:delete, auth_user, variables: %{"id" => user_group_id})
     assert {:ok, query_data} = result
 
     user = get_in(query_data, [:data, "deleteUserGroup", "errors", Access.at(0), "message"])

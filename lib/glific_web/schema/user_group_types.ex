@@ -58,21 +58,25 @@ defmodule GlificWeb.Schema.UserGroupTypes do
   object :user_group_mutations do
     field :create_user_group, :user_group_result do
       arg(:input, non_null(:user_group_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.create_user_group/3)
     end
 
     field :update_group_users, :group_users do
       arg(:input, non_null(:group_users_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.update_group_users/3)
     end
 
     field :update_user_groups, :user_groups do
       arg(:input, non_null(:user_groups_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.update_user_groups/3)
     end
 
     field :delete_user_group, :user_group_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.delete_user_group/3)
     end
   end
