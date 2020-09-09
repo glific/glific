@@ -15,16 +15,17 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
   @spec call(Absinthe.Resolution.t(), term()) :: Absinthe.Resolution.t()
   def call(resolution, role) do
     with %{roles: roles} <- resolution.context.current_user,
-      true <- is_valid_role?(roles, role) do
-        resolution
+         true <- is_valid_role?(roles, role) do
+      resolution
     else
-      _ -> resolution
-          |> Absinthe.Resolution.put_result({:error, "Unauthorized"})
+      _ ->
+        resolution
+        |> Absinthe.Resolution.put_result({:error, "Unauthorized"})
     end
   end
 
   # Check role with hierarchy
-  @spec is_valid_role?(list(), atom()|list()) :: boolean()
+  @spec is_valid_role?(list(), atom() | list()) :: boolean()
   defp is_valid_role?(_, :any), do: true
   defp is_valid_role?(roles, :admin), do: is_valid_role?(roles, [:admin])
   defp is_valid_role?(roles, :manager), do: is_valid_role?(roles, [:admin, :manager])
@@ -32,4 +33,4 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
 
   defp is_valid_role?(roles, role) when is_list(role), do: Enum.any?(roles, fn x -> x in role end)
   defp is_valid_role?(_, _), do: false
- end
+end
