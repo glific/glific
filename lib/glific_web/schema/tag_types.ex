@@ -80,6 +80,7 @@ defmodule GlificWeb.Schema.TagTypes do
     @desc "get the details of one tag"
     field :tag, :tag_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.tag/3)
     end
 
@@ -87,14 +88,14 @@ defmodule GlificWeb.Schema.TagTypes do
     field :tags, list_of(:tag) do
       arg(:filter, :tag_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :any)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.tags/3)
     end
 
     @desc "Get a count of all tags filtered by various criteria"
     field :count_tags, :integer do
       arg(:filter, :tag_filter)
-      middleware(Authorize, :admin)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.count_tags/3)
     end
   end
@@ -102,23 +103,27 @@ defmodule GlificWeb.Schema.TagTypes do
   object :tag_mutations do
     field :create_tag, :tag_result do
       arg(:input, non_null(:tag_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.create_tag/3)
     end
 
     field :update_tag, :tag_result do
       arg(:id, non_null(:id))
       arg(:input, :tag_input)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.update_tag/3)
     end
 
     field :delete_tag, :tag_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.delete_tag/3)
     end
 
     @desc "Remove unread tag from messages and returns a list of message ids"
     field :mark_contact_messages_as_read, list_of(:id) do
       arg(:contact_id, non_null(:gid))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tags.mark_contact_messages_as_read/3)
     end
   end
