@@ -39,7 +39,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     "assets/gql/session_templates/create_from_message.gql"
   )
 
-  test "session templates field returns list of session_templates", %{user: user} do
+  test "session templates field returns list of session_templates", %{staff: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
@@ -54,7 +54,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert res == "Default Template"
   end
 
-  test "count returns the number of session templates", %{user: user} do
+  test "count returns the number of session templates", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countSessionTemplates"]) > 4
 
@@ -73,7 +73,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert get_in(query_data, [:data, "countSessionTemplates"]) == 1
   end
 
-  test "session_templates field returns list of session_templates in desc order", %{user: user} do
+  test "session_templates field returns list of session_templates in desc order", %{staff: user} do
     Fixtures.session_template_fixture(%{label: "AAA"})
 
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
@@ -86,7 +86,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert get_in(session_template, ["label"]) == "AAA"
   end
 
-  test "session_templates returns list of session templates in various filters", %{user: user} do
+  test "session_templates returns list of session templates in various filters", %{staff: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"filter" => %{"body" => "Default Template"}})
 
@@ -143,7 +143,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert length(session_templates) == 3
   end
 
-  test "session_template by id returns one session_template or nil", %{user: user} do
+  test "session_template by id returns one session_template or nil", %{staff: user} do
     body = "Default Template"
 
     {:ok, session_template} =
@@ -162,7 +162,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert message == "Resource not found"
   end
 
-  test "create a session_template and test possible scenarios and errors", %{user: user} do
+  test "create a session_template and test possible scenarios and errors", %{staff: user} do
     label = "Default Template Label"
 
     {:ok, session_template} =
@@ -219,7 +219,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert message == "has already been taken"
   end
 
-  test "update a session template and test possible scenarios and errors", %{user: user} do
+  test "update a session template and test possible scenarios and errors", %{staff: user} do
     label = "Default Template Label"
 
     {:ok, session_template} =
@@ -252,7 +252,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert message == "has already been taken"
   end
 
-  test "delete an session_template", %{user: user} do
+  test "delete an session_template", %{staff: user} do
     {:ok, session_template} =
       Repo.fetch_by(SessionTemplate, %{
         body: "Default Template",
@@ -272,7 +272,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert message == "Resource not found"
   end
 
-  test "send session message", %{user: user} do
+  test "send session message", %{staff: user} do
     body = "Default Template"
 
     {:ok, session_template} =
@@ -290,7 +290,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert get_in(query_data, [:data, "sendSessionMessage", "errors"]) == [nil]
   end
 
-  test "create a session_template from message", %{user: user} do
+  test "create a session_template from message", %{staff: user} do
     label = "Default Template Label"
 
     {:ok, session_template} =

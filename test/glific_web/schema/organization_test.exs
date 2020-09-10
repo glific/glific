@@ -14,6 +14,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
   setup do
     provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(provider)
+    SeedsDev.seed_contacts()
+    SeedsDev.seed_users()
     :ok
   end
 
@@ -25,8 +27,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/organizations/delete.gql")
   load_gql(:list_timezones, GlificWeb.Schema, "assets/gql/organizations/list_timezones.gql")
 
-  test "organizations field returns list of organizations" do
-    result = query_gql_by(:list)
+  test "organizations field returns list of organizations", %{user: user} do
+    result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
     organizations = get_in(query_data, [:data, "organizations"])
@@ -40,33 +42,35 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert res == "Glific"
   end
 
-  test "count returns the number of organizations" do
-    {:ok, query_data} = query_gql_by(:count)
+  @tag :pending
+  test "count returns the number of organizations", %{user: user} do
+    {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countOrganizations"]) == 1
 
     {:ok, query_data} =
-      query_gql_by(:count,
+      auth_query_gql_by(:count, user,
         variables: %{"filter" => %{"name" => "This organization should never ever exist"}}
       )
 
     assert get_in(query_data, [:data, "countOrganizations"]) == 0
 
-    {:ok, query_data} = query_gql_by(:count, variables: %{"filter" => %{"name" => "Glific"}})
+    {:ok, query_data} =
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Glific"}})
 
     assert get_in(query_data, [:data, "countOrganizations"]) == 1
   end
 
-  test "organization id returns one organization or nil" do
+  test "organization id returns one organization or nil", %{user: user} do
     name = "Glific"
     {:ok, organization} = Repo.fetch_by(Organization, %{name: name})
 
-    result = query_gql_by(:by_id, variables: %{"id" => organization.id})
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
 
     organization = get_in(query_data, [:data, "organization", "organization", "name"])
     assert organization == name
 
-    result = query_gql_by(:by_id, variables: %{"id" => 123_456})
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "organization", "errors", Access.at(0), "message"])
@@ -81,7 +85,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert organization_id == to_string(user.organization_id)
   end
 
-  test "create an organization and test possible scenarios and errors" do
+  test "create an organization and test possible scenarios and errors", %{user: user} do
     name = "Organization Test Name"
     shortcode = "org_shortcode"
     email = "test2@glific.org"
@@ -95,7 +99,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
             "name" => name,
@@ -118,7 +122,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert Map.get(organization, "timezone") == "Asia/Kolkata"
 
     # try creating the same organization twice
-    query_gql_by(:create,
+    auth_query_gql_by(:create, user,
       variables: %{
         "input" => %{
           "name" => "test_name",
@@ -133,7 +137,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     )
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
             "name" => "test_name",
@@ -153,7 +157,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "has already been taken"
   end
 
-  test "update an organization and test possible scenarios and errors" do
+  test "update an organization and test possible scenarios and errors", %{user: user} do
     organization = Fixtures.organization_fixture()
 
     name = "Organization Test Name"
@@ -170,7 +174,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => organization.id,
           "input" => %{
@@ -194,7 +198,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     # Incorrect timezone should give error
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => organization.id,
           "input" => %{
@@ -209,7 +213,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "is invalid"
 
     # create a temp organization with a new name
-    query_gql_by(:create,
+    auth_query_gql_by(:create, user,
       variables: %{
         "input" => %{
           "name" => name,
@@ -225,7 +229,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     # ensure we cannot update an existing organization with the same shortcode, email or provider_phone
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => organization.id,
           "input" => %{
@@ -246,11 +250,11 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "has already been taken"
   end
 
-  test "update an organization with organization settings" do
+  test "update an organization with organization settings", %{user: user} do
     {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => organization.id,
           "input" => %{
@@ -280,16 +284,16 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert get_in(out_of_office, ["enabled_days", Access.at(1), "enabled"]) == false
   end
 
-  test "delete an organization" do
+  test "delete an organization", %{user: user} do
     organization = Fixtures.organization_fixture()
 
     # sometime This is causing a deadlock issue so we need to fix this
-    result = query_gql_by(:delete, variables: %{"id" => organization.id})
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "deleteOrganization", "errors"]) == nil
 
-    result = query_gql_by(:delete, variables: %{"id" => 123_456_789})
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "deleteOrganization", "errors", Access.at(0), "message"])

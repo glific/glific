@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.LanguageTypes do
   use Absinthe.Schema.Notation
 
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :language do
     field :id, :id
@@ -41,6 +42,7 @@ defmodule GlificWeb.Schema.LanguageTypes do
     @desc "get the details of one language"
     field :language, :language_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Settings.language/3)
     end
 
@@ -48,12 +50,14 @@ defmodule GlificWeb.Schema.LanguageTypes do
     field :languages, list_of(:language) do
       arg(:opts, :opts)
       arg(:filter, :language_filter)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Settings.languages/3)
     end
 
     @desc "Get a count of all languages"
     field :count_languages, :integer do
       arg(:filter, :language_filter)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Settings.count_languages/3)
     end
   end
@@ -61,17 +65,20 @@ defmodule GlificWeb.Schema.LanguageTypes do
   object :language_mutations do
     field :create_language, :language_result do
       arg(:input, non_null(:language_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Settings.create_language/3)
     end
 
     field :update_language, :language_result do
       arg(:id, non_null(:id))
       arg(:input, :language_input)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Settings.update_language/3)
     end
 
     field :delete_language, :language_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Settings.delete_language/3)
     end
   end

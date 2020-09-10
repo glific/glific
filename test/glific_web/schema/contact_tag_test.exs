@@ -20,14 +20,14 @@ defmodule GlificWeb.Schema.ContactTagTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_tag/create.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contact_tag/delete.gql")
 
-  test "create a contact tag and test possible scenarios and errors", %{user: user} do
+  test "create a contact tag and test possible scenarios and errors", %{staff: user} do
     label = "This is for testing"
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     name = "Glific Admin"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{"input" => %{"contact_id" => contact.id, "tag_id" => tag.id}}
       )
 
@@ -41,7 +41,7 @@ defmodule GlificWeb.Schema.ContactTagTest do
     # try creating the same contact tag entry twice
     # upserts come into play here and we dont return an error
     result =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{"input" => %{"contact_id" => contact.id, "tag_id" => tag.id}}
       )
 
@@ -52,26 +52,26 @@ defmodule GlificWeb.Schema.ContactTagTest do
     assert get_in(contact_tag, ["tag", "id"]) |> String.to_integer() == tag.id
   end
 
-  test "delete a contact tag", %{user: user} do
+  test "delete a contact tag", %{staff: user} do
     label = "This is for testing"
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     name = "Glific Admin"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     {:ok, query_data} =
-      query_gql_by(:create,
+      auth_query_gql_by(:create, user,
         variables: %{"input" => %{"contact_id" => contact.id, "tag_id" => tag.id}}
       )
 
     contact_tag_id = get_in(query_data, [:data, "createContactTag", "contact_tag", "id"])
 
-    result = query_gql_by(:delete, variables: %{"id" => contact_tag_id})
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => contact_tag_id})
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "deleteContactTag", "errors"]) == nil
 
     # try to delete incorrect entry
-    result = query_gql_by(:delete, variables: %{"id" => contact_tag_id})
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => contact_tag_id})
     assert {:ok, query_data} = result
 
     contact = get_in(query_data, [:data, "deleteContactTag", "errors", Access.at(0), "message"])
