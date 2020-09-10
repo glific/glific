@@ -55,11 +55,11 @@ defmodule Glific.Processor.Helper do
   defp process_dialogflow_response(nil, _), do: nil
   defp process_dialogflow_response("", _), do: nil
 
-  defp process_dialogflow_response(response_message, message),
-    do:
-      Glific.Messages.create_and_send_message(%{
-        body: response_message,
-        receiver_id: message.sender_id,
-        organization_id: message.organization_id
-      })
+  defp process_dialogflow_response(response_message, message) do
+    Glific.Messages.create_and_send_message(%{
+      body: response_message,
+      receiver_id: message.sender_id,
+      organization_id: message.organization_id
+    })
+  end
 end
