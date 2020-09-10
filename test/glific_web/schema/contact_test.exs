@@ -96,7 +96,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(query_data, [:data, "countContacts"]) == 1
   end
 
-  test "contact id returns one contact or nil", %{manager: user} do
+  test "contact id returns one contact or nil", %{staff: user} do
     name = "Glific Admin"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
@@ -144,7 +144,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert message == "has already been taken"
   end
 
-  test "update a contact and test possible scenarios and errors", %{manager: user} do
+  test "update a contact and test possible scenarios and errors", %{staff: user, manager: manager} do
     {:ok, contact} =
       Repo.fetch_by(Contact, %{name: "Glific Admin", organization_id: user.organization_id})
 
@@ -163,7 +163,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     # create a temp contact with a new phone number
     _ =
-      auth_query_gql_by(:create, user,
+      auth_query_gql_by(:create, manager,
         variables: %{"input" => %{"name" => "Yet another name", "phone" => phone <> " New"}}
       )
 

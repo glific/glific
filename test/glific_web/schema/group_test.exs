@@ -20,7 +20,7 @@ defmodule GlificWeb.Schema.GroupTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/groups/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/groups/delete.gql")
 
-  test "groups field returns list of groups", %{manager: user} do
+  test "groups field returns list of groups", %{staff: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
@@ -33,7 +33,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert get_in(query_data, [:data, "groups", Access.at(0), "users_count"]) == 0
   end
 
-  test "groups field returns list of groups in desc order", %{manager: user} do
+  test "groups field returns list of groups in desc order", %{staff: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "DESC"}})
     assert {:ok, query_data} = result
 
@@ -44,7 +44,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert get_in(group, ["label"]) == "Restricted Group"
   end
 
-  test "groups field returns list of groups in various filters", %{manager: user} do
+  test "groups field returns list of groups in various filters", %{staff: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"filter" => %{"label" => "Restricted Group"}})
 
@@ -57,7 +57,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert get_in(group, ["label"]) == "Restricted Group"
   end
 
-  test "groups field obeys limit and offset", %{manager: user} do
+  test "groups field obeys limit and offset", %{staff: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
 
@@ -73,7 +73,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert length(groups) <= 3
   end
 
-  test "count returns the number of groups", %{manager: user} do
+  test "count returns the number of groups", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countGroups"]) >= 2
 
@@ -90,7 +90,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert get_in(query_data, [:data, "countGroups"]) == 1
   end
 
-  test "group by id returns one group or nil", %{manager: user} do
+  test "group by id returns one group or nil", %{staff: user} do
     label = "Default Group"
     {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: user.organization_id})
 

@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.GroupTypes do
     @desc "get the details of one group"
     field :group, :group_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Groups.group/3)
     end
 
@@ -69,14 +69,14 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :groups, list_of(:group) do
       arg(:filter, :group_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Groups.groups/3)
     end
 
     @desc "Get a count of all groups filtered by various criteria"
     field :count_groups, :integer do
       arg(:filter, :group_filter)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Groups.count_groups/3)
     end
   end

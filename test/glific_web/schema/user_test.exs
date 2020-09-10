@@ -37,7 +37,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert length(roles) >= 4
   end
 
-  test "users returns list of users", %{manager: user} do
+  test "users returns list of users", %{staff: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
@@ -53,7 +53,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert user["groups"] == []
   end
 
-  test "users returns list of users in asc order", %{manager: user} do
+  test "users returns list of users in asc order", %{staff: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
@@ -65,7 +65,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert get_in(user, ["name"]) == "Glific Admin"
   end
 
-  test "users obeys limit and offset", %{manager: user} do
+  test "users obeys limit and offset", %{staff: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
 
@@ -82,7 +82,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert length(users) == users_count - 1
   end
 
-  test "count returns the number of users", %{manager: user} do
+  test "count returns the number of users", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     organization_id = Fixtures.get_org_id()
 
@@ -102,7 +102,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert get_in(query_data, [:data, "countUsers"]) == 1
   end
 
-  test "user by id returns one user or nil", %{manager: user_auth} do
+  test "user by id returns one user or nil", %{staff: user_auth} do
     name = "NGO Basic User 1"
     {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: user_auth.organization_id})
 

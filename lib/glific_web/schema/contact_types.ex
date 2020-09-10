@@ -99,7 +99,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     @desc "get the details of one contact"
     field :contact, :contact_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.contact/3)
     end
 
@@ -136,7 +136,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :update_contact, :contact_result do
       arg(:id, non_null(:id))
       arg(:input, :contact_input)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.update_contact/3)
     end
 

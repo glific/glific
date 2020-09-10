@@ -260,7 +260,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert message == "Resource not found"
   end
 
-  test "mark all contact messages as unread", %{manager: user} do
+  test "mark all contact messages as unread", %{staff: user} do
     message_1 = Fixtures.message_fixture()
 
     message_2 =

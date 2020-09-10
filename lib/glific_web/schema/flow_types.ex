@@ -53,6 +53,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     @desc "get the details of one flow"
     field :flow, :flow_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.flow/3)
     end
 
@@ -60,12 +61,14 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :flows, list_of(:flow) do
       arg(:filter, :flow_filter)
       arg(:opts, :opts)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.flows/3)
     end
 
     @desc "Get a count of all flows filtered by various criteria"
     field :count_flows, :integer do
       arg(:filter, :flow_filter)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.count_flows/3)
     end
   end
