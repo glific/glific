@@ -90,7 +90,12 @@ defmodule Glific.Flows.Flow do
 
   def validate_keywords(changeset, keywords) do
     id = get_field(changeset, :id)
-    query = if is_nil(id), do: Flows.Flow, else: Flows.Flow |> where([f], f.id != ^id)
+    organization_id = get_field(changeset, :organization_id)
+
+    query =
+      if is_nil(id),
+        do: Flows.Flow,
+        else: Flows.Flow |> where([f], f.id != ^id and f.organization_id == ^organization_id)
 
     keywords_list =
       query
