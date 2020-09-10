@@ -346,7 +346,6 @@ defmodule Glific.Fixtures do
   def flow_fixture(attrs \\ %{}) do
     valid_attrs = %{
       name: "Test Flow",
-      shortcode: "test_short_code",
       keywords: ["test_keyword"],
       flow_type: :message,
       version_number: "13.1.0",

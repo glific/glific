@@ -90,7 +90,12 @@ defmodule Glific.Flows.Flow do
 
   def validate_keywords(changeset, keywords) do
     id = get_field(changeset, :id)
-    query = if is_nil(id), do: Flows.Flow, else: Flows.Flow |> where([f], f.id != ^id)
+    organization_id = get_field(changeset, :organization_id)
+
+    query =
+      if is_nil(id),
+        do: Flows.Flow,
+        else: Flows.Flow |> where([f], f.id != ^id and f.organization_id == ^organization_id)
 
     keywords_list =
       query
@@ -226,11 +231,12 @@ defmodule Glific.Flows.Flow do
     Helper function to load a active flow from
     the database and build an object
   """
-  @spec get_loaded_flow(map()) :: map()
-  def get_loaded_flow(args) do
+  @spec get_loaded_flow(non_neg_integer, map()) :: map()
+  def get_loaded_flow(organization_id, args) do
     query =
       from f in Flow,
         join: fr in assoc(f, :revisions),
+        where: f.organization_id == ^organization_id,
         where: fr.flow_id == f.id and fr.status == "done",
         select: %Flow{
           id: f.id,
@@ -261,9 +267,6 @@ defmodule Glific.Flows.Flow do
 
   defp args_clause(query, %{keyword: keyword}),
     do: query |> where([f, _fr], ^keyword in f.keywords)
-
-  defp args_clause(query, %{organization_id: organization_id}),
-    do: query |> where([f, _fr], f.organization_id == ^organization_id)
 
   defp args_clause(query, _args), do: query
 end
