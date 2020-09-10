@@ -23,7 +23,7 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
   }
 
   @doc false
-  @spec seed_data(Organization.t(), [Language.t()]) :: nil
+  @spec seed_data(Organization.t(), [Language.t()]) :: any
   def seed_data(organization, languages) do
     # calling it gtags, since tags is a macro in philcolumns
     gtags(organization, languages)
