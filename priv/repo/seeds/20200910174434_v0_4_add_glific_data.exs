@@ -43,7 +43,7 @@ defmodule Glific.Repo.Seeds.V04AddGlificData do
         shortcode: "glific2",
         email: "ADMIN@REPLACE_ME2.NOW",
         provider_id: provider.id,
-        provider_key: "ADD_PROVIDER_API_KEY2",
+        provider_appname: "glific2",
         provider_phone: "9178348111142",
         default_language_id: en_us.id,
         out_of_office: out_of_office_default_data
@@ -55,7 +55,7 @@ defmodule Glific.Repo.Seeds.V04AddGlificData do
         shortcode: "glific3",
         email: "ADMIN@REPLACE_ME3.NOW",
         provider_id: provider.id,
-        provider_key: "ADD_PROVIDER_API_KEY3",
+        provider_appname: "glific3",
         provider_phone: "9178348111143",
         default_language_id: en_us.id,
         out_of_office: out_of_office_default_data

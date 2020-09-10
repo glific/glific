@@ -57,8 +57,8 @@ defmodule Glific.Dialogflow.SessionsTest do
       }
     ]) do
       message =
-      Fixtures.message_fixture(%{body: "Hola"})
-      |> Repo.preload(contact: [:language])
+        Fixtures.message_fixture(%{body: "Hola"})
+        |> Repo.preload(contact: [:language])
 
       Sessions.detect_intent(message, "1e8118272e2f69ea6ec98acbb71ab959")
       assert_enqueued(worker: SessionWorker)

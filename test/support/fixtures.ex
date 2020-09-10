@@ -105,7 +105,7 @@ defmodule Glific.Fixtures do
       email: "replace@idk.org",
       # lets just hope its there :)
       provider_id: 1,
-      provider_key: "this is not a secret key",
+      provider_appname: "this is not a secret key",
       provider_phone: "and this is not a valid phone",
       # lets just hope its there :)
       default_language_id: 1,
@@ -116,6 +116,12 @@ defmodule Glific.Fixtures do
       attrs
       |> Enum.into(valid_attrs)
       |> Partners.create_organization()
+
+    Application.put_env(
+      :glific,
+      String.to_atom("provider_key_#{organization.id}"),
+      "This is a fake key"
+    )
 
     organization
   end

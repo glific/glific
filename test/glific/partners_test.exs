@@ -149,7 +149,7 @@ defmodule Glific.PartnersTest do
       name: "Organization Name",
       shortcode: "organization_shortcode",
       email: "Contact person email",
-      provider_key: "Provider key",
+      provider_appname: "Provider appname",
       provider_phone: "991737373"
     }
 
@@ -157,7 +157,7 @@ defmodule Glific.PartnersTest do
       name: "Organization Name 1",
       shortcode: "organization_shortcode 1",
       email: "Contact person email 1",
-      provider_key: "Provider key 1",
+      provider_appname: "Provider appname 1",
       provider_phone: "9917373731"
     }
 
@@ -204,6 +204,12 @@ defmodule Glific.PartnersTest do
         |> Enum.into(@valid_org_attrs)
         |> Map.merge(%{provider_id: provider.id, default_language_id: default_language.id})
         |> Partners.create_organization()
+
+      Application.put_env(
+        :glific,
+        String.to_atom("provider_key_#{organization.id}"),
+        "This is a fake key"
+      )
 
       organization
     end

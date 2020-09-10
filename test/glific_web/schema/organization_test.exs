@@ -89,7 +89,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     name = "Organization Test Name"
     shortcode = "org_shortcode"
     email = "test2@glific.org"
-    provider_key = "random"
+    provider_appname = "random"
     provider_phone = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
     provider_name = "Default Provider"
@@ -105,7 +105,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "name" => name,
             "shortcode" => shortcode,
             "email" => email,
-            "provider_key" => provider_key,
+            "provider_appname" => provider_appname,
             "provider_id" => provider.id,
             "provider_phone" => provider_phone,
             "default_language_id" => language.id
@@ -128,7 +128,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "name" => "test_name",
           "shortcode" => shortcode,
           "email" => email,
-          "provider_key" => provider_key,
+          "provider_appname" => provider_appname,
           "provider_id" => provider.id,
           "provider_phone" => provider_phone,
           "default_language_id" => language.id
@@ -143,7 +143,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "name" => "test_name",
             "shortcode" => shortcode,
             "email" => email,
-            "provider_key" => provider_key,
+            "provider_appname" => provider_appname,
             "provider_id" => provider.id,
             "provider_phone" => provider_phone,
             "default_language_id" => language.id
@@ -163,7 +163,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     name = "Organization Test Name"
     shortcode = "org_shortcode"
     email = "test2@glific.org"
-    provider_key = "random"
+    provider_appname = "random"
     provider_phone = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     timezone = "America/Los_Angeles"
 
@@ -181,7 +181,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "name" => name,
             "shortcode" => shortcode,
             "email" => email,
-            "provider_key" => provider_key,
+            "provider_appname" => provider_appname,
             "provider_id" => provider.id,
             "provider_phone" => provider_phone,
             "default_language_id" => language.id,
@@ -219,7 +219,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "name" => name,
           "shortcode" => "new_shortcode",
           "email" => "new email",
-          "provider_key" => provider_key,
+          "provider_appname" => provider_appname,
           "provider_id" => provider.id,
           "provider_phone" => "new provider_phone",
           "default_language_id" => language.id
@@ -236,7 +236,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "name" => "new organization",
             "shortcode" => "new_shortcode",
             "email" => "new email",
-            "provider_key" => provider_key,
+            "provider_appname" => provider_appname,
             "provider_id" => provider.id,
             "provider_phone" => "new provider_phone",
             "default_language_id" => language.id

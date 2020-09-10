@@ -4,6 +4,8 @@ defmodule Glific.Repo.Seeds.V04AlterGlificData do
 
   envs([:dev, :test, :prod])
 
+  alias Glific.Repo
+
   def up(_repo) do
     Repo.query("UPDATE organizations SET provider_limit = 60;")
   end

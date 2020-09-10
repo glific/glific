@@ -21,7 +21,6 @@ defmodule Glific.Providers.Gupshup.Worker do
   @spec perform(Oban.Job.t()) :: :ok
   def perform(%Oban.Job{args: %{"message" => message, "payload" => payload}}) do
     organization = Partners.organization(message["organization_id"])
-
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
     # Refactring because of credo warning
     case ExRated.check_rate(organization.shortcode, 60_000, organization.provider_limit) do
@@ -32,7 +31,9 @@ defmodule Glific.Providers.Gupshup.Worker do
           headers: [{"apikey", organization.provider_key}]
         )
         |> handle_response(message)
-      _ -> {:error, :rate_limit_exceeded}
+
+      _ ->
+        {:error, :rate_limit_exceeded}
     end
 
     :ok
