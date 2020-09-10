@@ -13,7 +13,7 @@ defmodule Glific.Repo.Seeds.V04AddGlificData do
 
   def up(_repo) do
     [provider | _] = Partners.list_providers()
-    languages = Settings.list_languages()
+    languages = Settings.list_languages(%{filter: %{label: "english"}})
 
     organizations(provider, languages)
     |> Enum.each(fn organization ->
