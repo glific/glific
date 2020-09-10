@@ -47,7 +47,7 @@ defmodule GlificWeb.Schema.MessageTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/messages/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/messages/delete.gql")
 
-  test "messages field returns list of messages", %{user: user} do
+  test "messages field returns list of messages", %{staff: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
 
@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert get_in(message, ["receiver", "id"]) > 0
   end
 
-  test "messages field returns list of messages in various filters", %{user: user} do
+  test "messages field returns list of messages in various filters", %{staff: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"filter" => %{"body" => "Default message body"}})
 
@@ -89,7 +89,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert messages == []
   end
 
-  test "messages field returns list of messages in desc order", %{user: user} do
+  test "messages field returns list of messages in desc order", %{staff: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "DESC"}})
     assert {:ok, query_data} = result
 
@@ -101,7 +101,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert get_in(message, ["body"]) == "ZZZ message body for order test"
   end
 
-  test "messages field obeys limit and offset", %{user: user} do
+  test "messages field obeys limit and offset", %{staff: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
 
@@ -122,7 +122,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert get_in(messages, [Access.at(2), "body"]) != "Test"
   end
 
-  test "count returns the number of messages", %{user: user} do
+  test "count returns the number of messages", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countMessages"]) > 5
 
@@ -141,7 +141,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert get_in(query_data, [:data, "countMessages"]) == 1
   end
 
-  test "message id returns one message or nil", %{user: user} do
+  test "message id returns one message or nil", %{staff: user} do
     body = "Default message body"
     {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
 
@@ -158,7 +158,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message == "Resource not found"
   end
 
-  test "create a message and test possible scenarios and errors", %{user: user} do
+  test "create a message and test possible scenarios and errors", %{staff: user} do
     message = Fixtures.message_fixture()
 
     result =
@@ -236,7 +236,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message == "Resource not found"
   end
 
-  test "send message to multiple contacts", %{user: user} do
+  test "send message to multiple contacts", %{staff: user} do
     name = "Margarita Quinteros"
     {:ok, contact1} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
@@ -263,7 +263,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message["receiver"]["id"] == contact1.id || contact2.id
   end
 
-  test "send hsm message to an opted in contact", %{user: user} do
+  test "send hsm message to an opted in contact", %{staff: user} do
     contact = Glific.Fixtures.contact_fixture()
 
     label = "OTP Message"
@@ -287,7 +287,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert get_in(query_data, [:data, "sendHsmMessage", "message", "is_hsm"]) == true
   end
 
-  test "create and send a message to valid contact", %{user: user} do
+  test "create and send a message to valid contact", %{staff: user} do
     contact = Fixtures.contact_fixture()
     Contacts.contact_opted_in(contact.phone, contact.organization_id, DateTime.utc_now())
     {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: DateTime.utc_now()})
@@ -310,7 +310,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message["body"] == "Message body"
   end
 
-  test "create and send a message should parse the message body", %{user: user} do
+  test "create and send a message should parse the message body", %{staff: user} do
     contact = Fixtures.contact_fixture()
     Contacts.contact_opted_in(contact.phone, contact.organization_id, DateTime.utc_now())
     {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: DateTime.utc_now()})
@@ -333,7 +333,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message["body"] == "A message for " <> contact.name
   end
 
-  test "create and send a message to in valid contact will not create a message", %{user: user} do
+  test "create and send a message to in valid contact will not create a message", %{staff: user} do
     contact = Fixtures.contact_fixture()
     Contacts.contact_opted_out(contact.phone, contact.organization_id, DateTime.utc_now())
     message_body = Faker.Lorem.sentence()
