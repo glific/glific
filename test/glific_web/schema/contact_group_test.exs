@@ -35,7 +35,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     "assets/gql/contact_groups/update_contact_groups.gql"
   )
 
-  test "update group contacts", %{user: user_auth} do
+  test "update group contacts", %{staff: user_auth} do
     user = Fixtures.user_fixture()
     label = "Default Group"
 
@@ -94,7 +94,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert group_contacts == []
   end
 
-  test "update contact groups", %{user: user_auth} do
+  test "update contact groups", %{staff: user_auth} do
     name = "Default receiver"
 
     {:ok, contact} =
@@ -152,7 +152,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert contact_groups == []
   end
 
-  test "create a contact group and test possible scenarios and errors", %{user: user_auth} do
+  test "create a contact group and test possible scenarios and errors", %{staff: user_auth} do
     label = "Default Group"
 
     {:ok, group} =
@@ -187,7 +187,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert contact == "has already been taken"
   end
 
-  test "delete a contact group", %{user: user_auth} do
+  test "delete a contact group", %{staff: user_auth} do
     label = "Default Group"
 
     {:ok, group} =

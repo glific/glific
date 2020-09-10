@@ -26,7 +26,8 @@ defmodule GlificWeb.RouterTest do
         password: @password,
         password_confirmation: @password,
         contact_id: contact.id,
-        organization_id: organization_id
+        organization_id: organization_id,
+        roles: ["manager"]
       })
       |> Repo.insert!()
 

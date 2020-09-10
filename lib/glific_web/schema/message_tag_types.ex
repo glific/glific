@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.MessageTagTypes do
 
   alias Glific.Repo
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :message_tag_result do
     field :message_tag, :message_tag
@@ -46,16 +47,19 @@ defmodule GlificWeb.Schema.MessageTagTypes do
   object :message_tag_mutations do
     field :create_message_tag, :message_tag_result do
       arg(:input, non_null(:message_tag_input))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Tags.create_message_tag/3)
     end
 
     field :update_message_tags, :message_tags do
       arg(:input, non_null(:message_tags_input))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Tags.update_message_tags/3)
     end
 
     field :delete_message_tag, :message_tag_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Tags.delete_message_tag/3)
     end
   end

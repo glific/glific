@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.FlowTypes do
   use Absinthe.Schema.Notation
 
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :flow_result do
     field :flow, :flow
@@ -50,6 +51,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     @desc "get the details of one flow"
     field :flow, :flow_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.flow/3)
     end
 
@@ -57,12 +59,14 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :flows, list_of(:flow) do
       arg(:filter, :flow_filter)
       arg(:opts, :opts)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.flows/3)
     end
 
     @desc "Get a count of all flows filtered by various criteria"
     field :count_flows, :integer do
       arg(:filter, :flow_filter)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.count_flows/3)
     end
   end
@@ -70,34 +74,40 @@ defmodule GlificWeb.Schema.FlowTypes do
   object :flow_mutations do
     field :create_flow, :flow_result do
       arg(:input, non_null(:flow_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.create_flow/3)
     end
 
     field :update_flow, :flow_result do
       arg(:id, non_null(:id))
       arg(:input, :flow_input)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.update_flow/3)
     end
 
     field :delete_flow, :flow_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.delete_flow/3)
     end
 
     field :publish_flow, :publish_flow_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.publish_flow/3)
     end
 
     field :start_contact_flow, :start_flow_result do
       arg(:flow_id, non_null(:id))
       arg(:contact_id, non_null(:id))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.start_contact_flow/3)
     end
 
     field :start_group_flow, :start_flow_result do
       arg(:flow_id, non_null(:id))
       arg(:group_id, non_null(:id))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.start_group_flow/3)
     end
   end
