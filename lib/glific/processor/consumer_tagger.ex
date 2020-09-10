@@ -151,11 +151,13 @@ defmodule Glific.Processor.ConsumerTagger do
     IO.inspect("Hello1")
     # only do the query if we have a valid credentials file for dialogflow
     if FunWithFlags.enabled?(:dialogflow) do
-      Sessions.detect_intent(
-        message,
-        state.dialogflow_session_id,
-        message.contact.language.locale
-      )
+      %{
+        :path => state.dialogflow_session_id,
+        :locale => message.contact.language.locale,
+        :message => Message.to_minimal_map(message)
+      }
+      |> Glific.Dialogflow.Worker.new()
+      |> Oban.insert()
     end
 
     {message, state}

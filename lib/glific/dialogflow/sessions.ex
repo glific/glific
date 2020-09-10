@@ -3,11 +3,12 @@ defmodule Glific.Dialogflow.Sessions do
   Helper to help manage intents
   """
 
-  alias Glific.Messages.Message
+  alias Glific.Dialogflow
 
   @doc """
   Function to communicate with dialogflow to detect the intent of the request
   """
+
   @spec detect_intent(map(), String.t(), String.t()) :: tuple
   def detect_intent(message, session_id, language \\ "en") do
     body = %{
@@ -19,13 +20,17 @@ defmodule Glific.Dialogflow.Sessions do
       }
     }
 
-    %{
-      :method => :post,
-      :path => "sessions/#{session_id}:detectIntent",
-      :body => body,
-      :message => Message.to_minimal_map(message)
-    }
-    |> Glific.Dialogflow.Worker.new()
-    |> Oban.insert()
+    Dialogflow.request(:post, "sessions/#{session_id}:detectIntent", body)
+    |> handle_response(message)
+  end
+
+
+  defp handle_response({:ok, response}, message) do
+    Glific.Processor.Helper.add_dialogflow_tag(message, response["queryResult"])
+  end
+
+  defp handle_response(response, _) do
+    IO.inspect("error response")
+    IO.inspect(response)
   end
 end
