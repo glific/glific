@@ -5,6 +5,7 @@ defmodule Glific.Dialogflow.SessionsTest do
   alias Glific.Dialogflow.Sessions
   alias Glific.Dialogflow.SessionWorker
   alias Glific.Fixtures
+  alias Glific.Messages
 
   @query %{
     "queryResult" => %{
@@ -14,7 +15,7 @@ defmodule Glific.Dialogflow.SessionsTest do
       "fulfillmentMessages" => [%{"text" => %{"text" => ["¿Decías?"]}}],
       "fulfillmentText" => "Ups, no he entendido a que te refieres.",
       "intent" => %{
-        "displayName" => "Default Fallback Intent",
+        "displayName" => "Intent.Greeting",
         "name" => "projects/lbot-2131f/agent/intents/5eec5344-8a09-40ba-8f46-1d2ed3f7b0df"
       },
       "intentDetectionConfidence" => 1,
@@ -41,6 +42,10 @@ defmodule Glific.Dialogflow.SessionsTest do
     Sessions.detect_intent(message, "1e8118272e2f69ea6ec98acbb71ab959")
     assert_enqueued(worker: SessionWorker)
     assert %{success: 1, failure: 0} == Oban.drain_queue(queue: :dialogflow)
+    message = Messages.get_message!(message.id)
+              |> Repo.preload([:tags])
+
+    assert  hd(message.tags).label == "Greeting"
   end
 
 
