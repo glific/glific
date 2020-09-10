@@ -8,11 +8,11 @@ defmodule Glific.Providers.Glifproxy.Worker do
     max_attempts: 2,
     priority: 0
 
-  alias Glific.Communications
-  alias Glific.Providers.Gupshup.ApiClient
-
-  @rate_name Application.fetch_env!(:glific, :provider_id)
-  @rate_limit Application.fetch_env!(:glific, :provider_limit)
+  alias Glific.{
+    Communications,
+    Partners,
+    Providers.Gupshup.ApiClient
+  }
 
   @doc """
   Standard perform method to use Oban worker
@@ -20,12 +20,13 @@ defmodule Glific.Providers.Glifproxy.Worker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok
   def perform(%Oban.Job{args: %{"message" => message, "payload" => payload}}) do
+    organization = Partners.organization(message["organization_id"])
+
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
-    # Refactoring because of credo warning
     # We are in a proxy here, we simulate the message has been sent
     # We turn around and actually flip the contact to a proxy number (or vice versa)
     # and send it back to the frontend
-    case ExRated.check_rate(@rate_name, 60_000, @rate_limit) do
+    case ExRated.check_rate(organization.shortcode, 60_000, organization.provider_limit) do
       {:ok, _} -> proxy_message(message, payload)
       _ -> {:error, :rate_limit_exceeded}
     end

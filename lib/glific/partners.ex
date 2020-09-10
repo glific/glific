@@ -304,7 +304,15 @@ defmodule Glific.Partners do
       {:ok, value} when value in [nil, false] ->
         organization =
           get_organization!(organization_id)
+          |> Repo.preload(:provider)
           |> set_out_of_office_values()
+          |> Map.put(
+            :provider_key,
+            Application.fetch_env!(
+              :glific,
+              String.to_existing_atom("provider_key_" <> organization_id)
+            )
+          )
 
         Caches.set(organization_id, "organization", organization)
         organization

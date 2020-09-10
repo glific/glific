@@ -10,11 +10,9 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   alias Glific.{
     Communications,
+    Partners,
     Providers.Gupshup.ApiClient
   }
-
-  @rate_name Application.fetch_env!(:glific, :provider_id)
-  @rate_limit Application.fetch_env!(:glific, :provider_limit)
 
   @doc """
   Standard perform method to use Oban worker
@@ -22,10 +20,18 @@ defmodule Glific.Providers.Gupshup.Worker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok
   def perform(%Oban.Job{args: %{"message" => message, "payload" => payload}}) do
+    organization = Partners.organization(message["organization_id"])
+
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
     # Refactring because of credo warning
-    case ExRated.check_rate(@rate_name, 60_000, @rate_limit) do
-      {:ok, _} -> ApiClient.post("/msg", payload) |> handle_response(message)
+    case ExRated.check_rate(organization.shortcode, 60_000, organization.provider_limit) do
+      {:ok, _} ->
+        ApiClient.post(
+          "/msg",
+          payload,
+          headers: [{"apikey", organization.provider_key}]
+        )
+        |> handle_response(message)
       _ -> {:error, :rate_limit_exceeded}
     end
 
