@@ -81,7 +81,6 @@ defmodule Glific.Processor.ConsumerTagger do
   @doc false
   def handle_events(messages, _from, state) do
     Enum.each(messages, &process_message(&1, state))
-
     {:noreply, [], state}
   end
 
@@ -152,10 +151,8 @@ defmodule Glific.Processor.ConsumerTagger do
     # Since conatct and language are the required filed, we can skip some pattern checks.
     message = Repo.preload(message, contact: [:language])
     # only do the query if we have a valid credentials file for dialogflow
-    
     if FunWithFlags.enabled?(:dialogflow),
       do: Sessions.detect_intent(message, state.dialogflow_session_id)
-      
     {message, state}
   end
 
