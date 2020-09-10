@@ -29,24 +29,25 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     provider = providers()
 
-    organization = organization(provider, languages)
+    organizations(provider, languages)
+    |> Enum.each(fn organization ->
+      # calling it gtags, since tags is a macro in philcolumns
+      gtags(organization, languages)
 
-    # calling it gtags, since tags is a macro in philcolumns
-    gtags(organization, languages)
+      admin = contacts(organization, languages)
 
-    admin = contacts(organization, languages)
+      users(admin, organization)
 
-    users(admin, organization)
+      hsm_templates(organization, languages)
 
-    hsm_templates(organization, languages)
+      saved_searches(organization)
 
-    saved_searches(organization)
+      flows(organization)
 
-    flows(organization)
+      opted_in_contacts(organization)
 
-    opted_in_contacts(organization)
-
-    contacts_field(organization)
+      contacts_field(organization)
+    end)
   end
 
   def down(_repo) do
@@ -288,7 +289,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     admin =
       Repo.insert!(%Contact{
-        phone: @admin_phone,
+        phone: organization.provider_phone,
         name: "Glific Admin",
         organization_id: organization.id,
         language_id: en_us.id,
@@ -298,7 +299,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.update!(change(organization, contact_id: admin.id))
   end
 
-  def organization(provider, languages) do
+  def organizations(provider, languages) do
     {_hi, en_us} = languages
 
     out_of_office_default_data = %{
@@ -314,22 +315,35 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       ]
     }
 
-    Repo.insert!(%Organization{
+    org1 = Repo.insert!(%Organization{
       name: "Glific",
       shortcode: "glific",
       email: "ADMIN@REPLACE_ME.NOW",
       provider_id: provider.id,
       provider_key: "ADD_PROVIDER_API_KEY",
-      provider_phone: @admin_phone,
+      provider_phone: "917834811114",
       default_language_id: en_us.id,
       out_of_office: out_of_office_default_data
     })
+
+    org2 = Repo.insert!(%Organization{
+      name: "Glific2",
+      shortcode: "glific2",
+      email: "ADMIN@REPLACE_ME2.NOW",
+      provider_id: provider.id,
+      provider_key: "ADD_PROVIDER_API_KEY2",
+      provider_phone: "9178348111142",
+      default_language_id: en_us.id,
+      out_of_office: out_of_office_default_data
+    })
+
+    [org1, org2]
   end
 
   def users(admin, organization) do
     Users.create_user(%{
       name: "Glific Admin",
-      phone: @admin_phone,
+      phone: organization.provider_phone,
       password: @password,
       confirm_password: @password,
       roles: ["admin"],
@@ -353,7 +367,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
       If you’d like to continue this discussion, please reply with ‘yes’
       """,
-      uuid: "9381b1b9-1b9b-45a6-81f4-f91306959619"
+      uuid: Ecto.UUID.generate()
     })
 
     Repo.insert!(%SessionTemplate{
@@ -365,7 +379,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       language_id: en_us.id,
       organization_id: organization.id,
       body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
-      uuid: "e55f2c10-541c-470b-a5ff-9249ae82bc95"
+      uuid: Ecto.UUID.generate()
     })
 
     Repo.insert!(%SessionTemplate{
@@ -379,7 +393,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       is_reserved: true,
       language_id: en_us.id,
       organization_id: organization.id,
-      uuid: "fbf8d5a6-91ab-47ab-9691-35ef35443ad8"
+      uuid: Ecto.UUID.generate()
     })
   end
 
@@ -433,35 +447,27 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   def flows(organization) do
     data = [
-      {"Help Workflow", ["help", "मदद"], "3fa22108-f464-41e5-81d9-d8a298854429", true,
-       "help.json"},
-      {"Language Workflow", ["language", "भाषा"], "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf", true,
-       "language.json"},
-      {"Preferences Workflow", ["preference"], "63397051-789d-418d-9388-2ef7eb1268bb", false,
-       "preference.json"},
-      {"New Contact Workflow", ["newcontact"], "6fe8fda9-2df6-4694-9fd6-45b9e724f545", false,
-       "new_contact.json"},
-      {"Registration Workflow", ["registration"], "f4f38e00-3a50-4892-99ce-a281fe24d040", false,
-       "registration.json"},
-      {"Out of Office Workflow", ["outofoffice"], "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7", false,
-       "out_of_office.json"},
-      {"SoL Activity", ["solactivity"], "b050c652-65b5-4ccf-b62b-1e8b3f328676", false,
-       "sol_activity.json"},
-      {"sol_feedback", ["solfeedback"], "6c21af89-d7de-49ac-9848-c9febbf737a5", false,
-       "sol_feedback.json"}
+      {"Help Workflow", ["help", "मदद"], true, "help.json"},
+      {"Language Workflow", ["language", "भाषा"], true, "language.json"},
+      {"Preferences Workflow", ["preference"], false, "preference.json"},
+      {"New Contact Workflow", ["newcontact"], false, "new_contact.json"},
+      {"Registration Workflow", ["registration"], false, "registration.json"},
+      {"Out of Office Workflow", ["outofoffice"], false, "out_of_office.json"},
+      {"SoL Activity", ["solactivity"], false, "sol_activity.json"},
+      {"sol_feedback", ["solfeedback"], false, "sol_feedback.json"}
     ]
 
     Enum.map(data, &flow(&1, organization))
   end
 
-  defp flow({name, keywords, uuid, ignore_keywords, file}, organization) do
+  defp flow({name, keywords, ignore_keywords, file}, organization) do
     f =
       Repo.insert!(%Flow{
         name: name,
         keywords: keywords,
         ignore_keywords: ignore_keywords,
         version_number: "13.1.0",
-        uuid: uuid,
+        uuid: Ecto.UUID.generate(),
         organization_id: organization.id
       })
 
