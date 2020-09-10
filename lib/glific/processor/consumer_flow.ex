@@ -114,6 +114,7 @@ defmodule Glific.Processor.ConsumerFlow do
       check_contexts(context, message, body, state)
     else
       _ ->
+        IO.inspect state.flow_keywords
         if Enum.reduce(state.flow_keywords, false, fn {_org_id, keywords_map}, _ ->
              Map.has_key?(keywords_map, body)
            end),
