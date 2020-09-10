@@ -148,17 +148,9 @@ defmodule Glific.Processor.ConsumerTagger do
   defp dialogflow_tagger({message, %{tagged: false} = state}) do
     # Since conatct and language are the required filed, we can skip some pattern checks.
     message = Repo.preload(message, contact: [:language])
-    IO.inspect("Hello1")
     # only do the query if we have a valid credentials file for dialogflow
-    if FunWithFlags.enabled?(:dialogflow) do
-      %{
-        :path => state.dialogflow_session_id,
-        :locale => message.contact.language.locale,
-        :message => Message.to_minimal_map(message)
-      }
-      |> Glific.Dialogflow.Worker.new()
-      |> Oban.insert()
-    end
+    if FunWithFlags.enabled?(:dialogflow),
+      do: Sessions.detect_intent(message, state.dialogflow_session_id)
 
     {message, state}
   end

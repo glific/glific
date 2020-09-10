@@ -96,19 +96,17 @@ defmodule Glific do
 
   # Structs don't do enumerable and anyway the keys are already
   # atoms
-  def atomize_keys(struct = %{__struct__: _}),
-  do: struct
+  def atomize_keys(map) when is_struct(map),
+    do: map
 
-  def atomize_keys(map = %{}),
+  def atomize_keys([head | rest]), do: [atomize_keys(head) | atomize_keys(rest)]
+
+  def atomize_keys(map) when is_map(map),
     do:
-      Enum.map(map, fn {k, v}
-      -> {String.to_existing_atom(k), atomize_keys(v)} end)
+      Enum.map(map, fn {k, v} ->
+        {String.to_existing_atom(k), atomize_keys(v)}
+      end)
       |> Enum.into(%{})
 
-
-  def atomize_keys([head | rest]), do:
-    [atomize_keys(head) | atomize_keys(rest)]
-
   def atomize_keys(value), do: value
-
 end

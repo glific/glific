@@ -20,11 +20,10 @@ defmodule Glific.Dialogflow.Worker do
   @spec perform(Oban.Job.t()) :: :ok
   def perform(%Oban.Job{args: %{"path" => path, "locale" => locale, "message" => message}}) do
     case ExRated.check_rate(@rate_name, 60_000, @rate_limit) do
-      {:ok, _} ->
-        Sessions.detect_intent(Glific.atomize_keys(message), path, locale)
-        |> IO.inspect()
+      {:ok, _} -> Sessions.make_request(Glific.atomize_keys(message), path, locale)
       _ -> {:error, :rate_limit_exceeded}
     end
+
     :ok
   end
 end
