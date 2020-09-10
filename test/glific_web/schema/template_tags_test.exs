@@ -21,12 +21,12 @@ defmodule GlificWeb.Schema.TemplateTagsTest do
     Tags.status_map(%{organization_id: org_id})
   end
 
-  test "update a template tag with add tags", %{user: user} do
+  test "update a template tag with add tags", %{staff: user} do
     tags_map = tag_status_map(user.organization_id)
     template = Fixtures.session_template_fixture()
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "template_id" => template.id,
@@ -42,7 +42,7 @@ defmodule GlificWeb.Schema.TemplateTagsTest do
 
     # add a known tag id not there in the DB (like a negative number?)
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "template_id" => template.id,
@@ -57,7 +57,7 @@ defmodule GlificWeb.Schema.TemplateTagsTest do
     assert length(template_tags) == length(Map.values(tags_map))
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "template_id" => template.id,
@@ -72,13 +72,13 @@ defmodule GlificWeb.Schema.TemplateTagsTest do
     assert template_tags == []
   end
 
-  test "update a template tag with add and delete tags", %{user: user} do
+  test "update a template tag with add and delete tags", %{staff: user} do
     tags_map = tag_status_map(user.organization_id)
     template = Fixtures.session_template_fixture()
 
     # add some tags, test bad deletion value
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "template_id" => template.id,
@@ -95,7 +95,7 @@ defmodule GlificWeb.Schema.TemplateTagsTest do
 
     # now delete all the added tags
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "template_id" => template.id,

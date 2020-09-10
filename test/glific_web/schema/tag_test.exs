@@ -28,7 +28,7 @@ defmodule GlificWeb.Schema.TagTest do
     "assets/gql/tags/mark_contact_messages_as_read.gql"
   )
 
-  test "tags field returns list of tags", %{user: user} do
+  test "tags field returns list of tags", %{staff: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
     tags = get_in(query_data, [:data, "tags"])
@@ -40,7 +40,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert get_in(tag, ["language", "id"]) > 0
   end
 
-  test "tags field returns list of tags in desc order", %{user: user} do
+  test "tags field returns list of tags in desc order", %{staff: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "DESC"}})
     assert {:ok, query_data} = result
 
@@ -51,7 +51,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert get_in(tag, ["label"]) == "यह परीक्षण के लिए है"
   end
 
-  test "tags field returns list of tags in various filters", %{user: user} do
+  test "tags field returns list of tags in various filters", %{staff: user} do
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"label" => "Messages"}})
     assert {:ok, query_data} = result
 
@@ -88,7 +88,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert length(tags) > 0
   end
 
-  test "tags field obeys limit and offset", %{user: user} do
+  test "tags field obeys limit and offset", %{staff: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
 
@@ -109,7 +109,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert get_in(tags, [Access.at(2), "label"]) != "Child"
   end
 
-  test "count returns the number of tags", %{user: user} do
+  test "count returns the number of tags", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countTags"]) > 15
 
@@ -126,7 +126,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert get_in(query_data, [:data, "countTags"]) == 1
   end
 
-  test "tag id returns one tag or nil", %{user: user} do
+  test "tag id returns one tag or nil", %{staff: user} do
     label = "This is for testing"
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
 
@@ -143,7 +143,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert message == "Resource not found"
   end
 
-  test "create a tag and test possible scenarios and errors", %{user: user} do
+  test "create a tag and test possible scenarios and errors", %{manager: user} do
     label = "This is for testing"
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     language_id = tag.language_id
@@ -192,7 +192,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert message == "has already been taken"
   end
 
-  test "update a tag and test possible scenarios and errors", %{user: user} do
+  test "update a tag and test possible scenarios and errors", %{manager: user} do
     label = "This is for testing"
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
 
@@ -223,7 +223,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert message == "has already been taken"
   end
 
-  test "create a tag with keywords", %{user: user} do
+  test "create a tag with keywords", %{manager: user} do
     label = "This is for testing"
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
     language_id = tag.language_id
@@ -245,7 +245,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert ["hii", "hello"] == get_in(query_data, [:data, "createTag", "tag", "keywords"])
   end
 
-  test "delete a tag", %{user: user} do
+  test "delete a tag", %{manager: user} do
     label = "This is for testing"
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
 
@@ -260,7 +260,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert message == "Resource not found"
   end
 
-  test "mark all contact messages as unread", %{user: user} do
+  test "mark all contact messages as unread", %{staff: user} do
     message_1 = Fixtures.message_fixture()
 
     message_2 =

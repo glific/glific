@@ -22,13 +22,13 @@ defmodule GlificWeb.Schema.MessageTagsTest do
     Tags.status_map(%{organization_id: org_id})
   end
 
-  test "update a message tag with add tags", %{user: user} do
+  test "update a message tag with add tags", %{staff: user} do
     tags_map = tag_status_map(user.organization_id)
     body = "Default message body"
     {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "message_id" => message.id,
@@ -44,7 +44,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
 
     # add a known tag id not there in the DB (like a negative number?)
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "message_id" => message.id,
@@ -59,7 +59,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
     assert length(message_tags) == length(Map.values(tags_map))
 
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "message_id" => message.id,
@@ -74,14 +74,14 @@ defmodule GlificWeb.Schema.MessageTagsTest do
     assert message_tags == []
   end
 
-  test "update a message tag with add and delete tags", %{user: user} do
+  test "update a message tag with add and delete tags", %{staff: user} do
     tags_map = tag_status_map(user.organization_id)
     body = "Default message body"
     {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
 
     # add some tags, test bad deletion value
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "message_id" => message.id,
@@ -98,7 +98,7 @@ defmodule GlificWeb.Schema.MessageTagsTest do
 
     # now delete all the added tags
     result =
-      query_gql_by(:update,
+      auth_query_gql_by(:update, user,
         variables: %{
           "input" => %{
             "message_id" => message.id,

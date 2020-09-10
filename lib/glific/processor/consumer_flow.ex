@@ -14,6 +14,7 @@ defmodule Glific.Processor.ConsumerFlow do
     Flows.FlowContext,
     Flows.Periodic,
     Messages.Message,
+    Partners,
     Repo
   }
 
@@ -59,13 +60,19 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   defp reload(state) do
+    organization_ids_map =
+      Partners.list_organizations()
+      |> Enum.reduce(%{}, fn organization, acc ->
+        Map.put_new(acc, organization.id, %{})
+      end)
+
     flow_keywords_map =
       Flows.Flow
-      |> select([:keywords, :id])
+      |> select([:keywords, :id, :organization_id])
       |> Repo.all()
-      |> Enum.reduce(%{}, fn flow, acc ->
+      |> Enum.reduce(organization_ids_map, fn flow, acc ->
         Enum.reduce(flow.keywords, acc, fn keyword, acc ->
-          Map.put(acc, keyword, flow.id)
+          put_in(acc, [flow.organization_id, keyword], flow.id)
         end)
       end)
 
@@ -107,9 +114,11 @@ defmodule Glific.Processor.ConsumerFlow do
       check_contexts(context, message, body, state)
     else
       _ ->
-        if Map.has_key?(state.flow_keywords, body),
-          do: check_flows(message, body, state),
-          else: check_contexts(context, message, body, state)
+        if Enum.reduce(state.flow_keywords, false, fn {_org_id, keywords_map}, _ ->
+             Map.has_key?(keywords_map, body)
+           end),
+           do: check_flows(message, body, state),
+           else: check_contexts(context, message, body, state)
     end
   end
 

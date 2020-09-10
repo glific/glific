@@ -262,7 +262,7 @@ defmodule Glific.Flows do
   @spec get_cached_flow(non_neg_integer, any, any) :: {atom, any}
   def get_cached_flow(organization_id, key, args) do
     with {:ok, false} <- Caches.get(organization_id, key) do
-      flow = Flow.get_loaded_flow(args |> Map.merge(%{organization_id: organization_id}))
+      flow = Flow.get_loaded_flow(organization_id, args)
       Caches.set(organization_id, [flow.uuid | flow.keywords], flow)
     end
   end
@@ -273,7 +273,7 @@ defmodule Glific.Flows do
   """
   @spec update_cached_flow(Flow.t()) :: {atom, any}
   def update_cached_flow(flow) do
-    flow = Flow.get_loaded_flow(%{uuid: flow.uuid})
+    flow = Flow.get_loaded_flow(flow.organization_id, %{uuid: flow.uuid})
     Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
     Caches.set(flow.organization_id, [flow.uuid | flow.keywords], flow)
   end
