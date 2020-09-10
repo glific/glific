@@ -87,4 +87,26 @@ defmodule Glific do
 
     DateTime.add(time, -1 * go_back, unit)
   end
+
+  @doc """
+  Convert map string keys to :atom keys
+  """
+  @spec atomize_keys(map()) :: map()
+  def atomize_keys(nil), do: nil
+
+  # Structs don't do enumerable and anyway the keys are already
+  # atoms
+  def atomize_keys(map) when is_struct(map),
+    do: map
+
+  def atomize_keys([head | rest]), do: [atomize_keys(head) | atomize_keys(rest)]
+
+  def atomize_keys(map) when is_map(map),
+    do:
+      Enum.map(map, fn {k, v} ->
+        {String.to_existing_atom(k), atomize_keys(v)}
+      end)
+      |> Enum.into(%{})
+
+  def atomize_keys(value), do: value
 end

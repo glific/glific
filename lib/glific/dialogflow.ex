@@ -18,20 +18,23 @@ defmodule Glific.Dialogflow do
 
     url = "#{host()}/v2beta1/projects/#{id}/locations/global/agent/#{path}"
 
-    case HTTPoison.request(method, url, body(body), headers(email)) do
-      {:ok, %HTTPoison.Response{status_code: status, body: body}} when status in 200..299 ->
+    case do_request(method, url, body(body), headers(email)) do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Poison.decode!(body)}
 
-      {:ok, %HTTPoison.Response{status_code: status, body: body}} when status in 400..499 ->
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
         {:error, Poison.decode!(body)}
 
-      {:ok, %HTTPoison.Response{status_code: status, body: body}} when status >= 500 ->
+      {:ok, %Tesla.Env{status: status, body: body}} when status >= 500 ->
         {:error, Poison.decode!(body)}
 
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, Poison.decode!(reason)}
+      {:error, %Tesla.Error{reason: reason}} ->
+        {:error, reason}
     end
   end
+
+  defp do_request(:post, url, body, header), do: Tesla.post(url, body, headers: header)
+  defp do_request(_, url, _, _), do: Tesla.get(url)
 
   # ---------------------------------------------------------------------------
   # Encode body
