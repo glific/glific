@@ -12,30 +12,46 @@ defmodule Glific.Dialogflow do
   @doc """
   The request controller which sends and parses requests. We should move this to Tesla
   """
-  @spec request(atom, String.t(), String.t() | map) :: tuple
-  def request(method, path, body) do
+  @spec request(atom, String.t(), String.t() | map, map()) :: tuple
+  def request(method, path, body, message \\ %{}) do
+    IO.inspect(%{method: method, path: path, body: body  })
     %{id: id, email: email} = project_info()
 
     url = "#{host()}/v2beta1/projects/#{id}/locations/global/agent/#{path}"
 
-    case HTTPoison.request(method, url, body(body), headers(email)) do
-      {:ok, %HTTPoison.Response{status_code: status, body: body}} when status in 200..299 ->
-        {:ok, Poison.decode!(body)}
+    case do_request(method, url, body(body), headers(email)) do
+      {:ok, %Tesla.Env{status: status, body: body}}
+        when status in 200..299 -> handle_success_response(Poison.decode!(body), message)
 
-      {:ok, %HTTPoison.Response{status_code: status, body: body}} when status in 400..499 ->
-        {:error, Poison.decode!(body)}
+      {:ok, %Tesla.Env{status: status, body: body}}
+        when status in 400..499 -> handle_error_response(body, message)
 
-      {:ok, %HTTPoison.Response{status_code: status, body: body}} when status >= 500 ->
-        {:error, Poison.decode!(body)}
+      {:ok, %Tesla.Env{status: status, body: body}}
+        when status >= 500 -> handle_error_response(body, message)
 
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:error, Poison.decode!(reason)}
+      {:error, %Tesla.Error{reason: reason}} ->
+        handle_error_response(reason, message)
     end
   end
 
   # ---------------------------------------------------------------------------
   # Encode body
   # ---------------------------------------------------------------------------
+  defp do_request(:post, url, body, header), do: Tesla.post(url, body, headers: header)
+  defp do_request("post", url, body, header), do: Tesla.post(url, body, headers: header)
+  defp do_request(_, url, _, _), do: Tesla.get(url)
+
+
+  defp handle_success_response(response, message) do
+    IO.inspect("handle_success_response")
+    IO.inspect(response)
+    Glific.Processor.Helper.add_dialogflow_tag(Glific.atomize_keys(message), response["queryResult"])
+    {:ok, response}
+  end
+
+  defp handle_error_response(error, _), do:
+    {:error, error}
+
   @spec body(String.t() | map) :: String.t()
   defp body(""), do: ""
   defp body(body), do: Poison.encode!(body)

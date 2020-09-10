@@ -32,6 +32,9 @@ defmodule Glific.Processor.Helper do
   def add_dialogflow_tag(_message, %{"intent" => %{"isFallback" => true}}), do: nil
 
   def add_dialogflow_tag(message, %{"intent" => intent} = response) do
+    IO.inspect("Cleanupsss 1")
+    IO.inspect(message)
+
     tag_label =
       case intent["displayName"]
            |> String.split(".")
@@ -55,11 +58,15 @@ defmodule Glific.Processor.Helper do
   defp process_dialogflow_response(nil, _), do: nil
   defp process_dialogflow_response("", _), do: nil
 
-  defp process_dialogflow_response(response_message, message),
-    do:
+  defp process_dialogflow_response(response_message, message) do
+    IO.inspect("Cleanupsss")
+    IO.inspect(message)
       Glific.Messages.create_and_send_message(%{
         body: response_message,
         receiver_id: message.sender_id,
         organization_id: message.organization_id
       })
+
+
+  end
 end
