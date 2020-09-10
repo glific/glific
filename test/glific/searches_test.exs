@@ -29,7 +29,7 @@ defmodule Glific.SearchesTest do
 
     test "count_saved_searches/1 returns count of all saved_searches",
          %{organization_id: organization_id} = attrs do
-      saved_searches_count = Repo.aggregate(Searches.SavedSearch, :count)
+      saved_searches_count = Searches.count_saved_searches(%{filter: attrs})
 
       saved_search_fixture(attrs)
       assert Searches.count_saved_searches(%{filter: attrs}) == saved_searches_count + 1

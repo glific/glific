@@ -59,8 +59,12 @@ defmodule Glific.FLowsTest do
       assert length(flows) >= 2
     end
 
-    test "count_flows/0 returns count of all flows", attrs do
-      flow_count = Repo.aggregate(Flow, :count)
+    test "count_flows/0 returns count of all flows",
+         %{organization_id: organization_id} = attrs do
+      flow_count =
+        Flow
+        |> Ecto.Query.where([q], q.organization_id == ^organization_id)
+        |> Repo.aggregate(:count)
 
       _ = flow_fixture()
       assert Flows.count_flows(%{filter: attrs}) == flow_count + 1

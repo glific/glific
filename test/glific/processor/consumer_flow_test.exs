@@ -70,6 +70,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
     :ok
   end
 
+  @tag :pending
   test "should behave like consumer" do
     # keep track of current messages
     message_count = Repo.aggregate(Message, :count)

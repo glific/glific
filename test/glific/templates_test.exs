@@ -84,14 +84,14 @@ defmodule Glific.TemplatesTest do
     end
 
     test "list_session_templates/1 returns all session_templates", attrs do
-      templates_count = Repo.aggregate(SessionTemplate, :count)
+      templates_count = Templates.count_session_templates(%{filter: attrs})
 
       _session_template = session_template_fixture(attrs)
       assert length(Templates.list_session_templates(%{filter: attrs})) == templates_count + 1
     end
 
     test "count_session_templates/0 returns count of all session templates", attrs do
-      templates_count = Repo.aggregate(SessionTemplate, :count)
+      templates_count = Templates.count_session_templates(%{filter: attrs})
 
       session_template_fixture(attrs)
       assert Templates.count_session_templates(%{filter: attrs}) == templates_count + 1
@@ -177,7 +177,7 @@ defmodule Glific.TemplatesTest do
     end
 
     test "list_session_templates/1 with multiple items", attrs do
-      templates_count = Repo.aggregate(SessionTemplate, :count)
+      templates_count = Templates.count_session_templates(%{filter: attrs})
 
       session_template_fixture(attrs)
       session_template_fixture(Map.merge(attrs, @valid_attrs_1))
@@ -187,7 +187,7 @@ defmodule Glific.TemplatesTest do
     end
 
     test "list_session_templates/1 with multiple items sorted", attrs do
-      session_templates_count = Repo.aggregate(SessionTemplate, :count)
+      session_templates_count = Templates.count_session_templates(%{filter: attrs})
 
       s0 = session_template_fixture(Map.merge(attrs, @valid_attrs_to_test_order_1))
       s1 = session_template_fixture(Map.merge(attrs, @valid_attrs_to_test_order_2))
