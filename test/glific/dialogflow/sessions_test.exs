@@ -27,26 +27,27 @@ defmodule Glific.Dialogflow.SessionsTest do
   }
 
   setup do
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{ status: 200, body: Jason.encode!(@query)}
-      end)
-      :ok
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{status: 200, body: Jason.encode!(@query)}
+    end)
+
+    :ok
   end
 
-
   test "detect_intent/2 will add the message to queue" do
-    message = Fixtures.message_fixture(%{body: "Hola"})
-              |> Repo.preload([contact: [:language]])
+    message =
+      Fixtures.message_fixture(%{body: "Hola"})
+      |> Repo.preload(contact: [:language])
 
     Sessions.detect_intent(message, "1e8118272e2f69ea6ec98acbb71ab959")
     assert_enqueued(worker: SessionWorker)
     assert %{success: 1, failure: 0} == Oban.drain_queue(queue: :dialogflow)
-    message = Messages.get_message!(message.id)
-              |> Repo.preload([:tags])
 
-    assert  hd(message.tags).label == "Greeting"
+    message =
+      Messages.get_message!(message.id)
+      |> Repo.preload([:tags])
+
+    assert hd(message.tags).label == "Greeting"
   end
-
-
 end

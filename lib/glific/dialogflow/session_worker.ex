@@ -10,20 +10,13 @@ defmodule Glific.Dialogflow.SessionWorker do
 
   alias Glific.Dialogflow.Sessions
 
-  @rate_name Application.fetch_env!(:glific, :provider_id)
-  @rate_limit Application.fetch_env!(:glific, :provider_limit)
-
   @doc """
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok
   def perform(%Oban.Job{args: %{"path" => path, "locale" => locale, "message" => message}}) do
-    case ExRated.check_rate(@rate_name, 60_000, @rate_limit) do
-      {:ok, _} -> Sessions.make_request(Glific.atomize_keys(message), path, locale)
-      _ -> {:error, :rate_limit_exceeded}
-    end
-
+    Sessions.make_request(Glific.atomize_keys(message), path, locale)
     :ok
   end
 end
