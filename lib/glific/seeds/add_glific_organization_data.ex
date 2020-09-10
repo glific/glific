@@ -1,4 +1,7 @@
 defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
+  @moduledoc """
+  Seed data for each new organization
+  """
   import Ecto.Changeset, only: [change: 2]
 
   @now DateTime.utc_now() |> DateTime.truncate(:second)
@@ -10,13 +13,17 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
     Contacts.ContactsField,
     Flows.Flow,
     Flows.FlowRevision,
+    Partners.Organization,
     Repo,
     Searches.SavedSearch,
+    Settings.Language,
     Tags.Tag,
     Templates.SessionTemplate,
     Users
   }
 
+  @doc false
+  @spec seed_data(Organization.t(), [Language.t()]) :: nil
   def seed_data(organization, languages) do
     # calling it gtags, since tags is a macro in philcolumns
     gtags(organization, languages)
@@ -36,7 +43,7 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
     contacts_field(organization)
   end
 
-  def gtags(organization, languages) do
+  defp gtags(organization, languages) do
     [en_us | _] = languages
 
     # seed tags
@@ -221,7 +228,7 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
     Repo.insert_all(Tag, tags)
   end
 
-  def contacts(organization, languages) do
+  defp contacts(organization, languages) do
     [en_us | _] = languages
 
     admin =
@@ -236,7 +243,7 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
     Repo.update!(change(organization, contact_id: admin.id))
   end
 
-  def users(admin, organization) do
+  defp users(admin, organization) do
     Users.create_user(%{
       name: "Glific Admin",
       phone: organization.provider_phone,
@@ -248,7 +255,7 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
     })
   end
 
-  def hsm_templates(organization, languages) do
+  defp hsm_templates(organization, languages) do
     [en_us | _] = languages
 
     Repo.insert!(%SessionTemplate{
@@ -293,7 +300,7 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
     })
   end
 
-  def saved_searches(organization) do
+  defp saved_searches(organization) do
     labels =
       Repo.label_id_map(
         Tag,
@@ -341,7 +348,7 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
         organization_id: organization.id
       })
 
-  def flows(organization) do
+  defp flows(organization) do
     data = [
       {"Help Workflow", ["help", "मदद"], true, "help.json"},
       {"Language Workflow", ["language", "भाषा"], true, "language.json"},
@@ -382,7 +389,7 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
     })
   end
 
-  def opted_in_contacts(organization) do
+  defp opted_in_contacts(organization) do
     with {:ok, url} <- Application.fetch_env(:glific, :provider_optin_list_url),
          {:ok, api_key} <- Application.fetch_env(:glific, :provider_key),
          {:ok, response} <- HTTPoison.get(url, [{"apikey", api_key}]),
@@ -416,7 +423,7 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
     end
   end
 
-  def contacts_field(organization) do
+  defp contacts_field(organization) do
     data = [
       {"Name", "name", :text, :contact},
       {"Age Group", "age_group", :text, :contact},
