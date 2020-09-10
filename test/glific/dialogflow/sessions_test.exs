@@ -1,10 +1,10 @@
 defmodule Glific.Dialogflow.SessionsTest do
-  use ExUnit.Case
-
-  import Mock
+  use Glific.DataCase, async: true
+  use Oban.Testing, repo: Glific.Repo
 
   alias Glific.Dialogflow.Sessions
-  alias Goth.Token
+  alias Glific.Dialogflow.SessionWorker
+  alias Glific.Fixtures
 
   @query %{
     "queryResult" => %{
@@ -25,26 +25,23 @@ defmodule Glific.Dialogflow.SessionsTest do
     "responseId" => "ab7b5dca-6f34-4b9b-88cb-d0da5572778a"
   }
 
-  test "detect_intent/2 processes a natural language query" do
-    with_mocks([
-      {
-        Token,
-        [:passthrough],
-        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
-      },
-      {
-        HTTPoison,
-        [:passthrough],
-        [
-          request: fn _method, _url, _params, _headers ->
-            body = Poison.encode!(@query)
-            {:ok, %HTTPoison.Response{status_code: 200, body: body}}
-          end
-        ]
-      }
-    ]) do
-      assert Sessions.detect_intent("Hola", "1e8118272e2f69ea6ec98acbb71ab959") ==
-               {:ok, @query}
-    end
+  setup do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{ status: 200, body: Jason.encode!(@query)}
+      end)
+      :ok
   end
+
+
+  test "detect_intent/2 will add the message to queue" do
+    message = Fixtures.message_fixture(%{body: "Hola"})
+              |> Repo.preload([contact: [:language]])
+
+    Sessions.detect_intent(message, "1e8118272e2f69ea6ec98acbb71ab959")
+    assert_enqueued(worker: SessionWorker)
+    assert %{success: 1, failure: 0} == Oban.drain_queue(queue: :dialogflow)
+  end
+
+
 end

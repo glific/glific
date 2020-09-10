@@ -1,10 +1,10 @@
-defmodule Glific.Dialogflow.Worker do
+defmodule Glific.Dialogflow.SessionWorker do
   @moduledoc """
   A worker to handle send message processes
   """
 
   use Oban.Worker,
-    queue: :gupshup,
+    queue: :dialogflow,
     max_attempts: 1,
     priority: 0
 

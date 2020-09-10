@@ -5,7 +5,7 @@ defmodule Glific.Dialogflow.Sessions do
 
   alias Glific.{
     Dialogflow,
-    Dialogflow.Worker,
+    Dialogflow.SessionWorker,
     Messages.Message,
     Processor.Helper
   }
@@ -20,7 +20,7 @@ defmodule Glific.Dialogflow.Sessions do
       :locale => message.contact.language.locale,
       :message => Message.to_minimal_map(message)
     }
-    |> Worker.new()
+    |> SessionWorker.new()
     |> Oban.insert()
 
     {:ok}
