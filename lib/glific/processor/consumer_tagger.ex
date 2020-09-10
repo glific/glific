@@ -68,7 +68,7 @@ defmodule Glific.Processor.ConsumerTagger do
              Tag,
              %{shortcode: "numeric", organization_id: organization.id}
            ) do
-        {:ok, tag} -> put_in(state_acc.numeric_tag_id[organization.id], tag.id)
+        {:ok, tag} -> put_in(state_acc, [:numeric_tag_id, organization.id], tag.id)
         _ -> state_acc
       end
       |> put_in([:keyword_map, organization.id], Taggers.Keyword.get_keyword_map(attrs))
