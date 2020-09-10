@@ -26,7 +26,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     case ExRated.check_rate(organization.shortcode, 60_000, organization.provider_limit) do
       {:ok, _} ->
         ApiClient.post(
-          "/msg",
+          organization.provider.api_end_point <> "/msg",
           payload,
           headers: [{"apikey", organization.provider_key}]
         )

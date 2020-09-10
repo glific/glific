@@ -7,6 +7,13 @@ defmodule Glific.Repo.Seeds.V04AlterGlificData do
   alias Glific.Repo
 
   def up(_repo) do
-    Repo.query("UPDATE organizations SET provider_limit = 60;")
+    queries = [
+      "UPDATE organizations SET provider_limit = 60;",
+      "UPDATE providers SET handler = 'Glific.Providers.Gupshup.Message', worker = 'Glific.Providers.Gupshup.Worker'",
+    ]
+    Enum.each(
+      queries,
+      &Repo.query(&1)
+    )
   end
 end

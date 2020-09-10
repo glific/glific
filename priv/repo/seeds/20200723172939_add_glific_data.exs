@@ -279,7 +279,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.insert!(%Provider{
       name: "Gupshup",
       url: "https://gupshup.io/",
-      api_end_point: "https://api.gupshup.io/sm/api/v1"
+      api_end_point: "https://api.gupshup.io/sm/api/v1",
+      handler: "Glific.Providers.Gupshup.Message",
+      worker: "Glific.Providers.Gupshup.Worker"
     })
   end
 
