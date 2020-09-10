@@ -75,7 +75,7 @@ defmodule Glific.UsersTest do
     end
 
     test "list_users/1 returns all users", %{organization_id: _organization_id} = attrs do
-      users_count = Repo.aggregate(User, :count)
+      users_count = Users.count_users(%{filter: attrs})
 
       _user = user_fixture(attrs)
       assert length(Users.list_users(%{filter: attrs})) == users_count + 1
@@ -83,7 +83,7 @@ defmodule Glific.UsersTest do
 
     test "count_users/1 returns count of all users",
          %{organization_id: _organization_id} = attrs do
-      users_count = Repo.aggregate(User, :count)
+      users_count = Users.count_users(%{filter: attrs})
 
       _ = user_fixture(attrs)
 
@@ -140,7 +140,7 @@ defmodule Glific.UsersTest do
     end
 
     test "list_users/1 with multiple users", attrs do
-      users_count = Repo.aggregate(User, :count)
+      users_count = Users.count_users(%{filter: attrs})
 
       user_fixture(Map.merge(attrs, @valid_attrs))
       user_fixture(Map.merge(attrs, @valid_attrs_1))
@@ -151,7 +151,7 @@ defmodule Glific.UsersTest do
     end
 
     test "list_users/1 with multiple users sorted", attrs do
-      users_count = Repo.aggregate(User, :count)
+      users_count = Users.count_users(%{filter: attrs})
 
       u0 = user_fixture(Map.merge(attrs, @valid_attrs_to_test_order_1))
       u1 = user_fixture(Map.merge(attrs, @valid_attrs_to_test_order_2))

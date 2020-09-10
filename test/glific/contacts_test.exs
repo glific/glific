@@ -103,7 +103,7 @@ defmodule Glific.ContactsTest do
     end
 
     test "list_contacts/1 returns all contacts", %{organization_id: _organization_id} = attrs do
-      contacts_count = Repo.aggregate(Contact, :count)
+      contacts_count = Contacts.count_contacts(%{filter: attrs})
 
       _contact = contact_fixture(attrs)
       assert length(Contacts.list_contacts(%{filter: attrs})) == contacts_count + 1
@@ -111,7 +111,7 @@ defmodule Glific.ContactsTest do
 
     test "list_contacts/1 should remove blocked contacts unless filtered by status",
          %{organization_id: _organization_id} = attrs do
-      contacts_count = Repo.aggregate(Contact, :count)
+      contacts_count = Contacts.count_contacts(%{filter: attrs})
 
       _contact = contact_fixture(attrs |> Map.merge(%{status: :blocked}))
       assert length(Contacts.list_contacts(%{filter: attrs})) == contacts_count
@@ -119,7 +119,7 @@ defmodule Glific.ContactsTest do
 
     test "count_contacts/0 returns count of all contacts",
          %{organization_id: _organization_id} = attrs do
-      contacts_count = Repo.aggregate(Contact, :count)
+      contacts_count = Contacts.count_contacts(%{filter: attrs})
 
       _ = contact_fixture(attrs)
       assert Contacts.count_contacts(%{filter: attrs}) == contacts_count + 1
@@ -207,7 +207,7 @@ defmodule Glific.ContactsTest do
     end
 
     test "list_contacts/1 with multiple contacts", %{organization_id: _organization_id} = attrs do
-      contacts_count = Repo.aggregate(Contact, :count)
+      contacts_count = Contacts.count_contacts(%{filter: attrs})
 
       _c0 = contact_fixture(Map.merge(attrs, @valid_attrs))
       _c1 = contact_fixture(Map.merge(attrs, @valid_attrs_1))
@@ -219,7 +219,7 @@ defmodule Glific.ContactsTest do
 
     test "list_contacts/1 with multiple contacts sorted",
          %{organization_id: _organization_id} = attrs do
-      contacts_count = Repo.aggregate(Contact, :count)
+      contacts_count = Contacts.count_contacts(%{filter: attrs})
 
       c0 = contact_fixture(Map.merge(attrs, @valid_attrs_to_test_order_1))
       c1 = contact_fixture(Map.merge(attrs, @valid_attrs_to_test_order_2))

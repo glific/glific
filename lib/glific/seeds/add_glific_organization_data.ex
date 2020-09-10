@@ -10,11 +10,8 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
     Contacts.ContactsField,
     Flows.Flow,
     Flows.FlowRevision,
-    Partners,
-    Partners.Organization,
     Repo,
     Searches.SavedSearch,
-    Settings,
     Tags.Tag,
     Templates.SessionTemplate,
     Users

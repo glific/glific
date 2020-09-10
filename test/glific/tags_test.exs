@@ -61,7 +61,7 @@ defmodule Glific.TagsTest do
     end
 
     test "count_tags/1 returns count of all tags", %{organization_id: _organization_id} = attrs do
-      tag_count = Repo.aggregate(Tag, :count)
+      tag_count = Tags.count_tags(%{filter: attrs})
 
       _ = tag_fixture(attrs)
       assert Tags.count_tags(%{filter: attrs}) == tag_count + 1
@@ -128,7 +128,7 @@ defmodule Glific.TagsTest do
     end
 
     test "list_tags/1 with multiple items", %{organization_id: _organization_id} = attrs do
-      tag_count = Repo.aggregate(Tag, :count)
+      tag_count = Tags.count_tags(%{filter: attrs})
 
       tag1 = tag_fixture(attrs)
       tag2 = tag_fixture(Map.merge(@valid_more_attrs, attrs))
@@ -141,7 +141,7 @@ defmodule Glific.TagsTest do
     end
 
     test "list_tags/1 with multiple items sorted", %{organization_id: _organization_id} = attrs do
-      tag_count = Repo.aggregate(Tag, :count)
+      tag_count = Tags.count_tags(%{filter: attrs})
 
       tag1 = tag_fixture(attrs)
       tag2 = tag_fixture(Map.merge(attrs, @valid_more_attrs))
