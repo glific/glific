@@ -152,11 +152,11 @@ defmodule Glific.Processor.ConsumerTagger do
     # only do the query if we have a valid credentials file for dialogflow
     if FunWithFlags.enabled?(:dialogflow) do
       {:ok, response} =
-      Sessions.detect_intent(
-        message.body,
-        state.dialogflow_session_id,
-        message.contact.language.locale
-      )
+        Sessions.detect_intent(
+          message.body,
+          state.dialogflow_session_id,
+          message.contact.language.locale
+        )
 
       Helper.add_dialogflow_tag(message, response["queryResult"])
     end
