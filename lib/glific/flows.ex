@@ -156,9 +156,12 @@ defmodule Glific.Flows do
     # We should fix this to get the logged in user
     user = %{email: "user@glific.com", name: "Glific User"}
 
+    # Instead of sorting this list we need to fetch the ordered items from the DB
+    # We will optimize this more in the v0.4
     asset_list =
-      Enum.reduce(
-        flow.revisions,
+      flow.revisions
+      |> Enum.sort(fn fr1, fr2 -> fr1.id >= fr2.id end)
+      |> Enum.reduce(
         [],
         fn revision, acc ->
           [
