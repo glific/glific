@@ -25,7 +25,7 @@ defmodule Glific.Partners.Provider do
           url: String.t() | nil,
           api_end_point: String.t() | nil,
           handler: String.t() | nil,
-          worker: String.t() | nil,
+          worker: String.t() | nil
         }
 
   schema "providers" do

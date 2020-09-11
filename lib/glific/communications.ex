@@ -5,6 +5,7 @@ defmodule Glific.Communications do
 
   alias Glific.{
     Messages.Message,
+    Partners,
     Tags.ContactTag,
     Tags.MessageTag,
     Tags.TemplateTag
@@ -13,14 +14,22 @@ defmodule Glific.Communications do
   @doc """
   Get the current provider based on the config
   """
-  @spec provider :: atom()
-  def provider, do: Application.fetch_env!(:glific, :provider)
+  @spec provider(non_neg_integer) :: atom()
+  def provider(organization_id),
+    do:
+      "Elixir."
+      |> Kernel.<>(Partners.organization(organization_id).provider.handler)
+      |> String.to_existing_atom()
 
   @doc """
   Get the current provider worker based on the organization | Config | Defaultconfig
   """
-  @spec provider_worker :: atom()
-  def provider_worker, do: Application.fetch_env!(:glific, :provider_worker)
+  @spec provider_worker(non_neg_integer) :: atom()
+  def provider_worker(organization_id),
+    do:
+      "Elixir."
+      |> Kernel.<>(Partners.organization(organization_id).provider.worker)
+      |> String.to_existing_atom()
 
   @doc """
   Unified function to publish data on the graphql subscription endpoint. This  is still looking for a

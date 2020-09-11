@@ -38,7 +38,13 @@ defmodule Glific.Communications.Message do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
     if Contacts.can_send_message_to?(message.receiver, message.is_hsm) do
-      {:ok, _} = apply(Communications.provider(), @type_to_token[message.type], [message])
+      {:ok, _} =
+        apply(
+          Communications.provider(message.organization_id),
+          @type_to_token[message.type],
+          [message]
+        )
+
       {:ok, Communications.publish_data(message, :sent_message)}
     else
       {:ok, _} =

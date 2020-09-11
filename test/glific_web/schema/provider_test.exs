@@ -86,7 +86,8 @@ defmodule GlificWeb.Schema.ProviderTest do
             "api_end_point" => api_end_point,
             "handler" => handler,
             "worker" => worker
-          }}
+          }
+        }
       )
 
     assert {:ok, query_data} = result
@@ -98,13 +99,15 @@ defmodule GlificWeb.Schema.ProviderTest do
     # try creating the same provider twice
     _ =
       auth_query_gql_by(:create, user,
-        variables: %{"input" => %{
+        variables: %{
+          "input" => %{
             "name" => name,
             "url" => url,
             "api_end_point" => api_end_point,
             "handler" => handler,
             "worker" => worker
-          }}
+          }
+        }
       )
 
     result =
@@ -116,7 +119,8 @@ defmodule GlificWeb.Schema.ProviderTest do
             "api_end_point" => api_end_point,
             "handler" => handler,
             "worker" => worker
-          }}
+          }
+        }
       )
 
     assert {:ok, query_data} = result
@@ -174,7 +178,7 @@ defmodule GlificWeb.Schema.ProviderTest do
           "input" => %{
             "name" => "another provider",
             "url" => url,
-            "api_end_point" => api_end_point,
+            "api_end_point" => api_end_point
           }
         }
       )
