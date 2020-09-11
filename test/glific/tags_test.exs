@@ -41,7 +41,7 @@ defmodule Glific.TagsTest do
       is_active: nil,
       is_reserved: nil,
       language_id: nil,
-      organization_id: 1,
+      organization_id: 1
     }
 
     def tag_fixture(attrs \\ %{}) do

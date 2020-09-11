@@ -28,7 +28,8 @@ defmodule Glific.FLowsTest do
     @invalid_attrs %{
       name: "Test Flow",
       flow_type: :message_2,
-      version_number: "13.1.0"
+      version_number: "13.1.0",
+      organization_id: 1
     }
 
     @update_attrs %{
@@ -97,11 +98,12 @@ defmodule Glific.FLowsTest do
       assert {:error, %Ecto.Changeset{}} = Flows.create_flow(@invalid_attrs)
     end
 
-    test "create_flow/1 with existing keyword returns error changeset" do
-      Flows.create_flow(@valid_attrs)
+    test "create_flow/1 with existing keyword returns error changeset", attrs do
+      attrs = Map.merge(@valid_attrs, attrs)
+      Flows.create_flow(attrs)
 
       invalid_attrs =
-        @valid_attrs
+        attrs
         |> Map.merge(%{keywords: ["test_keyword", "test_keyword_2"]})
 
       assert {:error, %Ecto.Changeset{}} = Flows.create_flow(invalid_attrs)
