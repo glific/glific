@@ -13,6 +13,7 @@ defmodule Glific.Flows do
     Flows.FlowContext,
     Flows.FlowRevision,
     Groups.Group,
+    Partners,
     Repo
   }
 
@@ -80,8 +81,10 @@ defmodule Glific.Flows do
 
   """
   @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
-  def create_flow(attrs \\ %{}) do
+  def create_flow(attrs) do
     attrs = Map.merge(attrs, %{uuid: Ecto.UUID.generate()})
+
+    reset_flow_keywords_map(attrs.organization_id)
 
     with {:ok, flow} <-
            %Flow{}
@@ -113,6 +116,7 @@ defmodule Glific.Flows do
   def update_flow(%Flow{} = flow, attrs) do
     # first delete the cached flow
     Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
+    reset_flow_keywords_map(flow.organization_id)
 
     flow
     |> Flow.changeset(attrs)
@@ -360,23 +364,46 @@ defmodule Glific.Flows do
 
   @doc """
   Create a map of keywords that map to flow ids for each
-  active organization
+  active organization. Also cache this value including the outoffice
+  shortcode
   """
-  @spec flow_keywords_map(non_neg_integer | nil) :: map()
-  def flow_keywords_map(organization_id \\ nil) do
-    flow_keywords_map =
-      Flow
-      |> select([:keywords, :id])
-      |> Repo.all()
-      |> Enum.reduce(%{}, fn flow, acc ->
-        Enum.reduce(flow.keywords, acc, fn keyword, acc ->
-          Map.put(acc, keyword, flow.id)
-        end)
-      end)
+  @spec flow_keywords_map(non_neg_integer) :: map()
+  def flow_keywords_map(organization_id) do
+    case Caches.get(organization_id, "flow_keywords_map") do
+      {:ok, value} when value in [nil, false] ->
+        value =
+          Flow
+          |> where([f], f.organization_id == ^organization_id)
+          |> select([:keywords, :id])
+          |> Repo.all()
+          # credo:disable-for-lines:8
+          |> Enum.reduce(
+            %{},
+            fn flow, acc ->
+              Enum.reduce(flow.keywords, acc, fn keyword, acc ->
+                Map.put(acc, keyword, flow.id)
+              end)
+            end
+          )
 
-    # we need to fix this and retrieve for all active organization ids
-    if is_nil(organization_id),
-      do: flow_keywords_map,
-      else: %{organization_id: flow_keywords_map}
+        organization = Partners.organization(organization_id)
+
+        # also add outofoffice shortcode as set by the user
+        value =
+          if organization.out_of_office.enabled,
+            do: Map.put(value, "outofoffice", organization.out_of_office.flow_id),
+            else: value
+
+        Caches.set(organization_id, "flow_keywords_map", value)
+        value
+
+      {:ok, value} ->
+        value
+    end
   end
+
+  @doc false
+  @spec reset_flow_keywords_map(non_neg_integer) :: {:ok, any()}
+  def reset_flow_keywords_map(organization_id),
+    do: Caches.set(organization_id, "flow_keywords_map", nil)
 end

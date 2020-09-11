@@ -29,7 +29,9 @@ defmodule Glific.Processor.ConsumerFlow do
     producer = Keyword.get(opts, :producer, Glific.Processor.Producer)
     wakeup_timeout = Keyword.get(opts, :wakeup_timeout, @wakeup_timeout_ms)
 
-    GenStage.start_link(__MODULE__, [producer: producer, wakeup_timeout: wakeup_timeout],
+    GenStage.start_link(
+      __MODULE__,
+      [producer: producer, wakeup_timeout: wakeup_timeout],
       name: name
     )
   end
@@ -39,8 +41,7 @@ defmodule Glific.Processor.ConsumerFlow do
     state =
       %{
         producer: opts[:producer],
-        wakeup_timeout: opts[:wakeup_timeout],
-        flows: %{}
+        wakeup_timeout: opts[:wakeup_timeout]
       }
       |> reload()
 
@@ -107,9 +108,11 @@ defmodule Glific.Processor.ConsumerFlow do
     # context is not nil
     with false <- is_nil(context),
          {:ok, flow} <-
-           Flows.get_cached_flow(message.organization_id, context.flow_uuid, %{
-             uuid: context.flow_uuid
-           }),
+           Flows.get_cached_flow(
+             message.organization_id,
+             context.flow_uuid,
+             %{uuid: context.flow_uuid}
+           ),
          true <- flow.ignore_keywords do
       check_contexts(context, message, body, state)
     else

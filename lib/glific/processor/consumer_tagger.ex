@@ -10,14 +10,12 @@ defmodule Glific.Processor.ConsumerTagger do
   alias Glific.{
     Dialogflow.Sessions,
     Messages.Message,
-    Partners,
     Processor.ConsumerFlow,
     Processor.Helper,
     Repo,
     Taggers,
     Taggers.Numeric,
-    Taggers.Status,
-    Tags.Tag
+    Taggers.Status
   }
 
   @min_demand 0
@@ -33,18 +31,13 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @doc false
   def init(opts) do
-    state =
-      %{
-        producer: opts[:producer],
-        numeric_map: Numeric.get_numeric_map(),
-        numeric_tag_id: %{},
-        keyword_map: %{},
-        status_map: %{},
-        flows: %{},
-        dialogflow_session_id: Ecto.UUID.generate(),
-        tagged: false
-      }
-      |> reload
+    state = %{
+      producer: opts[:producer],
+      numeric_map: Numeric.get_numeric_map(),
+      flows: %{},
+      dialogflow_session_id: Ecto.UUID.generate(),
+      tagged: false
+    }
 
     {
       :consumer,
@@ -59,25 +52,6 @@ defmodule Glific.Processor.ConsumerTagger do
     }
   end
 
-  defp reload(%{numeric_tag_id: numeric_tag_id} = state) when numeric_tag_id == %{} do
-    Partners.list_organizations()
-    |> Enum.reduce(state, fn organization, state_acc ->
-      attrs = %{organization_id: organization.id}
-
-      case Repo.fetch_by(
-             Tag,
-             %{shortcode: "numeric", organization_id: organization.id}
-           ) do
-        {:ok, tag} -> put_in(state_acc, [:numeric_tag_id, organization.id], tag.id)
-        _ -> state_acc
-      end
-      |> put_in([:keyword_map, organization.id], Taggers.Keyword.get_keyword_map(attrs))
-      |> put_in([:status_map, organization.id], Status.get_status_map(attrs))
-    end)
-  end
-
-  defp reload(state), do: state
-
   @doc false
   def handle_events(messages, _from, state) do
     Enum.each(messages, &process_message(&1, state))
@@ -88,7 +62,12 @@ defmodule Glific.Processor.ConsumerTagger do
   defp process_message(message, state) do
     body = Glific.string_clean(message.body)
 
-    {message, Map.merge(state, %{tagged: false, organization_id: message.organization_id})}
+    state =
+      state
+      |> Map.merge(%{tagged: false, organization_id: message.organization_id})
+      |> Map.merge(Taggers.get_tag_maps(message.organization_id))
+
+    {message, state}
     |> numeric_tagger(body)
     |> keyword_tagger(body)
     |> dialogflow_tagger()
@@ -103,7 +82,7 @@ defmodule Glific.Processor.ConsumerTagger do
     case Numeric.tag_body(body, state.numeric_map) do
       {:ok, value} ->
         {
-          Helper.add_tag(message, state.numeric_tag_id[state.organization_id], value),
+          Helper.add_tag(message, state.numeric_tag_id, value),
           Map.put(state, :tagged, true)
         }
 
@@ -114,7 +93,7 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @spec keyword_tagger({atom() | Message.t(), map()}, String.t()) :: {Message.t(), map()}
   defp keyword_tagger({message, state}, body) do
-    case Taggers.Keyword.tag_body(body, state.keyword_map[state.organization_id]) do
+    case Taggers.Keyword.tag_body(body, state.keyword_map) do
       {:ok, value} ->
         {
           Helper.add_tag(message, value, body),
@@ -153,6 +132,7 @@ defmodule Glific.Processor.ConsumerTagger do
     # only do the query if we have a valid credentials file for dialogflow
     if FunWithFlags.enabled?(:dialogflow),
       do: Sessions.detect_intent(message, state.dialogflow_session_id)
+
     {message, state}
   end
 
@@ -160,5 +140,5 @@ defmodule Glific.Processor.ConsumerTagger do
 
   @spec add_status_tag(Message.t(), String.t(), map()) :: Message.t()
   defp add_status_tag(message, status, state),
-    do: Helper.add_tag(message, state.status_map[state.organization_id][status])
+    do: Helper.add_tag(message, state.status_map[status])
 end
