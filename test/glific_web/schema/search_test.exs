@@ -590,12 +590,12 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    conatct_ids =
+    contact_ids =
       Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
         acc ++ [row["contact"]["id"]]
       end)
 
-    assert "#{contact.id}" in conatct_ids
+    assert "#{contact.id}" in contact_ids
 
     # it should return empty list if date range doesn't have any messages
     result =
