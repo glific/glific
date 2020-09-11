@@ -58,6 +58,12 @@ defmodule Glific.Flows.Case do
     {c, Map.put(uuid_map, c.uuid, {:case, c})}
   end
 
+  defp strip(msgs) when is_list(msgs),
+    do: msgs |> hd() |> strip()
+
+  defp strip(msg) when is_binary(msg),
+    do: msg |> String.trim() |> String.downcase()
+
   @doc """
   Execute a case, given a message.
   This is the only execute function which has a different signature, since
@@ -66,10 +72,10 @@ defmodule Glific.Flows.Case do
   """
   @spec execute(Case.t(), FlowContext.t(), String.t()) :: boolean
   def execute(%{type: type} = c, _context, msg) when type == "has_any_word",
-    do: Enum.member?(c.arguments, msg)
+    do: Enum.member?(c.arguments, strip(msg))
 
   def execute(%{type: type} = c, _context, msg) when type == "has_number_eq",
-    do: hd(c.arguments) == msg
+    do: strip(c.arguments) == strip(msg)
 
   def execute(%{type: type} = c, _context, msg) when type == "has_number_between" do
     [low, high] = c.arguments
@@ -86,9 +92,15 @@ defmodule Glific.Flows.Case do
     end
   end
 
+  def execute(%{type: type}, _context, msg) when type == "has_number",
+    do: String.contains?(msg, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
+
+  def execute(%{type: type} = c, _context, msg) when type == "has_phrase",
+    do: String.contains?(strip(msg), strip(c.arguments))
+
   def execute(%{type: type} = c, _context, msg)
       when type == "has_only_phrase" or type == "has_only_text",
-      do: hd(c.arguments) == msg
+      do: strip(c.arguments) == strip(msg)
 
   def execute(c, _context, _msg),
     do:
