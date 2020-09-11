@@ -3,8 +3,11 @@ defmodule Glific.Tags do
   The Tags Context, which encapsulates and manages tags and the related join tables.
   """
 
-  alias Glific.Communications
-  alias Glific.Repo
+  alias Glific.{
+    Communications,
+    Repo,
+    Taggers
+  }
 
   alias Glific.Tags.{
     ContactTag,
@@ -65,7 +68,9 @@ defmodule Glific.Tags do
 
   """
   @spec create_tag(map()) :: {:ok, Tag.t()} | {:error, Ecto.Changeset.t()}
-  def create_tag(attrs) do
+  def create_tag(%{organization_id: organization_id} = attrs) do
+    Taggers.reset_tag_maps(organization_id)
+
     %Tag{}
     |> Tag.changeset(check_shortcode(attrs))
     |> Repo.insert()
@@ -97,6 +102,8 @@ defmodule Glific.Tags do
   """
   @spec update_tag(Tag.t(), map()) :: {:ok, Tag.t()} | {:error, Ecto.Changeset.t()}
   def update_tag(%Tag{} = tag, attrs) do
+    Taggers.reset_tag_maps(tag.organization_id)
+
     tag
     |> Tag.changeset(attrs)
     |> Repo.update()

@@ -35,11 +35,7 @@ defmodule Glific.Flows.PeriodicTest do
   end
 
   test "map flow ids" do
-    filled_map = %{flows: %{filled: true}}
-    assert Periodic.map_flow_ids(filled_map) == filled_map
-
     filled_map = Periodic.map_flow_ids(%{organization_id: Fixtures.get_org_id()})
-    assert filled_map.flows.filled == true
 
     # we know that outofoffice is a default seeded flow
     assert !is_nil(get_in(filled_map, [:flows, "outofoffice"]))

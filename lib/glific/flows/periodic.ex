@@ -16,8 +16,7 @@ defmodule Glific.Flows.Periodic do
   alias Glific.{
     Flows,
     Flows.FlowContext,
-    Messages.Message,
-    Partners
+    Messages.Message
   }
 
   @periodic_flows [
@@ -35,24 +34,10 @@ defmodule Glific.Flows.Periodic do
   ]
 
   # Fill the state flow values with a shortcode -> id map, so we can proceed
-  # through our periodic jobs quickly. Maybe move this to the ETS cache table
+  # through our periodic jobs quickly.
   @spec map_flow_ids(map()) :: map()
-  defp map_flow_ids(%{flows: %{filled: true}} = state), do: state
-
-  defp map_flow_ids(state) do
-    organization_id = state.organization_id
-
-    shortcode_id_map = Flows.flow_keywords_map()
-
-    organization = Partners.organization(organization_id)
-
-    shortcode_id_map =
-      if organization.out_of_office.enabled,
-        do: Map.put(shortcode_id_map, "outofoffice", organization.out_of_office.flow_id),
-        else: shortcode_id_map
-
-    Map.put(state, :flows, Map.merge(shortcode_id_map, %{filled: true}))
-  end
+  defp map_flow_ids(state),
+    do: Map.put(state, :flows, Flows.flow_keywords_map(state.organization_id))
 
   # Compute the offset for the time, so we can check if there is a flow running
   # for that specific periodic event already
