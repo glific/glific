@@ -74,10 +74,20 @@ defmodule GlificWeb.Schema.ProviderTest do
     name = "Provider Test Name"
     url = "Test url"
     api_end_point = "Test end point"
+    handler = "handler"
+    worker = "worker"
 
     result =
       auth_query_gql_by(:create, user,
-        variables: %{"input" => %{"name" => name, "url" => url, "api_end_point" => api_end_point}}
+        variables: %{
+          "input" => %{
+            "name" => name,
+            "url" => url,
+            "api_end_point" => api_end_point,
+            "handler" => handler,
+            "worker" => worker
+          }
+        }
       )
 
     assert {:ok, query_data} = result
@@ -89,12 +99,28 @@ defmodule GlificWeb.Schema.ProviderTest do
     # try creating the same provider twice
     _ =
       auth_query_gql_by(:create, user,
-        variables: %{"input" => %{"name" => name, "url" => url, "api_end_point" => api_end_point}}
+        variables: %{
+          "input" => %{
+            "name" => name,
+            "url" => url,
+            "api_end_point" => api_end_point,
+            "handler" => handler,
+            "worker" => worker
+          }
+        }
       )
 
     result =
       auth_query_gql_by(:create, user,
-        variables: %{"input" => %{"name" => name, "url" => url, "api_end_point" => api_end_point}}
+        variables: %{
+          "input" => %{
+            "name" => name,
+            "url" => url,
+            "api_end_point" => api_end_point,
+            "handler" => handler,
+            "worker" => worker
+          }
+        }
       )
 
     assert {:ok, query_data} = result
@@ -109,12 +135,20 @@ defmodule GlificWeb.Schema.ProviderTest do
     name = "Provider Test Name"
     url = "Test url"
     api_end_point = "Test end point"
+    handler = "handler"
+    worker = "worker"
 
     result =
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => provider.id,
-          "input" => %{"name" => name, "url" => url, "api_end_point" => api_end_point}
+          "input" => %{
+            "name" => name,
+            "url" => url,
+            "api_end_point" => api_end_point,
+            "handler" => handler,
+            "worker" => worker
+          }
         }
       )
 
@@ -126,7 +160,13 @@ defmodule GlificWeb.Schema.ProviderTest do
     # create a temp provider with a new name
     auth_query_gql_by(:create, user,
       variables: %{
-        "input" => %{"name" => "another provider", "url" => url, "api_end_point" => api_end_point}
+        "input" => %{
+          "name" => "another provider",
+          "url" => url,
+          "api_end_point" => api_end_point,
+          "handler" => handler,
+          "worker" => worker
+        }
       }
     )
 

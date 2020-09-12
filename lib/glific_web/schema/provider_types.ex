@@ -17,6 +17,8 @@ defmodule GlificWeb.Schema.ProviderTypes do
     field :name, :string
     field :url, :string
     field :api_end_point, :string
+    field :handler, :string
+    field :worker, :string
   end
 
   @desc "Filtering options for providers"
@@ -32,6 +34,8 @@ defmodule GlificWeb.Schema.ProviderTypes do
     field :name, :string
     field :url, :string
     field :api_end_point, :string
+    field :handler, :string
+    field :worker, :string
   end
 
   object :provider_queries do

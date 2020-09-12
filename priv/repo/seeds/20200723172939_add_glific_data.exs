@@ -279,7 +279,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.insert!(%Provider{
       name: "Gupshup",
       url: "https://gupshup.io/",
-      api_end_point: "https://api.gupshup.io/sm/api/v1"
+      api_end_point: "https://api.gupshup.io/sm/api/v1",
+      handler: "Glific.Providers.Gupshup.Message",
+      worker: "Glific.Providers.Gupshup.Worker"
     })
   end
 
@@ -319,7 +321,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       shortcode: "glific",
       email: "ADMIN@REPLACE_ME.NOW",
       provider_id: provider.id,
-      provider_key: "ADD_PROVIDER_API_KEY",
+      provider_appname: "ADD_PROVIDER_APPNAME",
       provider_phone: @admin_phone,
       default_language_id: en_us.id,
       out_of_office: out_of_office_default_data

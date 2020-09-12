@@ -10,7 +10,9 @@ defmodule Glific.Partners.Provider do
   @required_fields [
     :name,
     :url,
-    :api_end_point
+    :api_end_point,
+    :handler,
+    :worker
   ]
 
   # define all the optional fields for provider
@@ -20,13 +22,18 @@ defmodule Glific.Partners.Provider do
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
-          url: String.t() | nil
+          url: String.t() | nil,
+          api_end_point: String.t() | nil,
+          handler: String.t() | nil,
+          worker: String.t() | nil
         }
 
   schema "providers" do
     field :name, :string
     field :url, :string
     field :api_end_point, :string
+    field :handler, :string
+    field :worker, :string
 
     has_many :organizations, Glific.Partners.Organization
 

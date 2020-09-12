@@ -148,7 +148,7 @@ defmodule Glific.Providers.Gupshup.Message do
       |> Map.put(:destination, message.receiver.phone)
       |> Map.put("message", Jason.encode!(payload))
 
-    worker_module = Communications.provider_worker()
+    worker_module = Communications.provider_worker(message.organization_id)
     worker_args = %{message: Message.to_minimal_map(message), payload: request_body}
 
     apply(worker_module, :new, [worker_args, [scheduled_at: message.send_at]])

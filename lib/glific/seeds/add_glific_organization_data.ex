@@ -390,9 +390,10 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
   end
 
   defp opted_in_contacts(organization) do
-    with {:ok, url} <- Application.fetch_env(:glific, :provider_optin_list_url),
-         {:ok, api_key} <- Application.fetch_env(:glific, :provider_key),
-         {:ok, response} <- HTTPoison.get(url, [{"apikey", api_key}]),
+    url = organization.provider.url <> "/users/" <> organization.provider_appname
+    api_key = organization.provider_key
+
+    with {:ok, response} <- HTTPoison.get(url, [{"apikey", api_key}]),
          {:ok, response_data} <- Poison.decode(response.body),
          false <- is_nil(response_data["users"]) do
       users = response_data["users"]

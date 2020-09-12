@@ -293,6 +293,17 @@ defmodule Glific.Partners do
     Organization.changeset(organization, attrs)
   end
 
+  @spec get_provider_key(non_neg_integer) :: String.t()
+  defp get_provider_key(organization_id) do
+    case Application.fetch_env(
+           :glific,
+           String.to_atom("provider_key_#{organization_id}")
+         ) do
+      {:ok, value} -> value
+      :error -> raise ArgumentError
+    end
+  end
+
   @doc """
   Cache the entire organization structure.
 
@@ -304,7 +315,9 @@ defmodule Glific.Partners do
       {:ok, value} when value in [nil, false] ->
         organization =
           get_organization!(organization_id)
+          |> Repo.preload(:provider)
           |> set_out_of_office_values()
+          |> Map.put(:provider_key, get_provider_key(organization_id))
 
         Caches.set(organization_id, "organization", organization)
         organization

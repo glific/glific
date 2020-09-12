@@ -9,7 +9,6 @@ defmodule Glific.CommunicationsTest do
     Contacts,
     Fixtures,
     Messages,
-    Providers.Gupshup,
     Providers.Gupshup.Worker,
     Repo,
     Seeds.SeedsDev,
@@ -21,13 +20,6 @@ defmodule Glific.CommunicationsTest do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     :ok
-  end
-
-  describe "communications" do
-    test "fetch provider from config" do
-      Application.put_env(:glific, :provider, Gupshup.Message)
-      assert Gupshup.Message == Communications.provider()
-    end
   end
 
   describe "gupshup_messages" do

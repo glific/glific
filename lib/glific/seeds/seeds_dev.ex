@@ -109,21 +109,25 @@ if Code.ensure_loaded?(Faker) do
         Repo.insert!(%Provider{
           name: "Default Provider",
           url: "test_url",
-          api_end_point: "test"
+          api_end_point: "test",
+          handler: "Does not exist",
+          worker: "Neither does this"
         })
 
       Repo.insert!(%Provider{
         name: "twilio",
         url: "test_url_2",
-        api_end_point: "test"
+        api_end_point: "test",
+        handler: "Does not exist",
+        worker: "Neither does this"
       })
 
       default_provider
     end
 
     @doc false
-    @spec seed_organizations(any() | nil) :: Organization.t() | nil
-    def seed_organizations(_unused \\ nil) do
+    @spec seed_organizations(non_neg_integer | nil) :: Organization.t() | nil
+    def seed_organizations(_organization_id \\ nil) do
       Organization |> Ecto.Query.first() |> Repo.one()
     end
 

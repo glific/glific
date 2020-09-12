@@ -13,10 +13,7 @@ config :glific,
 # Settings for gupshup, this should actually go in Provider database table or something
 # similar
 config :glific,
-  provider: Glific.Providers.Gupshup.Message,
-  provider_worker: Glific.Providers.Gupshup.Worker,
-  provider_id: "gupshup",
-  provider_limit: 10
+  provider_key_1: "Please replace this value in the secrets file"
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,

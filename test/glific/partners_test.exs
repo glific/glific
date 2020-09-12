@@ -9,22 +9,30 @@ defmodule Glific.PartnersTest do
     @valid_attrs %{
       name: "some name",
       url: "some url",
-      api_end_point: "some api_end_point"
+      api_end_point: "some api_end_point",
+      handler: "handler",
+      worker: "worker"
     }
     @valid_attrs_1 %{
       name: "some name 1",
       url: "some url 1",
-      api_end_point: "some api_end_point 1"
+      api_end_point: "some api_end_point 1",
+      handler: "handler ",
+      worker: "worker"
     }
     @valid_attrs_2 %{
       name: "some name 2",
       url: "some url 2",
-      api_end_point: "some api_end_point 2"
+      api_end_point: "some api_end_point 2",
+      handler: "handler",
+      worker: "worker"
     }
     @valid_attrs_3 %{
       name: "some name 3",
       url: "some url 3",
-      api_end_point: "some api_end_point 3"
+      api_end_point: "some api_end_point 3",
+      handler: "handler",
+      worker: "worker"
     }
     @update_attrs %{
       name: "some updated name",
@@ -149,7 +157,7 @@ defmodule Glific.PartnersTest do
       name: "Organization Name",
       shortcode: "organization_shortcode",
       email: "Contact person email",
-      provider_key: "Provider key",
+      provider_appname: "Provider appname",
       provider_phone: "991737373"
     }
 
@@ -157,7 +165,7 @@ defmodule Glific.PartnersTest do
       name: "Organization Name 1",
       shortcode: "organization_shortcode 1",
       email: "Contact person email 1",
-      provider_key: "Provider key 1",
+      provider_appname: "Provider appname 1",
       provider_phone: "9917373731"
     }
 
@@ -204,6 +212,12 @@ defmodule Glific.PartnersTest do
         |> Enum.into(@valid_org_attrs)
         |> Map.merge(%{provider_id: provider.id, default_language_id: default_language.id})
         |> Partners.create_organization()
+
+      Application.put_env(
+        :glific,
+        String.to_atom("provider_key_#{organization.id}"),
+        "This is a fake key"
+      )
 
       organization
     end

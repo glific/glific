@@ -20,7 +20,7 @@ defmodule Glific.Partners.Organization do
     :shortcode,
     :email,
     :provider_id,
-    :provider_key,
+    :provider_appname,
     :provider_phone,
     :default_language_id
   ]
@@ -43,8 +43,10 @@ defmodule Glific.Partners.Organization do
           email: String.t() | nil,
           provider_id: non_neg_integer | nil,
           provider: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
-          provider_key: String.t() | nil,
+          provider_appname: String.t() | nil,
           provider_phone: String.t() | nil,
+          provider_limit: non_neg_integer,
+          provider_key: String.t() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           default_language_id: non_neg_integer | nil,
@@ -65,7 +67,12 @@ defmodule Glific.Partners.Organization do
     field :email, :string
 
     field :provider_phone, :string
-    field :provider_key, :string
+    field :provider_appname, :string
+    field :provider_limit, :integer, default: 60
+
+    # We get this value from the config object and store it here
+    # for downstream functions to access while executing
+    field :provider_key, :string, virtual: true, default: "No key exists"
 
     # lets cache the start/end hours in here
     # to make it easier on the flows
