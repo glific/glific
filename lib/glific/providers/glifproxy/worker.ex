@@ -69,12 +69,16 @@ defmodule Glific.Providers.Glifproxy.Worker do
   @spec handle_message(String.t(), String.t(), map()) :: any()
   defp handle_message(destination, name, message) do
     payload = generate_payload(destination, name, message)
+    organization = Partners.organization(message["organization_id"])
 
     # lets sleep for 1 seconds before posting, to avoid race
     # conditions with flows et al
-    :timer.sleep(1000)
+    # :timer.sleep(1000)
 
-    ApiClient.post("/gupshup", payload)
+    ApiClient.post(
+      organization.provider.api_end_point <> "/gupshup",
+      payload
+    )
     |> handle_response(message)
   end
 

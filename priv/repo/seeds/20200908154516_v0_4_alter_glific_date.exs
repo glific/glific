@@ -22,11 +22,11 @@ defmodule Glific.Repo.Seeds.V04AlterGlificData do
 
     # add glifproxy as a channel also
     Repo.insert!(%Provider{
-      name: "GlifProxy",
+      name: "Glifproxy",
       url: "https://glific.io/",
-      api_end_point: "https://glific.test:4000/",
+      api_end_point: "http://glific.test:4000",
       handler: "Glific.Providers.Gupshup.Message",
-      worker: "Glific.Providers.GlifProxy.Worker"
+      worker: "Glific.Providers.Glifproxy.Worker"
     })
   end
 end
