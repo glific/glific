@@ -9,7 +9,7 @@ defmodule Glific.Flags do
   alias Glific.Partners
 
   @doc false
-  @spec init(non_neg_integer) :: {:ok, boolean()}
+  @spec init(non_neg_integer | nil) :: {:ok, boolean()}
   def init(organization_id) do
     FunWithFlags.enable(
       :enable_out_of_office,
@@ -19,6 +19,13 @@ defmodule Glific.Flags do
     out_of_office_update(organization_id)
 
     dialogflow(organization_id)
+  end
+
+  def init() do
+    Partners.active_organizations()
+    |> Enum.each(fn {id, _name} ->
+      init(id)
+    end)
   end
 
   @spec business_day?(DateTime.t(), [integer]) :: boolean
@@ -63,18 +70,34 @@ defmodule Glific.Flags do
 
   @spec out_of_office_check(non_neg_integer) :: nil
   defp out_of_office_check(organization_id) do
-    {:ok, now} = Partners.organization_timezone(organization_id) |> DateTime.now()
+    organization = Partners.organization(organization_id)
 
-    {hours, days} = Partners.organization_out_of_office_summary(organization_id)
+    if organization.out_of_office.enabled do
+      {:ok, now} = organization.timezone |> DateTime.now()
 
-    # check if current day and time is valid
-    open? = business_day?(now, days) and office_hours?(now, hours)
+      hours = organization.hours
+      days = organization.days
 
-    if open?,
-      # we are operating now, so ensure out_of_office flag is disabled
-      do: disable_out_of_office(organization_id),
-      # we are closed now, enable out_of_office flow
-      else: enable_out_of_office(organization_id)
+      # check if current day and time is valid
+      open? = business_day?(now, days) and office_hours?(now, hours)
+
+      if open?,
+        # we are operating now, so ensure out_of_office flag is disabled
+        do: disable_out_of_office(organization_id),
+        # we are closed now, enable out_of_office flow
+        else: enable_out_of_office(organization_id)
+    else
+      # disable all out of office checks
+      FunWithFlags.disable(
+        :enable_out_of_office,
+        for_actor: %{organization_id: organization_id}
+      )
+
+      FunWithFlags.disable(
+        :out_of_office_active,
+        for_actor: %{organization_id: organization_id}
+      )
+    end
   end
 
   @doc """

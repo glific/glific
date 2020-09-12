@@ -262,7 +262,7 @@ defmodule Glific.Partners do
   end
 
   @doc ~S"""
-  Deletes an Organization.
+  Deletes an Orgsanization.
 
   ## Examples
 
@@ -349,14 +349,6 @@ defmodule Glific.Partners do
   def organization_timezone(organization_id),
     do: organization(organization_id).timezone
 
-  @doc """
-  Return the days of week and the hours for each day for this organization. At some point
-  we will unify the structures, so each day can have a different set of hours
-  """
-  @spec organization_out_of_office_summary(non_neg_integer) :: {[Time.t()], [integer]}
-  def organization_out_of_office_summary(organization_id),
-    do: {organization(organization_id).hours, organization(organization_id).days}
-
   @spec set_out_of_office_values(Organization.t()) :: Organization.t()
   defp set_out_of_office_values(organization) do
     out_of_office = organization.out_of_office
@@ -395,14 +387,17 @@ defmodule Glific.Partners do
   is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
   """
   @spec perform_all((non_neg_integer, map() -> nil), map()) :: :ok
-  def perform_all(handler, handler_args \\ %{}) do
+  def perform_all(handler, handler_args) do
     # We need to do this for all the active organizations
     active_organizations()
     |> Enum.each(fn {id, name} ->
-      handler.(
-        id,
-        Map.put(handler_args, :organization_name, name)
-      )
+      if is_nil(handler_args),
+        do: handler.(id),
+        else:
+          handler.(
+            id,
+            Map.put(handler_args, :organization_name, name)
+          )
     end)
 
     :ok
