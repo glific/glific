@@ -18,9 +18,15 @@ defmodule Glific.FlagsTest do
   @start_one elem(Time.new(0, 0, 0, 1), 1)
 
   test "ensure init returns ok, and enabled out of office" do
-    {status, _} = Flags.init()
+    organization = Partners.organization(Fixtures.get_org_id())
+
+    status = Flags.init()
     assert status == :ok
-    assert FunWithFlags.enabled?(:enable_out_of_office) == true
+
+    assert FunWithFlags.enabled?(
+             :enable_out_of_office,
+             for: %{organization_id: organization.id}
+           ) == true
   end
 
   test "check business days combinations" do
@@ -52,11 +58,21 @@ defmodule Glific.FlagsTest do
   end
 
   test "ensure enable/disable work as advertised" do
-    Flags.enable_out_of_office()
-    assert FunWithFlags.enabled?(:out_of_office_active) == true
+    organization = Partners.organization(Fixtures.get_org_id())
 
-    Flags.disable_out_of_office()
-    assert FunWithFlags.enabled?(:out_of_office_active) == false
+    Flags.enable_out_of_office(organization.id)
+
+    assert FunWithFlags.enabled?(
+             :out_of_office_active,
+             for: %{organization_id: organization.id}
+           ) == true
+
+    Flags.disable_out_of_office(organization.id)
+
+    assert FunWithFlags.enabled?(
+             :out_of_office_active,
+             for: %{organization_id: organization.id}
+           ) == false
   end
 
   @organization_settings %{
@@ -81,8 +97,12 @@ defmodule Glific.FlagsTest do
 
     # when office hours includes whole day of seven days
     {:ok, _} = Partners.update_organization(organization, @organization_settings)
-    Flags.out_of_office_check()
-    assert FunWithFlags.enabled?(:out_of_office_active) == false
+    Flags.out_of_office_check(organization.id)
+
+    assert FunWithFlags.enabled?(
+             :out_of_office_active,
+             for: %{organization_id: organization.id}
+           ) == false
   end
 
   test "check out of office should de-activate out_of_office_active flag" do
@@ -94,8 +114,12 @@ defmodule Glific.FlagsTest do
 
     # when office hours includes just one microsecond of the day
     {:ok, _} = Partners.update_organization(organization, organization_settings)
-    Flags.out_of_office_check()
-    assert FunWithFlags.enabled?(:out_of_office_active) == true
+    Flags.out_of_office_check(organization.id)
+
+    assert FunWithFlags.enabled?(
+             :out_of_office_active,
+             for: %{organization_id: organization.id}
+           ) == true
   end
 
   test "update out of office should deactivate out of office if disabled" do
@@ -106,12 +130,20 @@ defmodule Glific.FlagsTest do
       put_in(@organization_settings, [:out_of_office, :end_time], @start_one)
 
     {:ok, _} = Partners.update_organization(organization, new_organization_settings)
-    Flags.out_of_office_check()
-    assert FunWithFlags.enabled?(:out_of_office_active) == true
+    Flags.out_of_office_check(organization.id)
+
+    assert FunWithFlags.enabled?(
+             :out_of_office_active,
+             for: %{organization_id: organization.id}
+           ) == true
 
     # When flag is disabled
-    FunWithFlags.disable(:enable_out_of_office)
-    Flags.out_of_office_update()
-    assert FunWithFlags.enabled?(:out_of_office_active) == false
+    FunWithFlags.disable(:enable_out_of_office, for_actor: %{organization_id: organization.id})
+    Flags.out_of_office_update(organization.id)
+
+    assert FunWithFlags.enabled?(
+             :out_of_office_active,
+             for: %{organization_id: organization.id}
+           ) == false
   end
 end

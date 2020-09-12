@@ -9,7 +9,7 @@ defmodule Glific.Flags do
   alias Glific.Partners
 
   @doc false
-  @spec init(non_neg_integer | nil) :: {:ok, boolean()}
+  @spec init(non_neg_integer) :: {:ok, boolean()}
   def init(organization_id) do
     FunWithFlags.enable(
       :enable_out_of_office,
@@ -21,7 +21,9 @@ defmodule Glific.Flags do
     dialogflow(organization_id)
   end
 
-  def init() do
+  @doc false
+  @spec init :: :ok
+  def init do
     Partners.active_organizations()
     |> Enum.each(fn {id, _name} ->
       init(id)

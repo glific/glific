@@ -386,7 +386,7 @@ defmodule Glific.Partners do
   The handler is expected to take the organization id as its first argument. The second argument
   is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
   """
-  @spec perform_all((non_neg_integer, map() -> nil), map()) :: :ok
+  @spec perform_all((... -> nil), map() | nil) :: :ok
   def perform_all(handler, handler_args) do
     # We need to do this for all the active organizations
     active_organizations()

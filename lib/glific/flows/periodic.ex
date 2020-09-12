@@ -123,7 +123,7 @@ defmodule Glific.Flows.Periodic do
     # in the past 24 hours
     if FunWithFlags.enabled?(
          :out_of_office_active,
-         for_actor: %{organization_id: message.organization_id}
+         for: %{organization_id: message.organization_id}
        ),
        do: common_flow(state, period, message, since),
        else: {state, false}

@@ -477,9 +477,10 @@ defmodule Glific.PartnersTest do
 
     test "organization_out_of_office_summary/1 by id should return cached data" do
       organization = organization_fixture()
-      Partners.organization(organization.id)
+      organization = Partners.organization(organization.id)
 
-      {hours, days} = Partners.organization_out_of_office_summary(organization.id)
+      hours = organization.hours
+      days = organization.days
       assert hours != nil
       assert days != nil
     end

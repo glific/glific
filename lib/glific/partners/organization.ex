@@ -132,10 +132,19 @@ defmodule Glific.Partners.Organization do
   defp add_out_of_office_if_missing(changeset) do
     changeset
   end
+end
 
-  defimpl FunWithFlags.Actor, for: Map do
-    def id(%{organization_id: organization_id}) do
-      "org:#{organization_id}"
-    end
+defimpl FunWithFlags.Actor, for: Map do
+  @moduledoc false
+
+  @doc """
+  All users are organization actors for now. At some point, we might make
+  organization a group and isolate specific users
+
+  Implemention of id for the map protocol
+  """
+  @spec id(map()) :: String.t()
+  def id(%{organization_id: organization_id}) do
+    "org:#{organization_id}"
   end
 end
