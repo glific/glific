@@ -20,7 +20,7 @@ defmodule Glific.Jobs.MinuteWorker do
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"job" => "fun_with_flags"}} = _job) do
-    Flags.out_of_office_update()
+            Partners.perform_all(&Flags.out_of_office_update/1, nil)
     :ok
   end
 

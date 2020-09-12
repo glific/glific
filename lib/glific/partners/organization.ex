@@ -132,4 +132,10 @@ defmodule Glific.Partners.Organization do
   defp add_out_of_office_if_missing(changeset) do
     changeset
   end
+
+  defimpl FunWithFlags.Actor, for: Map do
+    def id(%{organization_id: organization_id}) do
+      "org:#{organization_id}"
+    end
+  end
 end

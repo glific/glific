@@ -9,13 +9,16 @@ defmodule Glific.Flags do
   alias Glific.Partners
 
   @doc false
-  @spec init :: {:ok, boolean()}
-  def init do
-    FunWithFlags.enable(:enable_out_of_office)
+  @spec init(non_neg_integer) :: {:ok, boolean()}
+  def init(organization_id) do
+    FunWithFlags.enable(
+      :enable_out_of_office,
+      for_actor: %{organization_id: organization_id}
+    )
 
-    out_of_office_update()
+    out_of_office_update(organization_id)
 
-    dialogflow()
+    dialogflow(organization_id)
   end
 
   @spec business_day?(DateTime.t(), [integer]) :: boolean
@@ -30,58 +33,84 @@ defmodule Glific.Flags do
 
   defp office_hours?(_time, []), do: false
 
-  @spec enable_out_of_office :: nil
-  defp enable_out_of_office do
+  @spec enable_out_of_office(non_neg_integer) :: nil
+  defp enable_out_of_office(organization_id) do
     # enable only if needed
-    if !FunWithFlags.enabled?(:out_of_office_active),
-      do: FunWithFlags.enable(:out_of_office_active)
+    if !FunWithFlags.enabled?(
+         :out_of_office_active,
+         for: %{organization_id: organization_id}
+       ),
+       do:
+         FunWithFlags.enable(
+           :out_of_office_active,
+           for_actor: %{organization_id: organization_id}
+         )
   end
 
-  @spec disable_out_of_office :: nil
-  defp disable_out_of_office do
+  @spec disable_out_of_office(non_neg_integer) :: nil
+  defp disable_out_of_office(organization_id) do
     # disable only if needed
-    if FunWithFlags.enabled?(:out_of_office_active),
-      do: FunWithFlags.disable(:out_of_office_active)
+    if FunWithFlags.enabled?(
+         :out_of_office_active,
+         for: %{organization_id: organization_id}
+       ),
+       do:
+         FunWithFlags.disable(
+           :out_of_office_active,
+           for_actor: %{organization_id: organization_id}
+         )
   end
 
-  @spec out_of_office_check :: nil
-  defp out_of_office_check do
-    {:ok, now} = Partners.organization_timezone(1) |> DateTime.now()
+  @spec out_of_office_check(non_neg_integer) :: nil
+  defp out_of_office_check(organization_id) do
+    {:ok, now} = Partners.organization_timezone(organization_id) |> DateTime.now()
 
-    {hours, days} = Partners.organization_out_of_office_summary(1)
+    {hours, days} = Partners.organization_out_of_office_summary(organization_id)
 
     # check if current day and time is valid
     open? = business_day?(now, days) and office_hours?(now, hours)
 
     if open?,
       # we are operating now, so ensure out_of_office flag is disabled
-      do: disable_out_of_office(),
+      do: disable_out_of_office(organization_id),
       # we are closed now, enable out_of_office flow
-      else: enable_out_of_office()
+      else: enable_out_of_office(organization_id)
   end
 
   @doc """
   Update the out of office flag, so we know if we should actually do any work
   """
-  @spec out_of_office_update() :: nil
-  def out_of_office_update,
+  @spec out_of_office_update(non_neg_integer) :: nil
+  def out_of_office_update(organization_id),
     do:
-      if(FunWithFlags.enabled?(:enable_out_of_office),
-        do: out_of_office_check(),
+      if(
+        FunWithFlags.enabled?(
+          :enable_out_of_office,
+          for: %{organization_id: organization_id}
+        ),
+        do: out_of_office_check(organization_id),
         # lets make sure that out_of_office_active is disabled
         # if we dont want this functionality
-        else: disable_out_of_office()
+        else: disable_out_of_office(organization_id)
       )
 
   @doc """
   See if we have valid dialogflow credentials, if so, enable dialogflow
   else disable it
   """
-  @spec dialogflow() :: {:ok, boolean()}
-  def dialogflow,
+  @spec dialogflow(non_neg_integer) :: {:ok, boolean()}
+  def dialogflow(organization_id),
     do:
-      if(File.exists?("config/.dialogflow.credentials.json"),
-        do: FunWithFlags.enable(:dialogflow),
-        else: FunWithFlags.disable(:dialogflow)
+      if(File.exists?("config/.dialogflow.credentials.json_#{organization_id}"),
+        do:
+          FunWithFlags.enable(
+            :dialogflow,
+            for_actor: %{organization_id: organization_id}
+          ),
+        else:
+          FunWithFlags.disable(
+            :dialogflow,
+            for_actor: %{organization_id: organization_id}
+          )
       )
 end
