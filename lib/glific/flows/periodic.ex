@@ -121,9 +121,12 @@ defmodule Glific.Flows.Periodic do
     # lets  check if we should initiate the out of office flow
     # lets do this only if we've not sent them the out of office flow
     # in the past 24 hours
-    if FunWithFlags.enabled?(:out_of_office_active),
-      do: common_flow(state, period, message, since),
-      else: {state, false}
+    if FunWithFlags.enabled?(
+         :out_of_office_active,
+         for: %{organization_id: message.organization_id}
+       ),
+       do: common_flow(state, period, message, since),
+       else: {state, false}
   end
 
   defp periodic_flow(state, period, message, since),

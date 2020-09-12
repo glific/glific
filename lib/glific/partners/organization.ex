@@ -133,3 +133,18 @@ defmodule Glific.Partners.Organization do
     changeset
   end
 end
+
+defimpl FunWithFlags.Actor, for: Map do
+  @moduledoc false
+
+  @doc """
+  All users are organization actors for now. At some point, we might make
+  organization a group and isolate specific users
+
+  Implemention of id for the map protocol
+  """
+  @spec id(map()) :: String.t()
+  def id(%{organization_id: organization_id}) do
+    "org:#{organization_id}"
+  end
+end

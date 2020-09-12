@@ -393,7 +393,7 @@ defmodule Glific.Flows do
 
         # also add outofoffice shortcode as set by the user
         value =
-          if organization.out_of_office.enabled,
+          if organization.out_of_office.enabled and organization.out_of_office.flow_id,
             do: Map.put(value, "outofoffice", organization.out_of_office.flow_id),
             else: value
 

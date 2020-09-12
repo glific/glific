@@ -28,6 +28,7 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
   @primary_key false
   embedded_schema do
     field :enabled, :boolean
+
     field :start_time, :time
     field :end_time, :time
     belongs_to :flow, Flow

@@ -36,14 +36,13 @@ npm-debug.log
 # Keep all our secrets in these files
 # We should explore valult for production level secrets
 **/*.secret.exs
-.*credentials.json
- # for vapor style config
-*.env
+.*credentials.json*
 
+# Not using env files now
+.env*
 
 # Ignore the dialyzer cache files
-/priv/plts/*.plt
-/priv/plts/*.plt.hash
+/priv/plts/
 
 # ignore visual studio and macos temp files
 .vscode/
