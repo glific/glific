@@ -20,18 +20,24 @@ config :glific, GlificWeb.Endpoint,
   server: false
 
 # Print only warnings and errors during test
-config :logger, level: :warn
+config :logger,
+  level: :warn
 
 # setting the state of the environment for use within code base
 config :glific, :environment, :test
 
-config :glific, Oban, crontab: false, queues: false, plugins: false
+config :glific, Oban,
+  crontab: false,
+  queues: false,
+  plugins: false
 
 config :glific,
   provider: Glific.Providers.Gupshup.Message,
   provider_worker: Glific.Providers.Gupshup.Worker,
   provider_id: "gupshup-provider-23",
   provider_limit: 10
+
+config :glific, Poolboy, worker: Glific.Processor.ConsumerWorkerMock
 
 config :tesla, adapter: Tesla.Mock
 

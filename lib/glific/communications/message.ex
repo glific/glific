@@ -10,7 +10,6 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Partners,
-    Processor.Producer,
     Repo,
     Taggers,
     Tags
@@ -150,7 +149,7 @@ defmodule Glific.Communications.Message do
     |> Messages.create_message()
     |> Taggers.TaggerHelper.tag_inbound_message()
     |> Communications.publish_data(:received_message)
-    |> Producer.add()
+    |> process_message()
 
     {:ok}
   end
@@ -164,7 +163,7 @@ defmodule Glific.Communications.Message do
     |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
     |> Communications.publish_data(:received_message)
-    |> Producer.add()
+    |> process_message()
 
     {:ok}
   end
@@ -181,7 +180,15 @@ defmodule Glific.Communications.Message do
 
     message
     |> Communications.publish_data(:received_message)
+    |> process_message()
 
     {:ok}
+  end
+
+  defp process_message(message) do
+    :poolboy.transaction(
+      Glific.Application.message_poolname(),
+      fn pid -> GenServer.cast(pid, {message, self()}) end
+    )
   end
 end

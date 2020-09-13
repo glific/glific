@@ -8,7 +8,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "0.3.1",
+      version: "0.4.0",
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -115,7 +115,6 @@ defmodule Glific.MixProject do
       {:sobelow, "~> 0.8", only: [:dev | @test_envs]},
       {:goth, "~> 1.2"},
       {:wormwood, "~> 0.1"},
-      {:gen_stage, "~> 1.0"},
       {:timex, "~> 3.0"},
       {:slugify, "~> 1.3"},
       {:cachex, "~> 3.2"},
@@ -123,7 +122,8 @@ defmodule Glific.MixProject do
       {:fun_with_flags_ui, "~> 0.7"},
       {:phil_columns, "~> 3.1"},
       {:passwordless_auth, "~> 0.3.0"},
-      {:appsignal, "~> 1.0"}
+      {:appsignal, "~> 1.0"},
+      {:poolboy, "~> 1.5"}
     ]
   end
 

@@ -1,80 +1,40 @@
 defmodule Glific.Processor.ConsumerTagger do
   @moduledoc """
   Process all messages of type consumer and run them thru the various in-built taggers.
-  At a later stage, we will also do translation and dialogflow queries as an offshoot
-  from this GenStage
   """
-
-  use GenStage
 
   alias Glific.{
     Dialogflow.Sessions,
     Messages.Message,
-    Processor.ConsumerFlow,
     Processor.Helper,
-    Repo,
     Taggers,
     Taggers.Numeric,
     Taggers.Status
   }
 
-  @min_demand 0
-  @max_demand 1
-
-  @doc false
-  @spec start_link([]) :: GenServer.on_start()
-  def start_link(opts) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    producer = Keyword.get(opts, :producer, Glific.Processor.Producer)
-    GenStage.start_link(__MODULE__, [producer: producer], name: name)
-  end
-
-  @doc false
-  def init(opts) do
-    state = %{
-      producer: opts[:producer],
+  @doc """
+  Load the relevant state into the gen_server state object that we need
+  to process messages
+  """
+  @spec load_state(non_neg_integer) :: map()
+  def load_state(organization_id) do
+    %{
       numeric_map: Numeric.get_numeric_map(),
-      flows: %{},
-      dialogflow_session_id: Ecto.UUID.generate(),
-      tagged: false
+      dialogflow_session_id: Ecto.UUID.generate()
     }
-
-    {
-      :consumer,
-      state,
-      # dispatcher: GenStage.BroadcastDispatcher,
-      subscribe_to: [
-        {state.producer,
-         selector: fn %{type: type} -> type == :text end,
-         min_demand: @min_demand,
-         max_demand: @max_demand}
-      ]
-    }
+    |> Map.merge(Taggers.get_tag_maps(organization_id))
   end
 
   @doc false
-  def handle_events(messages, _from, state) do
-    Enum.each(messages, &process_message(&1, state))
-    {:noreply, [], state}
-  end
-
-  @spec process_message(atom() | Message.t(), map()) :: Message.t()
-  defp process_message(message, state) do
-    body = Glific.string_clean(message.body)
-
-    state =
-      state
-      |> Map.merge(%{tagged: false, organization_id: message.organization_id})
-      |> Map.merge(Taggers.get_tag_maps(message.organization_id))
+  @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
+  def process_message({message, state}, body) do
+    state = Map.put(state, :tagged, false)
 
     {message, state}
     |> numeric_tagger(body)
     |> keyword_tagger(body)
     |> dialogflow_tagger()
     |> new_contact_tagger()
-    # get the first element which is the message
-    |> elem(0)
-    |> Repo.preload(:tags)
   end
 
   @spec numeric_tagger({atom() | Message.t(), map()}, String.t()) :: {Message.t(), map()}
@@ -110,11 +70,8 @@ defmodule Glific.Processor.ConsumerTagger do
     if Status.is_new_contact(message.sender_id) do
       message
       |> add_status_tag("newcontact", state)
-      # We make a cross module function call which is its own genserver
-      # but should be fine for now
-      |> ConsumerFlow.check_flows("newcontact", state)
 
-      {message, Map.put(state, :tagged, true)}
+      {message, state |> Map.put(:tagged, true) |> Map.put(:newcontact, true)}
     else
       {message, state}
     end
@@ -127,8 +84,6 @@ defmodule Glific.Processor.ConsumerTagger do
        do: {message, state}
 
   defp dialogflow_tagger({message, %{tagged: false} = state}) do
-    # Since conatct and language are the required filed, we can skip some pattern checks.
-    message = Repo.preload(message, contact: [:language])
     # only do the query if we have a valid credentials file for dialogflow
     if FunWithFlags.enabled?(:dialogflow),
       do: Sessions.detect_intent(message, state.dialogflow_session_id)

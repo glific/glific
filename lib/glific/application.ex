@@ -31,14 +31,13 @@ defmodule Glific.Application do
       %{
         id: :glific_cache_id,
         start: {Cachex, :start_link, [:glific_cache, []]}
-      }
+      },
+
+      # add poolboy and list of associated worker
+      :poolboy.child_spec(message_poolname(), poolboy_config())
     ]
 
-    glific_children = [
-      Glific.Processor.Producer,
-      Glific.Processor.ConsumerTagger,
-      Glific.Processor.ConsumerFlow
-    ]
+    glific_children = []
 
     children =
       if Application.get_env(:glific, :environment) == :test,
@@ -57,6 +56,26 @@ defmodule Glific.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  def message_poolname,
+    do: :message_pool
+
+  defp poolboy_config do
+    opts = Application.get_env(:glific, Poolboy)
+    default = Glific.Processor.ConsumerWorker
+
+    worker =
+      if is_nil(opts),
+        do: default,
+        else: Keyword.get(opts, :worker, default)
+
+    [
+      name: {:local, message_poolname()},
+      worker_module: worker,
+      size: 10,
+      max_overflow: 10
+    ]
   end
 
   # Tell Phoenix to update the endpoint configuration

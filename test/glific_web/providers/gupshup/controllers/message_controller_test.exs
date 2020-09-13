@@ -76,6 +76,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       # Provider message id should be updated
       assert message.provider_status == :delivered
       assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
       assert message.sender.last_message_at != nil
       assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
 
@@ -121,6 +125,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert message.provider_status == :delivered
       assert message.flow == :inbound
 
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
       # test media fields
       assert message.media.caption == setup_config.image_payload["caption"]
       assert message.media.url == setup_config.image_payload["url"]
@@ -152,6 +159,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       message = Repo.preload(message, [:media, :sender])
 
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
       assert message.media.source_url == setup_config.image_payload["url"]
@@ -179,6 +189,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       message = Repo.preload(message, [:media, :sender])
 
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
       assert message.media.source_url == setup_config.image_payload["url"]
@@ -204,6 +217,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         })
 
       message = Repo.preload(message, [:media, :sender])
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -248,6 +264,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       message = Repo.preload(message, [:media, :sender])
 
       {:ok, location} = Repo.fetch_by(Location, %{message_id: message.id})
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
 
       # test location fields
       assert location.longitude == setup_config.location_payload["longitude"]
