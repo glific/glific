@@ -62,13 +62,20 @@ defmodule Glific.Application do
   def message_poolname,
     do: :message_pool
 
-  defp poolboy_config,
-    do: [
+  defp poolboy_config do
+    opts = Application.get_env(:glific, Poolboy)
+    default = Glific.Processor.ConsumerWorker
+    worker = if is_nil(opts),
+      do: default,
+    else: Keyword.get(opts, :worker, default)
+
+    [
       name: {:local, message_poolname()},
-      worker_module: Glific.Processor.ConsumerWorker,
+      worker_module: worker,
       size: 10,
       max_overflow: 10
     ]
+  end
 
   # Tell Phoenix to update the endpoint configuration
   # whenever the application is updated.
