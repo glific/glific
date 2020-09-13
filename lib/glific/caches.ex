@@ -29,6 +29,10 @@ defmodule Glific.Caches do
   @spec set_to_cache(non_neg_integer, list(), any) :: {:ok, any()}
   defp set_to_cache(organization_id, keys, value) do
     keys = Enum.reduce(keys, [], fn key, acc -> [{{organization_id, key}, value} | acc] end)
+
+    # also update the reload key for consumers to refresh caches
+    keys = [{{organization_id, :cache_reload_key}, Ecto.UUID.generate()} | keys]
+
     {:ok, true} = Cachex.put_many(@cache_bucket, keys)
     {:ok, value}
   end
