@@ -38,7 +38,7 @@ defmodule Glific.Processor.ConsumerWorker do
     }
 
     # process the wakeup queue every timeout units
-    Process.send_after(self(), :wakeup_timeout, state[:wakeup_timeout])
+    # Process.send_after(self(), :wakeup_timeout, state[:wakeup_timeout])
 
     {:ok, state}
   end
