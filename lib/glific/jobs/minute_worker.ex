@@ -9,6 +9,7 @@ defmodule Glific.Jobs.MinuteWorker do
   alias Glific.{
     Contacts,
     Flags,
+    Flows.FlowContext,
     Partners
   }
 
@@ -26,6 +27,10 @@ defmodule Glific.Jobs.MinuteWorker do
 
   def perform(%Oban.Job{args: %{"job" => "contact_status"} = args} = _job) do
     Partners.perform_all(&Contacts.update_contact_status/2, args)
+  end
+
+  def perform(%Oban.Job{args: %{"job" => "wakeup_flows"}} = _job) do
+    FlowContext.wakeup()
   end
 
   def perform(_job), do: {:error, "This job is not handled"}

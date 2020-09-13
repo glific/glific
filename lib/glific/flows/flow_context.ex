@@ -12,6 +12,7 @@ defmodule Glific.Flows.FlowContext do
 
   alias Glific.{
     Contacts.Contact,
+    Flows,
     Flows.Flow,
     Flows.Node,
     Repo
@@ -269,17 +270,6 @@ defmodule Glific.Flows.FlowContext do
     |> execute([])
   end
 
-  @spec wakeup() :: [FlowContext.t()]
-  @doc """
-  Find all the contexts which need to be woken up and processed
-  """
-  def wakeup do
-    FlowContext
-    |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
-    |> where([fc], is_nil(fc.completed_at))
-    |> Repo.all()
-  end
-
   @doc """
   Check if there is an active context (i.e. with a non null, node_uuid for this contact)
   """
@@ -329,6 +319,43 @@ defmodule Glific.Flows.FlowContext do
       {:ok, context, []} -> {:ok, context}
       {:error, error} -> {:error, error}
     end
+  end
+
+  @spec wakeup() :: :ok
+  @doc """
+  Find all the contexts which need to be woken up and processed
+  """
+  def wakeup do
+    FlowContext
+    |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
+    |> where([fc], is_nil(fc.completed_at))
+    |> Repo.all()
+    |> Enum.each(&wakeup_one(&1))
+
+    :ok
+  end
+
+  @doc """
+  Process one context at a time that is ready to be woken
+  """
+  @spec wakeup_one(FlowContext.t()) ::
+          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
+  def wakeup_one(context) do
+    # update the context woken up time as soon as possible to avoid someone else
+    # grabbing this context
+    {:ok, context} = FlowContext.update_flow_context(context, %{wakeup_at: nil})
+
+    {:ok, flow} =
+      Flows.get_cached_flow(context.flow.organization_id, context.flow_uuid, %{
+        uuid: context.flow_uuid
+      })
+
+    {:ok, context} =
+      context
+      |> FlowContext.load_context(flow)
+      |> FlowContext.step_forward("No Response")
+
+    {:ok, context, []}
   end
 
   @doc """

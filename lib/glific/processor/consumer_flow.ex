@@ -96,27 +96,4 @@ defmodule Glific.Processor.ConsumerFlow do
 
     {message, state}
   end
-
-  @doc """
-  Process one context at a time that is ready to be woken
-  """
-  @spec wakeup(FlowContext.t(), map()) ::
-          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
-  def wakeup(context, _state) do
-    # update the context woken up time as soon as possible to avoid someone else
-    # grabbing this context
-    {:ok, context} = FlowContext.update_flow_context(context, %{wakeup_at: nil})
-
-    {:ok, flow} =
-      Flows.get_cached_flow(context.flow.organization_id, context.flow_uuid, %{
-        uuid: context.flow_uuid
-      })
-
-    {:ok, context} =
-      context
-      |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward("No Response")
-
-    {:ok, context, []}
-  end
 end
