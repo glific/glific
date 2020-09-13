@@ -34,11 +34,10 @@ defmodule Glific.Application do
       },
 
       # add poolboy and list of associated worker
-      :poolboy.child_spec(message_poolname(), poolboy_config()),
+      :poolboy.child_spec(message_poolname(), poolboy_config())
     ]
 
-    glific_children = [
-    ]
+    glific_children = []
 
     children =
       if Application.get_env(:glific, :environment) == :test,
@@ -65,9 +64,11 @@ defmodule Glific.Application do
   defp poolboy_config do
     opts = Application.get_env(:glific, Poolboy)
     default = Glific.Processor.ConsumerWorker
-    worker = if is_nil(opts),
-      do: default,
-    else: Keyword.get(opts, :worker, default)
+
+    worker =
+      if is_nil(opts),
+        do: default,
+        else: Keyword.get(opts, :worker, default)
 
     [
       name: {:local, message_poolname()},

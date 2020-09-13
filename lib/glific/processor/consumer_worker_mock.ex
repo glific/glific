@@ -20,14 +20,14 @@ defmodule Glific.Processor.ConsumerWorkerMock do
   end
 
   @doc false
-  def handle_call(_message, _from, state) do
-    send(self(), :received_message_to_process)
+  def handle_call({message, from}, _, state) do
+    send(from, :received_message_to_process)
     {:reply, message, state}
   end
 
   @doc false
-  def handle_cast(_message, state) do
-    send(self(), :received_message_to_process)
+  def handle_cast({_message, from}, state) do
+    send(from, :received_message_to_process)
     {:noreply, state}
   end
 end

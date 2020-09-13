@@ -75,13 +75,13 @@ defmodule Glific.Processor.ConsumerWorker do
       )
 
   @doc false
-  def handle_call(message, _from, state) do
+  def handle_call({message, _}, _, state) do
     {message, state} = handle_common(message, state)
     {:reply, message, state}
   end
 
   @doc false
-  def handle_cast(message, state) do
+  def handle_cast({message, _}, state) do
     {_message, state} = handle_common(message, state)
     {:noreply, state}
   end

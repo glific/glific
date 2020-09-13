@@ -180,6 +180,7 @@ defmodule Glific.Communications.Message do
 
     message
     |> Communications.publish_data(:received_message)
+    |> process_message()
 
     {:ok}
   end
@@ -187,7 +188,7 @@ defmodule Glific.Communications.Message do
   defp process_message(message) do
     :poolboy.transaction(
       Glific.Application.message_poolname(),
-      fn pid -> GenServer.cast(pid, message) end
+      fn pid -> GenServer.cast(pid, {message, self()}) end
     )
   end
 end

@@ -24,8 +24,7 @@ config :logger,
   level: :warn
 
 # setting the state of the environment for use within code base
-config :glific, :environment,
-  :test
+config :glific, :environment, :test
 
 config :glific, Oban,
   crontab: false,
@@ -38,8 +37,7 @@ config :glific,
   provider_id: "gupshup-provider-23",
   provider_limit: 10
 
-config :glific, Poolboy,
-  worker: Glific.Processor.ConsumerWorkerMock
+config :glific, Poolboy, worker: Glific.Processor.ConsumerWorkerMock
 
 config :tesla, adapter: Tesla.Mock
 
