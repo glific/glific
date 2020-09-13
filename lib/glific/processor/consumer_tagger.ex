@@ -7,7 +7,6 @@ defmodule Glific.Processor.ConsumerTagger do
     Dialogflow.Sessions,
     Messages.Message,
     Processor.Helper,
-    Repo,
     Taggers,
     Taggers.Numeric,
     Taggers.Status
@@ -85,8 +84,6 @@ defmodule Glific.Processor.ConsumerTagger do
        do: {message, state}
 
   defp dialogflow_tagger({message, %{tagged: false} = state}) do
-    # Since conatct and language are the required filed, we can skip some pattern checks.
-    message = Repo.preload(message, contact: [:language])
     # only do the query if we have a valid credentials file for dialogflow
     if FunWithFlags.enabled?(:dialogflow),
       do: Sessions.detect_intent(message, state.dialogflow_session_id)

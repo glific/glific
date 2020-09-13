@@ -53,9 +53,11 @@ defmodule Glific.Processor.ConsumerFlow do
       check_contexts(context, message, body, state)
     else
       _ ->
-      if Map.has_key?(state.flow_keywords, body),
-        do: check_flows(message, body, state),
-        else: check_contexts(context, message, body, state)
+        cond do
+          Map.get(state, :newcontact, false) == true -> check_flows(message, "newcontact", state)
+          Map.has_key?(state.flow_keywords, body) -> check_flows(message, body, state)
+          true -> check_contexts(context, message, body, state)
+        end
     end
   end
 
@@ -65,7 +67,6 @@ defmodule Glific.Processor.ConsumerFlow do
   """
   @spec check_flows(atom() | Message.t(), String.t(), map()) :: {Message.t(), map()}
   def check_flows(message, body, state) do
-    message = Repo.preload(message, :contact)
     {:ok, flow} = Flows.get_cached_flow(message.organization_id, body, %{keyword: body})
     FlowContext.init_context(flow, message.contact)
     {message, state}

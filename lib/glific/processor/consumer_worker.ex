@@ -95,7 +95,9 @@ defmodule Glific.Processor.ConsumerWorker do
   @spec process_message(atom() | Message.t(), map()) :: Message.t()
   defp process_message(message, state) do
     body = Glific.string_clean(message.body)
-    message = message |> Repo.preload(:contact)
+
+    # Since conatct and language are the required fiels in many places, lets preload them
+    message = Repo.preload(message, contact: [:language])
 
     {message, state}
     |> ConsumerTagger.process_message(body)
