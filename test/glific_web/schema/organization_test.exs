@@ -108,7 +108,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "provider_appname" => provider_appname,
             "provider_id" => provider.id,
             "provider_phone" => provider_phone,
-            "default_language_id" => language.id
+            "default_language_id" => language.id,
+            "active_language_ids" => [language.id]
           }
         }
       )
@@ -131,7 +132,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "provider_appname" => provider_appname,
           "provider_id" => provider.id,
           "provider_phone" => provider_phone,
-          "default_language_id" => language.id
+          "default_language_id" => language.id,
+          "active_language_ids" => [language.id]
         }
       }
     )
@@ -146,7 +148,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "provider_appname" => provider_appname,
             "provider_id" => provider.id,
             "provider_phone" => provider_phone,
-            "default_language_id" => language.id
+            "default_language_id" => language.id,
+            "active_language_ids" => [language.id]
           }
         }
       )
@@ -185,6 +188,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "provider_id" => provider.id,
             "provider_phone" => provider_phone,
             "default_language_id" => language.id,
+            "active_language_ids" => [language.id],
             "timezone" => timezone
           }
         }
@@ -222,7 +226,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "provider_appname" => provider_appname,
           "provider_id" => provider.id,
           "provider_phone" => "new provider_phone",
-          "default_language_id" => language.id
+          "default_language_id" => language.id,
+          "active_language_ids" => [language.id]
         }
       }
     )
@@ -238,8 +243,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "email" => "new email",
             "provider_appname" => provider_appname,
             "provider_id" => provider.id,
-            "provider_phone" => "new provider_phone",
-            "default_language_id" => language.id
+            "provider_phone" => "new provider_phone"
           }
         }
       )

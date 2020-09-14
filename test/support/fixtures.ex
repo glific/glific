@@ -109,7 +109,8 @@ defmodule Glific.Fixtures do
       provider_phone: "and this is not a valid phone",
       # lets just hope its there :)
       default_language_id: 1,
-      contact_id: contact_fixture().id
+      contact_id: contact_fixture().id,
+      active_language_ids: [1]
     }
 
     {:ok, organization} =

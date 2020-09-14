@@ -32,7 +32,7 @@ defmodule Glific.Partners.Organization do
     :contact_id,
     :is_active,
     :timezone,
-    :active_languages
+    :active_language_ids
     # commenting this out, since the tests were giving me an error
     # about cast_embed etc
     # :out_of_office
@@ -59,7 +59,7 @@ defmodule Glific.Partners.Organization do
           days: list() | nil,
           is_active: boolean() | true,
           timezone: String.t() | nil,
-          active_languages: [integer],
+          active_language_ids: [integer],
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -93,7 +93,7 @@ defmodule Glific.Partners.Organization do
 
     field :timezone, :string, default: "Asia/Kolkata"
 
-    field :active_languages, {:array, :integer}, default: []
+    field :active_language_ids, {:array, :integer}, default: []
 
     timestamps(type: :utc_datetime)
   end
@@ -124,15 +124,19 @@ defmodule Glific.Partners.Organization do
       |> Repo.all()
 
     changeset
-    |> validate_subset(:active_languages, language_ids)
+    |> validate_subset(:active_language_ids, language_ids)
   end
 
   defp validate_default_language(changeset) do
     default_language_id = get_field(changeset, :default_language_id)
-    active_languages = get_field(changeset, :active_languages)
+    active_language_ids = get_field(changeset, :active_language_ids)
 
-    if default_language_id not in active_languages do
-      add_error(changeset, :default_language_id, "default language must be updated according to active languages")
+    if default_language_id not in active_language_ids do
+      add_error(
+        changeset,
+        :default_language_id,
+        "default language must be updated according to active languages"
+      )
     else
       changeset
     end

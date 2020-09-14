@@ -512,6 +512,11 @@ Type | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>activeLanguages</strong></td>
+<td valign="top">[<a href="#language">Language</a>]</td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
@@ -762,6 +767,11 @@ Unique
 <tr>
 <td colspan="2" valign="top"><strong>defaultLanguageId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>activeLanguageIds</strong></td>
+<td valign="top">[<a href="#id">ID</a>]</td>
 <td></td>
 </tr>
 <tr>

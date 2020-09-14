@@ -385,7 +385,7 @@ defmodule Glific.Partners do
   defp set_languages(organization) do
     languages =
       Language
-      |> where([l], l.id in ^organization.active_languages)
+      |> where([l], l.id in ^organization.active_language_ids)
       |> Repo.all()
 
     organization

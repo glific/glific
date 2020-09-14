@@ -17,8 +17,8 @@ defmodule Glific.Repo.Migrations.V04AlterGlificTables do
       # add a provider limit field to limit rate of messages / minute
       add :provider_limit, :integer, default: 60
 
-      # choose active languages among supported languages
-      add :active_languages, {:array, :integer}, default: []
+      # choose active languages from the supported languages
+      add :active_language_ids, {:array, :integer}, default: []
     end
 
     alter table(:providers) do

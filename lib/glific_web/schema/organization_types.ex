@@ -60,7 +60,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(fn organization, _, _ ->
         languages =
           Language
-          |> where([l], l.id in ^organization.active_languages)
+          |> where([l], l.id in ^organization.active_language_ids)
           |> Repo.all()
 
         {:ok, languages}
@@ -119,7 +119,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :timezone, :string
 
-    field :active_languages, list_of(:id)
+    field :active_language_ids, list_of(:id)
   end
 
   object :organization_queries do
