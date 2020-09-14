@@ -12,8 +12,7 @@ defmodule Glific.Processor.ConsumerWorker do
     Messages.Message,
     Processor.ConsumerFlow,
     Processor.ConsumerTagger,
-    Repo,
-    Settings
+    Repo
   }
 
   @doc false
@@ -48,7 +47,6 @@ defmodule Glific.Processor.ConsumerWorker do
     }
     |> Map.merge(ConsumerTagger.load_state(organization_id))
     |> Map.merge(ConsumerFlow.load_state(organization_id))
-    |> Map.merge(Settings.load_languages(organization_id))
   end
 
   defp reload(state, organization_id),
