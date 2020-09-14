@@ -3,12 +3,9 @@ defmodule Glific.Settings do
   The Settings context. This includes language for now.
   """
 
-  alias Glific.{
-    Caches,
-    Partners,
-    Repo,
-    Settings.Language
-  }
+  import Ecto.Query, warn: false
+  alias Glific.Repo
+  alias Glific.Settings.Language
 
   @doc """
   Returns the list of languages.

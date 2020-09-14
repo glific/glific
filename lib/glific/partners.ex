@@ -13,7 +13,7 @@ defmodule Glific.Partners do
     Partners.Organization,
     Partners.Provider,
     Repo,
-    Settings
+    Settings.Language
   }
 
   @doc """
@@ -381,10 +381,10 @@ defmodule Glific.Partners do
     |> Map.put(:days, days)
   end
 
-  @spec set_languages(Organization.t()) :: Organization.t()
+  @spec set_languages(map()) :: map()
   defp set_languages(organization) do
     languages =
-      Settings.Language
+      Language
       |> where([l], l.id in ^organization.active_languages)
       |> Repo.all()
 

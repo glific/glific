@@ -118,8 +118,8 @@ defmodule Glific.Partners.Organization do
 
   defp validate_active_languages(changeset) do
     language_ids =
-      Glific.Settings.Language
-      |> Ecto.Query.select([l], l.id)
+      Language
+      |> select([l], l.id)
       |> Repo.all()
 
     changeset
