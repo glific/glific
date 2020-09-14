@@ -4,6 +4,7 @@ defmodule Glific.Partners.Organization do
   """
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query, warn: false
 
   alias __MODULE__
 
@@ -11,6 +12,7 @@ defmodule Glific.Partners.Organization do
     Contacts.Contact,
     Partners.OrganizationSettings.OutOfOffice,
     Partners.Provider,
+    Repo,
     Settings.Language
   }
 
@@ -29,7 +31,8 @@ defmodule Glific.Partners.Organization do
   @optional_fields [
     :contact_id,
     :is_active,
-    :timezone
+    :timezone,
+    :active_languages
     # commenting this out, since the tests were giving me an error
     # about cast_embed etc
     # :out_of_office
@@ -56,6 +59,7 @@ defmodule Glific.Partners.Organization do
           days: list() | nil,
           is_active: boolean() | true,
           timezone: String.t() | nil,
+          active_languages: [integer],
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -89,6 +93,8 @@ defmodule Glific.Partners.Organization do
 
     field :timezone, :string, default: "Asia/Kolkata"
 
+    field :active_languages, {:array, :integer}, default: []
+
     timestamps(type: :utc_datetime)
   end
 
@@ -103,10 +109,20 @@ defmodule Glific.Partners.Organization do
     |> cast_embed(:out_of_office, with: &OutOfOffice.out_of_office_changeset/2)
     |> validate_required(@required_fields)
     |> validate_inclusion(:timezone, Tzdata.zone_list())
+    |> validate_active_languages()
     |> unique_constraint(:shortcode)
     |> unique_constraint(:email)
     |> unique_constraint(:provider_phone)
     |> unique_constraint(:contact_id)
+  end
+
+  defp validate_active_languages(changeset) do
+    language_ids = Glific.Settings.Language
+          |> Ecto.Query.select([l], l.id)
+          |> Repo.all()
+
+    changeset
+    |> validate_subset(:active_languages, language_ids)
   end
 
   defp add_out_of_office_if_missing(
