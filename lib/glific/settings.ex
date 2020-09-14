@@ -4,8 +4,12 @@ defmodule Glific.Settings do
   """
 
   import Ecto.Query, warn: false
-  alias Glific.Repo
-  alias Glific.Settings.Language
+  alias Glific.{
+    Caches,
+    Partners,
+    Repo,
+    Settings.Language
+  }
 
   @doc """
   Returns the list of languages.
@@ -43,6 +47,29 @@ defmodule Glific.Settings do
       _, query ->
         query
     end)
+  end
+
+  def load_languages(organization_id) do
+    case Caches.get(organization_id, "languages") do
+      {:ok, value} when value in [nil, false] ->
+        organization = Partners.get_organization!(organization_id)
+
+        languages_map =
+          list_languages()
+          |> Enum.reduce([], fn language, acc ->
+            if language.id in organization.active_languages do
+              [language | acc]
+            else
+              acc
+            end
+          end)
+
+        Caches.set(organization_id, "languages", languages_map)
+        %{languages: languages_map}
+
+      {:ok, languages_map} ->
+        %{languages: languages_map}
+    end
   end
 
   # codebeat:enable[ABC]

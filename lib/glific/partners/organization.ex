@@ -117,9 +117,10 @@ defmodule Glific.Partners.Organization do
   end
 
   defp validate_active_languages(changeset) do
-    language_ids = Glific.Settings.Language
-          |> Ecto.Query.select([l], l.id)
-          |> Repo.all()
+    language_ids =
+      Glific.Settings.Language
+      |> Ecto.Query.select([l], l.id)
+      |> Repo.all()
 
     changeset
     |> validate_subset(:active_languages, language_ids)
