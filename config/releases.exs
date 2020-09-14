@@ -45,7 +45,7 @@ config :glific, GlificWeb.Endpoint,
 # AppSignal configs
 config :glific,
   provider_url: System.get_env("PROVIDER_URL"),
-  provider_key: System.get_env("PROVIDER_KEY")
+  provider_key_1: System.get_env("PROVIDER_KEY")
 
 config :appsignal, :config,
   name: "Glific",
