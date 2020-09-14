@@ -110,6 +110,7 @@ defmodule Glific.Partners.Organization do
     |> validate_required(@required_fields)
     |> validate_inclusion(:timezone, Tzdata.zone_list())
     |> validate_active_languages()
+    |> validate_default_language()
     |> unique_constraint(:shortcode)
     |> unique_constraint(:email)
     |> unique_constraint(:provider_phone)
@@ -124,6 +125,17 @@ defmodule Glific.Partners.Organization do
 
     changeset
     |> validate_subset(:active_languages, language_ids)
+  end
+
+  defp validate_default_language(changeset) do
+    default_language_id = get_field(changeset, :default_language_id)
+    active_languages = get_field(changeset, :active_languages)
+
+    if default_language_id not in active_languages do
+      add_error(changeset, :default_language_id, "default language must be updated according to active languages")
+    else
+      changeset
+    end
   end
 
   defp add_out_of_office_if_missing(

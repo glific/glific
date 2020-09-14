@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   import Ecto.Query, warn: false
 
   alias Glific.Repo
+  alias Glific.Settings.Language
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -58,8 +59,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :active_languages, list_of(:language) do
       resolve(fn organization, _, _ ->
         languages =
-          Glific.Settings.Language
-          |> Ecto.Query.where([l], l.id in ^organization.active_languages)
+          Language
+          |> where([l], l.id in ^organization.active_languages)
           |> Repo.all()
 
         {:ok, languages}
