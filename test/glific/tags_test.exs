@@ -184,10 +184,8 @@ defmodule Glific.TagsTest do
     test "create_tags fails with constraint violation on language", %{
       organization_id: organization_id
     } do
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
-
       attrs =
-        Map.merge(@valid_attrs, %{language_id: language.id * 10, organization_id: organization_id})
+        Map.merge(@valid_attrs, %{language_id: 99_999, organization_id: organization_id})
 
       assert {:error, %Ecto.Changeset{}} = Tags.create_tag(attrs)
     end
