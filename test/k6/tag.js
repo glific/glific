@@ -61,9 +61,7 @@ function tags_delete_query(id) {
     `;
 }
 
-export function setup() {
-  return setup_helper()
-}
+export const setup = () => setup_helper()
 
 export default function(access_token) {
     post_gql(tags_query(), access_token);
