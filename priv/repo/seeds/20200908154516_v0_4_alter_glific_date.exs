@@ -6,12 +6,15 @@ defmodule Glific.Repo.Seeds.V04AlterGlificData do
 
   alias Glific.{
     Partners.Provider,
-    Repo
+    Repo,
+    Settings
   }
 
   def up(_repo) do
+    [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+
     queries = [
-      "UPDATE organizations SET provider_limit = 60;",
+      "UPDATE organizations SET provider_limit = 60, active_language_ids = '{#{en_us.id}}';",
       "UPDATE providers SET handler = 'Glific.Providers.Gupshup.Message', worker = 'Glific.Providers.Gupshup.Worker'"
     ]
 
