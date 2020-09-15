@@ -41,7 +41,7 @@ defmodule Glific.Flows.PeriodicTest do
     assert !is_nil(get_in(filled_map, [:flows, "outofoffice"]))
   end
 
-  @tag :pending
+  # @tag :pending
   test "run flows and we know the outofoffice flow should get going", attrs do
     FunWithFlags.enable(:enable_out_of_office)
     FunWithFlags.enable(:out_of_office_active)
