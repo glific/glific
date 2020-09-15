@@ -107,14 +107,14 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :contacts, list_of(:contact) do
       arg(:filter, :contact_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.contacts/3)
     end
 
     @desc "Get a count of all contacts filtered by various criteria"
     field :count_contacts, :integer do
       arg(:filter, :contact_filter)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.count_contacts/3)
     end
 
