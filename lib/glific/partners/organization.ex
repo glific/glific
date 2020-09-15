@@ -131,15 +131,14 @@ defmodule Glific.Partners.Organization do
     default_language_id = get_field(changeset, :default_language_id)
     active_language_ids = get_field(changeset, :active_language_ids)
 
-    if default_language_id not in active_language_ids do
-      add_error(
-        changeset,
-        :default_language_id,
-        "default language must be updated according to active languages"
-      )
-    else
-      changeset
-    end
+    if default_language_id in active_language_ids,
+      do: changeset,
+      else:
+        add_error(
+          changeset,
+          :default_language_id,
+          "default language must be updated according to active languages"
+        )
   end
 
   defp add_out_of_office_if_missing(

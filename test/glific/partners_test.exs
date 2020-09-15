@@ -303,6 +303,24 @@ defmodule Glific.PartnersTest do
       assert organization == Partners.get_organization!(organization.id)
     end
 
+    test "update_organization/2 should validate default language and active languages" do
+      organization = organization_fixture()
+      another_language = Fixtures.language_fixture()
+
+      assert {:error, _} =
+               Partners.update_organization(organization, %{
+                 default_language_id: another_language.id
+               })
+
+      assert {:error, _} =
+               Partners.update_organization(organization, %{active_language_ids: [99_999]})
+
+      assert {:error, _} =
+               Partners.update_organization(organization, %{
+                 active_language_ids: [another_language.id]
+               })
+    end
+
     test "update_organization/2 with oraganization settings" do
       organization = organization_fixture()
 

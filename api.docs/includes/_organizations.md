@@ -11,6 +11,10 @@ query organizations($filter: OrganizationFilter, $opts: Opts) {
       id
       label
     }
+    activeLanguages {
+      id
+      label
+    }
     isActive
     timezone
   }
@@ -35,6 +39,16 @@ query organizations($filter: OrganizationFilter, $opts: Opts) {
   "data": {
     "organizations": [
       {
+        "activeLanguages": [
+          {
+            "id": "1",
+            "label": "Hindi"
+          },
+          {
+            "id": "2",
+            "label": "English (United States)"
+          }
+        ],
         "defaultLanguage": {
           "id": "1",
           "label": "Hindi"
