@@ -210,7 +210,11 @@ defmodule Glific.PartnersTest do
       {:ok, organization} =
         attrs
         |> Enum.into(@valid_org_attrs)
-        |> Map.merge(%{provider_id: provider.id, default_language_id: default_language.id})
+        |> Map.merge(%{
+          provider_id: provider.id,
+          default_language_id: default_language.id,
+          active_language_ids: [default_language.id]
+        })
         |> Partners.create_organization()
 
       Application.put_env(
@@ -243,10 +247,15 @@ defmodule Glific.PartnersTest do
     end
 
     test "create_organization/1 with valid data creates an organization" do
+      language = default_language_fixture()
+
       assert {:ok, %Organization{} = organization} =
                @valid_org_attrs
-               |> Map.merge(%{provider_id: provider_fixture().id})
-               |> Map.merge(%{default_language_id: default_language_fixture().id})
+               |> Map.merge(%{
+                 provider_id: provider_fixture().id,
+                 default_language_id: language.id,
+                 active_language_ids: [language.id]
+               })
                |> Partners.create_organization()
 
       assert organization.name == @valid_org_attrs.name
@@ -260,10 +269,15 @@ defmodule Glific.PartnersTest do
     end
 
     test "create_organization/1 should add default values for organization settings" do
+      language = default_language_fixture()
+
       {:ok, %Organization{} = organization} =
         @valid_org_attrs
-        |> Map.merge(%{provider_id: provider_fixture().id})
-        |> Map.merge(%{default_language_id: default_language_fixture().id})
+        |> Map.merge(%{
+          provider_id: provider_fixture().id,
+          default_language_id: language.id,
+          active_language_ids: [language.id]
+        })
         |> Partners.create_organization()
 
       assert organization.out_of_office.enabled == false
@@ -287,6 +301,24 @@ defmodule Glific.PartnersTest do
                Partners.update_organization(organization, @invalid_org_attrs)
 
       assert organization == Partners.get_organization!(organization.id)
+    end
+
+    test "update_organization/2 should validate default language and active languages" do
+      organization = organization_fixture()
+      another_language = Fixtures.language_fixture()
+
+      assert {:error, _} =
+               Partners.update_organization(organization, %{
+                 default_language_id: another_language.id
+               })
+
+      assert {:error, _} =
+               Partners.update_organization(organization, %{active_language_ids: [99_999]})
+
+      assert {:error, _} =
+               Partners.update_organization(organization, %{
+                 active_language_ids: [another_language.id]
+               })
     end
 
     test "update_organization/2 with oraganization settings" do
@@ -382,8 +414,11 @@ defmodule Glific.PartnersTest do
 
       {:ok, organization} =
         @valid_org_attrs
-        |> Map.merge(%{default_language_id: default_language.id})
-        |> Map.merge(%{provider_id: provider.id})
+        |> Map.merge(%{
+          provider_id: provider.id,
+          default_language_id: default_language.id,
+          active_language_ids: [default_language.id]
+        })
         |> Partners.create_organization()
 
       assert [organization] == Partners.list_organizations(%{filter: %{provider: provider.name}})
@@ -454,6 +489,14 @@ defmodule Glific.PartnersTest do
       assert organization != nil
       assert organization.hours != nil
       assert organization.days != nil
+    end
+
+    test "organization/1 should return cached active languages" do
+      organization = organization_fixture() |> Repo.preload(:default_language)
+      default_language = organization.default_language
+      organization = Partners.organization(organization.id)
+
+      assert organization.languages == [default_language]
     end
 
     test "organization_contact_id/1 by id should return cached organization's contact id" do

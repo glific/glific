@@ -12,7 +12,8 @@ defmodule Glific.Partners do
     Caches,
     Partners.Organization,
     Partners.Provider,
-    Repo
+    Repo,
+    Settings.Language
   }
 
   @doc """
@@ -318,6 +319,7 @@ defmodule Glific.Partners do
           |> Repo.preload(:provider)
           |> set_out_of_office_values()
           |> Map.put(:provider_key, get_provider_key(organization_id))
+          |> set_languages()
 
         Caches.set(organization_id, "organization", organization)
         organization
@@ -377,6 +379,17 @@ defmodule Glific.Partners do
     organization
     |> Map.put(:hours, hours)
     |> Map.put(:days, days)
+  end
+
+  @spec set_languages(map()) :: map()
+  defp set_languages(organization) do
+    languages =
+      Language
+      |> where([l], l.id in ^organization.active_language_ids)
+      |> Repo.all()
+
+    organization
+    |> Map.put(:languages, languages)
   end
 
   @doc """

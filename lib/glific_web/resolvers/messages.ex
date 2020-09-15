@@ -72,8 +72,11 @@ defmodule GlificWeb.Resolvers.Messages do
   @doc false
   @spec create_and_send_message(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, %{message: Message.t()}}
-  def create_and_send_message(_, %{input: params}, _) do
-    with {:ok, message} <- Messages.create_and_send_message(params),
+  def create_and_send_message(_, %{input: params}, %{context: %{current_user: current_user}}) do
+    with {:ok, message} <-
+           params
+           |> Map.merge(%{user_id: current_user.id})
+           |> Messages.create_and_send_message(),
          do: {:ok, %{message: message}}
   end
 

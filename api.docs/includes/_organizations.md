@@ -11,6 +11,10 @@ query organizations($filter: OrganizationFilter, $opts: Opts) {
       id
       label
     }
+    activeLanguages {
+      id
+      label
+    }
     isActive
     timezone
   }
@@ -35,6 +39,16 @@ query organizations($filter: OrganizationFilter, $opts: Opts) {
   "data": {
     "organizations": [
       {
+        "activeLanguages": [
+          {
+            "id": "1",
+            "label": "Hindi"
+          },
+          {
+            "id": "2",
+            "label": "English (United States)"
+          }
+        ],
         "defaultLanguage": {
           "id": "1",
           "label": "Hindi"
@@ -512,6 +526,11 @@ Type | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>activeLanguages</strong></td>
+<td valign="top">[<a href="#language">Language</a>]</td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
@@ -762,6 +781,11 @@ Unique
 <tr>
 <td colspan="2" valign="top"><strong>defaultLanguageId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>activeLanguageIds</strong></td>
+<td valign="top">[<a href="#id">ID</a>]</td>
 <td></td>
 </tr>
 <tr>

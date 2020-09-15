@@ -29,6 +29,16 @@ fragment OrganizationFields on OrganizationResult {
 
     isActive
     timezone
+
+    default_language {
+      id
+      label
+    }
+
+    active_languages {
+      id
+      label
+    }
   }
 }
 

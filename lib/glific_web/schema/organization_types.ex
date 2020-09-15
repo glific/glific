@@ -5,8 +5,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
+  import Ecto.Query, warn: false
 
   alias Glific.Repo
+  alias Glific.Settings.Language
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -53,6 +55,17 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :is_active, :boolean
 
     field :timezone, :string
+
+    field :active_languages, list_of(:language) do
+      resolve(fn organization, _, _ ->
+        languages =
+          Language
+          |> where([l], l.id in ^organization.active_language_ids)
+          |> Repo.all()
+
+        {:ok, languages}
+      end)
+    end
   end
 
   @desc "Filtering options for organizations"
@@ -105,6 +118,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :is_active, :boolean
 
     field :timezone, :string
+
+    field :active_language_ids, list_of(:id)
   end
 
   object :organization_queries do
