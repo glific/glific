@@ -50,4 +50,4 @@ npm-debug.log
 .DS_Store
 
 # don't commit mnesia files
-/Mnesia.nonode@nohost
+/Mnesia*
