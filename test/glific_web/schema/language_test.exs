@@ -22,7 +22,7 @@ defmodule GlificWeb.Schema.LanguageTest do
 
   test "count returns the number of languages", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
-    assert get_in(query_data, [:data, "countLanguages"]) == 3
+    assert get_in(query_data, [:data, "countLanguages"]) >= 3
   end
 
   test "language id returns one language or nil", %{staff: user} do
