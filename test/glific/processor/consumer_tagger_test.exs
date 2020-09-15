@@ -1,10 +1,13 @@
-defmodule TestProducer do
-  use GenStage
+defmodule Glific.Processor.ConsumerTaggerTest do
+  use Glific.DataCase
 
   alias Glific.{
     Fixtures,
     Processor.ConsumerTagger,
-    Repo
+    Repo,
+    Seeds.SeedsDev,
+    Tags.MessageTag,
+    Tags.Tag
   }
 
   @checks %{
@@ -20,45 +23,7 @@ defmodule TestProducer do
     9 => {to_string(['\u0039', 65_039, 8419]), "numeric", "9"},
     10 => {"hey there", "greeting", nil}
   }
-
   @checks_size Enum.count(@checks)
-
-  @doc false
-  @spec get_checks() :: %{integer => {}}
-  def get_checks, do: @checks
-
-  def start_link(demand) do
-    GenStage.start_link(__MODULE__, demand, name: TestProducer)
-  end
-
-  def init(demand), do: {:producer, demand}
-
-  def handle_demand(demand, counter) when counter > @checks_size + 1 do
-    send(:test, {:called_back})
-    {:stop, :normal, demand}
-  end
-
-  def handle_demand(demand, counter) when demand > 0 do
-    events =
-      Enum.map(
-        counter..(counter + demand - 1),
-        fn c -> Fixtures.message_fixture(%{body: elem(@checks[rem(c, @checks_size)], 0)}) end
-      )
-
-    {:noreply, events, demand + counter}
-  end
-end
-
-defmodule Glific.Processor.ConsumerTaggerTest do
-  use Glific.DataCase
-
-  alias Glific.{
-    Processor.ConsumerTagger,
-    Repo,
-    Seeds.SeedsDev,
-    Tags.MessageTag,
-    Tags.Tag
-  }
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -71,11 +36,15 @@ defmodule Glific.Processor.ConsumerTaggerTest do
 
   test "should behave like consumer",
        %{organization_id: organization_id} do
-    {:ok, producer} = TestProducer.start_link(1)
-    {:ok, _consumer} = ConsumerTagger.start_link(producer: producer, name: TestConsumerTagger)
+    state = ConsumerTagger.load_state(Fixtures.get_org_id())
 
-    Process.register(self(), :test)
-    assert_receive({:called_back}, 10_000)
+    Enum.map(
+      0..@checks_size,
+      fn c ->
+        message = Fixtures.message_fixture(%{body: elem(@checks[rem(c, @checks_size)], 0)})
+        ConsumerTagger.process_message({message, state}, message.body)
+      end
+    )
 
     # ensure we have a few message tags in the DB
     assert Repo.aggregate(MessageTag, :count) > 0
@@ -92,7 +61,7 @@ defmodule Glific.Processor.ConsumerTaggerTest do
       )
 
     Enum.map(
-      TestProducer.get_checks(),
+      @checks,
       # ensure that a tag with that value exists in the DB
       fn
         {_, {_, tag, nil}} ->
