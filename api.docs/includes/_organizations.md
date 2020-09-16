@@ -201,12 +201,12 @@ mutation createOrganization($input:OrganizationInput!) {
       contact {
         id
       }
-			email
+            email
       provider {
         id
         name
       }
-      providerKey
+      providerAppname
       providerPhone
       defaultLanguage {
         id
@@ -227,7 +227,7 @@ mutation createOrganization($input:OrganizationInput!) {
     "contactId": 1,
     "email": "test@test.com",
     "providerId": 1,
-    "providerKey": "Key provided by provider",
+    "providerAppname": "The name of your set in provider",
     "providerPhone": "Number",
     "defaultLanguageId": 1
   }
@@ -257,7 +257,7 @@ mutation createOrganization($input:OrganizationInput!) {
           "id": "1",
           "name": "Default Provider"
         },
-        "providerKey": "Key provided by provider",
+        "providerAppname": "MyAppName",
         "providerPhone": "Number"
       }
     }
@@ -556,7 +556,7 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>providerKey</strong></td>
+<td colspan="2" valign="top"><strong>providerAppname</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
