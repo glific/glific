@@ -621,12 +621,12 @@ defmodule Glific.Messages do
 
   # for all input contact ids that do not have messages attached to them
   # return a conversation data type with empty messages
-  # we dont add empty conversations when we have either include or exclude tags set
+  # we dont add empty conversations when we have either include tags or include users set
   @spec add_empty_conversations([Conversation.t()], map()) :: [Conversation.t()]
   defp add_empty_conversations(results, %{filter: %{include_tags: _tags}}),
     do: results
 
-  defp add_empty_conversations(results, %{filter: %{exclude_tags: _tags}}),
+  defp add_empty_conversations(results, %{filter: %{include_users: _users}}),
     do: results
 
   defp add_empty_conversations(results, %{filter: %{id: id}}),
