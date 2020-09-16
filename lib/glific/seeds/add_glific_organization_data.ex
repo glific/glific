@@ -4,7 +4,6 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
   """
   import Ecto.Changeset, only: [change: 2]
 
-  @now DateTime.utc_now() |> DateTime.truncate(:second)
   @password "secret1234"
 
   alias Glific.{
@@ -211,6 +210,8 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
       }
     ]
 
+    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
     tags =
       Enum.map(
         tags,
@@ -219,8 +220,8 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
           |> Map.put(:organization_id, organization.id)
           |> Map.put(:language_id, en_us.id)
           |> Map.put(:is_reserved, true)
-          |> Map.put(:inserted_at, @now)
-          |> Map.put(:updated_at, @now)
+          |> Map.put(:inserted_at, utc_now)
+          |> Map.put(:updated_at, utc_now)
         end
       )
 
@@ -231,13 +232,15 @@ defmodule Glific.Repo.Seeds.AddGlificOrganizationData do
   defp contacts(organization, languages) do
     [en_us | _] = languages
 
+    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
     admin =
       Repo.insert!(%Contact{
         phone: organization.provider_phone,
         name: "Glific Admin",
         organization_id: organization.id,
         language_id: en_us.id,
-        last_message_at: @now
+        last_message_at: utc_now
       })
 
     Repo.update!(change(organization, contact_id: admin.id))
