@@ -23,8 +23,6 @@ if Code.ensure_loaded?(Faker) do
 
     alias Faker.Lorem.Shakespeare
 
-    @now DateTime.utc_now() |> DateTime.truncate(:second)
-
     @doc """
     Smaller functions to seed various tables. This allows the test functions to call specific seeder functions.
     In the next phase we will also add unseeder functions as we learn more of the test capabilities
@@ -58,6 +56,8 @@ if Code.ensure_loaded?(Faker) do
     def seed_contacts(organization \\ nil) do
       organization = get_organization(organization)
 
+      utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
       [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
       [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
@@ -66,7 +66,7 @@ if Code.ensure_loaded?(Faker) do
           phone: "917834811231",
           name: "Default receiver",
           language_id: hi_in.id,
-          optin_time: @now,
+          optin_time: utc_now,
           provider_status: :session_and_hsm
         },
         %{
@@ -86,13 +86,15 @@ if Code.ensure_loaded?(Faker) do
         }
       ]
 
+      utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
       contact_entries =
         for contact_entry <- contacts do
           %{
-            inserted_at: @now,
-            updated_at: @now,
+            inserted_at: utc_now,
+            updated_at: utc_now,
             organization_id: organization.id,
-            last_message_at: @now,
+            last_message_at: utc_now,
             provider_status: :session
           }
           |> Map.merge(contact_entry)
@@ -332,13 +334,15 @@ if Code.ensure_loaded?(Faker) do
 
       {:ok, en_us} = Repo.fetch_by(Language, %{label_locale: "English"})
 
+      utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
       contact1 =
         Repo.insert!(%Contact{
           phone: "919820112345",
           name: "NGO Basic User 1",
           language_id: en_us.id,
-          optin_time: @now,
-          last_message_at: @now,
+          optin_time: utc_now,
+          last_message_at: utc_now,
           organization_id: organization.id
         })
 
@@ -347,8 +351,8 @@ if Code.ensure_loaded?(Faker) do
           phone: "919876543210",
           name: "NGO Admin",
           language_id: en_us.id,
-          optin_time: @now,
-          last_message_at: @now,
+          optin_time: utc_now,
+          last_message_at: utc_now,
           organization_id: organization.id
         })
 

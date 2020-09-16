@@ -178,7 +178,7 @@ defmodule Glific.Partners do
   @spec filter_organization_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
           Ecto.Queryable.t()
   defp filter_organization_with(query, filter) do
-            filter = Map.delete(filter, :organization_id)
+    filter = Map.delete(filter, :organization_id)
     query = Repo.filter_with(query, filter)
 
     Enum.reduce(filter, query, fn

@@ -10,8 +10,6 @@ defmodule Glific.Repo.Seeds.V04AddGlificData do
     Settings.Language
   }
 
-  @now DateTime.utc_now() |> DateTime.truncate(:second)
-
   def up(_repo) do
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
@@ -86,13 +84,15 @@ defmodule Glific.Repo.Seeds.V04AddGlificData do
       }
     ]
 
+    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
     languages =
       Enum.map(
         languages,
         fn language ->
           language
-          |> Map.put(:inserted_at, @now)
-          |> Map.put(:updated_at, @now)
+          |> Map.put(:inserted_at, utc_now)
+          |> Map.put(:updated_at, utc_now)
         end
       )
 

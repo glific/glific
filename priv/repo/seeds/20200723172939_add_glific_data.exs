@@ -20,7 +20,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Users
   }
 
-  @now DateTime.utc_now() |> DateTime.truncate(:second)
   @password "secret1234"
   @admin_phone "917834811114"
 
@@ -258,6 +257,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       }
     ]
 
+    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
     tags =
       Enum.map(
         tags,
@@ -266,8 +267,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
           |> Map.put(:organization_id, organization.id)
           |> Map.put(:language_id, en_us.id)
           |> Map.put(:is_reserved, true)
-          |> Map.put(:inserted_at, @now)
-          |> Map.put(:updated_at, @now)
+          |> Map.put(:inserted_at, utc_now)
+          |> Map.put(:updated_at, utc_now)
         end
       )
 
@@ -287,6 +288,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   def contacts(organization, languages) do
     {_hi, en_us} = languages
+    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     admin =
       Repo.insert!(%Contact{
@@ -294,7 +296,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         name: "Glific Admin",
         organization_id: organization.id,
         language_id: en_us.id,
-        last_message_at: @now
+        last_message_at: utc_now
       })
 
     Repo.update!(change(organization, contact_id: admin.id))
@@ -486,9 +488,10 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   def opted_in_contacts(organization) do
     with {:ok, url} <- Application.fetch_env(:glific, :provider_optin_list_url),
-         {:ok, api_key} <- Application.fetch_env(:glific, :provider_key),
-         {:ok, response} <- HTTPoison.get(url, [{"apikey", api_key}]),
-         {:ok, response_data} <- Poison.decode(response.body),
+         {:ok, provider_key} <-
+           Application.fetch_env(:glific, String.to_atom("provider_key_#{organization.id}")),
+         {:ok, response} <- Tesla.get(url, headers: [{"apikey", provider_key}]),
+         {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["users"]) do
       users = response_data["users"]
 
