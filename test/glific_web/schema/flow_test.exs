@@ -146,12 +146,12 @@ defmodule GlificWeb.Schema.FlowTest do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
-    result = auth_query_gql_by(:publish, user, variables: %{"id" => flow.id})
+    result = auth_query_gql_by(:publish, user, variables: %{"uuid" => flow.uuid})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "publishFlow", "errors"]) == nil
     assert get_in(query_data, [:data, "publishFlow", "success"]) == true
 
-    result = auth_query_gql_by(:publish, user, variables: %{"id" => 123_456_789})
+    result = auth_query_gql_by(:publish, user, variables: %{"uuid" => Ecto.UUID.generate()})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "publishFlow", "errors", Access.at(0), "message"])

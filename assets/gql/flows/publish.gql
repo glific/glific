@@ -1,5 +1,5 @@
-mutation publishFlow($id: ID!) {
-  publishFlow(id: $id) {
+mutation publishFlow($uuid: UUID4!) {
+  publishFlow(uuid: $uuid) {
     success
     errors {
       key
