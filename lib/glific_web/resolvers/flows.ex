@@ -78,7 +78,7 @@ defmodule GlificWeb.Resolvers.Flows do
       {:ok, %{success: true}}
     else
       {:error, message} ->
-        {:error, ["Flow #{uuid}", message]}
+        {:error, ["Flow UUID: #{uuid}", message]}
     end
   end
 
