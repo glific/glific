@@ -158,11 +158,16 @@ defmodule Glific.Searches do
       |> update_args_for_count(count)
 
     contact_ids =
-      if(args.filter[:ids]) do
-        args.filter[:ids]
-      else
-        search_query(args.filter[:term], args)
-        |> Repo.all()
+      cond do
+        args.filter[:id] != nil ->
+          [args.filter[:id]]
+
+        args.filter[:ids] != nil ->
+          args.filter[:ids]
+
+        true ->
+          search_query(args.filter[:term], args)
+          |> Repo.all()
       end
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
