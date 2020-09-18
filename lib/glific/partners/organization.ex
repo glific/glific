@@ -59,7 +59,8 @@ defmodule Glific.Partners.Organization do
           days: list() | nil,
           is_active: boolean() | true,
           timezone: String.t() | nil,
-          active_language_ids: [integer],
+          active_language_ids: [integer] | [],
+          languages: [Language.t()] | [],
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -94,6 +95,7 @@ defmodule Glific.Partners.Organization do
     field :timezone, :string, default: "Asia/Kolkata"
 
     field :active_language_ids, {:array, :integer}, default: []
+    field :languages, {:array, Language}, virtual: true
 
     timestamps(type: :utc_datetime)
   end

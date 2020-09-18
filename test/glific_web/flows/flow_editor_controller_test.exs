@@ -89,7 +89,9 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     test "languages", %{conn: conn} do
       conn = get(conn, "/flow-editor/languages", %{})
       languages = json_response(conn, 200)["results"]
-      assert length(Glific.Settings.list_languages()) == length(languages)
+
+      assert length(Glific.Partners.organization(conn.assigns[:organization_id]).languages) ==
+               length(languages)
     end
 
     test "environment", %{conn: conn} do
