@@ -237,7 +237,7 @@ defmodule Glific.Flows.ActionTest do
     action = %Action{
       type: "set_contact_field",
       value: "@results.test_result",
-      field: %{key: "not_settings"}
+      field: %{key: "not_settings", name: "Not Settings"}
     }
 
     message_stream = []
