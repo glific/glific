@@ -76,6 +76,9 @@ defmodule GlificWeb.Resolvers.Flows do
     with {:ok, flow} <- Repo.fetch_by(Flow, %{uuid: uuid}),
          {:ok, _flow} <- Flows.publish_flow(flow) do
       {:ok, %{success: true}}
+    else
+      {:error, message} ->
+        {:error, ["Flow #{uuid}", message]}
     end
   end
 

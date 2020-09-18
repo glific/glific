@@ -154,7 +154,7 @@ defmodule GlificWeb.Schema.FlowTest do
     result = auth_query_gql_by(:publish, user, variables: %{"uuid" => Ecto.UUID.generate()})
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:errors, Access.at(0), :message])
+    message = get_in(query_data, [:data, "publishFlow", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
   end
 
