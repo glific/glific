@@ -15,7 +15,8 @@ defmodule Glific.Flows.ContactField do
   Add a field {key, value} to a contact. For now, all preferences are stored under the
   settings map, with a sub-map of preferences. We expect to get more clarity on this soon
   """
-  @spec add_contact_field(FlowContext.t(), String.t(), String.t(), String.t(), String.t()) :: FlowContext.t()
+  @spec add_contact_field(FlowContext.t(), String.t(), String.t(), String.t(), String.t()) ::
+          FlowContext.t()
   def add_contact_field(context, field, label, value, type) do
     contact_fields =
       if is_nil(context.contact.fields),
@@ -24,7 +25,7 @@ defmodule Glific.Flows.ContactField do
 
     fields =
       contact_fields
-      |> Map.put(field, %{value: value, label: label,  type: type, inserted_at: DateTime.utc_now()})
+      |> Map.put(field, %{value: value, label: label, type: type, inserted_at: DateTime.utc_now()})
 
     {:ok, contact} =
       Contacts.update_contact(

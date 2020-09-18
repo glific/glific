@@ -10,6 +10,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Contacts.ContactsField,
     Flows.Flow,
     Flows.FlowRevision,
+    Partners,
     Partners.Organization,
     Partners.Provider,
     Repo,
@@ -24,26 +25,28 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   @admin_phone "917834811114"
 
   def up(_repo) do
-    languages = languages()
+    # check if this is the first organization that we are adding
+    # to the DB
+    count_organizations = Partners.count_organizations()
 
-    provider = providers()
+    en_us = languages(count_organizations)
 
-    organization = organization(provider, languages)
+    provider = providers(count_organizations)
+
+    organization = organization(count_organizations, provider, en_us)
 
     # calling it gtags, since tags is a macro in philcolumns
-    gtags(organization, languages)
+    gtags(organization, en_us)
 
-    admin = contacts(organization, languages)
+    admin = contacts(organization, en_us)
 
     users(admin, organization)
 
-    hsm_templates(organization, languages)
+    hsm_templates(organization, en_us)
 
     saved_searches(organization)
 
     flows(organization)
-
-    opted_in_contacts(organization)
 
     contacts_field(organization)
   end
@@ -53,25 +56,23 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     # hence we can get away with truncating in reverse order
     # DO NOT FOLLOW this pattern for any other migrations
     truncates = [
-      "TRUNCATE flows;",
-      "TRUNCATE flow_revisions;",
-      "TRUNCATE saved_searches;",
-      "TRUNCATE session_templates;",
-      "TRUNCATE users;",
-      "TRUNCATE organizations;",
-      "TRUNCATE contacts;",
-      "TRUNCATE providers;",
-      "TRUNCATE tags;",
-      "TRUNCATE languages;",
-      "TRUNCATE contacts_fields;"
+      "TRUNCATE flow_revisions CASCADE;",
+      "TRUNCATE flows CASCADE;",
+      "TRUNCATE saved_searches CASCADE;",
+      "TRUNCATE session_templates CASCADE;",
+      "TRUNCATE users CASCADE;",
+      "TRUNCATE contacts CASCADE;",
+      "TRUNCATE tags CASCADE;",
+      "TRUNCATE contacts_fields CASCADE;",
+      "TRUNCATE organizations CASCADE;",
+      "TRUNCATE providers CASCADE;",
+      "TRUNCATE languages CASCADE;"
     ]
 
     Enum.each(truncates, fn t -> Repo.query(t) end)
   end
 
-  def languages do
-    hi = Repo.insert!(%Language{label: "Hindi", label_locale: "हिंदी", locale: "hi"})
-
+  def languages(0 = _count_organizations) do
     en_us =
       Repo.insert!(%Language{
         label: "English (United States)",
@@ -79,19 +80,48 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         locale: "en_US"
       })
 
-    _ta =
-      Repo.insert!(%Language{
-        label: "Tamil",
-        label_locale: "தமிழ்",
-        locale: "ta"
-      })
+    languages = [
+      {"Hindi", "हिंदी", "hi"},
+      {"Tamil", "தமிழ்", "ta"},
+      {"Kannada", "ಕನ್ನಡ", "kn"},
+      {"Malayalam", "മലയാളം", "ml"},
+      {"Telugu", "తెలుగు", "te"},
+      {"Odia", "ଓଡ଼ିଆ", "or"},
+      {"Assamese", "অসমীয়া", "as"},
+      {"Gujarati", "ગુજરાતી", "gu"},
+      {"Bengali", "বাংলা", "bn"},
+      {"Punjabi", "ਪੰਜਾਬੀ", "pa"},
+      {"Marathi", "मराठी", "mr"}
+    ]
 
-    {hi, en_us}
+    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    languages =
+      Enum.map(
+        languages,
+        fn {label, label_locale, locale} ->
+          %{
+            label: label,
+            label_locale: label_locale,
+            locale: locale,
+            inserted_at: utc_now,
+            updated_at: utc_now
+          }
+        end
+      )
+
+    # seed languages
+    Repo.insert_all(Language, languages)
+
+    en_us
   end
 
-  def gtags(organization, languages) do
-    {_hi, en_us} = languages
+  def languages(_count_organizations) do
+    {:ok, en_us} = Repo.fetch_by(Language, %{label: "English (United States)"})
+    en_us
+  end
 
+  def gtags(organization, en_us) do
     # seed tags
     message_tags_mt =
       Repo.insert!(%Tag{
@@ -276,18 +306,34 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.insert_all(Tag, tags)
   end
 
-  def providers do
+  def providers(0 = _count_organizations) do
+    default =
+      Repo.insert!(%Provider{
+        name: "Gupshup",
+        url: "https://gupshup.io/",
+        api_end_point: "https://api.gupshup.io/sm/api/v1",
+        handler: "Glific.Providers.Gupshup.Message",
+        worker: "Glific.Providers.Gupshup.Worker"
+      })
+
+    # add glifproxy as a provider also
     Repo.insert!(%Provider{
-      name: "Gupshup",
-      url: "https://gupshup.io/",
-      api_end_point: "https://api.gupshup.io/sm/api/v1",
+      name: "Glifproxy",
+      url: "https://glific.io/",
+      api_end_point: "http://glific.test:4000",
       handler: "Glific.Providers.Gupshup.Message",
-      worker: "Glific.Providers.Gupshup.Worker"
+      worker: "Glific.Providers.Glifproxy.Worker"
     })
+
+    default
   end
 
-  def contacts(organization, languages) do
-    {_hi, en_us} = languages
+  def providers(_count_organizations) do
+    {:ok, default} = Repo.fetch_by(Provider, %{name: "Gupshup"})
+    default
+  end
+
+  def contacts(organization, en_us) do
     utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     admin =
@@ -302,9 +348,39 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.update!(change(organization, contact_id: admin.id))
   end
 
-  def organization(provider, languages) do
-    {_hi, en_us} = languages
+  defp create_org(0 = _count_organizations, provider, en_us, out_of_office_default_data) do
+    Repo.insert!(%Organization{
+      name: "Glific",
+      shortcode: "glific",
+      email: "ADMIN@REPLACE_ME.NOW",
+      provider_appname: "ADD_PROVIDER_APPNAME",
+      provider_phone: @admin_phone,
+      provider_id: provider.id,
+      provider_limit: 60,
+      active_language_ids: [en_us.id],
+      default_language_id: en_us.id,
+      out_of_office: out_of_office_default_data
+    })
+  end
 
+  defp create_org(count_organizations, provider, en_us, out_of_office_default_data) do
+    org_uniq_id = Integer.to_string(count_organizations + 1)
+
+    Repo.insert!(%Organization{
+      name: "New Seeded Organization" <> org_uniq_id,
+      shortcode: "shortcode" <> org_uniq_id,
+      email: "ADMIN_#{org_uniq_id}@REPLACE_ME.NOW",
+      provider_appname: "ADD_PROVIDER_APPNAME" <> org_uniq_id,
+      provider_phone: @admin_phone <> org_uniq_id,
+      provider_id: provider.id,
+      provider_limit: 60,
+      active_language_ids: '{#{en_us.id}}',
+      default_language_id: en_us.id,
+      out_of_office: out_of_office_default_data
+    })
+  end
+
+  def organization(count_organization, provider, en_us) do
     out_of_office_default_data = %{
       enabled: true,
       start_time: elem(Time.new(9, 0, 0), 1),
@@ -320,16 +396,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       ]
     }
 
-    Repo.insert!(%Organization{
-      name: "Glific",
-      shortcode: "glific",
-      email: "ADMIN@REPLACE_ME.NOW",
-      provider_id: provider.id,
-      provider_appname: "ADD_PROVIDER_APPNAME",
-      provider_phone: @admin_phone,
-      default_language_id: en_us.id,
-      out_of_office: out_of_office_default_data
-    })
+    create_org(count_organization, provider, en_us, out_of_office_default_data)
   end
 
   def users(admin, organization) do
@@ -344,9 +411,15 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     })
   end
 
-  def hsm_templates(organization, languages) do
-    {_hi, en_us} = languages
+  defp generate_uuid(organization, default) do
+    # we have static uuids for the first organization since we might have our test cases
+    # hardcoded with these uuids
+    if organization.id == 1,
+      do: default,
+      else: Ecto.UUID.generate()
+  end
 
+  def hsm_templates(organization, en_us) do
     Repo.insert!(%SessionTemplate{
       label: "Missed Message Apology",
       type: :text,
@@ -359,7 +432,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
       If you’d like to continue this discussion, please reply with ‘yes’
       """,
-      uuid: "9381b1b9-1b9b-45a6-81f4-f91306959619"
+      uuid: generate_uuid(organization, "9381b1b9-1b9b-45a6-81f4-f91306959619")
     })
 
     Repo.insert!(%SessionTemplate{
@@ -371,7 +444,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       language_id: en_us.id,
       organization_id: organization.id,
       body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
-      uuid: "e55f2c10-541c-470b-a5ff-9249ae82bc95"
+      uuid: generate_uuid(organization, "e55f2c10-541c-470b-a5ff-9249ae82bc95")
     })
 
     Repo.insert!(%SessionTemplate{
@@ -385,7 +458,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       is_reserved: true,
       language_id: en_us.id,
       organization_id: organization.id,
-      uuid: "fbf8d5a6-91ab-47ab-9691-35ef35443ad8"
+      uuid: generate_uuid(organization, "fbf8d5a6-91ab-47ab-9691-35ef35443ad8")
     })
   end
 
@@ -438,29 +511,48 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       })
 
   def flows(organization) do
+    uuid_map = %{
+      help: generate_uuid(organization, "3fa22108-f464-41e5-81d9-d8a298854429"),
+      language: generate_uuid(organization, "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"),
+      preference: generate_uuid(organization, "63397051-789d-418d-9388-2ef7eb1268bb"),
+      newcontact: generate_uuid(organization, "6fe8fda9-2df6-4694-9fd6-45b9e724f545"),
+      registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
+      outofoffice: generate_uuid(organization, "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7"),
+      activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
+      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5")
+    }
+
     data = [
-      {"Help Workflow", ["help", "मदद"], "3fa22108-f464-41e5-81d9-d8a298854429", true,
-       "help.json"},
-      {"Language Workflow", ["language", "भाषा"], "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf", true,
-       "language.json"},
-      {"Preferences Workflow", ["preference"], "63397051-789d-418d-9388-2ef7eb1268bb", false,
-       "preference.json"},
-      {"New Contact Workflow", ["newcontact"], "6fe8fda9-2df6-4694-9fd6-45b9e724f545", false,
-       "new_contact.json"},
-      {"Registration Workflow", ["registration"], "f4f38e00-3a50-4892-99ce-a281fe24d040", false,
+      {"Help Workflow", ["help", "मदद"], uuid_map.help, true, "help.json"},
+      {"Language Workflow", ["language", "भाषा"], uuid_map.language, true, "language.json"},
+      {"Preference Workflow", ["preference"], uuid_map.preference, false, "preference.json"},
+      {"New Contact Workflow", ["newcontact"], uuid_map.newcontact, false, "new_contact.json"},
+      {"Registration Workflow", ["registration"], uuid_map.registration, false,
        "registration.json"},
-      {"Out of Office Workflow", ["outofoffice"], "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7", false,
+      {"Out of Office Workflow", ["outofoffice"], uuid_map.outofoffice, false,
        "out_of_office.json"},
-      {"SoL Activity", ["solactivity"], "b050c652-65b5-4ccf-b62b-1e8b3f328676", false,
-       "sol_activity.json"},
-      {"sol_feedback", ["solfeedback"], "6c21af89-d7de-49ac-9848-c9febbf737a5", false,
-       "sol_feedback.json"}
+      {"Activity", ["activity"], uuid_map.activity, false, "activity.json"},
+      {"Feedback", ["feedback"], uuid_map.feedback, false, "feedback.json"}
     ]
 
-    Enum.map(data, &flow(&1, organization))
+    Enum.map(data, &flow(&1, organization, uuid_map))
   end
 
-  defp flow({name, keywords, uuid, ignore_keywords, file}, organization) do
+  defp replace_uuids(json, uuid_map),
+    do:
+      Enum.reduce(
+        uuid_map,
+        json,
+        fn {key, uuid}, acc ->
+          String.replace(
+            acc,
+            key |> Atom.to_string() |> String.upcase() |> Kernel.<>("_UUID"),
+            uuid
+          )
+        end
+      )
+
+  defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map) do
     f =
       Repo.insert!(%Flow{
         name: name,
@@ -473,6 +565,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     definition =
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
+      |> replace_uuids(uuid_map)
       |> Jason.decode!()
       |> Map.merge(%{
         "name" => f.name,
@@ -484,33 +577,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       flow_id: f.id,
       status: "done"
     })
-  end
-
-  def opted_in_contacts(organization) do
-    with {:ok, url} <- Application.fetch_env(:glific, :provider_optin_list_url),
-         {:ok, provider_key} <-
-           Application.fetch_env(:glific, String.to_atom("provider_key_#{organization.id}")),
-         {:ok, response} <- Tesla.get(url, headers: [{"apikey", provider_key}]),
-         {:ok, response_data} <- Jason.decode(response.body),
-         false <- is_nil(response_data["users"]) do
-      users = response_data["users"]
-
-      Enum.each(users, fn user ->
-        {:ok, last_message_at} = DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
-        {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
-
-        phone = user["countryCode"] <> user["phoneCode"]
-
-        Contacts.upsert(%{
-          phone: phone,
-          last_message_at: last_message_at |> DateTime.truncate(:second),
-          optin_time: optin_time |> DateTime.truncate(:second),
-          provider_status: check_provider_status(last_message_at),
-          organization_id: organization.id,
-          language_id: organization.default_language_id
-        })
-      end)
-    end
   end
 
   defp check_provider_status(last_message_at) do

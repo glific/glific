@@ -296,7 +296,7 @@
         {
           "uuid" : "883a4070-5201-4780-8fd6-86017afc87c9",
           "flow" : {
-            "uuid" : "3fa22108-f464-41e5-81d9-d8a298854429",
+            "uuid" : "HELP_UUID",
             "name" : "Help Workflow"
           },
           "type" : "enter_flow"
@@ -417,8 +417,8 @@
         {
           "uuid" : "fbe61add-c0fd-4bad-b3e9-ea3ff1ac69af",
           "flow" : {
-            "uuid" : "6c21af89-d7de-49ac-9848-c9febbf737a5",
-            "name" : "SoL Feedback"
+            "uuid" : "FEEDBACK_UUID",
+            "name" : "Feedback"
           },
           "type" : "enter_flow"
         }
@@ -476,6 +476,6 @@
   ],
   "language" : "base",
   "expire_after_minutes" : 10080,
-  "name" : "SoL Activity",
+  "name" : "Activity",
   "type" : "messaging"
 }

@@ -90,14 +90,21 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :email, :string, null: false
 
       add :provider_id, references(:providers, on_delete: :nothing), null: false
-      add :provider_key, :string, null: false
+      add :provider_appname, :string, null: false
 
       # WhatsApp Business API Phone (this is the primary point of identification)
       # We will not link this to a contact
       add :provider_phone, :string, null: false
 
+      # add a provider limit field to limit rate of messages / minute
+      add :provider_limit, :integer, default: 60
+
+      # choose active languages from the supported languages
       # organization default language
       add :default_language_id, references(:languages, on_delete: :restrict), null: false
+
+      # choose active languages from the supported languages
+      add :active_language_ids, {:array, :integer}, default: []
 
       # contact id of organization that can send messages out. We cannot make this a foreign
       # key due to cyclic nature. Hence definied as just an id
@@ -429,6 +436,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # The api end point for Provider
       add :api_end_point, :string, null: false
 
+      # add the handler and worker fields
+      add :handler, :string, null: false
+      add :worker, :string, null: false
+
       timestamps(type: :utc_datetime)
     end
 
@@ -557,7 +568,6 @@ defmodule Glific.Repo.Migrations.GlificCore do
   def flows do
     create table(:flows) do
       add :name, :string, null: false
-      add :shortcode, :string, null: false
       add :uuid, :uuid, null: false
 
       add :version_number, :string, default: "13.1.0"
@@ -576,7 +586,6 @@ defmodule Glific.Repo.Migrations.GlificCore do
     end
 
     create unique_index(:flows, [:name, :organization_id])
-    create unique_index(:flows, [:shortcode, :organization_id])
     create unique_index(:flows, :uuid)
     create index(:flows, :organization_id)
   end

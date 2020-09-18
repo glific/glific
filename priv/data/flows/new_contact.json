@@ -272,7 +272,7 @@
         {
           "type" : "enter_flow",
           "flow" : {
-            "uuid" : "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
+            "uuid" : "LANGUAGE_UUID",
             "name" : "Language Workflow"
           },
           "uuid" : "320ab9ec-67d1-4550-9bce-11ef3848897f"
@@ -331,7 +331,7 @@
           "type" : "enter_flow",
           "flow" : {
             "name" : "Registration Workflow",
-            "uuid" : "f4f38e00-3a50-4892-99ce-a281fe24d040"
+            "uuid" : "REGISTRATION_UUID"
           },
           "uuid" : "9bce0e17-1d51-4f44-a6f7-37427894dd8f"
         }
@@ -388,8 +388,8 @@
         {
           "type" : "enter_flow",
           "flow" : {
-            "name" : "SoL Activity",
-            "uuid" : "b050c652-65b5-4ccf-b62b-1e8b3f328676"
+            "name" : "Activity",
+            "uuid" : "ACTIVITY_UUID"
           },
           "uuid" : "557797aa-8979-4327-99e5-d0b8cddaea57"
         }

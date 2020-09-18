@@ -42,7 +42,7 @@
             }
         }
     },
-    "name": "SoL Feedback",
+    "name": "Feedback",
     "type": "messaging",
     "uuid": "6c21af89-d7de-49ac-9848-c9febbf737a5",
     "vars": ["6c21af89-d7de-49ac-9848-c9febbf737a5"],
@@ -167,8 +167,8 @@
         },
         "actions": [{
             "flow": {
-                "name": "SoL Activity",
-                "uuid": "b050c652-65b5-4ccf-b62b-1e8b3f328676"
+                "name": "Activity",
+                "uuid": "ACTIVITY_UUID"
             },
             "type": "enter_flow",
             "uuid": "3964acf1-4821-4f75-b891-0af826211ef4"

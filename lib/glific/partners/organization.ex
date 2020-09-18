@@ -133,6 +133,13 @@ defmodule Glific.Partners.Organization do
     default_language_id = get_field(changeset, :default_language_id)
     active_language_ids = get_field(changeset, :active_language_ids)
 
+    check_valid_language(changeset, default_language_id, active_language_ids)
+  end
+
+  defp check_valid_language(changeset, nil, _), do: changeset
+  defp check_valid_language(changeset, _, nil), do: changeset
+
+  defp check_valid_language(changeset, default_language_id, active_language_ids) do
     if default_language_id in active_language_ids,
       do: changeset,
       else:

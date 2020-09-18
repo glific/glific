@@ -5,7 +5,7 @@
   "localization" : {
 
   },
-  "name" : "Preferences Workflow",
+  "name" : "Preference Workflow",
   "nodes" : [
     {
       "uuid" : "d977a2dc-5987-4192-817e-1e3d3774abcb",
