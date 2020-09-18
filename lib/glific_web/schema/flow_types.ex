@@ -92,7 +92,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     end
 
     field :publish_flow, :publish_flow_result do
-      arg(:id, non_null(:id))
+      arg(:uuid, non_null(:uuid4))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.publish_flow/3)
     end

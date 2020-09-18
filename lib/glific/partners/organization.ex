@@ -60,7 +60,7 @@ defmodule Glific.Partners.Organization do
           is_active: boolean() | true,
           timezone: String.t() | nil,
           active_language_ids: [integer] | [],
-          languages: [Language.t()] | [],
+          languages: [Language.t()] | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }

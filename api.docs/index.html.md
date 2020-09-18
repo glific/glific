@@ -28,6 +28,7 @@ includes:
   - contact_group
   - message_group
   - user_group
+  - flows
   - types
   - scalars
   - enums
