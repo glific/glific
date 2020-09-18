@@ -10,6 +10,7 @@ defmodule Glific.Partners do
 
   alias Glific.{
     Caches,
+    Flags,
     Partners.Organization,
     Partners.Provider,
     Repo,
@@ -327,6 +328,10 @@ defmodule Glific.Partners do
           |> set_languages()
 
         Caches.set(organization_id, "organization", organization)
+
+        # also update the flags table with updated values
+        Flags.init(organization.id)
+
         organization
 
       {:ok, organization} ->
