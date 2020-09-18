@@ -10,6 +10,18 @@ defmodule Glific.FlagsTest do
   setup do
     Flags.init()
 
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "success",
+              "users" => []
+            })
+        }
+    end)
+
     :ok
   end
 

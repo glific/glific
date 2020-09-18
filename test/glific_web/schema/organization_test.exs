@@ -16,6 +16,19 @@ defmodule GlificWeb.Schema.OrganizationTest do
     SeedsDev.seed_organizations(provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_users()
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "success",
+              "users" => []
+            })
+        }
+    end)
+
     :ok
   end
 
