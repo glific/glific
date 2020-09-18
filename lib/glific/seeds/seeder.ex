@@ -31,6 +31,11 @@ defmodule Glific.Seeds.Seeder do
         do: Keyword.put(opts, :log, false),
         else: opts
 
+    opts =
+      if opts[:tenant],
+        do: opts,
+        else: Keyword.put(opts, :tenant, "main")
+
     # We need to run the with the loaded repo. This is a public API provided
     for repo <- repos do
       {:ok, _, _} = Ecto.Migrator.with_repo(repo, &run_seeders(&1, seeder, opts))
