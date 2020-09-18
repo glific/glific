@@ -237,7 +237,7 @@ defmodule Glific.Flows.ActionTest do
     action = %Action{
       type: "set_contact_field",
       value: "@results.test_result",
-      field: %{key: "not_settings"}
+      field: %{key: "not_settings", name: "Not Settings"}
     }
 
     message_stream = []
@@ -248,6 +248,7 @@ defmodule Glific.Flows.ActionTest do
 
     assert updated_context.contact.fields[action.field.key].value == "field1"
     assert updated_context.contact.fields[action.field.key].type == "string"
+    assert updated_context.contact.fields[action.field.key].label == "Not Settings"
   end
 
   test "execute an action when type is enter_flow", attrs do

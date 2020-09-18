@@ -354,8 +354,8 @@ Type | Description
 ## Publish a Flow
 
 ```graphql
-mutation publishFlow($id: ID!) {
-  publishFlow(id: $id) {
+mutation publishFlow($uuid: UUID4!) {
+  publishFlow(uuid: $uuid) {
     success
     errors {
       key
@@ -365,7 +365,7 @@ mutation publishFlow($id: ID!) {
 }
 
 {
-  "id": "3"
+  "uuid": "3fa22108-f464-41e5-81d9-d8a298854429"
 }
 ```
 
@@ -390,7 +390,7 @@ In case of errors, all the above functions return an error object like the below
     "publishFlow": {
       "errors": [
         {
-          "key": "Elixir.Glific.Flows.Flow 3",
+          "key": "Flow UUID: 9a2788e1-26cd-44d0-8868-d8f0552a08a6",
           "message": "Resource not found"
         }
       ],
@@ -567,7 +567,7 @@ Type | Description
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>uuid</strong></td>
-<td valign="top"><a href="#string">String</a></td>
+<td valign="top"><a href="#uuid4">UUID4</a></td>
 <td></td>
 </tr>
 <tr>

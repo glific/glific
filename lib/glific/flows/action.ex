@@ -210,7 +210,7 @@ defmodule Glific.Flows.Action do
           ContactSetting.set_contact_preference(context, value)
 
         true ->
-          ContactField.add_contact_field(context, key, value, "string")
+          ContactField.add_contact_field(context, key, action.field[:name], value, "string")
       end
 
     {:ok, context, message_stream}

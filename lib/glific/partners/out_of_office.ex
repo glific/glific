@@ -21,7 +21,7 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
           enabled: boolean | nil,
           start_time: :time | nil,
           end_time: :time | nil,
-          enabled_days: [EnabledDay.t()] | nil,
+          enabled_days: [EnabledDay.t()] | [],
           flow_id: non_neg_integer | nil
         }
 
