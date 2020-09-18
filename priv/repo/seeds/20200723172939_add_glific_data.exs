@@ -357,7 +357,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       provider_phone: @admin_phone,
       provider_id: provider.id,
       provider_limit: 60,
-      active_language_ids: '{#{en_us.id}}',
+      active_language_ids: [en_us.id],
       default_language_id: en_us.id,
       out_of_office: out_of_office_default_data
     })
