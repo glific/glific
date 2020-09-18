@@ -30,13 +30,15 @@ defmodule Glific.Flows.ContactFieldTest do
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
 
     field = "test field"
+    label = "Test Field"
     value = "test value"
     type = "string"
-    ContactField.add_contact_field(context, field, value, type)
+    ContactField.add_contact_field(context, field, label, value, type)
 
     {:ok, updated_contact} = Repo.fetch_by(Contacts.Contact, %{id: contact.id})
     assert updated_contact.fields[field]["value"] == value
     assert updated_contact.fields[field]["type"] == type
+    assert updated_contact.fields[field]["label"] == label
   end
 
   test "reset contact fields",
@@ -55,7 +57,8 @@ defmodule Glific.Flows.ContactFieldTest do
     field = "test field"
     value = "test value"
     type = "string"
-    context = ContactField.add_contact_field(context, field, value, type)
+    label = "Test Field"
+    context = ContactField.add_contact_field(context, field, label, value, type)
     _ = ContactField.reset_contact_fields(context)
 
     updated_contact = Contacts.get_contact!(contact.id)
