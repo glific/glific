@@ -153,6 +153,33 @@ defmodule Glific.PartnersTest do
       Settings
     }
 
+    @opted_in_contact_phone "8989898989"
+
+    setup do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "users" => [
+                  %{
+                    "countryCode" => "91",
+                    "lastMessageTimeStamp" => 1_600_402_466_679,
+                    "optinSource" => "URL",
+                    "optinStatus" => "OPT_IN",
+                    "optinTimeStamp" => 1_598_338_828_546,
+                    "phoneCode" => "91" <> @opted_in_contact_phone
+                  }
+                ]
+              })
+          }
+      end)
+
+      :ok
+    end
+
     @valid_org_attrs %{
       name: "Organization Name",
       shortcode: "organization_shortcode",
@@ -292,6 +319,18 @@ defmodule Glific.PartnersTest do
                Partners.update_organization(organization, @update_org_attrs)
 
       assert organization.name == @update_org_attrs.name
+    end
+
+    test "update_organization/2 should insert opted in contacts" do
+      organization = organization_fixture()
+
+      assert {:ok, %Organization{} = organization} =
+               Partners.update_organization(organization, @update_org_attrs)
+
+      assert [contact] =
+               Contacts.list_contacts(%{
+                 filter: %{organization_id: organization.id, phone: @opted_in_contact_phone}
+               })
     end
 
     test "update_organization/2 with invalid data returns error changeset" do

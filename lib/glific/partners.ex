@@ -259,6 +259,9 @@ defmodule Glific.Partners do
     # first delete the cached organization
     Caches.remove(organization.id, ["organization"])
 
+    # fetch opted in contacts
+    fetch_opted_in_contacts(organization)
+
     organization
     |> Organization.changeset(attrs)
     |> Repo.update()
@@ -416,5 +419,46 @@ defmodule Glific.Partners do
     end)
 
     :ok
+  end
+
+  @doc """
+  Fetch opted in contacts data from providers server
+  """
+  @spec fetch_opted_in_contacts(Organization.t()) :: :ok | any
+  def fetch_opted_in_contacts(organization) do
+    organization = organization |> Repo.preload(:provider)
+    url = organization.provider.api_end_point <> "/users/" <> organization.provider_appname
+    api_key = get_provider_key(organization.id)
+
+    with {:ok, response} <- Tesla.get(url, headers: [{"apikey", api_key}]),
+         {:ok, response_data} <- Jason.decode(response.body),
+         false <- is_nil(response_data["users"]) do
+      users = response_data["users"]
+
+      Enum.each(users, fn user ->
+        {:ok, last_message_at} = DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
+        {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
+
+        phone = user["countryCode"] <> user["phoneCode"]
+
+        Glific.Contacts.upsert(%{
+          phone: phone,
+          last_message_at: last_message_at |> DateTime.truncate(:second),
+          optin_time: optin_time |> DateTime.truncate(:second),
+          provider_status: check_provider_status(last_message_at),
+          organization_id: organization.id,
+          language_id: organization.default_language_id
+        })
+      end)
+    end
+  end
+
+  @spec check_provider_status(DateTime.t()) :: atom()
+  defp check_provider_status(last_message_at) do
+    if Timex.diff(DateTime.utc_now(), last_message_at, :hours) < 24 do
+      :session_and_hsm
+    else
+      :hsm
+    end
   end
 end
