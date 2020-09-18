@@ -10,6 +10,7 @@ defmodule Glific.Fixtures do
 
   alias Glific.{
     Contacts,
+    Flags,
     Flows,
     Groups,
     Messages,
@@ -110,7 +111,21 @@ defmodule Glific.Fixtures do
       # lets just hope its there :)
       default_language_id: 1,
       contact_id: contact_fixture().id,
-      active_language_ids: [1]
+      active_language_ids: [1],
+      out_of_office: %{
+        enabled: true,
+        start_time: elem(Time.new(9, 0, 0), 1),
+        end_time: elem(Time.new(20, 0, 0), 1),
+        enabled_days: [
+          %{enabled: true, id: 1},
+          %{enabled: true, id: 2},
+          %{enabled: true, id: 3},
+          %{enabled: true, id: 4},
+          %{enabled: true, id: 5},
+          %{enabled: false, id: 6},
+          %{enabled: false, id: 7}
+        ]
+      }
     }
 
     {:ok, organization} =
@@ -123,6 +138,9 @@ defmodule Glific.Fixtures do
       String.to_atom("provider_key_#{organization.id}"),
       "This is a fake key"
     )
+
+    # load state into flag options
+    Flags.init(organization.id)
 
     organization
   end
