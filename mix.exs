@@ -120,10 +120,10 @@ defmodule Glific.MixProject do
       {:cachex, "~> 3.2"},
       {:fun_with_flags, "~> 1.5"},
       {:fun_with_flags_ui, "~> 0.7"},
-      {:phil_columns, "~> 3.1"},
       {:passwordless_auth, "~> 0.3.0"},
       {:appsignal, "~> 1.0"},
-      {:poolboy, "~> 1.5"}
+      {:poolboy, "~> 1.5"},
+      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"},
     ]
   end
 

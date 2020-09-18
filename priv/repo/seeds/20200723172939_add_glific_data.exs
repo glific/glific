@@ -48,8 +48,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     flows(organization)
 
-    opted_in_contacts(organization)
-
     contacts_field(organization)
   end
 
@@ -579,33 +577,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       flow_id: f.id,
       status: "done"
     })
-  end
-
-  def opted_in_contacts(organization) do
-    with {:ok, url} <- Application.fetch_env(:glific, :provider_optin_list_url),
-         {:ok, provider_key} <-
-           Application.fetch_env(:glific, String.to_atom("provider_key_#{organization.id}")),
-         {:ok, response} <- Tesla.get(url, headers: [{"apikey", provider_key}]),
-         {:ok, response_data} <- Jason.decode(response.body),
-         false <- is_nil(response_data["users"]) do
-      users = response_data["users"]
-
-      Enum.each(users, fn user ->
-        {:ok, last_message_at} = DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
-        {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
-
-        phone = user["countryCode"] <> user["phoneCode"]
-
-        Contacts.upsert(%{
-          phone: phone,
-          last_message_at: last_message_at |> DateTime.truncate(:second),
-          optin_time: optin_time |> DateTime.truncate(:second),
-          provider_status: check_provider_status(last_message_at),
-          organization_id: organization.id,
-          language_id: organization.default_language_id
-        })
-      end)
-    end
   end
 
   defp check_provider_status(last_message_at) do
