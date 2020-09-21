@@ -91,7 +91,7 @@ defmodule Glific.Flows.Periodic do
 
     if !is_nil(flow_id) and
          !Flows.flow_activated(flow_id, message.contact_id, since) do
-      {:ok, flow} = Flows.get_cached_flow(message.organization_id, flow_id, %{id: flow_id})
+      {:ok, flow} = Flows.get_cached_flow(message.organization_id, {:flow_id, {:flow_id, flow_id}, %{id: flow_id})
       FlowContext.init_context(flow, message.contact)
       {state, true}
     else
