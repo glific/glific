@@ -287,7 +287,7 @@ defmodule Glific.Flows do
   @spec update_cached_flow(Flow.t()) :: {atom, any}
   def update_cached_flow(flow) do
     Caches.remove(flow.organization_id, keys_to_cache_flow(flow))
-    get_cached_flow(flow.organization_id, %{flow_uuid: flow.uuid}, %{uuid: flow.uuid})
+    get_cached_flow(flow.organization_id, {:flow_uuid, flow.uuid}, %{uuid: flow.uuid})
   end
 
   @doc """
