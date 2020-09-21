@@ -46,7 +46,7 @@ defmodule Glific.Processor.ConsumerFlow do
          {:ok, flow} <-
            Flows.get_cached_flow(
              message.organization_id,
-             {:flow_uuid, context.flow_uuid},
+             context.flow_uuid,
              %{uuid: context.flow_uuid}
            ),
          true <- flow.ignore_keywords do
@@ -84,7 +84,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
   def check_contexts(context, message, _body, state) do
     {:ok, flow} =
-      Flows.get_cached_flow(message.organization_id, {:flow_uuid, context.flow_uuid}, %{
+      Flows.get_cached_flow(message.organization_id, context.flow_uuid, %{
         uuid: context.flow_uuid
       })
 
