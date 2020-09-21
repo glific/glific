@@ -343,7 +343,7 @@ defmodule Glific.Flows do
   """
   @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
-    {:ok, flow} = get_cached_flow(contact.organization_id, flow.id, %{id: flow.id})
+    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow.id}, %{id: flow.id})
 
     if Contacts.can_send_message_to?(contact),
       do: process_contact_flow([contact], flow),
@@ -355,7 +355,7 @@ defmodule Glific.Flows do
   """
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
   def start_group_flow(%Flow{} = flow, %Group{} = group) do
-    {:ok, flow} = get_cached_flow(group.organization_id, flow.id, %{id: flow.id})
+    {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id}, %{id: flow.id})
     group = group |> Repo.preload([:contacts])
     process_contact_flow(group.contacts, flow)
   end
