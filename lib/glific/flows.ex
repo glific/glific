@@ -262,6 +262,12 @@ defmodule Glific.Flows do
     {Enum.reverse(objects), uuid_map}
   end
 
+  # Get a list of all the keys to cache the flow.
+  @spec keys_to_cache_flow(Flow.t()) :: list()
+  defp keys_to_cache_flow(flow), do:
+    Enum.map(flow.keywords, fn keyword ->  {:flow_keyword, keyword} end)
+    |> Enum.concat( [{:flow_uuid, flow.uuid}, {:flow_id, flow.id}])
+
   @doc """
   A helper function to interact with the Caching API and get the cached flow.
   It will also set the loaded flow to cache in case it does not exists.
@@ -270,8 +276,7 @@ defmodule Glific.Flows do
   def get_cached_flow(organization_id, key, args) do
     with {:ok, false} <- Caches.get(organization_id, key) do
       flow = Flow.get_loaded_flow(organization_id, args)
-      keys = [{:flow_uuid, flow.uuid}, {:flow_id, flow.id} | Enum.map(flow.keywords, fn keyword ->  {:flow_keyword, keyword} end)]
-      Caches.set(organization_id, keys, flow)
+      Caches.set(organization_id, keys_to_cache_flow(flow), flow)
     end
   end
 
@@ -281,9 +286,8 @@ defmodule Glific.Flows do
   """
   @spec update_cached_flow(Flow.t()) :: {atom, any}
   def update_cached_flow(flow) do
-    flow = Flow.get_loaded_flow(flow.organization_id, %{uuid: flow.uuid})
-    Caches.remove(flow.organization_id, [{:flow_uuid, flow.uuid}, {:flow_id, flow.id} | Enum.map(flow.keywords, fn keyword ->  {:flow_keyword, keyword} end)])
-    Caches.set(flow.organization_id, [{:flow_uuid, flow.uuid}, {:flow_id, flow.id} | Enum.map(flow.keywords, fn keyword ->  {:flow_keyword, keyword} end)], flow)
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow))
+    get_cached_flow(flow.organization_id, %{flow_uuid: flow.uuid}, %{uuid: flow.uuid})
   end
 
   @doc """
