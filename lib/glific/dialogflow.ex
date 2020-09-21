@@ -14,9 +14,9 @@ defmodule Glific.Dialogflow do
   """
   @spec request(atom, String.t(), String.t() | map) :: tuple
   def request(method, path, body) do
-    %{id: id, email: email} = project_info()
+    %{host: host, id: id, email: email} = project_info()
 
-    url = "#{host()}/v2beta1/projects/#{id}/locations/global/agent/#{path}"
+    url = "#{host}/v2beta1/projects/#{id}/locations/global/agent/#{path}"
 
     case do_request(method, url, body(body), headers(email)) do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
@@ -44,12 +44,6 @@ defmodule Glific.Dialogflow do
   defp body(body), do: Poison.encode!(body)
 
   # ---------------------------------------------------------------------------
-  # Get the host of the dialogflow API
-  # ---------------------------------------------------------------------------
-  @spec host :: String.t()
-  defp host, do: Application.fetch_env!(:glific, :dialogflow_url)
-
-  # ---------------------------------------------------------------------------
   # Headers for all subsequent API calls
   # ---------------------------------------------------------------------------
   @spec headers(String.t()) :: list
@@ -65,9 +59,10 @@ defmodule Glific.Dialogflow do
   # ---------------------------------------------------------------------------
   # Get the project details needed for authentication and to send via the API
   # ---------------------------------------------------------------------------
-  @spec project_info() :: %{:id => String.t(), :email => String.t()}
+  @spec project_info() :: %{:host => String.t(), :id => String.t(), :email => String.t()}
   defp project_info do
     %{
+      host: Application.fetch_env!(:glific, :dialogflow_url),
       id: Application.fetch_env!(:glific, :dialogflow_project_id),
       email: Application.fetch_env!(:glific, :dialogflow_project_email)
     }
