@@ -270,7 +270,8 @@ defmodule Glific.Flows do
   def get_cached_flow(organization_id, key, args) do
     with {:ok, false} <- Caches.get(organization_id, key) do
       flow = Flow.get_loaded_flow(organization_id, args)
-      Caches.set(organization_id, [{:flow_uuid, flow.uuid} | Enum.map(flow.keywords, fn keyword ->  {:flow_keyword, keyword} end)], flow)
+      keys = [{:flow_uuid, flow.uuid}, {:flow_id, flow.id} | Enum.map(flow.keywords, fn keyword ->  {:flow_keyword, keyword} end)]
+      Caches.set(organization_id, keys, flow)
     end
   end
 
