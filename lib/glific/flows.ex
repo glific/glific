@@ -282,8 +282,8 @@ defmodule Glific.Flows do
   @spec update_cached_flow(Flow.t()) :: {atom, any}
   def update_cached_flow(flow) do
     flow = Flow.get_loaded_flow(flow.organization_id, %{uuid: flow.uuid})
-    Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
-    Caches.set(flow.organization_id, [flow.uuid | flow.keywords], flow)
+    Caches.remove(flow.organization_id, [{:flow_uuid, flow.uuid}, {:flow_id, flow.id} | Enum.map(flow.keywords, fn keyword ->  {:flow_keyword, keyword} end)])
+    Caches.set(flow.organization_id, [{:flow_uuid, flow.uuid}, {:flow_id, flow.id} | Enum.map(flow.keywords, fn keyword ->  {:flow_keyword, keyword} end)], flow)
   end
 
   @doc """
