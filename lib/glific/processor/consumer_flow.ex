@@ -46,7 +46,7 @@ defmodule Glific.Processor.ConsumerFlow do
          {:ok, flow} <-
            Flows.get_cached_flow(
              message.organization_id,
-             context.flow_uuid,
+             {:flow_uuid, context.flow_uuid},
              %{uuid: context.flow_uuid}
            ),
          true <- flow.ignore_keywords do
@@ -67,7 +67,7 @@ defmodule Glific.Processor.ConsumerFlow do
   """
   @spec check_flows(atom() | Message.t(), String.t(), map()) :: {Message.t(), map()}
   def check_flows(message, body, state) do
-    {:ok, flow} = Flows.get_cached_flow(message.organization_id, body, %{keyword: body})
+    {:ok, flow} = Flows.get_cached_flow(message.organization_id, {:flow_keyword, body}, %{keyword: body})
     FlowContext.init_context(flow, message.contact)
     {message, state}
   end
@@ -84,7 +84,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
   def check_contexts(context, message, _body, state) do
     {:ok, flow} =
-      Flows.get_cached_flow(message.organization_id, context.flow_uuid, %{
+      Flows.get_cached_flow(message.organization_id, {:flow_uuid, context.flow_uuid}, %{
         uuid: context.flow_uuid
       })
 
