@@ -88,7 +88,7 @@ config :fun_with_flags, :cache_bust_notifications,
 
 # config dialogflow
 config :glific, :dialogflow,
-  url: "https://dialogflow.clients6.google.com",
+  host: "https://dialogflow.clients6.google.com",
   project_id: "newagent-wtro",
   project_email: "dialogflow-pnfavu@newagent-wtro.iam.gserviceaccount.com"
 
