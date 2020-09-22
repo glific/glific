@@ -55,7 +55,7 @@ defmodule Glific.Taggers do
   Reset the cache, typically called when tags are either created or updated
   """
 
-  @spec reset_tag_maps(non_neg_integer) :: {:ok, any()}
+  @spec reset_tag_maps(non_neg_integer) :: list()
   def reset_tag_maps(organization_id),
-    do: Caches.set(organization_id, "tag_maps", nil)
+    do: Caches.remove(organization_id, ["tag_maps"])
 end
