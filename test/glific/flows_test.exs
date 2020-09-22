@@ -202,24 +202,33 @@ defmodule Glific.FLowsTest do
     test "get_cached_flow/2 save the flow to cache returns a touple and flow",
          %{organization_id: organization_id} = attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
-      {:ok, loaded_flow} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
+
+      {:ok, loaded_flow} =
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid}, %{uuid: flow.uuid})
+
       assert loaded_flow.nodes != nil
 
       # Next time Flow will be picked from cache
       Flows.delete_flow(flow)
-      {:ok, loaded_flow_2} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
+
+      {:ok, loaded_flow_2} =
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid}, %{uuid: flow.uuid})
+
       assert loaded_flow_2 == loaded_flow
     end
 
     test "update_cached_flow/1 will remove the keys and update the flows" do
       organization_id = Fixtures.get_org_id()
       [flow | _tail] = Flows.list_flows(%{filter: %{organization_id: organization_id}})
-      {:ok, loaded_flow} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
+
+      {:ok, loaded_flow} =
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid}, %{uuid: flow.uuid})
+
       Flows.update_flow(flow, %{:keywords => ["flow_new"]})
       Flows.update_cached_flow(flow)
 
       {:ok, loaded_flow_new} =
-        Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid}, %{uuid: flow.uuid})
 
       assert loaded_flow.keywords == flow.keywords
       assert loaded_flow_new.keywords != loaded_flow.keywords
@@ -240,7 +249,9 @@ defmodule Glific.FLowsTest do
 
       [revision] = flow.revisions
       # should update the cached flow definition
-      {:ok, loaded_flow} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
+      {:ok, loaded_flow} =
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid}, %{uuid: flow.uuid})
+
       assert loaded_flow.definition == revision.definition
 
       # If a flow revision is already published
@@ -257,7 +268,9 @@ defmodule Glific.FLowsTest do
       assert revision.status == "done"
 
       # should update the cached flow definition
-      {:ok, loaded_flow} = Flows.get_cached_flow(organization_id, flow.uuid, %{uuid: flow.uuid})
+      {:ok, loaded_flow} =
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid}, %{uuid: flow.uuid})
+
       assert loaded_flow.definition == new_definition
     end
 

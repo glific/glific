@@ -84,7 +84,7 @@ defmodule Glific.Flows do
   def create_flow(attrs) do
     attrs = Map.merge(attrs, %{uuid: Ecto.UUID.generate()})
 
-    reset_flow_keywords_map(attrs.organization_id)
+    clean_cached_flow_keywords_map(attrs.organization_id)
 
     with {:ok, flow} <-
            %Flow{}
@@ -116,7 +116,7 @@ defmodule Glific.Flows do
   def update_flow(%Flow{} = flow, attrs) do
     # first delete the cached flow
     Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
-    reset_flow_keywords_map(flow.organization_id)
+    clean_cached_flow_keywords_map(flow.organization_id)
 
     flow
     |> Flow.changeset(attrs)
@@ -262,15 +262,24 @@ defmodule Glific.Flows do
     {Enum.reverse(objects), uuid_map}
   end
 
+  # Get a list of all the keys to cache the flow.
+  @spec keys_to_cache_flow(Flow.t()) :: list()
+  defp keys_to_cache_flow(flow),
+    do:
+      Enum.map(flow.keywords, fn keyword -> {:flow_keyword, keyword} end)
+      |> Enum.concat([{:flow_uuid, flow.uuid}, {:flow_id, flow.id}])
+
   @doc """
   A helper function to interact with the Caching API and get the cached flow.
   It will also set the loaded flow to cache in case it does not exists.
   """
-  @spec get_cached_flow(non_neg_integer, any, any) :: {atom, any}
+  @spec get_cached_flow(non_neg_integer, any, any) :: {atom, any} | atom()
+  def get_cached_flow(nil, _key, _args), do: {:ok, nil}
+
   def get_cached_flow(organization_id, key, args) do
     with {:ok, false} <- Caches.get(organization_id, key) do
       flow = Flow.get_loaded_flow(organization_id, args)
-      Caches.set(organization_id, [flow.uuid | flow.keywords], flow)
+      Caches.set(organization_id, keys_to_cache_flow(flow), flow)
     end
   end
 
@@ -280,9 +289,8 @@ defmodule Glific.Flows do
   """
   @spec update_cached_flow(Flow.t()) :: {atom, any}
   def update_cached_flow(flow) do
-    flow = Flow.get_loaded_flow(flow.organization_id, %{uuid: flow.uuid})
-    Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
-    Caches.set(flow.organization_id, [flow.uuid | flow.keywords], flow)
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow))
+    get_cached_flow(flow.organization_id, {:flow_uuid, flow.uuid}, %{uuid: flow.uuid})
   end
 
   @doc """
@@ -338,7 +346,7 @@ defmodule Glific.Flows do
   """
   @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
-    {:ok, flow} = get_cached_flow(contact.organization_id, flow.id, %{id: flow.id})
+    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow.id}, %{id: flow.id})
 
     if Contacts.can_send_message_to?(contact),
       do: process_contact_flow([contact], flow),
@@ -350,7 +358,7 @@ defmodule Glific.Flows do
   """
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
   def start_group_flow(%Flow{} = flow, %Group{} = group) do
-    {:ok, flow} = get_cached_flow(group.organization_id, flow.id, %{id: flow.id})
+    {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id}, %{id: flow.id})
     group = group |> Repo.preload([:contacts])
     process_contact_flow(group.contacts, flow)
   end
@@ -373,40 +381,44 @@ defmodule Glific.Flows do
   @spec flow_keywords_map(non_neg_integer) :: map()
   def flow_keywords_map(organization_id) do
     case Caches.get(organization_id, "flow_keywords_map") do
-      {:ok, value} when value in [nil, false] ->
-        value =
-          Flow
-          |> where([f], f.organization_id == ^organization_id)
-          |> select([:keywords, :id])
-          |> Repo.all()
-          # credo:disable-for-lines:8
-          |> Enum.reduce(
-            %{},
-            fn flow, acc ->
-              Enum.reduce(flow.keywords, acc, fn keyword, acc ->
-                Map.put(acc, keyword, flow.id)
-              end)
-            end
-          )
-
-        organization = Partners.organization(organization_id)
-
-        # also add outofoffice shortcode as set by the user
-        value =
-          if organization.out_of_office.enabled and organization.out_of_office.flow_id,
-            do: Map.put(value, "outofoffice", organization.out_of_office.flow_id),
-            else: value
-
-        Caches.set(organization_id, "flow_keywords_map", value)
-        value
+      {:ok, false} ->
+        Caches.set(
+          organization_id,
+          "flow_keywords_map",
+          load_flow_keywords_map_from_db(organization_id)
+        )
+        |> elem(1)
 
       {:ok, value} ->
         value
     end
   end
 
+  @spec load_flow_keywords_map_from_db(non_neg_integer) :: map()
+  defp load_flow_keywords_map_from_db(organization_id) do
+    value =
+      Flow
+      |> where([f], f.organization_id == ^organization_id)
+      |> select([:keywords, :id])
+      |> Repo.all()
+      |> Enum.reduce(
+        %{},
+        fn flow, acc ->
+          Enum.reduce(flow.keywords, acc, fn keyword, acc ->
+            Map.put(acc, keyword, flow.id)
+          end)
+        end
+      )
+
+    organization = Partners.organization(organization_id)
+    # also add outofoffice shortcode as set by the user
+    if organization.out_of_office.enabled and organization.out_of_office.flow_id,
+      do: Map.put(value, "outofoffice", organization.out_of_office.flow_id),
+      else: value
+  end
+
   @doc false
-  @spec reset_flow_keywords_map(non_neg_integer) :: {:ok, any()}
-  def reset_flow_keywords_map(organization_id),
-    do: Caches.set(organization_id, "flow_keywords_map", nil)
+  @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
+  defp clean_cached_flow_keywords_map(organization_id),
+    do: Caches.remove(organization_id, ["flow_keywords_map"])
 end

@@ -10,8 +10,7 @@ defmodule Glific.Processor.ConsumerFlow do
     Flows,
     Flows.FlowContext,
     Flows.Periodic,
-    Messages.Message,
-    Repo
+    Messages.Message
   }
 
   @doc """
@@ -19,20 +18,7 @@ defmodule Glific.Processor.ConsumerFlow do
   to process messages
   """
   @spec load_state(non_neg_integer) :: map()
-  def load_state(organization_id) do
-    flow_keywords_map =
-      Flows.Flow
-      |> select([:keywords, :id])
-      |> where([f], f.organization_id == ^organization_id)
-      |> Repo.all()
-      |> Enum.reduce(%{}, fn flow, acc ->
-        Enum.reduce(flow.keywords, acc, fn keyword, acc ->
-          Map.put(acc, keyword, flow.id)
-        end)
-      end)
-
-    %{flow_keywords: flow_keywords_map}
-  end
+  def load_state(organization_id), do: %{flow_keywords: Flows.flow_keywords_map(organization_id)}
 
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
@@ -46,7 +32,7 @@ defmodule Glific.Processor.ConsumerFlow do
          {:ok, flow} <-
            Flows.get_cached_flow(
              message.organization_id,
-             context.flow_uuid,
+             {:flow_uuid, context.flow_uuid},
              %{uuid: context.flow_uuid}
            ),
          true <- flow.ignore_keywords do
@@ -67,7 +53,9 @@ defmodule Glific.Processor.ConsumerFlow do
   """
   @spec check_flows(atom() | Message.t(), String.t(), map()) :: {Message.t(), map()}
   def check_flows(message, body, state) do
-    {:ok, flow} = Flows.get_cached_flow(message.organization_id, body, %{keyword: body})
+    {:ok, flow} =
+      Flows.get_cached_flow(message.organization_id, {:flow_keyword, body}, %{keyword: body})
+
     FlowContext.init_context(flow, message.contact)
     {message, state}
   end
@@ -84,7 +72,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
   def check_contexts(context, message, _body, state) do
     {:ok, flow} =
-      Flows.get_cached_flow(message.organization_id, context.flow_uuid, %{
+      Flows.get_cached_flow(message.organization_id, {:flow_uuid, context.flow_uuid}, %{
         uuid: context.flow_uuid
       })
 
