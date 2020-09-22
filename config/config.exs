@@ -87,6 +87,8 @@ config :fun_with_flags, :cache_bust_notifications,
   client: Glific.PubSub
 
 # config dialogflow
+# at some point we need to put this in the DB and org config
+# when we allow organizations to own their dialogflow installs
 config :glific, :dialogflow,
   host: "https://dialogflow.clients6.google.com",
   project_id: "newagent-wtro",
