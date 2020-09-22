@@ -13,6 +13,12 @@ db_database = System.get_env("DATABASE_DB") || "glific_prod"
 db_username = System.get_env("DATABASE_USER") || "postgres"
 db_password = System.get_env("DATABASE_PASSWORD") || "postgres"
 db_url = "ecto://#{db_username}:#{db_password}@#{db_host}/#{db_database}"
+# db_url =
+#   System.get_env("DATABASE_URL") ||
+#     raise """
+#     environment variable DATABASE_URL is missing
+#     """
+
 ssl_port = System.get_env("SSL_PORT") || 443
 http_port = System.get_env("HTTP_PORT") || 4000
 
