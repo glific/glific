@@ -18,9 +18,7 @@ defmodule Glific.Processor.ConsumerFlow do
   to process messages
   """
   @spec load_state(non_neg_integer) :: map()
-  def load_state(organization_id), do:
-    %{flow_keywords: Flows.flow_keywords_map(organization_id)}
-
+  def load_state(organization_id), do: %{flow_keywords: Flows.flow_keywords_map(organization_id)}
 
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}

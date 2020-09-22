@@ -381,40 +381,44 @@ defmodule Glific.Flows do
   @spec flow_keywords_map(non_neg_integer) :: map()
   def flow_keywords_map(organization_id) do
     case Caches.get(organization_id, "flow_keywords_map") do
-      {:ok, value} when value in [nil, false] ->
-        value =
-          Flow
-          |> where([f], f.organization_id == ^organization_id)
-          |> select([:keywords, :id])
-          |> Repo.all()
-          # credo:disable-for-lines:8
-          |> Enum.reduce(
-            %{},
-            fn flow, acc ->
-              Enum.reduce(flow.keywords, acc, fn keyword, acc ->
-                Map.put(acc, keyword, flow.id)
-              end)
-            end
-          )
-
-        organization = Partners.organization(organization_id)
-
-        # also add outofoffice shortcode as set by the user
-        value =
-          if organization.out_of_office.enabled and organization.out_of_office.flow_id,
-            do: Map.put(value, "outofoffice", organization.out_of_office.flow_id),
-            else: value
-
-        Caches.set(organization_id, "flow_keywords_map", value)
-        value
+      {:ok, false} ->
+        Caches.set(
+          organization_id,
+          "flow_keywords_map",
+          load_flow_keywords_map_from_db(organization_id)
+        )
+        |> elem(1)
 
       {:ok, value} ->
         value
     end
   end
 
+  @spec load_flow_keywords_map_from_db(non_neg_integer) :: map()
+  defp load_flow_keywords_map_from_db(organization_id) do
+    value =
+      Flow
+      |> where([f], f.organization_id == ^organization_id)
+      |> select([:keywords, :id])
+      |> Repo.all()
+      |> Enum.reduce(
+        %{},
+        fn flow, acc ->
+          Enum.reduce(flow.keywords, acc, fn keyword, acc ->
+            Map.put(acc, keyword, flow.id)
+          end)
+        end
+      )
+
+    organization = Partners.organization(organization_id)
+    # also add outofoffice shortcode as set by the user
+    if organization.out_of_office.enabled and organization.out_of_office.flow_id,
+      do: Map.put(value, "outofoffice", organization.out_of_office.flow_id),
+      else: value
+  end
+
   @doc false
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
-  def clean_cached_flow_keywords_map(organization_id),
+  defp clean_cached_flow_keywords_map(organization_id),
     do: Caches.remove(organization_id, ["flow_keywords_map"])
 end

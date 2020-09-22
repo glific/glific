@@ -37,19 +37,22 @@ defmodule Glific.Taggers do
       {:ok, false} ->
         Caches.set(organization_id, @cache_tag_maps_key, load_tags_map_form_db(organization_id))
         |> elem(1)
-      {:ok, value} -> value
+
+      {:ok, value} ->
+        value
     end
   end
 
   @spec load_tags_map_form_db(non_neg_integer) :: map()
   defp load_tags_map_form_db(organization_id) do
-      attrs = %{shortcode: "numeric", organization_id: organization_id}
-      case Repo.fetch_by(Tag, attrs) do
-        {:ok, tag} -> %{:numeric_tag_id => tag.id}
-        _ -> %{}
-      end
-      |> Map.put(:keyword_map, Taggers.Keyword.get_keyword_map(attrs))
-      |> Map.put(:status_map, Status.get_status_map(attrs))
+    attrs = %{shortcode: "numeric", organization_id: organization_id}
+
+    case Repo.fetch_by(Tag, attrs) do
+      {:ok, tag} -> %{:numeric_tag_id => tag.id}
+      _ -> %{}
+    end
+    |> Map.put(:keyword_map, Taggers.Keyword.get_keyword_map(attrs))
+    |> Map.put(:status_map, Status.get_status_map(attrs))
   end
 
   @doc """
