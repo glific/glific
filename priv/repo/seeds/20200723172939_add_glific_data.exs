@@ -5,7 +5,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   envs([:dev, :test, :prod])
 
   alias Glific.{
-    Contacts,
     Contacts.Contact,
     Contacts.ContactsField,
     Flows.Flow,
@@ -577,14 +576,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       flow_id: f.id,
       status: "done"
     })
-  end
-
-  defp check_provider_status(last_message_at) do
-    if Timex.diff(DateTime.utc_now(), last_message_at, :hours) < 24 do
-      :session_and_hsm
-    else
-      :hsm
-    end
   end
 
   def contacts_field(organization) do
