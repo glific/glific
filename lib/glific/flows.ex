@@ -264,9 +264,10 @@ defmodule Glific.Flows do
 
   # Get a list of all the keys to cache the flow.
   @spec keys_to_cache_flow(Flow.t()) :: list()
-  defp keys_to_cache_flow(flow), do:
-    Enum.map(flow.keywords, fn keyword ->  {:flow_keyword, keyword} end)
-    |> Enum.concat( [{:flow_uuid, flow.uuid}, {:flow_id, flow.id}])
+  defp keys_to_cache_flow(flow),
+    do:
+      Enum.map(flow.keywords, fn keyword -> {:flow_keyword, keyword} end)
+      |> Enum.concat([{:flow_uuid, flow.uuid}, {:flow_id, flow.id}])
 
   @doc """
   A helper function to interact with the Caching API and get the cached flow.
