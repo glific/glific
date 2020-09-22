@@ -272,15 +272,13 @@ defmodule Glific.Flows do
   A helper function to interact with the Caching API and get the cached flow.
   It will also set the loaded flow to cache in case it does not exists.
   """
-  @spec get_cached_flow(non_neg_integer, any, any) :: {atom, any}
-  def get_cached_flow(nil, _key, _args), do: {:ok, false}
+  @spec get_cached_flow(non_neg_integer, any, any) :: {atom, any} | atom()
+  def get_cached_flow(nil, _key, _args), do: {:ok, nil}
 
   def get_cached_flow(organization_id, key, args) do
-    case Caches.get(organization_id, key) do
-      {:ok, false} ->
-        flow = Flow.get_loaded_flow(organization_id, args)
-        Caches.set(organization_id, keys_to_cache_flow(flow), flow)
-        {status, flow} -> {status, flow}
+    with {:ok, false} <- Caches.get(organization_id, key) do
+      flow = Flow.get_loaded_flow(organization_id, args)
+      Caches.set(organization_id, keys_to_cache_flow(flow), flow)
     end
   end
 
