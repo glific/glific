@@ -8,11 +8,8 @@
 import Config
 
 config :glific,
-  ecto_repos: [Glific.Repo]
-
-# Settings for gupshup, this should actually go in Provider database table or something
-# similar
-config :glific,
+  ecto_repos: [Glific.Repo],
+  # Settings for provider key
   provider_key_1: "Please replace this value in the secrets file"
 
 # Configures the endpoint
@@ -32,9 +29,8 @@ config :logger, :console,
 config :phoenix, :json_library, Jason
 
 # Configure to use UTC timestamp in tables
-config :glific,
-       Glific.Repo,
-       migration_timestamps: [type: :utc_datetime]
+config :glific, Glific.Repo,
+  migration_timestamps: [type: :utc_datetime]
 
 # While we store everything in UTC, we need to respect the user's tz
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase

@@ -50,12 +50,11 @@ config :glific, GlificWeb.Endpoint,
 
 # AppSignal configs
 config :glific,
-  provider_url: System.get_env("PROVIDER_URL"),
-  provider_key_1: System.get_env("PROVIDER_KEY")
+  provider_key_1: System.get_env("PROVIDER_KEY_1")
 
 config :appsignal, :config,
   name: "Glific",
-  push_api_key: System.get_env("GLIFIC_PUSH_API_KEY")
+  push_api_key: System.get_env("APPSIGNAL_PUSH_API_KEY")
 
 # Goth configs: Picking up json from env itself at run time
 goth_json = System.get_env("GOTH_JSON_CREDENTIALS")
