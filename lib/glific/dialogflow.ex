@@ -62,6 +62,7 @@ defmodule Glific.Dialogflow do
   @spec project_info() :: %{:host => String.t(), :id => String.t(), :email => String.t()}
   defp project_info do
     config = Application.fetch_env!(:glific, :dialogflow)
+
     %{
       host: config[:host],
       id: config[:project_id],
