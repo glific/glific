@@ -481,6 +481,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Enum.each(data, &saved_search(&1, organization, labels))
   end
 
+  # Pre defined collections
   defp saved_search({label, shortcode}, organization, _labels) when shortcode == "All",
     do:
       Repo.insert!(%SavedSearch{
