@@ -61,6 +61,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
         languages =
           Language
           |> where([l], l.id in ^organization.active_language_ids)
+          |> order_by([l], l.label)
           |> Repo.all()
 
         {:ok, languages}

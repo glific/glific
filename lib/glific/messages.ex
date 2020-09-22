@@ -571,7 +571,7 @@ defmodule Glific.Messages do
         {:ids, ids}, query ->
           query
           |> where([m], m.id in ^ids)
-          |> order_by([m], desc: m.updated_at)
+          |> order_by([m], desc: m.inserted_at)
 
         {:filter, filter}, query ->
           query |> conversations_with(filter)
