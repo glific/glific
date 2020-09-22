@@ -84,7 +84,7 @@ defmodule Glific.Flows do
   def create_flow(attrs) do
     attrs = Map.merge(attrs, %{uuid: Ecto.UUID.generate()})
 
-    reset_flow_keywords_map(attrs.organization_id)
+    clean_cached_flow_keywords_map(attrs.organization_id)
 
     with {:ok, flow} <-
            %Flow{}
@@ -116,7 +116,7 @@ defmodule Glific.Flows do
   def update_flow(%Flow{} = flow, attrs) do
     # first delete the cached flow
     Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
-    reset_flow_keywords_map(flow.organization_id)
+    clean_cached_flow_keywords_map(flow.organization_id)
 
     flow
     |> Flow.changeset(attrs)
@@ -414,7 +414,7 @@ defmodule Glific.Flows do
   end
 
   @doc false
-  @spec reset_flow_keywords_map(non_neg_integer) :: {:ok, any()}
-  def reset_flow_keywords_map(organization_id),
-    do: Caches.set(organization_id, "flow_keywords_map", nil)
+  @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
+  def clean_cached_flow_keywords_map(organization_id),
+    do: Caches.remove(organization_id, ["flow_keywords_map"])
 end

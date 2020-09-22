@@ -44,10 +44,10 @@ defmodule Glific.Taggers do
           |> Map.put(:status_map, Status.get_status_map(attrs))
 
         Caches.set(organization_id, "tag_maps", value)
+
         value
 
-      {:ok, value} ->
-        value
+      {:ok, value} -> value
     end
   end
 
