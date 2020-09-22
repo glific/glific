@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 # Configure your database
 config :glific, Glific.Repo,
@@ -86,5 +86,8 @@ config :phoenix, :plug_init_mode, :runtime
 config :appsignal, :config,
   active: false,
   env: :dev
+
+config :goth,
+  disabled: true
 
 import_config "dev.secret.exs"

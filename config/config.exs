@@ -5,7 +5,7 @@
 # is restricted to this project.
 
 # General application configuration
-use Mix.Config
+import Config
 
 config :glific,
   ecto_repos: [Glific.Repo]
@@ -86,9 +86,15 @@ config :fun_with_flags, :cache_bust_notifications,
   adapter: FunWithFlags.Notifications.PhoenixPubSub,
   client: Glific.PubSub
 
-# import the dialogflow config, splitting it up into a seperate file
-# since we have some code in there to handle credentials
-import_config "dialogflow.exs"
+# config dialogflow
+config :glific, :dialogflow,
+  url: "https://dialogflow.clients6.google.com",
+  project_id: "newagent-wtro",
+  project_email: "dialogflow-pnfavu@newagent-wtro.iam.gserviceaccount.com"
+
+# config goth in default disabled state
+config :goth,
+  disabled: true
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

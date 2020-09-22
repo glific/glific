@@ -52,11 +52,9 @@ config :appsignal, :config,
   push_api_key: System.get_env("GLIFIC_PUSH_API_KEY")
 
 # Goth configs: Picking up json from env itself at run time
-goth_json =
-  System.get_env("GOTH_JSON_CREDENTIALS") ||
-    raise """
-    environment variable GOTH_JSON_CREDENTIALS is missing.
-    """
+goth_json = System.get_env("GOTH_JSON_CREDENTIALS")
 
-config :goth,
-  json: goth_json
+if goth_json !== nil do
+  config :goth,
+    json: goth_json
+end
