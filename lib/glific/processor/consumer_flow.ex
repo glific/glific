@@ -10,8 +10,7 @@ defmodule Glific.Processor.ConsumerFlow do
     Flows,
     Flows.FlowContext,
     Flows.Periodic,
-    Messages.Message,
-    Repo
+    Messages.Message
   }
 
   @doc """
@@ -19,20 +18,9 @@ defmodule Glific.Processor.ConsumerFlow do
   to process messages
   """
   @spec load_state(non_neg_integer) :: map()
-  def load_state(organization_id) do
-    flow_keywords_map =
-      Flows.Flow
-      |> select([:keywords, :id])
-      |> where([f], f.organization_id == ^organization_id)
-      |> Repo.all()
-      |> Enum.reduce(%{}, fn flow, acc ->
-        Enum.reduce(flow.keywords, acc, fn keyword, acc ->
-          Map.put(acc, keyword, flow.id)
-        end)
-      end)
+  def load_state(organization_id), do:
+    %{flow_keywords: Flows.flow_keywords_map(organization_id)}
 
-    %{flow_keywords: flow_keywords_map}
-  end
 
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}

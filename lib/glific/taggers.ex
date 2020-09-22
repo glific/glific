@@ -35,14 +35,14 @@ defmodule Glific.Taggers do
   def get_tag_maps(organization_id) do
     case Caches.get(organization_id, @cache_tag_maps_key) do
       {:ok, false} ->
-        Caches.set(organization_id, @cache_tag_maps_key, load_form_db(organization_id))
+        Caches.set(organization_id, @cache_tag_maps_key, load_tags_map_form_db(organization_id))
         |> elem(1)
       {:ok, value} -> value
     end
   end
 
-  @spec load_form_db(non_neg_integer) :: map()
-  defp load_form_db(organization_id) do
+  @spec load_tags_map_form_db(non_neg_integer) :: map()
+  defp load_tags_map_form_db(organization_id) do
       attrs = %{shortcode: "numeric", organization_id: organization_id}
       case Repo.fetch_by(Tag, attrs) do
         {:ok, tag} -> %{:numeric_tag_id => tag.id}
