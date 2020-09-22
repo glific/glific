@@ -44,7 +44,7 @@ defmodule Glific.Dialogflow.Sessions do
     |> handle_response(message)
   end
 
-  @spec detect_intent(tuple(), map() | String.t()) :: any()
+  @spec handle_response(tuple(), map() | String.t()) :: any()
   defp handle_response({:ok, response}, message),
     do: Helper.add_dialogflow_tag(message, response["queryResult"])
 
