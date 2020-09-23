@@ -162,4 +162,15 @@ defmodule Glific.Settings do
     |> Repo.all()
     |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.locale, language.id) end)
   end
+
+  @doc """
+  Get language from label or shortcode
+  """
+  @spec get_language_by_label_or_locale(String.t()) :: list()
+  def get_language_by_label_or_locale(term) do
+    Language
+    |> where([l], l.is_active == true)
+    |> where([l], ilike(l.label, ^"#{term}%") or ilike(l.locale, ^"#{term}%"))
+    |> Repo.all()
+  end
 end
