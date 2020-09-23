@@ -410,11 +410,11 @@ defmodule Glific.Partners do
     |> Map.put(:provider_key, get_provider_key(organization.id))
     |> Map.put(
       :provider_worker,
-      "Elixir." |> Kernel.<>(organization.provider.worker) |> String.to_existing_atom()
+      "Elixir." <> organization.provider.worker |> String.to_existing_atom()
     )
     |> Map.put(
       :provider_handler,
-      "Elixir." |> Kernel.<>(organization.provider.handler) |> String.to_existing_atom()
+      "Elixir." <> organization.provider.handler |> String.to_existing_atom()
     )
   end
 
