@@ -29,8 +29,7 @@ config :logger, :console,
 config :phoenix, :json_library, Jason
 
 # Configure to use UTC timestamp in tables
-config :glific, Glific.Repo,
-  migration_timestamps: [type: :utc_datetime]
+config :glific, Glific.Repo, migration_timestamps: [type: :utc_datetime]
 
 # While we store everything in UTC, we need to respect the user's tz
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase

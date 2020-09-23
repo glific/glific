@@ -323,8 +323,8 @@ defmodule Glific.Partners do
         organization =
           get_organization!(organization_id)
           |> Repo.preload(:provider)
+          |> set_provider_info()
           |> set_out_of_office_values()
-          |> Map.put(:provider_key, get_provider_key(organization_id))
           |> set_languages()
 
         Caches.set(organization_id, "organization", organization)
@@ -400,6 +400,22 @@ defmodule Glific.Partners do
 
     organization
     |> Map.put(:languages, languages)
+  end
+
+  # Lets cache all provider specific info in the organization entity since
+  # we use it on all sending / receiving of messages
+  @spec set_provider_info(map()) :: map()
+  defp set_provider_info(organization) do
+    organization
+    |> Map.put(:provider_key, get_provider_key(organization.id))
+    |> Map.put(
+      :provider_worker,
+      "Elixir." |> Kernel.<>(organization.provider.worker) |> String.to_existing_atom()
+    )
+    |> Map.put(
+      :provider_handler,
+      "Elixir." |> Kernel.<>(organization.provider.handler) |> String.to_existing_atom()
+    )
   end
 
   @doc """
