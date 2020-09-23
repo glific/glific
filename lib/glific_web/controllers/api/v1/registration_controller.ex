@@ -177,7 +177,11 @@ defmodule GlificWeb.API.V1.RegistrationController do
         |> APIAuthPlug.delete_all_user_sessions(user)
 
         # Create new user session
-        {:ok, conn} = Pow.Plug.authenticate_user(conn, user_params)
+        {:ok, conn} =
+          Pow.Plug.authenticate_user(
+            conn,
+            Map.put(user_params, "organization_id", conn.assigns[:organization_id])
+          )
 
         {:ok,
          %{

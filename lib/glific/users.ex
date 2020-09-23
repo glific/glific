@@ -2,10 +2,16 @@ defmodule Glific.Users do
   @moduledoc """
   The Users context.
   """
+  use Pow.Ecto.Context,
+    repo: Glific.Repo,
+    user: Glific.Users.User
+
   import Ecto.Query, warn: false
 
-  alias Glific.Repo
-  alias Glific.Users.User
+  alias Glific.{
+    Repo,
+    Users.User
+  }
 
   @doc """
   Returns the list of filtered users.
@@ -108,5 +114,27 @@ defmodule Glific.Users do
     user
     |> User.update_fields_changeset(attrs)
     |> Repo.update()
+  end
+
+  @impl true
+  def authenticate(params) do
+    authenticate_user_organization(params["organization_id"], params)
+  end
+
+  defp authenticate_user_organization(nil, _params), do: nil
+
+  defp authenticate_user_organization(organization_id, params) do
+    user =
+      User
+      |> Repo.get_by(phone: params["phone"], organization_id: organization_id)
+      |> case do
+        # Prevent timing attack
+        nil -> %User{password_hash: nil}
+        user -> user
+      end
+
+    if User.verify_password(user, params["password"]),
+      do: user,
+      else: nil
   end
 end

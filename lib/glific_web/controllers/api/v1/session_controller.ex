@@ -11,6 +11,8 @@ defmodule GlificWeb.API.V1.SessionController do
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
   def create(conn, %{"user" => user_params}) do
+    user_params = Map.put(user_params, "organization_id", conn.assigns[:organization_id])
+
     conn
     |> Pow.Plug.authenticate_user(user_params)
     |> case do

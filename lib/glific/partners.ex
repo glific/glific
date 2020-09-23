@@ -302,12 +302,19 @@ defmodule Glific.Partners do
 
   @spec get_provider_key(non_neg_integer) :: String.t()
   defp get_provider_key(organization_id) do
-    case Application.fetch_env(
-           :glific,
-           String.to_atom("provider_key_#{organization_id}")
-         ) do
-      {:ok, value} -> value
-      :error -> raise ArgumentError
+    provider_key = "provider_key_#{organization_id}"
+
+    case Application.fetch_env(:glific, String.to_atom(provider_key)) do
+      {:ok, value} ->
+        value
+
+      :error ->
+        case System.get_env(provider_key) do
+          nil -> raise ArgumentError
+          # we need to decide if we want to put this key in the application
+          # environment, but this is the only place we read it and cache it
+          value -> value
+        end
     end
   end
 
@@ -410,11 +417,11 @@ defmodule Glific.Partners do
     |> Map.put(:provider_key, get_provider_key(organization.id))
     |> Map.put(
       :provider_worker,
-      "Elixir." <> organization.provider.worker |> String.to_existing_atom()
+      ("Elixir." <> organization.provider.worker) |> String.to_existing_atom()
     )
     |> Map.put(
       :provider_handler,
-      "Elixir." <> organization.provider.handler |> String.to_existing_atom()
+      ("Elixir." <> organization.provider.handler) |> String.to_existing_atom()
     )
   end
 

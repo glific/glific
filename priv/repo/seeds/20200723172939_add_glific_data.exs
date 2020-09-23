@@ -23,6 +23,11 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   @password "secret1234"
   @admin_phone "917834811114"
 
+  defp admin_phone(1 = _organization_id), do: @admin_phone
+
+  defp admin_phone(organization_id),
+    do: (String.to_integer(@admin_phone) + organization_id) |> Integer.to_string()
+
   def up(_repo) do
     # check if this is the first organization that we are adding
     # to the DB
@@ -337,7 +342,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     admin =
       Repo.insert!(%Contact{
-        phone: @admin_phone,
+        phone: admin_phone(organization.id),
         name: "Glific Admin",
         organization_id: organization.id,
         language_id: en_us.id,
@@ -345,15 +350,16 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       })
 
     Repo.update!(change(organization, contact_id: admin.id))
+    admin
   end
 
-  defp create_org(0 = _count_organizations, provider, en_us, out_of_office_default_data) do
+  defp create_org(0 = count_organizations, provider, en_us, out_of_office_default_data) do
     Repo.insert!(%Organization{
       name: "Glific",
       shortcode: "glific",
       email: "ADMIN@REPLACE_ME.NOW",
       provider_appname: "ADD_PROVIDER_APPNAME",
-      provider_phone: @admin_phone,
+      provider_phone: admin_phone(count_organizations + 1),
       provider_id: provider.id,
       provider_limit: 60,
       active_language_ids: [en_us.id],
@@ -366,14 +372,14 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     org_uniq_id = Integer.to_string(count_organizations + 1)
 
     Repo.insert!(%Organization{
-      name: "New Seeded Organization" <> org_uniq_id,
-      shortcode: "shortcode" <> org_uniq_id,
+      name: "New Seeded Organization " <> org_uniq_id,
+      shortcode: "shortcode " <> org_uniq_id,
       email: "ADMIN_#{org_uniq_id}@REPLACE_ME.NOW",
-      provider_appname: "ADD_PROVIDER_APPNAME" <> org_uniq_id,
-      provider_phone: @admin_phone <> org_uniq_id,
+      provider_appname: "ADD_PROVIDER_APPNAME " <> org_uniq_id,
+      provider_phone: admin_phone(count_organizations + 1),
       provider_id: provider.id,
       provider_limit: 60,
-      active_language_ids: '{#{en_us.id}}',
+      active_language_ids: [en_us.id],
       default_language_id: en_us.id,
       out_of_office: out_of_office_default_data
     })
@@ -401,7 +407,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def users(admin, organization) do
     Users.create_user(%{
       name: "Glific Admin",
-      phone: @admin_phone,
+      phone: admin_phone(organization.id),
       password: @password,
       confirm_password: @password,
       roles: ["admin"],

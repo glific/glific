@@ -48,7 +48,8 @@ config :tesla, adapter: Tesla.Adapter.Hackney
 
 config :glific, :pow,
   user: Glific.Users.User,
-  repo: Glific.Repo
+  repo: Glific.Repo,
+  users_context: Glific.Users
 
 config :passwordless_auth,
   # seconds; optional (defaults to 30 if not provided)
