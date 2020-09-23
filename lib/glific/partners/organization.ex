@@ -50,6 +50,8 @@ defmodule Glific.Partners.Organization do
           provider_phone: String.t() | nil,
           provider_limit: non_neg_integer,
           provider_key: String.t() | nil,
+          provider_handler: String.t() | nil,
+          provider_worker: String.t() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           default_language_id: non_neg_integer | nil,
@@ -75,9 +77,11 @@ defmodule Glific.Partners.Organization do
     field :provider_appname, :string
     field :provider_limit, :integer, default: 60
 
-    # We get this value from the config object and store it here
+    # We get this value from the config and provider object and store it here
     # for downstream functions to access while executing
     field :provider_key, :string, virtual: true, default: "No key exists"
+    field :provider_handler, :string, virtual: true
+    field :provider_worker, :string, virtual: true
 
     # lets cache the start/end hours in here
     # to make it easier on the flows

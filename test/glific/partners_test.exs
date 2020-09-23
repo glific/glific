@@ -10,29 +10,29 @@ defmodule Glific.PartnersTest do
       name: "some name",
       url: "some url",
       api_end_point: "some api_end_point",
-      handler: "handler",
-      worker: "worker"
+      handler: "Glific.Providers.Gupshup.Message",
+      worker: "Glific.Providers.Gupshup.Worker"
     }
     @valid_attrs_1 %{
       name: "some name 1",
       url: "some url 1",
       api_end_point: "some api_end_point 1",
-      handler: "handler ",
-      worker: "worker"
+      handler: "Glific.Providers.Gupshup.Message",
+      worker: "Glific.Providers.Gupshup.Worker"
     }
     @valid_attrs_2 %{
       name: "some name 2",
       url: "some url 2",
       api_end_point: "some api_end_point 2",
-      handler: "handler",
-      worker: "worker"
+      handler: "Glific.Providers.Gupshup.Message",
+      worker: "Glific.Providers.Gupshup.Worker"
     }
     @valid_attrs_3 %{
       name: "some name 3",
       url: "some url 3",
       api_end_point: "some api_end_point 3",
-      handler: "handler",
-      worker: "worker"
+      handler: "Glific.Providers.Gupshup.Message",
+      worker: "Glific.Providers.Gupshup.Worker"
     }
     @update_attrs %{
       name: "some updated name",

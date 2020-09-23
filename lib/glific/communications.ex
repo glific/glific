@@ -12,24 +12,18 @@ defmodule Glific.Communications do
   }
 
   @doc """
-  Get the current provider based on the config
+  Get the current provider handler based on the config
   """
-  @spec provider(non_neg_integer) :: atom()
-  def provider(organization_id),
-    do:
-      "Elixir."
-      |> Kernel.<>(Partners.organization(organization_id).provider.handler)
-      |> String.to_existing_atom()
+  @spec provider_handler(non_neg_integer) :: atom()
+  def provider_handler(organization_id),
+    do: Partners.organization(organization_id).provider_handler
 
   @doc """
   Get the current provider worker based on the organization | Config | Defaultconfig
   """
   @spec provider_worker(non_neg_integer) :: atom()
   def provider_worker(organization_id),
-    do:
-      "Elixir."
-      |> Kernel.<>(Partners.organization(organization_id).provider.worker)
-      |> String.to_existing_atom()
+    do: Partners.organization(organization_id).provider_worker
 
   @doc """
   Unified function to publish data on the graphql subscription endpoint. This  is still looking for a

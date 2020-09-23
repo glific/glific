@@ -39,7 +39,7 @@ defmodule Glific.Communications.Message do
     if Contacts.can_send_message_to?(message.receiver, message.is_hsm) do
       {:ok, _} =
         apply(
-          Communications.provider(message.organization_id),
+          Communications.provider_handler(message.organization_id),
           @type_to_token[message.type],
           [message]
         )
