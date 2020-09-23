@@ -206,7 +206,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     results =
       Glific.Partners.organization(conn.assigns[:organization_id]).languages
       |> Enum.reduce([], fn language, acc ->
-        [%{iso: language.label, name: language.label} | acc]
+        [%{iso: language.locale, name: language.label} | acc]
       end)
 
     json(conn, %{results: results})
