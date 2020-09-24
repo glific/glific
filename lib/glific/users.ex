@@ -124,17 +124,21 @@ defmodule Glific.Users do
   defp authenticate_user_organization(nil, _params), do: nil
 
   defp authenticate_user_organization(organization_id, params) do
-    user =
-      User
-      |> Repo.get_by(phone: params["phone"], organization_id: organization_id)
-      |> case do
-        # Prevent timing attack
-        nil -> %User{password_hash: nil}
-        user -> user
-      end
-
-    if User.verify_password(user, params["password"]),
-      do: user,
-      else: nil
+    User
+    |> Repo.get_by(phone: params["phone"], organization_id: organization_id)
+    |> case do
+      # Prevent timing attack
+      nil -> %User{password_hash: nil}
+      user -> user
+    end
+    |> verify_password(params["password"])
   end
+
+  @spec verify_password(User.t(), String.t()) :: User.t() | nil
+  defp verify_password(user, password),
+    do:
+      if(User.verify_password(user, password),
+        do: user,
+        else: nil
+      )
 end
