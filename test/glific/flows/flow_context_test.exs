@@ -1,7 +1,10 @@
 defmodule Glific.Flows.FlowContextTest do
   use Glific.DataCase, async: true
 
-  alias Glific.Fixtures
+  alias Glific.{
+    Fixtures,
+    Messages
+  }
 
   alias Glific.Flows.{
     Action,
@@ -111,7 +114,8 @@ defmodule Glific.Flows.FlowContextTest do
     flow = Flow.get_loaded_flow(organization_id, %{keyword: keyword})
     contact = Fixtures.contact_fixture()
     {:ok, flow_context, _} = FlowContext.init_context(flow, contact)
-    assert {:ok, _, _} = FlowContext.execute(flow_context, ["Test"])
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "Test")
+    assert {:ok, _, _} = FlowContext.execute(flow_context, [message])
   end
 
   test "active_context/1 will return the current context for contact" do
@@ -135,7 +139,8 @@ defmodule Glific.Flows.FlowContextTest do
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
     flow_context = FlowContext.load_context(flow_context, flow)
-    assert {:ok, _map} = FlowContext.step_forward(flow_context, "help")
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "help")
+    assert {:ok, _map} = FlowContext.step_forward(flow_context, message)
   end
 
   test "get_result_value/2 will return the result value for a key" do

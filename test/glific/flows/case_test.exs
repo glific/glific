@@ -1,7 +1,11 @@
 defmodule Glific.Flows.CaseTest do
   use Glific.DataCase, async: true
 
-  alias Glific.Flows.Case
+  alias Glific.{
+    Fixtures,
+    Flows.Case,
+    Messages
+  }
 
   test "process extracts the right values from json" do
     json = %{
@@ -35,57 +39,62 @@ defmodule Glific.Flows.CaseTest do
   test "test the execute function for has_any_word" do
     c = %Case{type: "has_any_word", arguments: ["first", "second", "third"]}
 
-    assert Case.execute(c, nil, "first") == true
-    assert Case.execute(c, nil, "second") == true
-    assert Case.execute(c, nil, "fourth") == false
-    assert Case.execute(c, nil, "") == false
+    assert wrap_execute(c, nil, "first") == true
+    assert wrap_execute(c, nil, "second") == true
+    assert wrap_execute(c, nil, "fourth") == false
+    assert wrap_execute(c, nil, "") == false
 
     c = %Case{type: "has_any_word", arguments: []}
-    assert Case.execute(c, nil, "first") == false
-    assert Case.execute(c, nil, "second") == false
-    assert Case.execute(c, nil, "fourth") == false
-    assert Case.execute(c, nil, "") == false
+    assert wrap_execute(c, nil, "first") == false
+    assert wrap_execute(c, nil, "second") == false
+    assert wrap_execute(c, nil, "fourth") == false
+    assert wrap_execute(c, nil, "") == false
   end
 
   test "test the execute function for has_number_eq" do
     c = %Case{type: "has_number_eq", arguments: ["1", "2"]}
 
-    assert Case.execute(c, nil, "1") == true
-    assert Case.execute(c, nil, "second") == false
-    assert Case.execute(c, nil, "4") == false
-    assert Case.execute(c, nil, "") == false
+    assert wrap_execute(c, nil, "1") == true
+    assert wrap_execute(c, nil, "second") == false
+    assert wrap_execute(c, nil, "4") == false
+    assert wrap_execute(c, nil, "") == false
 
     c = %Case{type: "has_number_eq", arguments: ["23"]}
-    assert Case.execute(c, nil, "23") == true
-    assert Case.execute(c, nil, "1") == false
+    assert wrap_execute(c, nil, "23") == true
+    assert wrap_execute(c, nil, "1") == false
+  end
+
+  defp wrap_execute(c, context, body) do
+    message = Messages.create_temp_message(Fixtures.get_org_id(), body)
+    Case.execute(c, context, message)
   end
 
   test "test the execute function for has_number_between" do
     c = %Case{type: "has_number_between", arguments: ["1", "10"]}
 
-    assert Case.execute(c, nil, "1") == true
-    assert Case.execute(c, nil, "second") == false
-    assert Case.execute(c, nil, "4") == true
-    assert Case.execute(c, nil, "") == false
-    assert Case.execute(c, nil, "10") == true
-    assert Case.execute(c, nil, "23") == false
-    assert Case.execute(c, nil, "-42") == false
+    assert wrap_execute(c, nil, "1") == true
+    assert wrap_execute(c, nil, "second") == false
+    assert wrap_execute(c, nil, "4") == true
+    assert wrap_execute(c, nil, "") == false
+    assert wrap_execute(c, nil, "10") == true
+    assert wrap_execute(c, nil, "23") == false
+    assert wrap_execute(c, nil, "-42") == false
   end
 
   test "test the execute function for has_only_phrase or has_only_text" do
     c = %Case{type: "has_only_phrase", arguments: ["only phrase"]}
-    assert Case.execute(c, nil, "only phrase") == true
-    assert Case.execute(c, nil, "only phrase 1") == false
-    assert Case.execute(c, nil, "") == false
+    assert wrap_execute(c, nil, "only phrase") == true
+    assert wrap_execute(c, nil, "only phrase 1") == false
+    assert wrap_execute(c, nil, "") == false
 
     c = %Case{type: "has_only_text", arguments: ["only phrase"]}
-    assert Case.execute(c, nil, "only phrase") == true
-    assert Case.execute(c, nil, "only phrase 1") == false
-    assert Case.execute(c, nil, "") == false
+    assert wrap_execute(c, nil, "only phrase") == true
+    assert wrap_execute(c, nil, "only phrase 1") == false
+    assert wrap_execute(c, nil, "") == false
   end
 
   test "test exceptions" do
     c = %Case{type: "no_such_function", arguments: ["only phrase"]}
-    assert_raise UndefinedFunctionError, fn -> Case.execute(c, nil, "only phrase 1") end
+    assert_raise UndefinedFunctionError, fn -> wrap_execute(c, nil, "only phrase 1") end
   end
 end

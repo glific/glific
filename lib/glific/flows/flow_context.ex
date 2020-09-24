@@ -15,6 +15,8 @@ defmodule Glific.Flows.FlowContext do
     Flows,
     Flows.Flow,
     Flows.Node,
+    Messages,
+    Messages.Message,
     Repo
   }
 
@@ -129,7 +131,7 @@ defmodule Glific.Flows.FlowContext do
 
       parent
       |> load_context(Flow.get_flow(context.flow.organization_id, parent.flow_uuid))
-      |> step_forward("completed")
+      |> step_forward(Messages.create_temp_message(context.flow.organization_id, "completed"))
     end
   end
 
@@ -218,8 +220,8 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Execute one (or more) steps in a flow based on the message stream
   """
-  @spec execute(FlowContext.t(), [String.t()]) ::
-          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
+  @spec execute(FlowContext.t(), [Message.t()]) ::
+          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%FlowContext{node: node} = _context, _messages) when is_nil(node),
     do: {:error, "We have finished the flow"}
 
@@ -313,9 +315,9 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Given an input string, consume the input and advance the state of the context
   """
-  @spec step_forward(FlowContext.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  def step_forward(context, body) do
-    case FlowContext.execute(context, [body]) do
+  @spec step_forward(FlowContext.t(), Message.t()) :: {:ok, map()} | {:error, String.t()}
+  def step_forward(context, message) do
+    case FlowContext.execute(context, [message]) do
       {:ok, context, []} -> {:ok, context}
       {:error, error} -> {:error, error}
     end
@@ -353,7 +355,9 @@ defmodule Glific.Flows.FlowContext do
     {:ok, context} =
       context
       |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward("No Response")
+      |> FlowContext.step_forward(
+        Messages.create_temp_message(context.flow.organization_id, "No Response")
+      )
 
     {:ok, context, []}
   end

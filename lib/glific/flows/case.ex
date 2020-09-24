@@ -8,7 +8,8 @@ defmodule Glific.Flows.Case do
 
   alias Glific.{
     Enums.FlowCase,
-    Flows
+    Flows,
+    Messages.Message
   }
 
   alias Glific.Flows.{
@@ -61,8 +62,13 @@ defmodule Glific.Flows.Case do
   defp strip(msgs) when is_list(msgs),
     do: msgs |> hd() |> strip()
 
+  defp strip(%{body: body} = _msg),
+    do: strip(body)
+
   defp strip(msg) when is_binary(msg),
     do: msg |> String.trim() |> String.downcase()
+
+  defp strip(_msg), do: ""
 
   @doc """
   Execute a case, given a message.
@@ -70,7 +76,7 @@ defmodule Glific.Flows.Case do
   it just consumes one message at a time and executes it against a predefined function
   It also returns a boolean, rather than a tuple
   """
-  @spec execute(Case.t(), FlowContext.t(), String.t()) :: boolean
+  @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
   def execute(%{type: type} = c, _context, msg) when type == "has_any_word",
     do: Enum.member?(c.arguments, strip(msg))
 
@@ -81,19 +87,19 @@ defmodule Glific.Flows.Case do
     [low, high] = c.arguments
 
     # convert all 3 parameters to number
-    [low, high, msg] = Enum.map([low, high, msg], &Glific.parse_maybe_integer/1)
+    [low, high, body] = Enum.map([low, high, msg.clean_body], &Glific.parse_maybe_integer/1)
 
     # ensure no errors
-    if Enum.all?([low, high, msg], &(&1 != :error)) do
-      [low, high, msg] = Enum.map([low, high, msg], &elem(&1, 1))
-      msg >= low && msg <= high
+    if Enum.all?([low, high, body], &(&1 != :error)) do
+      [low, high, body] = Enum.map([low, high, body], &elem(&1, 1))
+      body >= low && body <= high
     else
       false
     end
   end
 
   def execute(%{type: type}, _context, msg) when type == "has_number",
-    do: String.contains?(msg, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
+    do: String.contains?(msg.clean_body, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
 
   def execute(%{type: type} = c, _context, msg) when type == "has_phrase",
     do: String.contains?(strip(msg), strip(c.arguments))

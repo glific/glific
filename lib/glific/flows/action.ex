@@ -7,9 +7,13 @@ defmodule Glific.Flows.Action do
 
   use Ecto.Schema
 
-  alias Glific.Flows
-  alias Glific.Groups
-  alias Glific.Tags
+  alias Glific.{
+    Flows,
+    Groups,
+    Messages,
+    Messages.Message,
+    Tags
+  }
 
   alias Glific.Flows.{
     ContactAction,
@@ -180,24 +184,24 @@ defmodule Glific.Flows.Action do
   Execute a action, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
-          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def execute(%{type: "send_msg"} = action, context, message_stream) do
-    ContactAction.send_message(context, action, message_stream)
+  @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
+          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  def execute(%{type: "send_msg"} = action, context, messages) do
+    ContactAction.send_message(context, action, messages)
   end
 
-  def execute(%{type: "set_contact_language"} = action, context, message_stream) do
+  def execute(%{type: "set_contact_language"} = action, context, messages) do
     context = ContactSetting.set_contact_language(context, action.text)
-    {:ok, context, message_stream}
+    {:ok, context, messages}
   end
 
-  def execute(%{type: "set_contact_name"} = action, context, message_stream) do
+  def execute(%{type: "set_contact_name"} = action, context, messages) do
     value = FlowContext.get_result_value(context, action.value)
     context = ContactSetting.set_contact_name(context, value)
-    {:ok, context, message_stream}
+    {:ok, context, messages}
   end
 
-  def execute(%{type: "set_contact_field"} = action, context, message_stream) do
+  def execute(%{type: "set_contact_field"} = action, context, messages) do
     key = String.downcase(action.field.key)
     value = FlowContext.get_result_value(context, action.value)
 
@@ -213,19 +217,19 @@ defmodule Glific.Flows.Action do
           ContactField.add_contact_field(context, key, action.field[:name], value, "string")
       end
 
-    {:ok, context, message_stream}
+    {:ok, context, messages}
   end
 
-  def execute(%{type: "enter_flow"} = action, context, message_stream) do
+  def execute(%{type: "enter_flow"} = action, context, messages) do
     # we start off a new context here and dont really modify the current context
     # hence ignoring the return value of start_sub_flow
     # for now, we'll just delay by at least min_delay second
     context = %{context | delay: min(context.delay + @min_delay, @min_delay)}
     Flow.start_sub_flow(context, action.enter_flow_uuid)
-    {:ok, context, message_stream}
+    {:ok, context, messages}
   end
 
-  def execute(%{type: "call_webhook"} = action, context, message_stream) do
+  def execute(%{type: "call_webhook"} = action, context, messages) do
     # first call the webhook
     json =
       Webhook.get(
@@ -235,17 +239,24 @@ defmodule Glific.Flows.Action do
       )
 
     if is_nil(json) or is_nil(action.result_name) do
-      {:ok, context, ["Failure" | message_stream]}
+      {:ok, context,
+       [
+         Messages.create_temp_message(context.contact.organization_id, "Failure")
+         | messages
+       ]}
     else
       {
         :ok,
         FlowContext.update_results(context, action.result_name, json),
-        ["Success" | message_stream]
+        [
+          Messages.create_temp_message(context.contact.organization_id, "Success")
+          | messages
+        ]
       }
     end
   end
 
-  def execute(%{type: "add_input_labels"} = action, context, message_stream) do
+  def execute(%{type: "add_input_labels"} = action, context, messages) do
     ## We will soon figure out how we will manage the UUID with tags
     _list =
       Enum.reduce(
@@ -257,10 +268,10 @@ defmodule Glific.Flows.Action do
         end
       )
 
-    {:ok, context, message_stream}
+    {:ok, context, messages}
   end
 
-  def execute(%{type: "add_contact_groups"} = action, context, message_stream) do
+  def execute(%{type: "add_contact_groups"} = action, context, messages) do
     ## We will soon figure out how we will manage the UUID with tags
     _list =
       Enum.reduce(
@@ -273,10 +284,10 @@ defmodule Glific.Flows.Action do
         end
       )
 
-    {:ok, context, message_stream}
+    {:ok, context, messages}
   end
 
-  def execute(action, _context, _message_stream),
+  def execute(action, _context, _messages),
     do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
 
   # let's format attachment and add as a map
