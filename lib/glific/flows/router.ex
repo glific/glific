@@ -6,7 +6,10 @@ defmodule Glific.Flows.Router do
 
   use Ecto.Schema
 
-  alias Glific.Flows
+  alias Glific.{
+    Flows,
+    Messages.Message
+  }
 
   alias Glific.Flows.{
     Case,
@@ -99,10 +102,10 @@ defmodule Glific.Flows.Router do
   Execute a router, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Router.t(), FlowContext.t(), [String.t()]) ::
-          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def execute(nil, context, message_stream),
-    do: {:ok, context, message_stream}
+  @spec execute(Router.t(), FlowContext.t(), [Message.t()]) ::
+          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  def execute(nil, context, messages),
+    do: {:ok, context, messages}
 
   def execute(router, context, []),
     do: Wait.execute(router.wait, context, [])
@@ -110,12 +113,12 @@ defmodule Glific.Flows.Router do
   def execute(
         %{type: type} = router,
         context,
-        message_stream
+        messages
       )
       when type == "switch" do
-    [msg | rest] = message_stream
+    [msg | rest] = messages
 
-    context = FlowContext.update_recent(context, msg, :recent_inbound)
+    context = FlowContext.update_recent(context, msg.body, :recent_inbound)
 
     category_uuid = find_category(router, context, msg)
 
@@ -126,22 +129,22 @@ defmodule Glific.Flows.Router do
       if is_nil(router.result_name),
         # if there is a result name, store it in the context table along with the category name first
         do: context,
-        else: FlowContext.update_results(context, router.result_name, msg, category.name)
+        else: FlowContext.update_results(context, router.result_name, msg.body, category.name)
 
     Category.execute(category, context, rest)
   end
 
-  def execute(_router, _context, _message_stream),
+  def execute(_router, _context, _messages),
     do: raise(UndefinedFunctionError, message: "Unimplemented router type and/or wait type")
 
-  @spec find_category(Router.t(), FlowContext.t(), String.t()) :: Ecto.UUID.t()
-  defp find_category(router, _context, msg)
-       when msg in ["No Response", "Exit Loop"] do
+  @spec find_category(Router.t(), FlowContext.t(), Message.t()) :: Ecto.UUID.t()
+  defp find_category(router, _context, %{body: body} = _msg)
+       when body in ["No Response", "Exit Loop"] do
     # Find the category with name == "No Response" or "Exit Loop"
-    category = Enum.find(router.categories, fn c -> c.name == msg end)
+    category = Enum.find(router.categories, fn c -> c.name == body end)
 
     if is_nil(category),
-      do: raise(ArgumentError, message: "Did not find a #{msg} category"),
+      do: raise(ArgumentError, message: "Did not find a #{body} category"),
       else: category.uuid
   end
 

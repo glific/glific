@@ -1,6 +1,11 @@
 defmodule Glific.Flows.RouterTest do
   use Glific.DataCase, async: true
 
+  alias Glific.{
+    Fixtures,
+    Messages
+  }
+
   alias Glific.Flows.{
     Flow,
     FlowContext,
@@ -89,7 +94,8 @@ defmodule Glific.Flows.RouterTest do
   test "router execution with type not equal to switch" do
     router = %Router{type: "No type"}
 
-    assert_raise UndefinedFunctionError, fn -> Router.execute(router, nil, ["Random Input"]) end
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "Random Input")
+    assert_raise UndefinedFunctionError, fn -> Router.execute(router, nil, [message]) end
   end
 
   test "router with switch and one case, category" do
@@ -141,7 +147,8 @@ defmodule Glific.Flows.RouterTest do
         uuid_map: uuid_map
       })
 
-    result = Router.execute(router, context, ["23"])
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "23")
+    result = Router.execute(router, context, [message])
 
     # we send it to a null node. lets ensure we get the right values
     assert result == {:ok, nil, []}
@@ -157,7 +164,8 @@ defmodule Glific.Flows.RouterTest do
       })
 
     # lets ensure the default category route also works
-    result = Router.execute(router, context, ["123"])
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "123")
+    result = Router.execute(router, context, [message])
     assert result == {:ok, nil, []}
   end
 
@@ -216,7 +224,8 @@ defmodule Glific.Flows.RouterTest do
         uuid_map: uuid_map
       })
 
-    result = Router.execute(router, context, ["alpha"])
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "alpha")
+    result = Router.execute(router, context, [message])
 
     # we send it to a null node. lets ensure we get the right values
     assert result == {:ok, nil, []}
@@ -232,7 +241,8 @@ defmodule Glific.Flows.RouterTest do
       })
 
     # lets ensure the default category route also works
-    result = Router.execute(router, context, ["123"])
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "123")
+    result = Router.execute(router, context, [message])
     assert result == {:ok, nil, []}
   end
 end

@@ -30,7 +30,9 @@ defmodule Glific.Messages do
   """
   @spec list_messages(map()) :: [Message.t()]
   def list_messages(%{filter: %{organization_id: _org_id}} = args),
-    do: Repo.list_filter(args, Message, &Repo.opts_with_body/2, &filter_with/2)
+    do:
+      Repo.list_filter(args, Message, &Repo.opts_with_body/2, &filter_with/2)
+      |> Enum.map(&put_clean_body/1)
 
   @doc """
   Return the count of messages, using the same filter as list_messages
@@ -111,7 +113,7 @@ defmodule Glific.Messages do
 
   """
   @spec get_message!(integer) :: Message.t()
-  def get_message!(id), do: Repo.get!(Message, id)
+  def get_message!(id), do: Repo.get!(Message, id) |> put_clean_body()
 
   @doc """
   Creates a message.
@@ -131,6 +133,7 @@ defmodule Glific.Messages do
       %{flow: :inbound, status: :enqueued}
       |> Map.merge(attrs)
       |> put_contact_id()
+      |> put_clean_body()
 
     %Message{}
     |> Message.changeset(attrs)
@@ -145,6 +148,12 @@ defmodule Glific.Messages do
     do: Map.put(attrs, :contact_id, attrs[:receiver_id])
 
   defp put_contact_id(attrs), do: attrs
+
+  @spec put_clean_body(map()) :: map()
+  defp put_clean_body(%{body: body} = attrs),
+    do: Map.put(attrs, :clean_body, Glific.string_clean(body))
+
+  defp put_clean_body(attrs), do: attrs
 
   @doc """
   Updates a message.
@@ -722,5 +731,19 @@ defmodule Glific.Messages do
       [element],
       &[element | &1]
     )
+  end
+
+  @doc """
+  We need to simulate a few messages as we move to the system. This is a wrapper function
+  to add those messages, which trigger specific actions within flows. e.g. include:
+  Completed, Failure, Success etc
+  """
+  @spec create_temp_message(non_neg_integer, String.t()) :: Message.t()
+  def create_temp_message(organization_id, body) do
+    %Message{
+      organization_id: organization_id,
+      body: body,
+      clean_body: Glific.string_clean(body)
+    }
   end
 end
