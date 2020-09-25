@@ -156,7 +156,8 @@ defmodule Glific.Flows.Router do
         nil,
         fn c -> Case.execute(c, context, msg) end
       )
-
+      IO.inspect("debug1")
+      IO.inspect(msg)
     if is_nil(c),
       do: router.default_category_uuid,
       else: c.category_uuid

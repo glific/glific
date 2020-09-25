@@ -110,7 +110,7 @@ defmodule Glific.Flows.Case do
 
   def execute(%{type: type} = c, _context, msg)
       when type == "has_media",
-      do: IO.inspect("hello")
+      do: IO.inspect("cake")
 
   def execute(c, _context, _msg),
     do:

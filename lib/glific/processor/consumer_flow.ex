@@ -86,7 +86,7 @@ defmodule Glific.Processor.ConsumerFlow do
     |> FlowContext.step_forward(
       Messages.create_temp_message(
         message.organization_id,
-        String.trim(message.body),
+        message.body,
         [type: message.type]
       )
     )
