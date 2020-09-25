@@ -739,11 +739,8 @@ defmodule Glific.Messages do
   Completed, Failure, Success etc
   """
   @spec create_temp_message(non_neg_integer, String.t()) :: Message.t()
-  def create_temp_message(organization_id, body) do
-    %Message{
-      organization_id: organization_id,
-      body: body,
-      clean_body: Glific.string_clean(body)
-    }
+  def create_temp_message(organization_id, body, attrs \\ Keyword.new ) do
+    opts = Keyword.merge([organization_id: organization_id, body: body, clean_body: Glific.string_clean(body)], attrs)
+    struct(Message, opts)
   end
 end

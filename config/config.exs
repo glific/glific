@@ -10,7 +10,7 @@ import Config
 config :glific,
   ecto_repos: [Glific.Repo],
   # Settings for provider key
-  provider_key_1: "Please replace this value in the secrets file"
+  provider_key_1: "a718c089d6a643ecc356f03867f8e00e"
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,
