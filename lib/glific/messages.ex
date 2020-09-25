@@ -745,5 +745,4 @@ defmodule Glific.Messages do
     opts = Keyword.merge([organization_id: organization_id, body: body, clean_body: Glific.string_clean(body)], attrs)
     struct(Message, opts)
   end
-
 end
