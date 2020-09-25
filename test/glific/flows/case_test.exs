@@ -89,12 +89,12 @@ defmodule Glific.Flows.CaseTest do
 
   test "test the execute function for has_media" do
     c = %Case{type: "has_media", arguments: [nil]}
-    assert has_media(c, nil, nil, [type: location]) == false
-    assert has_media(c, nil, nil, [type: text]) == false
-    assert has_media(c, nil, nil, [type: nil]) == false
-    assert has_media(c, nil, nil, [type: image]) == true
-    assert has_media(c, nil, nil, [type: audio]) == true
-    assert has_media(c, nil, nil, [type: video]) == true
+    assert has_media(c, nil, nil, [{:type, :location}]) == false
+    assert has_media(c, nil, nil, [{:type, :text}]) == false
+    assert has_media(c, nil, nil, [{:type, nil}]) == false
+    assert has_media(c, nil, nil, [{:type, :image}]) == true
+    assert has_media(c, nil, nil, [{:type, :audio}]) == true
+    assert has_media(c, nil, nil, [{:type, :video}]) == true
   end
 
   test "test the execute function for has_only_phrase or has_only_text" do
