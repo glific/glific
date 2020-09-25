@@ -4,7 +4,13 @@ defmodule GlificWeb.Resolvers.Partners do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Partners, Partners.Organization, Partners.Provider, Repo}
+  alias Glific.{
+    Partners,
+    Partners.Organization,
+    Partners.OrganizationCredential,
+    Partners.Provider,
+    Repo
+  }
 
   @doc """
   Get a specific organization by id
@@ -132,6 +138,60 @@ defmodule GlificWeb.Resolvers.Partners do
     with {:ok, provider} <- Repo.fetch(Provider, id),
          {:ok, provider} <- Partners.delete_provider(provider) do
       {:ok, provider}
+    end
+  end
+
+  @doc """
+  Get organization's credential by shorcode/service
+  """
+  @spec organization_credential(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def organization_credential(_, %{shortcode: shortcode}, %{
+        context: %{current_user: current_user}
+      }) do
+    with {:ok, organization_credential} <-
+           Partners.get_organization_credential(%{
+             organization_id: current_user.organization_id,
+             shortcode: shortcode
+           }),
+         do: {:ok, %{organization_credential: organization_credential}}
+  end
+
+  @doc """
+  Creates an organization's credential
+  """
+  @spec create_organization_credential(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_organization_credential(_, %{input: params}, %{
+        context: %{current_user: current_user}
+      }) do
+    with {:ok, organization_credential} <-
+           Partners.create_organization_credential(
+             params
+             |> Map.merge(%{organization_id: current_user.organization_id})
+           ) do
+      {:ok, %{organization_credential: organization_credential}}
+    end
+  end
+
+  @doc """
+  Updates an organization's credential
+  """
+  @spec update_organization_credential(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def update_organization_credential(_, %{id: id, input: params}, %{
+        context: %{current_user: current_user}
+      }) do
+    with {:ok, organization_credential} <-
+           Repo.fetch_by(OrganizationCredential, %{
+             id: id,
+             organization_id: current_user.organization_id
+           }),
+         {:ok, organization_credential} <-
+           Partners.update_organization_credential(organization_credential, params) do
+      {:ok, %{organization_credential: organization_credential}}
     end
   end
 end
