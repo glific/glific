@@ -69,10 +69,9 @@ defmodule Glific.Flows.CaseTest do
     Case.execute(c, context, message)
   end
 
-  defp has_media(c, context, body, opts) do
-    message = Messages.create_temp_message(Fixtures.get_org_id(), body) |> struct(opts)
+  defp wrap_execute(c, context, body, opts) do
+    message = Messages.create_temp_message(Fixtures.get_org_id(), body, opts)
     Case.execute(c, context, message)
-
   end
 
   test "test the execute function for has_number_between" do
@@ -88,13 +87,13 @@ defmodule Glific.Flows.CaseTest do
   end
 
   test "test the execute function for has_media" do
-    c = %Case{type: "has_media", arguments: [nil]}
-    assert has_media(c, nil, nil, [{:type, :location}]) == false
-    assert has_media(c, nil, nil, [{:type, :text}]) == false
-    assert has_media(c, nil, nil, [{:type, nil}]) == false
-    assert has_media(c, nil, nil, [{:type, :image}]) == true
-    assert has_media(c, nil, nil, [{:type, :audio}]) == true
-    assert has_media(c, nil, nil, [{:type, :video}]) == true
+    c = %Case{type: "has_media", arguments: []}
+    assert wrap_execute(c, nil, nil, [{:type, :location}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :text}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, nil}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :image}]) == true
+    assert wrap_execute(c, nil, nil, [{:type, :audio}]) == true
+    assert wrap_execute(c, nil, nil, [{:type, :video}]) == true
   end
 
   test "test the execute function for has_only_phrase or has_only_text" do
