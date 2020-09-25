@@ -72,8 +72,6 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   def check_contexts(context, message, _body, state) do
-    IO.inspect("get this")
-    IO.inspect(message)
     {:ok, flow} =
       Flows.get_cached_flow(message.organization_id, {:flow_uuid, context.flow_uuid}, %{
         uuid: context.flow_uuid
@@ -86,8 +84,7 @@ defmodule Glific.Processor.ConsumerFlow do
     |> FlowContext.step_forward(
       Messages.create_temp_message(
         message.organization_id,
-        message.body,
-        [type: message.type]
+        String.trim(message.body)
       )
     )
 
