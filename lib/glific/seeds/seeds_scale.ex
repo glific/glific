@@ -133,8 +133,8 @@ if Code.ensure_loaded?(Faker) do
       # get all beneficiaries ids
       query =
         from c in Contact,
-        select: c.id,
-        where: c.id != ^organization.contact_id and c.organization_id == ^organization.id
+          select: c.id,
+          where: c.id != ^organization.contact_id and c.organization_id == ^organization.id
 
       _ =
         Repo.all(query)
