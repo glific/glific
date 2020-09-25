@@ -144,6 +144,14 @@ defmodule Glific.MixProject do
         "run priv/repo/seeds_dev.exs"
       ],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
+      "ecto.scale": [
+        "ecto.reset",
+        "run priv/repo/seeds_scale.exs"
+      ],
+      "ecto.scale_2": [
+        "phil_columns.seed --tenant org_2",
+        "run priv/repo/seeds_scale.exs --organization 2 --contacts 250"
+      ],
       test_full: [
         "ecto.drop",
         "ecto.create --quiet",
