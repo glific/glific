@@ -126,7 +126,7 @@ defmodule Glific.Flags do
   @spec dialogflow(non_neg_integer) :: {:ok, boolean()}
   def dialogflow(organization_id),
     do:
-      if(File.exists?("config/.dialogflow.credentials.json_#{organization_id}"),
+      if(File.exists?("config/.dialogflow.credentials_#{organization_id}.json"),
         do:
           FunWithFlags.enable(
             :dialogflow,

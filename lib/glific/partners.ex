@@ -12,6 +12,7 @@ defmodule Glific.Partners do
     Caches,
     Flags,
     Partners.Organization,
+    Partners.OrganizationCredential,
     Partners.Provider,
     Repo,
     Settings.Language
@@ -302,19 +303,12 @@ defmodule Glific.Partners do
 
   @spec get_provider_key(non_neg_integer) :: String.t()
   defp get_provider_key(organization_id) do
-    provider_key = "provider_key_#{organization_id}"
+    case get_organization_credential!(%{shortcode: "provider", organization_id: organization_id}) do
+      {:ok, credentials} ->
+        credentials.secret_keys["provider_key"]
 
-    case Application.fetch_env(:glific, String.to_atom(provider_key)) do
-      {:ok, value} ->
-        value
-
-      :error ->
-        case System.get_env(provider_key) do
-          nil -> raise ArgumentError
-          # we need to decide if we want to put this key in the application
-          # environment, but this is the only place we read it and cache it
-          value -> value
-        end
+      {:error, _} ->
+        nil
     end
   end
 
@@ -488,5 +482,16 @@ defmodule Glific.Partners do
     else
       :hsm
     end
+  end
+
+  @spec get_organization_credential!(map()) :: {:ok, OrganizationCredential.t()}
+  def get_organization_credential!(
+        %{organization_id: organization_id, shortcode: shortcode} = _args
+      ) do
+
+    Repo.fetch_by(OrganizationCredential, %{
+      organization_id: organization_id,
+      shortcode: shortcode
+    })
   end
 end
