@@ -3,6 +3,8 @@ defmodule Glific.Flows.NodeTest do
 
   alias Glific.{
     Contacts,
+    Fixtures,
+    Messages,
     Messages.Message,
     Seeds.SeedsDev,
     Settings
@@ -196,7 +198,8 @@ defmodule Glific.Flows.NodeTest do
 
     context = Repo.preload(context, :contact)
 
-    message_stream = ["completed"]
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "completed")
+    message_stream = [message]
 
     # execute node
     assert_raise MatchError, fn ->

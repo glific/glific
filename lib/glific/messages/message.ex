@@ -39,6 +39,7 @@ defmodule Glific.Messages.Message do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           body: String.t() | nil,
+          clean_body: String.t() | nil,
           provider_message_id: String.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
@@ -57,6 +58,7 @@ defmodule Glific.Messages.Message do
   @optional_fields [
     :uuid,
     :body,
+    :clean_body,
     :is_hsm,
     :status,
     :provider_status,
@@ -74,6 +76,10 @@ defmodule Glific.Messages.Message do
     field :flow, MessageFlow
     field :type, MessageType
     field :status, MessageStatus
+
+    # we keep the clean version of the body here for easy access by flows
+    # and other actors
+    field :clean_body, :string, virtual: true
 
     field :is_hsm, :boolean, default: false
 

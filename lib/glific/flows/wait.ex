@@ -9,7 +9,8 @@ defmodule Glific.Flows.Wait do
   alias Glific.{
     Flows,
     Flows.FlowContext,
-    Flows.Router
+    Flows.Router,
+    Messages.Message
   }
 
   @required_fields [:type]
@@ -45,12 +46,12 @@ defmodule Glific.Flows.Wait do
   @doc """
   Execute a exit, given a message stream.
   """
-  @spec execute(Wait.t(), FlowContext.t(), [String.t()]) ::
-          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
-  def execute(nil, context, _message_stream),
+  @spec execute(Wait.t(), FlowContext.t(), [Message.t()]) ::
+          {:ok, FlowContext.t() | nil, [Message.t()]} | {:error, String.t()}
+  def execute(nil, context, _messages),
     do: {:ok, context, []}
 
-  def execute(wait, context, _message_stream) do
+  def execute(wait, context, _messages) do
     if is_nil(wait.seconds) do
       {:ok, context, []}
     else

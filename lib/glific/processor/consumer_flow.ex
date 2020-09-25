@@ -10,6 +10,7 @@ defmodule Glific.Processor.ConsumerFlow do
     Flows,
     Flows.FlowContext,
     Flows.Periodic,
+    Messages,
     Messages.Message
   }
 
@@ -61,7 +62,7 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   @doc false
-  @spec check_contexts(FlowContext.t(), atom() | Message.t(), String.t(), map()) ::
+  @spec check_contexts(FlowContext.t() | nil, atom() | Message.t(), String.t(), map()) ::
           {Message.t(), map()}
   def check_contexts(nil = _context, message, _body, state) do
     # lets do the periodic flow routine and send those out
@@ -80,7 +81,13 @@ defmodule Glific.Processor.ConsumerFlow do
     |> FlowContext.load_context(flow)
     # we are using message.body here since we want to use the original message
     # not the stripped version
-    |> FlowContext.step_forward(String.trim(message.body))
+    |> FlowContext.step_forward(
+      Messages.create_temp_message(
+        message.organization_id,
+        message.body,
+        type: message.type
+      )
+    )
 
     {message, state}
   end

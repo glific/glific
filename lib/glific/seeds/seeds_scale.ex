@@ -6,7 +6,7 @@ if Code.ensure_loaded?(Faker) do
     alias Glific.{
       Contacts.Contact,
       Messages.Message,
-      Partners.Organization,
+      Partners,
       Repo,
       Tags.MessageTag,
       Tags.Tag
@@ -49,12 +49,11 @@ if Code.ensure_loaded?(Faker) do
 
     defp create_message, do: create_message(Enum.random(1..4))
 
-    @sender_id 1
-    defp create_message_entry(contact_id, "ngo", index, organization) do
+    defp create_message_entry(contact_id, sender_id, "ngo", index, organization) do
       create_message_entry(
         %{
           flow: "outbound",
-          sender_id: @sender_id,
+          sender_id: sender_id,
           receiver_id: contact_id,
           contact_id: contact_id,
           organization_id: organization.id
@@ -63,12 +62,12 @@ if Code.ensure_loaded?(Faker) do
       )
     end
 
-    defp create_message_entry(contact_id, "beneficiary", index, organization) do
+    defp create_message_entry(contact_id, sender_id, "beneficiary", index, organization) do
       create_message_entry(
         %{
           flow: "inbound",
           sender_id: contact_id,
-          receiver_id: @sender_id,
+          receiver_id: sender_id,
           contact_id: contact_id,
           organization_id: organization.id
         },
@@ -94,13 +93,22 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @num_messages_per_conversation 40
-    defp create_conversation(contact_id, organization) do
+    defp create_conversation(contact_id, sender_id, organization) do
       num_messages = Enum.random(1..@num_messages_per_conversation)
 
       for i <- 1..num_messages do
         case rem(Enum.random(1..10), 2) do
-          0 -> create_message_entry(contact_id, "ngo", num_messages - i + 1, organization)
-          1 -> create_message_entry(contact_id, "beneficiary", num_messages - i + 1, organization)
+          0 ->
+            create_message_entry(contact_id, sender_id, "ngo", num_messages - i + 1, organization)
+
+          1 ->
+            create_message_entry(
+              contact_id,
+              sender_id,
+              "beneficiary",
+              num_messages - i + 1,
+              organization
+            )
         end
       end
     end
@@ -115,15 +123,23 @@ if Code.ensure_loaded?(Faker) do
       |> Enum.map(&Repo.insert_all(Contact, &1))
     end
 
-    defp seed_messages(organization) do
+    defp seed_messages(organization, sender_id) do
       Repo.query!("ALTER TABLE messages DISABLE TRIGGER update_search_message_trigger;")
-      Repo.query!("TRUNCATE messages CASCADE;")
+
+      # we dont need the generated dev messages
+      if organization.id == 1,
+        do: Repo.query!("TRUNCATE messages CASCADE;")
 
       # get all beneficiaries ids
+      query =
+        from c in Contact,
+          select: c.id,
+          where: c.id != ^organization.contact_id and c.organization_id == ^organization.id
+
       _ =
-        Repo.all(from c in "contacts", select: c.id, where: c.id != 1)
+        Repo.all(query)
         |> Enum.shuffle()
-        |> Enum.flat_map(&create_conversation(&1, organization))
+        |> Enum.flat_map(&create_conversation(&1, sender_id, organization))
         # this enables us to send smaller chunks to postgres for insert
         |> Enum.chunk_every(1000)
         |> Enum.map(&Repo.insert_all(Message, &1, timeout: 120_000))
@@ -153,10 +169,15 @@ if Code.ensure_loaded?(Faker) do
 
       tag_ids = Repo.all(query) |> Enum.shuffle()
 
+      query =
+        from m in Message,
+          select: m.id,
+          where:
+            m.organization_id == ^organization.id and
+              m.message_number != 0
+
       _ =
-        Repo.all(
-          from m in "messages", select: m.id, where: m.receiver_id == 1 and m.message_number != 0
-        )
+        Repo.all(query)
         |> Enum.shuffle()
         |> Enum.reduce([], fn x, acc -> create_message_tag_generic(x, tag_ids, acc) end)
         |> Enum.chunk_every(1000)
@@ -254,14 +275,29 @@ if Code.ensure_loaded?(Faker) do
     @doc false
     @spec seed_scale :: nil
     def seed_scale do
+      {opts, _, _} =
+        System.argv()
+        |> OptionParser.parse(
+          switches: [organization: :integer, contacts: :integer],
+          aliases: [o: :organization, c: :contacts]
+        )
+
+      opts =
+        opts
+        |> Keyword.put_new(:organization, 1)
+        |> Keyword.put_new(:contacts, 500)
+
+      organization = Partners.get_organization!(opts[:organization])
+
       # create seed for deterministic random data
-      :rand.seed(:exrop, {101, 102, 103})
+      start = organization.id * 100
+      :rand.seed(:exrop, {start, start + 1, start + 2})
 
-      organization = Organization |> Ecto.Query.first() |> Repo.one()
+      sender_id = organization.contact_id
 
-      seed_contacts(500, organization)
+      seed_contacts(opts[:contacts], organization)
 
-      seed_messages(organization)
+      seed_messages(organization, sender_id)
 
       seed_message_tags(organization)
 

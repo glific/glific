@@ -11,16 +11,17 @@ defmodule Glific.Flows.ContactAction do
     Flows.Localization,
     Flows.MessageVarParser,
     Messages,
+    Messages.Message,
     Repo
   }
 
   @min_delay 2
 
   @doc """
-  If the template is not define for the message send text messages
+  If the template is not defined for the message send text messages
   """
-  @spec send_message(FlowContext.t(), Action.t(), [String.t()]) :: {:ok, map(), any()}
-  def send_message(context, %Action{templating: nil, text: _text} = action, message_stream) do
+  @spec send_message(FlowContext.t(), Action.t(), [Message.t()]) :: {:ok, map(), any()}
+  def send_message(context, %Action{templating: nil} = action, messages) do
     # get the test translation if needed
     text = Localization.get_translation(context, action)
 
@@ -30,6 +31,7 @@ defmodule Glific.Flows.ContactAction do
     body = MessageVarParser.parse(text, message_vars)
 
     {type, media_id} = get_media_from_attachment(action.attachments, action.text)
+    organization_id = context.contact.organization_id
 
     attrs = %{
       uuid: action.uuid,
@@ -37,13 +39,13 @@ defmodule Glific.Flows.ContactAction do
       type: type,
       media_id: media_id,
       receiver_id: context.contact_id,
-      organization_id: context.contact.organization_id,
+      organization_id: organization_id,
       send_at: DateTime.add(DateTime.utc_now(), context.delay)
     }
 
     # we'll mark that we came here and are planning to send it, even if
     # we dont end up sending it. This allows us to detect and abort infinite loops
-    context = FlowContext.update_recent(context, action.uuid, :recent_outbound)
+    context = FlowContext.update_recent(context, body, :recent_outbound)
 
     # count the number of times we sent the same message in the recent list
     # in the past 6 hours
@@ -54,16 +56,16 @@ defmodule Glific.Flows.ContactAction do
         # :loop_infinite, for now we just ignore this error, and stay put
         # we might want to reset the context
         # this typically will happen when there is no Exit pathway out of the loop
-        {:ok, context, message_stream}
+        {:ok, context, messages}
 
       count >= 5 ->
         # :loop_detected
-        {:ok, context, ["Exit Loop" | message_stream]}
+        {:ok, context, [Messages.create_temp_message(organization_id, "Exit Loop") | messages]}
 
       true ->
         {:ok, _message} = Messages.create_and_send_message(attrs)
         # increment the delay
-        {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
+        {:ok, %{context | delay: context.delay + @min_delay}, messages}
     end
   end
 
@@ -74,7 +76,7 @@ defmodule Glific.Flows.ContactAction do
   def send_message(
         context,
         %Action{templating: templating, attachments: attachments},
-        message_stream
+        messages
       ) do
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
@@ -96,7 +98,7 @@ defmodule Glific.Flows.ContactAction do
       )
 
     # increment the delay
-    {:ok, %{context | delay: context.delay + @min_delay}, message_stream}
+    {:ok, %{context | delay: context.delay + @min_delay}, messages}
   end
 
   @spec get_media_from_attachment(any(), any()) :: any()
