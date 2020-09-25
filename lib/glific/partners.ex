@@ -303,11 +303,14 @@ defmodule Glific.Partners do
 
   @spec get_provider_key(non_neg_integer) :: String.t()
   defp get_provider_key(organization_id) do
-    case get_organization_credential!(%{shortcode: "provider", organization_id: organization_id}) do
+    case get_organization_credential(%{organization_id: organization_id, shortcode: "provider"}) do
       {:ok, credentials} ->
-        credentials.secret_keys["provider_key"]
+        credentials.secrets["provider_key"]
 
       {:error, _} ->
+        # raise ArgumentError
+        # we need to decide if we want to put this key in the application
+        # environment, but this is the only place we read it and cache it
         nil
     end
   end
@@ -484,14 +487,37 @@ defmodule Glific.Partners do
     end
   end
 
-  @spec get_organization_credential!(map()) :: {:ok, OrganizationCredential.t()}
-  def get_organization_credential!(
-        %{organization_id: organization_id, shortcode: shortcode} = _args
-      ) do
-
+  @doc """
+  Get organization's credential by service shortcode
+  """
+  @spec get_organization_credential(map()) ::
+          {:ok, OrganizationCredential.t()} | {:error, String.t()}
+  def get_organization_credential(%{organization_id: organization_id, shortcode: shortcode}) do
     Repo.fetch_by(OrganizationCredential, %{
       organization_id: organization_id,
       shortcode: shortcode
     })
+  end
+
+  @doc """
+  Creates an organization's credential
+  """
+  @spec create_organization_credential(map()) ::
+          {:ok, OrganizationCredential.t()} | {:error, Ecto.Changeset.t()}
+  def create_organization_credential(attrs \\ %{}) do
+    %OrganizationCredential{}
+    |> OrganizationCredential.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an organization's credential
+  """
+  @spec update_organization_credential(OrganizationCredential.t(), map()) ::
+          {:ok, OrganizationCredential.t()} | {:error, Ecto.Changeset.t()}
+  def update_organization_credential(%OrganizationCredential{} = organization_credential, attrs) do
+    organization_credential
+    |> OrganizationCredential.changeset(attrs)
+    |> Repo.update()
   end
 end

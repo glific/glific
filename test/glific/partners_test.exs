@@ -584,4 +584,72 @@ defmodule Glific.PartnersTest do
       assert updated_contact.provider_status == :hsm
     end
   end
+
+  describe "organization's credentials" do
+    alias Glific.{
+      Fixtures,
+      Partners,
+      Partners.Organization,
+      Partners.OrganizationCredential,
+      Seeds.SeedsDev
+    }
+
+    setup do
+      default_provider = SeedsDev.seed_providers()
+      SeedsDev.seed_organizations(default_provider)
+      :ok
+    end
+
+    @valid_attrs %{
+      shortcode: "testservice",
+      keys: %{},
+      secrets: %{provider_kye: "test_value"}
+    }
+
+    test "get_organization_credential/1 returns the organization credential for given shortcode",
+         %{organization_id: organization_id} = attrs do
+      attrs = Map.merge(attrs, @valid_attrs)
+      {:ok, _organization_credential} = Partners.create_organization_credential(attrs)
+
+      assert {:ok, %OrganizationCredential{} = organization_credential} =
+               Partners.get_organization_credential(%{
+                 shortcode: attrs.shortcode,
+                 organization_id: organization_id
+               })
+    end
+
+    test "create_organization_credential/1 with valid data creates a organization_credential",
+         %{organization_id: organization_id} = _attrs do
+      valid_attrs = %{
+        shortcode: "provider",
+        secrets: %{provider_kye: "test_value"},
+        organization_id: organization_id
+      }
+
+      assert {:ok, %OrganizationCredential{} = organization_credential} =
+               Partners.create_organization_credential(valid_attrs)
+
+      assert organization_credential.shortcode == valid_attrs.shortcode
+
+      # credential without organization id should be allowed
+      valid_attrs = %{
+        shortcode: "appsignal",
+        secrets: %{test_key: "test_value"}
+      }
+
+      assert {:ok, %OrganizationCredential{} = organization_credential} =
+               Partners.create_organization_credential(valid_attrs)
+
+      assert organization_credential.shortcode == "appsignal"
+
+      # credential with same shortcode for the organization should not be allowed
+      valid_attrs = %{
+        shortcode: "provider",
+        secrets: %{provider_kye: "test_value_2"},
+        organization_id: organization_id
+      }
+
+      assert {:error, %Ecto.Changeset{}} = Partners.create_organization_credential(valid_attrs)
+    end
+  end
 end

@@ -9,15 +9,15 @@ defmodule Glific.Partners.OrganizationCredential do
   alias __MODULE__
   alias Glific.Partners.Organization
 
-  @required_fields [:organization_id]
-  @optional_fields [:regular_keys, :secret_keys]
+  @required_fields []
+  @optional_fields [:shortcode, :keys, :secrets, :organization_id]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           shortcode: String.t() | nil,
-          regular_keys: map() | nil,
-          secret_keys: map() | nil,
+          keys: map() | nil,
+          secrets: map() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -26,8 +26,8 @@ defmodule Glific.Partners.OrganizationCredential do
 
   schema "organization_credentials" do
     field :shortcode, :string
-    field :regular_keys, :map
-    field :secret_keys, :map
+    field :keys, :map
+    field :secrets, :map
 
     belongs_to :organization, Organization
 

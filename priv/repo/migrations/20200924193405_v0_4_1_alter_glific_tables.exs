@@ -15,13 +15,13 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       add :shortcode, :string
 
       # all the service keys which doesn't need ecryption
-      add :regular_keys, :jsonb, default: "{}"
+      add :keys, :jsonb, default: "{}"
 
       # we will keep these keys encrypted
-      add :secret_keys, :jsonb, default: "{}"
+      add :secrets, :jsonb, default: "{}"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: true
 
       timestamps(type: :utc_datetime)
     end
