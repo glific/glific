@@ -69,6 +69,11 @@ defmodule Glific.Flows.CaseTest do
     Case.execute(c, context, message)
   end
 
+  defp wrap_execute(c, context, body, opts) do
+    message = Messages.create_temp_message(Fixtures.get_org_id(), body, opts)
+    Case.execute(c, context, message)
+  end
+
   test "test the execute function for has_number_between" do
     c = %Case{type: "has_number_between", arguments: ["1", "10"]}
 
@@ -79,6 +84,16 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "10") == true
     assert wrap_execute(c, nil, "23") == false
     assert wrap_execute(c, nil, "-42") == false
+  end
+
+  test "test the execute function for has_media" do
+    c = %Case{type: "has_media", arguments: []}
+    assert wrap_execute(c, nil, nil, [{:type, :location}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :text}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, nil}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :image}]) == true
+    assert wrap_execute(c, nil, nil, [{:type, :audio}]) == true
+    assert wrap_execute(c, nil, nil, [{:type, :video}]) == true
   end
 
   test "test the execute function for has_only_phrase or has_only_text" do
