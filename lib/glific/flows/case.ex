@@ -110,7 +110,7 @@ defmodule Glific.Flows.Case do
 
   def execute(%{type: type}, _context, msg)
       when type == "has_media",
-      do: if Enum.member?([:text, :location, nil], msg.type), do: false, else: true
+      do: if(Enum.member?([:text, :location, nil], msg.type), do: false, else: true)
 
   def execute(c, _context, _msg),
     do:

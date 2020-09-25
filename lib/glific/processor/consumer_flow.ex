@@ -85,7 +85,7 @@ defmodule Glific.Processor.ConsumerFlow do
       Messages.create_temp_message(
         message.organization_id,
         message.body,
-        [type: message.type]
+        type: message.type
       )
     )
 

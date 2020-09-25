@@ -741,6 +741,7 @@ defmodule Glific.Messages do
   @spec create_temp_message(non_neg_integer, String.t(), Keyword.t()) :: Message.t()
   def create_temp_message(organization_id, body, attrs \\ Keyword.new()) do
     body = String.trim(body || "")
+
     opts =
       Keyword.merge(
         [
@@ -750,6 +751,7 @@ defmodule Glific.Messages do
         ],
         attrs
       )
+
     Message
     |> struct(opts)
   end
