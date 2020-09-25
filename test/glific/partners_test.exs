@@ -651,5 +651,20 @@ defmodule Glific.PartnersTest do
 
       assert {:error, %Ecto.Changeset{}} = Partners.create_organization_credential(valid_attrs)
     end
+
+    test "update_organization_credential/1 with valid data updates an organization's credential",
+         %{organization_id: _organization_id} = attrs do
+      attrs = Map.merge(attrs, @valid_attrs)
+      {:ok, organization_credential} = Partners.create_organization_credential(attrs)
+
+      valid_update_attrs = %{
+        secrets: %{test_key: "updated_test_value"}
+      }
+
+      assert {:ok, %OrganizationCredential{} = organization_credential} =
+               Partners.update_organization_credential(organization_credential, valid_update_attrs)
+
+      assert organization_credential.secrets == valid_update_attrs.secrets
+    end
   end
 end
