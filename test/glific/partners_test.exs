@@ -662,7 +662,10 @@ defmodule Glific.PartnersTest do
       }
 
       assert {:ok, %OrganizationCredential{} = organization_credential} =
-               Partners.update_organization_credential(organization_credential, valid_update_attrs)
+               Partners.update_organization_credential(
+                 organization_credential,
+                 valid_update_attrs
+               )
 
       assert organization_credential.secrets == valid_update_attrs.secrets
     end

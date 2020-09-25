@@ -41,7 +41,10 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     Enum.map(
       0..@checks_size,
       fn c ->
-        message = Fixtures.message_fixture(%{body: elem(@checks[rem(c, @checks_size)], 0)})
+        message =
+          Fixtures.message_fixture(%{body: elem(@checks[rem(c, @checks_size)], 0)})
+          |> Repo.preload(contact: [:language])
+
         ConsumerTagger.process_message({message, state}, message.body)
       end
     )
