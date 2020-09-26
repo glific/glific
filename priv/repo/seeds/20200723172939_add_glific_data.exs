@@ -314,19 +314,137 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     default =
       Repo.insert!(%Provider{
         name: "Gupshup",
-        url: "https://gupshup.io/",
-        api_end_point: "https://api.gupshup.io/sm/api/v1",
-        handler: "Glific.Providers.Gupshup.Message",
-        worker: "Glific.Providers.Gupshup.Worker"
+        shortcode: "gupshup",
+        group: "bsp",
+        is_required: true,
+        keys: %{
+          url: %{
+            type: :string,
+            label: "BSP Home Page",
+            default: "https://gupshup.io/",
+            view_only: true
+          },
+          api_end_point: %{
+            type: :string,
+            label: "API End Point",
+            default: "https://api.gupshup.io/sm/api/v1",
+            view_only: false
+          },
+          handler: %{
+            type: :string,
+            label: "Inbound Message Handler",
+            default: "Glific.Providers.Gupshup.Message",
+            view_only: true
+          },
+          worker: %{
+            type: :string,
+            label: "Outbound Message Worker",
+            default: "Glific.Providers.Gupshup.Worker",
+            view_only: true
+          }
+        },
+        secrets: %{
+          api_key: %{
+            type: :string,
+            label: "API Key",
+            default: nil,
+            view_only: false
+          },
+          app_name: %{
+            type: :string,
+            label: "App Name",
+            default: nil,
+            view_only: false
+          }
+        }
       })
 
     # add glifproxy as a provider also
     Repo.insert!(%Provider{
       name: "Glifproxy",
-      url: "https://glific.io/",
-      api_end_point: "http://glific.test:4000",
-      handler: "Glific.Providers.Gupshup.Message",
-      worker: "Glific.Providers.Glifproxy.Worker"
+      shortcode: "glifproxy",
+      group: "bsp",
+      is_required: true,
+      keys: %{
+        url: %{
+          type: :string,
+          label: "BSP Home Page",
+          default: "https://glific.io/",
+          view_only: true
+        },
+        api_end_point: %{
+          type: :string,
+          label: "API End Point",
+          default: "https://glific.test:4000/",
+          view_only: false
+        },
+        handler: %{
+          type: :string,
+          label: "Inbound Message Handler",
+          default: "Glific.Providers.Gupshup.Message",
+          view_only: true
+        },
+        worker: %{
+          type: :string,
+          label: "Outbound Message Worker",
+          default: "Glific.Providers.Glifproxy.Worker",
+          view_only: true
+        }
+      },
+      secrets: %{}
+    })
+
+    # add dialogflow
+    Repo.insert!(%Provider{
+      name: "Dialogflow",
+      shortcode: "dialogflow",
+      group: nil,
+      is_required: false,
+      keys: %{
+        url: %{
+          type: :string,
+          label: "Dialogdlow Home Page",
+          default: "https://dialogflow.cloud.google.com/",
+          view_only: true
+        },
+        host: %{
+          type: :string,
+          label: "API End Point",
+          default: "https://dialogflow.clients6.google.com",
+          view_only: false
+        }
+      },
+      secrets: %{
+        project_id: %{
+          type: :string,
+          label: "Project ID",
+          default: nil,
+          view_only: false
+        },
+        project_email: %{
+          type: :string,
+          label: "Project Email",
+          default: nil,
+          view_only: false
+        }
+      }
+    })
+
+    # add goth (since we'll be using other google services also)
+    Repo.insert!(%Provider{
+      name: "GOTH",
+      shortcode: "goth",
+      group: nil,
+      is_required: false,
+      keys: %{},
+      secrets: %{
+        json: %{
+          type: :string,
+          label: "JSON Credentials ",
+          default: nil,
+          view_only: false
+        }
+      }
     })
 
     default

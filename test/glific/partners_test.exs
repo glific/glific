@@ -8,41 +8,38 @@ defmodule Glific.PartnersTest do
 
     @valid_attrs %{
       name: "some name",
-      url: "some url",
-      api_end_point: "some api_end_point",
-      handler: "Glific.Providers.Gupshup.Message",
-      worker: "Glific.Providers.Gupshup.Worker"
+      shortcode: "shortcode 1",
+      keys: %{},
+      secrets: %{},
     }
     @valid_attrs_1 %{
       name: "some name 1",
-      url: "some url 1",
-      api_end_point: "some api_end_point 1",
-      handler: "Glific.Providers.Gupshup.Message",
-      worker: "Glific.Providers.Gupshup.Worker"
+      shortcode: "shortcode 2",
+      keys: %{},
+      secrets: %{},
     }
     @valid_attrs_2 %{
       name: "some name 2",
-      url: "some url 2",
-      api_end_point: "some api_end_point 2",
-      handler: "Glific.Providers.Gupshup.Message",
-      worker: "Glific.Providers.Gupshup.Worker"
+      shortcode: "shortcode 3",
+      keys: %{},
+      secrets: %{},
     }
     @valid_attrs_3 %{
       name: "some name 3",
-      url: "some url 3",
-      api_end_point: "some api_end_point 3",
-      handler: "Glific.Providers.Gupshup.Message",
-      worker: "Glific.Providers.Gupshup.Worker"
+      shortcode: "shortcode 4",
+      keys: %{},
+      secrets: %{},
     }
     @update_attrs %{
       name: "some updated name",
-      url: "some updated url",
-      api_end_point: "some updated api_end_point"
+      shortcode: "new shortcode 4",
+      keys: %{},
+      secrets: %{},
     }
     @invalid_attrs %{
       name: nil,
-      url: nil,
-      api_end_point: nil
+      keys: %{},
+      secrets: %{},
     }
 
     def provider_fixture(attrs \\ %{}) do
@@ -589,8 +586,8 @@ defmodule Glific.PartnersTest do
     alias Glific.{
       Fixtures,
       Partners,
+      Partners.Credential,
       Partners.Organization,
-      Partners.OrganizationCredential,
       Seeds.SeedsDev
     }
 
@@ -606,19 +603,19 @@ defmodule Glific.PartnersTest do
       secrets: %{provider_kye: "test_value"}
     }
 
-    test "get_organization_credential/1 returns the organization credential for given shortcode",
+    test "get_credential/1 returns the organization credential for given shortcode",
          %{organization_id: organization_id} = attrs do
       attrs = Map.merge(attrs, @valid_attrs)
-      {:ok, _organization_credential} = Partners.create_organization_credential(attrs)
+      {:ok, _credential} = Partners.create_credential(attrs)
 
-      assert {:ok, %OrganizationCredential{} = organization_credential} =
-               Partners.get_organization_credential(%{
+      assert {:ok, %Credential{} = credential} =
+               Partners.get_credential(%{
                  shortcode: attrs.shortcode,
                  organization_id: organization_id
                })
     end
 
-    test "create_organization_credential/1 with valid data creates a organization_credential",
+    test "create_credential/1 with valid data creates a credential",
          %{organization_id: organization_id} = _attrs do
       valid_attrs = %{
         shortcode: "provider",
@@ -626,10 +623,9 @@ defmodule Glific.PartnersTest do
         organization_id: organization_id
       }
 
-      assert {:ok, %OrganizationCredential{} = organization_credential} =
-               Partners.create_organization_credential(valid_attrs)
+      assert {:ok, %Credential{} = credential} = Partners.create_credential(valid_attrs)
 
-      assert organization_credential.shortcode == valid_attrs.shortcode
+      assert credential.shortcode == valid_attrs.shortcode
 
       # credential without organization id should be allowed
       valid_attrs = %{
@@ -637,10 +633,9 @@ defmodule Glific.PartnersTest do
         secrets: %{test_key: "test_value"}
       }
 
-      assert {:ok, %OrganizationCredential{} = organization_credential} =
-               Partners.create_organization_credential(valid_attrs)
+      assert {:ok, %Credential{} = credential} = Partners.create_credential(valid_attrs)
 
-      assert organization_credential.shortcode == "appsignal"
+      assert credential.shortcode == "appsignal"
 
       # credential with same shortcode for the organization should not be allowed
       valid_attrs = %{
@@ -649,25 +644,25 @@ defmodule Glific.PartnersTest do
         organization_id: organization_id
       }
 
-      assert {:error, %Ecto.Changeset{}} = Partners.create_organization_credential(valid_attrs)
+      assert {:error, %Ecto.Changeset{}} = Partners.create_credential(valid_attrs)
     end
 
-    test "update_organization_credential/1 with valid data updates an organization's credential",
+    test "update_credential/1 with valid data updates an organization's credential",
          %{organization_id: _organization_id} = attrs do
       attrs = Map.merge(attrs, @valid_attrs)
-      {:ok, organization_credential} = Partners.create_organization_credential(attrs)
+      {:ok, credential} = Partners.create_credential(attrs)
 
       valid_update_attrs = %{
         secrets: %{test_key: "updated_test_value"}
       }
 
-      assert {:ok, %OrganizationCredential{} = organization_credential} =
-               Partners.update_organization_credential(
-                 organization_credential,
+      assert {:ok, %Credential{} = credential} =
+               Partners.update_credential(
+                 credential,
                  valid_update_attrs
                )
 
-      assert organization_credential.secrets == valid_update_attrs.secrets
+      assert credential.secrets == valid_update_attrs.secrets
     end
   end
 end

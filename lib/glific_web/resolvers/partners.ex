@@ -6,8 +6,8 @@ defmodule GlificWeb.Resolvers.Partners do
 
   alias Glific.{
     Partners,
+    Partners.Credential,
     Partners.Organization,
-    Partners.OrganizationCredential,
     Partners.Provider,
     Repo
   }
@@ -144,54 +144,54 @@ defmodule GlificWeb.Resolvers.Partners do
   @doc """
   Get organization's credential by shorcode/service
   """
-  @spec organization_credential(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec credential(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def organization_credential(_, %{shortcode: shortcode}, %{
+  def credential(_, %{shortcode: shortcode}, %{
         context: %{current_user: current_user}
       }) do
-    with {:ok, organization_credential} <-
-           Partners.get_organization_credential(%{
+    with {:ok, credential} <-
+           Partners.get_credential(%{
              organization_id: current_user.organization_id,
              shortcode: shortcode
            }),
-         do: {:ok, %{organization_credential: organization_credential}}
+         do: {:ok, %{credential: credential}}
   end
 
   @doc """
   Creates an organization's credential
   """
-  @spec create_organization_credential(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+  @spec create_credential(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_organization_credential(_, %{input: params}, %{
+  def create_credential(_, %{input: params}, %{
         context: %{current_user: current_user}
       }) do
-    with {:ok, organization_credential} <-
-           Partners.create_organization_credential(
+    with {:ok, credential} <-
+           Partners.create_credential(
              params
              |> Map.merge(%{organization_id: current_user.organization_id})
            ) do
-      {:ok, %{organization_credential: organization_credential}}
+      {:ok, %{credential: credential}}
     end
   end
 
   @doc """
   Updates an organization's credential
   """
-  @spec update_organization_credential(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+  @spec update_credential(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def update_organization_credential(_, %{id: id, input: params}, %{
+  def update_credential(_, %{id: id, input: params}, %{
         context: %{current_user: current_user}
       }) do
-    with {:ok, organization_credential} <-
-           Repo.fetch_by(OrganizationCredential, %{
+    with {:ok, credential} <-
+           Repo.fetch_by(Credential, %{
              id: id,
              organization_id: current_user.organization_id
            }),
-         {:ok, organization_credential} <-
-           Partners.update_organization_credential(organization_credential, params) do
-      {:ok, %{organization_credential: organization_credential}}
+         {:ok, credential} <-
+           Partners.update_credential(credential, params) do
+      {:ok, %{credential: credential}}
     end
   end
 end

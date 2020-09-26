@@ -20,7 +20,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.MessageMediaTypes)
   import_types(__MODULE__.MessageTagTypes)
   import_types(__MODULE__.OrganizationTypes)
-  import_types(__MODULE__.OrganizationCredentialTypes)
+  import_types(__MODULE__.CredentialTypes)
   import_types(__MODULE__.ProviderTypes)
   import_types(__MODULE__.SessionTemplateTypes)
   import_types(__MODULE__.TemplateTagTypes)
@@ -43,7 +43,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:organization_queries)
 
-    import_fields(:organization_credential_queries)
+    import_fields(:credential_queries)
 
     import_fields(:provider_queries)
 
@@ -75,7 +75,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:organization_mutations)
 
-    import_fields(:organization_credential_mutations)
+    import_fields(:credential_mutations)
 
     import_fields(:provider_mutations)
 

@@ -6,12 +6,35 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
   """
 
   def change do
-    organization_credentials()
+    credentials()
+
+    providers()
   end
 
-  defp organization_credentials do
-    create table(:organization_credentials) do
+  defp providers do
+    alter table("providers") do
+      add :shortcode, :string, null: false
+      add :group, :string
+
+      add :is_required, :boolean, default: false
+
+      # structure for keys
+      add :keys, :jsonb, default: "{}"
+
+      # structure for secrets
+      add :secrets, :jsonb, default: "{}"
+
+      remove :url
+      remove :api_end_point
+      remove :handler
+      remove :worker
+    end
+  end
+
+  defp credentials do
+    create table(:credentials) do
       # shortcode for service name
+      # do we need this? since this is part of provider_id
       add :shortcode, :string
 
       # all the service keys which doesn't need ecryption
@@ -20,12 +43,15 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       # we will keep these keys encrypted
       add :secrets, :jsonb, default: "{}"
 
+      # foreign key to provider id
+      add :provider_id, references(:providers, on_delete: :nilify_all), null: false
+
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: true
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
 
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:organization_credentials, [:shortcode, :organization_id])
+    create unique_index(:credentials, [:shortcode, :organization_id])
   end
 end

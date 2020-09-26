@@ -11,8 +11,8 @@ defmodule Glific.Partners do
   alias Glific.{
     Caches,
     Flags,
+    Partners.Credential,
     Partners.Organization,
-    Partners.OrganizationCredential,
     Partners.Provider,
     Repo,
     Settings.Language
@@ -303,7 +303,7 @@ defmodule Glific.Partners do
 
   @spec get_provider_key(non_neg_integer) :: String.t()
   defp get_provider_key(organization_id) do
-    case get_organization_credential(%{organization_id: organization_id, shortcode: "provider"}) do
+    case get_credential(%{organization_id: organization_id, shortcode: "provider"}) do
       {:ok, credentials} ->
         credentials.secrets["provider_key"]
 
@@ -490,10 +490,10 @@ defmodule Glific.Partners do
   @doc """
   Get organization's credential by service shortcode
   """
-  @spec get_organization_credential(map()) ::
-          {:ok, OrganizationCredential.t()} | {:error, String.t()}
-  def get_organization_credential(%{organization_id: organization_id, shortcode: shortcode}) do
-    Repo.fetch_by(OrganizationCredential, %{
+  @spec get_credential(map()) ::
+          {:ok, Credential.t()} | {:error, String.t()}
+  def get_credential(%{organization_id: organization_id, shortcode: shortcode}) do
+    Repo.fetch_by(Credential, %{
       organization_id: organization_id,
       shortcode: shortcode
     })
@@ -502,22 +502,22 @@ defmodule Glific.Partners do
   @doc """
   Creates an organization's credential
   """
-  @spec create_organization_credential(map()) ::
-          {:ok, OrganizationCredential.t()} | {:error, Ecto.Changeset.t()}
-  def create_organization_credential(attrs \\ %{}) do
-    %OrganizationCredential{}
-    |> OrganizationCredential.changeset(attrs)
+  @spec create_credential(map()) ::
+          {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
+  def create_credential(attrs \\ %{}) do
+    %Credential{}
+    |> Credential.changeset(attrs)
     |> Repo.insert()
   end
 
   @doc """
   Updates an organization's credential
   """
-  @spec update_organization_credential(OrganizationCredential.t(), map()) ::
-          {:ok, OrganizationCredential.t()} | {:error, Ecto.Changeset.t()}
-  def update_organization_credential(%OrganizationCredential{} = organization_credential, attrs) do
-    organization_credential
-    |> OrganizationCredential.changeset(attrs)
+  @spec update_credential(Credential.t(), map()) ::
+          {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
+  def update_credential(%Credential{} = credential, attrs) do
+    credential
+    |> Credential.changeset(attrs)
     |> Repo.update()
   end
 end
