@@ -7,17 +7,22 @@ defmodule Glific.Partners.Credential do
   import Ecto.Changeset
 
   alias __MODULE__
-  alias Glific.Partners.Organization
 
-  @required_fields []
-  @optional_fields [:shortcode, :keys, :secrets, :organization_id]
+  alias Glific.Partners.{
+    Organization,
+    Provider
+  }
+
+  @required_fields [:organization_id, :provider_id]
+  @optional_fields [:keys, :secrets]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
-          shortcode: String.t() | nil,
           keys: map() | nil,
           secrets: map() | nil,
+          provider_id: non_neg_integer | nil,
+          provider: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -25,10 +30,10 @@ defmodule Glific.Partners.Credential do
         }
 
   schema "credentials" do
-    field :shortcode, :string
     field :keys, :map
     field :secrets, :map
 
+    belongs_to :provider, Provider
     belongs_to :organization, Organization
 
     timestamps(type: :utc_datetime)

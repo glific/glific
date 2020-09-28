@@ -112,7 +112,7 @@ if Code.ensure_loaded?(Faker) do
           name: "Default Provider",
           shortcode: "shortcode",
           keys: %{},
-          secrets: %{},
+          secrets: %{}
         })
 
       default_provider

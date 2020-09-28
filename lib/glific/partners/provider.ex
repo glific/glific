@@ -25,7 +25,7 @@ defmodule Glific.Partners.Provider do
           group: String.t() | nil,
           is_required: boolean(),
           keys: map() | nil,
-          secrets: map() | nil,
+          secrets: map() | nil
         }
 
   schema "providers" do

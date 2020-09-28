@@ -10,36 +10,36 @@ defmodule Glific.PartnersTest do
       name: "some name",
       shortcode: "shortcode 1",
       keys: %{},
-      secrets: %{},
+      secrets: %{}
     }
     @valid_attrs_1 %{
       name: "some name 1",
       shortcode: "shortcode 2",
       keys: %{},
-      secrets: %{},
+      secrets: %{}
     }
     @valid_attrs_2 %{
       name: "some name 2",
       shortcode: "shortcode 3",
       keys: %{},
-      secrets: %{},
+      secrets: %{}
     }
     @valid_attrs_3 %{
       name: "some name 3",
       shortcode: "shortcode 4",
       keys: %{},
-      secrets: %{},
+      secrets: %{}
     }
     @update_attrs %{
       name: "some updated name",
       shortcode: "new shortcode 4",
       keys: %{},
-      secrets: %{},
+      secrets: %{}
     }
     @invalid_attrs %{
       name: nil,
       keys: %{},
-      secrets: %{},
+      secrets: %{}
     }
 
     def provider_fixture(attrs \\ %{}) do

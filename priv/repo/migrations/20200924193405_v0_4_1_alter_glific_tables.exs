@@ -33,10 +33,6 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
 
   defp credentials do
     create table(:credentials) do
-      # shortcode for service name
-      # do we need this? since this is part of provider_id
-      add :shortcode, :string
-
       # all the service keys which doesn't need ecryption
       add :keys, :jsonb, default: "{}"
 
@@ -52,6 +48,6 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:credentials, [:shortcode, :organization_id])
+    create unique_index(:credentials, [:provider_id, :organization_id])
   end
 end
