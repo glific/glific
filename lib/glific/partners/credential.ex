@@ -47,6 +47,8 @@ defmodule Glific.Partners.Credential do
     search
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:shortcode, :organization_id])
+    |> unique_constraint([:provider_id, :organization_id])
+    |> foreign_key_constraint(:provider_id)
+    |> foreign_key_constraint(:organization_id)
   end
 end

@@ -607,13 +607,8 @@ defmodule Glific.PartnersTest do
       :ok
     end
 
-    @valid_attrs %{
-      keys: %{},
-      secrets: %{provider_kye: "test_value"}
-    }
-
     test "create_credential/1 with valid data creates a credential",
-         %{organization_id: organization_id} = attrs do
+         %{organization_id: organization_id} = _attrs do
 
       provider = provider_fixture()
       valid_attrs = %{

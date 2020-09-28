@@ -79,7 +79,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
-    IO.inspect result
 
     organization = get_in(query_data, [:data, "organization", "organization", "name"])
     assert organization == name

@@ -2,8 +2,10 @@ fragment ProviderFields on ProviderResult {
   provider {
     id
     name
-    url
-    api_end_point   
+    group
+    shortcode
+    keys
+    secrets
   }
 }
 
