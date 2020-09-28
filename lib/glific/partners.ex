@@ -504,8 +504,8 @@ defmodule Glific.Partners do
   Creates an organization's credential
   """
   @spec create_credential(map()) :: {:ok, Credential.t()} | {:error, any()}
-  def create_credential(attrs \\ %{}) do
-    case Repo.fetch_by(Provider, %{shortcode: attrs.shortcode}) do
+  def create_credential(attrs) do
+    case Repo.fetch_by(Provider, %{shortcode: attrs[:shortcode]}) do
       {:ok, provider}
         ->
         attrs = Map.merge(attrs, %{provider_id: provider.id})
