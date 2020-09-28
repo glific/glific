@@ -29,6 +29,8 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       remove :handler
       remove :worker
     end
+
+    create unique_index(:providers, :shortcode)
   end
 
   defp credentials do

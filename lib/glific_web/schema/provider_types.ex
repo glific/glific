@@ -19,6 +19,7 @@ defmodule GlificWeb.Schema.ProviderTypes do
     field :group, :string
     field :keys, :json
     field :secrets, :json
+    field :is_required, :boolean
   end
 
   @desc "Filtering options for providers"
@@ -26,8 +27,8 @@ defmodule GlificWeb.Schema.ProviderTypes do
     @desc "Match the name"
     field :name, :string
 
-    @desc "Match the url of provider"
-    field :url, :string
+    @desc "Match the shortcode of provider"
+    field :shortcode, :string
   end
 
   input_object :provider_input do
@@ -36,6 +37,7 @@ defmodule GlificWeb.Schema.ProviderTypes do
     field :group, :string
     field :keys, :json
     field :secrets, :json
+    field :is_required, :boolean
   end
 
   object :provider_queries do
