@@ -1,6 +1,5 @@
 defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   use Glific.Seeds.Seed
-  import Ecto.Changeset, only: [change: 2]
 
   envs([:dev, :test, :prod])
 
