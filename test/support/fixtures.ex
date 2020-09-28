@@ -141,7 +141,7 @@ defmodule Glific.Fixtures do
 
     Partners.create_credential(%{
       organization_id: organization.id,
-      provider_id: organization.provider_id,
+      shortcode: "gupshup",
       keys: %{
         url: "test_url",
         api_end_point: "test_api_end_point",
