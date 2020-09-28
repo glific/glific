@@ -15,10 +15,10 @@ defmodule GlificWeb.Schema.ProviderTypes do
   object :provider do
     field :id, :id
     field :name, :string
-    field :url, :string
-    field :api_end_point, :string
-    field :handler, :string
-    field :worker, :string
+    field :shortcode, :string
+    field :group, :string
+    field :keys, :json
+    field :secrets, :json
   end
 
   @desc "Filtering options for providers"
@@ -32,10 +32,10 @@ defmodule GlificWeb.Schema.ProviderTypes do
 
   input_object :provider_input do
     field :name, :string
-    field :url, :string
-    field :api_end_point, :string
-    field :handler, :string
-    field :worker, :string
+    field :shortcode, :string
+    field :group, :string
+    field :keys, :json
+    field :secrets, :json
   end
 
   object :provider_queries do

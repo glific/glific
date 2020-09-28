@@ -12,8 +12,9 @@ fragment OrganizationFields on OrganizationResult {
     provider {
       id
       name
-      url
-      api_end_point
+      shortcode
+      keys
+      secrets
     }
 
     out_of_office {

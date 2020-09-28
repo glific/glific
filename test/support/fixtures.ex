@@ -139,6 +139,21 @@ defmodule Glific.Fixtures do
       "This is a fake key"
     )
 
+    Partners.create_credential(%{
+      organization_id: organization.id,
+      provider_id: organization.provider_id,
+      keys: %{
+        url: "test_url",
+        api_end_point: "test_api_end_point",
+        handler: "Glific.Providers.Gupshup.Message",
+        worker: "Glific.Providers.Gupshup.Worker"
+      },
+      secrets: %{
+        api_key: "Please enter your key here",
+        app_name: "Please enter your App Name here"
+      }
+    })
+
     # load state into flag options
     Flags.init(organization.id)
 

@@ -79,6 +79,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => organization.id})
     assert {:ok, query_data} = result
+    IO.inspect result
 
     organization = get_in(query_data, [:data, "organization", "organization", "name"])
     assert organization == name
@@ -198,7 +199,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "shortcode" => shortcode,
             "email" => email,
             "provider_appname" => provider_appname,
-            "provider_id" => provider.id,
+            # "provider_id" => provider.id,
             "provider_phone" => provider_phone,
             "default_language_id" => language.id,
             "active_language_ids" => [language.id],
