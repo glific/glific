@@ -609,8 +609,8 @@ defmodule Glific.PartnersTest do
 
     test "create_credential/1 with valid data creates a credential",
          %{organization_id: organization_id} = _attrs do
-
       provider = provider_fixture()
+
       valid_attrs = %{
         shortcode: provider.shortcode,
         secrets: %{api_kye: "test_value"},
@@ -633,23 +633,27 @@ defmodule Glific.PartnersTest do
 
     test "get_credential/1 returns the organization credential for given shortcode",
          %{organization_id: organization_id} = _attrs do
-
       provider = provider_fixture()
+
       valid_attrs = %{
         shortcode: provider.shortcode,
         secrets: %{api_kye: "test_value"},
         organization_id: organization_id
       }
+
       {:ok, _credential} = Partners.create_credential(valid_attrs)
 
       assert {:ok, %Credential{} = credential} =
-               Partners.get_credential(%{organization_id: organization_id, shortcode: provider.shortcode})
+               Partners.get_credential(%{
+                 organization_id: organization_id,
+                 shortcode: provider.shortcode
+               })
     end
 
     test "update_credential/1 with valid data updates an organization's credential",
          %{organization_id: organization_id} = _attrs do
-
       provider = provider_fixture()
+
       valid_attrs = %{
         shortcode: provider.shortcode,
         secrets: %{api_kye: "test_value"},

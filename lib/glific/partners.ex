@@ -396,18 +396,21 @@ defmodule Glific.Partners do
   # we use it on all sending / receiving of messages
   @spec set_provider_info(map()) :: map()
   defp set_provider_info(organization) do
-    {:ok, credential} = Repo.fetch_by(Credential,
-      %{organization_id: organization.id,
-        provider_id: organization.provider_id})
+    {:ok, credential} =
+      Repo.fetch_by(
+        Credential,
+        %{organization_id: organization.id, provider_id: organization.provider_id}
+      )
+
     organization
     |> Map.put(:provider_key, credential.secrets["api_key"])
     |> Map.put(
       :provider_worker,
-    ("Elixir." <> credential.keys["worker"]) |> String.to_existing_atom()
+      ("Elixir." <> credential.keys["worker"]) |> String.to_existing_atom()
     )
     |> Map.put(
       :provider_handler,
-    ("Elixir." <> credential.keys["handler"]) |> String.to_existing_atom()
+      ("Elixir." <> credential.keys["handler"]) |> String.to_existing_atom()
     )
   end
 
@@ -440,9 +443,11 @@ defmodule Glific.Partners do
   """
   @spec fetch_opted_in_contacts(Organization.t()) :: :ok | any
   def fetch_opted_in_contacts(organization) do
-    {:ok, credential} = Repo.fetch_by(Credential,
-      %{organization_id: organization.id,
-        provider_id: organization.provider_id})
+    {:ok, credential} =
+      Repo.fetch_by(
+        Credential,
+        %{organization_id: organization.id, provider_id: organization.provider_id}
+      )
 
     organization = organization |> Repo.preload(:provider)
     url = credential.keys["api_end_point"] <> "/users/" <> organization.provider_appname
@@ -488,6 +493,7 @@ defmodule Glific.Partners do
           {:ok, Credential.t()} | {:error, String.t()}
   def get_credential(%{organization_id: organization_id, shortcode: shortcode}) do
     [provider] = list_providers(%{filter: %{shortcode: shortcode}})
+
     Repo.fetch_by(Credential, %{
       organization_id: organization_id,
       provider_id: provider.id
@@ -497,14 +503,17 @@ defmodule Glific.Partners do
   @doc """
   Creates an organization's credential
   """
-  @spec create_credential(map()) ::
-          {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_credential(map()) :: {:ok, Credential.t()} | {:error, any()}
   def create_credential(attrs \\ %{}) do
-    with {:ok, provider} <- Repo.fetch_by(Provider, %{shortcode: attrs.shortcode}) do
-      attrs = Map.merge(attrs, %{provider_id: provider.id})
-      %Credential{}
-      |> Credential.changeset(attrs)
-      |> Repo.insert()
+    case Repo.fetch_by(Provider, %{shortcode: attrs.shortcode}) do
+      {:ok, provider}
+        ->
+        attrs = Map.merge(attrs, %{provider_id: provider.id})
+        %Credential{}
+        |> Credential.changeset(attrs)
+        |> Repo.insert()
+      _
+        -> {:error, "Invalid provider shortcode."}
     end
   end
 
