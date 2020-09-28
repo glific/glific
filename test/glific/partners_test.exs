@@ -612,7 +612,7 @@ defmodule Glific.PartnersTest do
 
       provider = provider_fixture()
       valid_attrs = %{
-        provider_id: provider.id,
+        shortcode: provider.shortcode,
         secrets: %{api_kye: "test_value"},
         organization_id: organization_id
       }
@@ -621,9 +621,9 @@ defmodule Glific.PartnersTest do
 
       assert credential.secrets == valid_attrs.secrets
 
-      # credential with same provider_id for the organization should not be allowed
+      # credential with same provider shortcode for the organization should not be allowed
       valid_attrs = %{
-        provider_id: provider.id,
+        shortcode: provider.shortcode,
         secrets: %{provider_kye: "test_value_2"},
         organization_id: organization_id
       }
@@ -636,7 +636,7 @@ defmodule Glific.PartnersTest do
 
       provider = provider_fixture()
       valid_attrs = %{
-        provider_id: provider.id,
+        shortcode: provider.shortcode,
         secrets: %{api_kye: "test_value"},
         organization_id: organization_id
       }
@@ -651,7 +651,7 @@ defmodule Glific.PartnersTest do
 
       provider = provider_fixture()
       valid_attrs = %{
-        provider_id: provider.id,
+        shortcode: provider.shortcode,
         secrets: %{api_kye: "test_value"},
         organization_id: organization_id
       }
