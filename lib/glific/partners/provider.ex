@@ -50,6 +50,5 @@ defmodule Glific.Partners.Provider do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:name])
-    |> foreign_key_constraint(:organizations)
   end
 end

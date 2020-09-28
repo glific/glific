@@ -486,10 +486,11 @@ defmodule Glific.Partners do
   """
   @spec get_credential(map()) ::
           {:ok, Credential.t()} | {:error, String.t()}
-  def get_credential(%{organization_id: organization_id, provider_id: provider_id}) do
+  def get_credential(%{organization_id: organization_id, shortcode: shortcode}) do
+    [provider] = list_providers(%{filter: %{shortcode: shortcode}})
     Repo.fetch_by(Credential, %{
       organization_id: organization_id,
-      provider_id: provider_id
+      provider_id: provider.id
     })
   end
 
