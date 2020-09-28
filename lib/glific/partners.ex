@@ -490,14 +490,18 @@ defmodule Glific.Partners do
   Get organization's credential by service shortcode
   """
   @spec get_credential(map()) ::
-          {:ok, Credential.t()} | {:error, String.t()}
+          {:ok, Credential.t()} | {:error, String.t() | [String.t()]}
   def get_credential(%{organization_id: organization_id, shortcode: shortcode}) do
-    [provider] = list_providers(%{filter: %{shortcode: shortcode}})
+    case Repo.fetch_by(Provider, %{shortcode: shortcode}) do
+      {:ok, provider} ->
+        Repo.fetch_by(Credential, %{
+          organization_id: organization_id,
+          provider_id: provider.id
+        })
 
-    Repo.fetch_by(Credential, %{
-      organization_id: organization_id,
-      provider_id: provider.id
-    })
+      _ ->
+        {:error, ["shortcode", "Invalid provider shortcode."]}
+    end
   end
 
   @doc """
@@ -506,14 +510,15 @@ defmodule Glific.Partners do
   @spec create_credential(map()) :: {:ok, Credential.t()} | {:error, any()}
   def create_credential(attrs) do
     case Repo.fetch_by(Provider, %{shortcode: attrs[:shortcode]}) do
-      {:ok, provider}
-        ->
+      {:ok, provider} ->
         attrs = Map.merge(attrs, %{provider_id: provider.id})
+
         %Credential{}
         |> Credential.changeset(attrs)
         |> Repo.insert()
-      _
-        -> {:error, "Invalid provider shortcode."}
+
+      _ ->
+        {:error, ["shortcode", "Invalid provider shortcode."]}
     end
   end
 
