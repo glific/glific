@@ -167,8 +167,7 @@ defmodule GlificWeb.Resolvers.Partners do
       }) do
     with {:ok, credential} <-
            Partners.create_credential(
-             params
-             |> Map.merge(%{organization_id: current_user.organization_id})
+             Map.merge(params, %{organization_id: current_user.organization_id})
            ) do
       {:ok, %{credential: credential}}
     end

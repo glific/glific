@@ -500,9 +500,12 @@ defmodule Glific.Partners do
   @spec create_credential(map()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def create_credential(attrs \\ %{}) do
-    %Credential{}
-    |> Credential.changeset(attrs)
-    |> Repo.insert()
+    with {:ok, provider} <- Repo.fetch_by(Provider, %{shortcode: attrs.shortcode}) do
+      attrs = Map.merge(attrs, %{provider_id: provider.id})
+      %Credential{}
+      |> Credential.changeset(attrs)
+      |> Repo.insert()
+    end
   end
 
   @doc """

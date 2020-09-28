@@ -4,7 +4,9 @@ defmodule GlificWeb.Schema.CredentialTypes do
   """
 
   use Absinthe.Schema.Notation
+  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
+  alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -15,9 +17,12 @@ defmodule GlificWeb.Schema.CredentialTypes do
 
   object :credential do
     field :id, :id
-    field :shortcode, :string
     field :keys, :json
     field :secrets, :json
+
+    field :provider, :provider do
+      resolve(dataloader(Repo))
+    end
   end
 
   input_object :credential_input do
