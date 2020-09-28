@@ -410,15 +410,18 @@ defmodule Glific.Partners do
   # we use it on all sending / receiving of messages
   @spec set_provider_info(map()) :: map()
   defp set_provider_info(organization) do
+    {:ok, credential} = Repo.fetch_by(Credential,
+      %{organization_id: organization.id,
+        provider_id: organization.provider.id})
     organization
-    |> Map.put(:provider_key, get_provider_key(organization.id))
+    |> Map.put(:provider_key, credential.secrets["api_key"])
     |> Map.put(
       :provider_worker,
-      ("Elixir." <> organization.provider.worker) |> String.to_existing_atom()
+    ("Elixir." <> credential.keys["worker"]) |> String.to_existing_atom()
     )
     |> Map.put(
       :provider_handler,
-      ("Elixir." <> organization.provider.handler) |> String.to_existing_atom()
+    ("Elixir." <> credential.keys["handler"]) |> String.to_existing_atom()
     )
   end
 
