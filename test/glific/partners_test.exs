@@ -224,7 +224,7 @@ defmodule Glific.PartnersTest do
 
     def organization_fixture(attrs \\ %{}) do
       default_language = default_language_fixture(attrs)
-      provider = provider_fixture(%{name: Person.name()})
+      provider = provider_fixture(%{name: Person.name(), shortcode: Person.name()})
 
       {:ok, organization} =
         attrs
