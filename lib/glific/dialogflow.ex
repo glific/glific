@@ -7,8 +7,8 @@ defmodule Glific.Dialogflow do
   seem to be maintained, that we could not use as is. The dependency list was quite old etc.
   """
 
-  alias Goth.Token
   alias Glific.Partners
+  alias Goth.Token
 
   @doc """
   The request controller which sends and parses requests. We should move this to Tesla
