@@ -525,8 +525,10 @@ defmodule Glific.Partners do
     |> Repo.update()
   end
 
-  # we will check if the goth config are loaded for the email
-  # if not we will load them again.
+  @doc """
+    we will check if the goth config are loaded for the email
+    if not we will load them again.
+  """
   @spec update_credential(String.t(), non_neg_integer) :: :ok
   def check_and_load_goth_config(email, org_id) do
     Goth.Config.get(email, "private_key_id")

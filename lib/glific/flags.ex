@@ -128,17 +128,19 @@ defmodule Glific.Flags do
     Partners.get_credential(%{
       organization_id: organization_id,
       shortcode: "dialogflow"
-    }) |> case do
-      {:ok, _}
-        -> FunWithFlags.enable(
-            :dialogflow,
-            for_actor: %{organization_id: organization_id}
-          )
-      {:error, _}
-        -> FunWithFlags.disable(
-            :dialogflow,
-            for_actor: %{organization_id: organization_id}
-          )
+    })
+    |> case do
+      {:ok, _} ->
+        FunWithFlags.enable(
+          :dialogflow,
+          for_actor: %{organization_id: organization_id}
+        )
+
+      {:error, _} ->
+        FunWithFlags.disable(
+          :dialogflow,
+          for_actor: %{organization_id: organization_id}
+        )
     end
   end
 end
