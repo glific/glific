@@ -60,5 +60,6 @@ goth_json = System.get_env("GOTH_JSON_CREDENTIALS")
 
 if goth_json !== nil do
   config :goth,
-    json: goth_json
+    json: goth_json,
+    disabled: false
 end
