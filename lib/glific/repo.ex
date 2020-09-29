@@ -33,7 +33,7 @@ defmodule Glific.Repo do
           {atom(), Ecto.Schema.t() | String.t()}
   def fetch_by(queryable, clauses, opts \\ []) do
     case get_by(queryable, clauses, opts) do
-      nil -> {:error, "Resource not found"}
+      nil -> {:error, ["#{queryable}", "Resource not found"]}
       resource -> {:ok, resource}
     end
   end
