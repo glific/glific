@@ -23,7 +23,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
 
       # structure for secrets
       add :secrets, :jsonb, default: "{}"
-
+      add :encrypted_name, :binary
       remove :url
       remove :api_end_point
       remove :handler

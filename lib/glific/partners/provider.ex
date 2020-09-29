@@ -36,6 +36,7 @@ defmodule Glific.Partners.Provider do
 
     field :keys, :map
     field :secrets, :map
+    field :encrypted_name, Glific.Encrypted.Map
     has_many :organizations, Glific.Partners.Organization
 
     timestamps(type: :utc_datetime)
@@ -47,8 +48,14 @@ defmodule Glific.Partners.Provider do
   @spec changeset(%Glific.Partners.Provider{}, map()) :: Ecto.Changeset.t()
   def changeset(provider, attrs) do
     provider
+    |> cast(attrs, [:secrets])
+    |> put_encrypted_fields()
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:name])
+  end
+  defp put_encrypted_fields(changeset) do
+    changeset
+    |> put_change(:encrypted_name, get_field(changeset, :secrets))
   end
 end
