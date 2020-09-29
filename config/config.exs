@@ -95,9 +95,7 @@ config :goth,
   disabled: true
 
 config :glific, Glific.Vault,
-  ciphers: [
-    default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: Base.decode64!("BliS4zyqMG065ZrRJ8BhhruZFXnpV+eYAQBRqzusnSY=")}
-  ]
+  ciphers: false
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
