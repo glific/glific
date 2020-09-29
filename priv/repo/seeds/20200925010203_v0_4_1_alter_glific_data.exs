@@ -11,6 +11,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   }
 
   def up(_repo) do
+    update_exisiting_providers()
+
+    add_providers()
+  end
+
+  defp update_exisiting_providers() do
     # add pseudo credentials for gupshup and glifproxy
     {:ok, gupshup} = Repo.fetch_by(Provider, %{name: "Gupshup"})
     {:ok, glifproxy} = Repo.fetch_by(Provider, %{name: "Glifproxy"})
@@ -106,6 +112,10 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
       )
     )
 
+    add_credentials(gupshup, glifproxy)
+  end
+
+  defp add_credentials(gupshup, glifproxy) do
     Partners.active_organizations()
     |> Enum.each(fn {org_id, _name} ->
       Repo.insert!(%Credential{
@@ -135,5 +145,71 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
         secrets: %{}
       })
     end)
+  end
+
+  defp add_providers() do
+    # add dialogflow
+    Repo.insert!(%Provider{
+      name: "Dialogflow",
+      shortcode: "dialogflow",
+      group: nil,
+      is_required: false,
+      keys: %{
+        url: %{
+          type: :string,
+          label: "Dialogdlow Home Page",
+          default: "https://dialogflow.cloud.google.com/",
+          view_only: true
+        }
+      },
+      secrets: %{
+        project_id: %{
+          type: :string,
+          label: "Project ID",
+          default: nil,
+          view_only: false
+        },
+        project_email: %{
+          type: :string,
+          label: "Project Email",
+          default: nil,
+          view_only: false
+        }
+      }
+    })
+
+    # add goth (since we'll be using other google services also)
+    Repo.insert!(%Provider{
+      name: "GOTH",
+      shortcode: "goth",
+      group: nil,
+      is_required: false,
+      keys: %{},
+      secrets: %{
+        json: %{
+          type: :string,
+          label: "JSON Credentials ",
+          default: nil,
+          view_only: false
+        }
+      }
+    })
+
+    # add chatbase
+    Repo.insert!(%Provider{
+      name: "Chatbase",
+      shortcode: "chatbase",
+      group: nil,
+      is_required: false,
+      keys: %{},
+      secrets: %{
+        api_key: %{
+          type: :string,
+          label: "API Key",
+          default: nil,
+          view_only: false
+        }
+      }
+    })
   end
 end
