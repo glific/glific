@@ -31,7 +31,7 @@ defmodule Glific.Partners.Credential do
 
   schema "credentials" do
     field :keys, :map, default: %{}
-    field :secrets, :map, default: %{}
+    field :secrets, Glific.Encrypted.Map
 
     belongs_to :provider, Provider
     belongs_to :organization, Organization
