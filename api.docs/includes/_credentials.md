@@ -17,7 +17,7 @@ query credential($shortcode: String!) {
 }
 
 {
-  "shortcode": "
+  "shortcode": "gupshup"
 }
 ```
 
