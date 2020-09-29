@@ -14,7 +14,8 @@ defmodule GlificWeb.Resolvers.Groups do
   @spec group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def group(_, %{id: id}, %{context: %{current_user: current_user}}) do
-    with {:ok, group} <- Repo.fetch_by(Group, %{id: id, organization_id: current_user.organization_id}),
+    with {:ok, group} <-
+           Repo.fetch_by(Group, %{id: id, organization_id: current_user.organization_id}),
          do: {:ok, %{group: group}}
   end
 
@@ -51,7 +52,8 @@ defmodule GlificWeb.Resolvers.Groups do
   @spec update_group(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_group(_, %{id: id, input: params}, %{context: %{current_user: current_user}}) do
-    with {:ok, group} <- Repo.fetch_by(Group, %{id: id, organization_id: current_user.organization_id}),
+    with {:ok, group} <-
+           Repo.fetch_by(Group, %{id: id, organization_id: current_user.organization_id}),
          {:ok, group} <- Groups.update_group(group, params) do
       {:ok, %{group: group}}
     end
@@ -63,7 +65,8 @@ defmodule GlificWeb.Resolvers.Groups do
   @spec delete_group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_group(_, %{id: id}, %{context: %{current_user: current_user}}) do
-    with {:ok, group} <- Repo.fetch_by(Group, %{id: id, organization_id: current_user.organization_id}),
+    with {:ok, group} <-
+           Repo.fetch_by(Group, %{id: id, organization_id: current_user.organization_id}),
          {:ok, group} <- Groups.delete_group(group) do
       {:ok, group}
     end
