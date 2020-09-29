@@ -36,7 +36,7 @@ defmodule Glific.Partners.Provider do
 
     field :keys, :map
     field :secrets, :map
-    field :encrypted_name, Glific.Encrypted.Map
+    field :encrypted_secrets, Glific.Encrypted.Map
     has_many :organizations, Glific.Partners.Organization
 
     timestamps(type: :utc_datetime)
@@ -56,6 +56,6 @@ defmodule Glific.Partners.Provider do
   end
   defp put_encrypted_fields(changeset) do
     changeset
-    |> put_change(:encrypted_name, get_field(changeset, :secrets))
+    |> put_change(:encrypted_secrets, get_field(changeset, :secrets))
   end
 end
