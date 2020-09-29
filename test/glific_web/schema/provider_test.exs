@@ -70,7 +70,7 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert message == "Resource not found"
   end
 
-  test "create a provider and test possible scenarios and errors", %{user: user} do
+  test "create a provider and test possible scenarios and errors", %{glific_admin: user} do
     name = "Provider Test Name"
     shortcode = "providershortcode"
     group = "bsp"
@@ -114,7 +114,7 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert message == "has already been taken"
   end
 
-  test "update a provider and test possible scenarios and errors", %{user: user} do
+  test "update a provider and test possible scenarios and errors", %{glific_admin: user} do
     {:ok, provider} = Repo.fetch_by(Provider, %{name: "Default Provider"})
 
     name = "Provider Test Name"
@@ -167,7 +167,7 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert message == "has already been taken"
   end
 
-  test "delete a provider", %{user: user} do
+  test "delete a provider", %{glific_admin: user} do
     {:ok, provider} = Repo.fetch_by(Provider, %{name: "Default Provider"})
 
     result = auth_query_gql_by(:delete, user, variables: %{"id" => provider.id})
