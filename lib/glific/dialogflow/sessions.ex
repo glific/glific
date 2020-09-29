@@ -40,7 +40,12 @@ defmodule Glific.Dialogflow.Sessions do
       }
     }
 
-    Dialogflow.request(:post, "sessions/#{session_id}:detectIntent", body)
+    Dialogflow.request(
+      message.organization_id,
+      :post,
+      "sessions/#{session_id}:detectIntent",
+      body
+    )
     |> handle_response(message)
   end
 

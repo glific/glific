@@ -110,19 +110,10 @@ if Code.ensure_loaded?(Faker) do
       default_provider =
         Repo.insert!(%Provider{
           name: "Default Provider",
-          url: "test_url",
-          api_end_point: "test",
-          handler: "Does not exist",
-          worker: "Neither does this"
+          shortcode: "shortcode",
+          keys: %{},
+          secrets: %{}
         })
-
-      Repo.insert!(%Provider{
-        name: "twilio",
-        url: "test_url_2",
-        api_end_point: "test",
-        handler: "Does not exist",
-        worker: "Neither does this"
-      })
 
       default_provider
     end

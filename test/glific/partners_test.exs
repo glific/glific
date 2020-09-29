@@ -8,41 +8,38 @@ defmodule Glific.PartnersTest do
 
     @valid_attrs %{
       name: "some name",
-      url: "some url",
-      api_end_point: "some api_end_point",
-      handler: "Glific.Providers.Gupshup.Message",
-      worker: "Glific.Providers.Gupshup.Worker"
+      shortcode: "shortcode 1",
+      keys: %{},
+      secrets: %{}
     }
     @valid_attrs_1 %{
       name: "some name 1",
-      url: "some url 1",
-      api_end_point: "some api_end_point 1",
-      handler: "Glific.Providers.Gupshup.Message",
-      worker: "Glific.Providers.Gupshup.Worker"
+      shortcode: "shortcode 2",
+      keys: %{},
+      secrets: %{}
     }
     @valid_attrs_2 %{
       name: "some name 2",
-      url: "some url 2",
-      api_end_point: "some api_end_point 2",
-      handler: "Glific.Providers.Gupshup.Message",
-      worker: "Glific.Providers.Gupshup.Worker"
+      shortcode: "shortcode 3",
+      keys: %{},
+      secrets: %{}
     }
     @valid_attrs_3 %{
       name: "some name 3",
-      url: "some url 3",
-      api_end_point: "some api_end_point 3",
-      handler: "Glific.Providers.Gupshup.Message",
-      worker: "Glific.Providers.Gupshup.Worker"
+      shortcode: "shortcode 4",
+      keys: %{},
+      secrets: %{}
     }
     @update_attrs %{
       name: "some updated name",
-      url: "some updated url",
-      api_end_point: "some updated api_end_point"
+      shortcode: "new shortcode 4",
+      keys: %{},
+      secrets: %{}
     }
     @invalid_attrs %{
       name: nil,
-      url: nil,
-      api_end_point: nil
+      keys: %{},
+      secrets: %{}
     }
 
     def provider_fixture(attrs \\ %{}) do
@@ -66,9 +63,6 @@ defmodule Glific.PartnersTest do
       provider_list = Partners.list_providers(%{filter: %{name: provider1.name}})
       assert provider_list == [provider1]
 
-      provider_list = Partners.list_providers(%{filter: %{url: provider1.url}})
-      assert provider_list == [provider1]
-
       provider_list = Partners.list_providers()
       assert length(provider_list) >= 2
     end
@@ -90,9 +84,8 @@ defmodule Glific.PartnersTest do
 
     test "create_provider/1 with valid data creates a provider" do
       assert {:ok, %Provider{} = provider} = Partners.create_provider(@valid_attrs)
-      assert provider.api_end_point == "some api_end_point"
       assert provider.name == "some name"
-      assert provider.url == "some url"
+      assert provider.shortcode == "shortcode 1"
     end
 
     test "create_provider/1 with invalid data returns error changeset" do
@@ -102,9 +95,8 @@ defmodule Glific.PartnersTest do
     test "update_provider/2 with valid data updates the provider" do
       provider = provider_fixture()
       assert {:ok, %Provider{} = provider} = Partners.update_provider(provider, @update_attrs)
-      assert provider.api_end_point == "some updated api_end_point"
       assert provider.name == "some updated name"
-      assert provider.url == "some updated url"
+      assert provider.shortcode == "new shortcode 4"
     end
 
     test "update_provider/2 with invalid data returns error changeset" do
@@ -232,7 +224,7 @@ defmodule Glific.PartnersTest do
 
     def organization_fixture(attrs \\ %{}) do
       default_language = default_language_fixture(attrs)
-      provider = provider_fixture(%{name: Person.name()})
+      provider = provider_fixture(%{name: Person.name(), shortcode: Person.name()})
 
       {:ok, organization} =
         attrs
@@ -249,6 +241,21 @@ defmodule Glific.PartnersTest do
         String.to_atom("provider_key_#{organization.id}"),
         "This is a fake key"
       )
+
+      Repo.insert!(%Glific.Partners.Credential{
+        organization_id: organization.id,
+        provider_id: organization.provider_id,
+        keys: %{
+          url: "test_url",
+          api_end_point: "test_api_end_point",
+          handler: "Glific.Providers.Gupshup.Message",
+          worker: "Glific.Providers.Gupshup.Worker"
+        },
+        secrets: %{
+          api_key: "Please enter your key here",
+          app_name: "Please enter your App Name here"
+        }
+      })
 
       organization
     end
@@ -582,6 +589,90 @@ defmodule Glific.PartnersTest do
 
       updated_contact = Contacts.get_contact!(contact.id)
       assert updated_contact.provider_status == :hsm
+    end
+  end
+
+  describe "organization's credentials" do
+    alias Glific.{
+      Fixtures,
+      Partners,
+      Partners.Credential,
+      Partners.Organization,
+      Seeds.SeedsDev
+    }
+
+    setup do
+      default_provider = SeedsDev.seed_providers()
+      SeedsDev.seed_organizations(default_provider)
+      :ok
+    end
+
+    test "create_credential/1 with valid data creates a credential",
+         %{organization_id: organization_id} = _attrs do
+      provider = provider_fixture()
+
+      valid_attrs = %{
+        shortcode: provider.shortcode,
+        secrets: %{api_kye: "test_value"},
+        organization_id: organization_id
+      }
+
+      assert {:ok, %Credential{} = credential} = Partners.create_credential(valid_attrs)
+
+      assert credential.secrets == valid_attrs.secrets
+
+      # credential with same provider shortcode for the organization should not be allowed
+      valid_attrs = %{
+        shortcode: provider.shortcode,
+        secrets: %{provider_kye: "test_value_2"},
+        organization_id: organization_id
+      }
+
+      assert {:error, %Ecto.Changeset{}} = Partners.create_credential(valid_attrs)
+    end
+
+    test "get_credential/1 returns the organization credential for given shortcode",
+         %{organization_id: organization_id} = _attrs do
+      provider = provider_fixture()
+
+      valid_attrs = %{
+        shortcode: provider.shortcode,
+        secrets: %{api_kye: "test_value"},
+        organization_id: organization_id
+      }
+
+      {:ok, _credential} = Partners.create_credential(valid_attrs)
+
+      assert {:ok, %Credential{} = credential} =
+               Partners.get_credential(%{
+                 organization_id: organization_id,
+                 shortcode: provider.shortcode
+               })
+    end
+
+    test "update_credential/1 with valid data updates an organization's credential",
+         %{organization_id: organization_id} = _attrs do
+      provider = provider_fixture()
+
+      valid_attrs = %{
+        shortcode: provider.shortcode,
+        secrets: %{api_kye: "test_value"},
+        organization_id: organization_id
+      }
+
+      {:ok, credential} = Partners.create_credential(valid_attrs)
+
+      valid_update_attrs = %{
+        secrets: %{test_key: "updated_test_value"}
+      }
+
+      assert {:ok, %Credential{} = credential} =
+               Partners.update_credential(
+                 credential,
+                 valid_update_attrs
+               )
+
+      assert credential.secrets == valid_update_attrs.secrets
     end
   end
 end

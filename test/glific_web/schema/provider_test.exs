@@ -72,20 +72,20 @@ defmodule GlificWeb.Schema.ProviderTest do
 
   test "create a provider and test possible scenarios and errors", %{user: user} do
     name = "Provider Test Name"
-    url = "Test url"
-    api_end_point = "Test end point"
-    handler = "handler"
-    worker = "worker"
+    shortcode = "providershortcode"
+    group = "bsp"
+    keys = "{}"
+    secrets = "{}"
 
     result =
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
             "name" => name,
-            "url" => url,
-            "api_end_point" => api_end_point,
-            "handler" => handler,
-            "worker" => worker
+            "shortcode" => shortcode,
+            "group" => group,
+            "keys" => keys,
+            "secrets" => secrets
           }
         }
       )
@@ -94,31 +94,16 @@ defmodule GlificWeb.Schema.ProviderTest do
 
     provider = get_in(query_data, [:data, "createProvider", "provider"])
     assert Map.get(provider, "name") == name
-    assert Map.get(provider, "url") == url
-
-    # try creating the same provider twice
-    _ =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "name" => name,
-            "url" => url,
-            "api_end_point" => api_end_point,
-            "handler" => handler,
-            "worker" => worker
-          }
-        }
-      )
 
     result =
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
             "name" => name,
-            "url" => url,
-            "api_end_point" => api_end_point,
-            "handler" => handler,
-            "worker" => worker
+            "shortcode" => shortcode,
+            "group" => group,
+            "keys" => keys,
+            "secrets" => secrets
           }
         }
       )
@@ -133,21 +118,17 @@ defmodule GlificWeb.Schema.ProviderTest do
     {:ok, provider} = Repo.fetch_by(Provider, %{name: "Default Provider"})
 
     name = "Provider Test Name"
-    url = "Test url"
-    api_end_point = "Test end point"
-    handler = "handler"
-    worker = "worker"
+    shortcode = "providershortcode"
+    group = "bsp"
+    keys = "{}"
+    secrets = "{}"
 
     result =
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => provider.id,
           "input" => %{
-            "name" => name,
-            "url" => url,
-            "api_end_point" => api_end_point,
-            "handler" => handler,
-            "worker" => worker
+            "name" => name
           }
         }
       )
@@ -162,10 +143,10 @@ defmodule GlificWeb.Schema.ProviderTest do
       variables: %{
         "input" => %{
           "name" => "another provider",
-          "url" => url,
-          "api_end_point" => api_end_point,
-          "handler" => handler,
-          "worker" => worker
+          "shortcode" => shortcode,
+          "group" => group,
+          "keys" => keys,
+          "secrets" => secrets
         }
       }
     )
@@ -176,9 +157,7 @@ defmodule GlificWeb.Schema.ProviderTest do
         variables: %{
           "id" => provider.id,
           "input" => %{
-            "name" => "another provider",
-            "url" => url,
-            "api_end_point" => api_end_point
+            "name" => "another provider"
           }
         }
       )

@@ -12,9 +12,9 @@ defmodule Glific.Dialogflow do
   @doc """
   The request controller which sends and parses requests. We should move this to Tesla
   """
-  @spec request(atom, String.t(), String.t() | map) :: tuple
-  def request(method, path, body) do
-    %{host: host, id: id, email: email} = project_info()
+  @spec request(non_neg_integer, atom, String.t(), String.t() | map) :: tuple
+  def request(organization_id, method, path, body) do
+    %{host: host, id: id, email: email} = project_info(organization_id)
 
     url = "#{host}/v2beta1/projects/#{id}/locations/global/agent/#{path}"
 
@@ -59,14 +59,29 @@ defmodule Glific.Dialogflow do
   # ---------------------------------------------------------------------------
   # Get the project details needed for authentication and to send via the API
   # ---------------------------------------------------------------------------
-  @spec project_info() :: %{:host => String.t(), :id => String.t(), :email => String.t()}
-  defp project_info do
-    config = Application.fetch_env!(:glific, :dialogflow)
+  @spec project_info(non_neg_integer) :: %{
+          :host => String.t(),
+          :id => String.t(),
+          :email => String.t()
+        }
+  defp project_info(organization_id) do
+    case Glific.Partners.get_credential(%{
+           organization_id: organization_id,
+           shortcode: "dialogflow"
+         }) do
+      {:ok, credential} ->
+        %{
+          host: credential.keys["host"],
+          id: credential.secrets["project_id"],
+          email: credential.secrets["project_email"]
+        }
 
-    %{
-      host: config[:host],
-      id: config[:project_id],
-      email: config[:project_email]
-    }
+      {:error, _} ->
+        %{
+          host: nil,
+          id: nil,
+          email: nil
+        }
+    end
   end
 end

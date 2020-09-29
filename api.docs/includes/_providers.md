@@ -7,8 +7,11 @@ query providers($filter: ProviderFilter, $opts: Opts) {
   providers(filter: $filter, opts: $opts) {
     id
     name
-    apiEndPoint
-    url
+    shortcode
+    keys
+    secrets
+    group
+    isRequired
   }
 }
 
@@ -31,14 +34,22 @@ query providers($filter: ProviderFilter, $opts: Opts) {
   "data": {
     "providers": [
       {
-        "apiEndPoint": "test",
-        "id": "1",
-        "name": "Default Provider",
-        "url": "test_url"
+        "id": "3",
+        "keys": "{}",
+        "name": "Dialogflow",
+        "secrets": "{}",
+        "shortcode": "dialogflow",
+        "group": null
+      },
+      {
+        "id": "2",
+        "keys": "{}",
+        "name": "Gupshup",
+        "secrets": "{}",
+        "shortcode": "gupshup",
+        "group": "bsp"
       }
     ]
-  }
-}
 ```
 This returns all the providers filtered by the input <a href="#providerfilter">ProviderFilter</a>
 
@@ -62,8 +73,11 @@ query provider($id: ID!) {
     provider {
       id
       name
-      apiEndPoint
-      url
+      shortcode
+      keys
+      secrets
+      group
+      isRequired
     }
   }
 }
@@ -80,10 +94,13 @@ query provider($id: ID!) {
   "data": {
     "provider": {
       "provider": {
-        "apiEndPoint": "test",
+        "group": "bsp",
         "id": "1",
-        "name": "Default Provider",
-        "url": "test_url"
+        "isRequired": true,
+        "keys": "{}",
+        "name": "Gupshup",
+        "secrets": "{}",
+        "shortcode": "gupshup"
       }
     }
   }
@@ -143,8 +160,6 @@ mutation createProvider($input:ProviderInput!) {
     provider {
       id
       name
-      apiEndPoint
-      url
     }
     errors {
       key
@@ -156,8 +171,6 @@ mutation createProvider($input:ProviderInput!) {
 {
   "input": {
     "name": "new_provider",
-    "url": "new provider url",
-    "apiEndPoint": "provider's api end point"
   }
 }
 ```
@@ -170,10 +183,8 @@ mutation createProvider($input:ProviderInput!) {
     "createProvider": {
       "errors": null,
       "provider": {
-        "apiEndPoint": "provider's api end point",
         "id": "4",
         "name": "new_provider",
-        "url": "new provider url"
       }
     }
   }
@@ -199,7 +210,6 @@ mutation updateProvider($id: ID!, $input:ProviderInput!) {
     provider {
       id
       name
-      url
     }
     errors {
       key
@@ -211,7 +221,7 @@ mutation updateProvider($id: ID!, $input:ProviderInput!) {
 {
   "id": "1",
   "input": {
-    "url": "updated url"
+    "name": "Updated Provider",
   }
 }
 ```
@@ -225,8 +235,7 @@ mutation updateProvider($id: ID!, $input:ProviderInput!) {
       "errors": null,
       "provider": {
         "id": "1",
-        "name": "Default Provider",
-        "url": "updated url"
+        "name": "Updated Provider",
       }
     }
   }
@@ -323,7 +332,7 @@ Type | Description
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>apiEndPoint</strong></td>
+<td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
@@ -338,9 +347,24 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>url</strong></td>
+<td colspan="2" valign="top"><strong>group</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isRequired</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>keys</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td>structure for keys</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>secrets</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td>structure for secrets</td>
 </tr>
 </tbody>
 </table>
@@ -396,11 +420,11 @@ Match the name
 </td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>url</strong></td>
+<td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td>
 
-Match the url of provider
+Match the shortcode of provider
 
 </td>
 </tr>
@@ -419,7 +443,7 @@ Match the url of provider
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>apiEndPoint</strong></td>
+<td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
@@ -429,9 +453,24 @@ Match the url of provider
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>url</strong></td>
+<td colspan="2" valign="top"><strong>group</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isRequired</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>keys</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td>structure for keys</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>secrets</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td>structure for secrets</td>
 </tr>
 </tbody>
 </table>

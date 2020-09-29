@@ -85,8 +85,10 @@ defmodule Glific.Processor.ConsumerTagger do
 
   defp dialogflow_tagger({message, %{tagged: false} = state}) do
     # only do the query if we have a valid credentials file for dialogflow
-    if FunWithFlags.enabled?(:dialogflow),
-      do: Sessions.detect_intent(message, state.dialogflow_session_id)
+    if FunWithFlags.enabled?(:dialogflow,
+         for: %{organization_id: message.organization_id}
+       ),
+       do: Sessions.detect_intent(message, state.dialogflow_session_id)
 
     {message, state}
   end

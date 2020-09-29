@@ -198,7 +198,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "shortcode" => shortcode,
             "email" => email,
             "provider_appname" => provider_appname,
-            "provider_id" => provider.id,
+            # "provider_id" => provider.id,
             "provider_phone" => provider_phone,
             "default_language_id" => language.id,
             "active_language_ids" => [language.id],
