@@ -124,18 +124,21 @@ defmodule Glific.Flags do
   else disable it
   """
   @spec dialogflow(non_neg_integer) :: {:ok, boolean()}
-  def dialogflow(organization_id),
-    do:
-      if(File.exists?("config/.dialogflow.credentials.json_#{organization_id}"),
-        do:
-          FunWithFlags.enable(
-            :dialogflow,
-            for_actor: %{organization_id: organization_id}
-          ),
-        else:
-          FunWithFlags.disable(
+  def dialogflow(organization_id) do
+    Partners.get_credential(%{
+      organization_id: organization_id,
+      shortcode: "dialogflow"
+    }) |> case do
+      {:ok, _}
+        -> FunWithFlags.enable(
             :dialogflow,
             for_actor: %{organization_id: organization_id}
           )
-      )
+      {:error, _}
+        -> FunWithFlags.disable(
+            :dialogflow,
+            for_actor: %{organization_id: organization_id}
+          )
+    end
+  end
 end

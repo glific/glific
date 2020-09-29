@@ -52,4 +52,5 @@ fake_goth_json = """
 """
 
 config :goth,
-  json: fake_goth_json
+  json: fake_goth_json,
+  disabled: false

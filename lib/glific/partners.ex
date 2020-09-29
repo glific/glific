@@ -525,7 +525,7 @@ defmodule Glific.Partners do
     |> Repo.update()
   end
 
-  #we will check if the goth config are loaded for the email
+  # we will check if the goth config are loaded for the email
   # if not we will load them again.
   @spec update_credential(String.t(), non_neg_integer) :: :ok
   def check_and_load_goth_config(email, org_id) do
@@ -535,13 +535,15 @@ defmodule Glific.Partners do
 
   @spec load_goth_config(any(), non_neg_integer) :: :ok
   defp load_goth_config(:error, org_id) do
-     {:ok, credential} =
+    {:ok, credential} =
       get_credential(%{
         organization_id: org_id,
         shortcode: "goth"
-    })
+      })
+
     credential.secrets["json"]
     |> Goth.Config.add_config()
+
     :ok
   end
 

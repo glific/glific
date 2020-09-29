@@ -76,13 +76,13 @@ defmodule Glific.Providers.Glifproxy.Worker do
     :timer.sleep(1000)
 
     {:ok, credential} =
-      Partners.get_credential(%{ organization_id: organization.id, shortcode: "glifproxy"})
-      ApiClient.post(
-        credential.keys["api_end_point"] <> "/gupshup",
-        payload
-      )
-      |> handle_response(message)
+      Partners.get_credential(%{organization_id: organization.id, shortcode: "glifproxy"})
 
+    ApiClient.post(
+      credential.keys["api_end_point"] <> "/gupshup",
+      payload
+    )
+    |> handle_response(message)
   end
 
   @spec generate_payload(String.t(), String.t(), map()) :: map()
