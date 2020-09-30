@@ -6,6 +6,7 @@ defmodule Glific.Searches do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts.Contact,
     Conversations.Conversation,
     Messages.Message,
     Repo,
@@ -121,6 +122,24 @@ defmodule Glific.Searches do
     SavedSearch.changeset(search, attrs)
   end
 
+  @spec filter_organization_active_contacts(
+          non_neg_integer() | [non_neg_integer()],
+          non_neg_integer()
+        ) :: Ecto.Query.t()
+  defp filter_organization_active_contacts(contact_id, organization_id)
+       when is_integer(contact_id) do
+    filter_organization_active_contacts([contact_id], organization_id)
+  end
+
+  defp filter_organization_active_contacts(contact_ids, organization_id)
+       when is_list(contact_ids) do
+    Contact
+    |> where([c], c.id in ^contact_ids)
+    |> where([c], c.organization_id == ^organization_id)
+    |> where([c], c.status != ^:blocked)
+    |> select([c], c.id)
+  end
+
   # common function to build query between count and search
   @spec search_query(String.t(), map()) :: Ecto.Query.t()
   defp search_query(term, args) do
@@ -160,15 +179,15 @@ defmodule Glific.Searches do
     contact_ids =
       cond do
         args.filter[:id] != nil ->
-          [args.filter[:id]]
+          filter_organization_active_contacts(args.filter.id, args.filter.organization_id)
 
         args.filter[:ids] != nil ->
-          args.filter[:ids]
+          filter_organization_active_contacts(args.filter.ids, args.filter.organization_id)
 
         true ->
           search_query(args.filter[:term], args)
-          |> Repo.all()
       end
+      |> Repo.all()
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Glific.Conversations.list_conversations(count)
