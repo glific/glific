@@ -32,9 +32,9 @@ if Code.ensure_loaded?(Faker) do
         status: "valid",
         language_id: organization.default_language_id,
         organization_id: organization.id,
-        inserted_at:
-          DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.truncate(:second),
-        updated_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.truncate(:second)
+        last_message_at: DateTime.utc_now() |> DateTime.truncate(:second),
+        inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
+        updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
     end
 
