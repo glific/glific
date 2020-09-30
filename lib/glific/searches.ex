@@ -122,16 +122,16 @@ defmodule Glific.Searches do
     SavedSearch.changeset(search, attrs)
   end
 
-  @spec filter_organization_active_contacts(
+  @spec filter_active_contacts_of_organization(
           non_neg_integer() | [non_neg_integer()],
           non_neg_integer()
         ) :: Ecto.Query.t()
-  defp filter_organization_active_contacts(contact_id, organization_id)
+  defp filter_active_contacts_of_organization(contact_id, organization_id)
        when is_integer(contact_id) do
-    filter_organization_active_contacts([contact_id], organization_id)
+    filter_active_contacts_of_organization([contact_id], organization_id)
   end
 
-  defp filter_organization_active_contacts(contact_ids, organization_id)
+  defp filter_active_contacts_of_organization(contact_ids, organization_id)
        when is_list(contact_ids) do
     Contact
     |> where([c], c.id in ^contact_ids)
@@ -179,10 +179,10 @@ defmodule Glific.Searches do
     contact_ids =
       cond do
         args.filter[:id] != nil ->
-          filter_organization_active_contacts(args.filter.id, args.filter.organization_id)
+          filter_active_contacts_of_organization(args.filter.id, args.filter.organization_id)
 
         args.filter[:ids] != nil ->
-          filter_organization_active_contacts(args.filter.ids, args.filter.organization_id)
+          filter_active_contacts_of_organization(args.filter.ids, args.filter.organization_id)
 
         true ->
           search_query(args.filter[:term], args)
