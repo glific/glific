@@ -11,8 +11,8 @@ defmodule GlificWeb.Resolvers.Users do
   @doc false
   @spec user(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def user(_, %{id: id}, _) do
-    with {:ok, user} <- Repo.fetch(User, id),
+  def user(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, user} <- Repo.fetch_by(User, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{user: user}}
   end
 
@@ -74,8 +74,8 @@ defmodule GlificWeb.Resolvers.Users do
   """
   @spec update_user(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_user(_, %{id: id, input: params}, _) do
-    with {:ok, user} <- Repo.fetch(User, id),
+  def update_user(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, user} <- Repo.fetch_by(User, %{id: id, organization_id: user.organization_id}),
          {:ok, user} <- Users.update_user(user, params) do
       if Map.has_key?(params, :group_ids) do
         Groups.update_user_groups(%{user_id: user.id, group_ids: params.group_ids})
@@ -88,8 +88,8 @@ defmodule GlificWeb.Resolvers.Users do
   @doc false
   @spec delete_user(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_user(_, %{id: id}, _) do
-    with {:ok, user} <- Repo.fetch(User, id),
+  def delete_user(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, user} <- Repo.fetch_by(User, %{id: id, organization_id: user.organization_id}),
          {:ok, user} <- Users.delete_user(user) do
       {:ok, user}
     end

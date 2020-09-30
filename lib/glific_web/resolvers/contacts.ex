@@ -10,8 +10,9 @@ defmodule GlificWeb.Resolvers.Contacts do
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def contact(_, %{id: id}, _) do
-    with {:ok, contact} <- Repo.fetch(Contact, id),
+  def contact(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, contact} <-
+           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{contact: contact}}
   end
 
@@ -42,8 +43,9 @@ defmodule GlificWeb.Resolvers.Contacts do
   @doc false
   @spec update_contact(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_contact(_, %{id: id, input: params}, _) do
-    with {:ok, contact} <- Repo.fetch(Contact, id),
+  def update_contact(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, contact} <-
+           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}),
          {:ok, contact} <- Contacts.update_contact(contact, params) do
       {:ok, %{contact: contact}}
     end
@@ -52,8 +54,9 @@ defmodule GlificWeb.Resolvers.Contacts do
   @doc false
   @spec delete_contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_contact(_, %{id: id}, _) do
-    with {:ok, contact} <- Repo.fetch(Contact, id),
+  def delete_contact(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, contact} <-
+           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}),
          {:ok, contact} <- Contacts.delete_contact(contact) do
       {:ok, contact}
     end
@@ -64,8 +67,9 @@ defmodule GlificWeb.Resolvers.Contacts do
   """
   @spec contact_location(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def contact_location(_, %{id: id}, _) do
-    with {:ok, contact} <- Repo.fetch(Contact, id),
+  def contact_location(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, contact} <-
+           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}),
          {:ok, location} <- Contacts.contact_location(contact) do
       {:ok, location}
     end

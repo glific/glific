@@ -43,8 +43,8 @@ defmodule Glific.Partners.Credential do
   Standard changeset pattern we use for all data types
   """
   @spec changeset(Credential.t(), map()) :: Ecto.Changeset.t()
-  def changeset(search, attrs) do
-    search
+  def changeset(credential, attrs) do
+    credential
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:provider_id, :organization_id])
