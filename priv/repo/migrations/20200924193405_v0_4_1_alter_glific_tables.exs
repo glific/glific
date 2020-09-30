@@ -65,5 +65,8 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
 
       timestamps(type: :utc_datetime)
     end
+
+    create unique_index(:chatbase_jobs, :organization_id)
+    create unique_index(:chatbase_jobs, :message_id)
   end
 end

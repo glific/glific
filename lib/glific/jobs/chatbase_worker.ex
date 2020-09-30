@@ -10,7 +10,7 @@ defmodule Glific.Jobs.ChatbaseWorker do
   import Ecto.Query
 
   use Oban.Worker,
-    queue: :chatbase,
+    queue: :default,
     max_attempts: 1,
     priority: 0
 
@@ -27,18 +27,34 @@ defmodule Glific.Jobs.ChatbaseWorker do
   and queue them up for delivery to chatbase
   """
   def perform_periodic(organization_id) do
-    chatbase_job = Jobs.get_chatbase_job!(organization_id)
-    message_id = chatbase_job.message_id
+    chatbase_job = Jobs.get_chatbase_job(organization_id) |> IO.inspect()
+    message_id =
+    if chatbase_job == nil,
+      do: 0,
+    else: chatbase_job.message_id
 
+    query =
+      Message
+      |> select([m], max(m.id))
+      |> where([m], m.organization_id == ^organization_id)
+
+    max_id = Repo.one(query) |> IO.inspect()
+    if max_id > message_id do
+      Jobs.upsert_chatbase_job(%{message_id: max_id, organization_id: organization_id})
+      queue_messages(organization_id, message_id, max_id)
+    end
+    :ok
+
+  end
+
+  @spec queue_messages(non_neg_integer, non_neg_integer, non_neg_integer) :: nil
+  defp queue_messages(organization_id, min_id, max_id) do
     query =
       Message
       |> select([m], [m.id, m.body, m.flow, m.inserted_at, m.contact_id])
       |> where([m], m.organization_id == ^organization_id)
-
-    query =
-      if message_id != nil,
-        do: query |> where([m], m.message_id > ^message_id),
-        else: query
+      |> where([m], m.id > ^min_id and m.id <= ^max_id)
+      |> order_by([m], [m.inserted_at, m.id])
 
     Repo.all(query)
     |> Enum.reduce(
@@ -62,6 +78,7 @@ defmodule Glific.Jobs.ChatbaseWorker do
     |> Enum.each(&make_job(&1, organization_id))
   end
 
+
   defp make_job(messages, organization_id) do
     __MODULE__.new(%{organization_id: organization_id, messages: messages})
     |> Oban.insert()
@@ -75,10 +92,14 @@ defmodule Glific.Jobs.ChatbaseWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(%Oban.Job{args: %{"messages" => messages, "organization_id" => organization_id}}) do
-    organization = Partners.organization(organization_id)
+    # we'll get the chatbase key from here
+    _organization = Partners.organization(organization_id)
 
-    if organization.services.chatbase do
-      api_key = organization.services.chatbase.api_key
+    secrets = Application.fetch_env!(:glific, :secrets)
+    chatbase = Keyword.get(secrets, :chatbase)
+    api_key = Keyword.get(chatbase, :api_key)
+    if api_key do
+      # api_key = organization.services.chatbase.api_key
       messages = Enum.map(messages, fn m -> Map.put(m, "api_key", api_key) end)
       data = %{"messages" => messages}
 

@@ -37,12 +37,12 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 # Configure Oban, its queues and crontab entries
 config :glific, Oban,
   repo: Glific.Repo,
-  queues: [default: 10, dialogflow: 10, gupshup: 10, glifproxy: 10, webhook: 10, crontab: 10],
+  queues: [default: 10, dialogflow: 10, gupshup: 10, webhook: 10, crontab: 10],
   crontab: [
-    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :fun_with_flags}},
-    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
-    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
-    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}}
+    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :fun_with_flags}},
+    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
+    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
+    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}}
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
