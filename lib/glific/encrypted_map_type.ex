@@ -1,4 +1,4 @@
-defmodule Glific.Encrypted.Map do
+defmodule Glific.EncryptedMapType do
   @moduledoc """
   Cloak for encrypting maps
   """
