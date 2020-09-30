@@ -3,5 +3,4 @@ defmodule Glific.Vault do
   Cloak Vault
   """
   use Cloak.Vault, otp_app: :glific
-
 end

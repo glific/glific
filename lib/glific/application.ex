@@ -9,7 +9,6 @@ defmodule Glific.Application do
     children = [
       # Start the Ecto repository
       Glific.Vault,
-
       Glific.Repo,
 
       # Start the Telemetry supervisor

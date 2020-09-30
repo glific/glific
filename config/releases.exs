@@ -64,8 +64,9 @@ if goth_json !== nil do
     disabled: false
 end
 
-
 config :glific, Glific.Vault,
   ciphers: [
-    default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: Base.decode64!(System.get_env("CIPHER_KEY"))}
-]
+    default:
+      {Cloak.Ciphers.AES.GCM,
+       tag: "AES.GCM.V1", key: Base.decode64!(System.get_env("CIPHER_KEY"))}
+  ]
