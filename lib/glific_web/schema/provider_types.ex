@@ -67,20 +67,20 @@ defmodule GlificWeb.Schema.ProviderTypes do
   object :provider_mutations do
     field :create_provider, :provider_result do
       arg(:input, non_null(:provider_input))
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.create_provider/3)
     end
 
     field :update_provider, :provider_result do
       arg(:id, non_null(:id))
       arg(:input, :provider_input)
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.update_provider/3)
     end
 
     field :delete_provider, :provider_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.delete_provider/3)
     end
   end

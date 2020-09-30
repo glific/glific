@@ -7,6 +7,7 @@ defmodule Glific.Dialogflow do
   seem to be maintained, that we could not use as is. The dependency list was quite old etc.
   """
 
+  alias Glific.Partners
   alias Goth.Token
 
   @doc """
@@ -18,7 +19,8 @@ defmodule Glific.Dialogflow do
 
     url = "#{host}/v2beta1/projects/#{id}/locations/global/agent/#{path}"
 
-    case do_request(method, url, body(body), headers(email)) do
+    do_request(method, url, body(body), headers(email, organization_id))
+    |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Poison.decode!(body)}
 
@@ -46,9 +48,10 @@ defmodule Glific.Dialogflow do
   # ---------------------------------------------------------------------------
   # Headers for all subsequent API calls
   # ---------------------------------------------------------------------------
-  @spec headers(String.t()) :: list
-  defp headers(_email) do
-    {:ok, token} = Token.for_scope("https://www.googleapis.com/auth/cloud-platform")
+  @spec headers(String.t(), non_neg_integer) :: list
+  defp headers(email, org_id) do
+    Partners.check_and_load_goth_config(email, org_id)
+    {:ok, token} = Token.for_scope({email, "https://www.googleapis.com/auth/cloud-platform"})
 
     [
       {"Authorization", "Bearer #{token.token}"},
@@ -65,7 +68,7 @@ defmodule Glific.Dialogflow do
           :email => String.t()
         }
   defp project_info(organization_id) do
-    case Glific.Partners.get_credential(%{
+    case Partners.get_credential(%{
            organization_id: organization_id,
            shortcode: "dialogflow"
          }) do
