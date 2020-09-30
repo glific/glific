@@ -162,6 +162,11 @@ query currentUser {
       name
       phone
       roles
+      organization {
+        activeLanguages {
+          label
+        }
+      }
     }
   }
 }
@@ -178,8 +183,15 @@ query currentUser {
         "name": "John Doe",
         "phone": "+919820198765",
         "roles": [
-          "admin"
-        ]
+          "Admin"
+        ],
+        "organization": {
+          "activeLanguages": [
+            {
+              "label": "English (United States)"
+            }
+          ]
+        },
       }
     }
   }

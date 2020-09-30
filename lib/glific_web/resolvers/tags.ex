@@ -13,8 +13,8 @@ defmodule GlificWeb.Resolvers.Tags do
   """
   @spec tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def tag(_, %{id: id}, _) do
-    with {:ok, tag} <- Repo.fetch(Tag, id),
+  def tag(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, tag} <- Repo.fetch_by(Tag, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{tag: tag}}
   end
 
@@ -46,8 +46,8 @@ defmodule GlificWeb.Resolvers.Tags do
   @doc false
   @spec update_tag(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_tag(_, %{id: id, input: params}, _) do
-    with {:ok, tag} <- Repo.fetch(Tag, id),
+  def update_tag(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, tag} <- Repo.fetch_by(Tag, %{id: id, organization_id: user.organization_id}),
          {:ok, tag} <- Tags.update_tag(tag, params) do
       {:ok, %{tag: tag}}
     end
@@ -56,8 +56,8 @@ defmodule GlificWeb.Resolvers.Tags do
   @doc false
   @spec delete_tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_tag(_, %{id: id}, _) do
-    with {:ok, tag} <- Repo.fetch(Tag, id),
+  def delete_tag(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, tag} <- Repo.fetch_by(Tag, %{id: id, organization_id: user.organization_id}),
          {:ok, tag} <- Tags.delete_tag(tag) do
       {:ok, tag}
     end

@@ -18,8 +18,9 @@ defmodule GlificWeb.Resolvers.Searches do
   """
   @spec saved_search(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, map()} | {:error, any}
-  def saved_search(_, %{id: id}, _) do
-    with {:ok, saved_search} <- Repo.fetch(SavedSearch, id),
+  def saved_search(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, saved_search} <-
+           Repo.fetch_by(SavedSearch, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{saved_search: saved_search}}
   end
 
@@ -53,8 +54,9 @@ defmodule GlificWeb.Resolvers.Searches do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def update_saved_search(_, %{id: id, input: params}, _) do
-    with {:ok, saved_search} <- Repo.fetch(SavedSearch, id),
+  def update_saved_search(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, saved_search} <-
+           Repo.fetch_by(SavedSearch, %{id: id, organization_id: user.organization_id}),
          {:ok, saved_search} <- Searches.update_saved_search(saved_search, params) do
       {:ok, %{saved_search: saved_search}}
     end
@@ -63,8 +65,9 @@ defmodule GlificWeb.Resolvers.Searches do
   @doc false
   @spec delete_saved_search(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_saved_search(_, %{id: id}, _) do
-    with {:ok, saved_search} <- Repo.fetch(SavedSearch, id),
+  def delete_saved_search(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, saved_search} <-
+           Repo.fetch_by(SavedSearch, %{id: id, organization_id: user.organization_id}),
          {:ok, saved_search} <- Searches.delete_saved_search(saved_search) do
       {:ok, saved_search}
     end

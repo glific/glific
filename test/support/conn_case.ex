@@ -63,7 +63,8 @@ defmodule GlificWeb.ConnCase do
       organization_id: organization_id,
       user: Fixtures.user_fixture(),
       manager: Fixtures.user_fixture(%{roles: ["manager"]}),
-      staff: Fixtures.user_fixture(%{roles: ["staff"]})
+      staff: Fixtures.user_fixture(%{roles: ["staff"]}),
+      glific_admin: Fixtures.user_fixture(%{roles: ["glific_admin"]})
     }
   end
 end

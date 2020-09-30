@@ -123,7 +123,8 @@ defmodule Glific.MixProject do
       {:passwordless_auth, "~> 0.3.0"},
       {:appsignal, "~> 1.0"},
       {:poolboy, "~> 1.5"},
-      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"}
+      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"},
+      {:cloak_ecto, "~> 1.0.1"}
     ]
   end
 
