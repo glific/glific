@@ -1,4 +1,4 @@
-defmodule Glific.Jobs.ChatbaseJob
+defmodule Glific.Jobs.ChatbaseJob do
   @moduledoc """
   Book keeping table to keep track of the last job that we processed from the
   messages belonging to the organization
@@ -11,7 +11,7 @@ defmodule Glific.Jobs.ChatbaseJob
 
   alias Glific.{
     Messages.Message,
-    Partners.Organization,
+    Partners.Organization
   }
 
   @required_fields [:organization_id]

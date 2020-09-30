@@ -10,7 +10,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Contacts,
     Flags,
     Flows.FlowContext,
-    Jobs.Chatbase,
+    Jobs.ChatbaseWorker,
     Partners
   }
 
@@ -22,8 +22,8 @@ defmodule Glific.Jobs.MinuteWorker do
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"job" => "fun_with_flags"}} = _job) do
-            Partners.perform_all(&Flags.out_of_office_update/1, nil)
-            :ok
+    Partners.perform_all(&Flags.out_of_office_update/1, nil)
+    :ok
   end
 
   def perform(%Oban.Job{args: %{"job" => "contact_status"} = args} = _job) do
@@ -35,7 +35,7 @@ defmodule Glific.Jobs.MinuteWorker do
   end
 
   def perform(%Oban.Job{args: %{"job" => "chatbase"}} = _job) do
-    Partners.perform_all(&Chatbase.perform_periodic/1, nil)
+    Partners.perform_all(&ChatbaseWorker.perform_periodic/1, nil)
     :ok
   end
 

@@ -25,10 +25,11 @@ defmodule Glific.Jobs do
   """
   @spec get_chatbase_job!(integer) :: User.t()
   def get_chatbase_job!(organization_id),
-    do: Repo.get_by!(
-          ChatbaseJob,
-          %{organization_id: organization_id)
-        )
+    do:
+      Repo.get_by!(
+        ChatbaseJob,
+        %{organization_id: organization_id}
+      )
 
   @doc """
   Create or update a chatbase_job with the message_id and
@@ -38,12 +39,11 @@ defmodule Glific.Jobs do
   def upsert_chatbase_job(attrs) do
     changeset = ChatbaseJob.changeset(%ChatbaseJob{}, attrs)
 
-    chatbase_job =
-      Repo.insert!(
-        changeset,
-        returning: true,
-        on_conflict: [set: [message_id: attrs.message_id]]
-        conflict_target: :organization_id
-      )
+    Repo.insert!(
+      changeset,
+      returning: true,
+      on_conflict: [set: [message_id: attrs.message_id]],
+      conflict_target: :organization_id
+    )
   end
 end
