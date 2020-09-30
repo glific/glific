@@ -52,4 +52,16 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
 
     create unique_index(:credentials, [:provider_id, :organization_id])
   end
+
+  defp chatbase_jobs do
+    create table(:chatbase_jobs) do
+      # references the last message we processed
+      add :message_id, references(:messages, on_delete: nilify), null: true
+
+      # foreign key to organization restricting scope of this table to this organization only
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+
+      timestamps(type: :utc_datetime)
+    end
+  end
 end

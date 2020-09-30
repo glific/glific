@@ -42,6 +42,7 @@ config :glific, Oban,
     {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :fun_with_flags}},
     {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
     {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}}
+    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}}
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
@@ -81,14 +82,6 @@ config :fun_with_flags, :cache_bust_notifications,
   enabled: true,
   adapter: FunWithFlags.Notifications.PhoenixPubSub,
   client: Glific.PubSub
-
-# config dialogflow
-# at some point we need to put this in the DB and org config
-# when we allow organizations to own their dialogflow installs
-config :glific, :dialogflow,
-  host: "https://dialogflow.clients6.google.com",
-  project_id: "newagent-wtro",
-  project_email: "dialogflow-pnfavu@newagent-wtro.iam.gserviceaccount.com"
 
 # config goth in default disabled state
 config :goth,

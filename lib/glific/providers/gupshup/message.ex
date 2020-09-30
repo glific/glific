@@ -140,7 +140,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @spec send_message(map(), Message.t()) ::
-          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+
   defp send_message(payload, message) do
     request_body =
       %{"channel" => @channel}
