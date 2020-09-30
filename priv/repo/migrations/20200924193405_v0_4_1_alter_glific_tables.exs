@@ -39,7 +39,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       add :keys, :jsonb, default: "{}"
 
       # we will keep these keys encrypted
-      add :secrets, :jsonb, default: "{}"
+      add :secrets, :binary
 
       # foreign key to provider id
       add :provider_id, references(:providers, on_delete: :nilify_all), null: false

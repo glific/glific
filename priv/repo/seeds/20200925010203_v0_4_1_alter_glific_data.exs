@@ -118,8 +118,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           worker: "Glific.Providers.Gupshup.Worker"
         },
         secrets: %{
-          api_key: "Please enter your key here",
-          app_name: "Please enter your App Name here"
+          api_key: "This is top secret",
+          app_name: "Glific42"
         }
       })
 
