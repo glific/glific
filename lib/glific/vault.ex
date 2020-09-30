@@ -4,6 +4,7 @@ defmodule Glific.Vault do
   """
   use Cloak.Vault, otp_app: :glific
   @impl GenServer
+  @spec init([key: value_type] :: {:ok , [key: value_type]})
   def init(config) do
     config =
       Keyword.put(config, :ciphers, [
