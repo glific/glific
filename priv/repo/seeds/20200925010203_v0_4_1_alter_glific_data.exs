@@ -117,21 +117,25 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           handler: "Glific.Providers.Gupshup.Message",
           worker: "Glific.Providers.Gupshup.Worker"
         },
-        secrets: nil
+        secrets: %{
+          api_key: "This is top secret",
+          app_name: "Glific42"
+        }
       })
 
 
-      # Repo.insert!(%Credential{
-      #   organization_id: org_id,
-      #   provider_id: glifproxy.id,
-      #   keys: %{
-      #     url: "https://glific.io/",
-      #     api_end_point: "We need to figure out how to get this dynamically, maybe in services?",
-      #     handler: "Glific.Providers.Gupshup.Message",
-      #     worker: "Glific.Providers.Glifproxy.Worker"
-      #   },
-      #   secrets: %{}
-      # })
+      Repo.insert!(%Credential{
+        organization_id: org_id,
+        provider_id: glifproxy.id,
+        keys: %{
+          url: "https://glific.io/",
+          api_end_point: "We need to figure out how to get this dynamically, maybe in services?",
+          handler: "Glific.Providers.Gupshup.Message",
+          worker: "Glific.Providers.Glifproxy.Worker"
+        },
+        secrets: %{
+        }
+                   })
     end)
   end
 end
