@@ -117,27 +117,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           handler: "Glific.Providers.Gupshup.Message",
           worker: "Glific.Providers.Gupshup.Worker"
         },
-        secrets: %{
-          api_key: "Please enter your key here",
-          app_name: "Please enter your App Name here"
-        }
+        secrets: nil
       })
 
-    # Glific.Partners.create_credential(%{
-    #   organization_id: 1,
-    #   provider_id: 1,
-    #   shortcode: "gupshup",
-    #   keys: %{
-    #     url: "https://gupshup.io/",
-    #     api_end_point: "https://apsi.gupshup.io/sm/api/v1",
-    #     handler: "Glific.Providers.Gupshup.Message",
-    #     worker: "Glific.Providers.Gupshup.Worker"
-    #   },
-    #   secrets: %{
-    #     api_key: "Please enter key here",
-    #     app_name: "Please enter App Name here"
-    #   }
-    # })
 
       # Repo.insert!(%Credential{
       #   organization_id: org_id,
