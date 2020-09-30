@@ -73,7 +73,6 @@ defmodule Glific.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.5"},
-      {:cloak_ecto, "~> 1.0.1"},
       {:phoenix_ecto, "~> 4.1"},
       {:ecto_sql, "~> 3.4"},
       {:postgrex, ">= 0.0.0"},
@@ -124,7 +123,8 @@ defmodule Glific.MixProject do
       {:passwordless_auth, "~> 0.3.0"},
       {:appsignal, "~> 1.0"},
       {:poolboy, "~> 1.5"},
-      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"}
+      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"},
+      {:cloak_ecto, "~> 1.0.1"}
     ]
   end
 

@@ -4,6 +4,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   envs([:dev, :test, :prod])
 
   alias Glific.{
+    Partners,
+    Partners.Credential,
     Partners.Provider,
     Repo
   }
@@ -104,5 +106,35 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
       )
     )
 
+    Partners.active_organizations()
+    |> Enum.each(fn {org_id, _name} ->
+      Glific.Partners.create_credential(%{
+        organization_id: 1,
+        provider_id: 1,
+        shortcode: "gupshup",
+        keys: %{
+          url: "https://gupshup.io/",
+          api_end_point: "https://api.gupshup.io/sm/api/v1",
+          handler: "Glific.Providers.Gupshup.Message",
+          worker: "Glific.Providers.Gupshup.Worker"
+        },
+        secrets: %{
+          api_key: "Please enter your key here",
+          app_name: "Please enter your App Name here"
+        }
+      })
+
+      # Repo.insert!(%Credential{
+      #   organization_id: org_id,
+      #   provider_id: glifproxy.id,
+      #   keys: %{
+      #     url: "https://glific.io/",
+      #     api_end_point: "We need to figure out how to get this dynamically, maybe in services?",
+      #     handler: "Glific.Providers.Gupshup.Message",
+      #     worker: "Glific.Providers.Glifproxy.Worker"
+      #   },
+      #   secrets: %{}
+      # })
+    end)
   end
 end
