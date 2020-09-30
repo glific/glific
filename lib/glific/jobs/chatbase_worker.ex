@@ -73,7 +73,7 @@ defmodule Glific.Jobs.ChatbaseWorker do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok | :error
+  @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(%Oban.Job{args: %{"messages" => messages, "organization_id" => organization_id}}) do
     organization = Partners.organization(organization_id)
 
@@ -87,8 +87,10 @@ defmodule Glific.Jobs.ChatbaseWorker do
           :ok
 
         _ ->
-          :error
+          {:error, "Chatbase returned an unexpected result"}
       end
+    else
+      :ok
     end
   end
 end

@@ -52,6 +52,7 @@ defmodule Glific.Partners.Organization do
           provider_key: String.t() | nil,
           provider_handler: String.t() | nil,
           provider_worker: String.t() | nil,
+          services: map(),
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           default_language_id: non_neg_integer | nil,
@@ -82,6 +83,9 @@ defmodule Glific.Partners.Organization do
     field :provider_key, :string, virtual: true, default: "No key exists"
     field :provider_handler, :string, virtual: true
     field :provider_worker, :string, virtual: true
+
+    # we'll cache all the services here
+    field :services, :map, virtual: true, default: %{}
 
     # lets cache the start/end hours in here
     # to make it easier on the flows

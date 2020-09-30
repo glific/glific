@@ -5,8 +5,8 @@ defmodule Glific.Jobs do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Jobs.ChatbaseJob,
     Repo,
-    Jobs.ChatbaseJob
   }
 
   @doc """
@@ -23,7 +23,7 @@ defmodule Glific.Jobs do
       ** (Ecto.NoResultsError)
 
   """
-  @spec get_chatbase_job!(integer) :: User.t()
+  @spec get_chatbase_job!(integer) :: ChatbaseJob.t()
   def get_chatbase_job!(organization_id),
     do:
       Repo.get_by!(
