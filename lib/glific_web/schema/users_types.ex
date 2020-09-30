@@ -28,6 +28,10 @@ defmodule GlificWeb.Schema.UserTypes do
     field :groups, list_of(:group) do
       resolve(dataloader(Repo))
     end
+
+    field :organization, :organization do
+      resolve(dataloader(Repo))
+    end
   end
 
   object :role do

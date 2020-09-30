@@ -351,7 +351,7 @@ defmodule GlificWeb.Schema.MessageTest do
         }
       )
 
-    assert {:error, "Resource not found"} ==
+    assert {:error, ["Elixir.Glific.Messages.Message", "Resource not found"]} ==
              Repo.fetch_by(Message, %{
                contact_id: contact.id,
                body: message_body,

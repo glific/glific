@@ -30,10 +30,10 @@ defmodule Glific.Repo do
   Glific version of get_by, which returns a tuple with an :ok | :error as the first element
   """
   @spec fetch_by(Ecto.Queryable.t(), Keyword.t() | map(), Keyword.t()) ::
-          {atom(), Ecto.Schema.t() | String.t()}
+          {:ok, Ecto.Schema.t()} | {:error, [String.t()]}
   def fetch_by(queryable, clauses, opts \\ []) do
     case get_by(queryable, clauses, opts) do
-      nil -> {:error, "Resource not found"}
+      nil -> {:error, ["#{queryable}", "Resource not found"]}
       resource -> {:ok, resource}
     end
   end

@@ -18,8 +18,9 @@ defmodule GlificWeb.Resolvers.Messages do
   """
   @spec message(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def message(_, %{id: id}, _) do
-    with {:ok, message} <- Repo.fetch(Message, id),
+  def message(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, message} <-
+           Repo.fetch_by(Message, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{message: message}}
   end
 
@@ -52,8 +53,9 @@ defmodule GlificWeb.Resolvers.Messages do
   @doc false
   @spec update_message(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_message(_, %{id: id, input: params}, _) do
-    with {:ok, message} <- Repo.fetch(Message, id),
+  def update_message(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, message} <-
+           Repo.fetch_by(Message, %{id: id, organization_id: user.organization_id}),
          {:ok, message} <- Messages.update_message(message, params) do
       {:ok, %{message: message}}
     end
@@ -62,8 +64,9 @@ defmodule GlificWeb.Resolvers.Messages do
   @doc false
   @spec delete_message(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_message(_, %{id: id}, _) do
-    with {:ok, message} <- Repo.fetch(Message, id),
+  def delete_message(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, message} <-
+           Repo.fetch_by(Message, %{id: id, organization_id: user.organization_id}),
          {:ok, message} <- Messages.delete_message(message) do
       {:ok, message}
     end

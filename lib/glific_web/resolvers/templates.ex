@@ -12,8 +12,9 @@ defmodule GlificWeb.Resolvers.Templates do
   """
   @spec session_template(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def session_template(_, %{id: id}, _) do
-    with {:ok, session_template} <- Repo.fetch(SessionTemplate, id),
+  def session_template(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, session_template} <-
+           Repo.fetch_by(SessionTemplate, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{session_template: session_template}}
   end
 
@@ -49,8 +50,9 @@ defmodule GlificWeb.Resolvers.Templates do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def update_session_template(_, %{id: id, input: params}, _) do
-    with {:ok, session_template} <- Repo.fetch(SessionTemplate, id),
+  def update_session_template(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, session_template} <-
+           Repo.fetch_by(SessionTemplate, %{id: id, organization_id: user.organization_id}),
          {:ok, session_template} <- Templates.update_session_template(session_template, params) do
       {:ok, %{session_template: session_template}}
     end
@@ -59,8 +61,9 @@ defmodule GlificWeb.Resolvers.Templates do
   @doc false
   @spec delete_session_template(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_session_template(_, %{id: id}, _) do
-    with {:ok, session_template} <- Repo.fetch(SessionTemplate, id),
+  def delete_session_template(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, session_template} <-
+           Repo.fetch_by(SessionTemplate, %{id: id, organization_id: user.organization_id}),
          {:ok, session_template} <- Templates.delete_session_template(session_template) do
       {:ok, session_template}
     end
