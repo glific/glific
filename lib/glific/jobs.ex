@@ -6,7 +6,7 @@ defmodule Glific.Jobs do
 
   alias Glific.{
     Jobs.ChatbaseJob,
-    Repo,
+    Repo
   }
 
   @doc """

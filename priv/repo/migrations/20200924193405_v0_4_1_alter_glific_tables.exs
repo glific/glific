@@ -9,6 +9,8 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
     credentials()
 
     providers()
+
+    chatbase_jobs()
   end
 
   defp providers do
@@ -56,7 +58,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
   defp chatbase_jobs do
     create table(:chatbase_jobs) do
       # references the last message we processed
-      add :message_id, references(:messages, on_delete: nilify), null: true
+      add :message_id, references(:messages, on_delete: :nilify_all), null: true
 
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
