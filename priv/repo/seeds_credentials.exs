@@ -32,63 +32,60 @@ defmodule Glific.Seeds.Credentials do
     Repo.update_all(query, set: [secrets: secrets])
   end
 
-  def update_dialogflow_credentials(nil = _dflow, _organization_id), do: nil
+  def insert_dialogflow_credentials(nil = _dflow, _organization_id), do: nil
 
-  def update_dialogflow_credentials(dflow, organization_id) do
-    keys = %{url: Keyword.get(dflow, :url)}
+  def insert_dialogflow_credentials(dflow, organization_id) do
+    {:ok, dialogflow} = Repo.fetch_by(Provider, %{shortcode: "dialogflow"})
 
-    secrets = %{
-      project_id: Keyword.get(dflow, :project_id),
-      project_email: Keyword.get(dflow, :project_email)
-    }
-
-    query =
-      from c in Credential,
-        join: p in Provider,
-        on: c.provider_id == p.id,
-        where: p.shortcode == "dialogflow" and c.organization_id == ^organization_id
-
-    Repo.update_all(query, set: [keys: keys, secrets: secrets])
+    Repo.insert!(%Credential{
+      organization_id: organization_id,
+      provider_id: dialogflow.id,
+      keys: %{
+        url: Keyword.get(dflow, :url)
+      },
+      secrets: %{
+        project_id: Keyword.get(dflow, :project_id),
+        project_email: Keyword.get(dflow, :project_email)
+      }
+    })
   end
 
-  def update_goth_credentials(nil = _goth, _organization_id), do: nil
+  def insert_goth_credentials(nil = _goth, _organization_id), do: nil
 
-  def update_goth_credentials(goth, organization_id) do
-    secrets = %{
-      json: Keyword.get(goth, :json)
-    }
+  def insert_goth_credentials(goth, organization_id) do
+    {:ok, goth_db} = Repo.fetch_by(Provider, %{shortcode: "goth"})
 
-    query =
-      from c in Credential,
-        join: p in Provider,
-        on: c.provider_id == p.id,
-        where: p.shortcode == "goth" and c.organization_id == ^organization_id
-
-    Repo.update_all(query, set: [secrets: secrets])
+    Repo.insert!(%Credential{
+      organization_id: organization_id,
+      provider_id: goth_db.id,
+      keys: %{},
+      secrets: %{
+        json: Keyword.get(goth, :json)
+      }
+    })
   end
 
-  def update_chatbase_credentials(nil = _chatbase, _organization_id), do: nil
+  def insert_chatbase_credentials(nil = _chatbase, _organization_id), do: nil
 
-  def update_chatbase_credentials(chatbase, organization_id) do
-    secrets = %{
-      api_key: Keyword.get(chatbase, :api_key)
-    }
+  def insert_chatbase_credentials(chatbase, organization_id) do
+    {:ok, chatbase_db} = Repo.fetch_by(Provider, %{shortcode: "chatbase"})
 
-    query =
-      from c in Credential,
-        join: p in Provider,
-        on: c.provider_id == p.id,
-        where: p.shortcode == "chatbase" and c.organization_id == ^organization_id
-
-    Repo.update_all(query, set: [secrets: secrets])
+    Repo.insert!(%Credential{
+      organization_id: organization_id,
+      provider_id: chatbase_db.id,
+      keys: %{},
+      secrets: %{
+        api_key: Keyword.get(chatbase, :api_key)
+      }
+    })
   end
 
   def execute do
     secrets = get_secrets()
     update_gupshup_credentials(Keyword.get(secrets, :gupshup), 1)
-    update_dialogflow_credentials(Keyword.get(secrets, :dialogflow), 1)
-    update_goth_credentials(Keyword.get(secrets, :goth), 1)
-    update_chatbase_credentials(Keyword.get(secrets, :chatbase), 1)
+    insert_dialogflow_credentials(Keyword.get(secrets, :dialogflow), 1)
+    insert_goth_credentials(Keyword.get(secrets, :goth), 1)
+    insert_chatbase_credentials(Keyword.get(secrets, :chatbase), 1)
   end
 end
 

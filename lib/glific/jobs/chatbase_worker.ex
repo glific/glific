@@ -27,27 +27,29 @@ defmodule Glific.Jobs.ChatbaseWorker do
   and queue them up for delivery to chatbase
   """
   def perform_periodic(organization_id) do
-    chatbase_job = Jobs.get_chatbase_job(organization_id) |> IO.inspect()
+    chatbase_job = Jobs.get_chatbase_job(organization_id)
+
     message_id =
-    if chatbase_job == nil,
-      do: 0,
-    else: chatbase_job.message_id
+      if chatbase_job == nil,
+        do: 0,
+        else: chatbase_job.message_id
 
     query =
       Message
       |> select([m], max(m.id))
       |> where([m], m.organization_id == ^organization_id)
 
-    max_id = Repo.one(query) |> IO.inspect()
+    max_id = Repo.one(query)
+
     if max_id > message_id do
       Jobs.upsert_chatbase_job(%{message_id: max_id, organization_id: organization_id})
       queue_messages(organization_id, message_id, max_id)
     end
-    :ok
 
+    :ok
   end
 
-  @spec queue_messages(non_neg_integer, non_neg_integer, non_neg_integer) :: nil
+  @spec queue_messages(non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
   defp queue_messages(organization_id, min_id, max_id) do
     query =
       Message
@@ -78,7 +80,6 @@ defmodule Glific.Jobs.ChatbaseWorker do
     |> Enum.each(&make_job(&1, organization_id))
   end
 
-
   defp make_job(messages, organization_id) do
     __MODULE__.new(%{organization_id: organization_id, messages: messages})
     |> Oban.insert()
@@ -98,6 +99,7 @@ defmodule Glific.Jobs.ChatbaseWorker do
     secrets = Application.fetch_env!(:glific, :secrets)
     chatbase = Keyword.get(secrets, :chatbase)
     api_key = Keyword.get(chatbase, :api_key)
+
     if api_key do
       # api_key = organization.services.chatbase.api_key
       messages = Enum.map(messages, fn m -> Map.put(m, "api_key", api_key) end)

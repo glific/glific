@@ -23,7 +23,7 @@ defmodule Glific.Jobs do
       ** (Ecto.NoResultsError)
 
   """
-  @spec get_chatbase_job(integer) :: ChatbaseJob.t()
+  @spec get_chatbase_job(integer) :: ChatbaseJob.t() | nil
   def get_chatbase_job(organization_id),
     do:
       Repo.get_by(
