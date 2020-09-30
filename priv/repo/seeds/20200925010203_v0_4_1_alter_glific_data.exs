@@ -123,7 +123,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
         }
       })
 
-
       Repo.insert!(%Credential{
         organization_id: org_id,
         provider_id: glifproxy.id,
@@ -133,9 +132,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           handler: "Glific.Providers.Gupshup.Message",
           worker: "Glific.Providers.Glifproxy.Worker"
         },
-        secrets: %{
-        }
-                   })
+        secrets: %{}
+      })
     end)
   end
 end
