@@ -51,12 +51,6 @@ defmodule GlificWeb.Schema.ContactTagTypes do
       resolve(&Resolvers.Tags.create_contact_tag/3)
     end
 
-    field :delete_contact_tag, :contact_tag_result do
-      arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Tags.delete_contact_tag/3)
-    end
-
     field :update_contact_tags, :contact_tags do
       arg(:input, non_null(:contact_tags_input))
       middleware(Authorize, :staff)

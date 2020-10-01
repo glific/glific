@@ -376,23 +376,6 @@ defmodule Glific.Tags do
   end
 
   @doc """
-  Deletes a contact tag.
-
-  ## Examples
-
-      iex> delete_contact_tag(contact_tag)
-      {:ok, %ContactTag{}}
-
-      iex> delete_contact_tag(contact_tag)
-      {:error, %Ecto.Changeset{}}
-
-  """
-  @spec delete_contact_tag(ContactTag.t()) :: {:ok, ContactTag.t()} | {:error, Ecto.Changeset.t()}
-  def delete_contact_tag(%ContactTag{} = contact_tag) do
-    Repo.delete(contact_tag)
-  end
-
-  @doc """
   Returns an `%Ecto.Changeset{}` for tracking contact changes.
 
   ## Examples

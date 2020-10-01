@@ -18,7 +18,6 @@ defmodule GlificWeb.Schema.ContactTagTest do
   end
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_tag/create.gql")
-  load_gql(:delete, GlificWeb.Schema, "assets/gql/contact_tag/delete.gql")
 
   test "create a contact tag and test possible scenarios and errors", %{staff: user} do
     label = "This is for testing"
@@ -50,31 +49,5 @@ defmodule GlificWeb.Schema.ContactTagTest do
     contact_tag = get_in(query_data, [:data, "createContactTag", "contact_tag"])
     assert get_in(contact_tag, ["contact", "id"]) |> String.to_integer() == contact.id
     assert get_in(contact_tag, ["tag", "id"]) |> String.to_integer() == tag.id
-  end
-
-  test "delete a contact tag", %{staff: user} do
-    label = "This is for testing"
-    {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
-    name = "Glific Admin"
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
-
-    {:ok, query_data} =
-      auth_query_gql_by(:create, user,
-        variables: %{"input" => %{"contact_id" => contact.id, "tag_id" => tag.id}}
-      )
-
-    contact_tag_id = get_in(query_data, [:data, "createContactTag", "contact_tag", "id"])
-
-    result = auth_query_gql_by(:delete, user, variables: %{"id" => contact_tag_id})
-    assert {:ok, query_data} = result
-
-    assert get_in(query_data, [:data, "deleteContactTag", "errors"]) == nil
-
-    # try to delete incorrect entry
-    result = auth_query_gql_by(:delete, user, variables: %{"id" => contact_tag_id})
-    assert {:ok, query_data} = result
-
-    contact = get_in(query_data, [:data, "deleteContactTag", "errors", Access.at(0), "message"])
-    assert contact == "Resource not found"
   end
 end

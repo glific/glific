@@ -99,16 +99,6 @@ defmodule GlificWeb.Resolvers.Tags do
     end
   end
 
-  @doc false
-  @spec delete_contact_tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def delete_contact_tag(_, %{id: id}, _) do
-    with {:ok, contact_tag} <- Repo.fetch(ContactTag, id),
-         {:ok, contact_tag} <- Tags.delete_contact_tag(contact_tag) do
-      {:ok, contact_tag}
-    end
-  end
-
   @doc """
   Creates and/or deletes a list of contact tags, each tag attached to the same contact
   """

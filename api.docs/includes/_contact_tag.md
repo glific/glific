@@ -74,46 +74,6 @@ Type | Description
 | ---- | -----------
 <a href="#contacttagresult">ContactTagResult</a> | The created contact tag object
 
-## Delete a ContactTag
-
-```graphql
-mutation deleteContactTag($id: ID!) {
-  deleteContactTag(id: $id) {
-    errors {
-      key
-      message
-    }
-  }
-}
-
-{
-  "id": 5
-}
-```
-
-> The above query returns JSON structured like this:
-
-```json
-{
-  "data": {
-    "deleteContactTag": {
-      "errors": null
-    }
-  }
-}
-```
-
-### Query Parameters
-
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a> | required |
-
-### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#contacttagresult">ContactTagResult</a> | An error object or empty
-
 ## Update a Contact with tags to be added and tags to be deleted
 
 ```graphql
