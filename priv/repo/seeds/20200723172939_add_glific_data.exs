@@ -394,59 +394,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       secrets: %{}
     })
 
-    # add dialogflow
-    Repo.insert!(%Provider{
-      name: "Dialogflow",
-      shortcode: "dialogflow",
-      group: nil,
-      is_required: false,
-      keys: %{
-        url: %{
-          type: :string,
-          label: "Dialogdlow Home Page",
-          default: "https://dialogflow.cloud.google.com/",
-          view_only: true
-        },
-        host: %{
-          type: :string,
-          label: "API End Point",
-          default: "https://dialogflow.clients6.google.com",
-          view_only: false
-        }
-      },
-      secrets: %{
-        project_id: %{
-          type: :string,
-          label: "Project ID",
-          default: nil,
-          view_only: false
-        },
-        project_email: %{
-          type: :string,
-          label: "Project Email",
-          default: nil,
-          view_only: false
-        }
-      }
-    })
-
-    # add goth (since we'll be using other google services also)
-    Repo.insert!(%Provider{
-      name: "GOTH",
-      shortcode: "goth",
-      group: nil,
-      is_required: false,
-      keys: %{},
-      secrets: %{
-        json: %{
-          type: :string,
-          label: "JSON Credentials ",
-          default: nil,
-          view_only: false
-        }
-      }
-    })
-
     default
   end
 
