@@ -5,7 +5,7 @@ defmodule GlificWeb.Resolvers.Groups do
   """
 
   alias Glific.{Groups, Groups.Group, Repo}
-  alias Glific.{Groups.ContactGroup, Groups.UserGroup}
+  alias Glific.{Groups.ContactGroups, Groups.UserGroups}
   alias GlificWeb.Resolvers.Helper
 
   @doc """
@@ -105,7 +105,7 @@ defmodule GlificWeb.Resolvers.Groups do
   @spec update_contact_groups(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_contact_groups(_, %{input: params}, _) do
-    group_contacts = Groups.ContactGroups.update_contact_groups(params)
+    group_contacts = ContactGroups.update_contact_groups(params)
     {:ok, group_contacts}
   end
 
@@ -133,7 +133,7 @@ defmodule GlificWeb.Resolvers.Groups do
   @spec update_user_groups(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_user_groups(_, %{input: params}, _) do
-    group_users = Groups.UserGroups.update_user_groups(params)
+    group_users = UserGroups.update_user_groups(params)
     {:ok, group_users}
   end
 end
