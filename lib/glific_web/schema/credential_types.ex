@@ -19,6 +19,7 @@ defmodule GlificWeb.Schema.CredentialTypes do
     field :id, :id
     field :keys, :json
     field :secrets, :json
+    field :is_active, :boolean
 
     field :provider, :provider do
       resolve(dataloader(Repo))
@@ -29,6 +30,7 @@ defmodule GlificWeb.Schema.CredentialTypes do
     field :shortcode, :string
     field :keys, :json
     field :secrets, :json
+    field :is_active, :boolean
   end
 
   object :credential_queries do
