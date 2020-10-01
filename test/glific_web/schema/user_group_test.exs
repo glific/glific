@@ -17,7 +17,6 @@ defmodule GlificWeb.Schema.UserGroupTest do
   end
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/user_groups/create.gql")
-  load_gql(:delete, GlificWeb.Schema, "assets/gql/user_groups/delete.gql")
   load_gql(:update_group_users, GlificWeb.Schema, "assets/gql/user_groups/update_group_users.gql")
   load_gql(:update_user_groups, GlificWeb.Schema, "assets/gql/user_groups/update_user_groups.gql")
 
@@ -166,34 +165,5 @@ defmodule GlificWeb.Schema.UserGroupTest do
 
     user = get_in(query_data, [:data, "createUserGroup", "errors", Access.at(0), "message"])
     assert user == "has already been taken"
-  end
-
-  test "delete a user group", %{manager: auth_user} do
-    label = "Default Group"
-
-    {:ok, group} =
-      Repo.fetch_by(Group, %{label: label, organization_id: auth_user.organization_id})
-
-    name = "NGO Basic User 1"
-    {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: auth_user.organization_id})
-
-    {:ok, query_data} =
-      auth_query_gql_by(:create, auth_user,
-        variables: %{"input" => %{"user_id" => user.id, "group_id" => group.id}}
-      )
-
-    user_group_id = get_in(query_data, [:data, "createUserGroup", "user_group", "id"])
-
-    result = auth_query_gql_by(:delete, auth_user, variables: %{"id" => user_group_id})
-    assert {:ok, query_data} = result
-
-    assert get_in(query_data, [:data, "deleteUserGroup", "errors"]) == nil
-
-    # try to delete incorrect entry
-    result = auth_query_gql_by(:delete, auth_user, variables: %{"id" => user_group_id})
-    assert {:ok, query_data} = result
-
-    user = get_in(query_data, [:data, "deleteUserGroup", "errors", Access.at(0), "message"])
-    assert user == "Resource not found"
   end
 end
