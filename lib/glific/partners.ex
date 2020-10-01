@@ -308,6 +308,7 @@ defmodule Glific.Partners do
           |> set_provider_info()
           |> set_out_of_office_values()
           |> set_languages()
+          |> set_credentials()
 
         Caches.set(organization_id, "organization", organization)
 
@@ -404,6 +405,27 @@ defmodule Glific.Partners do
       :provider_handler,
       ("Elixir." <> credential.keys["handler"]) |> String.to_existing_atom()
     )
+  end
+
+  # Lets cache keys and secrets of all the active services
+  @spec set_credentials(map()) :: map()
+  defp set_credentials(organization) do
+    credentials =
+      Credential
+      |> where([c], c.organization_id == ^organization.id)
+      |> where([c], c.is_active == true)
+      |> preload(:provider)
+      |> Repo.all()
+
+    credentials_map =
+      Enum.reduce(credentials, %{}, fn credential, acc ->
+        Map.merge(acc, %{
+          credential.provider.shortcode => %{keys: credential.keys, secrets: credential.secrets}
+        })
+      end)
+
+    organization
+    |> Map.put(:credentials, credentials_map)
   end
 
   @doc """
@@ -503,6 +525,9 @@ defmodule Glific.Partners do
   def create_credential(attrs) do
     case Repo.fetch_by(Provider, %{shortcode: attrs[:shortcode]}) do
       {:ok, provider} ->
+        # first delete the cached organization
+        Caches.remove(attrs.organization_id, ["organization"])
+
         attrs = Map.merge(attrs, %{provider_id: provider.id})
 
         %Credential{}
@@ -520,6 +545,9 @@ defmodule Glific.Partners do
   @spec update_credential(Credential.t(), map()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
+    # first delete the cached organization
+    Caches.remove(credential.organization_id, ["organization"])
+
     credential
     |> Credential.changeset(attrs)
     |> Repo.update()
