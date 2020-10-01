@@ -138,7 +138,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             secrets: %{
               api_key: "This is top secret",
               app_name: "Glific42"
-            }
+            },
+            is_active: true
           })
 
       query =
@@ -157,7 +158,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               handler: "Glific.Providers.Gupshup.Message",
               worker: "Glific.Providers.Glifproxy.Worker"
             },
-            secrets: %{}
+            secrets: %{},
+            is_active: true
           })
     end)
   end
