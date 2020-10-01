@@ -142,7 +142,8 @@ defmodule Glific.MixProject do
         "ecto.create --quiet",
         "ecto.migrate",
         "phil_columns.seed --tenant glific",
-        "run priv/repo/seeds_dev.exs"
+        "run priv/repo/seeds_dev.exs",
+        "run priv/repo/seeds_credentials.exs"
       ],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       "ecto.scale": [
