@@ -304,11 +304,11 @@ defmodule Glific.Partners do
       {:ok, value} when value in [nil, false] ->
         organization =
           get_organization!(organization_id)
+          |> set_credentials()
           |> Repo.preload(:provider)
           |> set_provider_info()
           |> set_out_of_office_values()
           |> set_languages()
-          |> set_credentials()
 
         Caches.set(organization_id, "organization", organization)
 
@@ -389,22 +389,16 @@ defmodule Glific.Partners do
   # we use it on all sending / receiving of messages
   @spec set_provider_info(map()) :: map()
   defp set_provider_info(organization) do
-    {:ok, credential} =
-      Repo.fetch_by(
-        Credential,
-        %{organization_id: organization.id, provider_id: organization.provider_id}
-      )
+    credential = organization.services[organization.provider.shortcode]
+
+    credentials = %{
+      provider_key: credential.secrets["api_key"],
+      provider_worker: ("Elixir." <> credential.keys["worker"]) |> String.to_existing_atom(),
+      provider_handler: ("Elixir." <> credential.keys["handler"]) |> String.to_existing_atom()
+    }
 
     organization
-    |> Map.put(:provider_key, credential.secrets["api_key"])
-    |> Map.put(
-      :provider_worker,
-      ("Elixir." <> credential.keys["worker"]) |> String.to_existing_atom()
-    )
-    |> Map.put(
-      :provider_handler,
-      ("Elixir." <> credential.keys["handler"]) |> String.to_existing_atom()
-    )
+    |> Map.merge(credentials)
   end
 
   # Lets cache keys and secrets of all the active services
