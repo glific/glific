@@ -24,9 +24,13 @@ defmodule Glific.Processor.ConsumerFlow do
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   def process_message({message, state}, body) do
-    if should_skip?(message) do
-      {message, state}
-    else
+    if should_skip_flow?(message),
+      do: {message, state},
+      else: do_process_message({message, state}, body)
+  end
+
+  @spec do_process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
+  defp do_process_message({message, state}, body) do
       context = FlowContext.active_context(message.contact_id)
       # if we are in a flow and the flow is set to ignore keywords
       # then send control to the flow directly
@@ -48,7 +52,6 @@ defmodule Glific.Processor.ConsumerFlow do
             true -> check_contexts(context, message, body, state)
           end
       end
-    end
   end
 
   @doc """
@@ -95,15 +98,18 @@ defmodule Glific.Processor.ConsumerFlow do
     {message, state}
   end
 
-  def should_skip?(message) do
-    opt_in = String.contains?(message.body, "Hi, I would like to receive notifications.")
+  # if this is a new contact then we will allow to
+  # process the flow other wise system will check if
+  # they opted in again and skip the flow
+  @spec should_skip_flow?(Message.t()) :: boolean()
+  defp should_skip_flow?(message) do
     message  = Glific.Repo.preload(message, [:tags])
-    tags = Enum.map(message.tags, fn tags -> tags.label end)
-    new_contact = !(Enum.member?(tags, "New Contact"))
-    if (opt_in && new_contact) do
-      true
-    else
-      false
-    end
+    is_new_contact =
+      message.tags
+      |> Enum.any?(fn tag -> tag.shortcode == "newcontact" end)
+
+    if is_new_contact,
+    do: false,
+    else: String.contains?(message.body, "Hi, I would like to receive notifications.")
   end
 end
