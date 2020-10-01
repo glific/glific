@@ -4,7 +4,6 @@ defmodule Glific.GroupsTest do
   alias Glific.{
     Contacts,
     Groups,
-    Groups.ContactGroup,
     Groups.Group,
     Groups.UserGroup,
     Seeds.SeedsDev,

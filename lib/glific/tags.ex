@@ -260,24 +260,6 @@ defmodule Glific.Tags do
   end
 
   @doc """
-  Deletes a message tag.
-
-  ## Examples
-
-      iex> delete_message_tag(message_tag)
-      {:ok, %MessageTag{}}
-
-      iex> delete_message_tag(message_tag)
-      {:error, %Ecto.Changeset{}}
-
-  """
-  @spec delete_message_tag(MessageTag.t()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
-  def delete_message_tag(%MessageTag{} = message_tag) do
-    publish_delete_message([message_tag])
-    Repo.delete(message_tag)
-  end
-
-  @doc """
   In Join tables we rarely use the table id. We always know the object ids
   and hence more convenient to delete an entry via its object ids.
   We will generalize this function and move it to Repo.ex when we get a better

@@ -294,12 +294,6 @@ defmodule Glific.TagsTest do
       assert message_tag.message_id == message.id
     end
 
-    test "delete_messages_tag/1 deletes the tag", %{organization_id: organization_id} do
-      message_tag = Fixtures.message_tag_fixture(%{organization_id: organization_id})
-      assert {:ok, %MessageTag{}} = Tags.delete_message_tag(message_tag)
-      assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message_tag.id) end
-    end
-
     test "change_messages_tag/1 returns a tag changeset", %{organization_id: organization_id} do
       message_tag = Fixtures.message_tag_fixture(%{organization_id: organization_id})
       assert %Ecto.Changeset{} = Tags.change_message_tag(message_tag)

@@ -148,63 +148,6 @@ Type | Description
 integer | The number of messages deleted
 
 
-## Delete a Message Tag
-
-```graphql
-mutation deleteMessageTag($id: ID!) {
-  deleteMessageTag(id: $id) {
-    errors {
-      key
-      message
-    }
-  }
-}
-
-{
-  "id": "26"
-}
-```
-
-> The above query returns JSON structured like this:
-
-```json
-{
-  "data": {
-    "deleteMessageTag": {
-      "errors": null
-    }
-  }
-}
-```
-
-In case of errors, all the above functions return an error object like the below
-
-```json
-{
-  "data": {
-    "deleteMessageTag": {
-      "errors": [
-        {
-          "key": "Elixir.Glific.Messages.MessageTag 26",
-          "message": "Resource not found"
-        }
-      ]
-    }
-  }
-}
-```
-
-### Query Parameters
-
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-
-### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#messagetagresult">MessageTagResult</a> | An error object or empty
-
 ## Subscription for Create Message Tag
 
 ```graphql
