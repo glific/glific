@@ -31,27 +31,27 @@ defmodule Glific.Processor.ConsumerFlow do
 
   @spec do_process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   defp do_process_message({message, state}, body) do
-      context = FlowContext.active_context(message.contact_id)
-      # if we are in a flow and the flow is set to ignore keywords
-      # then send control to the flow directly
-      # context is not nil
-      with false <- is_nil(context),
-          {:ok, flow} <-
-            Flows.get_cached_flow(
-              message.organization_id,
-              {:flow_uuid, context.flow_uuid},
-              %{uuid: context.flow_uuid}
-            ),
-          true <- flow.ignore_keywords do
-        check_contexts(context, message, body, state)
-      else
-        _ ->
-          cond do
-            Map.get(state, :newcontact, false) == true -> check_flows(message, "newcontact", state)
-            Map.has_key?(state.flow_keywords, body) -> check_flows(message, body, state)
-            true -> check_contexts(context, message, body, state)
-          end
-      end
+    context = FlowContext.active_context(message.contact_id)
+    # if we are in a flow and the flow is set to ignore keywords
+    # then send control to the flow directly
+    # context is not nil
+    with false <- is_nil(context),
+         {:ok, flow} <-
+           Flows.get_cached_flow(
+             message.organization_id,
+             {:flow_uuid, context.flow_uuid},
+             %{uuid: context.flow_uuid}
+           ),
+         true <- flow.ignore_keywords do
+      check_contexts(context, message, body, state)
+    else
+      _ ->
+        cond do
+          Map.get(state, :newcontact, false) == true -> check_flows(message, "newcontact", state)
+          Map.has_key?(state.flow_keywords, body) -> check_flows(message, body, state)
+          true -> check_contexts(context, message, body, state)
+        end
+    end
   end
 
   @doc """
@@ -103,13 +103,14 @@ defmodule Glific.Processor.ConsumerFlow do
   # they opted in again and skip the flow
   @spec should_skip_flow?(Message.t()) :: boolean()
   defp should_skip_flow?(message) do
-    message  = Glific.Repo.preload(message, [:tags])
+    message = Glific.Repo.preload(message, [:tags])
+
     is_new_contact =
       message.tags
       |> Enum.any?(fn tag -> tag.shortcode == "newcontact" end)
 
     if is_new_contact,
-    do: false,
-    else: String.contains?(message.body, "Hi, I would like to receive notifications.")
+      do: false,
+      else: String.contains?(message.body, "Hi, I would like to receive notifications.")
   end
 end
