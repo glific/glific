@@ -425,7 +425,7 @@ defmodule Glific.Partners do
       end)
 
     organization
-    |> Map.put(:credentials, credentials_map)
+    |> Map.put(:services, credentials_map)
   end
 
   @doc """
