@@ -199,47 +199,6 @@ Type | Description
 <a href="#user_groups">userGroups</a> | The list of user groups added
 integer | The number of user groups deleted
 
-## Delete a UserGroup
-
-```graphql
-mutation deleteUserGroup($id: ID!) {
-  deleteUserGroup(id: $id) {
-    errors {
-      key
-      message
-    }
-  }
-}
-
-{
-  "id": 1
-}
-```
-
-> The above query returns JSON structured like this:
-
-```json
-{
-  "data": {
-    "deleteUserGroup": {
-      "errors": null
-    }
-  }
-}
-```
-
-### Query Parameters
-
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a> | required |
-
-### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#usergroupresult">UserGroupResult</a> | An error object or empty
-
-
 ## UserGroup Objects
 
 ### UserGroup

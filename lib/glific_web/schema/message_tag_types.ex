@@ -56,12 +56,6 @@ defmodule GlificWeb.Schema.MessageTagTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Tags.update_message_tags/3)
     end
-
-    field :delete_message_tag, :message_tag_result do
-      arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Tags.delete_message_tag/3)
-    end
   end
 
   object :message_tag_subscriptions do

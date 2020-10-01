@@ -73,11 +73,5 @@ defmodule GlificWeb.Schema.UserGroupTypes do
       middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.update_user_groups/3)
     end
-
-    field :delete_user_group, :user_group_result do
-      arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
-      resolve(&Resolvers.Groups.delete_user_group/3)
-    end
   end
 end

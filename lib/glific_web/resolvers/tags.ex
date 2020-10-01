@@ -5,7 +5,6 @@ defmodule GlificWeb.Resolvers.Tags do
   """
 
   alias Glific.{Repo, Tags, Tags.Tag}
-  alias Glific.{Tags.ContactTag, Tags.MessageTag}
   alias GlificWeb.Resolvers.Helper
 
   @doc """
@@ -76,18 +75,9 @@ defmodule GlificWeb.Resolvers.Tags do
   @spec update_message_tags(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_message_tags(_, %{input: params}, _) do
+    # we should add sanity check whether message and tag belongs to the organization of the current user
     message_tags = Tags.MessageTags.update_message_tags(params)
     {:ok, message_tags}
-  end
-
-  @doc false
-  @spec delete_message_tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def delete_message_tag(_, %{id: id}, _) do
-    with {:ok, message_tag} <- Repo.fetch(MessageTag, id),
-         {:ok, message_tag} <- Tags.delete_message_tag(message_tag) do
-      {:ok, message_tag}
-    end
   end
 
   @doc false
@@ -99,22 +89,13 @@ defmodule GlificWeb.Resolvers.Tags do
     end
   end
 
-  @doc false
-  @spec delete_contact_tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def delete_contact_tag(_, %{id: id}, _) do
-    with {:ok, contact_tag} <- Repo.fetch(ContactTag, id),
-         {:ok, contact_tag} <- Tags.delete_contact_tag(contact_tag) do
-      {:ok, contact_tag}
-    end
-  end
-
   @doc """
   Creates and/or deletes a list of contact tags, each tag attached to the same contact
   """
   @spec update_contact_tags(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_contact_tags(_, %{input: params}, _) do
+    # we should add sanity check whether contact and tag belongs to the organization of the current user
     contact_tags = Tags.ContactTags.update_contact_tags(params)
     {:ok, contact_tags}
   end
@@ -146,6 +127,7 @@ defmodule GlificWeb.Resolvers.Tags do
   @spec update_template_tags(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_template_tags(_, %{input: params}, _) do
+    # we should add sanity check whether template and tag belongs to the organization of the current user
     template_tags = Tags.TemplateTags.update_template_tags(params)
     {:ok, template_tags}
   end

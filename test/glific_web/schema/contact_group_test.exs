@@ -21,7 +21,6 @@ defmodule GlificWeb.Schema.ContactGroupTest do
   end
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_groups/create.gql")
-  load_gql(:delete, GlificWeb.Schema, "assets/gql/contact_groups/delete.gql")
 
   load_gql(
     :update_group_contacts,
@@ -185,36 +184,5 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
     contact = get_in(query_data, [:data, "createContactGroup", "errors", Access.at(0), "message"])
     assert contact == "has already been taken"
-  end
-
-  test "delete a contact group", %{staff: user_auth} do
-    label = "Default Group"
-
-    {:ok, group} =
-      Repo.fetch_by(Group, %{label: label, organization_id: user_auth.organization_id})
-
-    name = "Glific Admin"
-
-    {:ok, contact} =
-      Repo.fetch_by(Contact, %{name: name, organization_id: user_auth.organization_id})
-
-    {:ok, query_data} =
-      auth_query_gql_by(:create, user_auth,
-        variables: %{"input" => %{"contact_id" => contact.id, "group_id" => group.id}}
-      )
-
-    contact_group_id = get_in(query_data, [:data, "createContactGroup", "contact_group", "id"])
-
-    result = auth_query_gql_by(:delete, user_auth, variables: %{"id" => contact_group_id})
-    assert {:ok, query_data} = result
-
-    assert get_in(query_data, [:data, "deleteContactGroup", "errors"]) == nil
-
-    # try to delete incorrect entry
-    result = auth_query_gql_by(:delete, user_auth, variables: %{"id" => contact_group_id})
-    assert {:ok, query_data} = result
-
-    contact = get_in(query_data, [:data, "deleteContactGroup", "errors", Access.at(0), "message"])
-    assert contact == "Resource not found"
   end
 end

@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-mutation deleteUserGroup($id: ID!) {
-  deleteUserGroup(id: $id) {
-    ...UserGroupFields
-
-    ...ErrorFields
-  }
-}

@@ -73,11 +73,5 @@ defmodule GlificWeb.Schema.ContactGroupTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Groups.update_contact_groups/3)
     end
-
-    field :delete_contact_group, :contact_group_result do
-      arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Groups.delete_contact_group/3)
-    end
   end
 end

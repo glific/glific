@@ -4,7 +4,6 @@ defmodule Glific.GroupsTest do
   alias Glific.{
     Contacts,
     Groups,
-    Groups.ContactGroup,
     Groups.Group,
     Groups.UserGroup,
     Seeds.SeedsDev,
@@ -162,11 +161,6 @@ defmodule Glific.GroupsTest do
       assert contact_group.group_id == group.id
     end
 
-    test "delete_contacts_group/1 deletes the group", attrs do
-      contact_group = contact_group_fixture(attrs)
-      assert {:ok, %ContactGroup{}} = Groups.delete_contact_group(contact_group)
-    end
-
     test "ensure that creating contact_group with same contact and group give an error", attrs do
       [contact | _] = Contacts.list_contacts(%{filter: attrs})
       group = group_fixture(attrs)
@@ -206,11 +200,6 @@ defmodule Glific.GroupsTest do
       assert user_group.group_id == group.id
     end
 
-    test "delete_users_group/1 deletes the group", attrs do
-      user_group = user_group_fixture(attrs)
-      assert {:ok, %UserGroup{}} = Groups.delete_user_group(user_group)
-    end
-
     test "ensure that creating user_group with same user and group give an error", attrs do
       [user | _] = Users.list_users(%{filter: attrs})
       group = group_fixture(attrs)
@@ -234,7 +223,7 @@ defmodule Glific.GroupsTest do
         })
 
       user_group_ids =
-        Groups.UserGroup
+        UserGroup
         |> where([ug], ug.user_id == ^user.id)
         |> select([ug], ug.group_id)
         |> Repo.all()
@@ -249,7 +238,7 @@ defmodule Glific.GroupsTest do
         })
 
       user_group_ids =
-        Groups.UserGroup
+        UserGroup
         |> where([ug], ug.user_id == ^user.id)
         |> select([ug], ug.group_id)
         |> Repo.all()

@@ -159,24 +159,6 @@ defmodule Glific.Groups do
   end
 
   @doc """
-  Deletes a contact group.
-
-  ## Examples
-
-      iex> delete_contact_group(contact_group)
-      {:ok, %ContactGroup{}}
-
-      iex> delete_contact_group(contact_group)
-      {:error, %Ecto.Changeset{}}
-
-  """
-  @spec delete_contact_group(ContactGroup.t()) ::
-          {:ok, ContactGroup.t()} | {:error, Ecto.Changeset.t()}
-  def delete_contact_group(%ContactGroup{} = contact_group) do
-    Repo.delete(contact_group)
-  end
-
-  @doc """
   Delete group contacts
   """
   @spec delete_group_contacts_by_ids(integer, []) :: {integer(), nil | [term()]}
@@ -211,23 +193,6 @@ defmodule Glific.Groups do
     %UserGroup{}
     |> UserGroup.changeset(attrs)
     |> Repo.insert()
-  end
-
-  @doc """
-  Deletes a user group.
-
-  ## Examples
-
-      iex> delete_user_group(user_group)
-      {:ok, %UserGroup{}}
-
-      iex> delete_user_group(user_group)
-      {:error, %Ecto.Changeset{}}
-
-  """
-  @spec delete_user_group(UserGroup.t()) :: {:ok, UserGroup.t()} | {:error, Ecto.Changeset.t()}
-  def delete_user_group(%UserGroup{} = user_group) do
-    Repo.delete(user_group)
   end
 
   @doc """
