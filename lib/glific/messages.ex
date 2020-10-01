@@ -578,6 +578,9 @@ defmodule Glific.Messages do
       Message,
       fn
         {:ids, ids}, query ->
+          # order by id instead of inserted_at,
+          # as inserted_at has precision of second which can be same for two message,
+          # we can think about changing inserted at field to have precision of millisecond or microsecond
           query
           |> where([m], m.id in ^ids)
           |> order_by([m], desc: m.id)
