@@ -578,6 +578,8 @@ defmodule Glific.Messages do
       Message,
       fn
         {:ids, ids}, query ->
+          # order by inserted_at instead of updated_at
+          # as message provider status might be updated later
           query
           |> where([m], m.id in ^ids)
           |> order_by([m], desc: m.inserted_at)

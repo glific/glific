@@ -78,7 +78,7 @@ if Code.ensure_loaded?(Faker) do
     defp create_message_entry(difference, index) do
       # random seconds in last month
       sub_time = Enum.random(((-index - 1) * 24 * 60 * 60)..(-index * 24 * 60 * 60))
-      record_time = DateTime.utc_now() |> DateTime.add(sub_time) |> DateTime.truncate(:second)
+      record_time = DateTime.utc_now() |> DateTime.add(sub_time)
 
       Map.merge(
         %{
