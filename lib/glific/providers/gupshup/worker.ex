@@ -25,11 +25,8 @@ defmodule Glific.Providers.Gupshup.Worker do
     # Refactring because of credo warning
     case ExRated.check_rate(organization.shortcode, 60_000, organization.provider_limit) do
       {:ok, _} ->
-        with {:ok, credential} <-
-               Partners.get_credential(%{
-                 organization_id: organization.id,
-                 shortcode: "gupshup"
-               }),
+        with credential <- organization.services[organization.provider.shortcode],
+             false <- is_nil(credential),
              do:
                ApiClient.post(
                  credential.keys["api_end_point"] <> "/msg",

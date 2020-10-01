@@ -75,8 +75,7 @@ defmodule Glific.Providers.Glifproxy.Worker do
     # conditions with flows et al
     :timer.sleep(1000)
 
-    {:ok, credential} =
-      Partners.get_credential(%{organization_id: organization.id, shortcode: "glifproxy"})
+    credential = organization.services["glifproxy"]
 
     ApiClient.post(
       credential.keys["api_end_point"] <> "/gupshup",
