@@ -46,6 +46,8 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       # Is the provider/service being currently active
       add :is_active, :boolean, default: false
 
+      add :is_valid, :boolean, default: true
+
       # foreign key to provider id
       add :provider_id, references(:providers, on_delete: :nilify_all), null: false
 
