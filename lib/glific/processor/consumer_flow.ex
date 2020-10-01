@@ -5,16 +5,16 @@ defmodule Glific.Processor.ConsumerFlow do
   """
 
   import Ecto.Query, warn: false
+
   alias Glific.{
     Flows,
     Flows.FlowContext,
     Flows.Periodic,
     Messages,
-    Messages.Message,
+    Messages.Message
   }
 
   @doc """
-  Glific.Tags.get_tag!(id)
   Load the relevant state into the gen_server state object that we need
   to process messages
   """
@@ -50,6 +50,7 @@ defmodule Glific.Processor.ConsumerFlow do
       end
     end
   end
+
   @doc """
   Start a flow or reactivate a flow if needed. This will be linked to the entire
   trigger mechanism once we have that under control.
