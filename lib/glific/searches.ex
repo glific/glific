@@ -141,7 +141,7 @@ defmodule Glific.Searches do
   end
 
   # common function to build query between count and search
-  # order by id instead of updated_at for order of conversations list
+  # order by inserted_at instead of updated_at for order of conversations list
   # so that conversation with latest message will be on the top
   @spec search_query(String.t(), map()) :: Ecto.Query.t()
   defp search_query(term, args) do
@@ -149,7 +149,7 @@ defmodule Glific.Searches do
     |> select([m], m.contact_id)
     |> where([m], m.message_number == 0)
     |> where([m], m.organization_id == ^args.filter.organization_id)
-    |> order_by([m], desc: m.id)
+    |> order_by([m], desc: m.inserted_at)
     |> Full.run(term, args)
   end
 

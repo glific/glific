@@ -11,6 +11,8 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
     providers()
 
     chatbase_jobs()
+
+    messages()
   end
 
   defp providers do
@@ -68,5 +70,13 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
 
     create unique_index(:chatbase_jobs, :organization_id)
     create unique_index(:chatbase_jobs, :message_id)
+  end
+
+  defp messages do
+    # using microsecond for correct ordering of messages
+    alter table(:messages) do
+      modify :inserted_at, :utc_datetime_usec
+      modify :updated_at, :utc_datetime_usec
+    end
   end
 end

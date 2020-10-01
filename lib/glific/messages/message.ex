@@ -43,8 +43,8 @@ defmodule Glific.Messages.Message do
           provider_message_id: String.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
-          inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          inserted_at: :utc_datetime_usec | nil,
+          updated_at: :utc_datetime_usec | nil
         }
 
   @required_fields [
@@ -99,7 +99,7 @@ defmodule Glific.Messages.Message do
 
     many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc """
