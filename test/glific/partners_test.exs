@@ -254,7 +254,8 @@ defmodule Glific.PartnersTest do
         secrets: %{
           api_key: "Please enter your key here",
           app_name: "Please enter your App Name here"
-        }
+        },
+        is_active: true
       })
 
       organization
