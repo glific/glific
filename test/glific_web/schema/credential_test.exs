@@ -51,7 +51,9 @@ defmodule GlificWeb.Schema.CredentialTest do
 
     assert {:ok, query_data} = result
     assert query_data[:data]["createCredential"]["errors"] == nil
+    # check default values
     assert query_data[:data]["createCredential"]["credential"]["keys"] == "{}"
+    assert query_data[:data]["createCredential"]["credential"]["isActive"] == false
 
     # try creating the same credential twice
     result =

@@ -304,6 +304,7 @@ defmodule Glific.Partners do
       {:ok, value} when value in [nil, false] ->
         organization =
           get_organization!(organization_id)
+          |> set_credentials()
           |> Repo.preload(:provider)
           |> set_provider_info()
           |> set_out_of_office_values()
@@ -388,22 +389,37 @@ defmodule Glific.Partners do
   # we use it on all sending / receiving of messages
   @spec set_provider_info(map()) :: map()
   defp set_provider_info(organization) do
-    {:ok, credential} =
-      Repo.fetch_by(
-        Credential,
-        %{organization_id: organization.id, provider_id: organization.provider_id}
-      )
+    credential = organization.services[organization.provider.shortcode]
+
+    credentials = %{
+      provider_key: credential.secrets["api_key"],
+      provider_worker: ("Elixir." <> credential.keys["worker"]) |> String.to_existing_atom(),
+      provider_handler: ("Elixir." <> credential.keys["handler"]) |> String.to_existing_atom()
+    }
 
     organization
-    |> Map.put(:provider_key, credential.secrets["api_key"])
-    |> Map.put(
-      :provider_worker,
-      ("Elixir." <> credential.keys["worker"]) |> String.to_existing_atom()
-    )
-    |> Map.put(
-      :provider_handler,
-      ("Elixir." <> credential.keys["handler"]) |> String.to_existing_atom()
-    )
+    |> Map.merge(credentials)
+  end
+
+  # Lets cache keys and secrets of all the active services
+  @spec set_credentials(map()) :: map()
+  defp set_credentials(organization) do
+    credentials =
+      Credential
+      |> where([c], c.organization_id == ^organization.id)
+      |> where([c], c.is_active == true)
+      |> preload(:provider)
+      |> Repo.all()
+
+    credentials_map =
+      Enum.reduce(credentials, %{}, fn credential, acc ->
+        Map.merge(acc, %{
+          credential.provider.shortcode => %{keys: credential.keys, secrets: credential.secrets}
+        })
+      end)
+
+    organization
+    |> Map.put(:services, credentials_map)
   end
 
   @doc """
@@ -503,6 +519,9 @@ defmodule Glific.Partners do
   def create_credential(attrs) do
     case Repo.fetch_by(Provider, %{shortcode: attrs[:shortcode]}) do
       {:ok, provider} ->
+        # first delete the cached organization
+        Caches.remove(attrs.organization_id, ["organization"])
+
         attrs = Map.merge(attrs, %{provider_id: provider.id})
 
         %Credential{}
@@ -520,6 +539,9 @@ defmodule Glific.Partners do
   @spec update_credential(Credential.t(), map()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
+    # first delete the cached organization
+    Caches.remove(credential.organization_id, ["organization"])
+
     credential
     |> Credential.changeset(attrs)
     |> Repo.update()
@@ -537,11 +559,7 @@ defmodule Glific.Partners do
 
   @spec load_goth_config(any(), non_neg_integer) :: :ok
   defp load_goth_config(:error, org_id) do
-    {:ok, credential} =
-      get_credential(%{
-        organization_id: org_id,
-        shortcode: "goth"
-      })
+    credential = organization(org_id).services["goth"]
 
     credential.secrets["json"]
     |> Goth.Config.add_config()

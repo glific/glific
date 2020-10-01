@@ -45,6 +45,11 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       # we will keep these keys encrypted
       add :secrets, :binary
 
+      # Is the provider/service being currently active
+      add :is_active, :boolean, default: false
+
+      add :is_valid, :boolean, default: true
+
       # foreign key to provider id
       add :provider_id, references(:providers, on_delete: :nilify_all), null: false
 

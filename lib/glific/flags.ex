@@ -125,19 +125,16 @@ defmodule Glific.Flags do
   """
   @spec dialogflow(non_neg_integer) :: {:ok, boolean()}
   def dialogflow(organization_id) do
-    Partners.get_credential(%{
-      organization_id: organization_id,
-      shortcode: "dialogflow"
-    })
+    Partners.organization(organization_id).services["dialogflow"]
     |> case do
-      {:ok, _} ->
-        FunWithFlags.enable(
+      nil ->
+        FunWithFlags.disable(
           :dialogflow,
           for_actor: %{organization_id: organization_id}
         )
 
-      {:error, _} ->
-        FunWithFlags.disable(
+      _credential ->
+        FunWithFlags.enable(
           :dialogflow,
           for_actor: %{organization_id: organization_id}
         )

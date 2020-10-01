@@ -14,13 +14,15 @@ defmodule Glific.Partners.Credential do
   }
 
   @required_fields [:organization_id, :provider_id]
-  @optional_fields [:keys, :secrets]
+  @optional_fields [:keys, :secrets, :is_active, :is_valid]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           keys: map() | nil,
           secrets: map() | nil,
+          is_active: boolean(),
+          is_valid: boolean(),
           provider_id: non_neg_integer | nil,
           provider: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -32,6 +34,9 @@ defmodule Glific.Partners.Credential do
   schema "credentials" do
     field :keys, :map, default: %{}
     field :secrets, Glific.EncryptedMap
+
+    field :is_active, :boolean, default: false
+    field :is_valid, :boolean, default: true
 
     belongs_to :provider, Provider
     belongs_to :organization, Organization

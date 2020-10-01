@@ -9,6 +9,7 @@ query credential($shortcode: String!) {
       id
       keys
       secrets
+      isActive
       provider {
         shortcode
       }
@@ -29,6 +30,7 @@ query credential($shortcode: String!) {
     "credential": {
       "credential": {
         "id": "1",
+        "isActive": true,
         "keys": "{\"worker\":\"Glific.Providers.Gupshup.Worker\",\"url\":\"https://gupshup.io/\",\"handler\":\"Glific.Providers.Gupshup.Message\",\"api_end_point\":\"https://api.gupshup.io/sm/api/v1\"}",
         "provider": {
           "shortcode": "gupshup"
@@ -59,6 +61,7 @@ mutation createCredential($input: CredentialInput!) {
     credential {
       keys
       secrets
+      isActive
     }
     errors {
       key
@@ -82,7 +85,8 @@ mutation createCredential($input: CredentialInput!) {
   "data": {
     "createCredential": {
       "credential": {
-        "keys": null,
+        "isActive": false,
+        "keys": "{}",
         "secrets": "{\"app_name\":\"App Name\",\"api_key\":\"App Key\"}"
       },
       "errors": null
@@ -114,6 +118,7 @@ mutation updateCredential($id: ID!, $input: CredentialInput!) {
       }
       keys
       secrets
+      isActive
     }
     errors {
       key
@@ -125,7 +130,8 @@ mutation updateCredential($id: ID!, $input: CredentialInput!) {
 {
   "id": 1,
   "input": {
-    "secrets": "{\"app_name\":\"updated App Name\",\"api_key\":\"updated app key\"}"
+    "secrets": "{\"app_name\":\"updated App Name\",\"api_key\":\"updated app key\"}",
+    "isActive": true
   }
 }
 ```
@@ -138,6 +144,7 @@ mutation updateCredential($id: ID!, $input: CredentialInput!) {
     "updateCredential": {
       "credential": {
         "id": "1",
+        "isActive": true,
         "keys": "{\"worker\":\"Glific.Providers.Gupshup.Worker\",\"url\":\"https://gupshup.io/\",\"handler\":\"Glific.Providers.Gupshup.Message\",\"api_end_point\":\"https://api.gupshup.io/sm/api/v1\"}",
         "provider": {
           "shortcode": "gupshup"
@@ -190,6 +197,11 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>secrets</strong></td>
 <td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isActive</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
 <tr>
@@ -251,6 +263,11 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>shortcode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isActive</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
 </tbody>

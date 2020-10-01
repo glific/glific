@@ -68,22 +68,19 @@ defmodule Glific.Dialogflow do
           :email => String.t()
         }
   defp project_info(organization_id) do
-    case Partners.get_credential(%{
-           organization_id: organization_id,
-           shortcode: "dialogflow"
-         }) do
-      {:ok, credential} ->
-        %{
-          url: credential.keys["url"],
-          id: credential.secrets["project_id"],
-          email: credential.secrets["project_email"]
-        }
-
-      {:error, _} ->
+    case Partners.organization(organization_id).services["dialogflow"] do
+      nil ->
         %{
           url: nil,
           id: nil,
           email: nil
+        }
+
+      credential ->
+        %{
+          url: credential.keys["url"],
+          id: credential.secrets["project_id"],
+          email: credential.secrets["project_email"]
         }
     end
   end
