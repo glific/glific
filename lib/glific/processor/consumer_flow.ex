@@ -11,8 +11,6 @@ defmodule Glific.Processor.ConsumerFlow do
     Flows.Periodic,
     Messages,
     Messages.Message,
-    Tags,
-    Tags.MessageTag,
   }
 
   @doc """
@@ -26,17 +24,10 @@ defmodule Glific.Processor.ConsumerFlow do
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   def process_message({message, state}, body) do
-    if should_skip?(body) && !(is_newcontact?(message)) do
+    if should_skip?(message) do
+      {message, state}
     else
-      IO.inspect("debug0000")
-      IO.inspect("message")
-      IO.inspect("tags")
-      IO.inspect(message.tags)
-      IO.inspect("message id")
-      IO.inspect(message.id)
-      IO.inspect("debug0001")
       context = FlowContext.active_context(message.contact_id)
-
       # if we are in a flow and the flow is set to ignore keywords
       # then send control to the flow directly
       # context is not nil
@@ -103,11 +94,15 @@ defmodule Glific.Processor.ConsumerFlow do
     {message, state}
   end
 
-  def should_skip?(body) do
-    String.contains?(body, "Hi, I would like to receive notifications.")
-  end
-
-  def is_newcontact?(_message) do
-    true
+  def should_skip?(message) do
+    opt_in = String.contains?(message.body, "Hi, I would like to receive notifications.")
+    message  = Glific.Repo.preload(message, [:tags])
+    tags = Enum.map(message.tags, fn tags -> tags.label end)
+    new_contact = !(Enum.member?(tags, "New Contact"))
+    if (opt_in && new_contact) do
+      true
+    else
+      false
+    end
   end
 end
