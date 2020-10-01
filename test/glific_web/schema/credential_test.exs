@@ -30,7 +30,7 @@ defmodule GlificWeb.Schema.CredentialTest do
 
     credential = get_in(query_data, [:data, "credential", "credential"])
     assert credential["keys"] == "{}"
-    assert credential["secrets"] == "{}"
+    assert credential["secrets"] == nil
 
     result =
       auth_query_gql_by(:by_shortcode, user, variables: %{"shortcode" => "wrong shortcode"})

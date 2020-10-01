@@ -15,11 +15,11 @@ defmodule Glific.Dialogflow do
   """
   @spec request(non_neg_integer, atom, String.t(), String.t() | map) :: tuple
   def request(organization_id, method, path, body) do
-    %{host: host, id: id, email: email} = project_info(organization_id)
+    %{url: url, id: id, email: email} = project_info(organization_id)
 
-    url = "#{host}/v2beta1/projects/#{id}/locations/global/agent/#{path}"
+    dflow_url = "#{url}/v2beta1/projects/#{id}/locations/global/agent/#{path}"
 
-    do_request(method, url, body(body), headers(email, organization_id))
+    do_request(method, dflow_url, body(body), headers(email, organization_id))
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Poison.decode!(body)}
@@ -63,7 +63,7 @@ defmodule Glific.Dialogflow do
   # Get the project details needed for authentication and to send via the API
   # ---------------------------------------------------------------------------
   @spec project_info(non_neg_integer) :: %{
-          :host => String.t(),
+          :url => String.t(),
           :id => String.t(),
           :email => String.t()
         }
@@ -74,14 +74,14 @@ defmodule Glific.Dialogflow do
          }) do
       {:ok, credential} ->
         %{
-          host: credential.keys["host"],
+          url: credential.keys["url"],
           id: credential.secrets["project_id"],
           email: credential.secrets["project_email"]
         }
 
       {:error, _} ->
         %{
-          host: nil,
+          url: nil,
           id: nil,
           email: nil
         }

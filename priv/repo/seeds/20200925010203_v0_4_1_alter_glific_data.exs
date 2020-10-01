@@ -3,6 +3,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
   envs([:dev, :test, :prod])
 
+  import Ecto.Query
+
   alias Glific.{
     Partners,
     Partners.Credential,
@@ -11,9 +13,15 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   }
 
   def up(_repo) do
+    update_exisiting_providers()
+
+    add_providers()
+  end
+
+  defp update_exisiting_providers() do
     # add pseudo credentials for gupshup and glifproxy
-    {:ok, gupshup} = Repo.fetch_by(Provider, %{name: "Gupshup"})
-    {:ok, glifproxy} = Repo.fetch_by(Provider, %{name: "Glifproxy"})
+    {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+    {:ok, glifproxy} = Repo.fetch_by(Provider, %{shortcode: "glifproxy"})
 
     # update providers gupshup and glifproxy with values for:
     # shortcode, group, is_required, keys and secrets
@@ -106,34 +114,129 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
       )
     )
 
+    add_credentials(gupshup, glifproxy)
+  end
+
+  defp add_credentials(gupshup, glifproxy) do
     Partners.active_organizations()
     |> Enum.each(fn {org_id, _name} ->
-      Repo.insert!(%Credential{
-        organization_id: org_id,
-        provider_id: gupshup.id,
-        keys: %{
-          url: "https://gupshup.io/",
-          api_end_point: "https://api.gupshup.io/sm/api/v1",
-          handler: "Glific.Providers.Gupshup.Message",
-          worker: "Glific.Providers.Gupshup.Worker"
-        },
-        secrets: %{
-          api_key: "Please enter your key here",
-          app_name: "Please enter your App Name here"
-        }
-      })
+      query =
+        from c in Credential,
+          where: c.organization_id == ^org_id and c.provider_id == ^gupshup.id
 
-      Repo.insert!(%Credential{
-        organization_id: org_id,
-        provider_id: glifproxy.id,
-        keys: %{
-          url: "https://glific.io/",
-          api_end_point: "We need to figure out how to get this dynamically, maybe in services?",
-          handler: "Glific.Providers.Gupshup.Message",
-          worker: "Glific.Providers.Glifproxy.Worker"
-        },
-        secrets: %{}
-      })
+      if !Repo.exists?(query),
+        do:
+          Repo.insert!(%Credential{
+            organization_id: org_id,
+            provider_id: gupshup.id,
+            keys: %{
+              url: "https://gupshup.io/",
+              api_end_point: "https://api.gupshup.io/sm/api/v1",
+              handler: "Glific.Providers.Gupshup.Message",
+              worker: "Glific.Providers.Gupshup.Worker"
+            },
+            secrets: %{
+              api_key: "This is top secret",
+              app_name: "Glific42"
+            }
+          })
+
+      query =
+        from c in Credential,
+          where: c.organization_id == ^org_id and c.provider_id == ^glifproxy.id
+
+      if !Repo.exists?(query),
+        do:
+          Repo.insert!(%Credential{
+            organization_id: org_id,
+            provider_id: glifproxy.id,
+            keys: %{
+              url: "https://glific.io/",
+              api_end_point:
+                "We need to figure out how to get this dynamically, maybe in services?",
+              handler: "Glific.Providers.Gupshup.Message",
+              worker: "Glific.Providers.Glifproxy.Worker"
+            },
+            secrets: %{}
+          })
     end)
+  end
+
+  defp add_providers() do
+    query = from p in Provider, where: p.shortcode == "dialogflow"
+
+    # add dialogflow
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "Dialogflow",
+          shortcode: "dialogflow",
+          group: nil,
+          is_required: false,
+          keys: %{
+            url: %{
+              type: :string,
+              label: "Dialogdlow Home Page",
+              default: "https://dialogflow.cloud.google.com/",
+              view_only: true
+            }
+          },
+          secrets: %{
+            project_id: %{
+              type: :string,
+              label: "Project ID",
+              default: nil,
+              view_only: false
+            },
+            project_email: %{
+              type: :string,
+              label: "Project Email",
+              default: nil,
+              view_only: false
+            }
+          }
+        })
+
+    # add goth (since we'll be using other google services also)
+    query = from p in Provider, where: p.shortcode == "goth"
+
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "GOTH",
+          shortcode: "goth",
+          group: nil,
+          is_required: false,
+          keys: %{},
+          secrets: %{
+            json: %{
+              type: :string,
+              label: "JSON Credentials ",
+              default: nil,
+              view_only: false
+            }
+          }
+        })
+
+    # add chatbase
+    query = from p in Provider, where: p.shortcode == "chatbase"
+
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "Chatbase",
+          shortcode: "chatbase",
+          group: nil,
+          is_required: false,
+          keys: %{},
+          secrets: %{
+            api_key: %{
+              type: :string,
+              label: "API Key",
+              default: nil,
+              view_only: false
+            }
+          }
+        })
   end
 end
