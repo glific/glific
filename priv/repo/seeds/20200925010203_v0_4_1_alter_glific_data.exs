@@ -208,7 +208,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             }
           }
         })
-
   end
 
   defp add_goth do
@@ -263,7 +262,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     # add google cloud storage (gcs)
     if !Repo.exists?(query),
       do:
-    Repo.insert!(%Provider{
+        Repo.insert!(%Provider{
           name: "Google Cloud Storage",
           shortcode: "google_cloud_storage",
           group: nil,
@@ -277,6 +276,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               view_only: false
             }
           }
-                 })
+        })
   end
 end

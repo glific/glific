@@ -1,4 +1,8 @@
 defmodule Glific.Media do
+  @moduledoc """
+  This is an auto generated file from waffle, that is used to control storage behavior
+  """
+
   use Waffle.Definition
 
   # Include ecto support (requires package waffle_ecto installed):

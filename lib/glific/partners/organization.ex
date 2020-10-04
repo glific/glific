@@ -103,7 +103,9 @@ defmodule Glific.Partners.Organization do
     field :timezone, :string, default: "Asia/Kolkata"
 
     field :active_language_ids, {:array, :integer}, default: []
-    field :languages, {:array, Language}, virtual: true
+
+    # new version of ecto was giving us an error if we set the inner_type ot Language
+    field :languages, {:array, :any}, virtual: true
 
     timestamps(type: :utc_datetime)
   end

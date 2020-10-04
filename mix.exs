@@ -126,8 +126,8 @@ defmodule Glific.MixProject do
       {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"},
       {:cloak_ecto, "~> 1.0"},
       {:waffle, "~> 1.1"},
-      {:waffle_gcs, git: "https://github.com/almirsarajcic/waffle_gcs"},
-      {:waffle_ecto, "~> 0.0"},
+      {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
+      {:waffle_ecto, "~> 0.0"}
     ]
   end
 

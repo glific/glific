@@ -572,9 +572,9 @@ defmodule Glific.Partners do
   defp load_goth_config(_, _), do: :ok
 
   @impl Waffle.Storage.Google.Token.Fetcher
+  @spec get_token(binary) :: binary
   def get_token(organization_id) when is_binary(organization_id) do
-    # seems like the package is messing up here, lets fix it later
-    organization_id = 1
+    organization_id = String.to_integer(organization_id)
 
     organization = organization(organization_id)
     gcs = organization.services["google_cloud_storage"]
@@ -584,10 +584,7 @@ defmodule Glific.Partners do
     email = gcs.secrets["email"]
     check_and_load_goth_config(email, organization_id)
 
-    {:ok, token} = Goth.Token.for_scope(
-      {email, "https://www.googleapis.com/auth/cloud-platform"}
-    )
+    {:ok, token} = Goth.Token.for_scope({email, "https://www.googleapis.com/auth/cloud-platform"})
     token.token
   end
-
 end
