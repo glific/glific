@@ -124,7 +124,10 @@ defmodule Glific.MixProject do
       {:appsignal, "~> 1.0"},
       {:poolboy, "~> 1.5"},
       {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"},
-      {:cloak_ecto, "~> 1.0.1"}
+      {:cloak_ecto, "~> 1.0"},
+      {:waffle, "~> 1.1"},
+      {:waffle_gcs, git: "https://github.com/almirsarajcic/waffle_gcs"},
+      {:waffle_ecto, "~> 0.0"},
     ]
   end
 

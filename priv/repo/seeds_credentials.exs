@@ -40,6 +40,7 @@ defmodule Glific.Seeds.Credentials do
     Repo.insert!(%Credential{
       organization_id: organization_id,
       provider_id: dialogflow.id,
+      is_active: true,
       keys: %{
         url: Keyword.get(dflow, :url)
       },
@@ -58,6 +59,7 @@ defmodule Glific.Seeds.Credentials do
     Repo.insert!(%Credential{
       organization_id: organization_id,
       provider_id: goth_db.id,
+      is_active: true,
       keys: %{},
       secrets: %{
         json: Keyword.get(goth, :json)
@@ -73,6 +75,7 @@ defmodule Glific.Seeds.Credentials do
     Repo.insert!(%Credential{
       organization_id: organization_id,
       provider_id: chatbase_db.id,
+      is_active: true,
       keys: %{},
       secrets: %{
         api_key: Keyword.get(chatbase, :api_key)
@@ -80,12 +83,29 @@ defmodule Glific.Seeds.Credentials do
     })
   end
 
+
+  def insert_gcs_credentials(gcs, organization_id) do
+    {:ok, gcs_db} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
+
+    Repo.insert!(%Credential{
+          organization_id: organization_id,
+          provider_id: gcs_db.id,
+          is_active: true,
+          keys: %{},
+          secrets: %{
+            email: Keyword.get(gcs, :email)
+          }
+                 })
+  end
+
   def execute do
     secrets = get_secrets()
     update_gupshup_credentials(Keyword.get(secrets, :gupshup), 1)
+
     insert_dialogflow_credentials(Keyword.get(secrets, :dialogflow), 1)
     insert_goth_credentials(Keyword.get(secrets, :goth), 1)
     insert_chatbase_credentials(Keyword.get(secrets, :chatbase), 1)
+    insert_gcs_credentials(Keyword.get(secrets, :gcs), 1)
   end
 end
 

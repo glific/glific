@@ -88,6 +88,11 @@ config :appsignal, :config,
   env: :dev
 
 config :goth,
-  disabled: true
+  disabled: false
+
+config :waffle,
+  storage: Waffle.Storage.Google.CloudStorage,
+  bucket: "media.glific.io",
+  token_fetcher: Glific.Partners
 
 import_config "dev.secret.exs"
