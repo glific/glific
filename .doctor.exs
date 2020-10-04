@@ -1,5 +1,7 @@
 %Doctor.Config{
   ignore_modules: [
+    Glific.Media,
+    Glific.Media.Type,
     Glific.Processor.ConsumerAutomation,
     Glific.Processor.ConsumerHelp,
     Glific.Processor.ConsumerLanguage,

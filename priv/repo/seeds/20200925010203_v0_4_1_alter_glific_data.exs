@@ -165,6 +165,16 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp add_providers() do
+    add_dialogflow()
+
+    add_chatbase()
+
+    add_goth()
+
+    add_google_cloud_storage()
+  end
+
+  defp add_dialogflow do
     query = from p in Provider, where: p.shortcode == "dialogflow"
 
     # add dialogflow
@@ -198,7 +208,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             }
           }
         })
+  end
 
+  defp add_goth do
     # add goth (since we'll be using other google services also)
     query = from p in Provider, where: p.shortcode == "goth"
 
@@ -219,7 +231,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             }
           }
         })
+  end
 
+  defp add_chatbase() do
     # add chatbase
     query = from p in Provider, where: p.shortcode == "chatbase"
 
@@ -235,6 +249,29 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             api_key: %{
               type: :string,
               label: "API Key",
+              default: nil,
+              view_only: false
+            }
+          }
+        })
+  end
+
+  defp add_google_cloud_storage() do
+    query = from p in Provider, where: p.shortcode == "google_cloud_storage"
+
+    # add google cloud storage (gcs)
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "Google Cloud Storage",
+          shortcode: "google_cloud_storage",
+          group: nil,
+          is_required: false,
+          keys: %{},
+          secrets: %{
+            email: %{
+              type: :string,
+              label: "Email",
               default: nil,
               view_only: false
             }

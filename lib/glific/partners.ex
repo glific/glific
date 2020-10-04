@@ -3,6 +3,7 @@ defmodule Glific.Partners do
   The Partners context. This is the gateway for the application to access/update all the organization
   and Provider information.
   """
+  @behaviour Waffle.Storage.Google.Token.Fetcher
 
   use Publicist
 
@@ -553,7 +554,7 @@ defmodule Glific.Partners do
   """
   @spec check_and_load_goth_config(String.t(), non_neg_integer) :: :ok
   def check_and_load_goth_config(email, org_id) do
-    Goth.Config.get(email, "private_key_id")
+    Goth.Config.get(email, :oauth_jwt)
     |> load_goth_config(org_id)
   end
 
@@ -562,10 +563,28 @@ defmodule Glific.Partners do
     credential = organization(org_id).services["goth"]
 
     credential.secrets["json"]
+    |> Jason.decode!()
     |> Goth.Config.add_config()
 
     :ok
   end
 
   defp load_goth_config(_, _), do: :ok
+
+  @impl Waffle.Storage.Google.Token.Fetcher
+  @spec get_token(binary) :: binary
+  def get_token(organization_id) when is_binary(organization_id) do
+    organization_id = String.to_integer(organization_id)
+
+    organization = organization(organization_id)
+    gcs = organization.services["google_cloud_storage"]
+
+    # we need to do this once only when setting the cache
+    # move for both gcs and dialogflow
+    email = gcs.secrets["email"]
+    check_and_load_goth_config(email, organization_id)
+
+    {:ok, token} = Goth.Token.for_scope({email, "https://www.googleapis.com/auth/cloud-platform"})
+    token.token
+  end
 end
