@@ -88,7 +88,7 @@ config :appsignal, :config,
   env: :dev
 
 config :goth,
-  disabled: false
+  disabled: true
 
 config :waffle,
   storage: Waffle.Storage.Google.CloudStorage,
