@@ -74,7 +74,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       message = Repo.preload(message, [:receiver, :sender, :media])
 
       # Provider message id should be updated
-      assert message.provider_status == :delivered
+      assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
       # ensure the message has been received by the mock
@@ -122,7 +122,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       message = Repo.preload(message, [:sender, :media])
 
       # Provider message id should be updated
-      assert message.provider_status == :delivered
+      assert message.bsp_status == :delivered
       assert message.flow == :inbound
 
       # ensure the message has been received by the mock

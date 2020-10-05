@@ -84,7 +84,7 @@ if Code.ensure_loaded?(Faker) do
         %{
           type: "text",
           body: create_message(),
-          provider_status: "delivered",
+          bsp_status: "delivered",
           inserted_at: record_time,
           updated_at: record_time
         },
