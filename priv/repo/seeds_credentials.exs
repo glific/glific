@@ -104,7 +104,7 @@ defmodule Glific.Seeds.Credentials do
     insert_dialogflow_credentials(Keyword.get(secrets, :dialogflow), 1)
     insert_goth_credentials(Keyword.get(secrets, :goth), 1)
     insert_chatbase_credentials(Keyword.get(secrets, :chatbase), 1)
-    insert_gcs_credentials(Keyword.get(secrets, :gcs), 1)
+    #insert_gcs_credentials(Keyword.get(secrets, :gcs), 1)
   end
 end
 
