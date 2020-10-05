@@ -390,14 +390,12 @@ defmodule Glific.Partners do
   defp set_bsp_info(organization) do
     bsp_credential = organization.services[organization.bsp.shortcode]
 
-    bsp_credential =
-      Map.merge(organization.bsp, %{
-        key: bsp_credential.secrets["api_key"],
-        worker: ("Elixir." <> bsp_credential.keys["worker"]) |> String.to_existing_atom(),
-        handler: ("Elixir." <> bsp_credential.keys["handler"]) |> String.to_existing_atom()
+    updated_services_map =
+      Map.merge(organization.services, %{
+        "bsp" => bsp_credential
       })
 
-    %{organization | bsp: bsp_credential}
+    %{organization | services: updated_services_map}
   end
 
   # Lets cache keys and secrets of all the active services
@@ -410,7 +408,7 @@ defmodule Glific.Partners do
       |> preload(:provider)
       |> Repo.all()
 
-    credentials_map =
+    services_map =
       Enum.reduce(credentials, %{}, fn credential, acc ->
         Map.merge(acc, %{
           credential.provider.shortcode => %{keys: credential.keys, secrets: credential.secrets}
@@ -418,7 +416,7 @@ defmodule Glific.Partners do
       end)
 
     organization
-    |> Map.put(:services, credentials_map)
+    |> Map.put(:services, services_map)
   end
 
   @doc """

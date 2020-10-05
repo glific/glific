@@ -43,7 +43,7 @@ defmodule Glific.Partners.Organization do
           shortcode: String.t() | nil,
           email: String.t() | nil,
           bsp_id: non_neg_integer | nil,
-          bsp: map() | Ecto.Association.NotLoaded.t() | nil,
+          bsp: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
           services: map(),
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
