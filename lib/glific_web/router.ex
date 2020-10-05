@@ -43,10 +43,10 @@ defmodule GlificWeb.Router do
     post "/session/renew", SessionController, :renew
   end
 
-  # scope "/", GlificWeb do
-  #   pipe_through :browser
-  #   live "/", PageLive, :index
-  # end
+  scope "/", GlificWeb do
+    pipe_through :browser
+    live "/", PageLive, :index
+  end
 
   # Custom stack for Absinthe
   scope "/" do

@@ -40,7 +40,7 @@ config :glific, GlificWeb.Endpoint,
   http: [:inet6, port: http_port],
   check_origin: false,
   secret_key_base: secret_key_base,
-  url: [host: System.get_env("BASE_URL"), port: http_port]
+  url: [host: System.get_env("BASE_URL")]
 
 # provider keys
 config :glific,
