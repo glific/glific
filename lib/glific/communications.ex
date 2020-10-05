@@ -16,14 +16,14 @@ defmodule Glific.Communications do
   """
   @spec provider_handler(non_neg_integer) :: atom()
   def provider_handler(organization_id),
-    do: Partners.organization(organization_id).provider_handler
+    do: Partners.organization(organization_id).bsp.handler
 
   @doc """
   Get the current provider worker based on the organization | Config | Defaultconfig
   """
   @spec provider_worker(non_neg_integer) :: atom()
   def provider_worker(organization_id),
-    do: Partners.organization(organization_id).provider_worker
+    do: Partners.organization(organization_id).bsp.worker
 
   @doc """
   Unified function to publish data on the graphql subscription endpoint. This  is still looking for a

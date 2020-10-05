@@ -117,7 +117,7 @@ defmodule Glific.Partners do
     provider
     |> Ecto.Changeset.change()
     |> Ecto.Changeset.no_assoc_constraint(:organizations)
-    |> Ecto.Changeset.no_assoc_constraint(:credentials)
+    |> Ecto.Changeset.no_assoc_constraint(:credential)
     |> Repo.delete()
   end
 
@@ -308,7 +308,7 @@ defmodule Glific.Partners do
           get_organization!(organization_id)
           |> set_credentials()
           |> Repo.preload(:bsp)
-          |> set_provider_info()
+          |> set_bsp_info()
           |> set_out_of_office_values()
           |> set_languages()
 
@@ -387,20 +387,19 @@ defmodule Glific.Partners do
     |> Map.put(:languages, languages)
   end
 
-  # Lets cache all provider specific info in the organization entity since
+  # Lets cache all bsp provider specific info in the organization entity since
   # we use it on all sending / receiving of messages
-  @spec set_provider_info(map()) :: map()
-  defp set_provider_info(organization) do
-    credential = organization.services[organization.bsp.shortcode]
+  @spec set_bsp_info(map()) :: map()
+  defp set_bsp_info(organization) do
+    bsp_credential = organization.services[organization.bsp.shortcode]
 
-    credentials = %{
-      provider_key: credential.secrets["api_key"],
-      provider_worker: ("Elixir." <> credential.keys["worker"]) |> String.to_existing_atom(),
-      provider_handler: ("Elixir." <> credential.keys["handler"]) |> String.to_existing_atom()
-    }
+    bsp_credential = Map.merge(organization.bsp, %{
+      key: bsp_credential.secrets["api_key"],
+      worker: ("Elixir." <> bsp_credential.keys["worker"]) |> String.to_existing_atom(),
+      handler: ("Elixir." <> bsp_credential.keys["handler"]) |> String.to_existing_atom()
+    })
 
-    organization
-    |> Map.merge(credentials)
+    %{organization | bsp: bsp_credential}
   end
 
   # Lets cache keys and secrets of all the active services

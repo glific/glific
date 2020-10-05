@@ -45,13 +45,10 @@ defmodule Glific.Partners.Organization do
           shortcode: String.t() | nil,
           email: String.t() | nil,
           bsp_id: non_neg_integer | nil,
-          bsp: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
+          bsp: map() | Ecto.Association.NotLoaded.t() | nil,
           provider_appname: String.t() | nil,
           provider_phone: String.t() | nil,
           provider_limit: non_neg_integer,
-          provider_key: String.t() | nil,
-          provider_handler: String.t() | nil,
-          provider_worker: String.t() | nil,
           services: map(),
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -77,12 +74,6 @@ defmodule Glific.Partners.Organization do
     field :provider_phone, :string
     field :provider_appname, :string
     field :provider_limit, :integer, default: 60
-
-    # We get this value from the config and provider object and store it here
-    # for downstream functions to access while executing
-    field :provider_key, :string, virtual: true, default: "No key exists"
-    field :provider_handler, :string, virtual: true
-    field :provider_worker, :string, virtual: true
 
     # we'll cache all the services here
     field :services, :map, virtual: true, default: %{}
