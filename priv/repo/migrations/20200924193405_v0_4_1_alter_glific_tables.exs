@@ -43,6 +43,8 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
     alter table("organizations") do
       remove :provider_id
       add :bsp_id, references(:providers, on_delete: :nothing), null: false
+
+      remove :provider_appname
     end
   end
 

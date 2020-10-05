@@ -106,7 +106,6 @@ defmodule Glific.Fixtures do
       email: "replace@idk.org",
       # lets just hope its there :)
       bsp_id: 1,
-      provider_appname: "this is not a secret key",
       provider_phone: "and this is not a valid phone",
       # lets just hope its there :)
       default_language_id: 1,

@@ -177,7 +177,6 @@ defmodule Glific.PartnersTest do
       name: "Organization Name",
       shortcode: "organization_shortcode",
       email: "Contact person email",
-      provider_appname: "Provider appname",
       provider_phone: "991737373"
     }
 
@@ -185,7 +184,6 @@ defmodule Glific.PartnersTest do
       name: "Organization Name 1",
       shortcode: "organization_shortcode 1",
       email: "Contact person email 1",
-      provider_appname: "Provider appname 1",
       provider_phone: "9917373731"
     }
 

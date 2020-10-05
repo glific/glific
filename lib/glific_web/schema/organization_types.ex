@@ -34,7 +34,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :id, :id
     field :name, :string
     field :shortcode, :string
-    field :provider_appname, :string
     field :email, :string
     field :provider_phone, :string
 
@@ -107,7 +106,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :name, :string
     field :shortcode, :string
     field :email, :string
-    field :provider_appname, :string
     field :provider_phone, :string
 
     field :bsp_id, :id

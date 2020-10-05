@@ -22,7 +22,6 @@ defmodule Glific.Partners.Organization do
     :shortcode,
     :email,
     :bsp_id,
-    :provider_appname,
     :provider_phone,
     :default_language_id
   ]
@@ -46,7 +45,6 @@ defmodule Glific.Partners.Organization do
           email: String.t() | nil,
           bsp_id: non_neg_integer | nil,
           bsp: map() | Ecto.Association.NotLoaded.t() | nil,
-          provider_appname: String.t() | nil,
           provider_phone: String.t() | nil,
           provider_limit: non_neg_integer,
           services: map(),
@@ -72,7 +70,6 @@ defmodule Glific.Partners.Organization do
     field :email, :string
 
     field :provider_phone, :string
-    field :provider_appname, :string
     field :provider_limit, :integer, default: 60
 
     # we'll cache all the services here

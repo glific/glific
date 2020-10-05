@@ -459,7 +459,7 @@ defmodule Glific.Partners do
       )
 
     organization = organization |> Repo.preload(:bsp)
-    url = credential.keys["api_end_point"] <> "/users/" <> organization.provider_appname
+    url = credential.keys["api_end_point"] <> "/users/" <> credential.secrets["app_name"]
 
     api_key = credential.secrets["api_key"]
 
