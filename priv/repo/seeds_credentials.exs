@@ -83,6 +83,8 @@ defmodule Glific.Seeds.Credentials do
     })
   end
 
+  def insert_gcs_credentials(nil = _gcs, _organization_id), do: nil
+
   def insert_gcs_credentials(gcs, organization_id) do
     {:ok, gcs_db} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
 
@@ -104,7 +106,7 @@ defmodule Glific.Seeds.Credentials do
     insert_dialogflow_credentials(Keyword.get(secrets, :dialogflow), 1)
     insert_goth_credentials(Keyword.get(secrets, :goth), 1)
     insert_chatbase_credentials(Keyword.get(secrets, :chatbase), 1)
-    #insert_gcs_credentials(Keyword.get(secrets, :gcs), 1)
+    insert_gcs_credentials(Keyword.get(secrets, :gcs), 1)
   end
 end
 
