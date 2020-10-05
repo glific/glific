@@ -48,6 +48,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
 
       remove :provider_appname
       remove :provider_phone
+      remove :provider_limit
     end
   end
 

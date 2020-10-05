@@ -341,6 +341,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
             label: "Outbound Message Worker",
             default: "Glific.Providers.Gupshup.Worker",
             view_only: true
+          },
+          bsp_limit: %{
+            type: :integer,
+            label: "BSP limit",
+            default: 60,
+            view_only: true
           }
         },
         secrets: %{
@@ -389,6 +395,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
           label: "Outbound Message Worker",
           default: "Glific.Providers.Glifproxy.Worker",
           view_only: true
+        },
+        bsp_limit: %{
+          type: :integer,
+          label: "BSP limit",
+          default: 60,
+          view_only: true
         }
       },
       secrets: %{}
@@ -418,13 +430,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     admin
   end
 
-  defp create_org(0 = count_organizations, provider, en_us, out_of_office_default_data) do
+  defp create_org(0 = _count_organizations, provider, en_us, out_of_office_default_data) do
     Repo.insert!(%Organization{
       name: "Glific",
       shortcode: "glific",
       email: "ADMIN@REPLACE_ME.NOW",
       bsp_id: provider.id,
-      provider_limit: 60,
       active_language_ids: [en_us.id],
       default_language_id: en_us.id,
       out_of_office: out_of_office_default_data
@@ -439,7 +450,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       shortcode: "shortcode " <> org_uniq_id,
       email: "ADMIN_#{org_uniq_id}@REPLACE_ME.NOW",
       bsp_id: provider.id,
-      provider_limit: 60,
       active_language_ids: [en_us.id],
       default_language_id: en_us.id,
       out_of_office: out_of_office_default_data
