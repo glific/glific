@@ -206,8 +206,6 @@ mutation createOrganization($input:OrganizationInput!) {
         id
         name
       }
-      providerAppname
-      providerPhone
       defaultLanguage {
         id
         label
@@ -227,8 +225,6 @@ mutation createOrganization($input:OrganizationInput!) {
     "contactId": 1,
     "email": "test@test.com",
     "bspId": 1,
-    "providerAppname": "The name of your set in provider",
-    "providerPhone": "Number",
     "defaultLanguageId": 1,
     "activeLanguageIds": [1]
   }
@@ -257,9 +253,7 @@ mutation createOrganization($input:OrganizationInput!) {
         "bsp": {
           "id": "1",
           "name": "Default Provider"
-        },
-        "providerAppname": "MyAppName",
-        "providerPhone": "Number"
+        }
       }
     }
   }
@@ -557,16 +551,6 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>providerAppname</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>providerPhone</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
 <td colspan="2" valign="top"><strong>outOfOffice</strong></td>
 <td valign="top"><a href="#outofoffice">OutOfOffice</a></td>
 <td></td>
@@ -737,15 +721,6 @@ Match the bsp provider
 
 </td>
 </tr>
-<tr>
-<td colspan="2" valign="top"><strong>providerPhone</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td>
-
-Match the whatsapp number of organization
-
-</td>
-</tr>
 </tbody>
 </table>
 
@@ -802,16 +777,6 @@ Unique
 <tr>
 <td colspan="2" valign="top"><strong>bspId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>providerKey</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>providerPhone</strong></td>
-<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>
