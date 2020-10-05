@@ -40,11 +40,14 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
   end
 
   defp organizations do
+    drop unique_index(:organizations, :provider_phone)
+
     alter table("organizations") do
       remove :provider_id
       add :bsp_id, references(:providers, on_delete: :nothing), null: false
 
       remove :provider_appname
+      remove :provider_phone
     end
   end
 

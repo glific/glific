@@ -176,15 +176,13 @@ defmodule Glific.PartnersTest do
     @valid_org_attrs %{
       name: "Organization Name",
       shortcode: "organization_shortcode",
-      email: "Contact person email",
-      provider_phone: "991737373"
+      email: "Contact person email"
     }
 
     @valid_org_attrs_1 %{
       name: "Organization Name 1",
       shortcode: "organization_shortcode 1",
-      email: "Contact person email 1",
-      provider_phone: "9917373731"
+      email: "Contact person email 1"
     }
 
     @update_org_attrs %{
@@ -295,7 +293,6 @@ defmodule Glific.PartnersTest do
       assert organization.name == @valid_org_attrs.name
       assert organization.shortcode == @valid_org_attrs.shortcode
       assert organization.email == @valid_org_attrs.email
-      assert organization.provider_phone == @valid_org_attrs.provider_phone
     end
 
     test "create_organization/1 with invalid data returns error changeset" do
@@ -442,9 +439,6 @@ defmodule Glific.PartnersTest do
       assert org_list == [org1]
 
       org_list = Partners.list_organizations(%{filter: %{email: org1.email}})
-      assert org_list == [org1]
-
-      org_list = Partners.list_organizations(%{filter: %{provider_phone: org1.provider_phone}})
       assert org_list == [org1]
 
       org_list = Partners.list_organizations(%{order: :asc, filter: %{name: "ABC"}})

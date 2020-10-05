@@ -186,9 +186,6 @@ defmodule Glific.Partners do
           join: c in assoc(q, :bsp),
           where: ilike(c.name, ^"%#{bsp}%")
 
-      {:provider_phone, provider_phone}, query ->
-        from q in query, where: ilike(q.provider_phone, ^"%#{provider_phone}%")
-
       {:default_language, default_language}, query ->
         from q in query,
           join: c in assoc(q, :default_language),
@@ -393,11 +390,12 @@ defmodule Glific.Partners do
   defp set_bsp_info(organization) do
     bsp_credential = organization.services[organization.bsp.shortcode]
 
-    bsp_credential = Map.merge(organization.bsp, %{
-      key: bsp_credential.secrets["api_key"],
-      worker: ("Elixir." <> bsp_credential.keys["worker"]) |> String.to_existing_atom(),
-      handler: ("Elixir." <> bsp_credential.keys["handler"]) |> String.to_existing_atom()
-    })
+    bsp_credential =
+      Map.merge(organization.bsp, %{
+        key: bsp_credential.secrets["api_key"],
+        worker: ("Elixir." <> bsp_credential.keys["worker"]) |> String.to_existing_atom(),
+        handler: ("Elixir." <> bsp_credential.keys["handler"]) |> String.to_existing_atom()
+      })
 
     %{organization | bsp: bsp_credential}
   end

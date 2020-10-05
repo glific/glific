@@ -102,7 +102,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
     name = "Organization Test Name"
     shortcode = "org_shortcode"
     email = "test2@glific.org"
-    provider_phone = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
     provider_name = "Default Provider"
     {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
@@ -118,7 +117,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "shortcode" => shortcode,
             "email" => email,
             "bsp_id" => bsp_provider.id,
-            "provider_phone" => provider_phone,
             "default_language_id" => language.id,
             "active_language_ids" => [language.id]
           }
@@ -141,7 +139,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "shortcode" => shortcode,
           "email" => email,
           "bsp_id" => bsp_provider.id,
-          "provider_phone" => provider_phone,
           "default_language_id" => language.id,
           "active_language_ids" => [language.id]
         }
@@ -156,7 +153,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "shortcode" => shortcode,
             "email" => email,
             "bsp_id" => bsp_provider.id,
-            "provider_phone" => provider_phone,
             "default_language_id" => language.id,
             "active_language_ids" => [language.id]
           }
@@ -175,7 +171,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
     name = "Organization Test Name"
     shortcode = "org_shortcode"
     email = "test2@glific.org"
-    provider_phone = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     timezone = "America/Los_Angeles"
 
     provider_name = "Default Provider"
@@ -193,7 +188,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "shortcode" => shortcode,
             "email" => email,
             # "bsp_id" => bsp_provider.id,
-            "provider_phone" => provider_phone,
             "default_language_id" => language.id,
             "active_language_ids" => [language.id],
             "timezone" => timezone
@@ -231,14 +225,13 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "shortcode" => "new_shortcode",
           "email" => "new email",
           "bsp_id" => bsp_provider.id,
-          "provider_phone" => "new provider_phone",
           "default_language_id" => language.id,
           "active_language_ids" => [language.id]
         }
       }
     )
 
-    # ensure we cannot update an existing organization with the same shortcode, email or provider_phone
+    # ensure we cannot update an existing organization with the same shortcode, email
     result =
       auth_query_gql_by(:update, user,
         variables: %{
@@ -246,8 +239,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "input" => %{
             "name" => "new organization",
             "shortcode" => "new_shortcode",
-            "email" => "new email",
-            "provider_phone" => "new provider_phone"
+            "email" => "new email"
           }
         }
       )

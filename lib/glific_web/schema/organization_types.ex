@@ -35,7 +35,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :name, :string
     field :shortcode, :string
     field :email, :string
-    field :provider_phone, :string
 
     field :bsp, :provider do
       resolve(dataloader(Repo))
@@ -79,9 +78,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     @desc "Match the email"
     field :email, :string
 
-    @desc "Match the whatsapp number of organization"
-    field :provider_phone, :string
-
     @desc "Match the provider"
     field :provider, :string
 
@@ -106,7 +102,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :name, :string
     field :shortcode, :string
     field :email, :string
-    field :provider_phone, :string
 
     field :bsp_id, :id
     field :contact_id, :id
