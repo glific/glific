@@ -113,7 +113,8 @@ defmodule Glific.PartnersTest do
 
     test "ensure that delete_provider/1 with foreign key constraints give error" do
       organization = organization_fixture()
-      provider = Partners.get_provider!(organization.provider_id)
+      provider = Partners.get_provider!(organization.bsp_id)
+      # check for no assoc constraint on credentials and organizations
       assert {:error, _} = Partners.delete_provider(provider)
     end
 
@@ -193,7 +194,7 @@ defmodule Glific.PartnersTest do
       shortcode: "updated_shortcode"
     }
 
-    @invalid_org_attrs %{provider_id: nil, name: nil}
+    @invalid_org_attrs %{bsp_id: nil, name: nil}
 
     @valid_default_language_attrs %{
       label: "English (United States)",
@@ -224,13 +225,13 @@ defmodule Glific.PartnersTest do
 
     def organization_fixture(attrs \\ %{}) do
       default_language = default_language_fixture(attrs)
-      provider = provider_fixture(%{name: Person.name(), shortcode: Person.name()})
+      bsp_provider = provider_fixture(%{name: Person.name(), shortcode: Person.name()})
 
       {:ok, organization} =
         attrs
         |> Enum.into(@valid_org_attrs)
         |> Map.merge(%{
-          provider_id: provider.id,
+          bsp_id: bsp_provider.id,
           default_language_id: default_language.id,
           active_language_ids: [default_language.id]
         })
@@ -244,7 +245,7 @@ defmodule Glific.PartnersTest do
 
       Repo.insert!(%Glific.Partners.Credential{
         organization_id: organization.id,
-        provider_id: organization.provider_id,
+        provider_id: organization.bsp_id,
         keys: %{
           url: "test_url",
           api_end_point: "test_api_end_point",
@@ -287,7 +288,7 @@ defmodule Glific.PartnersTest do
       assert {:ok, %Organization{} = organization} =
                @valid_org_attrs
                |> Map.merge(%{
-                 provider_id: provider_fixture().id,
+                 bsp_id: provider_fixture().id,
                  default_language_id: language.id,
                  active_language_ids: [language.id]
                })
@@ -309,7 +310,7 @@ defmodule Glific.PartnersTest do
       {:ok, %Organization{} = organization} =
         @valid_org_attrs
         |> Map.merge(%{
-          provider_id: provider_fixture().id,
+          bsp_id: provider_fixture().id,
           default_language_id: language.id,
           active_language_ids: [language.id]
         })
@@ -462,18 +463,18 @@ defmodule Glific.PartnersTest do
       {:ok, organization} =
         @valid_org_attrs
         |> Map.merge(%{
-          provider_id: provider.id,
+          bsp_id: provider.id,
           default_language_id: default_language.id,
           active_language_ids: [default_language.id]
         })
         |> Partners.create_organization()
 
-      assert [organization] == Partners.list_organizations(%{filter: %{provider: provider.name}})
+      assert [organization] == Partners.list_organizations(%{filter: %{bsp: provider.name}})
 
       assert [organization] ==
                Partners.list_organizations(%{filter: %{name: "Organization Name"}})
 
-      assert [] == Partners.list_organizations(%{filter: %{provider: "RandomString"}})
+      assert [] == Partners.list_organizations(%{filter: %{bsp: "RandomString"}})
 
       assert [] == Partners.list_organizations(%{filter: %{default_language: "Hindi"}})
     end
@@ -486,7 +487,7 @@ defmodule Glific.PartnersTest do
       organization = organization_fixture(@valid_org_attrs)
 
       assert {:error, %Ecto.Changeset{}} =
-               Map.merge(@valid_org_attrs, %{provider_id: organization.provider_id})
+               Map.merge(@valid_org_attrs, %{bsp_id: organization.bsp_id})
                |> Partners.create_organization()
     end
 

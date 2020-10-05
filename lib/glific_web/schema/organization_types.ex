@@ -38,7 +38,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :email, :string
     field :provider_phone, :string
 
-    field :provider, :provider do
+    field :bsp, :provider do
       resolve(dataloader(Repo))
     end
 
@@ -110,7 +110,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :provider_appname, :string
     field :provider_phone, :string
 
-    field :provider_id, :id
+    field :bsp_id, :id
     field :contact_id, :id
     field :default_language_id, :id
 

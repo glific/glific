@@ -10,6 +10,8 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
 
     providers()
 
+    organizations()
+
     chatbase_jobs()
 
     messages()
@@ -37,6 +39,13 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
     create unique_index(:providers, :shortcode)
   end
 
+  defp organizations do
+    alter table("organizations") do
+      remove :provider_id
+      add :bsp_id, references(:providers, on_delete: :nothing), null: false
+    end
+  end
+
   defp credentials do
     create table(:credentials) do
       # all the service keys which doesn't need ecryption
@@ -51,7 +60,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       add :is_valid, :boolean, default: true
 
       # foreign key to provider id
-      add :provider_id, references(:providers, on_delete: :nilify_all), null: false
+      add :provider_id, references(:providers, on_delete: :nothing), null: false
 
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false

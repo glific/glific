@@ -21,7 +21,7 @@ defmodule Glific.Partners.Organization do
     :name,
     :shortcode,
     :email,
-    :provider_id,
+    :bsp_id,
     :provider_appname,
     :provider_phone,
     :default_language_id
@@ -44,8 +44,8 @@ defmodule Glific.Partners.Organization do
           name: String.t() | nil,
           shortcode: String.t() | nil,
           email: String.t() | nil,
-          provider_id: non_neg_integer | nil,
-          provider: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
+          bsp_id: non_neg_integer | nil,
+          bsp: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
           provider_appname: String.t() | nil,
           provider_phone: String.t() | nil,
           provider_limit: non_neg_integer,
@@ -92,7 +92,7 @@ defmodule Glific.Partners.Organization do
     field :hours, {:array, :time}, virtual: true
     field :days, {:array, :integer}, virtual: true
 
-    belongs_to :provider, Provider
+    belongs_to :bsp, Provider, foreign_key: :bsp_id
     belongs_to :contact, Contact
     belongs_to :default_language, Language
 

@@ -105,7 +105,7 @@ defmodule Glific.Fixtures do
       shortcode: "fixture_org_shortcode",
       email: "replace@idk.org",
       # lets just hope its there :)
-      provider_id: 1,
+      bsp_id: 1,
       provider_appname: "this is not a secret key",
       provider_phone: "and this is not a valid phone",
       # lets just hope its there :)

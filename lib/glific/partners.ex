@@ -117,6 +117,7 @@ defmodule Glific.Partners do
     provider
     |> Ecto.Changeset.change()
     |> Ecto.Changeset.no_assoc_constraint(:organizations)
+    |> Ecto.Changeset.no_assoc_constraint(:credentials)
     |> Repo.delete()
   end
 
@@ -180,10 +181,10 @@ defmodule Glific.Partners do
       {:email, email}, query ->
         from q in query, where: ilike(q.email, ^"%#{email}%")
 
-      {:provider, provider}, query ->
+      {:bsp, bsp}, query ->
         from q in query,
-          join: c in assoc(q, :provider),
-          where: ilike(c.name, ^"%#{provider}%")
+          join: c in assoc(q, :bsp),
+          where: ilike(c.name, ^"%#{bsp}%")
 
       {:provider_phone, provider_phone}, query ->
         from q in query, where: ilike(q.provider_phone, ^"%#{provider_phone}%")
@@ -306,7 +307,7 @@ defmodule Glific.Partners do
         organization =
           get_organization!(organization_id)
           |> set_credentials()
-          |> Repo.preload(:provider)
+          |> Repo.preload(:bsp)
           |> set_provider_info()
           |> set_out_of_office_values()
           |> set_languages()
@@ -390,7 +391,7 @@ defmodule Glific.Partners do
   # we use it on all sending / receiving of messages
   @spec set_provider_info(map()) :: map()
   defp set_provider_info(organization) do
-    credential = organization.services[organization.provider.shortcode]
+    credential = organization.services[organization.bsp.shortcode]
 
     credentials = %{
       provider_key: credential.secrets["api_key"],
@@ -455,10 +456,10 @@ defmodule Glific.Partners do
     {:ok, credential} =
       Repo.fetch_by(
         Credential,
-        %{organization_id: organization.id, provider_id: organization.provider_id}
+        %{organization_id: organization.id, provider_id: organization.bsp_id}
       )
 
-    organization = organization |> Repo.preload(:provider)
+    organization = organization |> Repo.preload(:bsp)
     url = credential.keys["api_end_point"] <> "/users/" <> organization.provider_appname
 
     api_key = credential.secrets["api_key"]

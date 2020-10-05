@@ -106,7 +106,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     provider_phone = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
     provider_name = "Default Provider"
-    {:ok, provider} = Repo.fetch_by(Provider, %{name: provider_name})
+    {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
     language_locale = "en_US"
     {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
@@ -119,7 +119,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "shortcode" => shortcode,
             "email" => email,
             "provider_appname" => provider_appname,
-            "provider_id" => provider.id,
+            "bsp_id" => bsp_provider.id,
             "provider_phone" => provider_phone,
             "default_language_id" => language.id,
             "active_language_ids" => [language.id]
@@ -143,7 +143,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "shortcode" => shortcode,
           "email" => email,
           "provider_appname" => provider_appname,
-          "provider_id" => provider.id,
+          "bsp_id" => bsp_provider.id,
           "provider_phone" => provider_phone,
           "default_language_id" => language.id,
           "active_language_ids" => [language.id]
@@ -159,7 +159,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "shortcode" => shortcode,
             "email" => email,
             "provider_appname" => provider_appname,
-            "provider_id" => provider.id,
+            "bsp_id" => bsp_provider.id,
             "provider_phone" => provider_phone,
             "default_language_id" => language.id,
             "active_language_ids" => [language.id]
@@ -184,7 +184,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     timezone = "America/Los_Angeles"
 
     provider_name = "Default Provider"
-    {:ok, provider} = Repo.fetch_by(Provider, %{name: provider_name})
+    {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
     language_locale = "en_US"
     {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
@@ -198,7 +198,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "shortcode" => shortcode,
             "email" => email,
             "provider_appname" => provider_appname,
-            # "provider_id" => provider.id,
+            # "bsp_id" => bsp_provider.id,
             "provider_phone" => provider_phone,
             "default_language_id" => language.id,
             "active_language_ids" => [language.id],
@@ -237,7 +237,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "shortcode" => "new_shortcode",
           "email" => "new email",
           "provider_appname" => provider_appname,
-          "provider_id" => provider.id,
+          "bsp_id" => bsp_provider.id,
           "provider_phone" => "new provider_phone",
           "default_language_id" => language.id,
           "active_language_ids" => [language.id]
@@ -255,7 +255,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "shortcode" => "new_shortcode",
             "email" => "new email",
             "provider_appname" => provider_appname,
-            "provider_id" => provider.id,
             "provider_phone" => "new provider_phone"
           }
         }
