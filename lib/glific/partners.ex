@@ -474,7 +474,7 @@ defmodule Glific.Partners do
           phone: phone,
           last_message_at: last_message_at |> DateTime.truncate(:second),
           optin_time: optin_time |> DateTime.truncate(:second),
-          provider_status: check_provider_status(last_message_at),
+          bsp_status: check_bsp_status(last_message_at),
           organization_id: organization.id,
           language_id: organization.default_language_id
         })
@@ -482,8 +482,8 @@ defmodule Glific.Partners do
     end
   end
 
-  @spec check_provider_status(DateTime.t()) :: atom()
-  defp check_provider_status(last_message_at) do
+  @spec check_bsp_status(DateTime.t()) :: atom()
+  defp check_bsp_status(last_message_at) do
     if Timex.diff(DateTime.utc_now(), last_message_at, :hours) < 24 do
       :session_and_hsm
     else

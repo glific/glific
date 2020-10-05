@@ -10,7 +10,7 @@ query contacts($filter: ContactFilter, $opts: Opts) {
     optinTime
     optoutTime
     phone
-    providerStatus
+    bspStatus
     status
     tags {
       id
@@ -48,7 +48,7 @@ query contacts($filter: ContactFilter, $opts: Opts) {
         "optinTime": null,
         "optoutTime": null,
         "phone": "917834811231",
-        "providerStatus": "SESSION_AND_HSM",
+        "bspStatus": "SESSION_AND_HSM",
         "status": "VALID",
         "tags": []
       }
@@ -201,7 +201,7 @@ query contact($id: ID!) {
       optinTime
       optoutTime
       phone
-      providerStatus
+      bspStatus
       status
       tags {
         id
@@ -239,7 +239,7 @@ query contact($id: ID!) {
         "optinTime": "2020-08-28T13:15:19Z",
         "optoutTime": null,
         "phone": "917834811231",
-        "providerStatus": "SESSION_AND_HSM",
+        "bspStatus": "SESSION_AND_HSM",
         "settings": null,
         "status": "VALID",
         "tags": []
@@ -306,7 +306,7 @@ mutation createContact($input:ContactInput!) {
       optinTime
       optoutTime
       phone
-      providerStatus
+      bspStatus
       status
       tags {
         id
@@ -340,7 +340,7 @@ mutation createContact($input:ContactInput!) {
         "optinTime": null,
         "optoutTime": null,
         "phone": "9876543232",
-        "providerStatus": "SESSION",
+        "bspStatus": "SESSION",
         "status": null,
         "tags": []
       },
@@ -369,7 +369,7 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
     contact {
       id
       name
-      providerStatus
+      bspStatus
       status
       fields
       settings
@@ -407,7 +407,7 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
           "label": "English (United States)"
         },
         "name": "This is a updated contact for this example",
-        "providerStatus": "SESSION_AND_HSM",
+        "bspStatus": "SESSION_AND_HSM",
         "settings": null,
         "status": "VALID"
       },
@@ -652,8 +652,8 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>providerStatus</strong></td>
-<td valign="top"><a href="#contactproviderstatusenum">ContactProviderStatusEnum</a></td>
+<td colspan="2" valign="top"><strong>bspStatus</strong></td>
+<td valign="top"><a href="#contactbspstatusenum">ContactBspStatusEnum</a></td>
 <td></td>
 </tr>
 <tr>
@@ -778,8 +778,8 @@ Match the phone
 </td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>providerStatus</strong></td>
-<td valign="top"><a href="#contactproviderstatusenum">ContactProviderStatusEnum</a></td>
+<td colspan="2" valign="top"><strong>bspStatus</strong></td>
+<td valign="top"><a href="#contactbspstatusenum">ContactBspStatusEnum</a></td>
 <td></td>
 </tr>
 <tr>
@@ -842,8 +842,8 @@ Match if contact is mapped in a group of includeGroups list
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>providerStatus</strong></td>
-<td valign="top"><a href="#contactproviderstatusenum">ContactProviderStatusEnum</a></td>
+<td colspan="2" valign="top"><strong>bspStatus</strong></td>
+<td valign="top"><a href="#contactbspstatusenum">ContactBspStatusEnum</a></td>
 <td></td>
 </tr>
 <tr>

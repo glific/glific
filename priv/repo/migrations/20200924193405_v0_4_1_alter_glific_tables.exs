@@ -15,6 +15,8 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
     chatbase_jobs()
 
     messages()
+
+    contacts()
   end
 
   defp providers do
@@ -49,6 +51,13 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       remove :provider_appname
       remove :provider_phone
       remove :provider_limit
+    end
+  end
+
+  defp contacts do
+    alter table(:contacts) do
+      remove :provider_status
+      add :bsp_status, :contact_bsp_status_enum, null: false, default: "none"
     end
   end
 

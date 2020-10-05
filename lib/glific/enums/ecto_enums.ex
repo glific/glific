@@ -25,6 +25,12 @@ defenum(
 )
 
 defenum(
+  Glific.Enums.ContactBspStatus,
+  :contact_bsp_status_enum,
+  Glific.Enums.contact_bsp_status_const()
+)
+
+defenum(
   Glific.Enums.FlowCase,
   :flow_case_enum,
   Glific.Enums.flow_case_const()

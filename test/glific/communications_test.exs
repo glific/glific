@@ -51,7 +51,7 @@ defmodule Glific.CommunicationsTest do
       optin_time: ~U[2010-04-17 14:00:00Z],
       phone: "101013131",
       last_message_at: DateTime.utc_now(),
-      provider_status: :session_and_hsm
+      bsp_status: :session_and_hsm
     }
 
     @valid_attrs %{
@@ -271,7 +271,7 @@ defmodule Glific.CommunicationsTest do
     test "sending message to contact having incorrect provider status will return error", attrs do
       {:ok, receiver} =
         @receiver_attrs
-        |> Map.merge(%{provider_status: :none, phone: Phone.EnUs.phone()})
+        |> Map.merge(%{bsp_status: :none, phone: Phone.EnUs.phone()})
         |> Map.merge(attrs)
         |> Contacts.create_contact()
 
@@ -285,7 +285,7 @@ defmodule Glific.CommunicationsTest do
         |> Map.merge(%{
           phone: Phone.EnUs.phone(),
           last_message_at: Timex.shift(DateTime.utc_now(), days: -2),
-          provider_status: :none
+          bsp_status: :none
         })
         |> Map.merge(attrs)
         |> Contacts.create_contact()

@@ -22,6 +22,9 @@ defmodule Glific.Enums do
   iex> Glific.Enums.contact_provider_status_const()
   [:none, :session, :session_and_hsm, :hsm]
 
+  iex> Glific.Enums.contact_bsp_status_const()
+  [:none, :session, :session_and_hsm, :hsm]
+
   iex> Glific.Enums.flow_case_const()
   [:has_any_word]
 
@@ -60,6 +63,9 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.ContactProviderStatus.__enum_map__()
   Glific.Enums.contact_provider_status_const()
+
+  iex> Glific.Enums.ContactBspStatus.__enum_map__()
+  Glific.Enums.contact_bsp_status_const()
 
   iex> Glific.Enums.FlowCase.__enum_map__()
   Glific.Enums.flow_case_const()
@@ -107,6 +113,9 @@ defmodule Glific.Enums do
 
   defmacro contact_provider_status_const,
     do: Macro.expand(@contact_provider_status_const, __CALLER__)
+
+  defmacro contact_bsp_status_const,
+    do: Macro.expand(@contact_bsp_status_const, __CALLER__)
 
   defmacro flow_case_const,
     do: Macro.expand(@flow_case_const, __CALLER__)

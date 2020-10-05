@@ -41,7 +41,7 @@ defmodule Glific.Fixtures do
       last_message_at: DateTime.backward(0),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      provider_status: :session_and_hsm,
+      bsp_status: :session_and_hsm,
       organization_id: get_org_id()
     }
 

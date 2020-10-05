@@ -33,9 +33,9 @@ The Contact Status enum
 </tbody>
 </table>
 
-### ContactProviderStatusEnum
+### ContactBspStatusEnum
 
-The Contact Provider Status enum
+The Contact BSP Provider Status enum
 
 <table>
 <thead>

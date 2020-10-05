@@ -7,7 +7,7 @@ defmodule Glific.Contacts.Contact do
 
   alias Glific.{
     Contacts.Contact,
-    Enums.ContactProviderStatus,
+    Enums.ContactBspStatus,
     Enums.ContactStatus,
     Groups.Group,
     Partners.Organization,
@@ -22,7 +22,7 @@ defmodule Glific.Contacts.Contact do
   ]
   @optional_fields [
     :name,
-    :provider_status,
+    :bsp_status,
     :status,
     :optin_time,
     :optout_time,
@@ -37,7 +37,7 @@ defmodule Glific.Contacts.Contact do
           name: String.t() | nil,
           phone: String.t() | nil,
           status: ContactStatus | nil,
-          provider_status: ContactProviderStatus | nil,
+          bsp_status: ContactBspStatus | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -56,7 +56,7 @@ defmodule Glific.Contacts.Contact do
     field :phone, :string
 
     field :status, ContactStatus
-    field :provider_status, ContactProviderStatus
+    field :bsp_status, ContactBspStatus
 
     belongs_to :language, Language
     belongs_to :organization, Organization

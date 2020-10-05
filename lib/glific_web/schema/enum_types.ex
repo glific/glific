@@ -18,6 +18,9 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "The Contact Provider Status enum"
   enum(:contact_provider_status_enum, values: Glific.Enums.contact_provider_status_const())
 
+  @desc "The Contact BSP Provider Status enum"
+  enum(:contact_bsp_status_enum, values: Glific.Enums.contact_bsp_status_const())
+
   @desc "The Flow Case enum"
   enum(:flow_case_enum, values: Glific.Enums.flow_case_const())
 

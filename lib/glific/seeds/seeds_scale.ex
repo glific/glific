@@ -26,7 +26,7 @@ if Code.ensure_loaded?(Faker) do
       %{
         name: Person.name(),
         phone: phone,
-        provider_status: "session_and_hsm",
+        bsp_status: "session_and_hsm",
         optin_time: DateTime.truncate(DateTime.utc_now(), :second),
         optout_time: nil,
         status: "valid",

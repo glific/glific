@@ -46,8 +46,8 @@ defmodule Glific.Contacts do
       {:status, status}, query ->
         from q in query, where: q.status == ^status
 
-      {:provider_status, provider_status}, query ->
-        from q in query, where: q.provider_status == ^provider_status
+      {:bsp_status, bsp_status}, query ->
+        from q in query, where: q.bsp_status == ^bsp_status
 
       {:include_groups, []}, query ->
         query
@@ -236,7 +236,7 @@ defmodule Glific.Contacts do
       last_message_at: utc_time,
       optout_time: nil,
       status: :valid,
-      provider_status: :session_and_hsm,
+      bsp_status: :session_and_hsm,
       organization_id: organization_id,
       updated_at: DateTime.utc_now()
     })
@@ -254,7 +254,7 @@ defmodule Glific.Contacts do
       optout_time: utc_time,
       optin_time: nil,
       status: :invalid,
-      provider_status: :none,
+      bsp_status: :none,
       organization_id: organization_id,
       updated_at: DateTime.utc_now()
     })
@@ -273,7 +273,7 @@ defmodule Glific.Contacts do
   @spec can_send_message_to?(Contact.t(), boolean()) :: boolean()
   def can_send_message_to?(contact, true = _is_hsm) do
     with :valid <- contact.status,
-         true <- contact.provider_status in [:session_and_hsm, :hsm],
+         true <- contact.bsp_status in [:session_and_hsm, :hsm],
          true <- contact.optin_time != nil do
       true
     else
@@ -286,7 +286,7 @@ defmodule Glific.Contacts do
   """
   def can_send_message_to?(contact, _is_hsm) do
     with :valid <- contact.status,
-         true <- contact.provider_status in [:session_and_hsm, :session],
+         true <- contact.bsp_status in [:session_and_hsm, :session],
          true <- Glific.in_past_time(contact.last_message_at, :hours, 24) do
       true
     else
@@ -352,27 +352,27 @@ defmodule Glific.Contacts do
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | :ok
   def set_session_status(contact, :none = _status) when is_struct(contact) do
     if is_nil(contact.optin_time),
-      do: update_contact(contact, %{provider_status: :none}),
-      else: update_contact(contact, %{provider_status: :hsm})
+      do: update_contact(contact, %{bsp_status: :none}),
+      else: update_contact(contact, %{bsp_status: :hsm})
   end
 
   def set_session_status(contact_ids, :none = _status) when is_list(contact_ids) do
     Contact
     |> where([c], is_nil(c.optin_time))
     |> where([c], c.id in ^contact_ids)
-    |> Repo.update_all(set: [provider_status: :none])
+    |> Repo.update_all(set: [bsp_status: :none])
 
     Contact
     |> where([c], not is_nil(c.optin_time))
     |> where([c], c.id in ^contact_ids)
-    |> Repo.update_all(set: [provider_status: :hsm])
+    |> Repo.update_all(set: [bsp_status: :hsm])
 
     :ok
   end
 
   def set_session_status(contact, :session = _status) do
     if is_nil(contact.optin_time),
-      do: update_contact(contact, %{provider_status: :session}),
-      else: update_contact(contact, %{provider_status: :session_and_hsm})
+      do: update_contact(contact, %{bsp_status: :session}),
+      else: update_contact(contact, %{bsp_status: :session_and_hsm})
   end
 end

@@ -67,7 +67,7 @@ if Code.ensure_loaded?(Faker) do
           name: "Default receiver",
           language_id: hi_in.id,
           optin_time: utc_now,
-          provider_status: :session_and_hsm
+          bsp_status: :session_and_hsm
         },
         %{
           name: "Adelle Cavin",
@@ -95,7 +95,7 @@ if Code.ensure_loaded?(Faker) do
             updated_at: utc_now,
             organization_id: organization.id,
             last_message_at: utc_now,
-            provider_status: :session
+            bsp_status: :session
           }
           |> Map.merge(contact_entry)
         end
