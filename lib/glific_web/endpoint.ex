@@ -53,7 +53,7 @@ defmodule GlificWeb.Endpoint do
   plug Plug.Head
   plug Plug.Session, @session_options
   #plug CORSPlug
-  plug Corsica, origins: ["http://localhost", "*"]
+  plug Corsica, origins: "https://sol.tides.coloredcow.com"
 
   # add the subdomain/domain
   plug GlificWeb.SubdomainPlug
