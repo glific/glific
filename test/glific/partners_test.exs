@@ -571,7 +571,7 @@ defmodule Glific.PartnersTest do
     test "perform_all/2 should run handler for all active organizations" do
       contact =
         Fixtures.contact_fixture(%{
-          provider_status: :session_and_hsm,
+          bsp_status: :session_and_hsm,
           optin_time: Timex.shift(DateTime.utc_now(), hours: -25),
           last_message_at: Timex.shift(DateTime.utc_now(), hours: -24)
         })
@@ -582,7 +582,7 @@ defmodule Glific.PartnersTest do
       Partners.perform_all(&Contacts.update_contact_status/2, %{})
 
       updated_contact = Contacts.get_contact!(contact.id)
-      assert updated_contact.provider_status == :hsm
+      assert updated_contact.bsp_status == :hsm
     end
   end
 

@@ -46,8 +46,7 @@ defmodule Glific.Communications.Message do
 
       {:ok, Communications.publish_data(message, :sent_message)}
     else
-      {:ok, _} =
-        Messages.update_message(message, %{status: :contact_opt_out, provider_status: nil})
+      {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
 
       {:error, "Cannot send the message to the contact."}
     end
@@ -65,7 +64,7 @@ defmodule Glific.Communications.Message do
     |> Poison.decode!(as: %Message{})
     |> Messages.update_message(%{
       provider_message_id: body["messageId"],
-      provider_status: :enqueued,
+      bsp_status: :enqueued,
       status: :sent,
       flow: :outbound,
       sent_at: DateTime.truncate(DateTime.utc_now(), :second)
@@ -86,7 +85,7 @@ defmodule Glific.Communications.Message do
     |> Poison.encode!()
     |> Poison.decode!(as: %Message{})
     |> Messages.update_message(%{
-      provider_status: :error,
+      bsp_status: :error,
       status: :sent,
       flow: :outbound
     })
@@ -97,17 +96,15 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback to update the provider status for a message
   """
-  @spec update_provider_status(String.t(), atom(), map()) :: {:ok, Message.t()}
-  def update_provider_status(provider_message_id, :error, errors) do
+  @spec update_bsp_status(String.t(), atom(), map()) :: {:ok, Message.t()}
+  def update_bsp_status(provider_message_id, :error, errors) do
     from(m in Message, where: m.provider_message_id == ^provider_message_id)
-    |> Repo.update_all(
-      set: [provider_status: :error, errors: errors, updated_at: DateTime.utc_now()]
-    )
+    |> Repo.update_all(set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()])
   end
 
-  def update_provider_status(provider_message_id, provider_status, _params) do
+  def update_bsp_status(provider_message_id, bsp_status, _params) do
     from(m in Message, where: m.provider_message_id == ^provider_message_id)
-    |> Repo.update_all(set: [provider_status: provider_status, updated_at: DateTime.utc_now()])
+    |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
   end
 
   @doc """
@@ -130,7 +127,7 @@ defmodule Glific.Communications.Message do
         sender_id: contact.id,
         receiver_id: Partners.organization_contact_id(organization_id),
         flow: :inbound,
-        provider_status: :delivered,
+        bsp_status: :delivered,
         status: :received,
         organization_id: contact.organization_id
       })

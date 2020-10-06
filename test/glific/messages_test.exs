@@ -54,7 +54,7 @@ defmodule Glific.MessagesTest do
       optin_time: DateTime.utc_now(),
       optout_time: nil,
       phone: "101013131",
-      provider_status: :session_and_hsm,
+      bsp_status: :session_and_hsm,
       last_message_at: DateTime.utc_now()
     }
 
@@ -63,7 +63,7 @@ defmodule Glific.MessagesTest do
       flow: :inbound,
       type: :text,
       provider_message_id: "some provider_message_id",
-      provider_status: :enqueued
+      bsp_status: :enqueued
     }
     @update_attrs %{
       body: "some updated body",
@@ -118,7 +118,7 @@ defmodule Glific.MessagesTest do
       assert [message] ==
                Messages.list_messages(%{
                  opts: %{order: :asc},
-                 filter: Map.merge(attrs, %{provider_status: message.provider_status})
+                 filter: Map.merge(attrs, %{bsp_status: message.bsp_status})
                })
     end
 
@@ -381,11 +381,11 @@ defmodule Glific.MessagesTest do
       message2 = Messages.get_message!(message2.id)
 
       assert message1.provider_message_id != nil
-      assert message1.provider_status == :enqueued
+      assert message1.bsp_status == :enqueued
       assert message1.flow == :outbound
       assert message1.sent_at != nil
       assert message2.provider_message_id != nil
-      assert message2.provider_status == :enqueued
+      assert message2.bsp_status == :enqueued
       assert message2.flow == :outbound
       assert message2.sent_at != nil
     end
@@ -424,7 +424,7 @@ defmodule Glific.MessagesTest do
       assert message.is_hsm == true
       assert message.flow == :outbound
       assert message.provider_message_id != nil
-      assert message.provider_status == :enqueued
+      assert message.bsp_status == :enqueued
       assert message.sent_at != nil
     end
 

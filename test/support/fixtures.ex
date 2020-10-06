@@ -41,7 +41,7 @@ defmodule Glific.Fixtures do
       last_message_at: DateTime.backward(0),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      provider_status: :session_and_hsm,
+      bsp_status: :session_and_hsm,
       organization_id: get_org_id()
     }
 
@@ -64,7 +64,7 @@ defmodule Glific.Fixtures do
       flow: :inbound,
       type: :text,
       provider_message_id: Faker.String.base64(10),
-      provider_status: :enqueued,
+      bsp_status: :enqueued,
       sender_id: sender.id,
       receiver_id: receiver.id,
       contact_id: receiver.id,

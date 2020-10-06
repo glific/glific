@@ -90,8 +90,8 @@ defmodule Glific.Messages do
 
         query |> where([m], m.id not in ^message_ids)
 
-      {:provider_status, provider_status}, query ->
-        from q in query, where: q.provider_status == ^provider_status
+      {:bsp_status, bsp_status}, query ->
+        from q in query, where: q.bsp_status == ^bsp_status
 
       _, query ->
         query
