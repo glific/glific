@@ -33,7 +33,7 @@ The Contact Status enum
 </tbody>
 </table>
 
-### ContactBspStatusEnum
+### ContactProviderStatusEnum
 
 The Contact BSP Provider Status enum
 

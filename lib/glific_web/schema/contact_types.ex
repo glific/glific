@@ -21,7 +21,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :phone, :string
 
     field :status, :contact_status_enum
-    field :bsp_status, :contact_bsp_status_enum
+    field :bsp_status, :contact_provider_status_enum
 
     field :optin_time, :datetime
     field :optout_time, :datetime
@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :status, :contact_status_enum
 
     @desc "Match the bsp provider status"
-    field :bsp_status, :contact_bsp_status_enum
+    field :bsp_status, :contact_provider_status_enum
 
     @desc "Include contacts with these tags"
     field :include_tags, list_of(:id)
@@ -89,7 +89,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :name, :string
     field :phone, :string
     field :status, :contact_status_enum
-    field :bsp_status, :contact_bsp_status_enum
+    field :bsp_status, :contact_provider_status_enum
     field :language_id, :id
     field :fields, :json
     field :settings, :json

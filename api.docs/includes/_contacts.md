@@ -653,7 +653,7 @@ Type | Description
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>bspStatus</strong></td>
-<td valign="top"><a href="#contactbspstatusenum">ContactBspStatusEnum</a></td>
+<td valign="top"><a href="#contactproviderstatusenum">ContactProviderStatusEnum</a></td>
 <td></td>
 </tr>
 <tr>
@@ -779,7 +779,7 @@ Match the phone
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>bspStatus</strong></td>
-<td valign="top"><a href="#contactbspstatusenum">ContactBspStatusEnum</a></td>
+<td valign="top"><a href="#contactproviderstatusenum">ContactProviderStatusEnum</a></td>
 <td></td>
 </tr>
 <tr>
@@ -843,7 +843,7 @@ Match if contact is mapped in a group of includeGroups list
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>bspStatus</strong></td>
-<td valign="top"><a href="#contactbspstatusenum">ContactBspStatusEnum</a></td>
+<td valign="top"><a href="#contactproviderstatusenum">ContactProviderStatusEnum</a></td>
 <td></td>
 </tr>
 <tr>

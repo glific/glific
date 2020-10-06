@@ -57,7 +57,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
   defp contacts do
     alter table(:contacts) do
       remove :provider_status
-      add :bsp_status, :contact_bsp_status_enum, null: false, default: "none"
+      add :bsp_status, :contact_provider_status_enum, null: false, default: "none"
     end
   end
 
