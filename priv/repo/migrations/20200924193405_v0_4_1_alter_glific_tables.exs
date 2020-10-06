@@ -17,7 +17,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
 
   defp providers do
     alter table("providers") do
-      add :shortcode, :string
+      add :shortcode, :string, null: false
       add :group, :string
 
       add :is_required, :boolean, default: false
