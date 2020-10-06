@@ -13,7 +13,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
   end
 
   defp update_exisiting_providers() do
-    # add pseudo credentials for gupshup and glifproxy
     {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
     {:ok, glifproxy} = Repo.fetch_by(Provider, %{shortcode: "glifproxy"})
     {:ok, dialogflow} = Repo.fetch_by(Provider, %{shortcode: "dialogflow"})
@@ -21,16 +20,40 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
     {:ok, chatbase} = Repo.fetch_by(Provider, %{shortcode: "chatbase"})
     {:ok, google_cloud_storage} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
 
-    # update providers with description
+    updated_gupshup_keys =
+      Map.merge(gupshup.keys, %{
+        bsp_limit: %{
+          type: :integer,
+          label: "BSP limit",
+          default: 60,
+          view_only: true
+        }
+      })
+
+    updated_glifproxy_keys =
+      Map.merge(glifproxy.keys, %{
+        bsp_limit: %{
+          type: :integer,
+          label: "BSP limit",
+          default: 60,
+          view_only: true
+        }
+      })
+
+    # add bsp_limit in keys for gupshup and glifproxy
+    # update all providers with description
+
     Repo.update!(
       Ecto.Changeset.change(gupshup, %{
-        description: "Setup for WhatsApp message provider"
+        description: "Setup for WhatsApp message provider",
+        keys: updated_gupshup_keys
       })
     )
 
     Repo.update!(
       Ecto.Changeset.change(glifproxy, %{
-        description: "Setup for Glific simulator"
+        description: "Setup for Glific simulator",
+        keys: updated_glifproxy_keys
       })
     )
 

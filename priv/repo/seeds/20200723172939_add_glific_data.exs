@@ -341,12 +341,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
             label: "Outbound Message Worker",
             default: "Glific.Providers.Gupshup.Worker",
             view_only: true
-          },
-          bsp_limit: %{
-            type: :integer,
-            label: "BSP limit",
-            default: 60,
-            view_only: true
           }
         },
         secrets: %{
@@ -394,12 +388,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
           type: :string,
           label: "Outbound Message Worker",
           default: "Glific.Providers.Glifproxy.Worker",
-          view_only: true
-        },
-        bsp_limit: %{
-          type: :integer,
-          label: "BSP limit",
-          default: 60,
           view_only: true
         }
       },
