@@ -448,7 +448,7 @@ defmodule Glific.Partners do
   """
   @spec fetch_opted_in_contacts(Organization.t()) :: :ok | any
   def fetch_opted_in_contacts(organization) do
-    {:ok, credential} =
+   {:ok, credential} =
       Repo.fetch_by(
         Credential,
         %{organization_id: organization.id, provider_id: organization.bsp_id}
@@ -573,6 +573,7 @@ defmodule Glific.Partners do
     organization_id = String.to_integer(organization_id)
 
     organization = organization(organization_id)
+
     gcs = organization.services["google_cloud_storage"]
 
     # we need to do this once only when setting the cache

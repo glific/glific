@@ -83,6 +83,8 @@ defmodule Glific.Seeds.Credentials do
     })
   end
 
+  def insert_gcs_credentials(nil = _gcs, _organization_id), do: nil
+
   def insert_gcs_credentials(gcs, organization_id) do
     {:ok, gcs_db} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
 
