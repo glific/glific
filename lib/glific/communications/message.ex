@@ -63,7 +63,7 @@ defmodule Glific.Communications.Message do
     |> Poison.encode!()
     |> Poison.decode!(as: %Message{})
     |> Messages.update_message(%{
-      provider_message_id: body["messageId"],
+      bsp_message_id: body["messageId"],
       bsp_status: :enqueued,
       status: :sent,
       flow: :outbound,
@@ -97,13 +97,13 @@ defmodule Glific.Communications.Message do
   Callback to update the provider status for a message
   """
   @spec update_bsp_status(String.t(), atom(), map()) :: {:ok, Message.t()}
-  def update_bsp_status(provider_message_id, :error, errors) do
-    from(m in Message, where: m.provider_message_id == ^provider_message_id)
+  def update_bsp_status(bsp_message_id, :error, errors) do
+    from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
     |> Repo.update_all(set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()])
   end
 
-  def update_bsp_status(provider_message_id, bsp_status, _params) do
-    from(m in Message, where: m.provider_message_id == ^provider_message_id)
+  def update_bsp_status(bsp_message_id, bsp_status, _params) do
+    from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
     |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
   end
 

@@ -50,7 +50,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
       [message | _] =
         Messages.list_messages(%{filter: %{organization_id: conn.assigns[:organization_id]}})
 
-      Messages.update_message(message, %{provider_message_id: gupshup_id})
+      Messages.update_message(message, %{bsp_message_id: gupshup_id})
       %{message_params: message_params, message: message}
     end
 

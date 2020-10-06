@@ -63,11 +63,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
          %{conn: conn, message_params: message_params} do
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
-      provider_message_id = get_in(message_params, ["payload", "id"])
+      bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
-          provider_message_id: provider_message_id,
+          bsp_message_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
@@ -111,11 +111,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       conn = post(conn, "/gupshup", setup_config.message_params)
       json_response(conn, 200)
 
-      provider_message_id = get_in(setup_config.message_params, ["payload", "id"])
+      bsp_message_id = get_in(setup_config.message_params, ["payload", "id"])
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
-          provider_message_id: provider_message_id,
+          bsp_message_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
@@ -149,11 +149,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
-      provider_message_id = get_in(message_params, ["payload", "id"])
+      bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
-          provider_message_id: provider_message_id,
+          bsp_message_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
@@ -179,11 +179,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
-      provider_message_id = get_in(message_params, ["payload", "id"])
+      bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
-          provider_message_id: provider_message_id,
+          bsp_message_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
@@ -208,11 +208,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
-      provider_message_id = get_in(message_params, ["payload", "id"])
+      bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
-          provider_message_id: provider_message_id,
+          bsp_message_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 
@@ -253,11 +253,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       conn = post(conn, "/gupshup", message_params)
       json_response(conn, 200)
-      provider_message_id = get_in(message_params, ["payload", "id"])
+      bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
-          provider_message_id: provider_message_id,
+          bsp_message_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
 

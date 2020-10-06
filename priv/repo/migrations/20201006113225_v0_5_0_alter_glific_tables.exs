@@ -48,7 +48,9 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
     # using microsecond for correct ordering of messages
     alter table(:messages) do
       remove :provider_status
+      remove :provider_message_id
       add :bsp_status, :message_status_enum
+      add :bsp_message_id, :string, null: true
     end
   end
 end

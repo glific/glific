@@ -109,7 +109,7 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
-      assert message.provider_message_id != nil
+      assert message.bsp_message_id != nil
       assert message.sent_at != nil
       assert message.bsp_status == :enqueued
       assert message.flow == :outbound
@@ -186,7 +186,7 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
-      assert message.provider_message_id == nil
+      assert message.bsp_message_id == nil
       assert message.bsp_status == :error
       assert message.flow == :outbound
       assert message.sent_at == nil
@@ -208,7 +208,7 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
-      assert message.provider_message_id != nil
+      assert message.bsp_message_id != nil
       assert message.bsp_status == :enqueued
       assert message.flow == :outbound
       assert message.sent_at != nil
@@ -222,7 +222,7 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
-      assert message.provider_message_id != nil
+      assert message.bsp_message_id != nil
       assert message.bsp_status == :enqueued
       assert message.flow == :outbound
 
@@ -235,7 +235,7 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
-      assert message.provider_message_id != nil
+      assert message.bsp_message_id != nil
       assert message.bsp_status == :enqueued
       assert message.flow == :outbound
 
@@ -248,7 +248,7 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
-      assert message.provider_message_id != nil
+      assert message.bsp_message_id != nil
       assert message.bsp_status == :enqueued
       assert message.flow == :outbound
     end
@@ -301,13 +301,13 @@ defmodule Glific.CommunicationsTest do
           Map.merge(
             attrs,
             %{
-              provider_message_id: Faker.String.base64(36),
+              bsp_message_id: Faker.String.base64(36),
               bsp_status: :enqueued
             }
           )
         )
 
-      Communications.Message.update_bsp_status(message.provider_message_id, :read, nil)
+      Communications.Message.update_bsp_status(message.bsp_message_id, :read, nil)
       message = Messages.get_message!(message.id)
       assert message.bsp_status == :read
     end
@@ -327,7 +327,7 @@ defmodule Glific.CommunicationsTest do
       message = Messages.get_message!(message.id)
 
       assert message.status == :enqueued
-      assert message.provider_message_id == nil
+      assert message.bsp_message_id == nil
       assert message.sent_at == nil
       assert message.bsp_status == nil
       assert message.flow == :outbound

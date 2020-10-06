@@ -40,7 +40,7 @@ defmodule Glific.Messages.Message do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           body: String.t() | nil,
           clean_body: String.t() | nil,
-          provider_message_id: String.t() | nil,
+          bsp_message_id: String.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
           inserted_at: :utc_datetime_usec | nil,
@@ -62,7 +62,7 @@ defmodule Glific.Messages.Message do
     :is_hsm,
     :status,
     :bsp_status,
-    :provider_message_id,
+    :bsp_message_id,
     :errors,
     :media_id,
     :send_at,
@@ -83,7 +83,7 @@ defmodule Glific.Messages.Message do
 
     field :is_hsm, :boolean, default: false
 
-    field :provider_message_id, :string
+    field :bsp_message_id, :string
     field :bsp_status, MessageStatus
     field :errors, :map, default: %{}
     field :send_at, :utc_datetime

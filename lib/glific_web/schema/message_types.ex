@@ -19,7 +19,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :body, :string
     field :type, :message_type_enum
     field :flow, :message_flow_enum
-    field :provider_message_id, :string
+    field :bsp_message_id, :string
 
     field :is_hsm, :boolean
 

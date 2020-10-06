@@ -63,7 +63,7 @@ defmodule Glific.Fixtures do
       body: Faker.Lorem.sentence(),
       flow: :inbound,
       type: :text,
-      provider_message_id: Faker.String.base64(10),
+      bsp_message_id: Faker.String.base64(10),
       bsp_status: :enqueued,
       sender_id: sender.id,
       receiver_id: receiver.id,
