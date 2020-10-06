@@ -13,6 +13,8 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
     contacts()
 
     messages()
+
+    providers()
   end
 
   defp organizations do
@@ -43,5 +45,11 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
   defp messages do
     rename table(:messages), :provider_status, to: :bsp_status
     rename table(:messages), :provider_message_id, to: :bsp_message_id
+  end
+
+  defp providers do
+    alter table("providers") do
+      add :description, :string
+    end
   end
 end

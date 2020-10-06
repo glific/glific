@@ -15,7 +15,7 @@ defmodule Glific.Partners.Provider do
   ]
 
   # define all the optional fields for provider
-  @optional_fields [:group]
+  @optional_fields [:group, :description]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -23,6 +23,7 @@ defmodule Glific.Partners.Provider do
           name: String.t() | nil,
           shortcode: String.t() | nil,
           group: String.t() | nil,
+          description: String.t() | nil,
           is_required: boolean(),
           keys: map() | nil,
           secrets: map() | nil
@@ -32,6 +33,7 @@ defmodule Glific.Partners.Provider do
     field :name, :string
     field :shortcode, :string
     field :group, :string
+    field :description, :string
     field :is_required, :boolean, default: false
 
     field :keys, :map
