@@ -52,7 +52,8 @@ defmodule GlificWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  plug Corsica, origins: "sol.tides.coloredcow.com"
+  #plug Corsica, origins: "*"
+  plug CORSPlug, origin: "*"
 
   # add the subdomain/domain
   plug GlificWeb.SubdomainPlug
