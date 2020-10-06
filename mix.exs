@@ -59,7 +59,7 @@ defmodule Glific.MixProject do
   def application do
     [
       mod: {Glific.Application, []},
-      extra_applications: [:logger, :runtime_tools, :mnesia, :corsica]
+      extra_applications: [:logger, :runtime_tools, :mnesia]
     ]
   end
 
@@ -127,8 +127,7 @@ defmodule Glific.MixProject do
       {:cloak_ecto, "~> 1.0"},
       {:waffle, "~> 1.1"},
       {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
-      {:waffle_ecto, "~> 0.0"},
-      {:corsica, "~> 1.0"}
+      {:waffle_ecto, "~> 0.0"}
     ]
   end
 

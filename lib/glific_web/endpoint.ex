@@ -52,8 +52,7 @@ defmodule GlificWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  #plug CORSPlug
-  plug Corsica, max_age: 600, origins: "*", allow_headers: :all
+  plug CORSPlug
 
   # add the subdomain/domain
   plug GlificWeb.SubdomainPlug
