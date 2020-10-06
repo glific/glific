@@ -71,13 +71,13 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
 
     Repo.update!(
       Ecto.Changeset.change(chatbase, %{
-        description: "Setup for Chatbase"
+        description: "Integrate chatbase to create analytics and reports your way"
       })
     )
 
     Repo.update!(
       Ecto.Changeset.change(google_cloud_storage, %{
-        description: "Setup for Google Cloud Storage"
+        description: "Setup Cloud computing services with Google Cloud"
       })
     )
   end
