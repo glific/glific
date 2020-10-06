@@ -11,6 +11,8 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
     organizations()
 
     contacts()
+
+    messages()
   end
 
   defp organizations do
@@ -39,6 +41,14 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
     alter table(:contacts) do
       remove :provider_status
       add :bsp_status, :contact_provider_status_enum, null: false, default: "none"
+    end
+  end
+
+  defp messages do
+    # using microsecond for correct ordering of messages
+    alter table(:messages) do
+      remove :provider_status
+      add :bsp_status, :message_status_enum
     end
   end
 end

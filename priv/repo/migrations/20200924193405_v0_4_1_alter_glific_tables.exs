@@ -82,9 +82,6 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
     alter table(:messages) do
       modify :inserted_at, :utc_datetime_usec
       modify :updated_at, :utc_datetime_usec
-
-      remove :provider_status
-      add :bsp_status, :message_status_enum
     end
   end
 end
