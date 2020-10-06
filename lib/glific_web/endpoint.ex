@@ -53,7 +53,7 @@ defmodule GlificWeb.Endpoint do
   plug Plug.Head
   plug Plug.Session, @session_options
   #plug CORSPlug
-  plug Corsica, origins: "https://sol.tides.coloredcow.com"
+  plug Corsica, max_age: 600, origins: "*", allow_headers: :all
 
   # add the subdomain/domain
   plug GlificWeb.SubdomainPlug
