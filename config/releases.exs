@@ -34,11 +34,17 @@ secret_key_base =
     You can generate one by calling: mix phx.gen.secret
     """
 
+check_origin =
+  [System.get_env("REQUEST_ORIGIN"), System.get_env("REQUEST_ORIGIN_WILDCARD")] ||
+    raise """
+    environment variable REQUEST_ORIGIN/REQUEST_ORIGIN_WILDCARD is missing.
+"""
+
 # GLific endpoint configs
 config :glific, GlificWeb.Endpoint,
   server: true,
   http: [:inet6, port: http_port],
-  check_origin: false,
+  check_origin: check_origin,
   secret_key_base: secret_key_base,
   url: [host: System.get_env("BASE_URL")]
 
@@ -53,6 +59,7 @@ config :glific,
 # AppSignal configs
 config :appsignal, :config,
   name: "Glific",
+  active: true,
   push_api_key: System.get_env("APPSIGNAL_PUSH_API_KEY")
 
 # Goth configs: Picking up json from env itself at run time
