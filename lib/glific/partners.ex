@@ -116,7 +116,7 @@ defmodule Glific.Partners do
   def delete_provider(%Provider{} = provider) do
     provider
     |> Ecto.Changeset.change()
-    |> Ecto.Changeset.no_assoc_constraint(:organizations)
+    |> Ecto.Changeset.no_assoc_constraint(:organizations, name: "organizations_provider_id_fkey")
     |> Ecto.Changeset.no_assoc_constraint(:credential)
     |> Repo.delete()
   end

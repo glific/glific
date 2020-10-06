@@ -18,14 +18,13 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
   defp organizations do
     drop unique_index(:organizations, :provider_phone)
 
-    alter table("organizations") do
-      remove :provider_id
-      add :bsp_id, references(:providers, on_delete: :nothing), null: false
-
+    alter table(:organizations) do
       remove :provider_appname
       remove :provider_phone
       remove :provider_limit
     end
+
+    rename table(:organizations), :provider_id, to: :bsp_id
   end
 
   defp credentials do
@@ -38,19 +37,11 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
   end
 
   defp contacts do
-    alter table(:contacts) do
-      remove :provider_status
-      add :bsp_status, :contact_provider_status_enum, null: false, default: "none"
-    end
+    rename table(:contacts), :provider_status, to: :bsp_status
   end
 
   defp messages do
-    # using microsecond for correct ordering of messages
-    alter table(:messages) do
-      remove :provider_status
-      remove :provider_message_id
-      add :bsp_status, :message_status_enum
-      add :bsp_message_id, :string, null: true
-    end
+    rename table(:messages), :provider_status, to: :bsp_status
+    rename table(:messages), :provider_message_id, to: :bsp_message_id
   end
 end
