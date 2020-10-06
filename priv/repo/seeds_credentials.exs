@@ -99,6 +99,7 @@ defmodule Glific.Seeds.Credentials do
     })
   end
 
+  # Start adding the crednetials
   def execute do
     secrets = get_secrets()
     update_gupshup_credentials(Keyword.get(secrets, :gupshup), 1)

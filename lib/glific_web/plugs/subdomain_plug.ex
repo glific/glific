@@ -43,6 +43,7 @@ if Code.ensure_loaded?(Plug) do
         nil
       else
         String.replace(host, ~r/.?#{root_host}/, "")
+        |> String.replace("api.", "")
       end
     end
   end
