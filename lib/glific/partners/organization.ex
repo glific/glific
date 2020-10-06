@@ -21,9 +21,7 @@ defmodule Glific.Partners.Organization do
     :name,
     :shortcode,
     :email,
-    :provider_id,
-    :provider_appname,
-    :provider_phone,
+    :bsp_id,
     :default_language_id
   ]
 
@@ -44,14 +42,8 @@ defmodule Glific.Partners.Organization do
           name: String.t() | nil,
           shortcode: String.t() | nil,
           email: String.t() | nil,
-          provider_id: non_neg_integer | nil,
-          provider: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
-          provider_appname: String.t() | nil,
-          provider_phone: String.t() | nil,
-          provider_limit: non_neg_integer,
-          provider_key: String.t() | nil,
-          provider_handler: String.t() | nil,
-          provider_worker: String.t() | nil,
+          bsp_id: non_neg_integer | nil,
+          bsp: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
           services: map(),
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -74,16 +66,6 @@ defmodule Glific.Partners.Organization do
 
     field :email, :string
 
-    field :provider_phone, :string
-    field :provider_appname, :string
-    field :provider_limit, :integer, default: 60
-
-    # We get this value from the config and provider object and store it here
-    # for downstream functions to access while executing
-    field :provider_key, :string, virtual: true, default: "No key exists"
-    field :provider_handler, :string, virtual: true
-    field :provider_worker, :string, virtual: true
-
     # we'll cache all the services here
     field :services, :map, virtual: true, default: %{}
 
@@ -92,7 +74,7 @@ defmodule Glific.Partners.Organization do
     field :hours, {:array, :time}, virtual: true
     field :days, {:array, :integer}, virtual: true
 
-    belongs_to :provider, Provider
+    belongs_to :bsp, Provider, foreign_key: :bsp_id
     belongs_to :contact, Contact
     belongs_to :default_language, Language
 
@@ -125,7 +107,6 @@ defmodule Glific.Partners.Organization do
     |> validate_default_language()
     |> unique_constraint(:shortcode)
     |> unique_constraint(:email)
-    |> unique_constraint(:provider_phone)
     |> unique_constraint(:contact_id)
   end
 

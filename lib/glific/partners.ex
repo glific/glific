@@ -117,6 +117,7 @@ defmodule Glific.Partners do
     provider
     |> Ecto.Changeset.change()
     |> Ecto.Changeset.no_assoc_constraint(:organizations)
+    |> Ecto.Changeset.no_assoc_constraint(:credential)
     |> Repo.delete()
   end
 
@@ -180,13 +181,10 @@ defmodule Glific.Partners do
       {:email, email}, query ->
         from q in query, where: ilike(q.email, ^"%#{email}%")
 
-      {:provider, provider}, query ->
+      {:bsp, bsp}, query ->
         from q in query,
-          join: c in assoc(q, :provider),
-          where: ilike(c.name, ^"%#{provider}%")
-
-      {:provider_phone, provider_phone}, query ->
-        from q in query, where: ilike(q.provider_phone, ^"%#{provider_phone}%")
+          join: c in assoc(q, :bsp),
+          where: ilike(c.name, ^"%#{bsp}%")
 
       {:default_language, default_language}, query ->
         from q in query,
@@ -306,8 +304,8 @@ defmodule Glific.Partners do
         organization =
           get_organization!(organization_id)
           |> set_credentials()
-          |> Repo.preload(:provider)
-          |> set_provider_info()
+          |> Repo.preload(:bsp)
+          |> set_bsp_info()
           |> set_out_of_office_values()
           |> set_languages()
 
@@ -386,20 +384,18 @@ defmodule Glific.Partners do
     |> Map.put(:languages, languages)
   end
 
-  # Lets cache all provider specific info in the organization entity since
+  # Lets cache all bsp provider specific info in the organization entity since
   # we use it on all sending / receiving of messages
-  @spec set_provider_info(map()) :: map()
-  defp set_provider_info(organization) do
-    credential = organization.services[organization.provider.shortcode]
+  @spec set_bsp_info(map()) :: map()
+  defp set_bsp_info(organization) do
+    bsp_credential = organization.services[organization.bsp.shortcode]
 
-    credentials = %{
-      provider_key: credential.secrets["api_key"],
-      provider_worker: ("Elixir." <> credential.keys["worker"]) |> String.to_existing_atom(),
-      provider_handler: ("Elixir." <> credential.keys["handler"]) |> String.to_existing_atom()
-    }
+    updated_services_map =
+      Map.merge(organization.services, %{
+        "bsp" => bsp_credential
+      })
 
-    organization
-    |> Map.merge(credentials)
+    %{organization | services: updated_services_map}
   end
 
   # Lets cache keys and secrets of all the active services
@@ -412,7 +408,7 @@ defmodule Glific.Partners do
       |> preload(:provider)
       |> Repo.all()
 
-    credentials_map =
+    services_map =
       Enum.reduce(credentials, %{}, fn credential, acc ->
         Map.merge(acc, %{
           credential.provider.shortcode => %{keys: credential.keys, secrets: credential.secrets}
@@ -420,7 +416,7 @@ defmodule Glific.Partners do
       end)
 
     organization
-    |> Map.put(:services, credentials_map)
+    |> Map.put(:services, services_map)
   end
 
   @doc """
@@ -455,11 +451,11 @@ defmodule Glific.Partners do
    {:ok, credential} =
       Repo.fetch_by(
         Credential,
-        %{organization_id: organization.id, provider_id: organization.provider_id}
+        %{organization_id: organization.id, provider_id: organization.bsp_id}
       )
 
-    organization = organization |> Repo.preload(:provider)
-    url = credential.keys["api_end_point"] <> "/users/" <> organization.provider_appname
+    organization = organization |> Repo.preload(:bsp)
+    url = credential.keys["api_end_point"] <> "/users/" <> credential.secrets["app_name"]
 
     api_key = credential.secrets["api_key"]
 

@@ -36,7 +36,8 @@ defmodule Glific.Partners.Provider do
 
     field :keys, :map
     field :secrets, :map
-    has_many :organizations, Glific.Partners.Organization
+    has_many :organizations, Glific.Partners.Organization, foreign_key: :bsp_id
+    has_one :credential, Glific.Partners.Credential
 
     timestamps(type: :utc_datetime)
   end

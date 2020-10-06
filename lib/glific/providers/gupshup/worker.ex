@@ -23,9 +23,13 @@ defmodule Glific.Providers.Gupshup.Worker do
     organization = Partners.organization(message["organization_id"])
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
     # Refactring because of credo warning
-    case ExRated.check_rate(organization.shortcode, 60_000, organization.provider_limit) do
+    case ExRated.check_rate(
+           organization.shortcode,
+           60_000,
+           organization.services[organization.bsp.shortcode].keys["bsp_limit"]
+         ) do
       {:ok, _} ->
-        with credential <- organization.services[organization.provider.shortcode],
+        with credential <- organization.services[organization.bsp.shortcode],
              false <- is_nil(credential),
              do:
                ApiClient.post(
