@@ -146,33 +146,6 @@ defmodule Glific.PartnersTest do
       Settings
     }
 
-    @opted_in_contact_phone "8989898989"
-
-    setup do
-      Tesla.Mock.mock(fn
-        %{method: :get} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              Jason.encode!(%{
-                "status" => "success",
-                "users" => [
-                  %{
-                    "countryCode" => "91",
-                    "lastMessageTimeStamp" => 1_600_402_466_679,
-                    "optinSource" => "URL",
-                    "optinStatus" => "OPT_IN",
-                    "optinTimeStamp" => 1_598_338_828_546,
-                    "phoneCode" => "91" <> @opted_in_contact_phone
-                  }
-                ]
-              })
-          }
-      end)
-
-      :ok
-    end
-
     @valid_org_attrs %{
       name: "Organization Name",
       shortcode: "organization_shortcode",
@@ -323,18 +296,6 @@ defmodule Glific.PartnersTest do
                Partners.update_organization(organization, @update_org_attrs)
 
       assert organization.name == @update_org_attrs.name
-    end
-
-    test "update_organization/2 should insert opted in contacts" do
-      organization = organization_fixture()
-
-      assert {:ok, %Organization{} = organization} =
-               Partners.update_organization(organization, @update_org_attrs)
-
-      assert [contact] =
-               Contacts.list_contacts(%{
-                 filter: %{organization_id: organization.id, phone: @opted_in_contact_phone}
-               })
     end
 
     test "update_organization/2 with invalid data returns error changeset" do
@@ -588,6 +549,7 @@ defmodule Glific.PartnersTest do
 
   describe "organization's credentials" do
     alias Glific.{
+      Contacts,
       Fixtures,
       Partners,
       Partners.Credential,
@@ -595,9 +557,33 @@ defmodule Glific.PartnersTest do
       Seeds.SeedsDev
     }
 
+    @opted_in_contact_phone "8989898989"
+
     setup do
       default_provider = SeedsDev.seed_providers()
       SeedsDev.seed_organizations(default_provider)
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "users" => [
+                  %{
+                    "countryCode" => "91",
+                    "lastMessageTimeStamp" => 1_600_402_466_679,
+                    "optinSource" => "URL",
+                    "optinStatus" => "OPT_IN",
+                    "optinTimeStamp" => 1_598_338_828_546,
+                    "phoneCode" => "91" <> @opted_in_contact_phone
+                  }
+                ]
+              })
+          }
+      end)
+
       :ok
     end
 
@@ -667,6 +653,30 @@ defmodule Glific.PartnersTest do
                )
 
       assert credential.secrets == valid_update_attrs.secrets
+    end
+
+    test "update_credential/2 for bsp credentials should insert opted in contacts",
+         %{organization_id: organization_id} = _attrs do
+      provider = provider_fixture(%{group: "bsp"})
+
+      valid_attrs = %{
+        shortcode: provider.shortcode,
+        secrets: %{api_kye: "test_value"},
+        organization_id: organization_id
+      }
+
+      {:ok, credential} = Partners.create_credential(valid_attrs)
+
+      valid_update_attrs = %{
+        secrets: %{test_key: "updated_test_value"}
+      }
+
+      {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
+
+      assert [contact] =
+               Contacts.list_contacts(%{
+                 filter: %{organization_id: organization_id, phone: @opted_in_contact_phone}
+               })
     end
   end
 end
