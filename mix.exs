@@ -128,7 +128,6 @@ defmodule Glific.MixProject do
       {:waffle, "~> 1.1"},
       {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
       {:waffle_ecto, "~> 0.0"},
-      {:corsica, "~> 1.0"}
     ]
   end
 

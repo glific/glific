@@ -38,7 +38,7 @@ check_origin =
   [System.get_env("REQUEST_ORIGIN"), System.get_env("REQUEST_ORIGIN_WILDCARD")] ||
     raise """
     environment variable REQUEST_ORIGIN/REQUEST_ORIGIN_WILDCARD is missing.
-"""
+    """
 
 # GLific endpoint configs
 config :glific, GlificWeb.Endpoint,
