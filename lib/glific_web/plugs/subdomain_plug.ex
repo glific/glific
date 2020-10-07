@@ -40,15 +40,16 @@ if Code.ensure_loaded?(Plug) do
 
       root_host = endpoint.config(:url)[:host]
 
-      "sol"
       # nil
+      test_host = if host in [root_host, "localhost", "127.0.0.1", "0.0.0.0"] do
+        nil
+      else
+        String.replace(host, ~r/.?#{root_host}/, "")
+        |> String.replace("api.", "")
+      end
 
-      # if host in [root_host, "localhost", "127.0.0.1", "0.0.0.0"] do
-      #   nil
-      # else
-      #   String.replace(host, ~r/.?#{root_host}/, "")
-      #   |> String.replace("api.", "")
-      # end
+      IO.inspect("test_host")
+      IO.inspect(test_host)
     end
   end
 end
