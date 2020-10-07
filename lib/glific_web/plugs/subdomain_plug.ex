@@ -37,6 +37,7 @@ if Code.ensure_loaded?(Plug) do
            %Conn{host: host},
            %SubdomainPlugConfig{endpoint: endpoint}
          ) do
+
       root_host = endpoint.config(:url)[:host]
 
       if host in [root_host, "localhost", "127.0.0.1", "0.0.0.0"] do

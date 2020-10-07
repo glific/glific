@@ -127,7 +127,7 @@ defmodule Glific.MixProject do
       {:cloak_ecto, "~> 1.0"},
       {:waffle, "~> 1.1"},
       {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
-      {:waffle_ecto, "~> 0.0"}
+      {:waffle_ecto, "~> 0.0"},
     ]
   end
 
