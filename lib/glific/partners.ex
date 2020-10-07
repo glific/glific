@@ -252,9 +252,6 @@ defmodule Glific.Partners do
     # first delete the cached organization
     Caches.remove(organization.id, ["organization"])
 
-    # fetch opted in contacts
-    fetch_opted_in_contacts(organization)
-
     organization
     |> Organization.changeset(attrs)
     |> Repo.update()
@@ -446,15 +443,16 @@ defmodule Glific.Partners do
   @doc """
   Fetch opted in contacts data from providers server
   """
-  @spec fetch_opted_in_contacts(Organization.t()) :: :ok | any
-  def fetch_opted_in_contacts(organization) do
+  @spec fetch_opted_in_contacts(non_neg_integer) :: :ok | any
+  def fetch_opted_in_contacts(organization_id) do
+    organization = organization(organization_id)
+
     {:ok, credential} =
       Repo.fetch_by(
         Credential,
         %{organization_id: organization.id, provider_id: organization.bsp_id}
       )
 
-    organization = organization |> Repo.preload(:bsp)
     url = credential.keys["api_end_point"] <> "/users/" <> credential.secrets["app_name"]
 
     api_key = credential.secrets["api_key"]
@@ -538,6 +536,12 @@ defmodule Glific.Partners do
   def update_credential(%Credential{} = credential, attrs) do
     # first delete the cached organization
     Caches.remove(credential.organization_id, ["organization"])
+
+    credential = credential |> Repo.preload(:provider)
+    if credential.provider.group == "bsp" do
+      # fetch opted in contacts
+      fetch_opted_in_contacts(credential.organization_id)
+    end
 
     credential
     |> Credential.changeset(attrs)
