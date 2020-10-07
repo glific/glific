@@ -643,7 +643,7 @@ defmodule Glific.PartnersTest do
       {:ok, credential} = Partners.create_credential(valid_attrs)
 
       valid_update_attrs = %{
-        secrets: %{test_key: "updated_test_value"}
+        secrets: %{api_kye: "updated_test_value"}
       }
 
       assert {:ok, %Credential{} = credential} =
@@ -668,7 +668,7 @@ defmodule Glific.PartnersTest do
       {:ok, credential} = Partners.create_credential(valid_attrs)
 
       valid_update_attrs = %{
-        secrets: %{test_key: "updated_test_value"}
+        secrets: %{api_kye: "updated_test_value"}
       }
 
       {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)

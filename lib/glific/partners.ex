@@ -538,6 +538,7 @@ defmodule Glific.Partners do
     Caches.remove(credential.organization_id, ["organization"])
 
     credential = credential |> Repo.preload(:provider)
+
     if credential.provider.group == "bsp" do
       # fetch opted in contacts
       fetch_opted_in_contacts(credential.organization_id)
