@@ -11,7 +11,9 @@ defmodule Glific.Searches do
     Messages.Message,
     Repo,
     Search.Full,
-    Searches.SavedSearch
+    Searches.SavedSearch,
+    Tags.MessageTag,
+    Tags.Tag
   }
 
   @doc """
@@ -178,57 +180,76 @@ defmodule Glific.Searches do
       check_filter_for_save_search(args)
       |> update_args_for_count(count)
 
-    contact_ids =
-      cond do
-        args.filter[:id] != nil ->
-          filter_active_contacts_of_organization(args.filter.id, args.filter.organization_id)
-          |> get_conversations(args, count)
+    cond do
+      args.filter[:id] != nil ->
+        filter_active_contacts_of_organization(args.filter.id, args.filter.organization_id)
+        |> get_conversations(args, count)
 
-        args.filter[:ids] != nil ->
-          filter_active_contacts_of_organization(args.filter.ids, args.filter.organization_id)
-          |> get_conversations(args, count)
+      args.filter[:ids] != nil ->
+        filter_active_contacts_of_organization(args.filter.ids, args.filter.organization_id)
+        |> get_conversations(args, count)
 
-        true ->
-          search_conversations(args.filter[:term], args)
-      end
+        # keeping this around to avoid the warning and also so we can revert
+        # when we sort things out
+      args.filter[:old_search] ->
+        search_query(args.filter[:term], args)
+
+      true ->
+        search_conversations(args.filter[:term], args)
+    end
   end
 
   defp search_conversations(term, args) do
-    contatcs =  get_filtered_contacts(term, args)
-    messages =  get_filtered_messages_with_term(term, args)
-    tags =  get_filtered_tagged_message(term, args)
-    {:ok, Glific.Searches.Search.new(contatcs, messages, tags) }
-
+    contacts = get_filtered_contacts(term, args)
+    messages = get_filtered_messages_with_term(term, args)
+    tags = get_filtered_tagged_message(term, args)
+    Glific.Searches.Search.new(contacts, messages, tags)
   end
 
-  defp get_filtered_contacts(trem, args) do
+  defp get_filtered_contacts(term, args) do
+    {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
+
     Message
-      |> join(:left, [m], c in Contact, as: :contact, on: c.id == m.contact_id)
-      |> where([contact: c], ilike(c.name, ^"%#{trem}%") or ilike(c.phone, ^"%#{trem}%"))
-      |> where([contact: c], c.organization_id == ^args.filter.organization_id)
-      |> Repo.all()
+    # we are only interested in the latest message
+    |> where([m], m.organization_id == ^args.filter.organization_id and m.message_number == 0)
+    |> join(:left, [m], c in Contact, as: :contact, on: c.id == m.contact_id)
+    |> where([contact: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
+    |> order_by([m], desc: m.inserted_at)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all()
   end
 
-  defp get_filtered_messages_with_term(trem, args) do
+  defp get_filtered_messages_with_term(term, args) do
+    {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
+
     Message
-      |> where([m], ilike(m.body, ^"%#{trem}%"))
-      |> where([m], m.organization_id == ^args.filter.organization_id)
-      |> Repo.all()
+    |> where([m], m.organization_id == ^args.filter.organization_id)
+    |> where([m], ilike(m.body, ^"%#{term}%"))
+    |> order_by([m], desc: m.inserted_at)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all()
   end
 
-  defp get_filtered_tagged_message(trem, args) do
+  defp get_filtered_tagged_message(term, args) do
+    {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
+
     Message
-      |> join(:left, [m], mt in MessageTag, as: :mt, on: m.id == mt.message_id)
-      |> join(:left, [mt: mt], t in Tag, as: :t, on: t.id == mt.tag_id)
-      |> where([t: t], ilike(t.label, ^"%#{trem}%") or ilike(t.shortcode, ^"%#{trem}%") )
-      |> where([t: t], t.organization_id == ^args.filter.organization_id)
-      |> Repo.all()
+    |> where([m], m.organization_id == ^args.filter.organization_id)
+    |> join(:left, [m], mt in MessageTag, as: :mt, on: m.id == mt.message_id)
+    |> join(:left, [mt: mt], t in Tag, as: :t, on: t.id == mt.tag_id)
+    |> where([t: t], ilike(t.label, ^"%#{term}%") or ilike(t.shortcode, ^"%#{term}%"))
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all()
   end
 
   defp get_conversations(query, args, count) do
-      contact_ids = Repo.all(query)
-      put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
-          |> Glific.Conversations.list_conversations(count)
+    contact_ids = Repo.all(query)
+
+    put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
+    |> Glific.Conversations.list_conversations(count)
   end
 
   # Add the term if present to the list of args

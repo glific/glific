@@ -37,6 +37,12 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :messages, list_of(:message)
   end
 
+  object :search_cup do
+    field :contacts, list_of(:message)
+    field :messages, list_of(:message)
+    field :tags, list_of(:message)
+  end
+
   input_object :saved_search_filter do
     field :label, :string
     field :shortcode, :string
@@ -91,6 +97,20 @@ defmodule GlificWeb.Schema.SearchTypes do
   object :search_queries do
     @desc "Search for conversations"
     field :search, list_of(:conversation) do
+      arg(:save_search, :boolean, default_value: false)
+
+      @desc "Inputs to save a search"
+      arg(:save_search_input, :save_search_input)
+
+      arg(:filter, non_null(:search_filter))
+      arg(:message_opts, non_null(:opts))
+      arg(:contact_opts, non_null(:opts))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Searches.search/3)
+    end
+
+    @desc "New Search for messages + contacts + tags"
+    field :search_multi, :search_cup do
       arg(:save_search, :boolean, default_value: false)
 
       @desc "Inputs to save a search"
