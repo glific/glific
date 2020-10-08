@@ -35,7 +35,15 @@
     }
   ],
   "language": "base",
-  "localization": {},
+  "localization": {
+    "hi": {
+      "bc1622f8-64f8-4b3d-b767-bb6bbfb65104": {
+        "text": [
+          "हमे आपको जाते हुए देखकर बुरा लगा। अब आपको सिस्टम से बहार कर दिया गया है।"
+        ]
+      }
+    }
+  },
   "spec_version": "13.1.0",
   "expire_after_minutes": 10080,
   "_ui": {
