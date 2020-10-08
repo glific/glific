@@ -7,27 +7,27 @@ defmodule Glific.Searches.Search do
 
   use Ecto.Schema
 
-  alias Glific.{Contacts.Contact, Messages.Message, Searches.SearchItem}
+  alias Glific.{Messages.Message}
 
   @type t() :: %__MODULE__{
-          contacts: [SearchItem.t()],
-          messages: [SearchItem.t()],
-          tags: [SearchItem.t()]
+          contacts: [Message.t()],
+          messages: [Message.t()],
+          tags: [Message.t()]
         }
 
   # structure to hold a contact and the conversations with the contact
   # the messages should be in descending order, i.e. most recent ones first
   embedded_schema do
-    embeds_many(:contacts, SearchItem)
-    embeds_many(:messages, SearchItem)
-    embeds_many(:tags, SearchItem)
+    embeds_many(:contacts, [Message])
+    embeds_many(:messages, [Message])
+    embeds_many(:tags, [Message])
   end
 
   @doc """
   Create a new conversation. A contact is required for the conversation. Messages can
   be added later on
   """
-  @spec new(Contact.t(), [Message.t()]) :: Conversation.t()
+  @spec new(list(), list(), list()) :: Search.t()
   def new(contacts, messages, tags) do
     %Search{contacts: contacts, messages: messages, tags: tags}
   end

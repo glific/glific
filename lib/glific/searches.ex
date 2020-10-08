@@ -182,17 +182,53 @@ defmodule Glific.Searches do
       cond do
         args.filter[:id] != nil ->
           filter_active_contacts_of_organization(args.filter.id, args.filter.organization_id)
+          |> get_conversations(args, count)
 
         args.filter[:ids] != nil ->
           filter_active_contacts_of_organization(args.filter.ids, args.filter.organization_id)
+          |> get_conversations(args, count)
 
         true ->
-          search_query(args.filter[:term], args)
+          search_conversations(args.filter[:term], args)
       end
-      |> Repo.all()
+  end
 
-    put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
-    |> Glific.Conversations.list_conversations(count)
+  defp search_conversations(term, args) do
+    contatcs =  get_filtered_contacts(term, args)
+    messages =  get_filtered_messages_with_term(term, args)
+    tags =  get_filtered_tagged_message(term, args)
+    {:ok, Glific.Searches.Search.new(contatcs, messages, tags) }
+
+  end
+
+  defp get_filtered_contacts(trem, args) do
+    Message
+      |> join(:left, [m], c in Contact, as: :contact, on: c.id == m.contact_id)
+      |> where([contact: c], ilike(c.name, ^"%#{trem}%") or ilike(c.phone, ^"%#{trem}%"))
+      |> where([contact: c], c.organization_id == ^args.filter.organization_id)
+      |> Repo.all()
+  end
+
+  defp get_filtered_messages_with_term(trem, args) do
+    Message
+      |> where([m], ilike(m.body, ^"%#{trem}%"))
+      |> where([m], m.organization_id == ^args.filter.organization_id)
+      |> Repo.all()
+  end
+
+  defp get_filtered_tagged_message(trem, args) do
+    Message
+      |> join(:left, [m], mt in MessageTag, as: :mt, on: m.id == mt.message_id)
+      |> join(:left, [mt: mt], t in Tag, as: :t, on: t.id == mt.tag_id)
+      |> where([t: t], ilike(t.label, ^"%#{trem}%") or ilike(t.shortcode, ^"%#{trem}%") )
+      |> where([t: t], t.organization_id == ^args.filter.organization_id)
+      |> Repo.all()
+  end
+
+  defp get_conversations(query, args, count) do
+      contact_ids = Repo.all(query)
+      put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
+          |> Glific.Conversations.list_conversations(count)
   end
 
   # Add the term if present to the list of args
