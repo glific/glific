@@ -7,6 +7,25 @@
   ],
   "nodes": [
     {
+      "uuid": "5aa44454-eecc-495c-a2ed-f91ba5ee4f61",
+      "exits": [
+        {
+          "uuid": "d8cebf35-8764-42cb-9062-4e963be8492d",
+          "destination_uuid": "83bb3351-0a23-4e17-9aff-76085c8648ab"
+        }
+      ],
+      "actions": [
+        {
+          "text": "We are sorry to see you go. You will be opted out in the next five minutes.\nType 1⃣ to confirm.\nType 2⃣ to cancel.",
+          "type": "send_msg",
+          "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
+          "all_urns": false,
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
       "uuid": "83bb3351-0a23-4e17-9aff-76085c8648ab",
       "exits": [
         {
@@ -79,25 +98,6 @@
         "default_category_uuid": "0279e10e-440a-4904-abd5-9c64d48a1a75"
       },
       "actions": []
-    },
-    {
-      "uuid": "5aa44454-eecc-495c-a2ed-f91ba5ee4f61",
-      "exits": [
-        {
-          "uuid": "d8cebf35-8764-42cb-9062-4e963be8492d",
-          "destination_uuid": "83bb3351-0a23-4e17-9aff-76085c8648ab"
-        }
-      ],
-      "actions": [
-        {
-          "text": "We are sorry to see you go. You will be opted out in the next five minutes.\nType 1⃣ to confirm.\nType 2⃣ to cancel.",
-          "type": "send_msg",
-          "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
-          "all_urns": false,
-          "attachments": [],
-          "quick_replies": []
-        }
-      ]
     },
     {
       "uuid": "73597ecb-744b-4699-92c1-03e8582708b2",
@@ -174,8 +174,8 @@
       "5aa44454-eecc-495c-a2ed-f91ba5ee4f61": {
         "type": "execute_actions",
         "position": {
-          "top": 120,
-          "left": 40
+          "top": 80,
+          "left": 80
         }
       },
       "73597ecb-744b-4699-92c1-03e8582708b2": {
@@ -192,7 +192,7 @@
         },
         "position": {
           "top": 80,
-          "left": 420
+          "left": 440
         }
       }
     },
