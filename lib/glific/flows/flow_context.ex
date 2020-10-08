@@ -331,6 +331,7 @@ defmodule Glific.Flows.FlowContext do
     FlowContext
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
+    |> preload(:flow)
     |> Repo.all()
     |> Enum.each(&wakeup_one(&1))
 
@@ -347,7 +348,6 @@ defmodule Glific.Flows.FlowContext do
     # grabbing this context
     {:ok, context} = FlowContext.update_flow_context(context, %{wakeup_at: nil})
 
-    context = context |> Repo.preload([:flow])
     {:ok, flow} =
       Flows.get_cached_flow(context.flow.organization_id, {:flow_uuid, context.flow_uuid}, %{
         uuid: context.flow_uuid
