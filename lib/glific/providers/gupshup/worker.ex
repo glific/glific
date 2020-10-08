@@ -26,10 +26,10 @@ defmodule Glific.Providers.Gupshup.Worker do
     case ExRated.check_rate(
            organization.shortcode,
            60_000,
-           organization.services[organization.bsp.shortcode].keys["bsp_limit"]
+           organization.services["bsp"].keys["bsp_limit"]
          ) do
       {:ok, _} ->
-        with credential <- organization.services[organization.bsp.shortcode],
+        with credential <- organization.services["bsp"],
              false <- is_nil(credential),
              do:
                ApiClient.post(
