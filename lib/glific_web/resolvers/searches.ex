@@ -9,7 +9,7 @@ defmodule GlificWeb.Resolvers.Searches do
     Repo,
     Searches,
     Searches.SavedSearch,
-    Searches.Search,
+    Searches.Search
   }
 
   alias GlificWeb.Resolvers.Helper
