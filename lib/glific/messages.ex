@@ -16,6 +16,7 @@ defmodule Glific.Messages do
     Repo,
     Tags,
     Tags.MessageTag,
+    Tags.Tag,
     Templates.SessionTemplate
   }
 

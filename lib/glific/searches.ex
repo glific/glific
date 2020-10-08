@@ -181,18 +181,21 @@ defmodule Glific.Searches do
       check_filter_for_save_search(args)
       |> update_args_for_count(count)
 
-    cond do
-      args.filter[:id] != nil ->
-        filter_active_contacts_of_organization(args.filter.id, args.filter.organization_id)
-        |> get_conversations(args, count)
+    contact_ids =
+      cond do
+        args.filter[:id] != nil ->
+          filter_active_contacts_of_organization(args.filter.id, args.filter.organization_id)
 
-      args.filter[:ids] != nil ->
-        filter_active_contacts_of_organization(args.filter.ids, args.filter.organization_id)
-        |> get_conversations(args, count)
+        args.filter[:ids] != nil ->
+          filter_active_contacts_of_organization(args.filter.ids, args.filter.organization_id)
 
-      true ->
-        search_query(args.filter[:term], args)
-    end
+        true ->
+          search_query(args.filter[:term], args)
+      end
+      |> Repo.all()
+
+    put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
+    |> Glific.Conversations.list_conversations(count)
   end
 
   @doc """
@@ -245,13 +248,6 @@ defmodule Glific.Searches do
     |> limit(^limit)
     |> offset(^offset)
     |> Repo.all()
-  end
-
-  defp get_conversations(query, args, count) do
-    contact_ids = Repo.all(query)
-
-    put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
-    |> Glific.Conversations.list_conversations(count)
   end
 
   # Add the term if present to the list of args

@@ -427,14 +427,15 @@ defmodule Glific.ContactsTest do
       assert contact.optin_time != nil
       assert contact.optout_time == nil
 
-      #if the contact is blocked he want be able to optin again
+      # if the contact is blocked he want be able to optin again
       Contacts.update_contact(contact, %{status: :blocked})
       Contacts.contact_opted_in(contact.phone, organization_id, DateTime.utc_now())
+
       {:ok, contact} =
         Repo.fetch_by(
           Contact,
           %{phone: contact.phone, organization_id: organization_id}
-      )
+        )
 
       assert contact.status == :blocked
     end
@@ -511,6 +512,5 @@ defmodule Glific.ContactsTest do
       Contacts.update_contact(contact, %{status: :valid})
       assert Contacts.is_contact_blocked?(contact.phone, attrs.organization_id) == false
     end
-
   end
 end
