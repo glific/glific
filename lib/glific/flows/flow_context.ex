@@ -347,6 +347,7 @@ defmodule Glific.Flows.FlowContext do
     # grabbing this context
     {:ok, context} = FlowContext.update_flow_context(context, %{wakeup_at: nil})
 
+    context = context |> Repo.preload([:flow])
     {:ok, flow} =
       Flows.get_cached_flow(context.flow.organization_id, {:flow_uuid, context.flow_uuid}, %{
         uuid: context.flow_uuid

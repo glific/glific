@@ -1,6 +1,7 @@
 {
   "name": "Optout Workflow",
   "type": "messaging",
+  "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
   "vars": [
     "bc1622f8-64f8-4b3d-b767-bb6bbfb65104"
   ],
@@ -15,7 +16,7 @@
       ],
       "actions": [
         {
-          "text": "We are sorry to see you go. You will be opted out in the next five minutes.\nType 1⃣ to Confirm.\nType 2⃣ to Cancel.",
+          "text": "We are sorry to see you go. You will be opted out in the next five minutes.\nType 1⃣ to confirm.\nType 2⃣ to cancel.",
           "type": "send_msg",
           "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
           "all_urns": false,
@@ -135,7 +136,7 @@
       },
       "bc1622f8-64f8-4b3d-b767-bb6bbfb65104": {
         "text": [
-          "हमे आपको जाते हुए देखकर बुरा लगा।आपको अगले पांच मिनट में सिस्टम से बाहर कर दिया जाएगा।\n1⃣ दबाएं - पुष्टि करने के लिए। \n2⃣ दबाएं - रद्द करने के लिए। "
+          "हमें आपके जाने का अफसोस है। आपको अगले पांच मिनट में सिस्टम से बाहर कर दिया जाएगा।\n1⃣ दबाएं - पुष्टि करने के लिए। \n2⃣ दबाएं - रद्द करने के लिए। "
         ]
       }
     }
@@ -170,6 +171,5 @@
       }
     },
     "stickies": {}
-  },
-  "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
+  }
 }
