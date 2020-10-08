@@ -29,7 +29,7 @@ defmodule Glific.Providers.Glifproxy.Worker do
     case ExRated.check_rate(
            organization.shortcode,
            60_000,
-           organization.services[organization.bsp.shortcode].keys["bsp_limit"]
+           organization.services["bsp"].keys["bsp_limit"]
          ) do
       {:ok, _} -> proxy_message(message, payload)
       _ -> {:error, :rate_limit_exceeded}
