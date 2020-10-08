@@ -443,19 +443,12 @@ defmodule Glific.Partners do
   @doc """
   Fetch opted in contacts data from providers server
   """
-  @spec fetch_opted_in_contacts(non_neg_integer) :: :ok | any
-  def fetch_opted_in_contacts(organization_id) do
-    organization = organization(organization_id)
+  @spec fetch_opted_in_contacts(map()) :: :ok | any
+  def fetch_opted_in_contacts(attrs) do
+    organization = organization(attrs.organization_id)
+    url = attrs.keys["api_end_point"] <> "/users/" <> attrs.secrets["app_name"]
 
-    {:ok, credential} =
-      Repo.fetch_by(
-        Credential,
-        %{organization_id: organization.id, provider_id: organization.bsp_id}
-      )
-
-    url = credential.keys["api_end_point"] <> "/users/" <> credential.secrets["app_name"]
-
-    api_key = credential.secrets["api_key"]
+    api_key = attrs.secrets["api_key"]
 
     with {:ok, response} <- Tesla.get(url, headers: [{"apikey", api_key}]),
          {:ok, response_data} <- Jason.decode(response.body),
@@ -534,15 +527,15 @@ defmodule Glific.Partners do
   @spec update_credential(Credential.t(), map()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
-    # first delete the cached organization
-    Caches.remove(credential.organization_id, ["organization"])
-
+    # when updating the bsp credentials fetch list of opted in contacts
     credential = credential |> Repo.preload(:provider)
 
     if credential.provider.group == "bsp" do
-      # fetch opted in contacts
-      fetch_opted_in_contacts(credential.organization_id)
+      fetch_opted_in_contacts(attrs)
     end
+
+    # delete the cached organization and associated credentials
+    Caches.remove(credential.organization_id, ["organization"])
 
     credential
     |> Credential.changeset(attrs)

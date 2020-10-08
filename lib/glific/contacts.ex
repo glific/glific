@@ -226,10 +226,17 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Update DB fields when contact opted in
+  Update DB fields when contact opted in and ignore if it's blocked
   """
   @spec contact_opted_in(String.t(), non_neg_integer, DateTime.t()) :: {:ok}
   def contact_opted_in(phone, organization_id, utc_time) do
+    if is_contact_blocked?(phone, organization_id),
+      do: {:ok},
+      else: do_contact_opted_in(phone, organization_id, utc_time)
+  end
+
+  @spec do_contact_opted_in(String.t(), non_neg_integer, DateTime.t()) :: {:ok}
+  defp do_contact_opted_in(phone, organization_id, utc_time) do
     upsert(%{
       phone: phone,
       optin_time: utc_time,
@@ -374,5 +381,17 @@ defmodule Glific.Contacts do
     if is_nil(contact.optin_time),
       do: update_contact(contact, %{bsp_status: :session}),
       else: update_contact(contact, %{bsp_status: :session_and_hsm})
+  end
+
+  @doc """
+    check if contact is blocked or not
+  """
+  @spec is_contact_blocked?(String.t(), non_neg_integer) :: boolean()
+  def is_contact_blocked?(phone, organization_id) do
+    Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id})
+    |> case do
+      {:ok, contact} -> contact.status == :blocked
+      _ -> false
+    end
   end
 end
