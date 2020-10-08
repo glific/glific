@@ -7,25 +7,6 @@
   ],
   "nodes": [
     {
-      "uuid": "5aa44454-eecc-495c-a2ed-f91ba5ee4f61",
-      "exits": [
-        {
-          "uuid": "d8cebf35-8764-42cb-9062-4e963be8492d",
-          "destination_uuid": "83bb3351-0a23-4e17-9aff-76085c8648ab"
-        }
-      ],
-      "actions": [
-        {
-          "text": "We are sorry to see you go. You will be opted out in the next five minutes.\nType 1⃣ to confirm.\nType 2⃣ to cancel.",
-          "type": "send_msg",
-          "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
-          "all_urns": false,
-          "attachments": [],
-          "quick_replies": []
-        }
-      ]
-    },
-    {
       "uuid": "83bb3351-0a23-4e17-9aff-76085c8648ab",
       "exits": [
         {
@@ -33,11 +14,12 @@
           "destination_uuid": "5a45afa3-88c8-4dab-9bc0-afeebaeb172f"
         },
         {
-          "uuid": "cafda8fe-62b7-4408-aea0-e556299e4b80"
+          "uuid": "cafda8fe-62b7-4408-aea0-e556299e4b80",
+          "destination_uuid": "73597ecb-744b-4699-92c1-03e8582708b2"
         },
         {
           "uuid": "a2b9ed29-cde9-48e6-b16c-b455102e1e02",
-          "destination_uuid": "5a45afa3-88c8-4dab-9bc0-afeebaeb172f"
+          "destination_uuid": "5aa44454-eecc-495c-a2ed-f91ba5ee4f61"
         },
         {
           "uuid": "9850ac4c-0a80-4108-8cdf-d679dac1b94c",
@@ -99,6 +81,43 @@
       "actions": []
     },
     {
+      "uuid": "5aa44454-eecc-495c-a2ed-f91ba5ee4f61",
+      "exits": [
+        {
+          "uuid": "d8cebf35-8764-42cb-9062-4e963be8492d",
+          "destination_uuid": "83bb3351-0a23-4e17-9aff-76085c8648ab"
+        }
+      ],
+      "actions": [
+        {
+          "text": "We are sorry to see you go. You will be opted out in the next five minutes.\nType 1⃣ to confirm.\nType 2⃣ to cancel.",
+          "type": "send_msg",
+          "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
+          "all_urns": false,
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "73597ecb-744b-4699-92c1-03e8582708b2",
+      "exits": [
+        {
+          "uuid": "40db7372-40ee-4e2a-8009-dccdcb6baff7",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "Thank you for staying with us. You are still enrolled in the system.",
+          "type": "send_msg",
+          "uuid": "dad792ce-366f-487e-94a0-f6b92124b8c3",
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
       "uuid": "5a45afa3-88c8-4dab-9bc0-afeebaeb172f",
       "exits": [
         {
@@ -148,15 +167,22 @@
       "5a45afa3-88c8-4dab-9bc0-afeebaeb172f": {
         "type": "execute_actions",
         "position": {
-          "top": 440,
-          "left": 420
+          "top": 320,
+          "left": 460
         }
       },
       "5aa44454-eecc-495c-a2ed-f91ba5ee4f61": {
         "type": "execute_actions",
         "position": {
-          "top": 40,
-          "left": 440
+          "top": 120,
+          "left": 40
+        }
+      },
+      "73597ecb-744b-4699-92c1-03e8582708b2": {
+        "type": "execute_actions",
+        "position": {
+          "top": 240,
+          "left": 780
         }
       },
       "83bb3351-0a23-4e17-9aff-76085c8648ab": {
@@ -165,7 +191,7 @@
           "cases": {}
         },
         "position": {
-          "top": 240,
+          "top": 80,
           "left": 420
         }
       }
