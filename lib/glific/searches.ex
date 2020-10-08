@@ -12,6 +12,7 @@ defmodule Glific.Searches do
     Repo,
     Search.Full,
     Searches.SavedSearch,
+    Searches.Search,
     Tags.MessageTag,
     Tags.Tag
   }
@@ -189,21 +190,22 @@ defmodule Glific.Searches do
         filter_active_contacts_of_organization(args.filter.ids, args.filter.organization_id)
         |> get_conversations(args, count)
 
-      # keeping this around to avoid the warning and also so we can revert
-      # when we sort things out
-      args.filter[:old_search] ->
-        search_query(args.filter[:term], args)
-
       true ->
-        search_conversations(args.filter[:term], args)
+        search_query(args.filter[:term], args)
     end
   end
 
-  defp search_conversations(term, args) do
+  @doc """
+  Search across multiple tables, and return a multiple context
+  result back to the frontend. First step in emulating a whatsapp
+  search
+  """
+  @spec search_multi(String.t(), map()) :: Search.t()
+  def search_multi(term, args) do
     contacts = get_filtered_contacts(term, args)
     messages = get_filtered_messages_with_term(term, args)
     tags = get_filtered_tagged_message(term, args)
-    Glific.Searches.Search.new(contacts, messages, tags)
+    Search.new(contacts, messages, tags)
   end
 
   defp get_filtered_contacts(term, args) do

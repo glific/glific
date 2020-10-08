@@ -174,7 +174,7 @@ defmodule GlificWeb.Schema.SearchTest do
           "contactOpts" => %{"limit" => 1},
           "messageOpts" => %{"limit" => 1}
         }
-      )
+      ) |> IO.inspect
 
     assert {:ok, query_data} = result
 

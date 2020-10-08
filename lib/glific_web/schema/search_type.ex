@@ -120,7 +120,7 @@ defmodule GlificWeb.Schema.SearchTypes do
       arg(:message_opts, non_null(:opts))
       arg(:contact_opts, non_null(:opts))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Searches.search/3)
+      resolve(&Resolvers.Searches.search_multi/3)
     end
 
     @desc "get the details of one saved search"
