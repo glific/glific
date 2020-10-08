@@ -189,8 +189,8 @@ defmodule Glific.Searches do
         filter_active_contacts_of_organization(args.filter.ids, args.filter.organization_id)
         |> get_conversations(args, count)
 
-        # keeping this around to avoid the warning and also so we can revert
-        # when we sort things out
+      # keeping this around to avoid the warning and also so we can revert
+      # when we sort things out
       args.filter[:old_search] ->
         search_query(args.filter[:term], args)
 
