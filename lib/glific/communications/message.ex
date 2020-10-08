@@ -112,6 +112,13 @@ defmodule Glific.Communications.Message do
   """
   @spec receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
+    if Contacts.is_contact_blocked?(message_params.sender.phone, organization_id),
+      do: {:ok},
+      else: do_receive_message(message_params, type)
+  end
+
+  @spec do_receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
+  defp do_receive_message(%{organization_id: organization_id} = message_params, type) do
     {:ok, contact} =
       message_params.sender
       |> Map.put(:organization_id, organization_id)
