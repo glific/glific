@@ -1,0 +1,53 @@
+{
+  "name": "Optout Workflow",
+  "type": "messaging",
+  "vars": [
+    "ba81fd82-19e0-4b81-9c7d-96aa94c4edc1"
+  ],
+  "nodes": [
+    {
+      "uuid": "5aa44454-eecc-495c-a2ed-f91ba5ee4f61",
+      "exits": [
+        {
+          "uuid": "d8cebf35-8764-42cb-9062-4e963be8492d",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "We are sorry to see you go. You have been opted out from the system.",
+          "type": "send_msg",
+          "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
+          "all_urns": false,
+          "attachments": [],
+          "quick_replies": []
+        },
+        {
+          "type": "set_contact_field",
+          "uuid": "5219c81f-e16d-4ebc-84a5-45d087c423fc",
+          "field": {
+            "key": "settings",
+            "name": "Settings"
+          },
+          "value": "optout"
+        }
+      ]
+    }
+  ],
+  "language": "base",
+  "localization": {},
+  "spec_version": "13.1.0",
+  "expire_after_minutes": 10080,
+  "_ui": {
+    "nodes": {
+      "5aa44454-eecc-495c-a2ed-f91ba5ee4f61": {
+        "type": "execute_actions",
+        "position": {
+          "top": 80,
+          "left": 420
+        }
+      }
+    }
+  },
+  "uuid": "ba81fd82-19e0-4b81-9c7d-96aa94c4edc1"
+}
