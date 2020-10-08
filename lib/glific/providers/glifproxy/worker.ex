@@ -26,7 +26,11 @@ defmodule Glific.Providers.Glifproxy.Worker do
     # We are in a proxy here, we simulate the message has been sent
     # We turn around and actually flip the contact to a proxy number (or vice versa)
     # and send it back to the frontend
-    case ExRated.check_rate(organization.shortcode, 60_000, organization.provider_limit) do
+    case ExRated.check_rate(
+           organization.shortcode,
+           60_000,
+           organization.services[organization.bsp.shortcode].keys["bsp_limit"]
+         ) do
       {:ok, _} -> proxy_message(message, payload)
       _ -> {:error, :rate_limit_exceeded}
     end

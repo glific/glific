@@ -19,11 +19,11 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :body, :string
     field :type, :message_type_enum
     field :flow, :message_flow_enum
-    field :provider_message_id, :string
+    field :bsp_message_id, :string
 
     field :is_hsm, :boolean
 
-    field :provider_status, :message_status_enum
+    field :bsp_status, :message_status_enum
 
     # expose the date we processed this message since external clients need it
     field :inserted_at, :datetime
@@ -74,7 +74,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :user, :string
 
     @desc "Match the status"
-    field :provider_status, :message_status_enum
+    field :bsp_status, :message_status_enum
 
     @desc "Match the tags included"
     field :tags_included, list_of(:id)

@@ -7,9 +7,7 @@ fragment OrganizationFields on OrganizationResult {
       name
     }
     email
-    provider_appname
-    provider_phone
-    provider {
+    bsp {
       id
       name
       shortcode

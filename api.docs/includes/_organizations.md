@@ -201,13 +201,11 @@ mutation createOrganization($input:OrganizationInput!) {
       contact {
         id
       }
-            email
-      provider {
+      email
+      bsp {
         id
         name
       }
-      providerAppname
-      providerPhone
       defaultLanguage {
         id
         label
@@ -226,10 +224,9 @@ mutation createOrganization($input:OrganizationInput!) {
     "name": "new organization",
     "contactId": 1,
     "email": "test@test.com",
-    "providerId": 1,
-    "providerAppname": "The name of your set in provider",
-    "providerPhone": "Number",
-    "defaultLanguageId": 1
+    "bspId": 1,
+    "defaultLanguageId": 1,
+    "activeLanguageIds": [1]
   }
 }
 ```
@@ -253,12 +250,10 @@ mutation createOrganization($input:OrganizationInput!) {
         "email": "test@test.com",
         "id": "3",
         "shortcode": "new_organization",
-        "provider": {
+        "bsp": {
           "id": "1",
           "name": "Default Provider"
-        },
-        "providerAppname": "MyAppName",
-        "providerPhone": "Number"
+        }
       }
     }
   }
@@ -551,18 +546,8 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>provider</strong></td>
+<td colspan="2" valign="top"><strong>bsp</strong></td>
 <td valign="top"><a href="#provider">Provider</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>providerAppname</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>providerPhone</strong></td>
-<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>
@@ -728,20 +713,11 @@ Match the name
 </td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>provider</strong></td>
+<td colspan="2" valign="top"><strong>bsp</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td>
 
-Match the provider
-
-</td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>providerPhone</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td>
-
-Match the whatsapp number of organization
+Match the bsp provider
 
 </td>
 </tr>
@@ -799,18 +775,8 @@ Unique
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>providerId</strong></td>
+<td colspan="2" valign="top"><strong>bspId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>providerKey</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>providerPhone</strong></td>
-<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>

@@ -418,15 +418,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     admin
   end
 
-  defp create_org(0 = count_organizations, provider, en_us, out_of_office_default_data) do
+  defp create_org(0 = _count_organizations, provider, en_us, out_of_office_default_data) do
     Repo.insert!(%Organization{
       name: "Glific",
       shortcode: "glific",
       email: "ADMIN@REPLACE_ME.NOW",
-      provider_appname: "ADD_PROVIDER_APPNAME",
-      provider_phone: admin_phone(count_organizations + 1),
-      provider_id: provider.id,
-      provider_limit: 60,
+      bsp_id: provider.id,
       active_language_ids: [en_us.id],
       default_language_id: en_us.id,
       out_of_office: out_of_office_default_data
@@ -440,10 +437,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       name: "New Seeded Organization " <> org_uniq_id,
       shortcode: "shortcode " <> org_uniq_id,
       email: "ADMIN_#{org_uniq_id}@REPLACE_ME.NOW",
-      provider_appname: "ADD_PROVIDER_APPNAME " <> org_uniq_id,
-      provider_phone: admin_phone(count_organizations + 1),
-      provider_id: provider.id,
-      provider_limit: 60,
+      bsp_id: provider.id,
       active_language_ids: [en_us.id],
       default_language_id: en_us.id,
       out_of_office: out_of_office_default_data

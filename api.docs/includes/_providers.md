@@ -11,6 +11,7 @@ query providers($filter: ProviderFilter, $opts: Opts) {
     keys
     secrets
     group
+    description
     isRequired
   }
 }
@@ -39,7 +40,8 @@ query providers($filter: ProviderFilter, $opts: Opts) {
         "name": "Dialogflow",
         "secrets": "{}",
         "shortcode": "dialogflow",
-        "group": null
+        "group": null,
+        "description": "Provider for Dialogflow"
       },
       {
         "id": "2",
@@ -47,7 +49,8 @@ query providers($filter: ProviderFilter, $opts: Opts) {
         "name": "Gupshup",
         "secrets": "{}",
         "shortcode": "gupshup",
-        "group": "bsp"
+        "group": "bsp",
+        "description": "BSP provider"
       }
     ]
 ```
@@ -352,6 +355,11 @@ Type | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>description</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>isRequired</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
@@ -454,6 +462,11 @@ Match the shortcode of provider
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>group</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>description</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
