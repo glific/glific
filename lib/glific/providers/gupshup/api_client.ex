@@ -6,6 +6,16 @@ defmodule Glific.Providers.Gupshup.ApiClient do
 
   use Tesla
 
+  def simulator_post() do
+    message_id = Faker.String.base64(36)
+    {:ok,
+    %Tesla.Env{
+      body: "{\"status\":\"submitted\",\"messageId\":\"simu-#{message_id}\"}",
+      method: :post,
+      status: 200,
+    }}
+  end
+
   plug Tesla.Middleware.Logger, log_level: :debug
 
   plug Tesla.Middleware.FormUrlencoded,

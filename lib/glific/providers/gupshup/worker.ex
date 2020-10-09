@@ -32,7 +32,7 @@ defmodule Glific.Providers.Gupshup.Worker do
       {:ok, _} ->
         with credential <- organization.services["bsp"],
              false <- is_nil(credential),
-             do: check_simulator(credential, payload, message)
+             do: process_message(credential, payload, message)
       _ ->
         {:error, :rate_limit_exceeded}
     end
@@ -40,28 +40,26 @@ defmodule Glific.Providers.Gupshup.Worker do
     :ok
   end
 
-  defp check_simulator(credential, payload, message) do
-    receiver = Glific.Contacts.get_contact!(message["receiver_id"])
-    if receiver.phone == @simulater_phone do
-      message_id = Faker.String.base64(36)
-      {:ok,
-      %Tesla.Env{
-        __client__: %Tesla.Client{adapter: nil, fun: nil, post: [], pre: []},
-        __module__: Glific.Providers.Gupshup.ApiClient,
-        body: "{\"status\":\"submitted\",\"messageId\":\"#{message_id}\"}",
-        method: :post,
-        status: 200,
-      }}
-      |> handle_response(message)
+  defp process_message(credential, payload, message) do
+    if(is_simulator?(payload)) do process_as_simulator(message) else process_to_gupshup(credential, payload, message) end
+  end
 
-    else
-      ApiClient.post(
-        credential.keys["api_end_point"] <> "/msg",
-        payload,
-        headers: [{"apikey", credential.secrets["api_key"]}]
-      )
-      |> handle_response(message)
-    end
+  defp is_simulator?(payload) do
+    if payload["destination"] == @simulater_phone do true else false end
+  end
+
+  defp process_as_simulator(message) do
+    ApiClient.simulator_post()
+    |> handle_response(message)
+  end
+
+  defp process_to_gupshup(credential, payload, message) do
+    ApiClient.post(
+      credential.keys["api_end_point"] <> "/msg",
+      payload,
+      headers: [{"apikey", credential.secrets["api_key"]}]
+    )
+    |> handle_response(message)
   end
 
   @doc false
