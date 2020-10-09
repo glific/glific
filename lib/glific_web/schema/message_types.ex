@@ -20,6 +20,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :type, :message_type_enum
     field :flow, :message_flow_enum
     field :bsp_message_id, :string
+    field :message_number, :integer
 
     field :is_hsm, :boolean
 

@@ -34,6 +34,7 @@ defmodule GlificWeb.Schema.SearchTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/searches/delete.gql")
   load_gql(:search, GlificWeb.Schema, "assets/gql/searches/search.gql")
   load_gql(:search_count, GlificWeb.Schema, "assets/gql/searches/search_count.gql")
+  load_gql(:search_multi, GlificWeb.Schema, "assets/gql/searches/search_multi.gql")
 
   defp get_saved_search_list(org_id) do
     Searches.list_saved_searches(%{filter: %{organization_id: org_id}})
@@ -702,5 +703,25 @@ defmodule GlificWeb.Schema.SearchTest do
       end)
 
     assert "#{contact.id}" in conatct_ids
+  end
+
+  test "Search by term will return the search input", %{staff: user} do
+    result =
+      auth_query_gql_by(:search_multi, user,
+        variables: %{
+          "filter" => %{"term" => "Default"},
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    query_data[:data]["searchMulti"]["contacts"]
+    contacts = get_in(query_data, [:data, "searchMulti", "contacts"])
+    messages = get_in(query_data, [:data, "searchMulti", "messages"])
+    assert contacts != []
+    assert hd(contacts)["id"] != nil
+    assert String.contains?(hd(messages)["contact"]["name"], "Default")
+    assert messages != []
   end
 end
