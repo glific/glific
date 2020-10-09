@@ -27,6 +27,7 @@ defmodule Glific.Users.User do
 
   @required_fields [:phone, :name, :password, :contact_id, :organization_id]
   @optional_fields [:name, :roles]
+  # keeping the order alphabetical ASC for frontend dropdown display
   @user_roles ~w(Admin Manager None Staff)
 
   schema "users" do
