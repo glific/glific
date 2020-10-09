@@ -5,11 +5,15 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   alias Plug.Conn.Query
 
   use Tesla
+  plug Tesla.Middleware.Logger, log_level: :debug
+
+  plug Tesla.Middleware.FormUrlencoded,
+    encode: &Query.encode/1
 
   @doc """
   Returning mock Tesla value when message is send from simulator
   """
-  @spec simulator_post :: {:ok, Tesla.Env.t()}
+  @spec simulator_post :: {:ok, map()}
   def simulator_post do
     message_id = Faker.String.base64(36)
     {:ok,
@@ -20,8 +24,4 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     }}
   end
 
-  plug Tesla.Middleware.Logger, log_level: :debug
-
-  plug Tesla.Middleware.FormUrlencoded,
-    encode: &Query.encode/1
 end
