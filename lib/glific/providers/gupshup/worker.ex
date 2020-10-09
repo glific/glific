@@ -40,6 +40,8 @@ defmodule Glific.Providers.Gupshup.Worker do
     :ok
   end
 
+  @spec process_message(map(), map(), map()) ::
+          {:ok, Glific.Messages.Message.t()} | {:error, String.t()}
   defp process_message(credential, payload, message) do
     if is_simulator?(payload) do
       process_as_simulator(message)
@@ -48,15 +50,20 @@ defmodule Glific.Providers.Gupshup.Worker do
     end
   end
 
+  @spec is_simulator?(map()) :: boolean()
   defp is_simulator?(payload) do
     if payload["destination"] == @simulater_phone do true else false end
   end
 
+  @spec process_as_simulator(map()) ::
+          {:ok, Glific.Messages.Message.t()} | {:error, String.t()}
   defp process_as_simulator(message) do
     ApiClient.simulator_post()
     |> handle_response(message)
   end
 
+  @spec process_to_gupshup(map(), map(), map()) ::
+          {:ok, Glific.Messages.Message.t()} | {:error, String.t()}
   defp process_to_gupshup(credential, payload, message) do
     ApiClient.post(
       credential.keys["api_end_point"] <> "/msg",
