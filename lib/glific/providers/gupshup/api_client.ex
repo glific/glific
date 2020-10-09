@@ -6,7 +6,11 @@ defmodule Glific.Providers.Gupshup.ApiClient do
 
   use Tesla
 
-  def simulator_post() do
+  @doc """
+  Returning mock Tesla value when message is send from simulator
+  """
+  @spec simulator_post :: {:ok, Tesla.Env.t()}
+  def simulator_post do
     message_id = Faker.String.base64(36)
     {:ok,
     %Tesla.Env{

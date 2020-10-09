@@ -41,7 +41,11 @@ defmodule Glific.Providers.Gupshup.Worker do
   end
 
   defp process_message(credential, payload, message) do
-    if(is_simulator?(payload)) do process_as_simulator(message) else process_to_gupshup(credential, payload, message) end
+    if is_simulator?(payload) do
+      process_as_simulator(message)
+    else
+      process_to_gupshup(credential, payload, message)
+    end
   end
 
   defp is_simulator?(payload) do
