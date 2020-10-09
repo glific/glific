@@ -111,11 +111,6 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "New Search for messages + contacts + tags"
     field :search_multi, :search_cup do
-      arg(:save_search, :boolean, default_value: false)
-
-      @desc "Inputs to save a search"
-      arg(:save_search_input, :save_search_input)
-
       arg(:filter, non_null(:search_filter))
       arg(:message_opts, non_null(:opts))
       arg(:contact_opts, non_null(:opts))

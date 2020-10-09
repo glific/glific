@@ -1,0 +1,30 @@
+query searchMulti( 
+    $contactOpts: Opts!, 
+    $messageOpts: Opts!, 
+    $filter: SearchFilter
+  ) {
+    searchMulti(contactOpts: $contactOpts, messageOpts: $messageOpts, filter: $filter) {
+      contacts {
+        id
+        body
+        contact {
+            name
+        }
+      }
+      messages {
+        id
+        body
+        contact {
+            name
+        }
+      }
+
+      tags {
+        id
+        body
+        contact {
+            name
+        }
+      }
+    }
+}
