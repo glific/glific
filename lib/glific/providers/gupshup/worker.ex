@@ -43,12 +43,12 @@ defmodule Glific.Providers.Gupshup.Worker do
   defp check_simulator(credential, payload, message) do
     receiver = Glific.Contacts.get_contact!(message["receiver_id"])
     if receiver.phone == @simulater_phone do
-      messageID = Faker.String.base64(36)
+      message_id = Faker.String.base64(36)
       {:ok,
       %Tesla.Env{
         __client__: %Tesla.Client{adapter: nil, fun: nil, post: [], pre: []},
         __module__: Glific.Providers.Gupshup.ApiClient,
-        body: "{\"status\":\"submitted\",\"messageId\":\"#{messageID}\"}",
+        body: "{\"status\":\"submitted\",\"messageId\":\"#{message_id}\"}",
         method: :post,
         status: 200,
       }}
