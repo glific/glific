@@ -16,12 +16,12 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @spec simulator_post :: {:ok, map()}
   def simulator_post do
     message_id = Faker.String.base64(36)
-    {:ok,
-    %Tesla.Env{
-      body: "{\"status\":\"submitted\",\"messageId\":\"simu-#{message_id}\"}",
-      method: :post,
-      status: 200,
-    }}
-  end
 
+    {:ok,
+     %Tesla.Env{
+       body: "{\"status\":\"submitted\",\"messageId\":\"simu-#{message_id}\"}",
+       method: :post,
+       status: 200
+     }}
+  end
 end
