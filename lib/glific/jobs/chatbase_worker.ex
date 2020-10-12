@@ -94,11 +94,9 @@ defmodule Glific.Jobs.ChatbaseWorker do
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(%Oban.Job{args: %{"messages" => messages, "organization_id" => organization_id}}) do
     # we'll get the chatbase key from here
-    _organization = Partners.organization(organization_id)
-
-    secrets = Application.fetch_env!(:glific, :secrets)
-    chatbase = Keyword.get(secrets, :chatbase)
-    api_key = Keyword.get(chatbase, :api_key)
+    organization = Partners.organization(organization_id)
+    credential = organization.services["chatbase"]
+    api_key = if credential, do: credential.secrets["api_key"], else: nil
 
     if api_key do
       # api_key = organization.services.chatbase.api_key
