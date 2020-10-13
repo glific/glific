@@ -38,12 +38,21 @@ defmodule GlificWeb.Schema.FlowTest do
     assert get_in(flow, ["id"]) > 0
   end
 
-  test "flows field returns list of flows filtered by keyword", %{staff: user} do
+  test "flows field returns list of filtered flows", %{staff: user} do
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"keyword" => "help"}})
     assert {:ok, query_data} = result
 
     flows = get_in(query_data, [:data, "flows"])
     assert length(flows) == 1
+
+    name = "Test Workflow"
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: name, organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"uuid" => flow.uuid}})
+    assert {:ok, query_data} = result
+
+    flow_uuid = get_in(query_data, [:data, "flows", Access.at(0), "uuid"])
+    assert flow_uuid == flow.uuid
   end
 
   test "flow field id returns one flow or nil", %{staff: user} do

@@ -717,5 +717,10 @@ Filtering options for flows
   <td valign="top"><a href="#string">String</a></td>
   <td>Match the flow keyword</td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>uuid</strong></td>
+<td valign="top"><a href="#uuid4">UUID4</a></td>
+<td></td>
+</tr>
 </tbody>
 </table>

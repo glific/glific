@@ -45,6 +45,8 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :name, :string
     @desc "Match the keyword"
     field :keyword, :string
+    @desc "Match the uuid"
+    field :uuid, :uuid4
   end
 
   object :flow_queries do
