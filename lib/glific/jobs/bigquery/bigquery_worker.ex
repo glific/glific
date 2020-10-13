@@ -1,4 +1,4 @@
-defmodule Glific.Jobs.BigqueryWorker do
+defmodule Glific.Jobs.BigQueryWorker do
   @moduledoc """
   Process the message table for each organization. Chunk number of messages
   in groups of 128 and create a bigquery Worker Job to deliver the message to
@@ -7,7 +7,6 @@ defmodule Glific.Jobs.BigqueryWorker do
   We centralize both the cron job and the worker job in one module
   """
 
-  alias __MODULE__
   import Ecto.Query
 
   use Oban.Worker,
@@ -127,12 +126,12 @@ defmodule Glific.Jobs.BigqueryWorker do
   defp queue_table_data(_, _, _, _), do: nil
 
   defp make_job(data, "messages", organization_id) do
-    BigqueryWorker.new(%{organization_id: organization_id, messages: data})
+    __MODULE__.new(%{organization_id: organization_id, messages: data})
     |> Oban.insert()
   end
 
   defp make_job(data, "contacts", organization_id) do
-    BigqueryWorker.new(%{organization_id: organization_id, contacts: data})
+    __MODULE__.new(%{organization_id: organization_id, contacts: data})
     |> Oban.insert()
   end
 
