@@ -1,4 +1,4 @@
-defmodule Glific.Jobs.ChatbaseJob do
+defmodule Glific.Jobs.BigqueryJob do
   @moduledoc """
   Book keeping table to keep track of the last job that we processed from the
   messages belonging to the organization
@@ -31,13 +31,14 @@ defmodule Glific.Jobs.ChatbaseJob do
   schema "bigquery_jobs" do
     belongs_to :message, Message
     belongs_to :organization, Organization
+
     timestamps(type: :utc_datetime)
   end
 
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(ChatbaseJob.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(BigqueryJob.t(), map()) :: Ecto.Changeset.t()
   def changeset(search, attrs) do
     search
     |> cast(attrs, @required_fields ++ @optional_fields)

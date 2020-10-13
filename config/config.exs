@@ -43,6 +43,7 @@ config :glific, Oban,
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}}
+    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}}
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
