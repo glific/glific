@@ -18,6 +18,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     Jobs,
     Messages.Message,
     Contacts.Contact,
+    Partners,
     Repo
   }
 
@@ -150,30 +151,16 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp format_date(date),
     do: Timex.format!(date, "{YYYY}-{0M}-{D} 18:52:36")
 
-  def token() do
-    config = %{
-      "type" => "service_account",
-      "project_id" => "beginner-290513",
-      "private_key_id" => "b17c9ebd2e095a7d9d08e58341a012c8344fac6e",
-      "private_key" =>
-        "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCpJw8qkBVijhfY\nYBB5RL0HCydrpNw0NoQmRXkDPPiiyWWLPvP37rGizXOYoc7FEtjwblAVmPrbFDZH\nN+kf8ORCrsLirm/xVI1HiQPtN1yXjGn9fUAOjw+wMhTRXodnM1H3xczc1czxtKlM\nsXmy/rjYofVxDesU3kdszCMhXbFPWXmi9T1kEt1R2xWgPl5rsyTnNAWqwpJUo9aM\nwmleH74UwPh2wl2j+su5nXEZwn/s2wbYToId12MHfiPIRysEzQRK9CBClk/UzoQT\nDM/OUZe11D9AxVUpOixs9I9eEYVaYipIdIIMJhHD2DQJzHkYMkv26AiYo9F1/+63\nwIrXWH43AgMBAAECggEAEQsZy29qbYcPqVeUkVjMYFykA4Pq7r/cyiu507UIVa6h\nMp83NHCyfqA2LizaM/Uq3UmK0YJGfwh8Uj9fQpP3toL7/pxriboROiH4vqVos5m2\n8Y712Kxa0lAEKkxcrENO1lOcdAEpfePMIylxWl2xVkfgqRwpPEML7fnA7b24/dub\nIN1uFfbou+2taS00wbIeTg2MapxeqsjE6s+fnOVoMDjonriralBphj57mDylFxCK\n49YfpHxBS1LnTIEJpW6SG2QuLoyfMZXCO555GeDv2FnUbijwA4M5Hk4XYfJhM1Bz\nVRE/AUJCn5v1yME2sB/bb0woqi5bWS4QiyZcb1q+QQKBgQDtJQM+s8x+shYAG5vj\nx7CAKkMYA3JDUn5Pj4S1jLP12+QAlowJkOFmgIExZqTDtpuxxzd+j/KKWYXLPasF\n98JBg6b9+fWKHrqIYgzzuD3d7rY93QhqK/271G2L2ln42aOPa5W7gtnyZ+YOdvdD\n6RyEh4Uv6+Ai7xiYnZdp+JCGkQKBgQC2mhhj7FPBobfZ1WDIRYLPvQY7klktAKtd\n9nlw26Rkuy98ek4TPeFXu2xZsr66Lm4xJxIs1PKAWxoGOHW045PPzl8wznNsYY1V\nwuismCf5NFpgS3e5AyiQ5SoImsfJfACkG7rfj6HUskyNV21N8Zpvdr30DtWcZr+s\nlgDTUZ5sRwKBgAWlE+ayMPPzGUL3ZUaOwkzKtL4lltqzY/5Q1D/eEYqQqWS6MKsp\nn7Po6ypZ3yIpfptEurVwh71zVBP6a8/AjgcxMxBomsem45nLe7Nxd0eJHx1p3YFp\neqi17cWedPXPeG05il7kRnvWrUs62bfsHJmrACib3MH4HwXC+o+zMv2BAoGAIra6\nykxEQ/xlgkEBbDFiw/FwfOS+lUKaUXuo7J6k6w124pgxvZC3BUG5QHgtsCFhi3Cd\nEO7Oxz4KfYJARko5cHkQOawV31XQU6yBJUar2sFsKQBP21lRXfJjAk3Ci3hKeuhW\np2eb4V6gFQK44ed7b5NIW1xymZAjAkFmGMZccsMCgYB8jq62Cbqk/Vig7UyMYzDo\nZaPcOz2XfNLrgLbVo49Cz77/D8fmQ42zsihpsUCmiczANtdVGIOG0NZw549eJEeQ\nja5uVBg1L6g+irzg4W/L+wy/94yQtQxgf6JHLqFGO8ryfDwye4Rr1tN370uylOzG\nw2/+BufBs/Y4Tqxxy3VInA==\n-----END PRIVATE KEY-----\n",
-      "client_email" => "bqglific@beginner-290513.iam.gserviceaccount.com",
-      "client_id" => "104189268297059908552",
-      "auth_uri" => "https://accounts.google.com/o/oauth2/auth",
-      "token_uri" => "https://oauth2.googleapis.com/token",
-      "auth_provider_x509_cert_url" => "https://www.googleapis.com/oauth2/v1/certs",
-      "client_x509_cert_url" =>
-        "https://www.googleapis.com/robot/v1/metadata/x509/bqglific%40beginner-290513.iam.gserviceaccount.com"
-    }
+  def token(credentials) do
+    config = case Jason.decode(credentials.secrets["service_account"]) do
+      {:ok, config} -> config
+      _ -> :error
+    end
 
     Goth.Config.add_config(config)
-
-    {:ok, token} =
-      Goth.Token.for_scope(
-        {"bqglific@beginner-290513.iam.gserviceaccount.com",
-         "https://www.googleapis.com/auth/cloud-platform"}
+    {:ok, token} = Goth.Token.for_scope(
+        {credentials.secrets["project_email"], credentials.keys["url"]}
       )
-
     token
   end
 
@@ -182,16 +169,16 @@ defmodule Glific.Jobs.BigQueryWorker do
   """
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
-  def perform(%Oban.Job{args: %{"messages" => messages, "organization_id" => _organization_id}}) do
+  def perform(%Oban.Job{args: %{"messages" => messages, "organization_id" => organization_id}}) do
     messages
     |> Enum.map(fn msg -> format_data_for_bigquery("messages", msg) end)
-    |> make_insert_query("messages")
+    |> make_insert_query("messages", organization_id)
   end
 
-  def perform(%Oban.Job{args: %{"contacts" => contacts, "organization_id" => _organization_id}}) do
+  def perform(%Oban.Job{args: %{"contacts" => contacts, "organization_id" => organization_id}}) do
     contacts
     |> Enum.map(fn msg -> format_data_for_bigquery("contacts", msg) end)
-    |> make_insert_query("contacts")
+    |> make_insert_query("contacts", organization_id)
   end
 
   defp format_data_for_bigquery("messages", msg) do
@@ -237,12 +224,20 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp format_data_for_bigquery(_, _), do: :ok
 
-  def make_insert_query(data, table) do
-    token = token()
-    conn = GoogleApi.BigQuery.V2.Connection.new(token.token)
-    project_id = "beginner-290513"
-    dataset_id = "demo"
+  def make_insert_query(data, table, organization_id) do
+    organization = Partners.organization(organization_id)
+    credentials =
+      organization.services["bigquery"]
+      |> case do
+        nil ->  %{ url: nil, id: nil, email: nil}
+        credentials -> credentials
+      end
+
+    project_id = credentials.secrets["project_id"]
+    dataset_id = credentials.secrets["dataset_id"]
     table_id = table
+    token = token(credentials)
+    conn = GoogleApi.BigQuery.V2.Connection.new(token.token)
     GoogleApi.BigQuery.V2.Api.Tabledata.bigquery_tabledata_insert_all(
       conn,
       project_id,
