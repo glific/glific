@@ -33,6 +33,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
+  @spec perform_for_table(Jobs.BigqueryJob.t() | nil , non_neg_integer) :: :ok | nil
   defp perform_for_table(nil, _), do: nil
 
   defp perform_for_table(bigquery_job, organization_id) do
@@ -47,6 +48,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       Jobs.update_bigquery_job(bigquery_job, %{table_id: max_id})
       queue_table_data(bigquery_job.table, organization_id, table_id, max_id)
     end
+    :ok
   end
 
   @spec queue_table_data(String.t(), non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
@@ -126,9 +128,11 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp queue_table_data(_, _, _, _), do: nil
 
+  @spec make_job(list(), String.t(), non_neg_integer) :: :ok | nil
   defp make_job(data, "messages", organization_id) do
     __MODULE__.new(%{organization_id: organization_id, messages: data})
     |> Oban.insert()
+    :ok
   end
 
   defp make_job(data, "contacts", organization_id) do
@@ -138,19 +142,23 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp make_job(_, _, _), do: nil
 
+  @spec get_table_struct(String.t()) :: any()
   defp get_table_struct(table) do
     case table do
         "messages" -> Message
         "contacts" -> Contact
+        _ -> ""
     end
   end
 
+  @spec format_date(DateTime.t() | nil) :: any()
   defp format_date(nil),
     do: nil
 
   defp format_date(date),
     do: Timex.format!(date, "{YYYY}-{0M}-{D} 18:52:36")
 
+  @spec token(map()) :: any()
   def token(credentials) do
     config = case Jason.decode(credentials.secrets["service_account"]) do
       {:ok, config} -> config
@@ -181,6 +189,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> make_insert_query("contacts", organization_id)
   end
 
+  @spec format_data_for_bigquery(String.t(), map()) :: map()
   defp format_data_for_bigquery("messages", msg) do
     %{
       json: %{
@@ -222,8 +231,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     }
   end
 
-  defp format_data_for_bigquery(_, _), do: :ok
+  defp format_data_for_bigquery(_, _), do: %{}
 
+  @spec make_insert_query(list(), String.t(), non_neg_integer) :: :ok
   def make_insert_query(data, table, organization_id) do
     organization = Partners.organization(organization_id)
     credentials =
@@ -246,6 +256,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       [body: %{rows: data}],
       []
     )
-    |> IO.inspect()
+
+    :ok
   end
 end
