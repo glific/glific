@@ -67,4 +67,11 @@ defmodule Glific.Jobs do
     |> BigqueryJob.changeset(attrs)
     |> Repo.update()
   end
+
+  @spec get_bigquery_jobs(integer) :: list() | nil
+  def get_bigquery_jobs(organization_id) do
+    BigqueryJob
+    |> where([bg], bg.organization_id == ^organization_id)
+    |> Repo.all()
+  end
 end

@@ -28,55 +28,29 @@ defmodule Glific.Jobs.BigqueryWorker do
   """
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
-    preform_for_messages(organization_id)
-    preform_for_contacts(organization_id)
+    Jobs.get_bigquery_jobs(organization_id)
+    |> Enum.each(&perform_for_table(&1, organization_id))
     :ok
   end
 
-  defp preform_for_messages(organization_id) do
-    bigquery_job = Jobs.get_bigquery_job(organization_id, "messages")
+  defp perform_for_table(nil, _), do: nil
 
-    message_id =
-      if bigquery_job == nil,
-        do: 0,
-        else: bigquery_job.table_id
-
-    query =
-      Message
+  defp perform_for_table(bigquery_job, organization_id) do
+    table_id = bigquery_job.table_id
+    max_id =
+      get_table_struct(bigquery_job.table)
       |> select([m], max(m.id))
       |> where([m], m.organization_id == ^organization_id)
+      |> Repo.one()
 
-    max_id = Repo.one(query)
-
-    if max_id > message_id and bigquery_job != nil do
+    if max_id > table_id do
       Jobs.update_bigquery_job(bigquery_job, %{table_id: max_id})
-      queue_message_table_data(organization_id, message_id, max_id)
+      queue_table_data(bigquery_job.table, organization_id, table_id, max_id)
     end
   end
 
-  defp preform_for_contacts(organization_id) do
-    bigquery_job = Jobs.get_bigquery_job(organization_id, "contacts")
-
-    contact_id =
-      if bigquery_job == nil,
-        do: 0,
-        else: bigquery_job.table_id
-
-    query =
-      Contact
-      |> select([m], max(m.id))
-      |> where([m], m.organization_id == ^organization_id)
-
-    max_id = Repo.one(query)
-
-    if max_id > contact_id and bigquery_job != nil do
-      Jobs.update_bigquery_job(bigquery_job, %{table_id: max_id})
-      queue_contact_table_data(organization_id, contact_id, max_id)
-    end
-  end
-
-  @spec queue_message_table_data(non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
-  defp queue_message_table_data(organization_id, min_id, max_id) do
+  @spec queue_table_data(String.t(), non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
+  defp queue_table_data("messages", organization_id, min_id, max_id) do
     query =
       Message
       |> where([m], m.organization_id == ^organization_id)
@@ -110,11 +84,10 @@ defmodule Glific.Jobs.BigqueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_message_job(&1, organization_id))
+    |> Enum.each(&make_job(&1, "messages", organization_id))
   end
 
-  @spec queue_contact_table_data(non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
-  defp queue_contact_table_data(organization_id, min_id, max_id) do
+  defp queue_table_data("contacts", organization_id, min_id, max_id) do
     query =
       Contact
       |> where([m], m.organization_id == ^organization_id)
@@ -148,7 +121,28 @@ defmodule Glific.Jobs.BigqueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_contact_job(&1, organization_id))
+    |> Enum.each(&make_job(&1, "contacts",  organization_id))
+  end
+
+  defp queue_table_data(_, _, _, _), do: nil
+
+  defp make_job(data, "messages", organization_id) do
+    BigqueryWorker.new(%{organization_id: organization_id, messages: data})
+    |> Oban.insert()
+  end
+
+  defp make_job(data, "contacts", organization_id) do
+    BigqueryWorker.new(%{organization_id: organization_id, contacts: data})
+    |> Oban.insert()
+  end
+
+  defp make_job(_, _, _), do: nil
+
+  defp get_table_struct(table) do
+    case table do
+        "messages" -> Message
+        "contacts" -> Contact
+    end
   end
 
   defp format_date(nil),
@@ -156,16 +150,6 @@ defmodule Glific.Jobs.BigqueryWorker do
 
   defp format_date(date),
     do: Timex.format!(date, "{YYYY}-{0M}-{D} 18:52:36")
-
-  defp make_message_job(messages, organization_id) do
-    BigqueryWorker.new(%{organization_id: organization_id, messages: messages})
-    |> Oban.insert()
-  end
-
-  defp make_contact_job(contacts, organization_id) do
-    BigqueryWorker.new(%{organization_id: organization_id, contacts: contacts})
-    |> Oban.insert()
-  end
 
   def token() do
     config = %{
@@ -200,20 +184,18 @@ defmodule Glific.Jobs.BigqueryWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(%Oban.Job{args: %{"messages" => messages, "organization_id" => _organization_id}}) do
-    # Updating message table in bigquery
     messages
-    |> Enum.map(fn msg -> format_message_row(msg) end)
-    |> insert_query()
+    |> Enum.map(fn msg -> format_data_for_bigquery("messages", msg) end)
+    |> make_insert_query("messages")
   end
 
   def perform(%Oban.Job{args: %{"contacts" => contacts, "organization_id" => _organization_id}}) do
-    # Updating message table in bigquery
     contacts
-    |> Enum.map(fn msg -> format_contact_row(msg) end)
-    |> insert_conatct_query()
+    |> Enum.map(fn msg -> format_data_for_bigquery("contacts", msg) end)
+    |> make_insert_query("contacts")
   end
 
-  defp format_message_row(msg) do
+  defp format_data_for_bigquery("messages", msg) do
     %{
       json: %{
         id: msg["id"],
@@ -233,7 +215,7 @@ defmodule Glific.Jobs.BigqueryWorker do
     }
   end
 
-  defp format_contact_row(contact) do
+  defp format_data_for_bigquery("contacts", contact) do
     %{
       json: %{
         id: contact["id"],
@@ -254,37 +236,20 @@ defmodule Glific.Jobs.BigqueryWorker do
     }
   end
 
-  def insert_query(messages) do
+  defp format_data_for_bigquery(_, _), do: :ok
+
+  def make_insert_query(data, table) do
     token = token()
     conn = GoogleApi.BigQuery.V2.Connection.new(token.token)
     project_id = "beginner-290513"
     dataset_id = "demo"
-    table_id = "messages"
-
+    table_id = table
     GoogleApi.BigQuery.V2.Api.Tabledata.bigquery_tabledata_insert_all(
       conn,
       project_id,
       dataset_id,
       table_id,
-      [body: %{rows: messages}],
-      []
-    )
-    |> IO.inspect()
-  end
-
-  def insert_conatct_query(contacts) do
-    token = token()
-    conn = GoogleApi.BigQuery.V2.Connection.new(token.token)
-    project_id = "beginner-290513"
-    dataset_id = "demo"
-    table_id = "contacts"
-
-    GoogleApi.BigQuery.V2.Api.Tabledata.bigquery_tabledata_insert_all(
-      conn,
-      project_id,
-      dataset_id,
-      table_id,
-      [body: %{rows: contacts}],
+      [body: %{rows: data}],
       []
     )
     |> IO.inspect()
