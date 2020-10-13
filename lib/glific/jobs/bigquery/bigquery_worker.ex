@@ -49,7 +49,7 @@ defmodule Glific.Jobs.BigqueryWorker do
       max_id = Repo.one(query)
 
       if max_id > message_id and bigquery_job != nil do
-        Repo.update(bigquery_job, %{table_id: max_id})
+        #Repo.update(bigquery_job, %{table_id: max_id})
         queue_message_table_data(organization_id, message_id, max_id)
       end
   end
@@ -129,7 +129,7 @@ defmodule Glific.Jobs.BigqueryWorker do
     conn = GoogleApi.BigQuery.V2.Connection.new(token.token)
     project_id = "beginner-290513"
     dataset_id = "demo"
-    table_id = "BigqueryMsg"
+    table_id = "messages"
     {:ok, response} = GoogleApi.BigQuery.V2.Api.Tabledata.bigquery_tabledata_insert_all(
       conn,
       project_id,
@@ -139,22 +139,21 @@ defmodule Glific.Jobs.BigqueryWorker do
         rows: %{
             json: %{
               id: msg["id"],
-              body: msg["body"],
+              body: msg["message"],
               type: msg["type"],
               flow: msg["flow"],
               status: msg["status"],
               sender_phone: msg["sender_phone"],
               receiver_phone: msg["receiver_phone"],
               contact_phone: msg["contact_phone"],
-              user_phone: msg["user_phone"],
+              user_phone: msg["user_phone"]
             }
         }
       }
       ],
       []
     )
-
-    IO.inspect(response)
     response
+    |> IO.inspect()
   end
 end
