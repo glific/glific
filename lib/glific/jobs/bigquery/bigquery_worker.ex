@@ -49,7 +49,7 @@ defmodule Glific.Jobs.BigqueryWorker do
       max_id = Repo.one(query)
 
       if max_id > message_id and bigquery_job != nil do
-       # Repo.update(bigquery_job, %{table_id: max_id})
+        Repo.update(bigquery_job, %{table_id: max_id})
         queue_message_table_data(organization_id, message_id, max_id)
       end
   end
@@ -139,8 +139,7 @@ defmodule Glific.Jobs.BigqueryWorker do
         rows: %{
             json: %{
               id: msg["id"],
-            #   body: msg["body"],
-              body: "This is from glific",
+              body: msg["body"],
               type: msg["type"],
               flow: msg["flow"],
               status: msg["status"],
