@@ -3,12 +3,6 @@
 # This file will be used for production release only.
 import Config
 
-# db_host =
-#   System.get_env("DATABASE_HOST") || "localhost"
-
-# db_database = System.get_env("DATABASE_DB") || "glific_dev"
-# db_username = System.get_env("DATABASE_USER") || "postgres"
-# db_password = System.get_env("DATABASE_PASSWORD") || "postgres"
 db_url = System.get_env("DATABASE_URL") || "ecto://postgres:postgres@localhost/glific_dev"
 ssl_port = System.get_env("SSL_PORT") || 443
 http_port = System.get_env("HTTP_PORT") || 4000
@@ -40,22 +34,10 @@ config :glific,
 
 config :appsignal, :config,
   name: "Glific",
+  revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: System.get_env("GLIFIC_PUSH_API_KEY")
-
-# Goth configs: Picking up json from env itself at run time
-fake_goth_json = """
-{
-"project_id": "DOES NOT EXISTS",
-"private_key_id": "DOES NOT EXIST",
-"private_key": "INVALID PRIVATE KEY"
-}
-"""
 
 config :glific, Glific.Vault,
   ciphers: [
     default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: Base.decode64!(System.get_env("CIPHER_KEY"))}
 ]
-
-config :goth,
-  json: fake_goth_json,
-  disabled: false

@@ -3,16 +3,6 @@
 # This file will be used for production release only.
 import Config
 
-# db_host =
-#   System.get_env("DATABASE_HOST") ||
-#     raise """
-#     environment variable DATABASE_HOST is missing.
-#     """
-
-# db_database = System.get_env("DATABASE_DB") || "glific_prod"
-# db_username = System.get_env("DATABASE_USER") || "postgres"
-# db_password = System.get_env("DATABASE_PASSWORD") || "postgres"
-# db_url = "ecto://#{db_username}:#{db_password}@#{db_host}/#{db_database}"
 db_url =
   System.get_env("DATABASE_URL") ||
     raise """
@@ -60,16 +50,8 @@ config :glific,
 config :appsignal, :config,
   name: "Glific",
   active: true,
+  revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: System.get_env("APPSIGNAL_PUSH_API_KEY")
-
-# Goth configs: Picking up json from env itself at run time
-goth_json = System.get_env("GOTH_JSON_CREDENTIALS")
-
-if goth_json !== nil do
-  config :goth,
-    json: goth_json,
-    disabled: false
-end
 
 config :glific, Glific.Vault,
   ciphers: [
