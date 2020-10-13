@@ -60,15 +60,11 @@ defmodule Glific.Jobs do
   Create or update a chatbase_job with the message_id and
   organization_id
   """
-  @spec upsert_bigquery_job(map()) :: {:ok, BigqueryJob.t()} | {:error, Ecto.Changeset.t()}
-  def upsert_bigquery_job(attrs) do
-    changeset = BigqueryJob.changeset(%BigqueryJob{}, attrs)
-    Repo.insert!(
-      changeset,
-      returning: true,
-      on_conflict: [set: [table_id: attrs.table_id]],
-      conflict_target: :organization_id
-    )
+  @spec update_bigquery_job(BigqueryJob.t(), map()) :: {:ok, BigqueryJob.t()} | {:error, Ecto.Changeset.t()}
+  def update_bigquery_job(%BigqueryJob{} = bigquery_job, attrs) do
+    bigquery_job
+    |> BigqueryJob.changeset(attrs)
+    |> Repo.update()
   end
 
 

@@ -8,14 +8,10 @@ defmodule Glific.Jobs.BigqueryJob do
   import Ecto.Changeset
 
   alias __MODULE__
-
-  alias Glific.{
-    Messages.Message,
-    Partners.Organization
-  }
+  alias Glific.Partners.Organization
 
   @required_fields [:organization_id]
-  @optional_fields [:message_id]
+  @optional_fields [:table_id, :table ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),

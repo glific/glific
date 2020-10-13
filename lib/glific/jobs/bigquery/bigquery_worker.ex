@@ -49,7 +49,7 @@ defmodule Glific.Jobs.BigqueryWorker do
       max_id = Repo.one(query)
 
       if max_id > message_id and bigquery_job != nil do
-        #Repo.update(bigquery_job, %{table_id: max_id})
+       # Jobs.update_bigquery_job(bigquery_job, %{table_id: max_id})
         queue_message_table_data(organization_id, message_id, max_id)
       end
   end
@@ -81,6 +81,7 @@ defmodule Glific.Jobs.BigqueryWorker do
             receiver_phone: row.receiver.phone,
             contact_phone: row.contact.phone,
             user_phone: row.contact.phone,
+            tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
           }
           | acc
         ]
@@ -121,39 +122,39 @@ defmodule Glific.Jobs.BigqueryWorker do
   def perform(%Oban.Job{args: %{"messages" => messages, "organization_id" => _organization_id}}) do
     # Updating message table in bigquery
     messages
-    |> Enum.each(fn msg -> insert_query(msg) end)
+    |> Enum.map(fn msg -> format_message_row(msg) end)
+    |> insert_query()
   end
 
-  def insert_query(msg) do
+  defp format_message_row(msg) do
+    %{
+        json: %{
+            id: msg["id"],
+            body: "Format messages",
+            type: msg["type"],
+            flow: msg["flow"],
+            status: msg["status"],
+            sender_phone: msg["sender_phone"],
+            receiver_phone: msg["receiver_phone"],
+            contact_phone: msg["contact_phone"],
+            user_phone: msg["user_phone"]
+        }
+    }
+  end
+
+  def insert_query(messages) do
     token = token()
     conn = GoogleApi.BigQuery.V2.Connection.new(token.token)
     project_id = "beginner-290513"
     dataset_id = "demo"
     table_id = "messages"
-    {:ok, response} = GoogleApi.BigQuery.V2.Api.Tabledata.bigquery_tabledata_insert_all(
+    GoogleApi.BigQuery.V2.Api.Tabledata.bigquery_tabledata_insert_all(
       conn,
       project_id,
       dataset_id,
       table_id,
-      [body: %{
-        rows: %{
-            json: %{
-              id: msg["id"],
-              body: msg["message"],
-              type: msg["type"],
-              flow: msg["flow"],
-              status: msg["status"],
-              sender_phone: msg["sender_phone"],
-              receiver_phone: msg["receiver_phone"],
-              contact_phone: msg["contact_phone"],
-              user_phone: msg["user_phone"]
-            }
-        }
-      }
-      ],
+      [body: %{ rows: messages}],
       []
-    )
-    response
-    |> IO.inspect()
+    )|> IO.inspect()
   end
 end
