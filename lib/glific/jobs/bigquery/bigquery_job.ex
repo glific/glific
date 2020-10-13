@@ -21,7 +21,7 @@ defmodule Glific.Jobs.BigqueryJob do
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           table_id: non_neg_integer | nil,
-          table: Message.t() | Ecto.Association.NotLoaded.t() | nil,
+          table: String.t(),
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -29,9 +29,9 @@ defmodule Glific.Jobs.BigqueryJob do
         }
 
   schema "bigquery_jobs" do
-    belongs_to :message, Message
+    field :table_id, :integer
+    field :table, :string
     belongs_to :organization, Organization
-
     timestamps(type: :utc_datetime)
   end
 
@@ -43,9 +43,6 @@ defmodule Glific.Jobs.BigqueryJob do
     search
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint(:organization_id)
-    |> unique_constraint(:message_id)
-    |> foreign_key_constraint(:message_id)
     |> foreign_key_constraint(:organization_id)
   end
 end

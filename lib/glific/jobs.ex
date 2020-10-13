@@ -5,6 +5,7 @@ defmodule Glific.Jobs do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Jobs.BigqueryJob,
     Jobs.ChatbaseJob,
     Repo
   }
@@ -46,4 +47,29 @@ defmodule Glific.Jobs do
       conflict_target: :organization_id
     )
   end
+
+  @spec get_bigquery_job(integer, String.t()) :: BigqueryJob.t() | nil
+  def get_bigquery_job(organization_id, table),
+    do:
+     Repo.get_by(
+        BigqueryJob,
+        %{organization_id: organization_id, table: table }
+      )
+
+  @doc """
+  Create or update a chatbase_job with the message_id and
+  organization_id
+  """
+  @spec upsert_bigquery_job(map()) :: {:ok, BigqueryJob.t()} | {:error, Ecto.Changeset.t()}
+  def upsert_bigquery_job(attrs) do
+    changeset = BigqueryJob.changeset(%BigqueryJob{}, attrs)
+    Repo.insert!(
+      changeset,
+      returning: true,
+      on_conflict: [set: [table_id: attrs.table_id]],
+      conflict_target: :organization_id
+    )
+  end
+
+
 end
