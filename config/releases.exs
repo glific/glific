@@ -3,16 +3,6 @@
 # This file will be used for production release only.
 import Config
 
-# db_host =
-#   System.get_env("DATABASE_HOST") ||
-#     raise """
-#     environment variable DATABASE_HOST is missing.
-#     """
-
-# db_database = System.get_env("DATABASE_DB") || "glific_prod"
-# db_username = System.get_env("DATABASE_USER") || "postgres"
-# db_password = System.get_env("DATABASE_PASSWORD") || "postgres"
-# db_url = "ecto://#{db_username}:#{db_password}@#{db_host}/#{db_database}"
 db_url =
   System.get_env("DATABASE_URL") ||
     raise """
@@ -48,28 +38,14 @@ config :glific, GlificWeb.Endpoint,
   secret_key_base: secret_key_base,
   url: [host: System.get_env("BASE_URL")]
 
-# provider keys
-config :glific,
-  provider_key_1: System.get_env("PROVIDER_KEY_1"),
-  provider_key_2: System.get_env("PROVIDER_KEY_2"),
-  provider_key_3: System.get_env("PROVIDER_KEY_3"),
-  provider_key_4: System.get_env("PROVIDER_KEY_4"),
-  provider_key_5: System.get_env("PROVIDER_KEY_5")
-
 # AppSignal configs
 config :appsignal, :config,
   name: "Glific",
+  # we need to make this dynamic at some point
+  hostname: "Glific Gigalixir",
   active: true,
+  revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: System.get_env("APPSIGNAL_PUSH_API_KEY")
-
-# Goth configs: Picking up json from env itself at run time
-goth_json = System.get_env("GOTH_JSON_CREDENTIALS")
-
-if goth_json !== nil do
-  config :goth,
-    json: goth_json,
-    disabled: false
-end
 
 config :glific, Glific.Vault,
   ciphers: [
