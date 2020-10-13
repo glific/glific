@@ -51,21 +51,20 @@ defmodule Glific.Jobs do
   @spec get_bigquery_job(integer, String.t()) :: BigqueryJob.t() | nil
   def get_bigquery_job(organization_id, table),
     do:
-     Repo.get_by(
+      Repo.get_by(
         BigqueryJob,
-        %{organization_id: organization_id, table: table }
+        %{organization_id: organization_id, table: table}
       )
 
   @doc """
   Create or update a chatbase_job with the message_id and
   organization_id
   """
-  @spec update_bigquery_job(BigqueryJob.t(), map()) :: {:ok, BigqueryJob.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_bigquery_job(BigqueryJob.t(), map()) ::
+          {:ok, BigqueryJob.t()} | {:error, Ecto.Changeset.t()}
   def update_bigquery_job(%BigqueryJob{} = bigquery_job, attrs) do
     bigquery_job
     |> BigqueryJob.changeset(attrs)
     |> Repo.update()
   end
-
-
 end
