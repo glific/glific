@@ -1,7 +1,38 @@
-defmodule Glific.Sheets do
+defmodule Glific.CSV.File do
   @moduledoc """
   First implemenetation to convert sheets to flows using a menu structure and UUID
   """
+
+  alias Glific.{
+    Partners.Organization,
+  }
+
+  @type t :: %__MODULE__{
+    __meta__: Ecto.Schema.Metadata.t(),
+    id: non_neg_integer | nil,
+    name: String.t() | nil,
+    contents: String.t() | nil,
+    uuid_map: map() | nil,
+    main_menu: map() | nil,
+    organization_id: non_neg_integer | nil,
+    organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+    inserted_at: :utc_datetime | nil,
+    updated_at: :utc_datetime | nil
+  }
+
+  schema "csv_files" do
+    field :name, :string
+
+    field :contents, :string
+
+    field :uuid_map, :jsonb
+
+    field :main_menu, :menu, virtual: true
+
+    belongs_to :organization, Organization
+
+    timestamps(type: :utc_datetime)
+  end
 
   @doc """
   Read a csv file, and split it up into a bunch of tuples that we are interested in. Assuming
