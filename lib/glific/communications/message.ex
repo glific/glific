@@ -119,6 +119,9 @@ defmodule Glific.Communications.Message do
 
   @spec do_receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
   defp do_receive_message(%{organization_id: organization_id} = message_params, type) do
+    # get session id of contact's messages
+    session_id = Messages.get_session_id(message_params)
+
     {:ok, contact} =
       message_params.sender
       |> Map.put(:organization_id, organization_id)
@@ -136,6 +139,7 @@ defmodule Glific.Communications.Message do
         flow: :inbound,
         bsp_status: :delivered,
         status: :received,
+        session_id: session_id,
         organization_id: contact.organization_id
       })
 
