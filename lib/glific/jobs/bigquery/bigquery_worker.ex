@@ -63,7 +63,6 @@ defmodule Glific.Jobs.BigqueryWorker do
        |> order_by([m], [m.inserted_at, m.id])
        |> preload([:tags, :receiver, :sender, :contact])
 
-
     Repo.all(query)
     |> Enum.reduce(
       [],
