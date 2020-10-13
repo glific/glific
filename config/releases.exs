@@ -38,17 +38,11 @@ config :glific, GlificWeb.Endpoint,
   secret_key_base: secret_key_base,
   url: [host: System.get_env("BASE_URL")]
 
-# provider keys
-config :glific,
-  provider_key_1: System.get_env("PROVIDER_KEY_1"),
-  provider_key_2: System.get_env("PROVIDER_KEY_2"),
-  provider_key_3: System.get_env("PROVIDER_KEY_3"),
-  provider_key_4: System.get_env("PROVIDER_KEY_4"),
-  provider_key_5: System.get_env("PROVIDER_KEY_5")
-
 # AppSignal configs
 config :appsignal, :config,
   name: "Glific",
+  # we need to make this dynamic at some point
+  hostname: "Glific Gigalixir",
   active: true,
   revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: System.get_env("APPSIGNAL_PUSH_API_KEY")
