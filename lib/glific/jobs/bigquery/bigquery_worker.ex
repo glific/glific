@@ -90,18 +90,7 @@ defmodule Glific.Jobs.BigqueryWorker do
   end
 
   defp token() do
-    config = %{
-      "type" => "service_account",
-      "project_id" => "beginner-290513",
-      "private_key_id" => "b17c9ebd2e095a7d9d08e58341a012c8344fac6e",
-      "private_key" => "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCpJw8qkBVijhfY\nYBB5RL0HCydrpNw0NoQmRXkDPPiiyWWLPvP37rGizXOYoc7FEtjwblAVmPrbFDZH\nN+kf8ORCrsLirm/xVI1HiQPtN1yXjGn9fUAOjw+wMhTRXodnM1H3xczc1czxtKlM\nsXmy/rjYofVxDesU3kdszCMhXbFPWXmi9T1kEt1R2xWgPl5rsyTnNAWqwpJUo9aM\nwmleH74UwPh2wl2j+su5nXEZwn/s2wbYToId12MHfiPIRysEzQRK9CBClk/UzoQT\nDM/OUZe11D9AxVUpOixs9I9eEYVaYipIdIIMJhHD2DQJzHkYMkv26AiYo9F1/+63\nwIrXWH43AgMBAAECggEAEQsZy29qbYcPqVeUkVjMYFykA4Pq7r/cyiu507UIVa6h\nMp83NHCyfqA2LizaM/Uq3UmK0YJGfwh8Uj9fQpP3toL7/pxriboROiH4vqVos5m2\n8Y712Kxa0lAEKkxcrENO1lOcdAEpfePMIylxWl2xVkfgqRwpPEML7fnA7b24/dub\nIN1uFfbou+2taS00wbIeTg2MapxeqsjE6s+fnOVoMDjonriralBphj57mDylFxCK\n49YfpHxBS1LnTIEJpW6SG2QuLoyfMZXCO555GeDv2FnUbijwA4M5Hk4XYfJhM1Bz\nVRE/AUJCn5v1yME2sB/bb0woqi5bWS4QiyZcb1q+QQKBgQDtJQM+s8x+shYAG5vj\nx7CAKkMYA3JDUn5Pj4S1jLP12+QAlowJkOFmgIExZqTDtpuxxzd+j/KKWYXLPasF\n98JBg6b9+fWKHrqIYgzzuD3d7rY93QhqK/271G2L2ln42aOPa5W7gtnyZ+YOdvdD\n6RyEh4Uv6+Ai7xiYnZdp+JCGkQKBgQC2mhhj7FPBobfZ1WDIRYLPvQY7klktAKtd\n9nlw26Rkuy98ek4TPeFXu2xZsr66Lm4xJxIs1PKAWxoGOHW045PPzl8wznNsYY1V\nwuismCf5NFpgS3e5AyiQ5SoImsfJfACkG7rfj6HUskyNV21N8Zpvdr30DtWcZr+s\nlgDTUZ5sRwKBgAWlE+ayMPPzGUL3ZUaOwkzKtL4lltqzY/5Q1D/eEYqQqWS6MKsp\nn7Po6ypZ3yIpfptEurVwh71zVBP6a8/AjgcxMxBomsem45nLe7Nxd0eJHx1p3YFp\neqi17cWedPXPeG05il7kRnvWrUs62bfsHJmrACib3MH4HwXC+o+zMv2BAoGAIra6\nykxEQ/xlgkEBbDFiw/FwfOS+lUKaUXuo7J6k6w124pgxvZC3BUG5QHgtsCFhi3Cd\nEO7Oxz4KfYJARko5cHkQOawV31XQU6yBJUar2sFsKQBP21lRXfJjAk3Ci3hKeuhW\np2eb4V6gFQK44ed7b5NIW1xymZAjAkFmGMZccsMCgYB8jq62Cbqk/Vig7UyMYzDo\nZaPcOz2XfNLrgLbVo49Cz77/D8fmQ42zsihpsUCmiczANtdVGIOG0NZw549eJEeQ\nja5uVBg1L6g+irzg4W/L+wy/94yQtQxgf6JHLqFGO8ryfDwye4Rr1tN370uylOzG\nw2/+BufBs/Y4Tqxxy3VInA==\n-----END PRIVATE KEY-----\n",
-      "client_email" => "bqglific@beginner-290513.iam.gserviceaccount.com",
-      "client_id" => "104189268297059908552",
-      "auth_uri" => "https://accounts.google.com/o/oauth2/auth",
-      "token_uri" => "https://oauth2.googleapis.com/token",
-      "auth_provider_x509_cert_url" => "https://www.googleapis.com/oauth2/v1/certs",
-      "client_x509_cert_url" => "https://www.googleapis.com/robot/v1/metadata/x509/bqglific%40beginner-290513.iam.gserviceaccount.com"
-    }
+    config = %{}
     Goth.Config.add_config(config)
     {:ok, token} = Goth.Token.for_scope({"bqglific@beginner-290513.iam.gserviceaccount.com", "https://www.googleapis.com/auth/cloud-platform"})
     token
