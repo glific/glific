@@ -84,6 +84,7 @@ defmodule Glific.Processor.ConsumerFlow do
       })
 
     context
+    |> Map.merge(%{last_message: message})
     |> FlowContext.load_context(flow)
     # we are using message.body here since we want to use the original message
     # not the stripped version
