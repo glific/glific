@@ -4,29 +4,30 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_1 do
   envs([:dev, :test, :prod])
 
   alias Glific.{
+    Partners,
     Settings.Language,
     Tags.Tag,
     Repo
   }
 
   def up(_repo) do
-    add_tags()
+    Partners.list_organizations()
+    |> Enum.each(fn organization -> add_tags(organization) end)
   end
 
-  defp add_tags() do
-    {:ok, message_tags_mt} = Repo.fetch_by(Tag, %{shortcode: "messages"})
+  defp add_tags(organization) do
+    {:ok, message_tags_mt} = Repo.fetch_by(Tag, %{shortcode: "messages", organization_id: organization.id})
     {:ok, en_us} = Repo.fetch_by(Language, %{label: "English (United States)"})
-    organization_id = message_tags_mt.organization_id
 
     message_tags_flow =
       Repo.insert!(%Tag{
         label: "Flow",
         shortcode: "flow",
         description: "Marking message received for a flow",
-        is_reserved: true,
+        is_reserved: false,
         language_id: en_us.id,
         parent_id: message_tags_mt.id,
-        organization_id: organization_id
+        organization_id: organization.id
       })
 
     message_tags_flow_activity =
@@ -34,20 +35,20 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_1 do
         label: "Activities",
         shortcode: "activities",
         description: "Marking message received for an activity",
-        is_reserved: true,
+        is_reserved: false,
         language_id: en_us.id,
         parent_id: message_tags_flow.id,
-        organization_id: organization_id
+        organization_id: organization.id
       })
 
     Repo.insert!(%Tag{
       label: "Languages",
       shortcode: "languages",
       description: "Marking message received for the language flow",
-      is_reserved: true,
+      is_reserved: false,
       language_id: en_us.id,
       parent_id: message_tags_flow.id,
-      organization_id: organization_id
+      organization_id: organization.id
     })
 
     tags = [
@@ -79,9 +80,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_1 do
         tags,
         fn tag ->
           tag
-          |> Map.put(:organization_id, organization_id)
+          |> Map.put(:organization_id, organization.id)
           |> Map.put(:language_id, en_us.id)
-          |> Map.put(:is_reserved, true)
+          |> Map.put(:is_reserved, false)
           |> Map.put(:inserted_at, utc_now)
           |> Map.put(:updated_at, utc_now)
         end
