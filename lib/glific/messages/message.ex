@@ -43,6 +43,7 @@ defmodule Glific.Messages.Message do
           bsp_message_id: String.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
+          session_uuid: Ecto.UUID.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
           updated_at: :utc_datetime_usec | nil
         }
@@ -67,7 +68,8 @@ defmodule Glific.Messages.Message do
     :media_id,
     :send_at,
     :sent_at,
-    :user_id
+    :user_id,
+    :session_uuid
   ]
 
   schema "messages" do
@@ -89,6 +91,7 @@ defmodule Glific.Messages.Message do
     field :send_at, :utc_datetime
     field :sent_at, :utc_datetime
     field :message_number, :integer, default: 0
+    field :session_uuid, Ecto.UUID
 
     belongs_to :sender, Contact
     belongs_to :receiver, Contact

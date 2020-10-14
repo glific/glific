@@ -130,6 +130,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     # check default values
     assert Map.get(organization, "isActive") == true
     assert Map.get(organization, "timezone") == "Asia/Kolkata"
+    assert Map.get(organization, "sessionLimit") == 60
 
     # try creating the same organization twice
     auth_query_gql_by(:create, user,
@@ -190,7 +191,8 @@ defmodule GlificWeb.Schema.OrganizationTest do
             # "bsp_id" => bsp_provider.id,
             "default_language_id" => language.id,
             "active_language_ids" => [language.id],
-            "timezone" => timezone
+            "timezone" => timezone,
+            "sessionLimit" => 180
           }
         }
       )
@@ -200,6 +202,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
     assert updated_organization["name"] == name
     assert updated_organization["timezone"] == "America/Los_Angeles"
+    assert updated_organization["sessionLimit"] == 180
 
     # Incorrect timezone should give error
     result =

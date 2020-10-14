@@ -5,9 +5,9 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   alias Plug.Conn.Query
 
   use Tesla
-
   plug Tesla.Middleware.Logger, log_level: :debug
 
   plug Tesla.Middleware.FormUrlencoded,
     encode: &Query.encode/1
+
 end

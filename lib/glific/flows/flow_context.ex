@@ -42,6 +42,7 @@ defmodule Glific.Flows.FlowContext do
           results: map() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          last_message: Message.t() | nil,
           flow_id: non_neg_integer | nil,
           flow_uuid: Ecto.UUID.t() | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -74,6 +75,8 @@ defmodule Glific.Flows.FlowContext do
 
     field :recent_inbound, {:array, :map}, default: []
     field :recent_outbound, {:array, :map}, default: []
+
+    field :last_message, :map, virtual: true
 
     belongs_to :contact, Contact
     belongs_to :flow, Flow

@@ -39,6 +39,9 @@ defmodule Glific.Flows do
         from f in query,
           where: ^keyword in f.keywords
 
+      {:uuid, uuid}, query ->
+        from q in query, where: q.uuid == ^uuid
+
       _, query ->
         query
     end)

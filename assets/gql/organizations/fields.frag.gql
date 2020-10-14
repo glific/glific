@@ -28,6 +28,7 @@ fragment OrganizationFields on OrganizationResult {
 
     isActive
     timezone
+    sessionLimit
 
     default_language {
       id

@@ -221,7 +221,14 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           shortcode: "goth",
           group: nil,
           is_required: false,
-          keys: %{},
+          keys: %{
+            url: %{
+              type: :string,
+              label: "Goth Url",
+              default: "https://dialogflow.clients6.google.com",
+              view_only: true
+            }
+          },
           secrets: %{
             json: %{
               type: :string,
@@ -249,6 +256,52 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             api_key: %{
               type: :string,
               label: "API Key",
+              default: nil,
+              view_only: false
+            }
+          }
+        })
+
+    # add bigquery
+    query = from p in Provider, where: p.shortcode == "bigquery"
+
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "BigQuery",
+          shortcode: "bigquery",
+          group: nil,
+          is_required: false,
+          keys: %{
+            url: %{
+              type: :string,
+              label: "Bigquery Url",
+              default: "https://www.googleapis.com/auth/cloud-platform",
+              view_only: true
+            }
+          },
+          secrets: %{
+            project_id: %{
+              type: :string,
+              label: "Project ID",
+              default: nil,
+              view_only: false
+            },
+            project_email: %{
+              type: :string,
+              label: "Project Email",
+              default: nil,
+              view_only: false
+            },
+            dataset_id: %{
+              type: :string,
+              label: "Dataset ID",
+              default: nil,
+              view_only: false
+            },
+            service_account: %{
+              type: :string,
+              label: "Goth Credentials ",
               default: nil,
               view_only: false
             }

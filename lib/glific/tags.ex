@@ -194,6 +194,22 @@ defmodule Glific.Tags do
   end
 
   @doc """
+  Given a shortcode of tag, retrieve all the children for the tag
+  """
+  @spec get_all_children(String.t(), non_neg_integer) :: [Tag.t()]
+  def get_all_children(shortcode, organization_id) do
+    {:ok, flow_tag} =
+      Glific.Repo.fetch_by(Glific.Tags.Tag, %{
+        shortcode: shortcode,
+        organization_id: organization_id
+      })
+
+    Glific.Tags.Tag
+    |> where([t], ^flow_tag.id in t.ancestors)
+    |> Glific.Repo.all()
+  end
+
+  @doc """
   Gets a single message.
 
   Raises `Ecto.NoResultsError` if the Message does not exist.

@@ -84,6 +84,7 @@ defmodule Glific.Processor.ConsumerFlow do
       })
 
     context
+    |> Map.merge(%{last_message: message})
     |> FlowContext.load_context(flow)
     # we are using message.body here since we want to use the original message
     # not the stripped version
@@ -91,7 +92,8 @@ defmodule Glific.Processor.ConsumerFlow do
       Messages.create_temp_message(
         message.organization_id,
         message.body,
-        type: message.type
+        type: message.type,
+        id: message.id
       )
     )
 

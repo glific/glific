@@ -30,7 +30,8 @@ defmodule Glific.Partners.Organization do
     :contact_id,
     :is_active,
     :timezone,
-    :active_language_ids
+    :active_language_ids,
+    :session_limit
     # commenting this out, since the tests were giving me an error
     # about cast_embed etc
     # :out_of_office
@@ -56,6 +57,7 @@ defmodule Glific.Partners.Organization do
           timezone: String.t() | nil,
           active_language_ids: [integer] | [],
           languages: [Language.t()] | nil,
+          session_limit: non_neg_integer | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -88,6 +90,8 @@ defmodule Glific.Partners.Organization do
 
     # new version of ecto was giving us an error if we set the inner_type ot Language
     field :languages, {:array, :any}, virtual: true
+
+    field :session_limit, :integer, default: 60
 
     timestamps(type: :utc_datetime)
   end

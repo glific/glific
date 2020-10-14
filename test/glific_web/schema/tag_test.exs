@@ -34,7 +34,7 @@ defmodule GlificWeb.Schema.TagTest do
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) > 0
     [tag | _] = tags
-    assert get_in(tag, ["label"]) == "Child"
+    assert get_in(tag, ["label"]) == "Activities"
 
     # lets ensure that the language field exists and has a valid id
     assert get_in(tag, ["language", "id"]) > 0
@@ -103,10 +103,10 @@ defmodule GlificWeb.Schema.TagTest do
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) == 3
 
-    # lets make sure we dont get child as a tag
-    assert get_in(tags, [Access.at(0), "label"]) != "Child"
-    assert get_in(tags, [Access.at(1), "label"]) != "Child"
-    assert get_in(tags, [Access.at(2), "label"]) != "Child"
+    # lets make sure we dont get Activities as a tag
+    assert get_in(tags, [Access.at(0), "label"]) != "Activities"
+    assert get_in(tags, [Access.at(1), "label"]) != "Activities"
+    assert get_in(tags, [Access.at(2), "label"]) != "Activities"
   end
 
   test "count returns the number of tags", %{staff: user} do

@@ -10,6 +10,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Contacts,
     Flags,
     Flows.FlowContext,
+    Jobs.BigQueryWorker,
     Jobs.ChatbaseWorker,
     Partners
   }
@@ -36,6 +37,11 @@ defmodule Glific.Jobs.MinuteWorker do
 
   def perform(%Oban.Job{args: %{"job" => "chatbase"}} = _job) do
     Partners.perform_all(&ChatbaseWorker.perform_periodic/1, nil)
+    :ok
+  end
+
+  def perform(%Oban.Job{args: %{"job" => "bigquery"}} = _job) do
+    Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil)
     :ok
   end
 

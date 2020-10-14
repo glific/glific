@@ -83,6 +83,26 @@ defmodule Glific.Seeds.Credentials do
     })
   end
 
+  def insert_biqquery_credentials(nil = _bigquery, _organization_id), do: nil
+
+  def insert_biqquery_credentials(bigquery, organization_id) do
+    {:ok, bigquery_db} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
+    Repo.insert!(%Credential{
+      organization_id: organization_id,
+      provider_id: bigquery_db.id,
+      keys: %{
+        url: Keyword.get(bigquery, :url)
+      },
+      secrets: %{
+        project_id: Keyword.get(bigquery, :project_id),
+        project_email: Keyword.get(bigquery, :project_email),
+        dataset_id: Keyword.get(bigquery, :dataset_id),
+        service_account: Keyword.get(bigquery, :service_account)
+      }
+    })
+  end
+
   def insert_gcs_credentials(nil = _gcs, _organization_id), do: nil
 
   def insert_gcs_credentials(gcs, organization_id) do
@@ -103,10 +123,10 @@ defmodule Glific.Seeds.Credentials do
   def execute do
     secrets = get_secrets()
     update_gupshup_credentials(Keyword.get(secrets, :gupshup), 1)
-
     insert_dialogflow_credentials(Keyword.get(secrets, :dialogflow), 1)
     insert_goth_credentials(Keyword.get(secrets, :goth), 1)
     insert_chatbase_credentials(Keyword.get(secrets, :chatbase), 1)
+    insert_biqquery_credentials(Keyword.get(secrets, :bigquery), 1)
     insert_gcs_credentials(Keyword.get(secrets, :gcs), 1)
   end
 end
