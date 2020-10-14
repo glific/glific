@@ -32,7 +32,7 @@ defmodule Glific.Providers.Gupshup.Worker do
       {:ok, _} ->
         with credential <- organization.services["bsp"],
              false <- is_nil(credential),
-             false <- is_simulter(payload["destination"], message),
+             false <- is_simulater(payload["destination"], message),
              do: process_to_gupshup(credential, payload, message)
 
       _ ->
@@ -42,7 +42,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     :ok
   end
 
-  defp is_simulter(destination, message) when destination == @simulater_phone do
+  defp is_simulater(destination, message) when destination == @simulater_phone do
     message_id = Faker.String.base64(36)
 
     {:ok,
@@ -56,7 +56,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     |> handle_response(message)
   end
 
-  defp is_simulter(_, _), do: false
+  defp is_simulater(_, _), do: false
 
   defp process_to_gupshup(credential, payload, message) do
     ApiClient.post(
