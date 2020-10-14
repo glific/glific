@@ -48,6 +48,7 @@ defmodule Glific.Jobs do
     )
   end
 
+  @doc false
   @spec get_bigquery_job(integer, String.t()) :: BigqueryJob.t() | nil
   def get_bigquery_job(organization_id, table),
     do:
@@ -57,7 +58,7 @@ defmodule Glific.Jobs do
       )
 
   @doc """
-  Create or update a chatbase_job with the message_id and
+  Update a bigquery_job with the message_id and
   organization_id
   """
   @spec update_bigquery_job(BigqueryJob.t(), map()) ::
@@ -68,6 +69,7 @@ defmodule Glific.Jobs do
     |> Repo.update()
   end
 
+  @doc false
   @spec get_bigquery_jobs(integer) :: list() | nil
   def get_bigquery_jobs(organization_id) do
     BigqueryJob

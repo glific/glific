@@ -163,7 +163,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     do: Timex.format!(date, "{YYYY}-{0M}-{D} 18:52:36")
 
   @spec token(map()) :: any()
-  def token(credentials) do
+  defp token(credentials) do
     config =
       case Jason.decode(credentials.secrets["service_account"]) do
         {:ok, config} -> config
@@ -240,7 +240,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp format_data_for_bigquery(_, _), do: %{}
 
   @spec make_insert_query(list(), String.t(), non_neg_integer) :: :ok
-  def make_insert_query(data, table, organization_id) do
+  defp make_insert_query(data, table, organization_id) do
     organization = Partners.organization(organization_id)
 
     credentials =
