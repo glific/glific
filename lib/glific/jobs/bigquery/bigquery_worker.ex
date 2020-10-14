@@ -260,6 +260,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     table_id = table
     token = token(credentials)
     conn = Connection.new(token.token)
+
     Tabledata.bigquery_tabledata_insert_all(
       conn,
       project_id,

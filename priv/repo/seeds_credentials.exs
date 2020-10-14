@@ -83,7 +83,6 @@ defmodule Glific.Seeds.Credentials do
     })
   end
 
-
   def insert_biqquery_credentials(nil = _bigquery, _organization_id), do: nil
 
   def insert_biqquery_credentials(bigquery, organization_id) do
@@ -100,6 +99,10 @@ defmodule Glific.Seeds.Credentials do
         project_email: Keyword.get(bigquery, :project_email),
         dataset_id: Keyword.get(bigquery, :dataset_id),
         service_account: Keyword.get(bigquery, :service_account)
+      }
+    })
+  end
+
   def insert_gcs_credentials(nil = _gcs, _organization_id), do: nil
 
   def insert_gcs_credentials(gcs, organization_id) do
