@@ -40,16 +40,15 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_1 do
         organization_id: organization_id
       })
 
-    message_tags_flow_language =
-      Repo.insert!(%Tag{
-        label: "Languages",
-        shortcode: "languages",
-        description: "Marking message received for the language flow",
-        is_reserved: true,
-        language_id: en_us.id,
-        parent_id: message_tags_flow.id,
-        organization_id: organization_id
-      })
+    Repo.insert!(%Tag{
+      label: "Languages",
+      shortcode: "languages",
+      description: "Marking message received for the language flow",
+      is_reserved: true,
+      language_id: en_us.id,
+      parent_id: message_tags_flow.id,
+      organization_id: organization_id
+    })
 
     tags = [
       # flow tags

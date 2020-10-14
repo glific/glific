@@ -1,219 +1,227 @@
 {
-  "_ui" : {
-    "languages" : [
+  "_ui": {
+    "languages": [
       {
-        "english" : "English"
+        "english": "English"
       },
       {
-        "hindi" : "Hindi"
+        "hindi": "Hindi"
       }
     ],
-    "nodes" : {
-      "215233b8-cd9f-433a-aef1-4980954e7f84" : {
-        "type" : "wait_for_response",
-        "position" : {
-          "left" : 160,
-          "top" : 240
+    "nodes": {
+      "215233b8-cd9f-433a-aef1-4980954e7f84": {
+        "config": {
+          "cases": {}
         },
-        "config" : {
-          "cases" : {
-
-          }
-        }
+        "position": {
+          "left": 160,
+          "top": 240
+        },
+        "type": "wait_for_response"
       },
-      "5499045e-9ab7-4cf2-8a9f-c6d1fc322dbf" : {
-        "position" : {
-          "left" : 560,
-          "top" : 0
+      "5499045e-9ab7-4cf2-8a9f-c6d1fc322dbf": {
+        "position": {
+          "left": 560,
+          "top": 0
         },
-        "type" : "execute_actions"
+        "type": "execute_actions"
       },
-      "89bfa53e-df27-4ecd-9a7f-1fa5eed35766" : {
-        "position" : {
-          "left" : 60,
-          "top" : 680
+      "60258578-bd6b-48f6-9f6a-405924b6e9bc": {
+        "position": {
+          "left": 260,
+          "top": 480
         },
-        "type" : "execute_actions"
+        "type": "execute_actions"
       },
-      "60258578-bd6b-48f6-9f6a-405924b6e9bc" : {
-        "position" : {
-          "top" : 520,
-          "left" : 260
+      "668546dc-ae48-46e4-8237-4ff92a43c58e": {
+        "position": {
+          "left": 0,
+          "top": 480
         },
-        "type" : "execute_actions"
+        "type": "execute_actions"
       },
-      "668546dc-ae48-46e4-8237-4ff92a43c58e" : {
-        "position" : {
-          "top" : 480,
-          "left" : 0
+      "89bfa53e-df27-4ecd-9a7f-1fa5eed35766": {
+        "position": {
+          "left": 60,
+          "top": 680
         },
-        "type" : "execute_actions"
+        "type": "execute_actions"
       }
     }
   },
-  "language" : "eng",
-  "name" : "Language Workflow",
-  "nodes" : [
-    {
-      "uuid" : "5499045e-9ab7-4cf2-8a9f-c6d1fc322dbf",
-      "exits" : [
-        {
-          "destination_uuid" : "215233b8-cd9f-433a-aef1-4980954e7f84",
-          "uuid" : "51d5bd29-6172-47dc-a41d-5909a2f2f70c"
-        }
-      ],
-      "actions" : [
-        {
-          "type" : "send_msg",
-          "quick_replies" : [
-
-          ],
-          "text" : "Your language is currently set at @contact.language\n\nDo you want to change the language you want to receive messages in?\n\nहिंदी में संदेश प्राप्त करने के लिए 1 टाइप करें\nTo continue to receive messages in English, type 2",
-          "attachments" : [
-
-          ],
-          "uuid" : "463f5324-9810-4230-806c-fd905d917d58"
-        }
-      ]
-    },
-    {
-      "actions" : [
-
-      ],
-      "exits" : [
-        {
-          "uuid" : "e0e4a4bd-661f-4816-8abd-d8d75443b9a1",
-          "destination_uuid" : "668546dc-ae48-46e4-8237-4ff92a43c58e"
-        },
-        {
-          "uuid" : "d25a1226-27dd-4983-9264-61a04331e2d0",
-          "destination_uuid" : "60258578-bd6b-48f6-9f6a-405924b6e9bc"
-        },
-        {
-          "uuid" : "50229006-1b84-4507-874a-9bec5da73266",
-          "destination_uuid" : "5499045e-9ab7-4cf2-8a9f-c6d1fc322dbf"
-        }
-      ],
-      "router" : {
-        "result_name" : "Language",
-        "default_category_uuid" : "0ca569ff-2bf5-4032-859c-9a5594d638a4",
-        "wait" : {
-          "type" : "msg"
-        },
-        "cases" : [
-          {
-            "type" : "has_number_eq",
-            "category_uuid" : "90243edf-30e7-4dd6-b323-2233d3321dad",
-            "uuid" : "27ec9287-7506-498c-bced-71498df74d1c",
-            "arguments" : [
-              "1"
-            ]
-          },
-          {
-            "type" : "has_number_eq",
-            "category_uuid" : "b01c1f92-c370-4788-b494-2f4708cb1f12",
-            "uuid" : "441f8240-7f33-470c-a8d1-8e29b14af8a0",
-            "arguments" : [
-              "2"
-            ]
-          }
-        ],
-        "type" : "switch",
-        "operand" : "@input.text",
-        "categories" : [
-          {
-            "uuid" : "90243edf-30e7-4dd6-b323-2233d3321dad",
-            "exit_uuid" : "e0e4a4bd-661f-4816-8abd-d8d75443b9a1",
-            "name" : "Hindi"
-          },
-          {
-            "uuid" : "b01c1f92-c370-4788-b494-2f4708cb1f12",
-            "exit_uuid" : "d25a1226-27dd-4983-9264-61a04331e2d0",
-            "name" : "English"
-          },
-          {
-            "uuid" : "0ca569ff-2bf5-4032-859c-9a5594d638a4",
-            "exit_uuid" : "50229006-1b84-4507-874a-9bec5da73266",
-            "name" : "Other"
-          }
-        ]
-      },
-      "uuid" : "215233b8-cd9f-433a-aef1-4980954e7f84"
-    },
-    {
-      "uuid" : "668546dc-ae48-46e4-8237-4ff92a43c58e",
-      "exits" : [
-        {
-          "uuid" : "2894541c-bdfe-44f3-b0f2-18ecb296412d",
-          "destination_uuid" : "89bfa53e-df27-4ecd-9a7f-1fa5eed35766"
-        }
-      ],
-      "actions" : [
-        {
-          "type" : "set_contact_language",
-          "uuid" : "1fcfd29b-d6c5-4d09-8901-45c9bdc4f6b1",
-          "language" : "hindi"
-        }
-      ]
-    },
-    {
-      "uuid" : "60258578-bd6b-48f6-9f6a-405924b6e9bc",
-      "exits" : [
-        {
-          "destination_uuid" : "89bfa53e-df27-4ecd-9a7f-1fa5eed35766",
-          "uuid" : "60f5f33a-1594-40bd-b1cb-8ed1f1958bf9"
-        }
-      ],
-      "actions" : [
-        {
-          "type" : "set_contact_language",
-          "uuid" : "6c4fc49f-579b-44a0-b273-83445f3ea873",
-          "language" : "english"
-        }
-      ]
-    },
-    {
-      "uuid" : "89bfa53e-df27-4ecd-9a7f-1fa5eed35766",
-      "exits" : [
-        {
-          "uuid" : "ce6b20c9-7f22-4778-a651-e1bbd496653a",
-          "destination_uuid" : null
-        }
-      ],
-      "actions" : [
-        {
-          "attachments" : [
-
-          ],
-          "uuid" : "0ada0126-b6fc-4cc6-a17b-70cf5ba461d9",
-          "quick_replies" : [
-
-          ],
-          "all_urns" : false,
-          "type" : "send_msg",
-          "text" : "Your language is now set to @contact.language"
-        }
-      ]
-    }
-  ],
-  "localization" : {
-    "hi" : {
-      "463f5324-9810-4230-806c-fd905d917d58" : {
-        "text" : [
-          "आपकी भाषा वर्तमान में सेट हैा @contact.language\n\nआप जिस भाषा में संदेश प्राप्त करना चाहते हैं उसे बदल सकते हैं।क्या आप उस भाषा को बदलना चाहते हैं जिसमें आप संदेश प्राप्त करना चाहते हैं?\n\nहिंदी में संदेश प्राप्त करने के लिए 1 टाइप करें\nTo receive messages in English, type 2"
-        ]
-      },
-      "0ada0126-b6fc-4cc6-a17b-70cf5ba461d9" : {
-        "text" : [
+  "language": "eng",
+  "localization": {
+    "hi": {
+      "0ada0126-b6fc-4cc6-a17b-70cf5ba461d9": {
+        "text": [
           "अब आपकी भाषा @contact.language पर सेट है"
         ]
+      },
+      "463f5324-9810-4230-806c-fd905d917d58": {
+        "text": [
+          "आपकी भाषा वर्तमान में सेट हैा @contact.language\n\nआप जिस भाषा में संदेश प्राप्त करना चाहते हैं उसे बदल सकते हैं।क्या आप उस भाषा को बदलना चाहते हैं जिसमें आप संदेश प्राप्त करना चाहते हैं?\n\nहिंदी में संदेश प्राप्त करने के लिए 1 टाइप करें\nTo receive messages in English, type 2"
+        ]
       }
     }
   },
-  "type" : "message",
-  "vars" : [
-    "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"
+  "name": "Language Workflow",
+  "nodes": [
+    {
+      "actions": [
+        {
+          "attachments": [],
+          "quick_replies": [],
+          "text": "Your language is currently set at @contact.language\n\nDo you want to change the language you want to receive messages in?\n\nहिंदी में संदेश प्राप्त करने के लिए 1 टाइप करें\nTo continue to receive messages in English, type 2",
+          "type": "send_msg",
+          "uuid": "463f5324-9810-4230-806c-fd905d917d58"
+        }
+      ],
+      "exits": [
+        {
+          "destination_uuid": "215233b8-cd9f-433a-aef1-4980954e7f84",
+          "uuid": "51d5bd29-6172-47dc-a41d-5909a2f2f70c"
+        }
+      ],
+      "uuid": "5499045e-9ab7-4cf2-8a9f-c6d1fc322dbf"
+    },
+    {
+      "actions": [],
+      "exits": [
+        {
+          "destination_uuid": "668546dc-ae48-46e4-8237-4ff92a43c58e",
+          "uuid": "e0e4a4bd-661f-4816-8abd-d8d75443b9a1"
+        },
+        {
+          "destination_uuid": "60258578-bd6b-48f6-9f6a-405924b6e9bc",
+          "uuid": "d25a1226-27dd-4983-9264-61a04331e2d0"
+        },
+        {
+          "destination_uuid": "5499045e-9ab7-4cf2-8a9f-c6d1fc322dbf",
+          "uuid": "50229006-1b84-4507-874a-9bec5da73266"
+        }
+      ],
+      "router": {
+        "cases": [
+          {
+            "arguments": [
+              "1"
+            ],
+            "category_uuid": "90243edf-30e7-4dd6-b323-2233d3321dad",
+            "type": "has_number_eq",
+            "uuid": "27ec9287-7506-498c-bced-71498df74d1c"
+          },
+          {
+            "arguments": [
+              "2"
+            ],
+            "category_uuid": "b01c1f92-c370-4788-b494-2f4708cb1f12",
+            "type": "has_number_eq",
+            "uuid": "441f8240-7f33-470c-a8d1-8e29b14af8a0"
+          }
+        ],
+        "categories": [
+          {
+            "exit_uuid": "e0e4a4bd-661f-4816-8abd-d8d75443b9a1",
+            "name": "Hindi",
+            "uuid": "90243edf-30e7-4dd6-b323-2233d3321dad"
+          },
+          {
+            "exit_uuid": "d25a1226-27dd-4983-9264-61a04331e2d0",
+            "name": "English",
+            "uuid": "b01c1f92-c370-4788-b494-2f4708cb1f12"
+          },
+          {
+            "exit_uuid": "50229006-1b84-4507-874a-9bec5da73266",
+            "name": "Other",
+            "uuid": "0ca569ff-2bf5-4032-859c-9a5594d638a4"
+          }
+        ],
+        "default_category_uuid": "0ca569ff-2bf5-4032-859c-9a5594d638a4",
+        "operand": "@input.text",
+        "result_name": "Language",
+        "type": "switch",
+        "wait": {
+          "type": "msg"
+        }
+      },
+      "uuid": "215233b8-cd9f-433a-aef1-4980954e7f84"
+    },
+    {
+      "actions": [
+        {
+          "language": "hindi",
+          "type": "set_contact_language",
+          "uuid": "1fcfd29b-d6c5-4d09-8901-45c9bdc4f6b1"
+        },
+        {
+          "labels": [
+            {
+              "name": "Languages",
+              "uuid": "24"
+            }
+          ],
+          "type": "add_input_labels",
+          "uuid": "346f9c7e-4b76-4b74-8e9a-2ba0c96f2885"
+        }
+      ],
+      "exits": [
+        {
+          "destination_uuid": "89bfa53e-df27-4ecd-9a7f-1fa5eed35766",
+          "uuid": "2894541c-bdfe-44f3-b0f2-18ecb296412d"
+        }
+      ],
+      "uuid": "668546dc-ae48-46e4-8237-4ff92a43c58e"
+    },
+    {
+      "actions": [
+        {
+          "language": "english",
+          "type": "set_contact_language",
+          "uuid": "6c4fc49f-579b-44a0-b273-83445f3ea873"
+        },
+        {
+          "labels": [
+            {
+              "name": "Languages",
+              "uuid": "24"
+            }
+          ],
+          "type": "add_input_labels",
+          "uuid": "2ff3e13b-44db-46d5-b6fc-2590dd8acb3a"
+        }
+      ],
+      "exits": [
+        {
+          "destination_uuid": "89bfa53e-df27-4ecd-9a7f-1fa5eed35766",
+          "uuid": "60f5f33a-1594-40bd-b1cb-8ed1f1958bf9"
+        }
+      ],
+      "uuid": "60258578-bd6b-48f6-9f6a-405924b6e9bc"
+    },
+    {
+      "actions": [
+        {
+          "all_urns": false,
+          "attachments": [],
+          "quick_replies": [],
+          "text": "Your language is now set to @contact.language",
+          "type": "send_msg",
+          "uuid": "0ada0126-b6fc-4cc6-a17b-70cf5ba461d9"
+        }
+      ],
+      "exits": [
+        {
+          "destination_uuid": null,
+          "uuid": "ce6b20c9-7f22-4778-a651-e1bbd496653a"
+        }
+      ],
+      "uuid": "89bfa53e-df27-4ecd-9a7f-1fa5eed35766"
+    }
   ],
-  "spec_version" : "13.1.0",
-  "uuid" : "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"
+  "spec_version": "13.1.0",
+  "type": "message",
+  "uuid": "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
+  "vars": [
+    "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"
+  ]
 }
