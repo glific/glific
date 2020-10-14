@@ -262,8 +262,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           }
         })
 
-    #add bigquery
+    # add bigquery
     query = from p in Provider, where: p.shortcode == "bigquery"
+
     if !Repo.exists?(query),
       do:
         Repo.insert!(%Provider{
@@ -298,7 +299,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               default: nil,
               view_only: false
             },
-
             service_account: %{
               type: :string,
               label: "Goth Credentials ",
@@ -307,8 +307,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             }
           }
         })
-
-
   end
 
   defp add_google_cloud_storage() do

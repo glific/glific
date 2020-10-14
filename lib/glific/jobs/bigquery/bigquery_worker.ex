@@ -30,14 +30,16 @@ defmodule Glific.Jobs.BigQueryWorker do
   def perform_periodic(organization_id) do
     Jobs.get_bigquery_jobs(organization_id)
     |> Enum.each(&perform_for_table(&1, organization_id))
+
     :ok
   end
 
-  @spec perform_for_table(Jobs.BigqueryJob.t() | nil , non_neg_integer) :: :ok | nil
+  @spec perform_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
   defp perform_for_table(nil, _), do: nil
 
   defp perform_for_table(bigquery_job, organization_id) do
     table_id = bigquery_job.table_id
+
     max_id =
       get_table_struct(bigquery_job.table)
       |> select([m], max(m.id))
@@ -48,6 +50,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       Jobs.update_bigquery_job(bigquery_job, %{table_id: max_id})
       queue_table_data(bigquery_job.table, organization_id, table_id, max_id)
     end
+
     :ok
   end
 
@@ -123,7 +126,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, "contacts",  organization_id))
+    |> Enum.each(&make_job(&1, "contacts", organization_id))
   end
 
   defp queue_table_data(_, _, _, _), do: nil
@@ -132,6 +135,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp make_job(data, "messages", organization_id) do
     __MODULE__.new(%{organization_id: organization_id, messages: data})
     |> Oban.insert()
+
     :ok
   end
 
@@ -145,9 +149,9 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec get_table_struct(String.t()) :: any()
   defp get_table_struct(table) do
     case table do
-        "messages" -> Message
-        "contacts" -> Contact
-        _ -> ""
+      "messages" -> Message
+      "contacts" -> Contact
+      _ -> ""
     end
   end
 
@@ -160,15 +164,17 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec token(map()) :: any()
   def token(credentials) do
-    config = case Jason.decode(credentials.secrets["service_account"]) do
-      {:ok, config} -> config
-      _ -> :error
-    end
+    config =
+      case Jason.decode(credentials.secrets["service_account"]) do
+        {:ok, config} -> config
+        _ -> :error
+      end
 
     Goth.Config.add_config(config)
-    {:ok, token} = Goth.Token.for_scope(
-        {credentials.secrets["project_email"], credentials.keys["url"]}
-      )
+
+    {:ok, token} =
+      Goth.Token.for_scope({credentials.secrets["project_email"], credentials.keys["url"]})
+
     token
   end
 
@@ -236,10 +242,11 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec make_insert_query(list(), String.t(), non_neg_integer) :: :ok
   def make_insert_query(data, table, organization_id) do
     organization = Partners.organization(organization_id)
+
     credentials =
       organization.services["bigquery"]
       |> case do
-        nil ->  %{ url: nil, id: nil, email: nil}
+        nil -> %{url: nil, id: nil, email: nil}
         credentials -> credentials
       end
 
@@ -248,6 +255,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     table_id = table
     token = token(credentials)
     conn = GoogleApi.BigQuery.V2.Connection.new(token.token)
+
     GoogleApi.BigQuery.V2.Api.Tabledata.bigquery_tabledata_insert_all(
       conn,
       project_id,
