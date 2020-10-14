@@ -15,11 +15,16 @@ defmodule Glific.Jobs.BigQueryWorker do
     priority: 0
 
   alias Glific.{
+    Contacts.Contact,
     Jobs,
     Messages.Message,
-    Contacts.Contact,
     Partners,
     Repo
+  }
+
+  alias GoogleApi.BigQuery.{
+    V2.Api.Tabledata,
+    V2.Connection
   }
 
   @doc """
@@ -254,9 +259,8 @@ defmodule Glific.Jobs.BigQueryWorker do
     dataset_id = credentials.secrets["dataset_id"]
     table_id = table
     token = token(credentials)
-    conn = GoogleApi.BigQuery.V2.Connection.new(token.token)
-
-    GoogleApi.BigQuery.V2.Api.Tabledata.bigquery_tabledata_insert_all(
+    conn = Connection.new(token.token)
+    Tabledata.bigquery_tabledata_insert_all(
       conn,
       project_id,
       dataset_id,
