@@ -51,7 +51,7 @@ defmodule Glific.CommunicationsTest do
       optin_time: ~U[2010-04-17 14:00:00Z],
       phone: "101013131",
       last_message_at: DateTime.utc_now(),
-      provider_status: :session_and_hsm
+      bsp_status: :session_and_hsm
     }
 
     @valid_attrs %{
@@ -75,9 +75,9 @@ defmodule Glific.CommunicationsTest do
     end
 
     defp message_fixture(attrs) do
-      # eliminating provider_status here since in this case, its meant for the
+      # eliminating bsp_status here since in this case, its meant for the
       # message and not the contact
-      {_value, attrs} = Map.pop(attrs, :provider_status)
+      {_value, attrs} = Map.pop(attrs, :bsp_status)
 
       valid_attrs =
         Map.merge(
@@ -109,9 +109,9 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
-      assert message.provider_message_id != nil
+      assert message.bsp_message_id != nil
       assert message.sent_at != nil
-      assert message.provider_status == :enqueued
+      assert message.bsp_status == :enqueued
       assert message.flow == :outbound
     end
 
@@ -186,8 +186,8 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
-      assert message.provider_message_id == nil
-      assert message.provider_status == :error
+      assert message.bsp_message_id == nil
+      assert message.bsp_status == :error
       assert message.flow == :outbound
       assert message.sent_at == nil
     end
@@ -208,8 +208,8 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
-      assert message.provider_message_id != nil
-      assert message.provider_status == :enqueued
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
       assert message.flow == :outbound
       assert message.sent_at != nil
 
@@ -222,8 +222,8 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
-      assert message.provider_message_id != nil
-      assert message.provider_status == :enqueued
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
       assert message.flow == :outbound
 
       # video message
@@ -235,8 +235,8 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
-      assert message.provider_message_id != nil
-      assert message.provider_status == :enqueued
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
       assert message.flow == :outbound
 
       # document message
@@ -248,8 +248,8 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
-      assert message.provider_message_id != nil
-      assert message.provider_status == :enqueued
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
       assert message.flow == :outbound
     end
 
@@ -265,13 +265,13 @@ defmodule Glific.CommunicationsTest do
 
       message = Messages.get_message!(message.id)
       assert message.status == :contact_opt_out
-      assert message.provider_status == nil
+      assert message.bsp_status == nil
     end
 
     test "sending message to contact having incorrect provider status will return error", attrs do
       {:ok, receiver} =
         @receiver_attrs
-        |> Map.merge(%{provider_status: :none, phone: Phone.EnUs.phone()})
+        |> Map.merge(%{bsp_status: :none, phone: Phone.EnUs.phone()})
         |> Map.merge(attrs)
         |> Contacts.create_contact()
 
@@ -285,7 +285,7 @@ defmodule Glific.CommunicationsTest do
         |> Map.merge(%{
           phone: Phone.EnUs.phone(),
           last_message_at: Timex.shift(DateTime.utc_now(), days: -2),
-          provider_status: :none
+          bsp_status: :none
         })
         |> Map.merge(attrs)
         |> Contacts.create_contact()
@@ -294,22 +294,22 @@ defmodule Glific.CommunicationsTest do
       assert {:error, _msg} = Communications.Message.send_message(message)
     end
 
-    test "update_provider_status/2 will update the message status based on provider message ID",
+    test "update_bsp_status/2 will update the message status based on provider message ID",
          attrs do
       message =
         message_fixture(
           Map.merge(
             attrs,
             %{
-              provider_message_id: Faker.String.base64(36),
-              provider_status: :enqueued
+              bsp_message_id: Faker.String.base64(36),
+              bsp_status: :enqueued
             }
           )
         )
 
-      Communications.Message.update_provider_status(message.provider_message_id, :read, nil)
+      Communications.Message.update_bsp_status(message.bsp_message_id, :read, nil)
       message = Messages.get_message!(message.id)
-      assert message.provider_status == :read
+      assert message.bsp_status == :read
     end
 
     test "send message at a specific time should not send it immediately", attrs do
@@ -327,9 +327,9 @@ defmodule Glific.CommunicationsTest do
       message = Messages.get_message!(message.id)
 
       assert message.status == :enqueued
-      assert message.provider_message_id == nil
+      assert message.bsp_message_id == nil
       assert message.sent_at == nil
-      assert message.provider_status == nil
+      assert message.bsp_status == nil
       assert message.flow == :outbound
 
       # Verify job scheduled

@@ -331,6 +331,7 @@ defmodule Glific.Flows.FlowContext do
     FlowContext
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
+    |> preload(:flow)
     |> Repo.all()
     |> Enum.each(&wakeup_one(&1))
 

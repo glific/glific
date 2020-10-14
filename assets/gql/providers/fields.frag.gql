@@ -3,6 +3,7 @@ fragment ProviderFields on ProviderResult {
     id
     name
     group
+    description
     shortcode
     keys
     secrets

@@ -17,6 +17,7 @@ defmodule GlificWeb.Schema.ProviderTypes do
     field :name, :string
     field :shortcode, :string
     field :group, :string
+    field :description, :string
     field :keys, :json
     field :secrets, :json
     field :is_required, :boolean
@@ -35,6 +36,7 @@ defmodule GlificWeb.Schema.ProviderTypes do
     field :name, :string
     field :shortcode, :string
     field :group, :string
+    field :description, :string
     field :keys, :json
     field :secrets, :json
     field :is_required, :boolean

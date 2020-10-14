@@ -41,7 +41,7 @@ defmodule Glific.Fixtures do
       last_message_at: DateTime.backward(0),
       phone: Phone.EnUs.phone(),
       status: :valid,
-      provider_status: :session_and_hsm,
+      bsp_status: :session_and_hsm,
       organization_id: get_org_id()
     }
 
@@ -63,8 +63,8 @@ defmodule Glific.Fixtures do
       body: Faker.Lorem.sentence(),
       flow: :inbound,
       type: :text,
-      provider_message_id: Faker.String.base64(10),
-      provider_status: :enqueued,
+      bsp_message_id: Faker.String.base64(10),
+      bsp_status: :enqueued,
       sender_id: sender.id,
       receiver_id: receiver.id,
       contact_id: receiver.id,
@@ -105,9 +105,7 @@ defmodule Glific.Fixtures do
       shortcode: "fixture_org_shortcode",
       email: "replace@idk.org",
       # lets just hope its there :)
-      provider_id: 1,
-      provider_appname: "this is not a secret key",
-      provider_phone: "and this is not a valid phone",
+      bsp_id: 1,
       # lets just hope its there :)
       default_language_id: 1,
       contact_id: contact_fixture().id,

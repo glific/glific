@@ -716,12 +716,12 @@ Parameter | Type | Default | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>ProviderMessageId</strong></td>
+<td colspan="2" valign="top"><strong>BspMessageId</strong></td>
 <td valign="top">[<a href="#string">String</a>]</td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>ProviderStatus</strong></td>
+<td colspan="2" valign="top"><strong>BspStatus</strong></td>
 <td valign="top"><a href="#string">MessageStatusEnum</a></td>
 <td></td>
 </tr>
@@ -882,7 +882,7 @@ Match the phone with either the sender or receiver
 </tr>
 
 <tr>
-<td colspan="2" valign="top"><strong>ProviderStatus</strong></td>
+<td colspan="2" valign="top"><strong>BspStatus</strong></td>
 <td valign="top"><a href="#messagestatusenum">MessageStatusEnum</a></td>
 <td>
 

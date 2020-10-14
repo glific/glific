@@ -102,11 +102,9 @@ defmodule GlificWeb.Schema.OrganizationTest do
     name = "Organization Test Name"
     shortcode = "org_shortcode"
     email = "test2@glific.org"
-    provider_appname = "random"
-    provider_phone = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
 
     provider_name = "Default Provider"
-    {:ok, provider} = Repo.fetch_by(Provider, %{name: provider_name})
+    {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
     language_locale = "en_US"
     {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
@@ -118,9 +116,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "name" => name,
             "shortcode" => shortcode,
             "email" => email,
-            "provider_appname" => provider_appname,
-            "provider_id" => provider.id,
-            "provider_phone" => provider_phone,
+            "bsp_id" => bsp_provider.id,
             "default_language_id" => language.id,
             "active_language_ids" => [language.id]
           }
@@ -142,9 +138,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "name" => "test_name",
           "shortcode" => shortcode,
           "email" => email,
-          "provider_appname" => provider_appname,
-          "provider_id" => provider.id,
-          "provider_phone" => provider_phone,
+          "bsp_id" => bsp_provider.id,
           "default_language_id" => language.id,
           "active_language_ids" => [language.id]
         }
@@ -158,9 +152,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "name" => "test_name",
             "shortcode" => shortcode,
             "email" => email,
-            "provider_appname" => provider_appname,
-            "provider_id" => provider.id,
-            "provider_phone" => provider_phone,
+            "bsp_id" => bsp_provider.id,
             "default_language_id" => language.id,
             "active_language_ids" => [language.id]
           }
@@ -179,12 +171,10 @@ defmodule GlificWeb.Schema.OrganizationTest do
     name = "Organization Test Name"
     shortcode = "org_shortcode"
     email = "test2@glific.org"
-    provider_appname = "random"
-    provider_phone = Integer.to_string(Enum.random(123_456_789..9_876_543_210))
     timezone = "America/Los_Angeles"
 
     provider_name = "Default Provider"
-    {:ok, provider} = Repo.fetch_by(Provider, %{name: provider_name})
+    {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
     language_locale = "en_US"
     {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
@@ -197,9 +187,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
             "name" => name,
             "shortcode" => shortcode,
             "email" => email,
-            "provider_appname" => provider_appname,
-            # "provider_id" => provider.id,
-            "provider_phone" => provider_phone,
+            # "bsp_id" => bsp_provider.id,
             "default_language_id" => language.id,
             "active_language_ids" => [language.id],
             "timezone" => timezone
@@ -236,16 +224,14 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "name" => name,
           "shortcode" => "new_shortcode",
           "email" => "new email",
-          "provider_appname" => provider_appname,
-          "provider_id" => provider.id,
-          "provider_phone" => "new provider_phone",
+          "bsp_id" => bsp_provider.id,
           "default_language_id" => language.id,
           "active_language_ids" => [language.id]
         }
       }
     )
 
-    # ensure we cannot update an existing organization with the same shortcode, email or provider_phone
+    # ensure we cannot update an existing organization with the same shortcode, email
     result =
       auth_query_gql_by(:update, user,
         variables: %{
@@ -253,10 +239,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
           "input" => %{
             "name" => "new organization",
             "shortcode" => "new_shortcode",
-            "email" => "new email",
-            "provider_appname" => provider_appname,
-            "provider_id" => provider.id,
-            "provider_phone" => "new provider_phone"
+            "email" => "new email"
           }
         }
       )

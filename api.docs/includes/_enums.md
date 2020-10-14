@@ -35,7 +35,7 @@ The Contact Status enum
 
 ### ContactProviderStatusEnum
 
-The Contact Provider Status enum
+The Contact BSP Provider Status enum
 
 <table>
 <thead>

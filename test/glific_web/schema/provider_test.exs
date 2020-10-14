@@ -74,6 +74,7 @@ defmodule GlificWeb.Schema.ProviderTest do
     name = "Provider Test Name"
     shortcode = "providershortcode"
     group = "bsp"
+    description = "BSP provider"
     keys = "{}"
     secrets = "{}"
 
@@ -84,6 +85,7 @@ defmodule GlificWeb.Schema.ProviderTest do
             "name" => name,
             "shortcode" => shortcode,
             "group" => group,
+            "description" => description,
             "keys" => keys,
             "secrets" => secrets
           }
@@ -94,6 +96,7 @@ defmodule GlificWeb.Schema.ProviderTest do
 
     provider = get_in(query_data, [:data, "createProvider", "provider"])
     assert Map.get(provider, "name") == name
+    assert Map.get(provider, "description") == description
 
     result =
       auth_query_gql_by(:create, user,

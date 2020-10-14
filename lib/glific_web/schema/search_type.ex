@@ -37,6 +37,12 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :messages, list_of(:message)
   end
 
+  object :search_cup do
+    field :contacts, list_of(:message)
+    field :messages, list_of(:message)
+    field :tags, list_of(:message)
+  end
+
   input_object :saved_search_filter do
     field :label, :string
     field :shortcode, :string
@@ -101,6 +107,15 @@ defmodule GlificWeb.Schema.SearchTypes do
       arg(:contact_opts, non_null(:opts))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.search/3)
+    end
+
+    @desc "New Search for messages + contacts + tags"
+    field :search_multi, :search_cup do
+      arg(:filter, non_null(:search_filter))
+      arg(:message_opts, non_null(:opts))
+      arg(:contact_opts, non_null(:opts))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Searches.search_multi/3)
     end
 
     @desc "get the details of one saved search"

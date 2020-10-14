@@ -8,7 +8,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "0.4.0",
+      version: "0.5.0",
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -125,7 +125,10 @@ defmodule Glific.MixProject do
       {:poolboy, "~> 1.5"},
       {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"},
       {:cloak_ecto, "~> 1.0.1"},
-      {:google_api_big_query, "~> 0.47.0"}
+      {:google_api_big_query, "~> 0.47.0"},
+      {:waffle, "~> 1.1"},
+      {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
+      {:waffle_ecto, "~> 0.0"}
     ]
   end
 

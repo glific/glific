@@ -5,5 +5,6 @@ query flows($filter: FlowFilter) {
     versionNumber
     flowType
     keywords
+    uuid
   }
 }

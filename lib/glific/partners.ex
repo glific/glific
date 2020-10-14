@@ -3,6 +3,7 @@ defmodule Glific.Partners do
   The Partners context. This is the gateway for the application to access/update all the organization
   and Provider information.
   """
+  @behaviour Waffle.Storage.Google.Token.Fetcher
 
   use Publicist
 
@@ -115,7 +116,8 @@ defmodule Glific.Partners do
   def delete_provider(%Provider{} = provider) do
     provider
     |> Ecto.Changeset.change()
-    |> Ecto.Changeset.no_assoc_constraint(:organizations)
+    |> Ecto.Changeset.no_assoc_constraint(:organizations, name: "organizations_provider_id_fkey")
+    |> Ecto.Changeset.no_assoc_constraint(:credential)
     |> Repo.delete()
   end
 
@@ -179,13 +181,10 @@ defmodule Glific.Partners do
       {:email, email}, query ->
         from q in query, where: ilike(q.email, ^"%#{email}%")
 
-      {:provider, provider}, query ->
+      {:bsp, bsp}, query ->
         from q in query,
-          join: c in assoc(q, :provider),
-          where: ilike(c.name, ^"%#{provider}%")
-
-      {:provider_phone, provider_phone}, query ->
-        from q in query, where: ilike(q.provider_phone, ^"%#{provider_phone}%")
+          join: c in assoc(q, :bsp),
+          where: ilike(c.name, ^"%#{bsp}%")
 
       {:default_language, default_language}, query ->
         from q in query,
@@ -253,9 +252,6 @@ defmodule Glific.Partners do
     # first delete the cached organization
     Caches.remove(organization.id, ["organization"])
 
-    # fetch opted in contacts
-    fetch_opted_in_contacts(organization)
-
     organization
     |> Organization.changeset(attrs)
     |> Repo.update()
@@ -305,8 +301,8 @@ defmodule Glific.Partners do
         organization =
           get_organization!(organization_id)
           |> set_credentials()
-          |> Repo.preload(:provider)
-          |> set_provider_info()
+          |> Repo.preload(:bsp)
+          |> set_bsp_info()
           |> set_out_of_office_values()
           |> set_languages()
 
@@ -385,20 +381,18 @@ defmodule Glific.Partners do
     |> Map.put(:languages, languages)
   end
 
-  # Lets cache all provider specific info in the organization entity since
+  # Lets cache all bsp provider specific info in the organization entity since
   # we use it on all sending / receiving of messages
-  @spec set_provider_info(map()) :: map()
-  defp set_provider_info(organization) do
-    credential = organization.services[organization.provider.shortcode]
+  @spec set_bsp_info(map()) :: map()
+  defp set_bsp_info(organization) do
+    bsp_credential = organization.services[organization.bsp.shortcode]
 
-    credentials = %{
-      provider_key: credential.secrets["api_key"],
-      provider_worker: ("Elixir." <> credential.keys["worker"]) |> String.to_existing_atom(),
-      provider_handler: ("Elixir." <> credential.keys["handler"]) |> String.to_existing_atom()
-    }
+    updated_services_map =
+      Map.merge(organization.services, %{
+        "bsp" => bsp_credential
+      })
 
-    organization
-    |> Map.merge(credentials)
+    %{organization | services: updated_services_map}
   end
 
   # Lets cache keys and secrets of all the active services
@@ -411,7 +405,7 @@ defmodule Glific.Partners do
       |> preload(:provider)
       |> Repo.all()
 
-    credentials_map =
+    services_map =
       Enum.reduce(credentials, %{}, fn credential, acc ->
         Map.merge(acc, %{
           credential.provider.shortcode => %{keys: credential.keys, secrets: credential.secrets}
@@ -419,7 +413,7 @@ defmodule Glific.Partners do
       end)
 
     organization
-    |> Map.put(:services, credentials_map)
+    |> Map.put(:services, services_map)
   end
 
   @doc """
@@ -449,18 +443,12 @@ defmodule Glific.Partners do
   @doc """
   Fetch opted in contacts data from providers server
   """
-  @spec fetch_opted_in_contacts(Organization.t()) :: :ok | any
-  def fetch_opted_in_contacts(organization) do
-    {:ok, credential} =
-      Repo.fetch_by(
-        Credential,
-        %{organization_id: organization.id, provider_id: organization.provider_id}
-      )
+  @spec fetch_opted_in_contacts(map()) :: :ok | any
+  def fetch_opted_in_contacts(attrs) do
+    organization = organization(attrs.organization_id)
+    url = attrs.keys["api_end_point"] <> "/users/" <> attrs.secrets["app_name"]
 
-    organization = organization |> Repo.preload(:provider)
-    url = credential.keys["api_end_point"] <> "/users/" <> organization.provider_appname
-
-    api_key = credential.secrets["api_key"]
+    api_key = attrs.secrets["api_key"]
 
     with {:ok, response} <- Tesla.get(url, headers: [{"apikey", api_key}]),
          {:ok, response_data} <- Jason.decode(response.body),
@@ -477,7 +465,7 @@ defmodule Glific.Partners do
           phone: phone,
           last_message_at: last_message_at |> DateTime.truncate(:second),
           optin_time: optin_time |> DateTime.truncate(:second),
-          provider_status: check_provider_status(last_message_at),
+          bsp_status: check_bsp_status(last_message_at),
           organization_id: organization.id,
           language_id: organization.default_language_id
         })
@@ -485,8 +473,8 @@ defmodule Glific.Partners do
     end
   end
 
-  @spec check_provider_status(DateTime.t()) :: atom()
-  defp check_provider_status(last_message_at) do
+  @spec check_bsp_status(DateTime.t()) :: atom()
+  defp check_bsp_status(last_message_at) do
     if Timex.diff(DateTime.utc_now(), last_message_at, :hours) < 24 do
       :session_and_hsm
     else
@@ -539,7 +527,14 @@ defmodule Glific.Partners do
   @spec update_credential(Credential.t(), map()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
-    # first delete the cached organization
+    # when updating the bsp credentials fetch list of opted in contacts
+    credential = credential |> Repo.preload(:provider)
+
+    if credential.provider.group == "bsp" do
+      fetch_opted_in_contacts(attrs)
+    end
+
+    # delete the cached organization and associated credentials
     Caches.remove(credential.organization_id, ["organization"])
 
     credential
@@ -553,7 +548,7 @@ defmodule Glific.Partners do
   """
   @spec check_and_load_goth_config(String.t(), non_neg_integer) :: :ok
   def check_and_load_goth_config(email, org_id) do
-    Goth.Config.get(email, "private_key_id")
+    Goth.Config.get(email, :oauth_jwt)
     |> load_goth_config(org_id)
   end
 
@@ -562,10 +557,29 @@ defmodule Glific.Partners do
     credential = organization(org_id).services["goth"]
 
     credential.secrets["json"]
+    |> Jason.decode!()
     |> Goth.Config.add_config()
 
     :ok
   end
 
   defp load_goth_config(_, _), do: :ok
+
+  @impl Waffle.Storage.Google.Token.Fetcher
+  @spec get_token(binary) :: binary
+  def get_token(organization_id) when is_binary(organization_id) do
+    organization_id = String.to_integer(organization_id)
+
+    organization = organization(organization_id)
+
+    gcs = organization.services["google_cloud_storage"]
+
+    # we need to do this once only when setting the cache
+    # move for both gcs and dialogflow
+    email = gcs.secrets["email"]
+    check_and_load_goth_config(email, organization_id)
+
+    {:ok, token} = Goth.Token.for_scope({email, "https://www.googleapis.com/auth/cloud-platform"})
+    token.token
+  end
 end

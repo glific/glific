@@ -418,15 +418,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     admin
   end
 
-  defp create_org(0 = count_organizations, provider, en_us, out_of_office_default_data) do
+  defp create_org(0 = _count_organizations, provider, en_us, out_of_office_default_data) do
     Repo.insert!(%Organization{
       name: "Glific",
       shortcode: "glific",
       email: "ADMIN@REPLACE_ME.NOW",
-      provider_appname: "ADD_PROVIDER_APPNAME",
-      provider_phone: admin_phone(count_organizations + 1),
-      provider_id: provider.id,
-      provider_limit: 60,
+      bsp_id: provider.id,
       active_language_ids: [en_us.id],
       default_language_id: en_us.id,
       out_of_office: out_of_office_default_data
@@ -440,10 +437,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       name: "New Seeded Organization " <> org_uniq_id,
       shortcode: "shortcode " <> org_uniq_id,
       email: "ADMIN_#{org_uniq_id}@REPLACE_ME.NOW",
-      provider_appname: "ADD_PROVIDER_APPNAME " <> org_uniq_id,
-      provider_phone: admin_phone(count_organizations + 1),
-      provider_id: provider.id,
-      provider_limit: 60,
+      bsp_id: provider.id,
       active_language_ids: [en_us.id],
       default_language_id: en_us.id,
       out_of_office: out_of_office_default_data
@@ -590,7 +584,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
       outofoffice: generate_uuid(organization, "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7"),
       activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
-      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5")
+      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
+      optout: generate_uuid(organization, "bc1622f8-64f8-4b3d-b767-bb6bbfb65104")
     }
 
     data = [
@@ -603,7 +598,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       {"Out of Office Workflow", ["outofoffice"], uuid_map.outofoffice, false,
        "out_of_office.json"},
       {"Activity", ["activity"], uuid_map.activity, false, "activity.json"},
-      {"Feedback", ["feedback"], uuid_map.feedback, false, "feedback.json"}
+      {"Feedback", ["feedback"], uuid_map.feedback, false, "feedback.json"},
+      {"Optout Workflow", ["optout"], uuid_map.optout, false, "optout.json"}
     ]
 
     Enum.map(data, &flow(&1, organization, uuid_map))

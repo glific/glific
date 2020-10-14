@@ -223,8 +223,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         optout_time: contact["optout_time"],
         last_message_at: contact["last_message_at"],
         inserted_at: contact["inserted_at"],
-        fields: row.fields,
-        settings: row.settings,
+        fields: contact["fields"],
+        settings: contact["settings"],
         groups: contact["groups"],
         tags: contact["tags"]
       }

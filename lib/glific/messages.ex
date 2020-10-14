@@ -16,6 +16,7 @@ defmodule Glific.Messages do
     Repo,
     Tags,
     Tags.MessageTag,
+    Tags.Tag,
     Templates.SessionTemplate
   }
 
@@ -90,8 +91,8 @@ defmodule Glific.Messages do
 
         query |> where([m], m.id not in ^message_ids)
 
-      {:provider_status, provider_status}, query ->
-        from q in query, where: q.provider_status == ^provider_status
+      {:bsp_status, bsp_status}, query ->
+        from q in query, where: q.bsp_status == ^bsp_status
 
       _, query ->
         query
@@ -714,6 +715,7 @@ defmodule Glific.Messages do
 
     query
     |> join(:left, [m], mt in MessageTag, as: :mt, on: m.id == mt.message_id)
+    |> join(:left, [mt: mt], t in Tag, as: :t, on: t.id == mt.tag_id)
     |> where([mt: mt], mt.tag_id in ^all_tag_ids)
   end
 
