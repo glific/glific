@@ -38,10 +38,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     end
 
     test "labels", %{conn: conn} do
-      tags =
-        Tags.list_tags(%{
-          filter: %{parent: "Contacts", organization_id: conn.assigns[:organization_id]}
-        })
+      tags = Tags.get_all_children("flow", conn.assigns[:organization_id])
 
       conn = get(conn, "/flow-editor/labels", %{})
       assert length(json_response(conn, 200)["results"]) == length(tags)
