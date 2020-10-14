@@ -761,10 +761,10 @@ defmodule Glific.Messages do
   end
 
   @doc """
-  Get session id of contact's last inbound message
+  Get session uuid of contact's last inbound message
   """
-  @spec get_session_id(map()) :: Ecto.UUID.t()
-  def get_session_id(message_params) do
+  @spec get_session_uuid(map()) :: Ecto.UUID.t()
+  def get_session_uuid(message_params) do
     organization = Partners.organization(message_params.organization_id)
 
     with {:ok, contact} <-
@@ -782,7 +782,7 @@ defmodule Glific.Messages do
                |> first()
                |> Repo.one()
            ) do
-      last_inbound_message.session_id
+      last_inbound_message.session_uuid
     else
       _ ->
         Ecto.UUID.generate()

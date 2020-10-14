@@ -20,7 +20,7 @@ defmodule Glific.Repo.Migrations.V0_5_1_AlterGlificTables do
 
   defp messages do
     alter table(:messages) do
-      add :session_id, :uuid
+      add :session_uuid, :uuid
     end
   end
 end
