@@ -13,6 +13,8 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
     chatbase_jobs()
 
     messages()
+
+    bigquery_jobs()
   end
 
   defp providers do
@@ -82,6 +84,19 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
     alter table(:messages) do
       modify :inserted_at, :utc_datetime_usec
       modify :updated_at, :utc_datetime_usec
+    end
+  end
+
+  defp bigquery_jobs do
+    create table(:bigquery_jobs) do
+      # references the last message we processed
+      add :table, :string
+      add :table_id, :integer
+
+      # foreign key to organization restricting scope of this table to this organization only
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+
+      timestamps(type: :utc_datetime)
     end
   end
 end
