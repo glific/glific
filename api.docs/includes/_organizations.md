@@ -571,7 +571,7 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>sessionLimit</strong></td>
 <td valign="top"><a href="#integer">Integer</a></td>
-<td></td>
+<td>(in minutes)</td>
 </tr>
 </tbody>
 </table>
@@ -805,7 +805,7 @@ Unique
 <tr>
 <td colspan="2" valign="top"><strong>sessionLimit</strong></td>
 <td valign="top"><a href="#integer">Integer</a></td>
-<td></td>
+<td>(in minutes)</td>
 </tr>
 </tbody>
 </table>
