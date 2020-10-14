@@ -109,7 +109,7 @@ defmodule Glific.Processor.ConsumerFlow do
       message.tags
       |> Enum.any?(fn tag -> tag.shortcode == "newcontact" end)
 
-    if is_new_contact,
+    if is_new_contact and message.body != nil,
       do: false,
       else: String.contains?(message.body, "Hi, I would like to receive notifications.")
   end
