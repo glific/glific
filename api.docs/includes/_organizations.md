@@ -280,6 +280,7 @@ mutation updateOrganization($id: ID!, $input: OrganizationInput!) {
       id
       name
       shortcode
+      sessionLimit
       outOfOffice {
         enabled
         startTime
@@ -302,6 +303,7 @@ mutation updateOrganization($id: ID!, $input: OrganizationInput!) {
   "id": "1",
   "input": {
     "name": "updated organization display name",
+    "sessionLimit": 180,
     "outOfOffice": {
       "enabled": true,
       "enabledDays": [
@@ -353,6 +355,7 @@ mutation updateOrganization($id: ID!, $input: OrganizationInput!) {
         "name": "updated organization display name",
         "id": "1",
         "name": "Glific",
+        "sessionLimit": 180,
         "outOfOffice": {
           "enabled": true,
           "enabledDays": [
@@ -564,6 +567,11 @@ Type | Description
 <td colspan="2" valign="top"><strong>timezone</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>sessionLimit</strong></td>
+<td valign="top"><a href="#integer">Integer</a></td>
+<td>(in minutes)</td>
 </tr>
 </tbody>
 </table>
@@ -793,6 +801,11 @@ Unique
 <td colspan="2" valign="top"><strong>timezone</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>sessionLimit</strong></td>
+<td valign="top"><a href="#integer">Integer</a></td>
+<td>(in minutes)</td>
 </tr>
 </tbody>
 </table>

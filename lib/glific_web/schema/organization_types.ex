@@ -54,6 +54,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :timezone, :string
 
+    field :session_limit, :integer
+
     field :active_languages, list_of(:language) do
       resolve(fn organization, _, _ ->
         languages =
@@ -112,6 +114,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :is_active, :boolean
 
     field :timezone, :string
+
+    field :session_limit, :integer
 
     field :active_language_ids, list_of(:id)
   end
