@@ -80,7 +80,7 @@ defmodule Glific.Jobs.BigQueryWorker do
             inserted_at: format_date(row.inserted_at),
             sent_at: format_date(row.sent_at),
             uuid: row.uuid,
-            id: row.contact_id,
+            id: row.id,
             flow: row.flow,
             status: row.status,
             sender_phone: row.sender.phone,
@@ -165,7 +165,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     do: nil
 
   defp format_date(date),
-    do: Timex.format!(date, "{YYYY}-{0M}-{D} 18:52:36")
+    do: Timex.format!(date, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
 
   @spec token(map()) :: any()
   defp token(credentials) do
