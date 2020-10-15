@@ -28,6 +28,7 @@ defmodule GlificWeb.UserSocket do
 
     %Plug.Conn{secret_key_base: socket.endpoint.config(:secret_key_base)}
     |> APIAuthPlug.get_credentials(token, config)
+    |> IO.inspect(label: "Get Credentials")
     |> case do
       nil ->
         :error
@@ -47,7 +48,10 @@ defmodule GlificWeb.UserSocket do
   end
 
   # This function will be called when there was no authentication information
-  def connect(_params, _socket, _connect_info), do: :error
+  def connect(params, _socket, _connect_info) do
+    IO.inspect(params, label: "Params")
+    :error
+  end
 
   # Socket id's are topics that allow you to identify all sockets for a given user:
   #
