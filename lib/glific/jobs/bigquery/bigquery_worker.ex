@@ -262,7 +262,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
 
     project_id = credentials.secrets["project_id"]
-    dataset_id = "919511136363"
+    dataset_id = credentials.secrets["dataset_id"]
     table_id = table
     token = token(credentials)
     conn = Connection.new(token.token)
@@ -274,7 +274,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       table_id,
       [body: %{rows: data}],
       []
-    )|>IO.inspect()
+    )
 
     :ok
   end
