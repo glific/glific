@@ -121,7 +121,7 @@ defmodule Glific.Jobs.BigQueryWorker do
             optout_time: format_date(row.optout_time),
             last_message_at: format_date(row.last_message_at),
             inserted_at: format_date(row.inserted_at),
-            fields: row.fields,
+            fields: Enum.map(row.fields, fn {_key, field} -> %{label: field["label"], inserted_at: format_date(field["inserted_at"]), type: field["type"], value: field["value"] }  end),
             settings: row.settings,
             groups: Enum.map(row.groups, fn group -> %{label: group.label} end),
             tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
@@ -163,6 +163,12 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec format_date(DateTime.t() | nil) :: any()
   defp format_date(nil),
     do: nil
+
+  defp format_date(date) when is_binary(date),
+    do: Timex.parse(date, "{RFC3339z}")
+    |> elem(1)
+    |>Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+
 
   defp format_date(date),
     do: Timex.format!(date, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
