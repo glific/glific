@@ -22,13 +22,9 @@ defmodule GlificWeb.UserSocket do
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
   @impl true
-  def connect(%{"token" => token} = params, socket, %{pow_config: config} = connect_info) do
-    IO.inspect(params, label: "Params")
-    IO.inspect(connect_info, label: "CI")
-
+  def connect(%{"token" => token} = _params, socket, %{pow_config: config} = _connect_info) do
     %Plug.Conn{secret_key_base: socket.endpoint.config(:secret_key_base)}
     |> APIAuthPlug.get_credentials(token, config)
-    |> IO.inspect(label: "Get Credentials")
     |> case do
       nil ->
         :error
@@ -42,14 +38,12 @@ defmodule GlificWeb.UserSocket do
           |> assign(:user_id, user.id)
           |> assign(:organization_id, user.organization_id)
 
-        IO.inspect(socket, label: "Socket")
         {:ok, socket}
     end
   end
 
   # This function will be called when there was no authentication information
-  def connect(params, _socket, _connect_info) do
-    IO.inspect(params, label: "Params")
+  def connect(_params, _socket, _connect_info) do
     :error
   end
 

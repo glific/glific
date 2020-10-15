@@ -14,7 +14,7 @@ defmodule GlificWeb.APIAuthPlug do
   @impl true
   @spec fetch(Conn.t(), Config.t()) :: {Conn.t(), map() | nil}
   def fetch(conn, config) do
-    with {:ok, signed_token} <- fetch_access_token(conn) |> IO.inspect(),
+    with {:ok, signed_token} <- fetch_access_token(conn),
          {user, _metadata} <- get_credentials(conn, signed_token, config) do
       {conn, user}
     else
@@ -22,10 +22,14 @@ defmodule GlificWeb.APIAuthPlug do
     end
   end
 
-  @spec get_credentials(Conn.t(), binary(), Config.t()) :: map() | nil
+  @doc """
+  helper function that can be called from the socket token verification to
+  validate the token
+  """
+  # @spec get_credentials(Conn.t(), binary(), Config.t() | nil) :: {map(), [any()]} | nil
   def get_credentials(conn, signed_token, config) do
-    with {:ok, token} <- verify_token(conn, signed_token, config) |> IO.inspect(label: "VT"),
-         {user, metadata} <- CredentialsCache.get(store_config(config), token) |> IO.inspect(label: "CC") do
+    with {:ok, token} <- verify_token(conn, signed_token, config),
+         {user, metadata} <- CredentialsCache.get(store_config(config), token) do
       {user, metadata}
     else
       _any -> nil
@@ -38,7 +42,7 @@ defmodule GlificWeb.APIAuthPlug do
   The tokens are added to the `conn.private` as `:api_access_token` and
   `:api_renewal_token`. The renewal token is stored in the access token
   metadata and vice versa.
- """
+  """
   @impl true
   @spec create(Conn.t(), map(), Config.t()) :: {Conn.t(), map()}
   def create(conn, user, config) do
