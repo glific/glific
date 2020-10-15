@@ -114,7 +114,7 @@ defmodule Glific.Jobs.BigQueryWorker do
             id: row.id,
             name: row.name,
             phone: row.phone,
-            provider_status: row.provider_status,
+            provider_status: row.bsp_status,
             status: row.status,
             language: row.language.label,
             optin_time: format_date(row.optin_time),
@@ -262,7 +262,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
 
     project_id = credentials.secrets["project_id"]
-    dataset_id = credentials.secrets["dataset_id"]
+    dataset_id = "919511136363"
     table_id = table
     token = token(credentials)
     conn = Connection.new(token.token)
@@ -274,7 +274,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       table_id,
       [body: %{rows: data}],
       []
-    )
+    )|>IO.inspect()
 
     :ok
   end
