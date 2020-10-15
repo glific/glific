@@ -2,6 +2,7 @@ defmodule Glific.CSV.File do
   @moduledoc """
   First implemenetation to convert sheets to flows using a menu structure and UUID
   """
+  use Ecto.Schema
 
   alias Glific.{
     Partners.Organization,
@@ -25,9 +26,9 @@ defmodule Glific.CSV.File do
 
     field :contents, :string
 
-    field :uuid_map, :jsonb
+    field :uuid_map, :map
 
-    field :main_menu, :menu, virtual: true
+    field :main_menu, :map, virtual: true
 
     belongs_to :organization, Organization
 
