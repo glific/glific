@@ -167,16 +167,30 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :received_message, :message do
       arg(:organization_id, non_null(:id))
 
-      config(fn args, _info ->
-        {:ok, topic: args.id, context_id: args.id}
+      config(fn args, %{context: %{current_user: user}} ->
+        organization_id = args.organization_id
+
+        if organization_id == Integer.to_string(user.organization_id) do
+          {:ok, topic: organization_id, context_id: organization_id}
+        else
+          {:error, "Credentials did not match"}
+        end
       end)
+
+      resolve(&Resolvers.Messages.publish_sent_message/3)
     end
 
     field :sent_message, :message do
       arg(:organization_id, non_null(:id))
 
-      config(fn args, _info ->
-        {:ok, topic: args.id, context_id: args.id}
+      config(fn args, %{context: %{current_user: user}} ->
+        organization_id = args.organization_id
+
+        if organization_id == Integer.to_string(user.organization_id) do
+          {:ok, topic: organization_id, context_id: organization_id}
+        else
+          {:error, "Credentials did not match"}
+        end
       end)
 
       resolve(&Resolvers.Messages.publish_sent_message/3)

@@ -37,6 +37,7 @@ defmodule GlificWeb.UserSocket do
           |> assign(:session_fingerprint, fingerprint)
           |> assign(:user_id, user.id)
           |> assign(:organization_id, user.organization_id)
+          |> Absinthe.Phoenix.Socket.put_options(context: %{current_user: user})
 
         {:ok, socket}
     end
