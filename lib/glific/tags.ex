@@ -346,7 +346,7 @@ defmodule Glific.Tags do
       |> Repo.insert(on_conflict: :replace_all, conflict_target: [:contact_id, :tag_id])
 
     if status == :ok do
-      Communications.publish_data({status, response}, :created_contact_tag)
+      Communications.publish_data(response, :created_contact_tag)
       {:ok, response}
     else
       {:error, response}
@@ -420,7 +420,7 @@ defmodule Glific.Tags do
     _list =
       message_tags
       |> Enum.reduce([], fn message_tag, _acc ->
-        Communications.publish_data({:ok, message_tag}, :deleted_message_tag)
+        Communications.publish_data(message_tag, :deleted_message_tag)
       end)
 
     {:ok}
@@ -448,7 +448,7 @@ defmodule Glific.Tags do
     _list =
       contact_tags
       |> Enum.reduce([], fn contact_tag, _acc ->
-        Communications.publish_data({:ok, contact_tag}, :deleted_contact_tag)
+        Communications.publish_data(contact_tag, :deleted_contact_tag)
       end)
 
     {:ok}
@@ -474,7 +474,7 @@ defmodule Glific.Tags do
       |> Repo.insert(on_conflict: :replace_all, conflict_target: [:template_id, :tag_id])
 
     if status == :ok do
-      Communications.publish_data({status, response}, :created_template_tag)
+      Communications.publish_data(response, :created_template_tag)
       {:ok, response}
     else
       {:error, response}
@@ -503,7 +503,7 @@ defmodule Glific.Tags do
     _list =
       template_tags
       |> Enum.reduce([], fn template_tag, _acc ->
-        Communications.publish_data({:ok, template_tag}, :deleted_template_tag)
+        Communications.publish_data(template_tag, :deleted_template_tag)
       end)
 
     {:ok}

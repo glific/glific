@@ -29,29 +29,37 @@ defmodule Glific.Communications do
     ("Elixir." <> bsp_credential.keys["worker"]) |> String.to_existing_atom()
   end
 
+  def publish_data(data, topic, organization_id \\ 1)
+
   @doc """
   Unified function to publish data on the graphql subscription endpoint. This  is still looking for a
   place to actually reside. This is a good next stop for now
 
-  For now the data types are Message and MessageTag
+  For now the data types are Message and all join Tag tables
   """
-
   @spec publish_data(
           {:ok, Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t()},
-          atom()
+          atom(),
+          non_neg_integer
         ) ::
           Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t()
-  def publish_data({:ok, data}, topic) do
-    publish_data(data, topic)
+  def publish_data({:ok, data}, topic, organization_id) do
+    publish_data(data, topic, organization_id)
   end
 
-  @spec publish_data(Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t(), atom()) ::
+  @spec publish_data(
+          Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t(),
+          atom(),
+          non_neg_integer
+        ) ::
           Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t()
-  def publish_data(data, topic) do
+  def publish_data(data, topic, organization_id) do
+    # we will delete the default value setting, the minute we know what to do with tags
+    # and how to get the organization id
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
       data,
-      [{topic, :glific}]
+      [{topic, organization_id}]
     )
 
     data

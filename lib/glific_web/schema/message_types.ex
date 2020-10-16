@@ -165,14 +165,18 @@ defmodule GlificWeb.Schema.MessageTypes do
 
   object :message_subscriptions do
     field :received_message, :message do
-      config(fn _args, _info ->
-        {:ok, topic: :glific}
+      arg(:organization_id, non_null(:id))
+
+      config(fn args, _info ->
+        {:ok, topic: args.id, context_id: args.id}
       end)
     end
 
     field :sent_message, :message do
-      config(fn _args, _info ->
-        {:ok, topic: :glific}
+      arg(:organization_id, non_null(:id))
+
+      config(fn args, _info ->
+        {:ok, topic: args.id, context_id: args.id}
       end)
 
       resolve(&Resolvers.Messages.publish_sent_message/3)

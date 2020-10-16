@@ -44,7 +44,7 @@ defmodule Glific.Communications.Message do
           [message]
         )
 
-      {:ok, Communications.publish_data(message, :sent_message)}
+      {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
     else
       {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
 
@@ -156,7 +156,7 @@ defmodule Glific.Communications.Message do
     message_params
     |> Messages.create_message()
     |> Taggers.TaggerHelper.tag_inbound_message()
-    |> Communications.publish_data(:received_message)
+    |> Communications.publish_data(:received_message, message_params.organization_id)
     |> process_message()
 
     {:ok}
@@ -170,7 +170,7 @@ defmodule Glific.Communications.Message do
     message_params
     |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
-    |> Communications.publish_data(:received_message)
+    |> Communications.publish_data(:received_message, message_params.organization_id)
     |> process_message()
 
     {:ok}
@@ -187,7 +187,7 @@ defmodule Glific.Communications.Message do
     |> Contacts.create_location()
 
     message
-    |> Communications.publish_data(:received_message)
+    |> Communications.publish_data(:received_message, message.organization_id)
     |> process_message()
 
     {:ok}
