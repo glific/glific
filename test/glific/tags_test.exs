@@ -378,12 +378,11 @@ defmodule Glific.TagsTest do
 
       # using upsert
       assert {:ok, %ContactTag{}} =
-        Tags.create_contact_tag(
-          %{
-            contact_id: contact.id,
-            tag_id: tag.id,
-            organization_id: organization_id
-          })
+               Tags.create_contact_tag(%{
+                 contact_id: contact.id,
+                 tag_id: tag.id,
+                 organization_id: organization_id
+               })
     end
 
     test "remove_tag_from_all_message/2 removes teh tag and return the message ids ", %{

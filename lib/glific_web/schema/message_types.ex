@@ -6,8 +6,12 @@ defmodule GlificWeb.Schema.MessageTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias Glific.Repo
-  alias GlificWeb.Resolvers
-  alias GlificWeb.Schema.Middleware.Authorize
+
+  alias GlificWeb.{
+    Resolvers,
+    Schema,
+    Schema.Middleware.Authorize
+  }
 
   object :message_result do
     field :message, :message
@@ -167,33 +171,17 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :received_message, :message do
       arg(:organization_id, non_null(:id))
 
-      config(fn args, %{context: %{current_user: user}} ->
-        organization_id = args.organization_id
+      config(&Schema.config_fun/2)
 
-        if organization_id == Integer.to_string(user.organization_id) do
-          {:ok, topic: organization_id, context_id: organization_id}
-        else
-          {:error, "Credentials did not match"}
-        end
-      end)
-
-      resolve(&Resolvers.Messages.publish_sent_message/3)
+      resolve(&Resolvers.Messages.publish_message/3)
     end
 
     field :sent_message, :message do
       arg(:organization_id, non_null(:id))
 
-      config(fn args, %{context: %{current_user: user}} ->
-        organization_id = args.organization_id
+      config(&Schema.config_fun/2)
 
-        if organization_id == Integer.to_string(user.organization_id) do
-          {:ok, topic: organization_id, context_id: organization_id}
-        else
-          {:error, "Credentials did not match"}
-        end
-      end)
-
-      resolve(&Resolvers.Messages.publish_sent_message/3)
+      resolve(&Resolvers.Messages.publish_message/3)
     end
   end
 end

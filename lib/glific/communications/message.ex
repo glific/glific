@@ -69,7 +69,7 @@ defmodule Glific.Communications.Message do
         status: :sent,
         flow: :outbound,
         sent_at: DateTime.truncate(DateTime.utc_now(), :second)
-                                 })
+      })
 
     Tags.remove_tag_from_all_message(
       message.contact_id,
