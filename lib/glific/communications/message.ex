@@ -59,18 +59,24 @@ defmodule Glific.Communications.Message do
   def handle_success_response(response, message) do
     body = response.body |> Jason.decode!()
 
-    message
-    |> Poison.encode!()
-    |> Poison.decode!(as: %Message{})
-    |> Messages.update_message(%{
-      bsp_message_id: body["messageId"],
-      bsp_status: :enqueued,
-      status: :sent,
-      flow: :outbound,
-      sent_at: DateTime.truncate(DateTime.utc_now(), :second)
-    })
+    {:ok, message} =
+      message
+      |> Poison.encode!()
+      |> Poison.decode!(as: %Message{})
+      |> Messages.update_message(%{
+        bsp_message_id: body["messageId"],
+        bsp_status: :enqueued,
+        status: :sent,
+        flow: :outbound,
+        sent_at: DateTime.truncate(DateTime.utc_now(), :second)
+                                 })
 
-    Tags.remove_tag_from_all_message(message["contact_id"], ["notreplied", "unread"])
+    Tags.remove_tag_from_all_message(
+      message.contact_id,
+      ["notreplied", "unread"],
+      message.organization_id
+    )
+
     Taggers.TaggerHelper.tag_outbound_message(message)
 
     {:ok, message}

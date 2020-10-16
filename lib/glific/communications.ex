@@ -29,8 +29,6 @@ defmodule Glific.Communications do
     ("Elixir." <> bsp_credential.keys["worker"]) |> String.to_existing_atom()
   end
 
-  def publish_data(data, topic, organization_id \\ 1)
-
   @doc """
   Unified function to publish data on the graphql subscription endpoint. This  is still looking for a
   place to actually reside. This is a good next stop for now
