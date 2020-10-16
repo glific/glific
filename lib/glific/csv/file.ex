@@ -5,21 +5,21 @@ defmodule Glific.CSV.File do
   use Ecto.Schema
 
   alias Glific.{
-    Partners.Organization,
+    Partners.Organization
   }
 
   @type t :: %__MODULE__{
-    __meta__: Ecto.Schema.Metadata.t(),
-    id: non_neg_integer | nil,
-    name: String.t() | nil,
-    contents: String.t() | nil,
-    uuid_map: map() | nil,
-    main_menu: map() | nil,
-    organization_id: non_neg_integer | nil,
-    organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-    inserted_at: :utc_datetime | nil,
-    updated_at: :utc_datetime | nil
-  }
+          __meta__: Ecto.Schema.Metadata.t(),
+          id: non_neg_integer | nil,
+          name: String.t() | nil,
+          contents: String.t() | nil,
+          uuid_map: map() | nil,
+          main_menu: map() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
+        }
 
   schema "csv_files" do
     field :name, :string
@@ -39,7 +39,7 @@ defmodule Glific.CSV.File do
   Read a csv file, and split it up into a bunch of tuples that we are interested in. Assuming
   that the csv file is valid for now
   """
-  @spec read_csv_file(String.t()) :: list()
+  @spec read_csv_file(String.t()) :: map()
   def read_csv_file(file) do
     file
     |> Path.expand(__DIR__)
@@ -54,9 +54,9 @@ defmodule Glific.CSV.File do
   @doc """
   Given a set of rows from the CSV, rearrange it so we can generate a flow
   """
-  @spec format_rows(list()) :: map()
+  @spec format_rows(list()) :: {list(), map()}
   def format_rows(rows) do
-    [header | _rest] = rows
+    header = hd(rows)
 
     meta_data = %{
       language: get_languages(header),
@@ -104,7 +104,7 @@ defmodule Glific.CSV.File do
     )
   end
 
-  @spec parse_rows(list(), map()) :: map()
+  @spec parse_rows({list(), map()}, map()) :: map()
   defp parse_rows({rows, header_data}, summary) do
     [_header | rest] = rows
 
@@ -194,36 +194,34 @@ defmodule Glific.CSV.File do
   end
 
   defp merge_menu_item(merged_item, item, menu_idx) do
-    cond do
-      merged_item == nil ->
-        merged_item = item
-        sub_menu = Map.get(item, menu_idx)
+    if merged_item == nil do
+      merged_item = item
+      sub_menu = Map.get(item, menu_idx)
 
-        merged_item =
-          if menu_idx == 1,
-            do: Map.put(merged_item, menu_idx - 1, %{}),
-            else: merged_item
+      merged_item =
+        if menu_idx == 1,
+          do: Map.put(merged_item, menu_idx - 1, %{}),
+          else: merged_item
 
-        Map.update!(
-          merged_item,
-          menu_idx - 1,
-          &Map.put(&1, :sub_menu, sub_menu)
-        )
+      Map.update!(
+        merged_item,
+        menu_idx - 1,
+        &Map.put(&1, :sub_menu, sub_menu)
+      )
+    else
+      sub_menu = Map.get(item, menu_idx)
 
-      true ->
-        sub_menu = Map.get(item, menu_idx)
-
-        Map.update!(
-          merged_item,
-          menu_idx - 1,
-          fn value ->
-            Map.update!(
-              value,
-              :sub_menu,
-              &merge_menu_one(&1, sub_menu)
-            )
-          end
-        )
+      Map.update!(
+        merged_item,
+        menu_idx - 1,
+        fn value ->
+          Map.update!(
+            value,
+            :sub_menu,
+            &merge_menu_one(&1, sub_menu)
+          )
+        end
+      )
     end
   end
 
@@ -239,7 +237,8 @@ defmodule Glific.CSV.File do
           k == :sub_menu and is_list(v1) -> v1 ++ [v2]
           k == :sub_menu -> [v1, v2]
           k == :merged -> v1
-          String.contains?(v1, v2) -> v1 # skip duplicates
+          # skip duplicates
+          String.contains?(v1, v2) -> v1
           true -> v1 <> "\n" <> v2
         end
       end

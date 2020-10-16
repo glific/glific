@@ -5,7 +5,10 @@ defmodule Glific.CSV.Flow do
   back in the database
   """
 
+  @doc """
+  Given a file, generate the flow for it that matches floweditor input
+  """
+  @spec gen_flow :: nil
   def gen_flow do
   end
-
 end

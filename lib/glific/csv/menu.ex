@@ -5,20 +5,14 @@ defmodule Glific.CSV.Menu do
   """
   use Ecto.Schema
 
-  alias Glific.{
-    CSV.File,
-    CSV.MenuItems,
-    CSV.Message,
-  }
-
   @type t() :: %__MODULE__{
-    uuid: Ecto.UUID.t() | nil,
-    sr_no: integer() | nil,
-    input: String.t() | nil,
-    content: String.t() | nil,
-    menu_items: [MenuItem.t()] | nil,
-    parent: File.t() | nil,
-  }
+          uuid: Ecto.UUID.t() | nil,
+          sr_no: integer() | nil,
+          input: String.t() | nil,
+          content: String.t() | nil,
+          menu_items: map() | nil,
+          content_items: map() | nil
+        }
 
   embedded_schema do
     field :uuid, Ecto.UUID
@@ -39,9 +33,9 @@ defmodule Glific.CSV.Menu do
     # the content we send to render this menu
     field :content, :string
 
-    belongs_to :parent, Menu
+    field :parent, :map, virtual: true
 
-    embeds_many :menu_items, Menu
-    embeds_many :content_items, Content
+    field :menu_items, :map, virtual: true
+    field :content_items, :map, virtual: true
   end
 end
