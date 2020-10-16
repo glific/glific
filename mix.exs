@@ -106,7 +106,7 @@ defmodule Glific.MixProject do
       {:hackney, "~> 1.16"},
       {:tesla, "~> 1.3"},
       {:oban, "~> 2.0"},
-      {:faker, "~> 0.13", only: [:dev | @test_envs]},
+      {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.13", only: @test_envs},
       {:publicist, "~> 1.1"},
