@@ -1,4 +1,4 @@
-defmodule Glific.CSV.Menu do
+defmodule Glific.CSV.Content do
   @moduledoc """
   Represent a menu interpreted from the CSV. Each Menu item either sends a content message
   or sends a sub-menu. A menu is an array of menu items
@@ -12,9 +12,6 @@ defmodule Glific.CSV.Menu do
           position: integer() | nil,
           parent: Ecto.UUID.t() | nil,
           content: map.t() | nil,
-          menu_content: map() | nil,
-          content_items: map() | nil
-          sub_menus: map() | nil
         }
 
   embedded_schema do
@@ -34,15 +31,10 @@ defmodule Glific.CSV.Menu do
     # map to account for multiple languages
     field :content, :map()
 
+    # points back to parent menu
     field :parent, :uuid
 
-    # this is one content item which stores the text of the menu in all languages
-    field :menu_content, :map, virtual: true
-
-    # this is an array of content items which stores each individual cell
-    field :content_items, :map, virtual: true
-
-    # this is an array of sub menu items for a top level menu
-    field :sub_menus, :map, virtual: true
+    # this is a map of strings for each language
+    field :content, :map, virtual: true
   end
 end

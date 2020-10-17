@@ -47,15 +47,16 @@ defmodule Glific.CSV.File do
     |> CSV.decode()
     |> Enum.drop(3)
     |> Enum.map(fn {:ok, l} -> l end)
-    |> format_rows()
+    |> parse_header()
     |> parse_rows(%{})
   end
 
   @doc """
-  Given a set of rows from the CSV, rearrange it so we can generate a flow
+  Given a header, extract the indexes of the language, menu and content
+  items which helps us when parsing each row
   """
-  @spec format_rows(list()) :: {list(), map()}
-  def format_rows(rows) do
+  @spec parse_header(list()) :: {list(), map()}
+  def parse_header(rows) do
     header = hd(rows)
 
     meta_data = %{
@@ -106,7 +107,7 @@ defmodule Glific.CSV.File do
 
   @spec parse_rows({list(), map()}, map()) :: map()
   defp parse_rows({rows, header_data}, summary) do
-    [_header | rest] = rows
+    rest = tl(rows)
 
     summary =
       summary
