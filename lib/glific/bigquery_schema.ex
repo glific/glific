@@ -1,142 +1,145 @@
 defmodule Glific.BigquerySchema do
+    @moduledoc """
+    Schema for tables to be created for a dataset
+    """
   def contact_schema do
-    schema = [
+    [
+        %{
+            name: "id",
+            type: "INTEGER",
+            mode: "REQUIRED"
+        },
+        %{
+            name: "name",
+            type: "STRING",
+            mode: "NULLABLE"
+        },
+        %{
+            name: "phone",
+            type: "STRING",
+            mode: "REQUIRED"
+        },
+        %{
+            name: "provider_status",
+            type: "STRING",
+            mode: "REQUIRED"
+        },
+        %{
+            name: "status",
+            type: "STRING",
+            mode: "REQUIRED"
+        },
+        %{
+            name: "language",
+            type: "STRING",
+            mode: "NULLABLE"
+        },
+        %{
+            name: "optin_time",
+            type: "DATETIME",
+            mode: "NULLABLE"
+        },
+        %{
+            name: "optout_time",
+            type: "DATETIME",
+            mode: "NULLABLE"
+        },
+        %{
+            name: "last_message_at",
+            type: "DATETIME",
+            mode: "NULLABLE"
+        },
+        %{
+            name: "inserted_at",
+            type: "DATETIME",
+            mode: "NULLABLE"
+        },
+        %{
+            name: "updated_at",
+            type: "DATETIME",
+            mode: "NULLABLE"
+        },
+        %{
+            name: "fields",
+            type: "RECORD",
+            mode: "REPEATED",
+            fields: [
                 %{
-                    name: "id",
-                    type: "INTEGER",
+                    name: "label",
+                    type: "STRING",
                     mode: "REQUIRED"
                 },
                 %{
-                    name: "name",
-                    type: "STRING",
-                    mode: "NULLABLE"
-                },
-                %{
-                    name: "phone",
-                    type: "STRING",
+                    name: "value",
+                    type: "string",
                     mode: "REQUIRED"
                 },
                 %{
-                    name: "provider_status",
+                    name: "type",
                     type: "STRING",
                     mode: "REQUIRED"
-                },
-                %{
-                    name: "status",
-                    type: "STRING",
-                    mode: "REQUIRED"
-                },
-                %{
-                    name: "language",
-                    type: "STRING",
-                    mode: "NULLABLE"
-                },
-                %{
-                    name: "optin_time",
-                    type: "DATETIME",
-                    mode: "NULLABLE"
-                },
-                %{
-                    name: "optout_time",
-                    type: "DATETIME",
-                    mode: "NULLABLE"
-                },
-                %{
-                    name: "last_message_at",
-                    type: "DATETIME",
-                    mode: "NULLABLE"
                 },
                 %{
                     name: "inserted_at",
                     type: "DATETIME",
-                    mode: "NULLABLE"
+                    mode: "REQUIRED"
+                }
+            ]
+        },
+        %{
+            name: "settings",
+            type: "RECORD",
+            mode: "NULLABLE",
+            fields: [
+                %{
+                    name: "label",
+                    type: "STRING",
+                    mode: "REQUIRED"
                 },
                 %{
-                    name: "updated_at",
-                    type: "DATETIME",
-                    mode: "NULLABLE"
-                },
-                %{
-                    name: "fields",
+                    name: "values",
                     type: "RECORD",
                     mode: "REPEATED",
                     fields: [
                         %{
-                            name: "label",
+                            name: "key",
                             type: "STRING",
                             mode: "REQUIRED"
                         },
                         %{
                             name: "value",
-                            type: "string",
-                            mode: "REQUIRED"
-                        },
-                        %{
-                            name: "type",
                             type: "STRING",
-                            mode: "REQUIRED"
-                        },
-                        %{
-                            name: "inserted_at",
-                            type: "DATETIME",
-                            mode: "REQUIRED"
-                        }
-                    ]
-                },
-                %{
-                    name: "settings",
-                    type: "RECORD",
-                    mode: "NULLABLE",
-                    fields: [
-                        %{
-                            name: "label",
-                            type: "STRING",
-                            mode: "REQUIRED"
-                        },
-                        %{
-                            name: "values",
-                            type: "RECORD",
-                            mode: "REPEATED",
-                            fields: [
-                                %{
-                                    name: "key",
-                                    type: "STRING",
-                                    mode: "REQUIRED"
-                                },
-                                %{
-                                    name: "value",
-                                    type: "STRING",
-                                    mode: "NULLABLE"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                %{
-                    name: "groups",
-                    type: "RECORD",
-                    mode: "REPEATED",
-                    fields: [
-                        %{
-                            name: "label",
-                            type: "STRING",
-                            mode: "REQUIRED"
-                        }
-                    ]
-                },
-                %{
-                    name: "tags",
-                    type: "RECORD",
-                    mode: "REPEATED",
-                    fields: [
-                        %{
-                            name: "label",
-                            type: "STRING",
-                            mode: "REQUIRED"
+                            mode: "NULLABLE"
                         }
                     ]
                 }
             ]
+        },
+        %{
+            name: "groups",
+            type: "RECORD",
+            mode: "REPEATED",
+            fields: [
+                %{
+                    name: "label",
+                    type: "STRING",
+                    mode: "REQUIRED"
+                }
+            ]
+        },
+        %{
+            name: "tags",
+            type: "RECORD",
+            mode: "REPEATED",
+            fields: [
+                %{
+                    name: "label",
+                    type: "STRING",
+                    mode: "REQUIRED"
+                }
+            ]
+        }
+    ]
 
   end
 

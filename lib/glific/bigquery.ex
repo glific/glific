@@ -1,12 +1,10 @@
 defmodule Glific.Bigquery do
   @moduledoc """
-  Glific.Bigquery.make_dataset("HALO2", 1)
-
   Glific Bigquery Dataset and table creation
   """
 
-  alias Glific.Partners
   alias Glific.BigquerySchema
+  alias Glific.Partners
 
   alias GoogleApi.BigQuery.V2.{
     Api.Datasets,
@@ -23,12 +21,14 @@ defmodule Glific.Bigquery do
       end
 
     Goth.Config.add_config(config)
-
     {:ok, token} =
       Goth.Token.for_scope({credentials.secrets["project_email"], credentials.keys["url"]})
     token
   end
 
+  @doc """
+  Creating a dataset with messages and contacts as tables
+  """
   @spec make_dataset(String.t(), non_neg_integer) :: :ok
   def make_dataset(dataset_id, organization_id) do
     organization = Partners.organization(organization_id)
@@ -57,16 +57,11 @@ defmodule Glific.Bigquery do
       []
     )
 
-    table(BigquerySchema.contact_schema, token, dataset_id, project_id, "contacts")
-    table(BigquerySchema.message_schema, token, dataset_id, project_id, "messages")
-
-    response
+    table(BigquerySchema.contact_schema, conn, dataset_id, project_id, "contacts")
+    table(BigquerySchema.message_schema, conn, dataset_id, project_id, "messages")
   end
 
-  defp table(schema, token, dataset_id, project_id, table_id) do
-    IO.inspect("debug001-Schema")
-    IO.inspect(schema)
-    conn = Connection.new(token.token)
+  defp table(schema, conn, dataset_id, project_id, table_id) do
     {:ok, response} = Tables.bigquery_tables_insert(
       conn,
       project_id,
