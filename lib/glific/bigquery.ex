@@ -4,6 +4,7 @@ defmodule Glific.Bigquery do
   """
 
   alias Glific.Partners
+  alias Glific.BigquerySchema
 
   @spec token(map()) :: any()
   defp token(credentials) do
@@ -49,13 +50,14 @@ defmodule Glific.Bigquery do
       ],
       []
     )
-    table(dataset_id, project_id, "contacts")
-    table(dataset_id, project_id, "messages")
+
+    table(BigquerySchema.contact_schema, dataset_id, project_id, "contacts")
+    table(BigquerySchema.messages_schema, dataset_id, project_id, "messages")
 
     :ok
   end
 
-  defp table(dataset_id, project_id, table_id) do
+  defp table(schema, dataset_id, project_id, table_id) do
     {:ok, token} = Goth.Token.for_scope("https://www.googleapis.com/auth/cloud-platform")
     conn = GoogleApi.BigQuery.V2.Connection.new(token.token)
     {:ok, response} = GoogleApi.BigQuery.V2.Api.Tables.bigquery_tables_insert(
@@ -69,30 +71,7 @@ defmodule Glific.Bigquery do
           tableId: table_id
         },
         schema: %{
-          fields: [
-          %{
-              name: "type",
-              type: "STRING",
-              mode: "REQUIRED"
-          },
-          %{
-              name: "flow",
-              type: "STRING",
-              mode: "REQUIRED"
-          },
-          %{
-            name: "tags",
-            type: "RECORD",
-            mode: "REPEATED",
-            fields: [
-                %{
-                    name: "label",
-                    type: "STRING",
-                    mode: "REQUIRED"
-                }
-            ]
-          }
-          ]
+          fields: schema
         }
       }
       ],
