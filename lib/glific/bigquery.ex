@@ -1,5 +1,7 @@
 defmodule Glific.Bigquery do
   @moduledoc """
+  Glific.Bigquery.make_dataset("HALO", 1)
+
   Glific Bigquery Dataset and table creation
   """
 
@@ -34,7 +36,6 @@ defmodule Glific.Bigquery do
       end
 
     project_id = credentials.secrets["project_id"]
-    table_id = table
     token = token(credentials)
 
     conn = GoogleApi.BigQuery.V2.Connection.new(token.token)
@@ -52,9 +53,9 @@ defmodule Glific.Bigquery do
     )
 
     table(BigquerySchema.contact_schema, dataset_id, project_id, "contacts")
-    table(BigquerySchema.messages_schema, dataset_id, project_id, "messages")
+    table(BigquerySchema.message_schema, dataset_id, project_id, "messages")
 
-    :ok
+    response
   end
 
   defp table(schema, dataset_id, project_id, table_id) do
