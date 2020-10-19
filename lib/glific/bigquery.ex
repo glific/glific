@@ -8,6 +8,13 @@ defmodule Glific.Bigquery do
   alias Glific.Partners
   alias Glific.BigquerySchema
 
+  alias GoogleApi.BigQuery.V2.{
+    Api.Tabledata,
+    Api.Datasets,
+    Api.Tables,
+    Connection
+  }
+
   @spec token(map()) :: any()
   defp token(credentials) do
     config =
@@ -20,7 +27,6 @@ defmodule Glific.Bigquery do
 
     {:ok, token} =
       Goth.Token.for_scope({credentials.secrets["project_email"], credentials.keys["url"]})
-
     token
   end
 
@@ -38,8 +44,8 @@ defmodule Glific.Bigquery do
     project_id = credentials.secrets["project_id"]
     token = token(credentials)
 
-    conn = GoogleApi.BigQuery.V2.Connection.new(token.token)
-    {:ok, response} = GoogleApi.BigQuery.V2.Api.Datasets.bigquery_datasets_insert(
+    conn = Connection.new(token.token)
+    {:ok, response} = Datasets.bigquery_datasets_insert(
       conn,
       project_id,
       [body: %{
@@ -52,16 +58,15 @@ defmodule Glific.Bigquery do
       []
     )
 
-    table(BigquerySchema.contact_schema, dataset_id, project_id, "contacts")
-    table(BigquerySchema.message_schema, dataset_id, project_id, "messages")
+    table(BigquerySchema.contact_schema, token, dataset_id, project_id, "contacts")
+    table(BigquerySchema.message_schema, token, dataset_id, project_id, "messages")
 
     response
   end
 
-  defp table(schema, dataset_id, project_id, table_id) do
-    {:ok, token} = Goth.Token.for_scope("https://www.googleapis.com/auth/cloud-platform")
-    conn = GoogleApi.BigQuery.V2.Connection.new(token.token)
-    {:ok, response} = GoogleApi.BigQuery.V2.Api.Tables.bigquery_tables_insert(
+  defp table(schema, token, dataset_id, project_id, table_id) do
+    conn = Connection.new(token.token)
+    {:ok, response} = Tables.bigquery_tables_insert(
       conn,
       project_id,
       dataset_id,
