@@ -11,9 +11,9 @@ defmodule Glific.CSV.Menu do
           input: String.t() | nil,
           position: integer() | nil,
           parent: Ecto.UUID.t() | nil,
-          content: map.t() | nil,
+          content: map() | nil,
           menu_content: map() | nil,
-          content_items: map() | nil
+          content_items: map() | nil,
           sub_menus: map() | nil
         }
 
@@ -32,9 +32,9 @@ defmodule Glific.CSV.Menu do
     # the content we send to render this menu. This is computed from
     # sub_menus, menu_content, and content_items
     # map to account for multiple languages
-    field :content, :map()
+    field :content, :map
 
-    field :parent, :uuid
+    field :parent, Ecto.UUID
 
     # this is one content item which stores the text of the menu in all languages
     field :menu_content, :map, virtual: true
