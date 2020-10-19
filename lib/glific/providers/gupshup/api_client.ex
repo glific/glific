@@ -9,5 +9,4 @@ defmodule Glific.Providers.Gupshup.ApiClient do
 
   plug Tesla.Middleware.FormUrlencoded,
     encode: &Query.encode/1
-
 end

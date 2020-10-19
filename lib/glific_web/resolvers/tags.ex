@@ -105,8 +105,11 @@ defmodule GlificWeb.Resolvers.Tags do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def mark_contact_messages_as_read(_, %{contact_id: contact_id}, _) do
-    with untag_message_ids <- Tags.remove_tag_from_all_message(contact_id, "unread"),
+  def mark_contact_messages_as_read(_, %{contact_id: contact_id}, %{
+        context: %{current_user: user}
+      }) do
+    with untag_message_ids <-
+           Tags.remove_tag_from_all_message(contact_id, "unread", user.organization_id),
          do: {:ok, untag_message_ids}
   end
 

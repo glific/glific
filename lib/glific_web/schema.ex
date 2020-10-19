@@ -102,8 +102,6 @@ defmodule GlificWeb.Schema do
     import_fields(:message_subscriptions)
 
     import_fields(:message_tag_subscriptions)
-
-    import_fields(:template_tag_subscriptions)
   end
 
   @doc """
@@ -148,5 +146,19 @@ defmodule GlificWeb.Schema do
   @spec plugins() :: [Absinthe.Plugin.t()]
   def plugins do
     [Absinthe.Middleware.Dataloader | Absinthe.Plugin.defaults()]
+  end
+
+  @doc """
+  Validation function for all subscriptions received by the system
+  """
+  @spec config_fun(map(), map()) :: {:ok, Keyword.t()} | {:error, String.t()}
+  def config_fun(args, %{context: %{current_user: user}}) do
+    organization_id = args.organization_id
+
+    if organization_id == Integer.to_string(user.organization_id) do
+      {:ok, [topic: organization_id, context_id: organization_id]}
+    else
+      {:error, "Credentials did not match"}
+    end
   end
 end

@@ -201,9 +201,12 @@ defmodule Glific.Fixtures do
   @doc false
   @spec contact_tag_fixture(map()) :: Tags.ContactTag.t()
   def contact_tag_fixture(attrs \\ %{}) do
+    contact = contact_fixture(attrs)
+
     valid_attrs = %{
-      contact_id: contact_fixture(attrs).id,
-      tag_id: tag_fixture(attrs).id
+      contact_id: contact.id,
+      tag_id: tag_fixture(attrs).id,
+      organization_id: contact.organization_id
     }
 
     {:ok, contact_tag} =
@@ -343,19 +346,22 @@ defmodule Glific.Fixtures do
     {:ok, ct1} =
       Tags.create_contact_tag(%{
         contact_id: c1.id,
-        tag_id: t1.id
+        tag_id: t1.id,
+        organization_id: c1.organization_id
       })
 
     {:ok, ct2} =
       Tags.create_contact_tag(%{
         contact_id: c2.id,
-        tag_id: t1.id
+        tag_id: t1.id,
+        organization_id: c1.organization_id
       })
 
     {:ok, ct3} =
       Tags.create_contact_tag(%{
         contact_id: c1.id,
-        tag_id: t2.id
+        tag_id: t2.id,
+        organization_id: c1.organization_id
       })
 
     [ct1, ct2, ct3]

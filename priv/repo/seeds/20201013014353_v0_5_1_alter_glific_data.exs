@@ -16,7 +16,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_1 do
   end
 
   defp add_tags(organization) do
-    {:ok, message_tags_mt} = Repo.fetch_by(Tag, %{shortcode: "messages", organization_id: organization.id})
+    {:ok, message_tags_mt} =
+      Repo.fetch_by(Tag, %{shortcode: "messages", organization_id: organization.id})
+
     {:ok, en_us} = Repo.fetch_by(Language, %{label: "English (United States)"})
 
     message_tags_flow =
