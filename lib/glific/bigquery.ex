@@ -29,8 +29,8 @@ defmodule Glific.Bigquery do
   @doc """
   Creating a dataset with messages and contacts as tables
   """
-  @spec make_dataset(String.t(), non_neg_integer) :: :ok
-  def make_dataset(dataset_id, organization_id) do
+  @spec bigquery_dataset(String.t(), non_neg_integer) :: :ok
+  def bigquery_dataset(dataset_id, organization_id) do
     organization = Partners.organization(organization_id)
 
     credentials =
@@ -44,7 +44,17 @@ defmodule Glific.Bigquery do
     token = token(credentials)
 
     conn = Connection.new(token.token)
-    {:ok, _response} = Datasets.bigquery_datasets_insert(
+    case create_dataset(conn, project_id, dataset_id) do
+      {:ok, _} ->
+        table(BigquerySchema.contact_schema, conn, dataset_id, project_id, "contacts")
+        table(BigquerySchema.message_schema, conn, dataset_id, project_id, "messages")
+      {:error, _} -> nil
+      end
+      :ok
+  end
+
+  defp create_dataset(conn, project_id, dataset_id) do
+    Datasets.bigquery_datasets_insert(
       conn,
       project_id,
       [body: %{
@@ -56,10 +66,6 @@ defmodule Glific.Bigquery do
       ],
       []
     )
-
-    table(BigquerySchema.contact_schema, conn, dataset_id, project_id, "contacts")
-    table(BigquerySchema.message_schema, conn, dataset_id, project_id, "messages")
-    :ok
   end
 
   defp table(schema, conn, dataset_id, project_id, table_id) do
