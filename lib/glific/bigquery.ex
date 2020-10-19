@@ -1,6 +1,6 @@
 defmodule Glific.Bigquery do
   @moduledoc """
-  Glific.Bigquery.make_dataset("HALO", 1)
+  Glific.Bigquery.make_dataset("HALO2", 1)
 
   Glific Bigquery Dataset and table creation
   """
@@ -9,7 +9,6 @@ defmodule Glific.Bigquery do
   alias Glific.BigquerySchema
 
   alias GoogleApi.BigQuery.V2.{
-    Api.Tabledata,
     Api.Datasets,
     Api.Tables,
     Connection
@@ -65,6 +64,8 @@ defmodule Glific.Bigquery do
   end
 
   defp table(schema, token, dataset_id, project_id, table_id) do
+    IO.inspect("debug001-Schema")
+    IO.inspect(schema)
     conn = Connection.new(token.token)
     {:ok, response} = Tables.bigquery_tables_insert(
       conn,
