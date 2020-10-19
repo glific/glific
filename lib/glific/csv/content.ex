@@ -11,7 +11,7 @@ defmodule Glific.CSV.Content do
           input: String.t() | nil,
           position: integer() | nil,
           parent: Ecto.UUID.t() | nil,
-          content: map() | nil,
+          content: map() | nil
         }
 
   embedded_schema do
