@@ -72,22 +72,22 @@ defmodule Glific.BigquerySchema do
                 %{
                     name: "label",
                     type: "STRING",
-                    mode: "REQUIRED"
+                    mode: "NULLABLE"
                 },
                 %{
                     name: "value",
                     type: "string",
-                    mode: "REQUIRED"
+                    mode: "NULLABLE"
                 },
                 %{
                     name: "type",
                     type: "STRING",
-                    mode: "REQUIRED"
+                    mode: "NULLABLE"
                 },
                 %{
                     name: "inserted_at",
                     type: "DATETIME",
-                    mode: "REQUIRED"
+                    mode: "NULLABLE"
                 }
             ]
         },
@@ -99,7 +99,7 @@ defmodule Glific.BigquerySchema do
                 %{
                     name: "label",
                     type: "STRING",
-                    mode: "REQUIRED"
+                    mode: "NULLABLE"
                 },
                 %{
                     name: "values",
@@ -109,7 +109,7 @@ defmodule Glific.BigquerySchema do
                         %{
                             name: "key",
                             type: "STRING",
-                            mode: "REQUIRED"
+                            mode: "NULLABLE"
                         },
                         %{
                             name: "value",
@@ -209,8 +209,8 @@ defmodule Glific.BigquerySchema do
                 mode: "REQUIRED"
             },
             %{
-                name: "media_id",
-                type: "INTEGER",
+                name: "media_url",
+                type: "STRING",
                 mode: "NULLABLE"
             },
             %{
