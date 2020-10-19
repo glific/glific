@@ -44,7 +44,7 @@ defmodule Glific.Bigquery do
     token = token(credentials)
 
     conn = Connection.new(token.token)
-    {:ok, response} = Datasets.bigquery_datasets_insert(
+    {:ok, _response} = Datasets.bigquery_datasets_insert(
       conn,
       project_id,
       [body: %{
@@ -59,6 +59,7 @@ defmodule Glific.Bigquery do
 
     table(BigquerySchema.contact_schema, conn, dataset_id, project_id, "contacts")
     table(BigquerySchema.message_schema, conn, dataset_id, project_id, "messages")
+    :ok
   end
 
   defp table(schema, conn, dataset_id, project_id, table_id) do
