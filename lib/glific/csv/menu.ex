@@ -5,16 +5,21 @@ defmodule Glific.CSV.Menu do
   """
   use Ecto.Schema
 
+  alias __MODULE__
+
+  alias Glific.CSV.Content
+
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
           sr_no: integer() | nil,
-          input: String.t() | nil,
           position: integer() | nil,
+          level: integer() | nil,
+          root: Ecto.UUID.t() | nil,
           parent: Ecto.UUID.t() | nil,
-          content: map() | nil,
-          menu_content: map() | nil,
-          content_items: map() | nil,
-          sub_menus: map() | nil
+          content: Content.t() | nil,
+          menu_content: Content.t() | nil,
+          content_items: [Content.t()] | nil,
+          sub_menus: [Menu.t()] | nil
         }
 
   embedded_schema do
@@ -22,27 +27,33 @@ defmodule Glific.CSV.Menu do
 
     field :sr_no, :integer
 
-    # this is the input column or row, which made us create this record
-    field :input, :string
-
     # the position of this menu item, when we are stiching the higher level
     # content together
     field :position, :integer
 
-    # the content we send to render this menu. This is computed from
-    # sub_menus, menu_content, and content_items
-    # map to account for multiple languages
-    field :content, :map
+    # The level of this menu item, helps us with layout
+    field :level, :integer
 
+    # The root of this flow
+    field :root, Ecto.UUID
+
+    # The menu i've come from, useful when we implement previous menu
+    # functionality
     field :parent, Ecto.UUID
 
-    # this is one content item which stores the text of the menu in all languages
-    field :menu_content, :map, virtual: true
+    # the content for this specific menu item. We add footers, headers and other extra stuff
+    # to make the final content
+    embeds_one :menu_content, Content
 
     # this is an array of content items which stores each individual cell
-    field :content_items, :map, virtual: true
+    embeds_many :content_items, Content
 
     # this is an array of sub menu items for a top level menu
-    field :sub_menus, :map, virtual: true
+    embeds_many :sub_menus, Menu
+
+    # the content we send to render this menu. This is computed from
+    # sub_menus, menu_content, and content_items
+    # and merged into one content object
+    embeds_one :content, Content
   end
 end

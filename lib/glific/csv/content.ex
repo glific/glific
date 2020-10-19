@@ -8,7 +8,6 @@ defmodule Glific.CSV.Content do
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
           sr_no: integer() | nil,
-          input: String.t() | nil,
           position: integer() | nil,
           parent: Ecto.UUID.t() | nil,
           content: map() | nil
@@ -18,9 +17,6 @@ defmodule Glific.CSV.Content do
     field :uuid, Ecto.UUID
 
     field :sr_no, :integer
-
-    # this is the input column or row, which made us create this record
-    field :input, :string
 
     # the position of this menu item, when we are stiching the higher level
     # content together

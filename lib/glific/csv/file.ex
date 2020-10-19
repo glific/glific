@@ -5,7 +5,9 @@ defmodule Glific.CSV.File do
   use Ecto.Schema
 
   alias Glific.{
-    Partners.Organization
+    CSV.Content,
+    CSV.Menu,
+    Partners.Organization,
   }
 
   @type t :: %__MODULE__{
@@ -41,14 +43,17 @@ defmodule Glific.CSV.File do
   """
   @spec read_csv_file(String.t()) :: map()
   def read_csv_file(file) do
-    file
-    |> Path.expand(__DIR__)
-    |> File.stream!()
-    |> CSV.decode()
-    |> Enum.drop(3)
-    |> Enum.map(fn {:ok, l} -> l end)
-    |> parse_header()
-    |> parse_rows(%{})
+    summary =
+      file
+      |> Path.expand(__DIR__)
+      |> File.stream!()
+      |> CSV.decode()
+      |> Enum.drop(3)
+      |> Enum.map(fn {:ok, l} -> l end)
+      |> parse_header()
+      |> parse_rows(%{})
+
+    summary.menus[0]
   end
 
   @doc """
@@ -109,10 +114,23 @@ defmodule Glific.CSV.File do
   defp parse_rows({rows, header_data}, summary) do
     rest = tl(rows)
 
+    root = %Menu{
+      uuid: Ecto.UUID.generate(),
+      sr_no: 0,
+      position: 0,
+      level: 0,
+      root: nil,
+      parent: nil,
+      content: nil,
+      menu_content: nil,
+      content_items: [],
+      sub_menus: []
+    }
+
     summary =
       summary
       |> Map.put(:header_data, header_data)
-      |> Map.put(:menu, %{})
+      |> Map.put(:menus, %{0 => root})
       |> Map.put(:content, %{})
 
     rest
@@ -127,155 +145,109 @@ defmodule Glific.CSV.File do
   defp parse_row([_num, active | rest] = row, summary) do
     cond do
       active == "FALSE" -> summary
-      Enum.all?(rest, fn x -> x == "" end) -> summary
+      Enum.all?(rest, fn x -> x == "" or is_nil(x) end) -> summary
       true -> parse_valid_row(row, summary)
     end
   end
 
-  defp parse_valid_row([num, _active, menu | _rest] = row, summary) do
+  defp parse_valid_row([num, _active | _rest] = row, summary) do
     header_data = summary.header_data
     num = String.to_integer(num)
 
-    menu_item = get_keyword_values(row, header_data.menu, false)
-    content_item = get_keyword_values(row, header_data.content, true)
+    content = content_items(row, num, header_data.content)
+    menu_content = content_items(row, num, header_data.menu)
+    leaf_menu_idx = Enum.max(Map.keys(menu_content))
 
-    summary =
-      summary
-      |> Map.update!(:menu, &Map.put(&1, num, menu_item))
-      |> Map.update!(:content, &Map.put(&1, num, content_item))
+    # create menu entries for each of the menu_content items
+    # in sorted order
+    Enum.reduce(
+      menu_content,
+      summary,
+      fn {idx, menu}, summary ->
+        content_items =
+          if idx == leaf_menu_idx,
+            do: [content],
+            else: []
 
-    # if there is a menu entry here, lets process the menu items
-    if menu == "" or is_nil(menu) or !String.starts_with?(menu, "menu:"),
-      do: summary,
-      else: create_menu_items(summary, menu)
-  end
-
-  defp create_menu_items(summary, menu) do
-    m = String.split(menu, ":", trim: true)
-
-    if length(m) > 1 do
-      [_ | rest] = m
-
-      Enum.reduce(
-        rest,
-        summary,
-        fn i, acc -> merge_menu_items(acc, String.to_integer(i)) end
-      )
-    else
-      summary
-    end
-  end
-
-  defp merge_menu_items(summary, menu_idx) do
-    # traverse the current summary.meny array
-    # gather all elements of the menu_idx together, and make them
-    # a subitem of the top level first entry
-    # eliminate all other entries in the menu entry
-    {menu, num, merged_item} =
-      Enum.reduce(
-        summary.menu,
-        {%{}, 0, nil},
-        fn {num, m}, {menu, merged_num, merged_item} ->
-          if Map.has_key?(m, menu_idx) and !Map.has_key?(m[menu_idx], :merged) do
-            m = Map.put(m, menu_idx, Map.put(m[menu_idx], :merged, true))
-
-            {
-              Map.put(menu, num, m),
-              if(merged_item == nil, do: num, else: merged_num),
-              merge_menu_item(merged_item, m, menu_idx)
-            }
-          else
-            {Map.put(menu, num, m), merged_num, merged_item}
-          end
-        end
-      )
-
-    menu = Map.put(menu, num, merged_item)
-    Map.put(summary, :menu, menu)
-  end
-
-  defp merge_menu_item(merged_item, item, menu_idx) do
-    if merged_item == nil do
-      merged_item = item
-      sub_menu = Map.get(item, menu_idx)
-
-      merged_item =
-        if menu_idx == 1,
-          do: Map.put(merged_item, menu_idx - 1, %{}),
-          else: merged_item
-
-      Map.update!(
-        merged_item,
-        menu_idx - 1,
-        &Map.put(&1, :sub_menu, sub_menu)
-      )
-    else
-      sub_menu = Map.get(item, menu_idx)
-
-      Map.update!(
-        merged_item,
-        menu_idx - 1,
-        fn value ->
-          Map.update!(
-            value,
-            :sub_menu,
-            &merge_menu_one(&1, sub_menu)
+        sub_menu =
+          create_menu(
+            sr_no: num,
+            root: summary.menus[0].uuid,
+            parent: summary.menus[idx - 1].uuid,
+            menu_content: menu,
+            content_items: content_items
           )
-        end
-      )
-    end
-  end
 
-  defp merge_menu_one(nil = _main, sub_menu),
-    do: sub_menu
+        # keep track of the latest menu for this level
+        # we append the next higher level submenus here
+        parent_menu =
+          Map.update(summary.menus[idx - 1], :sub_menus, [sub_menu], fn m -> m ++ [sub_menu] end)
 
-  defp merge_menu_one(main, sub_menu) do
-    Map.merge(
-      main,
-      sub_menu,
-      fn k, v1, v2 ->
-        cond do
-          k == :sub_menu and is_list(v1) -> v1 ++ [v2]
-          k == :sub_menu -> [v1, v2]
-          k == :merged -> v1
-          # skip duplicates
-          String.contains?(v1, v2) -> v1
-          true -> v1 <> "\n" <> v2
-        end
+        menus =
+          summary.menus
+          |> Map.put(idx, sub_menu)
+          |> Map.put(idx - 1, parent_menu)
+          |> update_ancestors(parent_menu, idx - 2)
+
+        Map.put(summary, :menus, menus)
       end
     )
   end
 
-  # maps are ordered for first 32 keys in elixir
-  # lets use that for now
-  defp get_keyword_values(row, header_map, merge) do
-    # gather all the  items by id, grouped by language
+  defp update_ancestors(menus, _leaf, idx) when idx < 0, do: menus
+
+  defp update_ancestors(menus, leaf, idx) do
+    # update the parent at the leaf id
+    parent = Map.get(menus, idx)
+    parent = Map.update!(parent, :sub_menus, fn m -> List.update_at(m, -1, fn _l -> leaf end) end)
+    menus = Map.put(menus, idx, parent)
+
+    # do it for its ancestor also
+    update_ancestors(menus, parent, idx - 1)
+  end
+
+  defp create_menu(attrs) do
+    defaults = [
+      uuid: Ecto.UUID.generate(),
+      position: 0,
+      level: 0,
+      parent: nil,
+      sub_menus: [],
+      content_items: []
+    ]
+
+    struct(Menu, Keyword.merge(defaults, attrs))
+  end
+
+  # get the content items from the row, and create the content structure
+  # return as an array of content items
+  defp content_items(row, num, header_map) do
     Enum.reduce(
       header_map,
       %{},
-      fn {menu_idx, values}, acc ->
-        value = get_keyword_value(row, values, %{})
+      fn {idx, values}, acc ->
+        content = get_content_value(row, values)
 
-        if merge,
-          do:
-            Map.merge(
-              acc,
-              value,
-              fn _k, v1, v2 ->
-                if v2 == "" or is_nil(v2),
-                  do: v1,
-                  else: v1 <> "\n" <> v2
-              end
-            ),
-          else: Map.put(acc, menu_idx, value)
+        if empty?(content),
+          do: acc,
+          else:
+            Map.put(acc, idx, %Content{
+              uuid: Ecto.UUID.generate(),
+              sr_no: num,
+              position: idx,
+              content: content
+            })
       end
     )
   end
 
-  defp get_keyword_value(row, header_map, acc) do
+  defp empty?(content),
+    do: Enum.all?(content, fn {_k, v} -> v == "" or is_nil(v) end)
+
+  defp get_content_value(row, header_map) do
     Enum.reduce(
       header_map,
-      acc,
+      %{},
       fn {language, col}, acc ->
         Map.put(acc, language, Enum.at(row, col))
       end
