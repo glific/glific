@@ -169,7 +169,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> elem(1)
     |>Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
 
-
   defp format_date(date),
     do: Timex.format!(date, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
 
