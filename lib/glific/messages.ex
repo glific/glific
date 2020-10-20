@@ -768,7 +768,7 @@ defmodule Glific.Messages do
     organization = Partners.organization(message_params.organization_id)
 
     with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{phone: message_params.sender.phone}),
+           Repo.fetch_by(Contact, %{phone: message_params.sender.phone, organization_id: message_params.organization_id}),
          true <-
            Timex.diff(DateTime.utc_now(), contact.last_message_at, :minutes) <
              organization.session_limit,
