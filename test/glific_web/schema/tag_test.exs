@@ -34,7 +34,7 @@ defmodule GlificWeb.Schema.TagTest do
     tags = get_in(query_data, [:data, "tags"])
     assert length(tags) > 0
     [tag | _] = tags
-    assert get_in(tag, ["label"]) == "Activities"
+    assert get_in(tag, ["label"]) == "Age Group 11 to 14"
 
     # lets ensure that the language field exists and has a valid id
     assert get_in(tag, ["language", "id"]) > 0
