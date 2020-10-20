@@ -6,6 +6,7 @@ defmodule Glific.CSV.File do
 
   alias Glific.{
     CSV.Content,
+    CSV.Flow,
     CSV.Menu,
     Partners.Organization
   }
@@ -55,6 +56,7 @@ defmodule Glific.CSV.File do
 
     summary
     |> Map.put(:root, summary.menus[0])
+    |> Map.put(:json_map, Flow.gen_flow(summary.menus[0]))
     |> Map.delete(:menus)
   end
 
@@ -118,6 +120,9 @@ defmodule Glific.CSV.File do
 
     root = %Menu{
       uuid: Ecto.UUID.generate(),
+      node_uuid: Ecto.UUID.generate(),
+      action_uuid: Ecto.UUID.generate(),
+      exit_uuid: Ecto.UUID.generate(),
       sr_no: 0,
       position: 0,
       level: 0,
@@ -213,6 +218,9 @@ defmodule Glific.CSV.File do
   defp create_menu(attrs) do
     defaults = [
       uuid: Ecto.UUID.generate(),
+      node_uuid: Ecto.UUID.generate(),
+      action_uuid: Ecto.UUID.generate(),
+      exit_uuid: Ecto.UUID.generate(),
       position: 0,
       level: 0,
       parent: nil,
@@ -236,7 +244,6 @@ defmodule Glific.CSV.File do
           do: acc,
           else:
             Map.put(acc, idx, %Content{
-              uuid: Ecto.UUID.generate(),
               sr_no: num,
               position: idx,
               content: content
@@ -264,7 +271,8 @@ defmodule Glific.CSV.File do
       %{},
       fn {idx, cont}, acc ->
         merge_content_map(idx, cont, acc)
-      end)
+      end
+    )
   end
 
   defp merge_content_map(idx, cont, acc) do
@@ -278,7 +286,8 @@ defmodule Glific.CSV.File do
           %{idx => text},
           fn l -> Map.put(l, idx, text) end
         )
-      end)
+      end
+    )
   end
 
   defp merge_menu_content(main_menu, sub_menu) do

@@ -11,6 +11,10 @@ defmodule Glific.CSV.Menu do
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
+          action_uuid: Ecto.UUID.t() | nil,
+          exit_uuid: Ecto.UUID.t() | nil,
+          node_uuid: Ecto.UUID.t() | nil,
+          router_uuid: Ecto.UUID.t() | nil,
           sr_no: integer() | nil,
           position: integer() | nil,
           level: integer() | nil,
@@ -24,10 +28,14 @@ defmodule Glific.CSV.Menu do
 
   embedded_schema do
     field :uuid, Ecto.UUID
+    field :action_uuid, Ecto.UUID
+    field :exit_uuid, Ecto.UUID
+    field :node_uuid, Ecto.UUID
+    field :router_uuid, Ecto.UUID
 
     field :sr_no, :integer
 
-    # the position of this menu item, when we are stiching the higher level
+    # the position of this menu item, when we are stitching the higher level
     # content together
     field :position, :integer
 

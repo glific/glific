@@ -6,16 +6,12 @@ defmodule Glific.CSV.Content do
   use Ecto.Schema
 
   @type t() :: %__MODULE__{
-          uuid: Ecto.UUID.t() | nil,
           sr_no: integer() | nil,
           position: integer() | nil,
-          parent: Ecto.UUID.t() | nil,
           content: map() | nil
         }
 
   embedded_schema do
-    field :uuid, Ecto.UUID
-
     field :sr_no, :integer
 
     # the position of this menu item, when we are stiching the higher level
@@ -26,8 +22,5 @@ defmodule Glific.CSV.Content do
     # sub_menus, menu_content, and content_items
     # map to account for multiple languages
     field :content, :map
-
-    # points back to parent menu
-    field :parent, Ecto.UUID
   end
 end
