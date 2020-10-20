@@ -413,8 +413,8 @@ defmodule Glific.Partners do
         })
       end)
 
-      organization
-      |> Map.put(:services, services_map)
+    organization
+    |> Map.put(:services, services_map)
   end
 
   @doc """
