@@ -22,7 +22,7 @@ defmodule Glific.CSV.Content do
     # content together
     field :position, :integer
 
-    # the content we send to render this menu. This is computed from
+    # the content we send to render this element. This is computed from
     # sub_menus, menu_content, and content_items
     # map to account for multiple languages
     field :content, :map

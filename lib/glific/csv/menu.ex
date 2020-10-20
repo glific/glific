@@ -18,7 +18,7 @@ defmodule Glific.CSV.Menu do
           parent: Ecto.UUID.t() | nil,
           content: Content.t() | nil,
           menu_content: Content.t() | nil,
-          content_items: [Content.t()] | nil,
+          content_item: Content.t() | nil,
           sub_menus: [Menu.t()] | nil
         }
 
@@ -45,15 +45,15 @@ defmodule Glific.CSV.Menu do
     # to make the final content
     embeds_one :menu_content, Content
 
-    # this is an array of content items which stores each individual cell
-    embeds_many :content_items, Content
+    # this os the content items for a leaf menu item that we send out when activated
+    embeds_one :content_item, Content
 
     # this is an array of sub menu items for a top level menu
     embeds_many :sub_menus, Menu
 
     # the content we send to render this menu. This is computed from
     # sub_menus, menu_content, and content_items
-    # and merged into one content object
-    embeds_one :content, Content
+    # and merged into a map, with keys for each language
+    field :content, :map
   end
 end

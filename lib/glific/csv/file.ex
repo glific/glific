@@ -7,7 +7,7 @@ defmodule Glific.CSV.File do
   alias Glific.{
     CSV.Content,
     CSV.Menu,
-    Partners.Organization,
+    Partners.Organization
   }
 
   @type t :: %__MODULE__{
@@ -53,7 +53,9 @@ defmodule Glific.CSV.File do
       |> parse_header()
       |> parse_rows(%{})
 
-    summary.menus[0]
+    summary
+    |> Map.put(:root, summary.menus[0])
+    |> Map.delete(:menus)
   end
 
   @doc """
@@ -121,9 +123,9 @@ defmodule Glific.CSV.File do
       level: 0,
       root: nil,
       parent: nil,
-      content: nil,
+      content: %{},
       menu_content: nil,
-      content_items: [],
+      content_item: nil,
       sub_menus: []
     }
 
@@ -131,7 +133,6 @@ defmodule Glific.CSV.File do
       summary
       |> Map.put(:header_data, header_data)
       |> Map.put(:menus, %{0 => root})
-      |> Map.put(:content, %{})
 
     rest
     |> Enum.reduce(
@@ -154,8 +155,8 @@ defmodule Glific.CSV.File do
     header_data = summary.header_data
     num = String.to_integer(num)
 
-    content = content_items(row, num, header_data.content)
-    menu_content = content_items(row, num, header_data.menu)
+    content_item = content_item(row, num, header_data.content)
+    menu_content = content_item(row, num, header_data.menu)
     leaf_menu_idx = Enum.max(Map.keys(menu_content))
 
     # create menu entries for each of the menu_content items
@@ -164,10 +165,10 @@ defmodule Glific.CSV.File do
       menu_content,
       summary,
       fn {idx, menu}, summary ->
-        content_items =
+        {item, content} =
           if idx == leaf_menu_idx,
-            do: [content],
-            else: []
+            do: {content_item, build_content_map(content_item)},
+            else: {nil, %{}}
 
         sub_menu =
           create_menu(
@@ -175,13 +176,16 @@ defmodule Glific.CSV.File do
             root: summary.menus[0].uuid,
             parent: summary.menus[idx - 1].uuid,
             menu_content: menu,
-            content_items: content_items
+            content_item: item,
+            content: content
           )
 
         # keep track of the latest menu for this level
         # we append the next higher level submenus here
         parent_menu =
-          Map.update(summary.menus[idx - 1], :sub_menus, [sub_menu], fn m -> m ++ [sub_menu] end)
+          summary.menus[idx - 1]
+          |> Map.update(:sub_menus, [sub_menu], fn m -> m ++ [sub_menu] end)
+          |> Map.update!(:content, fn c -> merge_menu_content(c, sub_menu.menu_content) end)
 
         menus =
           summary.menus
@@ -221,7 +225,7 @@ defmodule Glific.CSV.File do
 
   # get the content items from the row, and create the content structure
   # return as an array of content items
-  defp content_items(row, num, header_map) do
+  defp content_item(row, num, header_map) do
     Enum.reduce(
       header_map,
       %{},
@@ -250,6 +254,41 @@ defmodule Glific.CSV.File do
       %{},
       fn {language, col}, acc ->
         Map.put(acc, language, Enum.at(row, col))
+      end
+    )
+  end
+
+  defp build_content_map(content) do
+    Enum.reduce(
+      content,
+      %{},
+      fn {idx, cont}, acc ->
+        merge_content_map(idx, content, acc)
+      end)
+  end
+
+  defp merge_content_map(idx, cont, acc) do
+    Enum.reduce(
+      cont.content,
+      acc,
+      fn {lang, text}, acc ->
+        Map.update(
+          acc,
+          lang,
+          %{idx => text},
+          fn l -> Map.put(l, idx, text) end
+        )
+      end)
+  end
+
+  defp merge_menu_content(main_menu, sub_menu) do
+    Enum.reduce(
+      sub_menu.content,
+      main_menu,
+      fn {lang, text}, acc ->
+        Map.update(acc, lang, %{sub_menu.sr_no => text}, fn m ->
+          Map.put(m, sub_menu.sr_no, text)
+        end)
       end
     )
   end
