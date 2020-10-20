@@ -413,12 +413,6 @@ defmodule Glific.Partners do
         })
       end)
 
-      if (!(is_nil(services_map["bigquery"])))
-       do
-        org = organization|> Repo.preload(:contact)
-        Bigquery.bigquery_dataset(org.contact.phone, org.id)
-      end
-
       organization
       |> Map.put(:services, services_map)
 
@@ -536,7 +530,9 @@ defmodule Glific.Partners do
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
     # when updating the bsp credentials fetch list of opted in contacts
-    credential = credential |> Repo.preload(:provider)
+    credential = credential |> Repo.preload([:provider, :organization])
+    org = credential.organization |> Repo.preload(:contact)
+    Bigquery.bigquery_dataset(org.contact.phone, org.id)
 
     if credential.provider.group == "bsp" do
       fetch_opted_in_contacts(attrs)
