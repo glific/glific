@@ -263,7 +263,7 @@ defmodule Glific.CSV.File do
       content,
       %{},
       fn {idx, cont}, acc ->
-        merge_content_map(idx, content, acc)
+        merge_content_map(idx, cont, acc)
       end)
   end
 
