@@ -10,6 +10,7 @@ defmodule Glific.Partners do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Bigquery,
     Caches,
     Flags,
     Partners.Credential,
@@ -412,8 +413,15 @@ defmodule Glific.Partners do
         })
       end)
 
-    organization
-    |> Map.put(:services, services_map)
+      if (!(is_nil(services_map["bigquery"])))
+       do
+        org = organization|> Repo.preload(:contact)
+        Bigquery.bigquery_dataset(org.contact.phone, org.id)
+      end
+
+      organization
+      |> Map.put(:services, services_map)
+
   end
 
   @doc """
