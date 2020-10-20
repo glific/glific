@@ -57,27 +57,4 @@ defmodule GlificWeb.Schema.TemplateTagTypes do
       resolve(&Resolvers.Tags.update_template_tags/3)
     end
   end
-
-  object :template_tag_subscriptions do
-    field :created_template_tag, :template_tag do
-      config(fn _args, _info ->
-        {:ok, topic: :glific}
-      end)
-
-      resolve(fn template_tag, _, _ -> {:ok, template_tag} end)
-    end
-
-    field :deleted_template_tag, :template_tag do
-      config(fn _args, _info ->
-        {:ok, topic: :glific}
-      end)
-
-      trigger(
-        [:delete_template_tag],
-        :glific
-      )
-
-      resolve(fn template_tag, _, _ -> {:ok, template_tag} end)
-    end
-  end
 end

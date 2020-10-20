@@ -96,7 +96,12 @@ defmodule GlificWeb.API.V1.RegistrationController do
            Repo.fetch_by(Contact, %{phone: user.phone, organization_id: organization_id}),
          {:ok, tag} <-
            Repo.fetch_by(Tags.Tag, %{label: "Staff", organization_id: organization_id}),
-         {:ok, _} <- Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id}),
+         {:ok, _} <-
+           Tags.create_contact_tag(%{
+             contact_id: contact.id,
+             tag_id: tag.id,
+             organization_id: organization_id
+           }),
          do: {:ok, "Staff tag added to the user contatct"}
   end
 

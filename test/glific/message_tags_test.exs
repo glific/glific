@@ -21,6 +21,7 @@ defmodule Glific.MessageTagsTest do
     message_tags =
       MessageTags.update_message_tags(%{
         message_id: message.id,
+        organization_id: message.organization_id,
         add_tag_ids: [],
         delete_tag_ids: []
       })
@@ -32,6 +33,7 @@ defmodule Glific.MessageTagsTest do
     message_tags =
       MessageTags.update_message_tags(%{
         message_id: message.id,
+        organization_id: message.organization_id,
         add_tag_ids: [12_345, 765_843],
         delete_tag_ids: [12_345, 765_843]
       })
@@ -47,6 +49,7 @@ defmodule Glific.MessageTagsTest do
     message_tags =
       MessageTags.update_message_tags(%{
         message_id: message.id,
+        organization_id: message.organization_id,
         add_tag_ids: Map.values(tags_map),
         delete_tag_ids: []
       })
@@ -57,6 +60,7 @@ defmodule Glific.MessageTagsTest do
     message_tags =
       MessageTags.update_message_tags(%{
         message_id: message.id,
+        organization_id: message.organization_id,
         add_tag_ids: Map.values(tags_map) ++ ["-1"],
         delete_tag_ids: []
       })
@@ -67,6 +71,7 @@ defmodule Glific.MessageTagsTest do
     message_tags =
       MessageTags.update_message_tags(%{
         message_id: message.id,
+        organization_id: message.organization_id,
         add_tag_ids: [],
         delete_tag_ids: Map.values(tags_map)
       })
