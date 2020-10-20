@@ -209,5 +209,31 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_2 do
         organization_id: organization_id
       })
     end
+
+    if {:error, ["Elixir.Glific.Tags.Tag", "Resource not found"]} ==
+         Repo.fetch_by(Tag, %{shortcode: "hindi", organization_id: organization_id}) do
+      Repo.insert!(%Tag{
+        label: "Hindi",
+        shortcode: "hindi",
+        description: "Marking message received for the language flow: Hindi",
+        is_reserved: false,
+        language_id: en_us.id,
+        parent_id: language_tag.id,
+        organization_id: organization_id
+      })
+    end
+
+    if {:error, ["Elixir.Glific.Tags.Tag", "Resource not found"]} ==
+         Repo.fetch_by(Tag, %{shortcode: "english", organization_id: organization_id}) do
+      Repo.insert!(%Tag{
+        label: "English",
+        shortcode: "english",
+        description: "Marking message received for the language flow: English",
+        is_reserved: false,
+        language_id: en_us.id,
+        parent_id: language_tag.id,
+        organization_id: organization_id
+      })
+    end
   end
 end
