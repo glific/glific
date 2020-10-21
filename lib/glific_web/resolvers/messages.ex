@@ -89,16 +89,15 @@ defmodule GlificWeb.Resolvers.Messages do
   """
   @spec create_and_send_message_to_group(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_and_send_message_to_group(_, %{input: message, group_id: group_id}, %{
-        context: %{current_user: user}
+  def create_and_send_message_to_group(_, %{input: message_params, group_id: group_id}, %{
+        context: %{current_user: current_user}
       }) do
     with {:ok, group} <-
-           Repo.fetch_by(Group, %{id: group_id, organization_id: user.organization_id}),
+           Repo.fetch_by(Group, %{id: group_id, organization_id: current_user.organization_id}),
          {:ok, contact_ids} <-
-           Messages.create_and_send_message_to_group(
-             message |> Map.merge(%{user_id: user.id}),
-             group
-           ),
+           message_params
+           |> Map.merge(%{user_id: current_user.id})
+           |> Messages.create_and_send_message_to_group(group),
          do: {:ok, %{success: true, contact_ids: contact_ids}}
   end
 

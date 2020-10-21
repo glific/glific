@@ -1,7 +1,6 @@
 defmodule GlificWeb.Schema.MessageTest do
   alias Glific.{
     Contacts,
-    Contacts.Contact,
     Fixtures,
     Messages.Message,
     Partners,
@@ -26,12 +25,6 @@ defmodule GlificWeb.Schema.MessageTest do
     :create_and_send_message,
     GlificWeb.Schema,
     "assets/gql/messages/create_and_send_message.gql"
-  )
-
-  load_gql(
-    :create_and_send_message_to_contacts,
-    GlificWeb.Schema,
-    "assets/gql/messages/create_and_send_message_to_contacts.gql"
   )
 
   load_gql(

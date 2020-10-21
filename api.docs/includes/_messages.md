@@ -346,8 +346,7 @@ mutation createAndSendMessage($input: MessageInput!) {
     "flow": "OUTBOUND",
     "type": "TEXT",
     "senderId": 1,
-    "receiverId": 2,
-    "userId": 1
+    "receiverId": 2
   }
 }
 ```
@@ -397,8 +396,7 @@ mutation createAndSendMessage($input: MessageInput!) {
     "receiverId": 7,
     "sendAt": "2020-07-10T03:30:00Z",
     "senderId": 1,
-    "type": "TEXT",
-    "userId": 1
+    "type": "TEXT"
   }
 }
 ```
