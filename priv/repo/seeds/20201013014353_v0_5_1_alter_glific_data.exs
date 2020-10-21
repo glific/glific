@@ -40,14 +40,32 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_1 do
 
     flow_activity_tag =
       case Repo.fetch_by(Tag, %{shortcode: "activities", organization_id: organization_id}) do
-        {:ok, flow_tag} ->
-          flow_tag
+        {:ok, flow_activity_tag} ->
+          flow_activity_tag
 
         {:error, _} ->
           Repo.insert!(%Tag{
             label: "Activities",
             shortcode: "activities",
             description: "Marking message received for an activity",
+            is_reserved: false,
+            language_id: en_us.id,
+            parent_id: flow_tag.id,
+            organization_id: organization_id
+          })
+      end
+
+    # will remove this tag later and use the language tag with flow tag as parent
+    flow_languages_tag =
+      case Repo.fetch_by(Tag, %{shortcode: "languages", organization_id: organization_id}) do
+        {:ok, flow_languages_tag} ->
+          flow_languages_tag
+
+        {:error, _} ->
+          Repo.insert!(%Tag{
+            label: "Languages",
+            shortcode: "languages",
+            description: "Marking message received for an language flow",
             is_reserved: false,
             language_id: en_us.id,
             parent_id: flow_tag.id,
