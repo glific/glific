@@ -19,8 +19,8 @@ defmodule Glific.CSV.Flow do
       expire_after_minutes: 10_080,
       spec_version: "13.1.0",
       type: "messaging",
-      uuid: root.uuid,
-      vars: [root.uuid],
+      uuid: root.uuids.main,
+      vars: [root.uuids.main],
       language: "base",
       nodes: [],
       localization: %{},
@@ -49,18 +49,18 @@ defmodule Glific.CSV.Flow do
   @spec gen_flow_menu(map(), Menu.t()) :: map()
   defp gen_flow_menu(json_map, node) do
     node_json = %{
-      uuid: node.node_uuid,
+      uuid: node.uuids.node,
       exits: [
         %{
-          uuid: node.exit_uuid,
+          uuid: node.uuids.exit,
           # At some stage for all content nodes, we'll basically go back to main menu
           # for any key pressed
-          destination_uuid: node.router_uuid
+          destination_uuid: node.uuids.router
         }
       ],
       actions: [
         %{
-          uuid: node.action_uuid,
+          uuid: node.uuids.action,
           quick_replies: [],
           attachments: [],
           text: menu_content(node.content["en"], "en"),
@@ -74,7 +74,7 @@ defmodule Glific.CSV.Flow do
     {categories, default_category_uuid} = get_categories(node.content["en"], exits, cases)
 
     router_json = %{
-      uuid: node.router_uuid,
+      uuid: node.uuids.router,
       actions: [],
       exits: [exits],
       router: %{
@@ -105,7 +105,7 @@ defmodule Glific.CSV.Flow do
     node.sub_menus
     |> Enum.reduce(
       [],
-      fn s, acc -> [s.node_uuid | acc] end
+      fn s, acc -> [s.uuids.node | acc] end
     )
     |> Enum.reverse()
   end
@@ -188,10 +188,10 @@ defmodule Glific.CSV.Flow do
   @spec gen_flow_content(map(), Menu.t()) :: map()
   defp gen_flow_content(json_map, node) do
     node_json = %{
-      uuid: node.node_uuid,
+      uuid: node.uuids.node,
       exits: [
         %{
-          uuid: node.exit_uuid,
+          uuid: node.uuids.exit,
           # At some stage for all content nodes, we'll basically go back to main menu
           # for any key pressed
           destination_uuid: nil
@@ -199,7 +199,7 @@ defmodule Glific.CSV.Flow do
       ],
       actions: [
         %{
-          uuid: node.action_uuid,
+          uuid: node.uuids.action,
           quick_replies: [],
           text: language_content(node.content["en"], "en")
         }
@@ -250,10 +250,10 @@ defmodule Glific.CSV.Flow do
               lang,
               %{
                 lang => %{
-                  node.action_uuid => %{text: [text]}
+                  node.uuids.action => %{text: [text]}
                 }
               },
-              fn l -> Map.put(l, node.action_uuid, %{text: [text]}) end
+              fn l -> Map.put(l, node.uuids.action, %{text: [text]}) end
             )
           end
         end

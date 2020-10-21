@@ -118,17 +118,21 @@ defmodule Glific.CSV.File do
   defp parse_rows({rows, header_data}, summary) do
     rest = tl(rows)
 
+    root_uuid = Ecto.UUID.generate()
+
     root = %Menu{
-      uuid: Ecto.UUID.generate(),
-      node_uuid: Ecto.UUID.generate(),
-      action_uuid: Ecto.UUID.generate(),
-      exit_uuid: Ecto.UUID.generate(),
-      router_uuid: Ecto.UUID.generate(),
+      uuids: %{
+        main: root_uuid,
+        node: Ecto.UUID.generate(),
+        action: Ecto.UUID.generate(),
+        exit: Ecto.UUID.generate(),
+        router: Ecto.UUID.generate(),
+        parent: nil,
+        root: root_uuid
+      },
       sr_no: 0,
       level: 0,
       position: 0,
-      root: nil,
-      parent: nil,
       content: %{},
       menu_content: nil,
       content_item: nil,
@@ -202,9 +206,9 @@ defmodule Glific.CSV.File do
 
         sub_menu =
           create_menu(
+            summary.menus[0].uuids.main,
+            summary.menus[idx - 1].uuids.main,
             sr_no: num,
-            root: summary.menus[0].uuid,
-            parent: summary.menus[idx - 1].uuid,
             level: level,
             position: position,
             menu_content: menu,
@@ -242,16 +246,19 @@ defmodule Glific.CSV.File do
     update_ancestors(menus, parent, idx - 1)
   end
 
-  defp create_menu(attrs) do
+  defp create_menu(root, parent, attrs) do
     defaults = [
-      uuid: Ecto.UUID.generate(),
-      node_uuid: Ecto.UUID.generate(),
-      action_uuid: Ecto.UUID.generate(),
-      exit_uuid: Ecto.UUID.generate(),
-      router_uuid: Ecto.UUID.generate(),
+      uuids: %{
+        main: Ecto.UUID.generate(),
+        node: Ecto.UUID.generate(),
+        action: Ecto.UUID.generate(),
+        exit: Ecto.UUID.generate(),
+        router: Ecto.UUID.generate(),
+        parent: parent,
+        root: root
+      },
       position: 0,
       level: 0,
-      parent: nil,
       sub_menus: [],
       content_items: []
     ]

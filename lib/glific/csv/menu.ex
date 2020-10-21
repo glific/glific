@@ -10,16 +10,10 @@ defmodule Glific.CSV.Menu do
   alias Glific.CSV.Content
 
   @type t() :: %__MODULE__{
-          uuid: Ecto.UUID.t() | nil,
-          action_uuid: Ecto.UUID.t() | nil,
-          exit_uuid: Ecto.UUID.t() | nil,
-          node_uuid: Ecto.UUID.t() | nil,
-          router_uuid: Ecto.UUID.t() | nil,
+          uuids: %{atom() => Ecto.UUID.t()} | nil,
           sr_no: integer() | nil,
           level: integer() | nil,
           position: integer() | nil,
-          root: Ecto.UUID.t() | nil,
-          parent: Ecto.UUID.t() | nil,
           content: Content.t() | nil,
           menu_content: Content.t() | nil,
           content_item: Content.t() | nil,
@@ -27,11 +21,9 @@ defmodule Glific.CSV.Menu do
         }
 
   embedded_schema do
-    field :uuid, Ecto.UUID
-    field :action_uuid, Ecto.UUID
-    field :exit_uuid, Ecto.UUID
-    field :node_uuid, Ecto.UUID
-    field :router_uuid, Ecto.UUID
+    # for now this includes:
+    # main, node, action, router, exit, root and parent
+    field :uuids, :map
 
     field :sr_no, :integer
 
@@ -41,13 +33,6 @@ defmodule Glific.CSV.Menu do
     # the position of this menu item, when we are stitching the higher level
     # content together
     field :position, :integer
-
-    # The root of this flow
-    field :root, Ecto.UUID
-
-    # The menu i've come from, useful when we implement previous menu
-    # functionality
-    field :parent, Ecto.UUID
 
     # the content for this specific menu item. We add footers, headers and other extra stuff
     # to make the final content
