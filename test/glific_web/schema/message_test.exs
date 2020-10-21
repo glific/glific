@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.MessageTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
+    Groups.Group,
     Messages.Message,
     Partners,
     Repo,
@@ -19,6 +20,8 @@ defmodule GlificWeb.Schema.MessageTest do
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
+    SeedsDev.seed_groups()
+    SeedsDev.seed_group_contacts()
     :ok
   end
 
@@ -32,6 +35,12 @@ defmodule GlificWeb.Schema.MessageTest do
     :create_and_send_message_to_contacts,
     GlificWeb.Schema,
     "assets/gql/messages/create_and_send_message_to_contacts.gql"
+  )
+
+  load_gql(
+    :create_and_send_message_to_group,
+    GlificWeb.Schema,
+    "assets/gql/messages/create_and_send_message_to_group.gql"
   )
 
   load_gql(
@@ -261,6 +270,27 @@ defmodule GlificWeb.Schema.MessageTest do
     assert length(messages) == 2
     [message | _] = messages
     assert message["receiver"]["id"] == contact1.id || contact2.id
+  end
+
+  test "send message to a group", %{staff: user} do
+    {:ok, group} = Repo.fetch_by(Group, %{label: "Default Group", organization_id: user.organization_id})
+
+    result =
+      auth_query_gql_by(:create_and_send_message_to_group, user,
+        variables: %{
+          "input" => %{
+            "body" => "Message body",
+            "flow" => "OUTBOUND",
+            "type" => "TEXT",
+            "sender_id" => Partners.organization_contact_id(user.organization_id)
+          },
+          "group_id" => group.id
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contact_ids = get_in(query_data, [:data, "createAndSendMessageToGroup", "contactIds"])
+    assert length(contact_ids) >= 2
   end
 
   test "send hsm message to an opted in contact", %{staff: user} do
