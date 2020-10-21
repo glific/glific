@@ -124,8 +124,8 @@ defmodule Glific.CSV.File do
       action_uuid: Ecto.UUID.generate(),
       exit_uuid: Ecto.UUID.generate(),
       sr_no: 0,
-      position: 0,
       level: 0,
+      position: 0,
       root: nil,
       parent: nil,
       content: %{},
@@ -138,6 +138,7 @@ defmodule Glific.CSV.File do
       summary
       |> Map.put(:header_data, header_data)
       |> Map.put(:menus, %{0 => root})
+      |> Map.put(:positions, %{0 => 0, 1 => 0})
 
     rest
     |> Enum.reduce(
@@ -160,9 +161,24 @@ defmodule Glific.CSV.File do
     header_data = summary.header_data
     num = String.to_integer(num)
 
-    content_item = content_item(row, num, header_data.content)
-    menu_content = content_item(row, num, header_data.menu)
+    menu_opts = %{
+      sr_no: num,
+      level: 0,
+      position: 0
+    }
+    menu_content = content_item(row, header_data.menu, menu_opts)
     leaf_menu_idx = Enum.max(Map.keys(menu_content))
+
+    # initialize position of content items
+    content_opts = %{
+      sr_no: num,
+      level: leaf_menu_idx, # since we start numbering from 0 internally
+      position: Map.get(summary.positions, leaf_menu_idx, 0)
+    }
+
+    content_item = content_item(row, header_data.content, content_opts)
+    positions = Map.put(summary.positions, leaf_menu_idx, content_opts.position + 1)
+    summary = Map.put(summary, :positions, positions)
 
     # create menu entries for each of the menu_content items
     # in sorted order
@@ -170,16 +186,24 @@ defmodule Glific.CSV.File do
       menu_content,
       summary,
       fn {idx, menu}, summary ->
-        {item, content} =
-          if idx == leaf_menu_idx,
-            do: {content_item, build_content_map(content_item)},
-            else: {nil, %{}}
+        {item, content, level, position, summary} =
+        if idx == leaf_menu_idx do
+          c = hd(Map.values(content_item))
+          {content_item, build_content_map(content_item), c.level, c.position, summary}
+        else
+          position = Map.get(summary.positions, idx, 0)
+          positions = Map.put(summary.positions, idx, position + 1)
+          summary = Map.put(summary, :positions, positions)
+          {nil, %{}, summary.menus[idx - 1].level + 1, position, summary}
+        end
 
         sub_menu =
           create_menu(
             sr_no: num,
             root: summary.menus[0].uuid,
             parent: summary.menus[idx - 1].uuid,
+            level: level,
+            position: position,
             menu_content: menu,
             content_item: item,
             content: content
@@ -233,21 +257,23 @@ defmodule Glific.CSV.File do
 
   # get the content items from the row, and create the content structure
   # return as an array of content items
-  defp content_item(row, num, header_map) do
+  defp content_item(row, header_map, opts) do
     Enum.reduce(
       header_map,
       %{},
       fn {idx, values}, acc ->
         content = get_content_value(row, values)
 
-        if empty?(content),
-          do: acc,
-          else:
-            Map.put(acc, idx, %Content{
-              sr_no: num,
-              position: idx,
-              content: content
-            })
+        if empty?(content) do
+          acc
+        else
+          Map.put(acc, idx, %Content{
+                sr_no: opts.sr_no,
+                level: opts.level,
+                position: opts.position,
+                content: content
+                  })
+        end
       end
     )
   end

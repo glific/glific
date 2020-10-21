@@ -7,12 +7,16 @@ defmodule Glific.CSV.Content do
 
   @type t() :: %__MODULE__{
           sr_no: integer() | nil,
+          level: integer() | nil,
           position: integer() | nil,
           content: map() | nil
         }
 
   embedded_schema do
     field :sr_no, :integer
+
+    # The level of this menu item, helps us with layout
+    field :level, :integer
 
     # the position of this menu item, when we are stiching the higher level
     # content together
