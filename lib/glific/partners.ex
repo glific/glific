@@ -10,6 +10,7 @@ defmodule Glific.Partners do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Bigquery,
     Caches,
     Flags,
     Partners.Credential,
@@ -528,7 +529,7 @@ defmodule Glific.Partners do
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
     # when updating the bsp credentials fetch list of opted in contacts
-    credential = credential |> Repo.preload(:provider)
+    credential = credential |> Repo.preload([:provider, :organization])
 
     if credential.provider.group == "bsp" do
       fetch_opted_in_contacts(attrs)
@@ -537,9 +538,16 @@ defmodule Glific.Partners do
     # delete the cached organization and associated credentials
     Caches.remove(credential.organization_id, ["organization"])
 
-    credential
+    response = credential
     |> Credential.changeset(attrs)
     |> Repo.update()
+
+    if credential.provider.shortcode == "bigquery" do
+      org = credential.organization |> Repo.preload(:contact)
+      Bigquery.bigquery_dataset(org.contact.phone, org.id)
+    end
+
+    response
   end
 
   @doc """
