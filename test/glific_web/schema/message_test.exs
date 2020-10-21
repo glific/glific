@@ -242,33 +242,6 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message == "Resource not found"
   end
 
-  test "send message to multiple contacts", %{staff: user} do
-    name = "Margarita Quinteros"
-    {:ok, contact1} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
-
-    name = "Adelle Cavin"
-    {:ok, contact2} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
-
-    result =
-      auth_query_gql_by(:create_and_send_message_to_contacts, user,
-        variables: %{
-          "input" => %{
-            "body" => "Message body",
-            "flow" => "OUTBOUND",
-            "type" => "TEXT",
-            "sender_id" => Partners.organization_contact_id(user.organization_id)
-          },
-          "contact_ids" => [contact1.id, contact2.id]
-        }
-      )
-
-    assert {:ok, query_data} = result
-    messages = get_in(query_data, [:data, "createAndSendMessageToContacts"])
-    assert length(messages) == 2
-    [message | _] = messages
-    assert message["receiver"]["id"] == contact1.id || contact2.id
-  end
-
   test "send message to a group", %{staff: user} = attrs do
     [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
 
