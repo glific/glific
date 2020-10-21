@@ -530,10 +530,7 @@ defmodule Glific.Partners do
   def update_credential(%Credential{} = credential, attrs) do
     # when updating the bsp credentials fetch list of opted in contacts
     credential = credential |> Repo.preload([:provider, :organization])
-    if credential.provider_id == 5 do
-      org = credential.organization |> Repo.preload(:contact)
-      Bigquery.bigquery_dataset(org.contact.phone, org.id)
-    end
+
     if credential.provider.group == "bsp" do
       fetch_opted_in_contacts(attrs)
     end
@@ -544,6 +541,12 @@ defmodule Glific.Partners do
     credential
     |> Credential.changeset(attrs)
     |> Repo.update()
+
+    if credential.provider.shortcode == "bigquery" do
+      org = credential.organization |> Repo.preload(:contact)
+      Bigquery.bigquery_dataset(org.contact.phone, org.id)
+    end
+
   end
 
   @doc """
