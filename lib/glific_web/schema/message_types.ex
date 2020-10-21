@@ -18,6 +18,12 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :group_message_result do
+    field :success, :boolean
+    field :contact_ids, list_of(:id)
+    field :errors, list_of(:input_error)
+  end
+
   object :message do
     field :id, :id
     field :body, :string
@@ -143,6 +149,13 @@ defmodule GlificWeb.Schema.MessageTypes do
       arg(:contact_ids, non_null(list_of(:id)))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.create_and_send_message_to_contacts/3)
+    end
+
+    field :create_and_send_message_to_group, :group_message_result do
+      arg(:input, non_null(:message_input))
+      arg(:group_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Messages.create_and_send_message_to_group/3)
     end
 
     field :send_hsm_message, :message_result do

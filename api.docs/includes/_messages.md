@@ -497,6 +497,59 @@ Parameter | Type | Default | Description
 [<a href="#message">Message</a>] | List of messages
 
 
+## Create and send Message to contacts of a group
+
+```graphql
+mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {
+  createAndSendMessageToGroup(input: $input, groupId: $groupId) {
+    success
+    contactIds
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "body": "Test message",
+    "flow": "OUTBOUND",
+    "type": "TEXT",
+    "senderId": 1
+  },
+  "groupId": 1
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createAndSendMessageToGroup": {
+      "contactIds": [
+        "8"
+      ],
+      "errors": null,
+      "success": true
+    }
+  }
+}
+```
+
+### Query Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#messageinput">MessageInput</a> | required ||
+groupId | [<a href="#id">ID</a>]! | required ||
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+[<a href="#groupmessageresult">GroupMessageResult</a>] | List of contact ids
+
+
 ## Send hsm Message
 
 ```graphql
@@ -801,6 +854,36 @@ Parameter | Type | Default | Description
 <tr>
 <td colspan="2" valign="top"><strong>message</strong></td>
 <td valign="top"><a href="#message">Message</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### GroupMessageResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>success</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>contactIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
 <td></td>
 </tr>
 </tbody>

@@ -5,6 +5,7 @@ defmodule GlificWeb.Resolvers.Messages do
   """
 
   alias Glific.{
+    Groups.Group,
     Messages,
     Messages.Message,
     Messages.MessageMedia,
@@ -89,6 +90,24 @@ defmodule GlificWeb.Resolvers.Messages do
   def create_and_send_message_to_contacts(_, %{input: message, contact_ids: contact_ids}, _) do
     with {:ok, messages} <- Messages.create_and_send_message_to_contacts(message, contact_ids),
          do: {:ok, messages}
+  end
+
+  @doc """
+  Create and send message to contacts of a group
+  """
+  @spec create_and_send_message_to_group(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_and_send_message_to_group(_, %{input: message, group_id: group_id}, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, group} <-
+           Repo.fetch_by(Group, %{id: group_id, organization_id: user.organization_id}),
+         {:ok, contact_ids} <-
+           Messages.create_and_send_message_to_group(
+             message |> Map.merge(%{user_id: user.id}),
+             group
+           ),
+         do: {:ok, %{success: true, contact_ids: contact_ids}}
   end
 
   @doc false
