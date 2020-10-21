@@ -20,8 +20,6 @@ defmodule Glific.MessagesTest do
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_contacts(organization)
-    SeedsDev.seed_groups(organization)
-    SeedsDev.seed_group_contacts(organization)
     :ok
   end
 
@@ -396,7 +394,8 @@ defmodule Glific.MessagesTest do
     test "create and send message to a group should send message to contacts of the group",
          %{organization_id: organization_id} = attrs do
 
-      {:ok, group} = Repo.fetch_by(Group, %{label: "Default Group", organization_id: organization_id})
+      [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
+      {:ok, group} = Repo.fetch_by(Group, %{id: cg1.group_id, organization_id: organization_id})
       group = group |> Repo.preload(:contacts)
 
       contact_ids =

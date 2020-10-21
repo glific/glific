@@ -3,7 +3,6 @@ defmodule GlificWeb.Schema.MessageTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
-    Groups.Group,
     Messages.Message,
     Partners,
     Repo,
@@ -20,8 +19,6 @@ defmodule GlificWeb.Schema.MessageTest do
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
-    SeedsDev.seed_groups()
-    SeedsDev.seed_group_contacts()
     :ok
   end
 
@@ -272,8 +269,8 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message["receiver"]["id"] == contact1.id || contact2.id
   end
 
-  test "send message to a group", %{staff: user} do
-    {:ok, group} = Repo.fetch_by(Group, %{label: "Default Group", organization_id: user.organization_id})
+  test "send message to a group", %{staff: user} = attrs do
+    [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
 
     result =
       auth_query_gql_by(:create_and_send_message_to_group, user,
@@ -284,7 +281,7 @@ defmodule GlificWeb.Schema.MessageTest do
             "type" => "TEXT",
             "sender_id" => Partners.organization_contact_id(user.organization_id)
           },
-          "group_id" => group.id
+          "group_id" => cg1.group_id
         }
       )
 
