@@ -167,13 +167,15 @@ defmodule Glific.CSV.File do
       level: 0,
       position: 0
     }
+
     menu_content = content_item(row, header_data.menu, menu_opts)
     leaf_menu_idx = Enum.max(Map.keys(menu_content))
 
     # initialize position of content items
     content_opts = %{
       sr_no: num,
-      level: leaf_menu_idx, # since we start numbering from 0 internally
+      # since we start numbering from 0 internally
+      level: leaf_menu_idx,
       position: Map.get(summary.positions, leaf_menu_idx, 0)
     }
 
@@ -188,15 +190,15 @@ defmodule Glific.CSV.File do
       summary,
       fn {idx, menu}, summary ->
         {item, content, level, position, summary} =
-        if idx == leaf_menu_idx do
-          c = hd(Map.values(content_item))
-          {content_item, build_content_map(content_item), c.level, c.position, summary}
-        else
-          position = Map.get(summary.positions, idx, 0)
-          positions = Map.put(summary.positions, idx, position + 1)
-          summary = Map.put(summary, :positions, positions)
-          {nil, %{}, summary.menus[idx - 1].level + 1, position, summary}
-        end
+          if idx == leaf_menu_idx do
+            c = hd(Map.values(content_item))
+            {content_item, build_content_map(content_item), c.level, c.position, summary}
+          else
+            position = Map.get(summary.positions, idx, 0)
+            positions = Map.put(summary.positions, idx, position + 1)
+            summary = Map.put(summary, :positions, positions)
+            {nil, %{}, summary.menus[idx - 1].level + 1, position, summary}
+          end
 
         sub_menu =
           create_menu(
@@ -270,11 +272,11 @@ defmodule Glific.CSV.File do
           acc
         else
           Map.put(acc, idx, %Content{
-                sr_no: opts.sr_no,
-                level: opts.level,
-                position: opts.position,
-                content: content
-                  })
+            sr_no: opts.sr_no,
+            level: opts.level,
+            position: opts.position,
+            content: content
+          })
         end
       end
     )

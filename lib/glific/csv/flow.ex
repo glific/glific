@@ -120,7 +120,10 @@ defmodule Glific.CSV.Flow do
       |> Enum.reduce(
         [],
         fn {_str, idx}, acc ->
-          [%{uuid: Ecto.UUID.generate(), destination_uuid: Enum.at(destination_uuids, idx - 1)} | acc]
+          [
+            %{uuid: Ecto.UUID.generate(), destination_uuid: Enum.at(destination_uuids, idx - 1)}
+            | acc
+          ]
         end
       )
 
