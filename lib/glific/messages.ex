@@ -780,7 +780,7 @@ defmodule Glific.Messages do
              last_inbound_message =
                Message
                |> where([m], m.contact_id == ^contact.id)
-               |> where([m], m.oraganization_id == ^organization.id)
+               |> where([m], m.organization_id == ^organization.id)
                |> where([m], m.flow == "inbound")
                |> order_by([m], desc: m.id)
                |> first()
