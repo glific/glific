@@ -44,7 +44,7 @@ defmodule Glific.Communications.Message do
           [message]
         )
 
-      {:ok, Communications.publish_data(message, :sent_message)}
+      {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
     else
       {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
 
@@ -59,18 +59,24 @@ defmodule Glific.Communications.Message do
   def handle_success_response(response, message) do
     body = response.body |> Jason.decode!()
 
-    message
-    |> Poison.encode!()
-    |> Poison.decode!(as: %Message{})
-    |> Messages.update_message(%{
-      bsp_message_id: body["messageId"],
-      bsp_status: :enqueued,
-      status: :sent,
-      flow: :outbound,
-      sent_at: DateTime.truncate(DateTime.utc_now(), :second)
-    })
+    {:ok, message} =
+      message
+      |> Poison.encode!()
+      |> Poison.decode!(as: %Message{})
+      |> Messages.update_message(%{
+        bsp_message_id: body["messageId"],
+        bsp_status: :enqueued,
+        status: :sent,
+        flow: :outbound,
+        sent_at: DateTime.truncate(DateTime.utc_now(), :second)
+      })
 
-    Tags.remove_tag_from_all_message(message["contact_id"], ["notreplied", "unread"])
+    Tags.remove_tag_from_all_message(
+      message.contact_id,
+      ["notreplied", "unread"],
+      message.organization_id
+    )
+
     Taggers.TaggerHelper.tag_outbound_message(message)
 
     {:ok, message}
@@ -156,7 +162,7 @@ defmodule Glific.Communications.Message do
     message_params
     |> Messages.create_message()
     |> Taggers.TaggerHelper.tag_inbound_message()
-    |> Communications.publish_data(:received_message)
+    |> Communications.publish_data(:received_message, message_params.organization_id)
     |> process_message()
 
     {:ok}
@@ -170,7 +176,7 @@ defmodule Glific.Communications.Message do
     message_params
     |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
-    |> Communications.publish_data(:received_message)
+    |> Communications.publish_data(:received_message, message_params.organization_id)
     |> process_message()
 
     {:ok}
@@ -187,7 +193,7 @@ defmodule Glific.Communications.Message do
     |> Contacts.create_location()
 
     message
-    |> Communications.publish_data(:received_message)
+    |> Communications.publish_data(:received_message, message.organization_id)
     |> process_message()
 
     {:ok}

@@ -280,6 +280,7 @@ defmodule GlificWeb.Schema.SearchTest do
 
     MessageTags.update_message_tags(%{
       message_id: message.id,
+      organization_id: message.organization_id,
       add_tag_ids: [not_replied_tag.id],
       delete_tag_ids: []
     })
@@ -312,6 +313,7 @@ defmodule GlificWeb.Schema.SearchTest do
 
     MessageTags.update_message_tags(%{
       message_id: message.id,
+      organization_id: message.organization_id,
       add_tag_ids: [not_responded_tag.id],
       delete_tag_ids: []
     })
@@ -344,6 +346,7 @@ defmodule GlificWeb.Schema.SearchTest do
 
     MessageTags.update_message_tags(%{
       message_id: message.id,
+      organization_id: message.organization_id,
       add_tag_ids: [not_replied_tag.id],
       delete_tag_ids: []
     })

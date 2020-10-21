@@ -47,7 +47,8 @@ defmodule Glific.Taggers.TaggerHelper do
     {:ok, _} =
       Tags.create_message_tag(%{
         message_id: message.id,
-        tag_id: tag.id
+        tag_id: tag.id,
+        organization_id: message.organization_id
       })
 
     message
@@ -60,19 +61,19 @@ defmodule Glific.Taggers.TaggerHelper do
 
   @spec add_not_replied_tag(Message.t()) :: Message.t()
   defp add_not_replied_tag(message) do
-    Tags.remove_tag_from_all_message(message.contact_id, "notreplied")
+    Tags.remove_tag_from_all_message(message.contact_id, "notreplied", message.organization_id)
     add_tag(message, "notreplied")
   end
 
   @spec remove_not_responded_tag(Message.t()) :: Message.t()
   defp remove_not_responded_tag(message) do
-    Tags.remove_tag_from_all_message(message.contact_id, "notresponded")
+    Tags.remove_tag_from_all_message(message.contact_id, "notresponded", message.organization_id)
     message
   end
 
   @spec add_not_responded_tag(Message.t()) :: Message.t()
   defp add_not_responded_tag(message) do
-    Tags.remove_tag_from_all_message(message.contact_id, "notresponded")
+    Tags.remove_tag_from_all_message(message.contact_id, "notresponded", message.organization_id)
     add_tag(message, "notresponded")
   end
 end

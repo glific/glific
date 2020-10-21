@@ -241,18 +241,16 @@ defmodule Glific.Tags do
 
   """
   @spec create_message_tag(map()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
-  def create_message_tag(attrs \\ %{}) do
+  def create_message_tag(%{organization_id: organization_id} = attrs) do
     {status, response} =
       %MessageTag{}
       |> MessageTag.changeset(attrs)
       |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])
 
-    if status == :ok do
-      Communications.publish_data({status, response}, :created_message_tag)
-      {:ok, response}
-    else
-      {:error, response}
-    end
+    if status == :ok,
+      do: Communications.publish_data(response, :created_message_tag, organization_id)
+
+    {status, response}
   end
 
   @doc """
@@ -281,14 +279,14 @@ defmodule Glific.Tags do
   We will generalize this function and move it to Repo.ex when we get a better
   handle on how to do so :)
   """
-  @spec delete_message_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
-  def delete_message_tag_by_ids(message_id, tag_ids) when is_list(tag_ids) do
+  @spec delete_message_tag_by_ids(integer, [], non_neg_integer) :: {integer(), nil | [term()]}
+  def delete_message_tag_by_ids(message_id, tag_ids, organization_id) when is_list(tag_ids) do
     query =
       MessageTag
       |> where([m], m.message_id == ^message_id and m.tag_id in ^tag_ids)
 
     Repo.all(query)
-    |> publish_delete_message
+    |> publish_delete_message(organization_id)
 
     Repo.delete_all(query)
   end
@@ -339,18 +337,16 @@ defmodule Glific.Tags do
 
   """
   @spec create_contact_tag(map()) :: {:ok, ContactTag.t()} | {:error, Ecto.Changeset.t()}
-  def create_contact_tag(attrs \\ %{}) do
+  def create_contact_tag(%{organization_id: organization_id} = attrs) do
     {status, response} =
       %ContactTag{}
       |> ContactTag.changeset(attrs)
       |> Repo.insert(on_conflict: :replace_all, conflict_target: [:contact_id, :tag_id])
 
-    if status == :ok do
-      Communications.publish_data({status, response}, :created_contact_tag)
-      {:ok, response}
-    else
-      {:error, response}
-    end
+    if status == :ok,
+      do: Communications.publish_data(response, :created_contact_tag, organization_id)
+
+    {status, response}
   end
 
   @doc """
@@ -390,13 +386,14 @@ defmodule Glific.Tags do
   @doc """
   Remove a specific tag from contact messages
   """
-  @spec remove_tag_from_all_message(integer(), String.t()) :: list()
-  def remove_tag_from_all_message(contact_id, tag_shortcode) when is_binary(tag_shortcode) do
-    remove_tag_from_all_message(contact_id, [tag_shortcode])
+  @spec remove_tag_from_all_message(integer(), String.t(), non_neg_integer) :: list()
+  def remove_tag_from_all_message(contact_id, tag_shortcode, organization_id)
+      when is_binary(tag_shortcode) do
+    remove_tag_from_all_message(contact_id, [tag_shortcode], organization_id)
   end
 
-  @spec remove_tag_from_all_message(integer(), [String.t()]) :: list()
-  def remove_tag_from_all_message(contact_id, tag_shortcode_list) do
+  @spec remove_tag_from_all_message(integer(), [String.t()], non_neg_integer) :: list()
+  def remove_tag_from_all_message(contact_id, tag_shortcode_list, organization_id) do
     query =
       from mt in MessageTag,
         join: m in assoc(mt, :message),
@@ -404,7 +401,7 @@ defmodule Glific.Tags do
         where: m.contact_id == ^contact_id and t.shortcode in ^tag_shortcode_list
 
     Repo.all(query)
-    |> publish_delete_message
+    |> publish_delete_message(organization_id)
 
     {_, deleted_rows} =
       select(query, [mt], [mt.message_id])
@@ -413,14 +410,14 @@ defmodule Glific.Tags do
     List.flatten(deleted_rows)
   end
 
-  @spec publish_delete_message(list) :: {:ok}
-  defp publish_delete_message([]), do: {:ok}
+  @spec publish_delete_message(list, non_neg_integer) :: {:ok}
+  defp publish_delete_message([], _organization_id), do: {:ok}
 
-  defp publish_delete_message(message_tags) do
+  defp publish_delete_message(message_tags, organization_id) do
     _list =
       message_tags
       |> Enum.reduce([], fn message_tag, _acc ->
-        Communications.publish_data({:ok, message_tag}, :deleted_message_tag)
+        Communications.publish_data(message_tag, :deleted_message_tag, organization_id)
       end)
 
     {:ok}
@@ -431,27 +428,9 @@ defmodule Glific.Tags do
   """
   @spec delete_contact_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
   def delete_contact_tag_by_ids(contact_id, tag_ids) when is_list(tag_ids) do
-    query =
-      ContactTag
-      |> where([m], m.contact_id == ^contact_id and m.tag_id in ^tag_ids)
-
-    Repo.all(query)
-    |> publish_delete_contact
-
-    Repo.delete_all(query)
-  end
-
-  @spec publish_delete_contact(list) :: {:ok}
-  defp publish_delete_contact([]), do: {:ok}
-
-  defp publish_delete_contact(contact_tags) do
-    _list =
-      contact_tags
-      |> Enum.reduce([], fn contact_tag, _acc ->
-        Communications.publish_data({:ok, contact_tag}, :deleted_contact_tag)
-      end)
-
-    {:ok}
+    ContactTag
+    |> where([m], m.contact_id == ^contact_id and m.tag_id in ^tag_ids)
+    |> Repo.delete_all()
   end
 
   @doc """
@@ -468,17 +447,9 @@ defmodule Glific.Tags do
   """
   @spec create_template_tag(map()) :: {:ok, TemplateTag.t()} | {:error, Ecto.Changeset.t()}
   def create_template_tag(attrs \\ %{}) do
-    {status, response} =
-      %TemplateTag{}
-      |> TemplateTag.changeset(attrs)
-      |> Repo.insert(on_conflict: :replace_all, conflict_target: [:template_id, :tag_id])
-
-    if status == :ok do
-      Communications.publish_data({status, response}, :created_template_tag)
-      {:ok, response}
-    else
-      {:error, response}
-    end
+    %TemplateTag{}
+    |> TemplateTag.changeset(attrs)
+    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:template_id, :tag_id])
   end
 
   @doc """
@@ -486,26 +457,8 @@ defmodule Glific.Tags do
   """
   @spec delete_template_tag_by_ids(integer, []) :: {integer(), nil | [term()]}
   def delete_template_tag_by_ids(template_id, tag_ids) when is_list(tag_ids) do
-    query =
-      TemplateTag
-      |> where([m], m.template_id == ^template_id and m.tag_id in ^tag_ids)
-
-    Repo.all(query)
-    |> publish_delete_template
-
-    Repo.delete_all(query)
-  end
-
-  @spec publish_delete_template(list) :: {:ok}
-  defp publish_delete_template([]), do: {:ok}
-
-  defp publish_delete_template(template_tags) do
-    _list =
-      template_tags
-      |> Enum.reduce([], fn template_tag, _acc ->
-        Communications.publish_data({:ok, template_tag}, :deleted_template_tag)
-      end)
-
-    {:ok}
+    TemplateTag
+    |> where([m], m.template_id == ^template_id and m.tag_id in ^tag_ids)
+    |> Repo.delete_all()
   end
 end

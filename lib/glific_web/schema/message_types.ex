@@ -6,8 +6,12 @@ defmodule GlificWeb.Schema.MessageTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias Glific.Repo
-  alias GlificWeb.Resolvers
-  alias GlificWeb.Schema.Middleware.Authorize
+
+  alias GlificWeb.{
+    Resolvers,
+    Schema,
+    Schema.Middleware.Authorize
+  }
 
   object :message_result do
     field :message, :message
@@ -165,17 +169,19 @@ defmodule GlificWeb.Schema.MessageTypes do
 
   object :message_subscriptions do
     field :received_message, :message do
-      config(fn _args, _info ->
-        {:ok, topic: :glific}
-      end)
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(&Resolvers.Messages.publish_message/3)
     end
 
     field :sent_message, :message do
-      config(fn _args, _info ->
-        {:ok, topic: :glific}
-      end)
+      arg(:organization_id, non_null(:id))
 
-      resolve(&Resolvers.Messages.publish_sent_message/3)
+      config(&Schema.config_fun/2)
+
+      resolve(&Resolvers.Messages.publish_message/3)
     end
   end
 end

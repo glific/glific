@@ -313,7 +313,12 @@ defmodule Glific.TagsTest do
 
       # we love upserts!
       assert {:ok, %MessageTag{}}
-      Tags.create_message_tag(%{message_id: message.id, tag_id: tag.id})
+
+      Tags.create_message_tag(%{
+        message_id: message.id,
+        tag_id: tag.id,
+        organization_id: organization_id
+      })
     end
   end
 
@@ -373,7 +378,11 @@ defmodule Glific.TagsTest do
 
       # using upsert
       assert {:ok, %ContactTag{}} =
-               Tags.create_contact_tag(%{contact_id: contact.id, tag_id: tag.id})
+               Tags.create_contact_tag(%{
+                 contact_id: contact.id,
+                 tag_id: tag.id,
+                 organization_id: organization_id
+               })
     end
 
     test "remove_tag_from_all_message/2 removes teh tag and return the message ids ", %{
@@ -399,11 +408,29 @@ defmodule Glific.TagsTest do
           %{shortcode: "unread", organization_id: organization_id}
         )
 
-      {:ok, message1_tag} = Tags.create_message_tag(%{message_id: message_1.id, tag_id: tag.id})
-      {:ok, message2_tag} = Tags.create_message_tag(%{message_id: message_2.id, tag_id: tag.id})
-      {:ok, message3_tag} = Tags.create_message_tag(%{message_id: message_3.id, tag_id: tag.id})
+      {:ok, message1_tag} =
+        Tags.create_message_tag(%{
+          message_id: message_1.id,
+          tag_id: tag.id,
+          organization_id: organization_id
+        })
 
-      untag_message_id = Tags.remove_tag_from_all_message(message_1.contact_id, "unread")
+      {:ok, message2_tag} =
+        Tags.create_message_tag(%{
+          message_id: message_2.id,
+          tag_id: tag.id,
+          organization_id: organization_id
+        })
+
+      {:ok, message3_tag} =
+        Tags.create_message_tag(%{
+          message_id: message_3.id,
+          tag_id: tag.id,
+          organization_id: organization_id
+        })
+
+      untag_message_id =
+        Tags.remove_tag_from_all_message(message_1.contact_id, "unread", organization_id)
 
       assert message_1.id in untag_message_id
       assert message_2.id in untag_message_id

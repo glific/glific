@@ -6,8 +6,12 @@ defmodule GlificWeb.Schema.MessageTagTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias Glific.Repo
-  alias GlificWeb.Resolvers
-  alias GlificWeb.Schema.Middleware.Authorize
+
+  alias GlificWeb.{
+    Resolvers,
+    Schema,
+    Schema.Middleware.Authorize
+  }
 
   object :message_tag_result do
     field :message_tag, :message_tag
@@ -60,35 +64,19 @@ defmodule GlificWeb.Schema.MessageTagTypes do
 
   object :message_tag_subscriptions do
     field :created_message_tag, :message_tag do
-      config(fn _args, _info ->
-        {:ok, topic: :glific}
-      end)
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
 
       resolve(fn message_tag, _, _ -> {:ok, message_tag} end)
     end
 
     field :deleted_message_tag, :message_tag do
-      config(fn _args, _info ->
-        {:ok, topic: :glific}
-      end)
+      arg(:organization_id, non_null(:id))
 
-      trigger(
-        [:delete_message_tag],
-        :glific
-      )
+      config(&Schema.config_fun/2)
 
       resolve(fn message_tag, _, _ -> {:ok, message_tag} end)
-    end
-
-    field :update_message_tags, :message_tags do
-      config(fn _args, _info ->
-        {:ok, topic: :glific}
-      end)
-
-      trigger(
-        [:update_message_tags],
-        :glific
-      )
     end
   end
 end

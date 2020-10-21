@@ -6,6 +6,8 @@ defmodule GlificWeb.APIAuthPlug do
   alias Pow.{Config, Plug, Store.CredentialsCache}
   alias PowPersistentSession.Store.PersistentSessionCache
 
+  alias GlificWeb.Endpoint
+
   @doc """
   Fetches the user from access token.
   """
@@ -13,11 +15,24 @@ defmodule GlificWeb.APIAuthPlug do
   @spec fetch(Conn.t(), Config.t()) :: {Conn.t(), map() | nil}
   def fetch(conn, config) do
     with {:ok, signed_token} <- fetch_access_token(conn),
-         {:ok, token} <- verify_token(conn, signed_token, config),
-         {user, _metadata} <- CredentialsCache.get(store_config(config), token) do
+         {user, _metadata} <- get_credentials(conn, signed_token, config) do
       {conn, user}
     else
       _any -> {conn, nil}
+    end
+  end
+
+  @doc """
+  helper function that can be called from the socket token verification to
+  validate the token
+  """
+  # @spec get_credentials(Conn.t(), binary(), Config.t() | nil) :: {map(), [any()]} | nil
+  def get_credentials(conn, signed_token, config) do
+    with {:ok, token} <- verify_token(conn, signed_token, config),
+         {user, metadata} <- CredentialsCache.get(store_config(config), token) do
+      {user, metadata}
+    else
+      _any -> nil
     end
   end
 
@@ -35,7 +50,7 @@ defmodule GlificWeb.APIAuthPlug do
 
     # 30 mins in seconds - this is the default, we wont change it
     token_expiry_time = DateTime.utc_now() |> DateTime.add(30 * 60, :second)
-
+    fingerprint = conn.private[:pow_api_session_fingerprint] || Pow.UUID.generate()
     access_token = Pow.UUID.generate()
     renewal_token = Pow.UUID.generate()
 
@@ -45,12 +60,16 @@ defmodule GlificWeb.APIAuthPlug do
       |> Conn.put_private(:api_renewal_token, sign_token(conn, renewal_token, config))
       |> Conn.put_private(:api_token_expiry_time, token_expiry_time)
 
-    CredentialsCache.put(store_config, access_token, {user, [renewal_token: renewal_token]})
+    CredentialsCache.put(
+      store_config,
+      access_token,
+      {user, fingerprint: fingerprint, renewal_token: renewal_token}
+    )
 
     PersistentSessionCache.put(
       store_config,
       renewal_token,
-      {[id: user.id], [access_token: access_token]}
+      {[id: user.id], fingerprint: fingerprint, access_token: access_token}
     )
 
     {conn, user}
@@ -71,6 +90,8 @@ defmodule GlificWeb.APIAuthPlug do
          {_user, metadata} <- CredentialsCache.get(store_config, token) do
       PersistentSessionCache.delete(store_config, metadata[:renewal_token])
       CredentialsCache.delete(store_config, token)
+
+      Endpoint.broadcast("users_socket:" <> metadata[:fingerprint], "disconnect", %{})
     else
       _any -> :ok
     end
@@ -84,6 +105,10 @@ defmodule GlificWeb.APIAuthPlug do
   The access token, if any, will be deleted by fetching it from the renewal
   token metadata. The renewal token will be deleted from the store after the
   it has been fetched.
+
+  `:pow_api_session_fingerprint` will be set in `conn.private` with the
+  `:fingerprint` fetched from the metadata, to ensure it will be persisted in
+  the tokens generated in `create/2`.
   """
   @spec renew(Conn.t(), Config.t()) :: {Conn.t(), map() | nil}
   def renew(conn, config) do
@@ -95,7 +120,9 @@ defmodule GlificWeb.APIAuthPlug do
       CredentialsCache.delete(store_config, metadata[:access_token])
       PersistentSessionCache.delete(store_config, token)
 
-      load_and_create_session(conn, {clauses, metadata}, config)
+      conn
+      |> Conn.put_private(:pow_api_session_fingerprint, metadata[:fingerprint])
+      |> load_and_create_session({clauses, metadata}, config)
     else
       _any -> {conn, nil}
     end
@@ -106,9 +133,15 @@ defmodule GlificWeb.APIAuthPlug do
   """
   @spec delete_all_user_sessions(Config.t(), map()) :: :ok
   def delete_all_user_sessions(config, user) do
-    CredentialsCache.sessions(store_config(config), user)
+    store_config = store_config(config)
+
+    CredentialsCache.sessions(store_config, user)
     |> Enum.each(fn token ->
-      CredentialsCache.delete(store_config(config), token)
+      {_user, metadata} = CredentialsCache.get(store_config, token)
+      PersistentSessionCache.delete(store_config, metadata[:renewal_token])
+      CredentialsCache.delete(store_config, token)
+
+      Endpoint.broadcast("users_socket:" <> metadata[:fingerprint], "disconnect", %{})
     end)
   end
 

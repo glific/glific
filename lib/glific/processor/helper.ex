@@ -19,7 +19,8 @@ defmodule Glific.Processor.Helper do
       Tags.create_message_tag(%{
         message_id: message.id,
         tag_id: tag_id,
-        value: value
+        value: value,
+        organization_id: message.organization_id
       })
 
     message

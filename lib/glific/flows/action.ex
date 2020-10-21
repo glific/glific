@@ -264,7 +264,12 @@ defmodule Glific.Flows.Action do
         [],
         fn label, _acc ->
           {:ok, tag_id} = Glific.parse_maybe_integer(label["uuid"])
-          Tags.create_message_tag(%{message_id: context.last_message.id, tag_id: tag_id})
+
+          Tags.create_message_tag(%{
+            message_id: context.last_message.id,
+            tag_id: tag_id,
+            organization_id: context.contact.organization_id
+          })
         end
       )
 
