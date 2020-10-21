@@ -37,23 +37,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_2 do
           })
       end
 
-    preference_tag =
-      case Repo.fetch_by(Tag, %{shortcode: "preference", organization_id: organization_id}) do
-        {:ok, preference_tag} ->
-          preference_tag
-
-        {:error, _} ->
-          Repo.insert!(%Tag{
-            label: "Preference",
-            shortcode: "preference",
-            description: "Marking message received for the preference flow",
-            is_reserved: false,
-            language_id: en_us.id,
-            parent_id: flow_tag.id,
-            organization_id: organization_id
-          })
-      end
-
     registration_tag =
       case Repo.fetch_by(Tag, %{shortcode: "registration", organization_id: organization_id}) do
         {:ok, registration_tag} ->
