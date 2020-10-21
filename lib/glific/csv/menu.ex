@@ -35,12 +35,12 @@ defmodule Glific.CSV.Menu do
 
     field :sr_no, :integer
 
+    # The level of this menu item, helps us with layout
+    field :level, :integer
+
     # the position of this menu item, when we are stitching the higher level
     # content together
     field :position, :integer
-
-    # The level of this menu item, helps us with layout
-    field :level, :integer
 
     # The root of this flow
     field :root, Ecto.UUID

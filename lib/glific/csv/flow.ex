@@ -29,7 +29,9 @@ defmodule Glific.CSV.Flow do
 
     # first generate the nodes and localization (and later _ui) for
     # this node, then do it recursively for each of its menu items
-    gen_flow_helper(json_map, root)
+    json_map = gen_flow_helper(json_map, root)
+
+    Map.put(json_map, :nodes, Enum.reverse(json_map.nodes))
   end
 
   @spec gen_flow_helper(map(), Menu.t()) :: map()
@@ -67,7 +69,7 @@ defmodule Glific.CSV.Flow do
       ]
     }
 
-    exits = Enum.reverse(get_exits(node.content["en"]))
+    exits = Enum.reverse(get_exits(node.content["en"], get_destination_uuids(node)))
     cases = Enum.reverse(get_cases(node.content["en"]))
     {categories, default_category_uuid} = get_categories(node.content["en"], exits, cases)
 
@@ -87,7 +89,7 @@ defmodule Glific.CSV.Flow do
 
     json_map =
       json_map
-      |> Map.update!(:nodes, fn n -> [node_json, router_json | n] end)
+      |> Map.update!(:nodes, fn n -> [router_json, node_json | n] end)
       |> add_localization(node, :menu)
 
     # now go thru all the sub_menu and call json_map for each of them
@@ -98,17 +100,27 @@ defmodule Glific.CSV.Flow do
     )
   end
 
+  defp get_destination_uuids(node) do
+    # collect all the destination uuids from the sub_menu
+    node.sub_menus
+    |> Enum.reduce(
+      [],
+      fn s, acc -> [s.node_uuid | acc] end
+    )
+    |> Enum.reverse()
+  end
+
   defp indexed_content(content),
     do: content |> Map.values() |> Enum.with_index(1)
 
-  defp get_exits(content) do
+  defp get_exits(content, destination_uuids) do
     exits =
       content
       |> indexed_content()
       |> Enum.reduce(
         [],
-        fn _, acc ->
-          [%{uuid: Ecto.UUID.generate(), destination_uuid: Ecto.UUID.generate()} | acc]
+        fn {_str, idx}, acc ->
+          [%{uuid: Ecto.UUID.generate(), destination_uuid: Enum.at(destination_uuids, idx - 1)} | acc]
         end
       )
 
