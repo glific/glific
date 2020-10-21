@@ -768,7 +768,10 @@ defmodule Glific.Messages do
     organization = Partners.organization(message_params.organization_id)
 
     with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{phone: message_params.sender.phone}),
+           Repo.fetch_by(Contact, %{
+             phone: message_params.sender.phone,
+             organization_id: organization.id
+           }),
          true <-
            Timex.diff(DateTime.utc_now(), contact.last_message_at, :minutes) <
              organization.session_limit,
@@ -777,6 +780,7 @@ defmodule Glific.Messages do
              last_inbound_message =
                Message
                |> where([m], m.contact_id == ^contact.id)
+               |> where([m], m.oraganization_id == ^organization.id)
                |> where([m], m.flow == "inbound")
                |> order_by([m], desc: m.id)
                |> first()
