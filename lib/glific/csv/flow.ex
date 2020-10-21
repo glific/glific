@@ -24,7 +24,9 @@ defmodule Glific.CSV.Flow do
       language: "base",
       nodes: [],
       localization: %{},
-      _ui: %{}
+      _ui: %{
+        nodes: %{}
+      }
     }
 
     # first generate the nodes and localization (and later _ui) for
@@ -91,6 +93,7 @@ defmodule Glific.CSV.Flow do
       json_map
       |> Map.update!(:nodes, fn n -> [router_json, node_json | n] end)
       |> add_localization(node, :menu)
+      |> add_ui(node, :menu)
 
     # now go thru all the sub_menu and call json_map for each of them
     Enum.reduce(
@@ -98,6 +101,46 @@ defmodule Glific.CSV.Flow do
       json_map,
       fn menu, acc -> gen_flow_helper(acc, menu) end
     )
+  end
+
+  defp add_ui(json_map, node, :content = _type) do
+    nodes =
+      json_map._ui.nodes
+      |> Map.put(
+        node.uuids.node,
+        %{
+          position: %{
+            top: node.level * 400,
+            left: node.position * 200
+          },
+          type: "execute_actions"
+        }
+      )
+
+    put_in(json_map, [:_ui, :nodes], nodes)
+  end
+
+  defp add_ui(json_map, node, :menu = _type) do
+    nodes =
+      json_map._ui.nodes
+      |> Map.put(
+        node.uuids.router,
+        %{
+          position: %{
+            top: node.level * 400 + 200,
+            left: node.position * 200
+          },
+          config: %{
+            cases: %{}
+          },
+          type: "wait_for_response"
+        }
+      )
+
+      # also add the content node
+      json_map
+      |> add_ui(node, :content)
+      |> put_in([:_ui, :nodes], nodes)
   end
 
   defp get_destination_uuids(node) do
@@ -209,6 +252,7 @@ defmodule Glific.CSV.Flow do
     json_map
     |> Map.update!(:nodes, fn n -> [node_json | n] end)
     |> add_localization(node, :content)
+    |> add_ui(node, :content)
   end
 
   # Get the content for language
