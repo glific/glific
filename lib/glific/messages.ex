@@ -367,32 +367,12 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message_to_contacts(map(), []) :: {:ok, Message.t()}
+  @spec create_and_send_message_to_contacts(map(), []) :: {:ok, list()}
   def create_and_send_message_to_contacts(message_params, contact_ids) do
-    messages =
-      contact_ids
-      |> Enum.reduce([], fn contact_id, messages ->
-        message_params = Map.put(message_params, :receiver_id, contact_id)
-
-        with {:ok, message} <- create_and_send_message(message_params) do
-          [message | messages]
-        end
-      end)
-
-    {:ok, messages}
-  end
-
-  @doc """
-  Create and send message to all contacts of a group
-  """
-  @spec create_and_send_message_to_group(map(), Group.t()) :: {:ok, list()}
-  def create_and_send_message_to_group(message_params, group) do
-    group = group |> Repo.preload(:contacts)
-
     contact_ids =
-      group.contacts
-      |> Enum.reduce([], fn contact, contact_ids ->
-        message_params = Map.put(message_params, :receiver_id, contact.id)
+      contact_ids
+      |> Enum.reduce([], fn contact_id, contact_ids ->
+        message_params = Map.put(message_params, :receiver_id, contact_id)
 
         case create_and_send_message(message_params) do
           {:ok, message} ->
@@ -404,6 +384,20 @@ defmodule Glific.Messages do
       end)
 
     {:ok, contact_ids}
+  end
+
+  @doc """
+  Create and send message to all contacts of a group
+  """
+  @spec create_and_send_message_to_group(map(), Group.t()) :: {:ok, list()}
+  def create_and_send_message_to_group(message_params, group) do
+    group = group |> Repo.preload(:contacts)
+
+    contact_ids =
+      group.contacts
+      |> Enum.map(fn contact -> contact.id end)
+
+    create_and_send_message_to_contacts(message_params, contact_ids)
   end
 
   @doc """

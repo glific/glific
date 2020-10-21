@@ -372,14 +372,25 @@ defmodule Glific.MessagesTest do
 
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
 
-      {:ok, [message1, message2 | _]} =
-        Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
+      assert {:ok, [contact1_id, contact2_id | _]} =
+               Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
 
       assert_enqueued(worker: Worker)
       Oban.drain_queue(queue: :gupshup)
 
-      message1 = Messages.get_message!(message1.id)
-      message2 = Messages.get_message!(message2.id)
+      assert {:ok, message1} =
+               Repo.fetch_by(Message, %{
+                 contact_id: contact1_id,
+                 message_number: 0,
+                 body: valid_attrs.body
+               })
+
+      assert {:ok, message2} =
+               Repo.fetch_by(Message, %{
+                 contact_id: contact2_id,
+                 message_number: 0,
+                 body: valid_attrs.body
+               })
 
       assert message1.bsp_message_id != nil
       assert message1.bsp_status == :enqueued
@@ -391,9 +402,32 @@ defmodule Glific.MessagesTest do
       assert message2.sent_at != nil
     end
 
+    test "create and send message to multiple contacts should not send message to a contact with none bsp_status",
+         %{organization_id: organization_id} = attrs do
+      {:ok, receiver} =
+        Contacts.create_contact(
+          @receiver_attrs
+          |> Map.merge(%{
+            phone: Phone.EnUs.phone(),
+            organization_id: organization_id,
+            bsp_status: :none
+          })
+        )
+
+      valid_attrs = %{
+        body: "test message",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+
+      assert {:ok, []} =
+               Messages.create_and_send_message_to_contacts(message_attrs, [receiver.id])
+    end
+
     test "create and send message to a group should send message to contacts of the group",
          %{organization_id: organization_id} = attrs do
-
       [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
       {:ok, group} = Repo.fetch_by(Group, %{id: cg1.group_id, organization_id: organization_id})
       group = group |> Repo.preload(:contacts)
@@ -411,7 +445,7 @@ defmodule Glific.MessagesTest do
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
 
       assert {:ok, [contact1_id, contact2_id | _]} =
-        Messages.create_and_send_message_to_group(message_attrs, group)
+               Messages.create_and_send_message_to_group(message_attrs, group)
 
       # message should be sent only to the contacts of the group
       assert [contact1_id, contact2_id] -- contact_ids == []

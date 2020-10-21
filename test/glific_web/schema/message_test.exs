@@ -360,7 +360,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message["body"] == "A message for " <> contact.name
   end
 
-  test "create and send a message to in valid contact will not create a message", %{staff: user} do
+  test "create and send a message to invalid contact will not create a message", %{staff: user} do
     contact = Fixtures.contact_fixture()
     Contacts.contact_opted_out(contact.phone, contact.organization_id, DateTime.utc_now())
     message_body = Faker.Lorem.sentence()

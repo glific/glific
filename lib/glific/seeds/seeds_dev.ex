@@ -394,7 +394,9 @@ if Code.ensure_loaded?(Faker) do
     def seed_group_contacts(organization \\ nil) do
       organization = get_organization(organization)
 
-      [_glific_admin, c1, c2 | _] = Contacts.list_contacts(%{filter: %{organization_id: organization.id}})
+      [_glific_admin, c1, c2 | _] =
+        Contacts.list_contacts(%{filter: %{organization_id: organization.id}})
+
       [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
       Repo.insert!(%Groups.ContactGroup{

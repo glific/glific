@@ -84,14 +84,6 @@ defmodule GlificWeb.Resolvers.Messages do
          do: {:ok, %{message: message}}
   end
 
-  @doc false
-  @spec create_and_send_message_to_contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def create_and_send_message_to_contacts(_, %{input: message, contact_ids: contact_ids}, _) do
-    with {:ok, messages} <- Messages.create_and_send_message_to_contacts(message, contact_ids),
-         do: {:ok, messages}
-  end
-
   @doc """
   Create and send message to contacts of a group
   """

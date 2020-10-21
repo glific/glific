@@ -144,13 +144,6 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.create_and_send_message/3)
     end
 
-    field :create_and_send_message_to_contacts, list_of(:message) do
-      arg(:input, non_null(:message_input))
-      arg(:contact_ids, non_null(list_of(:id)))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Messages.create_and_send_message_to_contacts/3)
-    end
-
     field :create_and_send_message_to_group, :group_message_result do
       arg(:input, non_null(:message_input))
       arg(:group_id, non_null(:id))
