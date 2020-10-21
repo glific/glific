@@ -39,10 +39,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_1 do
       end
 
     flow_activity_tag =
-      case Repo.fetch_by(Tag, %{shortcode: "flow", organization_id: organization_id}) do
-        {:ok, flow_tag} ->
-          flow_tag
-
+      case Repo.fetch_by(Tag, %{shortcode: "activities", organization_id: organization_id}) do
+        {:ok, flow_activity_tag} ->
+          flow_activity_tag
         {:error, _} ->
           Repo.insert!(%Tag{
             label: "Activities",
