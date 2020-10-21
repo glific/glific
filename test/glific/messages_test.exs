@@ -7,6 +7,7 @@ defmodule Glific.MessagesTest do
   alias Glific.{
     Contacts,
     Fixtures,
+    Groups.Group,
     Messages,
     Messages.Message,
     Messages.MessageMedia,
@@ -19,6 +20,8 @@ defmodule Glific.MessagesTest do
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_contacts(organization)
+    SeedsDev.seed_groups(organization)
+    SeedsDev.seed_group_contacts(organization)
     :ok
   end
 
@@ -388,6 +391,31 @@ defmodule Glific.MessagesTest do
       assert message2.bsp_status == :enqueued
       assert message2.flow == :outbound
       assert message2.sent_at != nil
+    end
+
+    test "create and send message to a group should send message to contacts of the group",
+         %{organization_id: organization_id} = attrs do
+
+      {:ok, group} = Repo.fetch_by(Group, %{label: "Default Group", organization_id: organization_id})
+      group = group |> Repo.preload(:contacts)
+
+      contact_ids =
+        group.contacts
+        |> Enum.map(fn contact -> contact.id end)
+
+      valid_attrs = %{
+        body: "test message",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+
+      assert {:ok, [contact1_id, contact2_id | _]} =
+        Messages.create_and_send_message_to_group(message_attrs, group)
+
+      # message should be sent only to the contacts of the group
+      assert [contact1_id, contact2_id] -- contact_ids == []
     end
 
     test "send hsm message incorrect parameters",
