@@ -5,9 +5,9 @@ defmodule Glific.CSV.Flow do
   back in the database
   """
 
-     ## we need to put the default height and default width based on the content
-    @default_height  400
-    @default_width  200
+  ## we need to put the default height and default width based on the content
+  @default_height 400
+  @default_width 200
 
   alias Glific.{
     CSV.Menu
@@ -49,11 +49,40 @@ defmodule Glific.CSV.Flow do
     end
   end
 
+  defp add_label(actions, %{label: nil} = _node), do: actions
+
+  defp add_label(actions, %{label: label} = _node),
+    do: [
+      %{
+        labels: [
+          %{
+            name: label,
+            uuid: 1
+          }
+        ],
+        type: "add_input_labels",
+        uuid: Ecto.UUID.generate()
+      }
+      | actions
+    ]
+
   # this is a menu node
   # generate the message and the localization
   # call gen_flow_helper on each sub_menu
   @spec gen_flow_menu(map(), Menu.t()) :: map()
   defp gen_flow_menu(json_map, node) do
+    actions =
+      [
+        %{
+          uuid: node.uuids.action,
+          quick_replies: [],
+          attachments: [],
+          text: menu_content(node.content["en"], "en"),
+          type: "send_msg"
+        }
+      ]
+      |> add_label(node)
+
     node_json = %{
       uuid: node.uuids.node,
       exits: [
@@ -65,18 +94,12 @@ defmodule Glific.CSV.Flow do
           destination_uuid: node.uuids.router
         }
       ],
-      actions: [
-        %{
-          uuid: node.uuids.action,
-          quick_replies: [],
-          attachments: [],
-          text: menu_content(node.content["en"], "en"),
-          type: "send_msg"
-        }
-      ]
+      actions: actions
     }
 
-    exits = Enum.reverse(get_exits(node.content["en"], get_destination_uuids(node), node.uuids.node))
+    exits =
+      Enum.reverse(get_exits(node.content["en"], get_destination_uuids(node), node.uuids.node))
+
     cases = Enum.reverse(get_cases(node.content["en"]))
     {categories, default_category_uuid} = get_categories(node.content["en"], exits, cases)
 
@@ -235,6 +258,18 @@ defmodule Glific.CSV.Flow do
   # generate the message and the localization
   @spec gen_flow_content(map(), Menu.t()) :: map()
   defp gen_flow_content(json_map, node) do
+    actions =
+      [
+        %{
+          uuid: node.uuids.action,
+          attachmnents: [],
+          quick_replies: [],
+          text: language_content(node.content["en"], "en"),
+          type: "send_msg"
+        }
+      ]
+      |> add_label(node)
+
     node_json = %{
       uuid: node.uuids.node,
       exits: [
@@ -245,15 +280,7 @@ defmodule Glific.CSV.Flow do
           destination_uuid: nil
         }
       ],
-      actions: [
-        %{
-          uuid: node.uuids.action,
-          attachmnents: [],
-          quick_replies: [],
-          text: language_content(node.content["en"], "en"),
-          type: "send_msg",
-        }
-      ]
+      actions: actions
     }
 
     json_map

@@ -14,6 +14,7 @@ defmodule Glific.CSV.Menu do
           sr_no: integer() | nil,
           level: integer() | nil,
           position: integer() | nil,
+          label: String.t() | nil,
           content: Content.t() | nil,
           menu_content: Content.t() | nil,
           content_item: Content.t() | nil,
@@ -22,10 +23,13 @@ defmodule Glific.CSV.Menu do
 
   embedded_schema do
     # for now this includes:
-    # main, node, action, router, exit, root and parent
+    # main, node, action, router, exit, label,  root and parent
     field :uuids, :map
 
     field :sr_no, :integer
+
+    # the label to attach to this menu item
+    field :label, :string
 
     # The level of this menu item, helps us with layout
     field :level, :integer

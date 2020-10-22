@@ -58,9 +58,9 @@ defmodule Glific.CSV.File do
     {:ok, json} = Jason.encode_to_iodata(json_map, pretty: true)
 
     :ok =
-    output
-    |> Path.expand(__DIR__)
-    |> File.write(json)
+      output
+      |> Path.expand(__DIR__)
+      |> File.write(json)
 
     summary
     |> Map.put(:root, summary.menus[0])
@@ -79,7 +79,8 @@ defmodule Glific.CSV.File do
     meta_data = %{
       language: get_languages(header),
       menu: get_keyword_maps(header, "menu"),
-      content: get_keyword_maps(header, "content")
+      content: get_keyword_maps(header, "content"),
+      label: get_keyword_maps(header, "label", true)
     }
 
     {rows, meta_data}
@@ -101,8 +102,8 @@ defmodule Glific.CSV.File do
   end
 
   # get the mapping of menu and content items to their column position
-  @spec get_keyword_maps(list(), String.t()) :: map()
-  defp get_keyword_maps(header, key) do
+  @spec get_keyword_maps(list(), String.t(), boolean()) :: map()
+  defp get_keyword_maps(header, key, ignore_language \\ false) do
     header
     |> Enum.with_index()
     |> Enum.reduce(
@@ -115,8 +116,13 @@ defmodule Glific.CSV.File do
         else
           [language, _, menu_idx] = s
           menu_idx = String.to_integer(menu_idx)
-          idx = Map.get(acc, menu_idx, %{})
-          Map.put(acc, menu_idx, Map.put(idx, language, index))
+
+          if ignore_language do
+            Map.put(acc, menu_idx, index)
+          else
+            idx = Map.get(acc, menu_idx, %{})
+            Map.put(acc, menu_idx, Map.put(idx, language, index))
+          end
         end
       end
     )
@@ -138,6 +144,7 @@ defmodule Glific.CSV.File do
         action: Ecto.UUID.generate(),
         exit: Ecto.UUID.generate(),
         router: Ecto.UUID.generate(),
+        label: Ecto.UUID.generate(),
         parent: nil,
         root: root_uuid
       },
@@ -163,7 +170,7 @@ defmodule Glific.CSV.File do
         parse_row(r, acc)
       end
     )
-    end
+  end
 
   defp parse_row([_num, active | rest] = row, summary) do
     cond do
@@ -185,6 +192,9 @@ defmodule Glific.CSV.File do
 
     menu_content = content_item(row, header_data.menu, menu_opts)
     leaf_menu_idx = Enum.max(Map.keys(menu_content))
+
+    # get the labels
+    labels = get_labels(row, header_data.label)
 
     # initialize position of content items
     content_opts = %{
@@ -220,6 +230,7 @@ defmodule Glific.CSV.File do
             summary.menus[0].uuids.main,
             summary.menus[idx - 1].uuids.main,
             sr_no: num,
+            label: labels[idx],
             level: level,
             position: position,
             menu_content: menu,
@@ -265,6 +276,7 @@ defmodule Glific.CSV.File do
         action: Ecto.UUID.generate(),
         exit: Ecto.UUID.generate(),
         router: Ecto.UUID.generate(),
+        label: Ecto.UUID.generate(),
         parent: parent,
         root: root
       },
@@ -275,6 +287,14 @@ defmodule Glific.CSV.File do
     ]
 
     struct(Menu, Keyword.merge(defaults, attrs))
+  end
+
+  defp get_labels(row, header_map) do
+    Enum.reduce(
+      header_map,
+      %{},
+      fn {idx, col}, acc -> Map.put(acc, idx, Enum.at(row, col)) end
+    )
   end
 
   # get the content items from the row, and create the content structure

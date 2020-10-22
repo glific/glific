@@ -1,177 +1,99 @@
 {
-  "localization" : {
-    "hi" : {
-      "1982950e-9142-4495-b096-3840599c35dd" : {
-        "text" : [
-          "आपने कार्यशाला और इंजीनियरिंग तकनीकों का चयन किया।\n\nकृपया इस अनुभाग में किसी विषय का चयन करें\n1. बढ़ईगीरी\n2. मिलाप और निर्माण (शीट धातु से नौकरियां बनाना)\n\nकृपया 1 या 2 दर्ज करें"
-        ]
-      },
-      "bc3fdc67-9857-4cf4-81ba-9fa80782f417" : {
-        "text" : [
-          "https:\/\/forms.gle\/uP3EpQhNdbHjpRX39\n\nपूरा होने पर मेन मेन्यू पर लौटने के लिए 0 दबाएँ"
-        ]
-      },
-      "58ec165f-4eb9-4967-ae14-f3ebd62c33a8" : {
-        "text" : [
-          "आपने ऊर्जा और पर्यावरण का चयन किया\n\nकृपया इस अनुभाग में किसी विषय का चयन करें\n\n1. विद्युत कंडक्टर तारों के जोड़ों\n2. सरल तारों\n\nकृपया 1 या 2 दर्ज करें"
-        ]
-      },
-      "ea86c69f-12b0-4d8e-a12b-eaef89352d6d" : {
-        "text" : [
-          "ग्रेड 9 कौशल के लिए मुख्य मेनू।\n\nकृपया निम्न अनुभागों में से एक का चयन करें\n\n1. कार्यशाला और इंजीनियरिंग तकनीक\n2. ऊर्जा और पर्यावरण\n3. बागवानी नर्सरी और कृषि तकनीक\n4. खाद्य प्रसंस्करण तकनीक\n\nकृपया 1, 2, 3 या 4 दर्ज करें"
-        ]
-      },
-      "b4ca7cfd-4a13-442f-a657-50363a0b426d" : {
-        "text" : [
-          "https:\/\/forms.gle\/Yv5Rky2ugPVXSC9z9\n\nपूरा होने पर मेन मेन्यू पर लौटने के लिए 0 दबाएँ"
-        ]
-      },
-      "d7972468-c294-49ba-bf77-050a3ac8d059" : {
-        "text" : [
-          "https:\/\/forms.gle\/HhsNSfR676EWCUAm7\n\nhttps:\/\/drive.google.com\/file\/d\/14JoUCojG2_lutzUanqHwCliyFsLfh7AJ\/view?usp=sharing\n\nपूरा होने पर मेन मेन्यू पर लौटने के लिए 0 दबाएँ"
-        ]
-      },
-      "5d46f29b-012c-4552-9808-7d469216a8e6" : {
-        "text" : [
-          "https:\/\/forms.gle\/6paRxcm3RF9utc6i8\n\nपूरा होने पर मेन मेन्यू पर लौटने के लिए 0 दबाएँ"
-        ]
-      }
-    }
-  },
-  "name" : "LAHI Main",
-  "_ui" : {
-    "nodes" : {
-      "510ab9c9-362c-44cf-8dd9-d66582d8fb06" : {
-        "position" : {
-          "left" : 780,
-          "top" : 960
-        },
-        "type" : "execute_actions"
-      },
-      "c38cac7c-581e-4648-ba7e-e25bc8768e09" : {
-        "position" : {
-          "left" : 500,
-          "top" : 940
-        },
-        "type" : "execute_actions"
-      },
-      "a11e1f51-c178-472b-8ab1-55fc7ee81508" : {
-        "position" : {
-          "left" : 20,
-          "top" : 940
-        },
-        "type" : "execute_actions"
-      },
-      "a1cbc3d0-29d2-4d4f-9e67-f40eb09b9573" : {
-        "position" : {
-          "top" : 1260,
-          "left" : 700
-        },
-        "config" : {
-          "cases" : {
-
-          }
-        },
-        "type" : "wait_for_response"
-      },
-      "bfee7439-230a-42b6-baab-63da3a2467c3" : {
-        "position" : {
-          "left" : 360,
-          "top" : 340
-        },
-        "config" : {
-          "cases" : {
-
-          }
-        },
-        "type" : "wait_for_response"
-      },
-      "c8313d39-a6f3-41fc-aadc-d0f1535963e9" : {
-        "position" : {
-          "top" : 720,
-          "left" : 0
-        },
-        "config" : {
-          "cases" : {
-
-          }
-        },
-        "type" : "wait_for_response"
-      },
-      "b0378807-2065-4ad3-b81e-d68b69d7048a" : {
-        "position" : {
-          "top" : 940,
-          "left" : 260
-        },
-        "type" : "execute_actions"
-      },
-      "e567d90e-2bb8-43f1-9106-3e89296c2539" : {
-        "position" : {
-          "left" : 380,
-          "top" : 0
-        },
-        "type" : "execute_actions"
-      },
-      "c287b7d4-f1e7-4635-a235-0f752adacb49" : {
-        "position" : {
-          "top" : 400,
-          "left" : 0
-        },
-        "type" : "execute_actions"
-      },
-      "947cb6ac-6afd-49db-b5ac-2ee980bb6c01" : {
-        "position" : {
-          "left" : 260,
-          "top" : 440
-        },
-        "type" : "execute_actions"
-      },
-      "2d97aae9-4cc6-4803-9ac1-0444d9867cff" : {
-        "position" : {
-          "left" : 280,
-          "top" : 720
-        },
-        "config" : {
-          "cases" : {
-
-          }
-        },
-        "type" : "wait_for_response"
-      }
-    }
-  },
-  "expire_after_minutes" : 10080,
-  "spec_version" : "13.1.0",
-  "type" : "messaging",
-  "vars" : [
-    "366148ea-97ef-4b60-894a-fe9ca01235b5"
-  ],
   "language" : "base",
-  "uuid" : "366148ea-97ef-4b60-894a-fe9ca01235b5",
+  "type" : "messaging",
   "nodes" : [
     {
-      "uuid" : "e567d90e-2bb8-43f1-9106-3e89296c2539",
+      "actions" : [
+        {
+          "quick_replies" : [
+
+          ],
+          "uuid" : "ea86c69f-12b0-4d8e-a12b-eaef89352d6d",
+          "text" : "Main Menu for Grade 9 Skills.\n\nPlease select one of the following sections\n\n1. Workshop and Engineering Techniques\n2. Energy and Environment\n3. Gardening Nursery and Agricultural Techniques\n4. Food processing Techniques\n\nPlease enter either 1, 2, 3 or 4",
+          "type" : "send_msg",
+          "attachments" : [
+
+          ]
+        }
+      ],
       "exits" : [
         {
           "uuid" : "6cf48b50-9bc3-4ea8-ade8-e76d7fe666ff",
           "destination_uuid" : "bfee7439-230a-42b6-baab-63da3a2467c3"
         }
       ],
-      "actions" : [
-        {
-          "uuid" : "ea86c69f-12b0-4d8e-a12b-eaef89352d6d",
-          "quick_replies" : [
-
-          ],
-          "attachments" : [
-
-          ],
-          "text" : "Main Menu for Grade 9 Skills.\n\nPlease select one of the following sections\n\n1. Workshop and Engineering Techniques\n2. Energy and Environment\n3. Gardening Nursery and Agricultural Techniques\n4. Food processing Techniques\n\nPlease enter either 1, 2, 3 or 4",
-          "type" : "send_msg"
-        }
-      ]
+      "uuid" : "e567d90e-2bb8-43f1-9106-3e89296c2539"
     },
     {
+      "router" : {
+        "operand" : "@input.text",
+        "default_category_uuid" : "5d984ec7-428f-480f-8ad9-01c3ff0aba9f",
+        "cases" : [
+          {
+            "arguments" : [
+              "1"
+            ],
+            "type" : "has_number_eq",
+            "uuid" : "783522e5-925b-41c2-93a8-1cb8a805cb2a",
+            "category_uuid" : "31bccc84-1b25-4431-867b-5ea7c1c9a6d3"
+          },
+          {
+            "type" : "has_number_eq",
+            "arguments" : [
+              "2"
+            ],
+            "uuid" : "e35cd226-793b-4d6f-a5dd-60cdf2e1305b",
+            "category_uuid" : "ec57210d-849a-4b5d-9c66-cc838681b687"
+          },
+          {
+            "type" : "has_number_eq",
+            "arguments" : [
+              "3"
+            ],
+            "uuid" : "e2b39581-53b2-4a8b-addf-7ae2350abc58",
+            "category_uuid" : "1f9afccb-b242-49cf-814c-6de9f5a5580f"
+          },
+          {
+            "type" : "has_number_eq",
+            "arguments" : [
+              "4"
+            ],
+            "uuid" : "49449f81-18b4-49d2-81ca-3b504de1f065",
+            "category_uuid" : "69bfad46-82c8-4337-85b1-41083a60ea2a"
+          }
+        ],
+        "wait" : {
+          "type" : "msg"
+        },
+        "type" : "switch",
+        "categories" : [
+          {
+            "name" : "1",
+            "uuid" : "31bccc84-1b25-4431-867b-5ea7c1c9a6d3",
+            "exit_uuid" : "a7846872-9104-4733-882c-3e3b37df2238"
+          },
+          {
+            "name" : "2",
+            "uuid" : "ec57210d-849a-4b5d-9c66-cc838681b687",
+            "exit_uuid" : "d9fddf42-310c-4263-a2ac-0ae1f18260f9"
+          },
+          {
+            "name" : "3",
+            "uuid" : "1f9afccb-b242-49cf-814c-6de9f5a5580f",
+            "exit_uuid" : "a6bda2b5-9afc-4691-bb84-b67efe7db5de"
+          },
+          {
+            "name" : "4",
+            "uuid" : "69bfad46-82c8-4337-85b1-41083a60ea2a",
+            "exit_uuid" : "fcda624d-9670-44a3-8058-0ff1aa1350b3"
+          },
+          {
+            "name" : "Other",
+            "uuid" : "5d984ec7-428f-480f-8ad9-01c3ff0aba9f",
+            "exit_uuid" : "168c029c-4020-4f55-bce8-e0c46df2cf33"
+          }
+        ]
+      },
       "actions" : [
 
       ],
@@ -195,123 +117,73 @@
           "destination_uuid" : "e567d90e-2bb8-43f1-9106-3e89296c2539"
         }
       ],
-      "router" : {
-        "cases" : [
-          {
-            "arguments" : [
-              "1"
-            ],
-            "type" : "has_number_eq",
-            "uuid" : "783522e5-925b-41c2-93a8-1cb8a805cb2a",
-            "category_uuid" : "31bccc84-1b25-4431-867b-5ea7c1c9a6d3"
-          },
-          {
-            "arguments" : [
-              "2"
-            ],
-            "type" : "has_number_eq",
-            "uuid" : "e35cd226-793b-4d6f-a5dd-60cdf2e1305b",
-            "category_uuid" : "ec57210d-849a-4b5d-9c66-cc838681b687"
-          },
-          {
-            "arguments" : [
-              "3"
-            ],
-            "type" : "has_number_eq",
-            "uuid" : "e2b39581-53b2-4a8b-addf-7ae2350abc58",
-            "category_uuid" : "1f9afccb-b242-49cf-814c-6de9f5a5580f"
-          },
-          {
-            "arguments" : [
-              "4"
-            ],
-            "type" : "has_number_eq",
-            "uuid" : "49449f81-18b4-49d2-81ca-3b504de1f065",
-            "category_uuid" : "69bfad46-82c8-4337-85b1-41083a60ea2a"
-          }
-        ],
-        "wait" : {
-          "type" : "msg"
-        },
-        "operand" : "@input.text",
-        "categories" : [
-          {
-            "uuid" : "31bccc84-1b25-4431-867b-5ea7c1c9a6d3",
-            "name" : "1",
-            "exit_uuid" : "a7846872-9104-4733-882c-3e3b37df2238"
-          },
-          {
-            "uuid" : "ec57210d-849a-4b5d-9c66-cc838681b687",
-            "name" : "2",
-            "exit_uuid" : "d9fddf42-310c-4263-a2ac-0ae1f18260f9"
-          },
-          {
-            "uuid" : "1f9afccb-b242-49cf-814c-6de9f5a5580f",
-            "name" : "3",
-            "exit_uuid" : "a6bda2b5-9afc-4691-bb84-b67efe7db5de"
-          },
-          {
-            "uuid" : "69bfad46-82c8-4337-85b1-41083a60ea2a",
-            "name" : "4",
-            "exit_uuid" : "fcda624d-9670-44a3-8058-0ff1aa1350b3"
-          },
-          {
-            "uuid" : "5d984ec7-428f-480f-8ad9-01c3ff0aba9f",
-            "name" : "Other",
-            "exit_uuid" : "168c029c-4020-4f55-bce8-e0c46df2cf33"
-          }
-        ],
-        "default_category_uuid" : "5d984ec7-428f-480f-8ad9-01c3ff0aba9f",
-        "type" : "switch"
-      },
       "uuid" : "bfee7439-230a-42b6-baab-63da3a2467c3"
     },
     {
-      "uuid" : "c287b7d4-f1e7-4635-a235-0f752adacb49",
-      "exits" : [
-        {
-          "destination_uuid" : "c8313d39-a6f3-41fc-aadc-d0f1535963e9",
-          "uuid" : "ecd5a6bd-bd2b-42bf-b893-4765b3fe6e40"
-        }
-      ],
       "actions" : [
         {
-          "text" : "You selected Workshop and Engineering Techniques. \n\nPlease select a topic in this section\n\n1. Carpentry\n2. Soldering and Fabrication (Making Jobs from Sheet Metal)\n\nPlease enter 1 or the 2",
+          "labels" : [
+            {
+              "name" : "Poetry",
+              "uuid" : "25"
+            }
+          ],
+          "type" : "add_input_labels",
+          "uuid" : "fc79f635-fb47-4e58-98ba-c70566e38434"
+        },
+        {
           "quick_replies" : [
 
           ],
+          "text" : "You selected Workshop and Engineering Techniques. \n\nPlease select a topic in this section\n\n1. Carpentry\n2. Soldering and Fabrication (Making Jobs from Sheet Metal)\n\nPlease enter 1 or the 2",
           "type" : "send_msg",
           "attachments" : [
 
           ],
           "uuid" : "1982950e-9142-4495-b096-3840599c35dd"
         }
+      ],
+      "uuid" : "c287b7d4-f1e7-4635-a235-0f752adacb49",
+      "exits" : [
+        {
+          "uuid" : "ecd5a6bd-bd2b-42bf-b893-4765b3fe6e40",
+          "destination_uuid" : "c8313d39-a6f3-41fc-aadc-d0f1535963e9"
+        }
       ]
     },
     {
+      "actions" : [
+        {
+          "uuid" : "b91123d1-0951-4981-9557-87eeb8b7afe3",
+          "type" : "add_input_labels",
+          "labels" : [
+            {
+              "name" : "Theatre",
+              "uuid" : "27"
+            }
+          ]
+        },
+        {
+          "text" : "You selected Energy and Environment\n\nPlease select a topic in this section\n\n1. Joints of Electrical Conductor Wires\n2. Simple Wiring\n\nPlease enter 1 or 2",
+          "type" : "send_msg",
+          "uuid" : "58ec165f-4eb9-4967-ae14-f3ebd62c33a8",
+          "attachments" : [
+
+          ],
+          "quick_replies" : [
+
+          ]
+        }
+      ],
       "uuid" : "947cb6ac-6afd-49db-b5ac-2ee980bb6c01",
       "exits" : [
         {
           "destination_uuid" : "2d97aae9-4cc6-4803-9ac1-0444d9867cff",
           "uuid" : "7da72198-5d00-4470-839e-24af6e93e480"
         }
-      ],
-      "actions" : [
-        {
-          "quick_replies" : [
-
-          ],
-          "uuid" : "58ec165f-4eb9-4967-ae14-f3ebd62c33a8",
-          "attachments" : [
-
-          ],
-          "type" : "send_msg",
-          "text" : "You selected Energy and Environment\n\nPlease select a topic in this section\n\n1. Joints of Electrical Conductor Wires\n2. Simple Wiring\n\nPlease enter 1 or 2"
-        }
       ]
     },
     {
-      "uuid" : "c8313d39-a6f3-41fc-aadc-d0f1535963e9",
       "exits" : [
         {
           "uuid" : "e41ff4ba-03dd-4cf0-a87a-229266f9b5e2",
@@ -330,64 +202,64 @@
           "destination_uuid" : "c287b7d4-f1e7-4635-a235-0f752adacb49"
         }
       ],
+      "uuid" : "c8313d39-a6f3-41fc-aadc-d0f1535963e9",
       "router" : {
-        "cases" : [
-          {
-            "uuid" : "5b841187-438a-4fe2-9b2c-48d6d17ed614",
-            "arguments" : [
-              "1"
-            ],
-            "type" : "has_number_eq",
-            "category_uuid" : "f2d5a803-f9e4-489d-b3ab-252d7516bec8"
-          },
-          {
-            "uuid" : "3a63aaae-d4f7-4164-9231-580299428289",
-            "arguments" : [
-              "2"
-            ],
-            "type" : "has_number_eq",
-            "category_uuid" : "a08b5404-396b-465f-a676-e8111e1d7bff"
-          }
-        ],
         "wait" : {
+          "type" : "msg",
           "timeout" : {
             "seconds" : 180,
             "category_uuid" : "648cd5f3-fdb1-4af4-b5fb-a45f6ef0fd71"
-          },
-          "type" : "msg"
+          }
         },
-        "default_category_uuid" : "8c1f3ef0-398e-402b-be47-62008d89ab1e",
         "categories" : [
           {
-            "uuid" : "f2d5a803-f9e4-489d-b3ab-252d7516bec8",
             "name" : "1",
+            "uuid" : "f2d5a803-f9e4-489d-b3ab-252d7516bec8",
             "exit_uuid" : "e41ff4ba-03dd-4cf0-a87a-229266f9b5e2"
           },
           {
-            "uuid" : "a08b5404-396b-465f-a676-e8111e1d7bff",
             "name" : "2",
+            "uuid" : "a08b5404-396b-465f-a676-e8111e1d7bff",
             "exit_uuid" : "7aee0da4-645c-453a-83b3-c0c67e98312f"
           },
           {
-            "uuid" : "8c1f3ef0-398e-402b-be47-62008d89ab1e",
             "name" : "Other",
+            "uuid" : "8c1f3ef0-398e-402b-be47-62008d89ab1e",
             "exit_uuid" : "7f3bd16d-6c71-4614-94df-caeee02fa829"
           },
           {
-            "uuid" : "648cd5f3-fdb1-4af4-b5fb-a45f6ef0fd71",
             "name" : "No Response",
+            "uuid" : "648cd5f3-fdb1-4af4-b5fb-a45f6ef0fd71",
             "exit_uuid" : "1db3fa0f-b7aa-49b2-be43-87dc726e5f37"
           }
         ],
+        "default_category_uuid" : "8c1f3ef0-398e-402b-be47-62008d89ab1e",
+        "type" : "switch",
         "operand" : "@input.text",
-        "type" : "switch"
+        "cases" : [
+          {
+            "type" : "has_number_eq",
+            "category_uuid" : "f2d5a803-f9e4-489d-b3ab-252d7516bec8",
+            "uuid" : "5b841187-438a-4fe2-9b2c-48d6d17ed614",
+            "arguments" : [
+              "1"
+            ]
+          },
+          {
+            "type" : "has_number_eq",
+            "category_uuid" : "a08b5404-396b-465f-a676-e8111e1d7bff",
+            "uuid" : "3a63aaae-d4f7-4164-9231-580299428289",
+            "arguments" : [
+              "2"
+            ]
+          }
+        ]
       },
       "actions" : [
 
       ]
     },
     {
-      "uuid" : "2d97aae9-4cc6-4803-9ac1-0444d9867cff",
       "exits" : [
         {
           "uuid" : "753c16f3-3164-4ec0-94d9-791d9960e8c7",
@@ -406,151 +278,155 @@
           "destination_uuid" : "947cb6ac-6afd-49db-b5ac-2ee980bb6c01"
         }
       ],
+      "uuid" : "2d97aae9-4cc6-4803-9ac1-0444d9867cff",
       "router" : {
+        "categories" : [
+          {
+            "name" : "1",
+            "uuid" : "02501330-f63b-4082-898d-989f53020de9",
+            "exit_uuid" : "753c16f3-3164-4ec0-94d9-791d9960e8c7"
+          },
+          {
+            "name" : "2",
+            "uuid" : "7b60fea3-d3af-4510-8066-94bd4d573d4e",
+            "exit_uuid" : "173b2a84-b76f-43c5-82a6-c197686febe1"
+          },
+          {
+            "name" : "Other",
+            "uuid" : "5a7272cd-d113-410a-bf2d-9c9cec9a6b23",
+            "exit_uuid" : "8de19b40-267f-45cc-92c0-ea9d43ea8d48"
+          },
+          {
+            "name" : "No Response",
+            "uuid" : "2cd6730e-fb1a-4c5a-aec0-3b3b0f57363f",
+            "exit_uuid" : "3f0868b6-580f-45f1-918f-2095729f0104"
+          }
+        ],
+        "wait" : {
+          "type" : "msg",
+          "timeout" : {
+            "category_uuid" : "2cd6730e-fb1a-4c5a-aec0-3b3b0f57363f",
+            "seconds" : 300
+          }
+        },
         "operand" : "@input.text",
+        "type" : "switch",
+        "default_category_uuid" : "5a7272cd-d113-410a-bf2d-9c9cec9a6b23",
         "cases" : [
           {
-            "category_uuid" : "02501330-f63b-4082-898d-989f53020de9",
-            "uuid" : "eb7d2ccb-3041-4310-b905-8bac541ba10a",
             "type" : "has_number_eq",
+            "uuid" : "eb7d2ccb-3041-4310-b905-8bac541ba10a",
+            "category_uuid" : "02501330-f63b-4082-898d-989f53020de9",
             "arguments" : [
               "1"
             ]
           },
           {
-            "category_uuid" : "7b60fea3-d3af-4510-8066-94bd4d573d4e",
-            "uuid" : "4304a297-d2de-462d-b6ad-e1f3604dc6a1",
             "type" : "has_number_eq",
+            "uuid" : "4304a297-d2de-462d-b6ad-e1f3604dc6a1",
+            "category_uuid" : "7b60fea3-d3af-4510-8066-94bd4d573d4e",
             "arguments" : [
               "2"
             ]
           }
-        ],
-        "type" : "switch",
-        "wait" : {
-          "timeout" : {
-            "category_uuid" : "2cd6730e-fb1a-4c5a-aec0-3b3b0f57363f",
-            "seconds" : 300
-          },
-          "type" : "msg"
-        },
-        "categories" : [
-          {
-            "uuid" : "02501330-f63b-4082-898d-989f53020de9",
-            "name" : "1",
-            "exit_uuid" : "753c16f3-3164-4ec0-94d9-791d9960e8c7"
-          },
-          {
-            "uuid" : "7b60fea3-d3af-4510-8066-94bd4d573d4e",
-            "name" : "2",
-            "exit_uuid" : "173b2a84-b76f-43c5-82a6-c197686febe1"
-          },
-          {
-            "uuid" : "5a7272cd-d113-410a-bf2d-9c9cec9a6b23",
-            "name" : "Other",
-            "exit_uuid" : "8de19b40-267f-45cc-92c0-ea9d43ea8d48"
-          },
-          {
-            "uuid" : "2cd6730e-fb1a-4c5a-aec0-3b3b0f57363f",
-            "name" : "No Response",
-            "exit_uuid" : "3f0868b6-580f-45f1-918f-2095729f0104"
-          }
-        ],
-        "default_category_uuid" : "5a7272cd-d113-410a-bf2d-9c9cec9a6b23"
+        ]
       },
       "actions" : [
 
       ]
     },
     {
+      "actions" : [
+        {
+          "attachments" : [
+
+          ],
+          "text" : "https:\/\/forms.gle\/72wovfpv43VqEBVF8\n\nPress 0 to return to the Main Menu when done\n",
+          "quick_replies" : [
+
+          ],
+          "uuid" : "bc3fdc67-9857-4cf4-81ba-9fa80782f417",
+          "type" : "send_msg"
+        }
+      ],
       "uuid" : "a11e1f51-c178-472b-8ab1-55fc7ee81508",
       "exits" : [
         {
           "uuid" : "49f6c6a1-75bf-4798-9017-bf536580b1f2",
           "destination_uuid" : "a1cbc3d0-29d2-4d4f-9e67-f40eb09b9573"
         }
-      ],
-      "actions" : [
-        {
-          "uuid" : "bc3fdc67-9857-4cf4-81ba-9fa80782f417",
-          "attachments" : [
-
-          ],
-          "type" : "send_msg",
-          "quick_replies" : [
-
-          ],
-          "text" : "https:\/\/forms.gle\/72wovfpv43VqEBVF8\n\nPress 0 to return to the Main Menu when done\n"
-        }
       ]
     },
     {
+      "actions" : [
+        {
+          "attachments" : [
+
+          ],
+          "text" : "https:\/\/forms.gle\/jWNMy6eJ4oiBcuws5\n\nPress 0 to return to the Main Manu when done.",
+          "quick_replies" : [
+
+          ],
+          "uuid" : "5d46f29b-012c-4552-9808-7d469216a8e6",
+          "type" : "send_msg"
+        }
+      ],
       "uuid" : "b0378807-2065-4ad3-b81e-d68b69d7048a",
       "exits" : [
         {
           "destination_uuid" : "a1cbc3d0-29d2-4d4f-9e67-f40eb09b9573",
           "uuid" : "b1405ff9-95fa-4af8-8c23-f207e5a3411c"
         }
-      ],
+      ]
+    },
+    {
       "actions" : [
         {
           "quick_replies" : [
 
           ],
+          "type" : "send_msg",
+          "text" : "https:\/\/forms.gle\/MxZFtiBGRWaz2Br86\n\nPress 0 to return to the Main Menu when done",
           "attachments" : [
 
           ],
-          "text" : "https:\/\/forms.gle\/jWNMy6eJ4oiBcuws5\n\nPress 0 to return to the Main Manu when done.",
-          "type" : "send_msg",
-          "uuid" : "5d46f29b-012c-4552-9808-7d469216a8e6"
+          "uuid" : "b4ca7cfd-4a13-442f-a657-50363a0b426d"
         }
-      ]
-    },
-    {
+      ],
       "uuid" : "c38cac7c-581e-4648-ba7e-e25bc8768e09",
       "exits" : [
         {
           "destination_uuid" : "a1cbc3d0-29d2-4d4f-9e67-f40eb09b9573",
           "uuid" : "342e8220-99cc-4e17-a99b-d763c02b8d99"
         }
-      ],
+      ]
+    },
+    {
       "actions" : [
         {
           "quick_replies" : [
 
           ],
+          "type" : "send_msg",
+          "text" : "https:\/\/forms.gle\/B8pckAVGijmuuNrT7\n\nhttps:\/\/drive.google.com\/file\/d\/1YLQcbe1giXwr9n2v2Ey_NCKrVeJLBR5q\/view?usp=sharing\n\nPress 0 to return back to the Main Menu",
           "attachments" : [
 
           ],
-          "text" : "https:\/\/forms.gle\/MxZFtiBGRWaz2Br86\n\nPress 0 to return to the Main Menu when done",
-          "type" : "send_msg",
-          "uuid" : "b4ca7cfd-4a13-442f-a657-50363a0b426d"
+          "uuid" : "d7972468-c294-49ba-bf77-050a3ac8d059"
         }
-      ]
-    },
-    {
+      ],
       "uuid" : "510ab9c9-362c-44cf-8dd9-d66582d8fb06",
       "exits" : [
         {
           "uuid" : "021b42b8-af34-4d51-bbef-cbb8b4ead945",
           "destination_uuid" : null
         }
-      ],
-      "actions" : [
-        {
-          "uuid" : "d7972468-c294-49ba-bf77-050a3ac8d059",
-          "quick_replies" : [
-
-          ],
-          "type" : "send_msg",
-          "attachments" : [
-
-          ],
-          "text" : "https:\/\/forms.gle\/B8pckAVGijmuuNrT7\n\nhttps:\/\/drive.google.com\/file\/d\/1YLQcbe1giXwr9n2v2Ey_NCKrVeJLBR5q\/view?usp=sharing\n\nPress 0 to return back to the Main Menu"
-        }
       ]
     },
     {
+      "actions" : [
+
+      ],
       "uuid" : "a1cbc3d0-29d2-4d4f-9e67-f40eb09b9573",
       "exits" : [
         {
@@ -559,26 +435,170 @@
         }
       ],
       "router" : {
-        "type" : "switch",
-        "default_category_uuid" : "71cc81ce-bad0-4351-a932-9d605283e94d",
-        "operand" : "@input.text",
-        "categories" : [
-          {
-            "uuid" : "71cc81ce-bad0-4351-a932-9d605283e94d",
-            "name" : "All Responses",
-            "exit_uuid" : "6c5a1aeb-a720-4d18-b82b-7584a660cf69"
-          }
-        ],
+        "wait" : {
+          "type" : "msg"
+        },
         "cases" : [
 
         ],
-        "wait" : {
-          "type" : "msg"
+        "operand" : "@input.text",
+        "default_category_uuid" : "71cc81ce-bad0-4351-a932-9d605283e94d",
+        "categories" : [
+          {
+            "name" : "All Responses",
+            "uuid" : "71cc81ce-bad0-4351-a932-9d605283e94d",
+            "exit_uuid" : "6c5a1aeb-a720-4d18-b82b-7584a660cf69"
+          }
+        ],
+        "type" : "switch"
+      }
+    }
+  ],
+  "uuid" : "366148ea-97ef-4b60-894a-fe9ca01235b5",
+  "_ui" : {
+    "nodes" : {
+      "947cb6ac-6afd-49db-b5ac-2ee980bb6c01" : {
+        "position" : {
+          "left" : 260,
+          "top" : 460
+        },
+        "type" : "execute_actions"
+      },
+      "b0378807-2065-4ad3-b81e-d68b69d7048a" : {
+        "position" : {
+          "left" : 260,
+          "top" : 940
+        },
+        "type" : "execute_actions"
+      },
+      "510ab9c9-362c-44cf-8dd9-d66582d8fb06" : {
+        "position" : {
+          "top" : 960,
+          "left" : 780
+        },
+        "type" : "execute_actions"
+      },
+      "a1cbc3d0-29d2-4d4f-9e67-f40eb09b9573" : {
+        "position" : {
+          "left" : 700,
+          "top" : 1260
+        },
+        "type" : "wait_for_response",
+        "config" : {
+          "cases" : {
+
+          }
         }
       },
-      "actions" : [
+      "c287b7d4-f1e7-4635-a235-0f752adacb49" : {
+        "position" : {
+          "top" : 400,
+          "left" : 0
+        },
+        "type" : "execute_actions"
+      },
+      "a11e1f51-c178-472b-8ab1-55fc7ee81508" : {
+        "position" : {
+          "left" : 20,
+          "top" : 940
+        },
+        "type" : "execute_actions"
+      },
+      "c8313d39-a6f3-41fc-aadc-d0f1535963e9" : {
+        "position" : {
+          "top" : 780,
+          "left" : 0
+        },
+        "type" : "wait_for_response",
+        "config" : {
+          "cases" : {
 
-      ]
+          }
+        }
+      },
+      "e567d90e-2bb8-43f1-9106-3e89296c2539" : {
+        "position" : {
+          "top" : 20,
+          "left" : 440
+        },
+        "type" : "execute_actions"
+      },
+      "2d97aae9-4cc6-4803-9ac1-0444d9867cff" : {
+        "position" : {
+          "top" : 800,
+          "left" : 280
+        },
+        "type" : "wait_for_response",
+        "config" : {
+          "cases" : {
+
+          }
+        }
+      },
+      "bfee7439-230a-42b6-baab-63da3a2467c3" : {
+        "position" : {
+          "left" : 360,
+          "top" : 360
+        },
+        "type" : "wait_for_response",
+        "config" : {
+          "cases" : {
+
+          }
+        }
+      },
+      "c38cac7c-581e-4648-ba7e-e25bc8768e09" : {
+        "position" : {
+          "left" : 500,
+          "top" : 940
+        },
+        "type" : "execute_actions"
+      }
     }
-  ]
+  },
+  "expire_after_minutes" : 10080,
+  "name" : "LAHI Main",
+  "vars" : [
+    "366148ea-97ef-4b60-894a-fe9ca01235b5"
+  ],
+  "localization" : {
+    "hi" : {
+      "5d46f29b-012c-4552-9808-7d469216a8e6" : {
+        "text" : [
+          "https:\/\/forms.gle\/6paRxcm3RF9utc6i8\n\nपूरा होने पर मेन मेन्यू पर लौटने के लिए 0 दबाएँ"
+        ]
+      },
+      "bc3fdc67-9857-4cf4-81ba-9fa80782f417" : {
+        "text" : [
+          "https:\/\/forms.gle\/uP3EpQhNdbHjpRX39\n\nपूरा होने पर मेन मेन्यू पर लौटने के लिए 0 दबाएँ"
+        ]
+      },
+      "d7972468-c294-49ba-bf77-050a3ac8d059" : {
+        "text" : [
+          "https:\/\/forms.gle\/HhsNSfR676EWCUAm7\n\nhttps:\/\/drive.google.com\/file\/d\/14JoUCojG2_lutzUanqHwCliyFsLfh7AJ\/view?usp=sharing\n\nपूरा होने पर मेन मेन्यू पर लौटने के लिए 0 दबाएँ"
+        ]
+      },
+      "ea86c69f-12b0-4d8e-a12b-eaef89352d6d" : {
+        "text" : [
+          "ग्रेड 9 कौशल के लिए मुख्य मेनू।\n\nकृपया निम्न अनुभागों में से एक का चयन करें\n\n1. कार्यशाला और इंजीनियरिंग तकनीक\n2. ऊर्जा और पर्यावरण\n3. बागवानी नर्सरी और कृषि तकनीक\n4. खाद्य प्रसंस्करण तकनीक\n\nकृपया 1, 2, 3 या 4 दर्ज करें"
+        ]
+      },
+      "b4ca7cfd-4a13-442f-a657-50363a0b426d" : {
+        "text" : [
+          "https:\/\/forms.gle\/Yv5Rky2ugPVXSC9z9\n\nपूरा होने पर मेन मेन्यू पर लौटने के लिए 0 दबाएँ"
+        ]
+      },
+      "58ec165f-4eb9-4967-ae14-f3ebd62c33a8" : {
+        "text" : [
+          "आपने ऊर्जा और पर्यावरण का चयन किया\n\nकृपया इस अनुभाग में किसी विषय का चयन करें\n\n1. विद्युत कंडक्टर तारों के जोड़ों\n2. सरल तारों\n\nकृपया 1 या 2 दर्ज करें"
+        ]
+      },
+      "1982950e-9142-4495-b096-3840599c35dd" : {
+        "text" : [
+          "आपने कार्यशाला और इंजीनियरिंग तकनीकों का चयन किया।\n\nकृपया इस अनुभाग में किसी विषय का चयन करें\n1. बढ़ईगीरी\n2. मिलाप और निर्माण (शीट धातु से नौकरियां बनाना)\n\nकृपया 1 या 2 दर्ज करें"
+        ]
+      }
+    }
+  },
+  "spec_version" : "13.1.0"
 }
