@@ -5,6 +5,10 @@ defmodule Glific.CSV.Flow do
   back in the database
   """
 
+     ## we need to put the default height and default width based on the content
+    @default_height  400
+    @default_width  200
+
   alias Glific.{
     CSV.Menu
   }
@@ -111,8 +115,8 @@ defmodule Glific.CSV.Flow do
         node.uuids.node,
         %{
           position: %{
-            top: node.level * 400,
-            left: node.position * 200
+            top: node.level * @default_height,
+            left: node.position * @default_width
           },
           type: "execute_actions"
         }
@@ -128,8 +132,8 @@ defmodule Glific.CSV.Flow do
         node.uuids.router,
         %{
           position: %{
-            top: node.level * 400 + 200,
-            left: node.position * 200
+            top: node.level * @default_height + @default_width,
+            left: node.position * @default_width
           },
           config: %{
             cases: %{}
