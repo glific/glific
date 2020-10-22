@@ -10,6 +10,7 @@ defmodule Glific.Messages do
     Contacts.Contact,
     Conversations.Conversation,
     Flows.MessageVarParser,
+    Groups.Group,
     Messages.Message,
     Messages.MessageVariables,
     Partners,
@@ -366,19 +367,37 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message_to_contacts(map(), []) :: {:ok, Message.t()}
+  @spec create_and_send_message_to_contacts(map(), []) :: {:ok, list()}
   def create_and_send_message_to_contacts(message_params, contact_ids) do
-    messages =
+    contact_ids =
       contact_ids
-      |> Enum.reduce([], fn contact_id, messages ->
+      |> Enum.reduce([], fn contact_id, contact_ids ->
         message_params = Map.put(message_params, :receiver_id, contact_id)
 
-        with {:ok, message} <- create_and_send_message(message_params) do
-          [message | messages]
+        case create_and_send_message(message_params) do
+          {:ok, message} ->
+            [message.contact_id | contact_ids]
+
+          {:error, _} ->
+            contact_ids
         end
       end)
 
-    {:ok, messages}
+    {:ok, contact_ids}
+  end
+
+  @doc """
+  Create and send message to all contacts of a group
+  """
+  @spec create_and_send_message_to_group(map(), Group.t()) :: {:ok, list()}
+  def create_and_send_message_to_group(message_params, group) do
+    group = group |> Repo.preload(:contacts)
+
+    contact_ids =
+      group.contacts
+      |> Enum.map(fn contact -> contact.id end)
+
+    create_and_send_message_to_contacts(message_params, contact_ids)
   end
 
   @doc """
