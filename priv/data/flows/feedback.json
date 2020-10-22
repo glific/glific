@@ -257,7 +257,7 @@
           {
             "flow": {
               "name": "Activity",
-              "uuid": "b050c652-65b5-4ccf-b62b-1e8b3f328676"
+              "uuid": "ACTIVITY_UUID"
             },
             "type": "enter_flow",
             "uuid": "3964acf1-4821-4f75-b891-0af826211ef4"
