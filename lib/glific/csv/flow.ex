@@ -82,8 +82,8 @@ defmodule Glific.CSV.Flow do
       router: %{
         cases: [cases],
         wait: %{type: "msg"},
-        operand: "@inout.text",
-        categories: [categories],
+        operand: "@input.text",
+        categories: categories,
         default_category_uuid: default_category_uuid,
         type: "switch"
       }
@@ -137,10 +137,10 @@ defmodule Glific.CSV.Flow do
         }
       )
 
-      # also add the content node
-      json_map
-      |> add_ui(node, :content)
-      |> put_in([:_ui, :nodes], nodes)
+    # also add the content node
+    json_map
+    |> add_ui(node, :content)
+    |> put_in([:_ui, :nodes], nodes)
   end
 
   defp get_destination_uuids(node) do

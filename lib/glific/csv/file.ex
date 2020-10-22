@@ -42,8 +42,8 @@ defmodule Glific.CSV.File do
   Read a csv file, and split it up into a bunch of tuples that we are interested in. Assuming
   that the csv file is valid for now
   """
-  @spec read_csv_file(String.t()) :: map()
-  def read_csv_file(file) do
+  @spec process_csv_file(String.t(), String.t()) :: map()
+  def process_csv_file(file, output) do
     summary =
       file
       |> Path.expand(__DIR__)
@@ -54,9 +54,17 @@ defmodule Glific.CSV.File do
       |> parse_header()
       |> parse_rows(%{})
 
+    json_map = Flow.gen_flow(summary.menus[0])
+    {:ok, json} = Jason.encode_to_iodata(json_map, pretty: true)
+
+    :ok =
+    output
+    |> Path.expand(__DIR__)
+    |> File.write(json)
+
     summary
     |> Map.put(:root, summary.menus[0])
-    |> Map.put(:json_map, Flow.gen_flow(summary.menus[0]))
+    |> Map.put(:json_map, json_map)
     |> Map.delete(:menus)
   end
 
@@ -118,7 +126,10 @@ defmodule Glific.CSV.File do
   defp parse_rows({rows, header_data}, summary) do
     rest = tl(rows)
 
-    root_uuid = Ecto.UUID.generate()
+    # lets hardcode this for the flow, to make it easier to import
+    # into our db and hence flow-editor
+    # root_uuid = Ecto.UUID.generate()
+    {:ok, root_uuid} = Ecto.UUID.cast("8a67330c-8cf6-498f-93fb-d771e675ff22")
 
     root = %Menu{
       uuids: %{
@@ -152,7 +163,7 @@ defmodule Glific.CSV.File do
         parse_row(r, acc)
       end
     )
-  end
+    end
 
   defp parse_row([_num, active | rest] = row, summary) do
     cond do
