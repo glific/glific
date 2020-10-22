@@ -390,9 +390,13 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_group_contacts(Organization.t()) :: nil
-    def seed_group_contacts(organization) do
-      [c1, c2 | _] = Contacts.list_contacts(%{filter: %{organization_id: organization.id}})
+    @spec seed_group_contacts(Organization.t() | nil) :: nil
+    def seed_group_contacts(organization \\ nil) do
+      organization = get_organization(organization)
+
+      [_glific_admin, c1, c2 | _] =
+        Contacts.list_contacts(%{filter: %{organization_id: organization.id}})
+
       [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
       Repo.insert!(%Groups.ContactGroup{
@@ -412,8 +416,10 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_group_users(Organization.t()) :: nil
-    def seed_group_users(organization) do
+    @spec seed_group_users(Organization.t() | nil) :: nil
+    def seed_group_users(organization \\ nil) do
+      organization = get_organization(organization)
+
       [u1, u2 | _] = Users.list_users(%{filter: %{organization_id: organization.id}})
       [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
