@@ -57,6 +57,7 @@ defmodule Glific.CSV.Flow do
           uuid: node.uuids.exit,
           # At some stage for all content nodes, we'll basically go back to main menu
           # for any key pressed
+          # we need to set this as null if there is no node with this UUID
           destination_uuid: node.uuids.router
         }
       ],
@@ -78,7 +79,7 @@ defmodule Glific.CSV.Flow do
     router_json = %{
       uuid: node.uuids.router,
       actions: [],
-      exits: [exits],
+      exits: exits,
       router: %{
         cases: [cases],
         wait: %{type: "msg"},
@@ -103,7 +104,7 @@ defmodule Glific.CSV.Flow do
     )
   end
 
-  defp add_ui(json_map, node, :content = _type) do
+  defp add_ui(json_map, node, :content) do
     nodes =
       json_map._ui.nodes
       |> Map.put(
@@ -120,7 +121,7 @@ defmodule Glific.CSV.Flow do
     put_in(json_map, [:_ui, :nodes], nodes)
   end
 
-  defp add_ui(json_map, node, :menu = _type) do
+  defp add_ui(json_map, node, :menu) do
     nodes =
       json_map._ui.nodes
       |> Map.put(
