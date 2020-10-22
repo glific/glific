@@ -248,8 +248,10 @@ defmodule Glific.CSV.Flow do
       actions: [
         %{
           uuid: node.uuids.action,
+          attachmnents: [],
           quick_replies: [],
-          text: language_content(node.content["en"], "en")
+          text: language_content(node.content["en"], "en"),
+          type: "send_msg",
         }
       ]
     }
