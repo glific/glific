@@ -76,7 +76,7 @@ defmodule Glific.CSV.Flow do
       ]
     }
 
-    exits = Enum.reverse(get_exits(node.content["en"], get_destination_uuids(node)))
+    exits = Enum.reverse(get_exits(node.content["en"], get_destination_uuids(node), node.uuids.node))
     cases = Enum.reverse(get_cases(node.content["en"]))
     {categories, default_category_uuid} = get_categories(node.content["en"], exits, cases)
 
@@ -161,7 +161,7 @@ defmodule Glific.CSV.Flow do
   defp indexed_content(content),
     do: content |> Map.values() |> Enum.with_index(1)
 
-  defp get_exits(content, destination_uuids) do
+  defp get_exits(content, destination_uuids, node_uuid) do
     exits =
       content
       |> indexed_content()
@@ -176,7 +176,7 @@ defmodule Glific.CSV.Flow do
       )
 
     # also add Other (and soon no response)
-    [%{uuid: Ecto.UUID.generate(), destination_uuid: Ecto.UUID.generate()} | exits]
+    [%{uuid: Ecto.UUID.generate(), destination_uuid: node_uuid} | exits]
   end
 
   defp get_cases(content) do
