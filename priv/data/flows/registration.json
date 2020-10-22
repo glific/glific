@@ -504,8 +504,8 @@
   ],
   "spec_version": "13.1.0",
   "type": "messaging",
-  "uuid": "f4f38e00-3a50-4892-99ce-a281fe24d040",
+  "uuid": "REGISTRATION_UUID",
   "vars": [
-    "f4f38e00-3a50-4892-99ce-a281fe24d040"
+    "REGISTRATION_UUID"
   ]
 }

@@ -263,7 +263,7 @@
         {
           "flow": {
             "name": "Help Workflow",
-            "uuid": "3fa22108-f464-41e5-81d9-d8a298854429"
+            "uuid": "HELP_UUID"
           },
           "type": "enter_flow",
           "uuid": "883a4070-5201-4780-8fd6-86017afc87c9"
@@ -498,7 +498,7 @@
         {
           "flow": {
             "name": "Feedback",
-            "uuid": "6c21af89-d7de-49ac-9848-c9febbf737a5"
+            "uuid": "FEEDBACK_UUID"
           },
           "type": "enter_flow",
           "uuid": "fbe61add-c0fd-4bad-b3e9-ea3ff1ac69af"
@@ -554,8 +554,8 @@
   ],
   "spec_version": "13.1.0",
   "type": "messaging",
-  "uuid": "b050c652-65b5-4ccf-b62b-1e8b3f328676",
+  "uuid": "ACTIVITY_UUID",
   "vars": [
-    "b050c652-65b5-4ccf-b62b-1e8b3f328676"
+    "ACTIVITY_UUID"
   ]
 }

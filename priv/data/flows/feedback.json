@@ -313,8 +313,8 @@
     ],
     "spec_version": "13.1.0",
     "type": "messaging",
-    "uuid": "6c21af89-d7de-49ac-9848-c9febbf737a5",
+    "uuid": "FEEDBACK_UUID",
     "vars": [
-      "6c21af89-d7de-49ac-9848-c9febbf737a5"
+      "FEEDBACK_UUID"
     ]
   }

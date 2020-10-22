@@ -58,7 +58,7 @@
           "आपको सिस्टम से बाहर कर दिया गया है। "
         ]
       },
-      "bc1622f8-64f8-4b3d-b767-bb6bbfb65104": {
+      "OPTOUT_UUID": {
         "text": [
           "हमें आपके जाने का अफसोस है। आपको अगले पांच मिनट में सिस्टम से बाहर कर दिया जाएगा।\n1⃣ दबाएं - पुष्टि करने के लिए। \n2⃣ दबाएं - रद्द करने के लिए। "
         ]
@@ -75,7 +75,7 @@
           "quick_replies": [],
           "text": "We are sorry to see you go. You will be opted out in the next five minutes.\nType 1⃣ to confirm.\nType 2⃣ to cancel.",
           "type": "send_msg",
-          "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104"
+          "uuid": "OPTOUT_UUID"
         }
       ],
       "exits": [
@@ -250,8 +250,8 @@
   ],
   "spec_version": "13.1.0",
   "type": "messaging",
-  "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
+  "uuid": "OPTOUT_UUID",
   "vars": [
-    "bc1622f8-64f8-4b3d-b767-bb6bbfb65104"
+    "OPTOUT_UUID"
   ]
 }

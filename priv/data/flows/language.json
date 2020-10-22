@@ -256,8 +256,8 @@
   ],
   "spec_version": "13.1.0",
   "type": "message",
-  "uuid": "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
+  "uuid": "LANGUAGE_UUID",
   "vars": [
-    "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"
+    "LANGUAGE_UUID"
   ]
 }
