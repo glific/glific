@@ -1,7 +1,6 @@
 defmodule GlificWeb.Schema.MessageTest do
   alias Glific.{
     Contacts,
-    Contacts.Contact,
     Fixtures,
     Messages.Message,
     Partners,
@@ -29,9 +28,9 @@ defmodule GlificWeb.Schema.MessageTest do
   )
 
   load_gql(
-    :create_and_send_message_to_contacts,
+    :create_and_send_message_to_group,
     GlificWeb.Schema,
-    "assets/gql/messages/create_and_send_message_to_contacts.gql"
+    "assets/gql/messages/create_and_send_message_to_group.gql"
   )
 
   load_gql(
@@ -236,15 +235,11 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message == "Resource not found"
   end
 
-  test "send message to multiple contacts", %{staff: user} do
-    name = "Margarita Quinteros"
-    {:ok, contact1} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
-
-    name = "Adelle Cavin"
-    {:ok, contact2} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
+  test "send message to a group", %{staff: user} = attrs do
+    [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
 
     result =
-      auth_query_gql_by(:create_and_send_message_to_contacts, user,
+      auth_query_gql_by(:create_and_send_message_to_group, user,
         variables: %{
           "input" => %{
             "body" => "Message body",
@@ -252,15 +247,13 @@ defmodule GlificWeb.Schema.MessageTest do
             "type" => "TEXT",
             "sender_id" => Partners.organization_contact_id(user.organization_id)
           },
-          "contact_ids" => [contact1.id, contact2.id]
+          "group_id" => cg1.group_id
         }
       )
 
     assert {:ok, query_data} = result
-    messages = get_in(query_data, [:data, "createAndSendMessageToContacts"])
-    assert length(messages) == 2
-    [message | _] = messages
-    assert message["receiver"]["id"] == contact1.id || contact2.id
+    contact_ids = get_in(query_data, [:data, "createAndSendMessageToGroup", "contactIds"])
+    assert length(contact_ids) >= 2
   end
 
   test "send hsm message to an opted in contact", %{staff: user} do
@@ -333,7 +326,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message["body"] == "A message for " <> contact.name
   end
 
-  test "create and send a message to in valid contact will not create a message", %{staff: user} do
+  test "create and send a message to invalid contact will not create a message", %{staff: user} do
     contact = Fixtures.contact_fixture()
     Contacts.contact_opted_out(contact.phone, contact.organization_id, DateTime.utc_now())
     message_body = Faker.Lorem.sentence()
