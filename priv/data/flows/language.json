@@ -166,7 +166,7 @@
           "labels": [
             {
               "name": "Hindi",
-              "uuid": "42"
+              "uuid": "Hindi:ID"
             }
           ],
           "type": "add_input_labels",
@@ -187,7 +187,7 @@
           "labels": [
             {
               "name": "English",
-              "uuid": "43"
+              "uuid": "English:ID"
             }
           ],
           "type": "add_input_labels",

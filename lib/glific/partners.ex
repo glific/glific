@@ -538,9 +538,10 @@ defmodule Glific.Partners do
     # delete the cached organization and associated credentials
     Caches.remove(credential.organization_id, ["organization"])
 
-    response = credential
-    |> Credential.changeset(attrs)
-    |> Repo.update()
+    response =
+      credential
+      |> Credential.changeset(attrs)
+      |> Repo.update()
 
     if credential.provider.shortcode == "bigquery" do
       org = credential.organization |> Repo.preload(:contact)

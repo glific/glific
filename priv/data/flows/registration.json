@@ -367,7 +367,7 @@
           "labels": [
             {
               "name": "Age Group less than 10",
-              "uuid": "39"
+              "uuid": "Age Group less than 10:ID"
             }
           ],
           "type": "add_input_labels",
@@ -406,7 +406,7 @@
           "labels": [
             {
               "name": "Age Group 11 to 14",
-              "uuid": "38"
+              "uuid": "Age Group 11 to 14:ID"
             }
           ],
           "type": "add_input_labels",
@@ -427,7 +427,7 @@
           "labels": [
             {
               "name": "Age Group 15 to 18",
-              "uuid": "39"
+              "uuid": "Age Group 15 to 18:ID"
             }
           ],
           "type": "add_input_labels",
@@ -448,7 +448,7 @@
           "labels": [
             {
               "name": "Age Group 19 or above",
-              "uuid": "40"
+              "uuid": "Age Group 19 or above:ID"
             }
           ],
           "type": "add_input_labels",

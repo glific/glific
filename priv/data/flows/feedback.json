@@ -180,7 +180,7 @@
             "labels": [
               {
                 "name": "Understood",
-                "uuid": "33"
+                "uuid": "Understood:ID"
               }
             ],
             "type": "add_input_labels",
@@ -201,7 +201,7 @@
             "labels": [
               {
                 "name": "Not Understood",
-                "uuid": "34"
+                "uuid": "Not Understood:ID"
               }
             ],
             "type": "add_input_labels",

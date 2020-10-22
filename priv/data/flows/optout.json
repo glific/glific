@@ -1,24 +1,10 @@
 {
   "_ui": {
     "nodes": {
-      "48619f34-7a05-4ba9-91c7-c73344bb975f": {
-        "position": {
-          "left": 780,
-          "top": 220
-        },
-        "type": "execute_actions"
-      },
-      "523e236f-83a3-4c7f-94be-abbc65ada320": {
-        "position": {
-          "left": 480,
-          "top": 340
-        },
-        "type": "execute_actions"
-      },
       "5a45afa3-88c8-4dab-9bc0-afeebaeb172f": {
         "position": {
-          "left": 480,
-          "top": 460
+          "left": 460,
+          "top": 320
         },
         "type": "execute_actions"
       },
@@ -32,7 +18,7 @@
       "73597ecb-744b-4699-92c1-03e8582708b2": {
         "position": {
           "left": 780,
-          "top": 340
+          "top": 240
         },
         "type": "execute_actions"
       },
@@ -90,11 +76,11 @@
       "actions": [],
       "exits": [
         {
-          "destination_uuid": "523e236f-83a3-4c7f-94be-abbc65ada320",
+          "destination_uuid": "5a45afa3-88c8-4dab-9bc0-afeebaeb172f",
           "uuid": "3db7fe9d-7e59-42b7-8969-47374148247a"
         },
         {
-          "destination_uuid": "48619f34-7a05-4ba9-91c7-c73344bb975f",
+          "destination_uuid": "73597ecb-744b-4699-92c1-03e8582708b2",
           "uuid": "cafda8fe-62b7-4408-aea0-e556299e4b80"
         },
         {
@@ -102,7 +88,7 @@
           "uuid": "a2b9ed29-cde9-48e6-b16c-b455102e1e02"
         },
         {
-          "destination_uuid": "523e236f-83a3-4c7f-94be-abbc65ada320",
+          "destination_uuid": "5a45afa3-88c8-4dab-9bc0-afeebaeb172f",
           "uuid": "9850ac4c-0a80-4108-8cdf-d679dac1b94c"
         }
       ],
@@ -159,48 +145,6 @@
         }
       },
       "uuid": "83bb3351-0a23-4e17-9aff-76085c8648ab"
-    },
-    {
-      "actions": [
-        {
-          "labels": [
-            {
-              "name": "Cancel Optout",
-              "uuid": "35"
-            }
-          ],
-          "type": "add_input_labels",
-          "uuid": "32565c9e-bb96-4e9c-a132-38f287a922fc"
-        }
-      ],
-      "exits": [
-        {
-          "destination_uuid": "73597ecb-744b-4699-92c1-03e8582708b2",
-          "uuid": "e150b658-0766-48fd-ba20-bd5e1e4df273"
-        }
-      ],
-      "uuid": "48619f34-7a05-4ba9-91c7-c73344bb975f"
-    },
-    {
-      "actions": [
-        {
-          "labels": [
-            {
-              "name": "Confirm Optout",
-              "uuid": "37"
-            }
-          ],
-          "type": "add_input_labels",
-          "uuid": "e12ed032-6663-41e9-9c12-e1c76b7cc1f7"
-        }
-      ],
-      "exits": [
-        {
-          "destination_uuid": "5a45afa3-88c8-4dab-9bc0-afeebaeb172f",
-          "uuid": "193cc8d7-679b-4704-966c-118702d3395b"
-        }
-      ],
-      "uuid": "523e236f-83a3-4c7f-94be-abbc65ada320"
     },
     {
       "actions": [

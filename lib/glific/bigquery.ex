@@ -21,8 +21,10 @@ defmodule Glific.Bigquery do
       end
 
     Goth.Config.add_config(config)
+
     {:ok, token} =
       Goth.Token.for_scope({credentials.secrets["project_email"], credentials.keys["url"]})
+
     token
   end
 
@@ -44,48 +46,56 @@ defmodule Glific.Bigquery do
     token = token(credentials)
 
     conn = Connection.new(token.token)
+
     case create_dataset(conn, project_id, dataset_id) do
       {:ok, _} ->
-        table(BigquerySchema.contact_schema, conn, dataset_id, project_id, "contacts")
-        table(BigquerySchema.message_schema, conn, dataset_id, project_id, "messages")
-      {:error, _} -> nil
-      end
-      :ok
+        table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
+        table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
+
+      {:error, _} ->
+        nil
+    end
+
+    :ok
   end
 
   defp create_dataset(conn, project_id, dataset_id) do
     Datasets.bigquery_datasets_insert(
       conn,
       project_id,
-      [body: %{
-        datasetReference: %{
-          datasetId: dataset_id,
-          projectId: project_id
+      [
+        body: %{
+          datasetReference: %{
+            datasetId: dataset_id,
+            projectId: project_id
+          }
         }
-      }
       ],
       []
     )
   end
 
   defp table(schema, conn, dataset_id, project_id, table_id) do
-    {:ok, response} = Tables.bigquery_tables_insert(
-      conn,
-      project_id,
-      dataset_id,
-      [body: %{
-        tableReference: %{
-          datasetId: dataset_id,
-          projectId: project_id,
-          tableId: table_id
-        },
-        schema: %{
-          fields: schema
-        }
-      }
-      ],
-      []
-    )
+    {:ok, response} =
+      Tables.bigquery_tables_insert(
+        conn,
+        project_id,
+        dataset_id,
+        [
+          body: %{
+            tableReference: %{
+              datasetId: dataset_id,
+              projectId: project_id,
+              tableId: table_id
+            },
+            schema: %{
+              fields: schema
+            }
+          }
+        ],
+        []
+      )
+
     response
   end
 end

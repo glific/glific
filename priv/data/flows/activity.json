@@ -322,7 +322,7 @@
           "labels": [
             {
               "name": "Help",
-              "uuid": "14"
+              "uuid": "Help:ID"
             }
           ],
           "type": "add_input_labels",
@@ -343,7 +343,7 @@
           "labels": [
             {
               "name": "Visual Arts",
-              "uuid": "29"
+              "uuid": "Visual Arts:ID"
             }
           ],
           "type": "add_input_labels",
@@ -364,7 +364,7 @@
           "labels": [
             {
               "name": "Poetry",
-              "uuid": "28"
+              "uuid": "Poetry:ID"
             }
           ],
           "type": "add_input_labels",
@@ -385,7 +385,7 @@
           "labels": [
             {
               "name": "Theatre",
-              "uuid": "30"
+              "uuid": "Theatre:ID"
             }
           ],
           "type": "add_input_labels",
