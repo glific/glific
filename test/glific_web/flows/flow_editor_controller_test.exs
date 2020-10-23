@@ -2,8 +2,8 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
   use GlificWeb.ConnCase
 
   alias Glific.Flows
-  alias Glific.Groups
   alias Glific.Flows.FlowLabel
+  alias Glific.Groups
 
   describe "flow_editor_routes" do
     test "globals", %{conn: conn} do

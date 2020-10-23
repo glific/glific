@@ -19,8 +19,6 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
     contacts_fields()
 
-    flow_label()
-
     messages_media()
 
     session_templates()
@@ -707,18 +705,4 @@ defmodule Glific.Repo.Migrations.GlificCore do
     create unique_index(:contacts_fields, [:shortcode, :organization_id])
   end
 
-  @doc """
-  Create flow label to associate flow messages with label
-  """
-  def flow_label do
-    create table(:flow_label) do
-      add :uuid, :uuid, null: false
-      add :name, :string
-
-      # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
-    end
-
-    create unique_index(:flow_label, [:name, :organization_id])
-  end
 end
