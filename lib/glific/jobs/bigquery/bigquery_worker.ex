@@ -27,6 +27,8 @@ defmodule Glific.Jobs.BigQueryWorker do
     V2.Connection
   }
 
+  @simulater_phone "9876543210"
+
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
   and queue them up for delivery to bigquery
@@ -61,9 +63,12 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec queue_table_data(String.t(), non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
   defp queue_table_data("messages", organization_id, min_id, max_id) do
+    {:ok, simulator_contact} = Repo.fetch_by(Contact, %{phone: @simulater_phone, organization_id: organization_id})
+
     query =
       Message
       |> where([m], m.organization_id == ^organization_id)
+      |> where([m], m.contact_id != ^simulator_contact.id)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:tags, :receiver, :sender, :contact, :user])
@@ -111,6 +116,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     query =
       Contact
       |> where([m], m.organization_id == ^organization_id)
+      |> where([m], m.phone != @simulater_phone)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups])
