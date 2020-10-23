@@ -197,7 +197,7 @@ defmodule Glific.BigquerySchema do
         name: "receiver_phone",
         type: "STRING",
         mode: "REQUIRED"
-      }
+      },
       %{
         name: "contact_phone",
         type: "STRING",
