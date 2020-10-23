@@ -6,7 +6,8 @@ defmodule Glific.CSV.Flow do
   """
 
   ## we need to put the default height and default width based on the content
-  @default_height 400
+  @default_height 300
+  @default_offset 100
   @default_width 200
 
   alias Glific.{
@@ -145,18 +146,20 @@ defmodule Glific.CSV.Flow do
         }
       )
 
-    put_in(json_map, [:_ui, :nodes], nodes)
+      put_in(json_map, [:_ui, :nodes], nodes)
   end
 
   defp add_ui(json_map, node, :menu) do
+    json_map = add_ui(json_map, node, :content)
+
     nodes =
       json_map._ui.nodes
       |> Map.put(
         node.uuids.router,
         %{
           position: %{
-            top: node.level * @default_height + @default_width,
-            left: node.position * @default_width
+            top: node.level * @default_height,
+            left: node.position * @default_width + @default_offset
           },
           config: %{
             cases: %{}
@@ -165,10 +168,7 @@ defmodule Glific.CSV.Flow do
         }
       )
 
-    # also add the content node
-    json_map
-    |> add_ui(node, :content)
-    |> put_in([:_ui, :nodes], nodes)
+    put_in(json_map, [:_ui, :nodes], nodes)
   end
 
   defp get_destination_uuids(node) do

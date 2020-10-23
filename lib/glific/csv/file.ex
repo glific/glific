@@ -200,7 +200,7 @@ defmodule Glific.CSV.File do
     content_opts = %{
       sr_no: num,
       # since we start numbering from 0 internally
-      level: leaf_menu_idx,
+      level: leaf_menu_idx * 2 + 1,
       position: Map.get(summary.positions, leaf_menu_idx, 0)
     }
 
@@ -222,7 +222,7 @@ defmodule Glific.CSV.File do
             position = Map.get(summary.positions, idx, 0)
             positions = Map.put(summary.positions, idx, position + 1)
             summary = Map.put(summary, :positions, positions)
-            {nil, %{}, summary.menus[idx - 1].level + 1, position, summary}
+            {nil, %{}, summary.menus[idx - 1].level + 2, position, summary}
           end
 
         sub_menu =
