@@ -22,6 +22,7 @@ defmodule Glific.Messages.Message do
           type: String.t() | nil,
           is_hsm: boolean | nil,
           flow: String.t() | nil,
+          flow_label: String.t() | nil,
           status: String.t() | nil,
           bsp_status: String.t() | nil,
           errors: map() | nil,
