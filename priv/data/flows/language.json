@@ -29,14 +29,14 @@
       "60258578-bd6b-48f6-9f6a-405924b6e9bc": {
         "position": {
           "left": 260,
-          "top": 480
+          "top": 540
         },
         "type": "execute_actions"
       },
       "668546dc-ae48-46e4-8237-4ff92a43c58e": {
         "position": {
           "left": 0,
-          "top": 480
+          "top": 540
         },
         "type": "execute_actions"
       },
@@ -44,6 +44,20 @@
         "position": {
           "left": 60,
           "top": 680
+        },
+        "type": "execute_actions"
+      },
+      "d07e79b6-6b31-4765-993d-4f12eff90515": {
+        "position": {
+          "left": 0,
+          "top": 440
+        },
+        "type": "execute_actions"
+      },
+      "f3fa4a51-0b3b-4759-b655-85ab65d62744": {
+        "position": {
+          "left": 260,
+          "top": 440
         },
         "type": "execute_actions"
       }
@@ -88,11 +102,11 @@
       "actions": [],
       "exits": [
         {
-          "destination_uuid": "668546dc-ae48-46e4-8237-4ff92a43c58e",
+          "destination_uuid": "d07e79b6-6b31-4765-993d-4f12eff90515",
           "uuid": "e0e4a4bd-661f-4816-8abd-d8d75443b9a1"
         },
         {
-          "destination_uuid": "60258578-bd6b-48f6-9f6a-405924b6e9bc",
+          "destination_uuid": "f3fa4a51-0b3b-4759-b655-85ab65d62744",
           "uuid": "d25a1226-27dd-4983-9264-61a04331e2d0"
         },
         {
@@ -149,19 +163,51 @@
     {
       "actions": [
         {
-          "language": "hindi",
-          "type": "set_contact_language",
-          "uuid": "1fcfd29b-d6c5-4d09-8901-45c9bdc4f6b1"
-        },
-        {
           "labels": [
             {
-              "name": "Languages",
-              "uuid": "24"
+              "name": "Hindi",
+              "uuid": "Hindi:ID"
             }
           ],
           "type": "add_input_labels",
-          "uuid": "346f9c7e-4b76-4b74-8e9a-2ba0c96f2885"
+          "uuid": "6e23e8a5-0274-4e73-aee6-78d84e02a5b5"
+        }
+      ],
+      "exits": [
+        {
+          "destination_uuid": "668546dc-ae48-46e4-8237-4ff92a43c58e",
+          "uuid": "0102a753-ce2c-4d6b-b1e0-31eee335cc15"
+        }
+      ],
+      "uuid": "d07e79b6-6b31-4765-993d-4f12eff90515"
+    },
+    {
+      "actions": [
+        {
+          "labels": [
+            {
+              "name": "English",
+              "uuid": "English:ID"
+            }
+          ],
+          "type": "add_input_labels",
+          "uuid": "b43f4925-749a-481b-b070-550c37960476"
+        }
+      ],
+      "exits": [
+        {
+          "destination_uuid": "60258578-bd6b-48f6-9f6a-405924b6e9bc",
+          "uuid": "367ae108-c057-4595-8041-65d241bd8103"
+        }
+      ],
+      "uuid": "f3fa4a51-0b3b-4759-b655-85ab65d62744"
+    },
+    {
+      "actions": [
+        {
+          "language": "hindi",
+          "type": "set_contact_language",
+          "uuid": "1fcfd29b-d6c5-4d09-8901-45c9bdc4f6b1"
         }
       ],
       "exits": [
@@ -178,16 +224,6 @@
           "language": "english",
           "type": "set_contact_language",
           "uuid": "6c4fc49f-579b-44a0-b273-83445f3ea873"
-        },
-        {
-          "labels": [
-            {
-              "name": "Languages",
-              "uuid": "24"
-            }
-          ],
-          "type": "add_input_labels",
-          "uuid": "2ff3e13b-44db-46d5-b6fc-2590dd8acb3a"
         }
       ],
       "exits": [
@@ -220,8 +256,8 @@
   ],
   "spec_version": "13.1.0",
   "type": "message",
-  "uuid": "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
+  "uuid": "LANGUAGE_UUID",
   "vars": [
-    "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"
+    "LANGUAGE_UUID"
   ]
 }

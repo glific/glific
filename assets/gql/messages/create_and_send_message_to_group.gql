@@ -1,0 +1,10 @@
+mutation createAndSendMessageToGroup($input: MessageInput!, $group_id: ID!) {
+  createAndSendMessageToGroup(input: $input, group_id: $group_id) {
+    success
+    contactIds
+    errors {
+      key
+      message
+    }
+  }
+}

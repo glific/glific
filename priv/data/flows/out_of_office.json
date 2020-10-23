@@ -1,5 +1,5 @@
 {
-  "uuid" : "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7",
+  "uuid" : "OUTOFOFFICE_UUID",
   "_ui" : {
     "nodes" : {
       "5a60660e-30ca-4e95-901d-2f1f77bea840" : {
@@ -48,7 +48,7 @@
     }
   },
   "vars" : [
-    "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7"
+    "OUTOFOFFICE_UUID"
   ],
   "type" : "messaging",
   "name" : "Out of Office Workflow"

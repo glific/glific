@@ -309,7 +309,7 @@ defmodule Glific.Fixtures do
 
     group_fixture(attrs)
 
-    [c1, c2 | _] = Contacts.list_contacts(attrs)
+    [_glific_admin, c1, c2 | _] = Contacts.list_contacts(attrs)
     [g1, g2 | _] = Groups.list_groups(attrs)
 
     {:ok, cg1} =

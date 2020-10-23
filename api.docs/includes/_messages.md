@@ -346,8 +346,7 @@ mutation createAndSendMessage($input: MessageInput!) {
     "flow": "OUTBOUND",
     "type": "TEXT",
     "senderId": 1,
-    "receiverId": 2,
-    "userId": 1
+    "receiverId": 2
   }
 }
 ```
@@ -397,8 +396,7 @@ mutation createAndSendMessage($input: MessageInput!) {
     "receiverId": 7,
     "sendAt": "2020-07-10T03:30:00Z",
     "senderId": 1,
-    "type": "TEXT",
-    "userId": 1
+    "type": "TEXT"
   }
 }
 ```
@@ -432,15 +430,17 @@ Parameter | Type | Default | Description
 <a href="#messageresult">MessageResult</a> | An error object or empty
 
 
-## Create and send Message to multiple Contacts
+
+## Create and send Message to contacts of a group
 
 ```graphql
-mutation createAndSendMessageToContacts($input: MessageInput!, $contactIds: [ID]!) {
-  createAndSendMessageToContacts(input: $input, contactIds: $contactIds) {
-    id
-    body
-    receiver{
-      id
+mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {
+  createAndSendMessageToGroup(input: $input, groupId: $groupId) {
+    success
+    contactIds
+    errors {
+      key
+      message
     }
   }
 }
@@ -450,13 +450,9 @@ mutation createAndSendMessageToContacts($input: MessageInput!, $contactIds: [ID]
     "body": "Test message",
     "flow": "OUTBOUND",
     "type": "TEXT",
-    "senderId": 1,
-    "userId": 1
+    "senderId": 1
   },
-  "contactIds": [
-    2,
-    3
-  ]
+  "groupId": 1
 }
 ```
 
@@ -465,22 +461,13 @@ mutation createAndSendMessageToContacts($input: MessageInput!, $contactIds: [ID]
 ```json
 {
   "data": {
-    "createAndSendMessageToContacts": [
-      {
-        "body": "Test message",
-        "id": "61",
-        "receiver": {
-          "id": "3"
-        }
-      },
-      {
-        "body": "Test message",
-        "id": "60",
-        "receiver": {
-          "id": "2"
-        }
-      }
-    ]
+    "createAndSendMessageToGroup": {
+      "contactIds": [
+        "8"
+      ],
+      "errors": null,
+      "success": true
+    }
   }
 }
 ```
@@ -489,12 +476,12 @@ mutation createAndSendMessageToContacts($input: MessageInput!, $contactIds: [ID]
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 input | <a href="#messageinput">MessageInput</a> | required ||
-contactIds | [<a href="#id">ID</a>]! | required ||
+groupId | [<a href="#id">ID</a>]! | required ||
 
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-[<a href="#message">Message</a>] | List of messages
+[<a href="#groupmessageresult">GroupMessageResult</a>] | List of contact ids
 
 
 ## Send hsm Message
@@ -801,6 +788,36 @@ Parameter | Type | Default | Description
 <tr>
 <td colspan="2" valign="top"><strong>message</strong></td>
 <td valign="top"><a href="#message">Message</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### GroupMessageResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>success</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>contactIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
 <td></td>
 </tr>
 </tbody>
