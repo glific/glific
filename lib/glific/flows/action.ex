@@ -13,13 +13,8 @@ defmodule Glific.Flows.Action do
     Groups,
     Messages,
     Messages.Message,
-<<<<<<< HEAD
-    Tags,
-    Repo
-=======
     Repo,
     Tags
->>>>>>> 9d7204767654379dfe4ed37432fd6e7b4045a4e3
   }
 
   alias Glific.Flows.{
