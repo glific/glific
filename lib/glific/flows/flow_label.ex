@@ -10,6 +10,7 @@ defmodule Glific.Flows.FlowLabel do
   alias __MODULE__
   alias Glific.{
     Flows.Flow,
+    Flows.FlowLabel,
     Partners.Organization,
     Repo
   }
@@ -33,6 +34,7 @@ defmodule Glific.Flows.FlowLabel do
   end
 
   @doc """
+  Glific.Flows.FlowLabel.list_flow_label()
   Standard changeset pattern we use for all data types
 
   """
@@ -44,4 +46,13 @@ defmodule Glific.Flows.FlowLabel do
     |> unique_constraint([:name, :organization_id])
   end
 
+  @doc """
+  Given a organization id, retrieve all the flow labels for organization
+  """
+  def get_all_flowlabel(organization_id) do
+      query =
+        FlowLabel
+        |> where([m], m.organization_id == ^organization_id)
+      Repo.all(query)
+  end
 end

@@ -93,13 +93,12 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec labels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels(conn, _params) do
-    tag_list =
-      Glific.Tags.get_all_children("flow", conn.assigns[:organization_id])
-      |> Enum.reduce([], fn tag, acc ->
-        [%{uuid: "#{tag.id}", name: tag.label} | acc]
+    flow_list =
+      Glific.Flows.FlowLabel.get_all_flowlabel(conn.assigns[:organization_id])
+      |> Enum.reduce([], fn flow, acc ->
+        [%{uuid: "#{flow.uuid}", name: flow.name} | acc]
       end)
-
-    json(conn, %{results: tag_list})
+    json(conn, %{results: flow_list})
   end
 
   @doc """
