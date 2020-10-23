@@ -34,6 +34,7 @@ defmodule Glific.Flows.FlowLabel do
 
   @doc """
   Standard changeset pattern we use for all data types
+
   """
   @spec changeset(any(), map()) :: Ecto.Changeset.t()
   def changeset(flow_label, attrs) do
@@ -42,4 +43,5 @@ defmodule Glific.Flows.FlowLabel do
     |> validate_required(@required_fields)
     |> unique_constraint([:name, :organization_id])
   end
+
 end

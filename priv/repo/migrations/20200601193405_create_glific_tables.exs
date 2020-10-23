@@ -712,8 +712,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
   """
   def flow_label do
     create table(:flow_label) do
-      add :uuid, :string
-
+      add :uuid, :uuid, null: false
       add :name, :string
 
       # foreign key to organization restricting scope of this table to this organization only
