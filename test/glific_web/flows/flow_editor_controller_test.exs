@@ -45,7 +45,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
 
     test "labels_post", %{conn: conn} do
       conn = post(conn, "/flow-editor/labels", %{"name" => "Test Lable"})
-      results =  json_response(conn, 200)
+      results = json_response(conn, 200)
       assert results["name"] == "Test Lable"
     end
 
