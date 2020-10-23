@@ -66,31 +66,41 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([m], m.organization_id == ^organization_id)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:tags, :receiver, :sender, :contact])
+      |> preload([:tags, :receiver, :sender, :contact, :user])
 
     Repo.all(query)
     |> Enum.reduce(
       [],
       fn row, acc ->
-        [
-          %{
-            type: row.type,
-            user_id: row.contact_id,
-            message: row.body,
-            inserted_at: format_date(row.inserted_at),
-            sent_at: format_date(row.sent_at),
-            uuid: row.uuid,
-            id: row.id,
-            flow: row.flow,
-            status: row.status,
-            sender_phone: row.sender.phone,
-            receiver_phone: row.receiver.phone,
-            contact_phone: row.contact.phone,
-            user_phone: row.contact.phone,
-            tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
-          }
-          | acc
-        ]
+        message_row = %{
+          type: row.type,
+          user_id: row.contact_id,
+          message: row.body,
+          inserted_at: format_date(row.inserted_at),
+          sent_at: format_date(row.sent_at),
+          uuid: row.uuid,
+          id: row.id,
+          flow: row.flow,
+          status: row.status,
+          sender_phone: row.sender.phone,
+          receiver_phone: row.receiver.phone,
+          contact_phone: row.contact.phone,
+          contact_name: row.contact.name,
+          tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
+        }
+
+        message_row =
+          if row.user != nil do
+            message_row
+            |> Map.merge(%{
+              user_phone: row.user.phone,
+              user_name: row.user.name
+            })
+          else
+            message_row
+          end
+
+        [message_row | acc]
       end
     )
     |> Enum.chunk_every(100)
@@ -229,7 +239,9 @@ defmodule Glific.Jobs.BigQueryWorker do
         sender_phone: msg["sender_phone"],
         receiver_phone: msg["receiver_phone"],
         contact_phone: msg["contact_phone"],
+        contact_name: msg["contact_name"],
         user_phone: msg["user_phone"],
+        user_name: msg["user_name"],
         tags: msg["tags"]
       }
     }
@@ -275,14 +287,16 @@ defmodule Glific.Jobs.BigQueryWorker do
     token = token(credentials)
     conn = Connection.new(token.token)
 
-    Tabledata.bigquery_tabledata_insert_all(
-      conn,
-      project_id,
-      dataset_id,
-      table_id,
-      [body: %{rows: data}],
-      []
-    )
+    # In case of error response error will be stored in the oban job
+    {:ok, %{insertErrors: nil}} =
+      Tabledata.bigquery_tabledata_insert_all(
+        conn,
+        project_id,
+        dataset_id,
+        table_id,
+        [body: %{rows: data}],
+        []
+      )
 
     :ok
   end
