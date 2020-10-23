@@ -59,6 +59,7 @@ defmodule Glific.Messages.Message do
   @optional_fields [
     :uuid,
     :body,
+    :flow_label,
     :clean_body,
     :is_hsm,
     :status,
@@ -75,6 +76,7 @@ defmodule Glific.Messages.Message do
   schema "messages" do
     field :uuid, Ecto.UUID
     field :body, :string
+    field :flow_label, :string
     field :flow, MessageFlow
     field :type, MessageType
     field :status, MessageStatus
