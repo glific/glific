@@ -12,7 +12,7 @@ defmodule Glific.Flows.Action do
     Groups,
     Messages,
     Messages.Message,
-    Repo,
+    Repo
   }
 
   alias Glific.Flows.{
@@ -258,13 +258,15 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "add_input_labels"} = action, context, messages) do
     ## We will soon figure out how we will manage the UUID with tags
-    flow_label = action.labels
-                  |>Enum.map(fn label -> label["name"] end)
-                  |>Enum.join(", ")
+    flow_label =
+      action.labels
+      |> Enum.map(fn label -> label["name"] end)
+      |> Enum.join(", ")
 
     Repo.get(Message, context.last_message.id)
     |> Message.changeset(%{flow_label: flow_label})
     |> Repo.update()
+
     {:ok, context, messages}
   end
 

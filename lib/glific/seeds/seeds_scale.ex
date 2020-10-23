@@ -92,7 +92,7 @@ if Code.ensure_loaded?(Faker) do
       )
     end
 
-    @num_messages_per_conversation 40
+    @num_messages_per_conversation 20
     defp create_conversation(contact_id, sender_id, organization) do
       num_messages = Enum.random(1..@num_messages_per_conversation)
 
@@ -136,15 +136,168 @@ if Code.ensure_loaded?(Faker) do
           select: c.id,
           where: c.id != ^organization.contact_id and c.organization_id == ^organization.id
 
+      contact_ids = Repo.all(query)
+
       _ =
-        Repo.all(query)
+        contact_ids
         |> Enum.shuffle()
         |> Enum.flat_map(&create_conversation(&1, sender_id, organization))
         # this enables us to send smaller chunks to postgres for insert
         |> Enum.chunk_every(1000)
         |> Enum.map(&Repo.insert_all(Message, &1, timeout: 120_000))
 
+      seed_flows(contact_ids, sender_id, organization.id)
+
       Repo.query!("ALTER TABLE messages ENABLE TRIGGER update_search_message_trigger;")
+    end
+
+    @contact_range 10..40
+    @dropout_percent 20
+    @day_range 31..0
+
+    defp seed_flows(contact_ids, sender_id, organization_id),
+      do:
+        Enum.each(
+          @day_range,
+          &seed_flows(contact_ids, sender_id, organization_id, &1)
+        )
+
+    defp seed_flows(contact_ids, sender_id, organization_id, day) when is_list(contact_ids) do
+      num_contacts = div(length(contact_ids) * Enum.random(@contact_range), 100)
+
+      contact_ids
+      |> Enum.take_random(num_contacts)
+      |> Enum.flat_map(&seed_flows(&1, sender_id, organization_id, day))
+      # this enables us to send smaller chunks to postgres for insert
+      |> Enum.chunk_every(1000)
+      |> Enum.map(&Repo.insert_all(Message, &1, timeout: 120_000))
+    end
+
+    defp seed_flows(contact_id, sender_id, organization_id, day) do
+      # we are simulating an activity and feedback flow from SoL
+      # User -> Glific: "I am ready to start Activity flow"
+      # Glific -> User: "Response to Activity with menu options {1, "Visual Arts"}, {2, "Poetry"}, {3, "Theatre"}"
+      # User -> Glific: random tuple between  {1, "Visual Arts"}, {2, "Poetry"}, {3, "Theatre"}
+      # random dropout by dropout_range
+      # Glific -> User: "Response to Main Menu Selection with menu options {1, "Understood"}, {2, "Not Understood"}"
+      # User -> Glific: random tuple between  {1, "Understood"}, {2, "Not Understood"}
+      # If 2 chosen, stop here
+      # Glific -> User: "Response to Understood selection with menu options {1, "Loved"}, {2, "OK"}, {3, "Not Great"}"
+      # User -> Glific: random tuple between {1, "Loved"}, {2, "OK"}, {3, "Not Great"}
+      # Glific -> User: "Thank you for your response"
+
+      # get time here
+      sub_time = (-day - 1) * 24 * 60 * 60
+
+      opts = %{
+        contact: contact_id,
+        sender: sender_id,
+        organization: organization_id,
+        current_time: DateTime.utc_now() |> DateTime.add(sub_time),
+        messages: [],
+        halt: false
+      }
+
+      opts
+      |> create_message_to_glific("I am ready to start Activity Flow")
+      |> create_message_from_glific(
+        "Response to Activity with menu options {1, Visual Arts}, {2, Poetry}, {3, Theatre}"
+      )
+      |> create_message_to_glific(
+        Enum.random([{1, "Visual Arts"}, {2, "Poetry"}, {3, "Theatre"}]),
+        dropout: @dropout_percent
+      )
+      |> create_message_from_glific(
+        "Response to Main Menu Selection with menu options {1, Understood}, {2, Not Understood}"
+      )
+      # we are ensuring more people understood. simple but works
+      |> create_message_to_glific(
+        Enum.random([
+          {1, "Understood"},
+          {1, "Understood"},
+          {1, "Understood"},
+          {1, "Understood"},
+          {2, "Not Understood"}
+        ]),
+        stop: 2,
+        dropout: @dropout_percent
+      )
+      |> create_message_from_glific(
+        "Response to Understood selection with menu options {1, Loved}, {2, OK}, {3, Not Great}"
+      )
+      |> create_message_to_glific(Enum.random([{1, "Loved"}, {2, "OK"}, {3, "Not Great"}]))
+      |> create_message_from_glific("Thank you for your response")
+      |> Map.get(:messages)
+      |> Enum.reverse()
+    end
+
+    defp create_message_common(opts, body, difference) do
+      message =
+        Map.merge(
+          difference,
+          %{
+            type: "text",
+            body: body,
+            bsp_status: "delivered",
+            contact_id: opts.contact,
+            organization_id: opts.organization,
+            inserted_at: opts.current_time,
+            updated_at: opts.current_time
+          }
+        )
+
+      opts
+      |> Map.update!(:messages, fn m -> [message | m] end)
+      |> Map.update!(:current_time, fn c -> DateTime.add(c, Enum.random(5..600)) end)
+    end
+
+    defp create_message_from_glific(%{halt: true} = opts, _body), do: opts
+
+    defp create_message_from_glific(opts, body) do
+      difference = %{
+        flow: "outbound",
+        sender_id: opts.sender,
+        receiver_id: opts.contact
+      }
+
+      create_message_common(opts, body, difference)
+    end
+
+    defp create_message_to_glific(opts, body, extra \\ [])
+
+    defp create_message_to_glific(%{halt: true} = opts, _body, _extra), do: opts
+
+    defp create_message_to_glific(opts, body, _extra) when is_binary(body) do
+      difference = %{
+        flow: "outbound",
+        sender_id: opts.contact,
+        receiver_id: opts.sender
+      }
+
+      create_message_common(opts, body, difference)
+    end
+
+    defp create_message_to_glific(opts, {num, label} = tup, extra) when is_tuple(tup) do
+      difference = %{
+        flow: "outbound",
+        sender_id: opts.contact,
+        receiver_id: opts.sender,
+        flow_label: label
+      }
+
+      opts
+      |> create_message_common(to_string(num), difference)
+      |> process_stop(num, Keyword.get(extra, :stop))
+      |> process_dropout(Keyword.get(extra, :dropout, -1))
+    end
+
+    defp process_stop(opts, num, num), do: Map.put(opts, :halt, true)
+    defp process_stop(opts, _num, _), do: opts
+
+    defp process_dropout(opts, limit) do
+      if Enum.random(0..100) < limit,
+        do: Map.put(opts, :halt, true),
+        else: opts
     end
 
     defp seed_message_tags(organization) do
