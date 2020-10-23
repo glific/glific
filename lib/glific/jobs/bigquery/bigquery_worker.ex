@@ -63,7 +63,8 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec queue_table_data(String.t(), non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
   defp queue_table_data("messages", organization_id, min_id, max_id) do
-    {:ok, simulator_contact} = Repo.fetch_by(Contact, %{phone: @simulater_phone, organization_id: organization_id})
+    {:ok, simulator_contact} =
+      Repo.fetch_by(Contact, %{phone: @simulater_phone, organization_id: organization_id})
 
     query =
       Message
@@ -81,8 +82,8 @@ defmodule Glific.Jobs.BigQueryWorker do
           type: row.type,
           user_id: row.contact_id,
           message: row.body,
-          inserted_at: format_date(row.inserted_at),
-          sent_at: format_date(row.sent_at),
+          inserted_at: format_date(row.inserted_at, organization_id),
+          sent_at: format_date(row.sent_at, organization_id),
           uuid: row.uuid,
           id: row.id,
           flow: row.flow,
@@ -133,15 +134,15 @@ defmodule Glific.Jobs.BigQueryWorker do
             provider_status: row.bsp_status,
             status: row.status,
             language: row.language.label,
-            optin_time: format_date(row.optin_time),
-            optout_time: format_date(row.optout_time),
-            last_message_at: format_date(row.last_message_at),
-            inserted_at: format_date(row.inserted_at),
+            optin_time: format_date(row.optin_time, organization_id),
+            optout_time: format_date(row.optout_time, organization_id),
+            last_message_at: format_date(row.last_message_at, organization_id),
+            inserted_at: format_date(row.inserted_at, organization_id),
             fields:
               Enum.map(row.fields, fn {_key, field} ->
                 %{
                   label: field["label"],
-                  inserted_at: format_date(field["inserted_at"]),
+                  inserted_at: format_date(field["inserted_at"], organization_id),
                   type: field["type"],
                   value: field["value"]
                 }
@@ -184,18 +185,26 @@ defmodule Glific.Jobs.BigQueryWorker do
     end
   end
 
-  @spec format_date(DateTime.t() | nil) :: any()
-  defp format_date(nil),
+  @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
+  defp format_date(nil, _),
     do: nil
 
-  defp format_date(date) when is_binary(date),
-    do:
-      Timex.parse(date, "{RFC3339z}")
-      |> elem(1)
-      |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+  defp format_date(date, organization_id) when is_binary(date) do
+    timezone = Partners.organization(organization_id).timezone
 
-  defp format_date(date),
-    do: Timex.format!(date, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
+    Timex.parse(date, "{RFC3339z}")
+    |> elem(1)
+    |> Timex.Timezone.convert(timezone)
+    |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+  end
+
+  defp format_date(date, organization_id) do
+    timezone = Partners.organization(organization_id).timezone
+
+    date
+    |> Timex.Timezone.convert(timezone)
+    |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+  end
 
   @spec token(map()) :: any()
   defp token(credentials) do
