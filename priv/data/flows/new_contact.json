@@ -1,6 +1,6 @@
 {
   "language" : "base",
-  "uuid" : "6fe8fda9-2df6-4694-9fd6-45b9e724f545",
+  "uuid" : "NEWCONTACT_UUID",
   "type" : "messaging",
   "_ui" : {
     "nodes" : {
@@ -398,6 +398,6 @@
   ],
   "name" : "New Contact Workflow",
   "vars" : [
-    "6fe8fda9-2df6-4694-9fd6-45b9e724f545"
+    "NEWCONTACT_UUID"
   ]
 }

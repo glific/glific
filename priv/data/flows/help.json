@@ -1,9 +1,9 @@
 {
   "name": "Help Workflow",
   "type": "message",
-  "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
+  "uuid": "HELP_UUID",
   "vars": [
-    "3fa22108-f464-41e5-81d9-d8a298854429"
+    "HELP_UUID"
   ],
   "nodes": [
     {
@@ -187,7 +187,7 @@
         {
           "flow": {
             "name": "Optout Workflow",
-            "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104"
+            "uuid": "OPTOUT_UUID"
           },
           "type": "enter_flow",
           "uuid": "1222300c-e84c-494a-8a5b-f88fe52c33ce"

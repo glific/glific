@@ -147,6 +147,17 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         organization_id: organization.id
       })
 
+    flow_tag =
+      Repo.insert!(%Tag{
+        label: "Flow",
+        shortcode: "flow",
+        description: "Marking message received for a flow",
+        is_reserved: true,
+        language_id: en_us.id,
+        parent_id: message_tags_mt.id,
+        organization_id: organization.id
+      })
+
     tags = [
       # Intent of message
       %{
@@ -212,12 +223,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         parent_id: message_tags_mt.id
       },
 
+      # Languages, Optout and Help tags can be used to tag respective flow responses
       # Languages
       %{
         label: "Language",
         shortcode: "language",
         description: "Marking message as a name of a language",
-        parent_id: message_tags_mt.id,
+        parent_id: flow_tag.id,
         keywords: ["hindi", "english", "हिंदी", "अंग्रेज़ी"]
       },
 
@@ -226,7 +238,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         label: "Optout",
         shortcode: "optout",
         description: "Marking message as a sign of opting out",
-        parent_id: message_tags_mt.id,
+        parent_id: flow_tag.id,
         keywords: ["stop", "unsubscribe", "halt", "सदस्यता समाप्त"]
       },
 
@@ -235,7 +247,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         label: "Help",
         shortcode: "help",
         description: "Marking message as a sign of requiring assistance",
-        parent_id: message_tags_mt.id,
+        parent_id: flow_tag.id,
         keywords: ["help", "मदद"]
       },
 
@@ -308,6 +320,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     # seed multiple tags
     Repo.insert_all(Tag, tags)
+
+    # seed tags for flows
+    add_flow_tags(organization, en_us, flow_tag)
   end
 
   def providers(0 = _count_organizations) do
@@ -588,6 +603,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       optout: generate_uuid(organization, "bc1622f8-64f8-4b3d-b767-bb6bbfb65104")
     }
 
+    flow_labels_id_map =
+      Glific.Tags.get_all_children("flow", organization.id)
+      |> Enum.reduce(%{}, fn tag, acc ->
+        acc |> Map.merge(%{tag.label => tag.id})
+      end)
+
     data = [
       {"Help Workflow", ["help", "मदद"], uuid_map.help, true, "help.json"},
       {"Language Workflow", ["language", "भाषा"], uuid_map.language, true, "language.json"},
@@ -602,7 +623,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       {"Optout Workflow", ["optout"], uuid_map.optout, false, "optout.json"}
     ]
 
-    Enum.map(data, &flow(&1, organization, uuid_map))
+    Enum.map(data, &flow(&1, organization, uuid_map, flow_labels_id_map))
   end
 
   defp replace_uuids(json, uuid_map),
@@ -619,7 +640,21 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         end
       )
 
-  defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map) do
+  defp replace_label_uuids(json, flow_labels_id_map),
+    do:
+      Enum.reduce(
+        flow_labels_id_map,
+        json,
+        fn {key, id}, acc ->
+          String.replace(
+            acc,
+            key |> Kernel.<>(":ID"),
+            "#{id}"
+          )
+        end
+      )
+
+  defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
     f =
       Repo.insert!(%Flow{
         name: name,
@@ -633,6 +668,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     definition =
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
       |> replace_uuids(uuid_map)
+      |> replace_label_uuids(id_map)
       |> Jason.decode!()
       |> Map.merge(%{
         "name" => f.name,
@@ -666,5 +702,130 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       scope: scope,
       organization_id: organization.id
     })
+  end
+
+  defp add_flow_tags(organization, en_us, flow_tag) do
+    flow_activity_tag =
+      Repo.insert!(%Tag{
+        label: "Activities",
+        shortcode: "activities",
+        description: "Marking message received for an activity",
+        is_reserved: false,
+        language_id: en_us.id,
+        parent_id: flow_tag.id,
+        organization_id: organization.id
+      })
+
+    feedback_tag =
+      Repo.insert!(%Tag{
+        label: "Feedback",
+        shortcode: "feedback",
+        description: "Marking message received for the feedback flow",
+        is_reserved: false,
+        language_id: en_us.id,
+        parent_id: flow_tag.id,
+        organization_id: organization.id
+      })
+
+    registration_tag =
+      Repo.insert!(%Tag{
+        label: "Registration",
+        shortcode: "registration",
+        description: "Marking message received for the registration flow",
+        is_reserved: false,
+        language_id: en_us.id,
+        parent_id: flow_tag.id,
+        organization_id: organization.id
+      })
+
+    {:ok, language_tag} =
+      Repo.fetch_by(Tag, %{shortcode: "language", organization_id: organization.id})
+
+    flow_tags = [
+      %{
+        label: "Poetry",
+        shortcode: "poetry",
+        description: "Marking message received for the activity: poetry",
+        parent_id: flow_activity_tag.id
+      },
+      %{
+        label: "Visual Arts",
+        shortcode: "visualarts",
+        description: "Marking message received for the activity: visual arts",
+        parent_id: flow_activity_tag.id
+      },
+      %{
+        label: "Theatre",
+        shortcode: "theatre",
+        description: "Marking message received for the activity: theatre",
+        parent_id: flow_activity_tag.id
+      },
+      %{
+        label: "Understood",
+        shortcode: "understood",
+        description: "Marking message received for the feedback flow: understood",
+        parent_id: feedback_tag.id
+      },
+      %{
+        label: "Not Understood",
+        shortcode: "notunderstood",
+        description: "Marking message received for the feedback flow: not understood",
+        parent_id: feedback_tag.id
+      },
+      %{
+        label: "Age Group less than 10",
+        shortcode: "agegrouplessthan10",
+        description: "Marking message received for the registration flow: age group less than 10",
+        parent_id: registration_tag.id
+      },
+      %{
+        label: "Age Group 11 to 14",
+        shortcode: "agegroup11to14",
+        description: "Marking message received for the registration flow: age group 11 to 14",
+        parent_id: registration_tag.id
+      },
+      %{
+        label: "Age Group 15 to 18",
+        shortcode: "agegroup15to18",
+        description: "Marking message received for the registration flow: Age Group 15 to 18",
+        parent_id: registration_tag.id
+      },
+      %{
+        label: "Age Group 19 or above",
+        shortcode: "agegroup19orabove",
+        description: "Marking message received for the registration flow: age group 19 or above",
+        parent_id: registration_tag.id
+      },
+      %{
+        label: "Hindi",
+        shortcode: "hindi",
+        description: "Marking message received for the language flow: Hindi",
+        parent_id: language_tag.id
+      },
+      %{
+        label: "English",
+        shortcode: "english",
+        description: "Marking message received for the language flow: English",
+        parent_id: language_tag.id
+      }
+    ]
+
+    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    flow_tags =
+      Enum.map(
+        flow_tags,
+        fn tag ->
+          tag
+          |> Map.put(:organization_id, organization.id)
+          |> Map.put(:language_id, en_us.id)
+          |> Map.put(:is_reserved, false)
+          |> Map.put(:inserted_at, utc_now)
+          |> Map.put(:updated_at, utc_now)
+        end
+      )
+
+    # seed multiple tags
+    Repo.insert_all(Tag, flow_tags)
   end
 end
