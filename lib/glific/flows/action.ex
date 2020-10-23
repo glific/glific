@@ -6,7 +6,6 @@ defmodule Glific.Flows.Action do
   alias __MODULE__
 
   use Ecto.Schema
-  import Ecto.Query
 
   alias Glific.{
     Flows,
@@ -14,7 +13,6 @@ defmodule Glific.Flows.Action do
     Messages,
     Messages.Message,
     Repo,
-    Tags
   }
 
   alias Glific.Flows.{
