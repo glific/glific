@@ -22,6 +22,7 @@ defmodule Glific.Messages.Message do
           type: String.t() | nil,
           is_hsm: boolean | nil,
           flow: String.t() | nil,
+          flow_label: String.t() | nil,
           status: String.t() | nil,
           bsp_status: String.t() | nil,
           errors: map() | nil,
@@ -59,6 +60,7 @@ defmodule Glific.Messages.Message do
   @optional_fields [
     :uuid,
     :body,
+    :flow_label,
     :clean_body,
     :is_hsm,
     :status,
@@ -75,6 +77,7 @@ defmodule Glific.Messages.Message do
   schema "messages" do
     field :uuid, Ecto.UUID
     field :body, :string
+    field :flow_label, :string
     field :flow, MessageFlow
     field :type, MessageType
     field :status, MessageStatus
