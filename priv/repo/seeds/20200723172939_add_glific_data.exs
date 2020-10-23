@@ -827,5 +827,39 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     # seed multiple tags
     Repo.insert_all(Tag, flow_tags)
+
+    flow_labels = [
+      %{name: "Activities"},
+      %{name: "Feedback"},
+      %{name: "Registration"},
+      %{name: "poetry"},
+      %{name: "visualarts"},
+      %{name: "theatre"},
+      %{name: "understood"},
+      %{name: "notunderstood"},
+      %{name: "agegrouplessthan10"},
+      %{name: "agegroup11to14"},
+      %{name: "agegroup15to18"},
+      %{name: "agegroup19orabove"},
+      %{name: "hindi"},
+      %{name: "english"}
+    ]
+
+    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    flow_labels =
+      Enum.map(
+        flow_labels,
+        fn tag ->
+          tag
+          |> Map.put(:organization_id, organization.id)
+          |> Map.put(:uuid, Ecto.UUID.generate())
+          |> Map.put(:inserted_at, utc_now)
+          |> Map.put(:updated_at, utc_now)
+        end
+      )
+
+    # seed multiple labels
+    Repo.insert_all(FlowLabel, flow_labels)
   end
 end
