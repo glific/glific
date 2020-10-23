@@ -1,6 +1,6 @@
 {
   "vars" : [
-    "63397051-789d-418d-9388-2ef7eb1268bb"
+    "Prefe"
   ],
   "localization" : {
 
@@ -202,7 +202,7 @@
       ]
     }
   ],
-  "uuid" : "63397051-789d-418d-9388-2ef7eb1268bb",
+  "uuid" : "PREFERENCE_UUID",
   "_ui" : {
     "languages" : [
       {

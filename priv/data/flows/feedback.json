@@ -1,202 +1,320 @@
 {
     "_ui": {
-        "nodes": {
-            "1a37ab55-3a2e-49bd-a8a8-7a268ad21dce": {
-                "type": "wait_for_response",
-                "config": {
-                    "cases": {}
-                },
-                "position": {
-                    "top": 280,
-                    "left": 0
-                }
-            },
-            "9bd028bb-bdd0-4383-858b-e7eb1e424530": {
-                "type": "split_by_subflow",
-                "config": {},
-                "position": {
-                    "top": 640,
-                    "left": 540
-                }
-            },
-            "b1297a2c-49ea-4074-99c0-ef8e22abf336": {
-                "type": "execute_actions",
-                "position": {
-                    "top": 440,
-                    "left": 380
-                }
-            },
-            "c5120b2b-380f-4864-9a3b-a5ec9a9eabfd": {
-                "type": "execute_actions",
-                "position": {
-                    "top": 540,
-                    "left": 60
-                }
-            },
-            "d60bb1cd-6b92-43e0-acc7-97a988c9817b": {
-                "type": "execute_actions",
-                "position": {
-                    "top": 0,
-                    "left": 0
-                }
-            }
+      "nodes": {
+        "1a37ab55-3a2e-49bd-a8a8-7a268ad21dce": {
+          "config": {
+            "cases": {}
+          },
+          "position": {
+            "left": 0,
+            "top": 280
+          },
+          "type": "wait_for_response"
+        },
+        "93ad0d06-d789-4245-88e2-dc2f151bab2c": {
+          "position": {
+            "left": 220,
+            "top": 460
+          },
+          "type": "execute_actions"
+        },
+        "9bd028bb-bdd0-4383-858b-e7eb1e424530": {
+          "config": {},
+          "position": {
+            "left": 540,
+            "top": 700
+          },
+          "type": "split_by_subflow"
+        },
+        "b1297a2c-49ea-4074-99c0-ef8e22abf336": {
+          "position": {
+            "left": 360,
+            "top": 560
+          },
+          "type": "execute_actions"
+        },
+        "c5120b2b-380f-4864-9a3b-a5ec9a9eabfd": {
+          "position": {
+            "left": 80,
+            "top": 580
+          },
+          "type": "execute_actions"
+        },
+        "d60bb1cd-6b92-43e0-acc7-97a988c9817b": {
+          "position": {
+            "left": 0,
+            "top": 0
+          },
+          "type": "execute_actions"
+        },
+        "e1bd3dfd-062f-432e-9fc5-5e35796b8ad4": {
+          "position": {
+            "left": 0,
+            "top": 460
+          },
+          "type": "execute_actions"
         }
+      }
+    },
+    "expire_after_minutes": 10080,
+    "language": "base",
+    "localization": {
+      "hi": {
+        "248c1143-55a4-45a6-8c08-bc1b9b146bf7": {
+          "name": [
+            "अन्य"
+          ]
+        },
+        "4b880e98-bef4-43f7-9012-767b7fddd8d4": {
+          "text": [
+            "ओह, यह ठीक नहीं है! आप अपनी गतिविधि प्रकार बदल सकते हैं"
+          ]
+        },
+        "5b2bcaf0-b751-443e-8347-421066b7d9d2": {
+          "name": [
+            "नहीं समझे"
+          ]
+        },
+        "826c265b-45d3-4ec5-b699-197533c8ab46": {
+          "name": [
+            "समझ लिया"
+          ]
+        },
+        "bb3c506d-0a27-411d-acdc-1f572dbbd44f": {
+          "text": [
+            "एक दम बढ़िया! एक बार काम पूरा होने के बाद हम आपके साथ आपकी गतिविधि देखकर खुश होंगे।"
+          ]
+        },
+        "bbf9e196-e538-480b-a2fa-abfd9f5c62bc": {
+          "text": [
+            "क्या आप गतिविधि का आनंद ले रहे हैं?\n\n1. टाइप 1 यदि आप इस गतिविधि को समझ गए हैं\n2. टाइप 2 अगर आपको इस गतिविधि को समझने में परेशानी हो रही है"
+          ]
+        }
+      }
     },
     "name": "Feedback",
-    "type": "messaging",
-    "uuid": "6c21af89-d7de-49ac-9848-c9febbf737a5",
-    "vars": ["6c21af89-d7de-49ac-9848-c9febbf737a5"],
-    "nodes": [{
-        "uuid": "d60bb1cd-6b92-43e0-acc7-97a988c9817b",
-        "exits": [{
-            "uuid": "45ec34cf-400a-4b43-bae7-d03d5098cf80",
-            "destination_uuid": "1a37ab55-3a2e-49bd-a8a8-7a268ad21dce"
-        }],
-        "actions": [{
+    "nodes": [
+      {
+        "actions": [
+          {
+            "attachments": [],
+            "quick_replies": [],
             "text": "Are you enjoying the activity?\n\n1. Type 1 if this you have understood this activity\n2. Type 2 if you are had trouble understanding this activity",
             "type": "send_msg",
-            "uuid": "bbf9e196-e538-480b-a2fa-abfd9f5c62bc",
-            "attachments": [],
-            "quick_replies": []
-        }]
-    }, {
-        "uuid": "1a37ab55-3a2e-49bd-a8a8-7a268ad21dce",
-        "exits": [{
-            "uuid": "d0c21ffd-f516-4a3e-a6e6-5026d6d7705a",
-            "destination_uuid": "c5120b2b-380f-4864-9a3b-a5ec9a9eabfd"
-        }, {
-            "uuid": "7a80da97-a4be-49d2-b7a1-adeeb21c8722",
-            "destination_uuid": "b1297a2c-49ea-4074-99c0-ef8e22abf336"
-        }, {
-            "uuid": "b3f7e923-0ab2-40a9-b805-b0845165343b",
-            "destination_uuid": null
-        }],
+            "uuid": "bbf9e196-e538-480b-a2fa-abfd9f5c62bc"
+          }
+        ],
+        "exits": [
+          {
+            "destination_uuid": "1a37ab55-3a2e-49bd-a8a8-7a268ad21dce",
+            "uuid": "45ec34cf-400a-4b43-bae7-d03d5098cf80"
+          }
+        ],
+        "uuid": "d60bb1cd-6b92-43e0-acc7-97a988c9817b"
+      },
+      {
+        "actions": [],
+        "exits": [
+          {
+            "destination_uuid": "e1bd3dfd-062f-432e-9fc5-5e35796b8ad4",
+            "uuid": "d0c21ffd-f516-4a3e-a6e6-5026d6d7705a"
+          },
+          {
+            "destination_uuid": "93ad0d06-d789-4245-88e2-dc2f151bab2c",
+            "uuid": "7a80da97-a4be-49d2-b7a1-adeeb21c8722"
+          },
+          {
+            "destination_uuid": null,
+            "uuid": "b3f7e923-0ab2-40a9-b805-b0845165343b"
+          }
+        ],
         "router": {
-            "type": "switch",
-            "wait": {
-                "type": "msg"
+          "cases": [
+            {
+              "arguments": [
+                "1"
+              ],
+              "category_uuid": "826c265b-45d3-4ec5-b699-197533c8ab46",
+              "type": "has_any_word",
+              "uuid": "bd810bea-112a-4932-aacb-8c7c6b38e7ba"
             },
-            "cases": [{
-                "type": "has_any_word",
-                "uuid": "bd810bea-112a-4932-aacb-8c7c6b38e7ba",
-                "arguments": ["1"],
-                "category_uuid": "826c265b-45d3-4ec5-b699-197533c8ab46"
-            }, {
-                "type": "has_any_word",
-                "uuid": "0e328deb-9c89-4f94-bf39-6ea3c41d22b5",
-                "arguments": ["2"],
-                "category_uuid": "5b2bcaf0-b751-443e-8347-421066b7d9d2"
-            }],
-            "operand": "@input.text",
-            "categories": [{
-                "name": "Understood",
-                "uuid": "826c265b-45d3-4ec5-b699-197533c8ab46",
-                "exit_uuid": "d0c21ffd-f516-4a3e-a6e6-5026d6d7705a"
-            }, {
-                "name": "Not understood",
-                "uuid": "5b2bcaf0-b751-443e-8347-421066b7d9d2",
-                "exit_uuid": "7a80da97-a4be-49d2-b7a1-adeeb21c8722"
-            }, {
-                "name": "Other",
-                "uuid": "248c1143-55a4-45a6-8c08-bc1b9b146bf7",
-                "exit_uuid": "b3f7e923-0ab2-40a9-b805-b0845165343b"
-            }],
-            "result_name": "feedback",
-            "default_category_uuid": "248c1143-55a4-45a6-8c08-bc1b9b146bf7"
+            {
+              "arguments": [
+                "2"
+              ],
+              "category_uuid": "5b2bcaf0-b751-443e-8347-421066b7d9d2",
+              "type": "has_any_word",
+              "uuid": "0e328deb-9c89-4f94-bf39-6ea3c41d22b5"
+            }
+          ],
+          "categories": [
+            {
+              "exit_uuid": "d0c21ffd-f516-4a3e-a6e6-5026d6d7705a",
+              "name": "Understood",
+              "uuid": "826c265b-45d3-4ec5-b699-197533c8ab46"
+            },
+            {
+              "exit_uuid": "7a80da97-a4be-49d2-b7a1-adeeb21c8722",
+              "name": "Not understood",
+              "uuid": "5b2bcaf0-b751-443e-8347-421066b7d9d2"
+            },
+            {
+              "exit_uuid": "b3f7e923-0ab2-40a9-b805-b0845165343b",
+              "name": "Other",
+              "uuid": "248c1143-55a4-45a6-8c08-bc1b9b146bf7"
+            }
+          ],
+          "default_category_uuid": "248c1143-55a4-45a6-8c08-bc1b9b146bf7",
+          "operand": "@input.text",
+          "result_name": "feedback",
+          "type": "switch",
+          "wait": {
+            "type": "msg"
+          }
         },
-        "actions": []
-    }, {
-        "uuid": "b1297a2c-49ea-4074-99c0-ef8e22abf336",
-        "exits": [{
-            "uuid": "59b93927-35ca-434b-a5fd-1e26df81f3ff",
-            "destination_uuid": "9bd028bb-bdd0-4383-858b-e7eb1e424530"
-        }],
-        "actions": [{
+        "uuid": "1a37ab55-3a2e-49bd-a8a8-7a268ad21dce"
+      },
+      {
+        "actions": [
+          {
+            "labels": [
+              {
+                "name": "Understood",
+                "uuid": "Understood:ID"
+              }
+            ],
+            "type": "add_input_labels",
+            "uuid": "d56724bc-49ef-4cdc-aed7-ccd6659b562c"
+          }
+        ],
+        "exits": [
+          {
+            "destination_uuid": "c5120b2b-380f-4864-9a3b-a5ec9a9eabfd",
+            "uuid": "4c01d985-7ac5-4b89-9c0e-209a9cf87c33"
+          }
+        ],
+        "uuid": "e1bd3dfd-062f-432e-9fc5-5e35796b8ad4"
+      },
+      {
+        "actions": [
+          {
+            "labels": [
+              {
+                "name": "Not Understood",
+                "uuid": "Not Understood:ID"
+              }
+            ],
+            "type": "add_input_labels",
+            "uuid": "44f858fa-1ed5-4147-ac93-90128c9f30a3"
+          }
+        ],
+        "exits": [
+          {
+            "destination_uuid": "b1297a2c-49ea-4074-99c0-ef8e22abf336",
+            "uuid": "1b82e836-26fe-4522-92b9-319caf2d63fb"
+          }
+        ],
+        "uuid": "93ad0d06-d789-4245-88e2-dc2f151bab2c"
+      },
+      {
+        "actions": [
+          {
+            "attachments": [],
+            "quick_replies": [],
             "text": "Oh that's not great! You can change your activity type\n",
             "type": "send_msg",
-            "uuid": "4b880e98-bef4-43f7-9012-767b7fddd8d4",
+            "uuid": "4b880e98-bef4-43f7-9012-767b7fddd8d4"
+          }
+        ],
+        "exits": [
+          {
+            "destination_uuid": "9bd028bb-bdd0-4383-858b-e7eb1e424530",
+            "uuid": "59b93927-35ca-434b-a5fd-1e26df81f3ff"
+          }
+        ],
+        "uuid": "b1297a2c-49ea-4074-99c0-ef8e22abf336"
+      },
+      {
+        "actions": [
+          {
             "attachments": [],
-            "quick_replies": []
-        }]
-    }, {
-        "uuid": "c5120b2b-380f-4864-9a3b-a5ec9a9eabfd",
-        "exits": [{
-            "uuid": "3c27376a-4195-48f5-9457-a74d73033f6d",
-            "destination_uuid": null
-        }],
-        "actions": [{
+            "quick_replies": [],
             "text": "That's great! We'll be happy to see your activity with us once you're done.",
             "type": "send_msg",
-            "uuid": "bb3c506d-0a27-411d-acdc-1f572dbbd44f",
-            "attachments": [],
-            "quick_replies": []
-        }]
-    }, {
-        "uuid": "9bd028bb-bdd0-4383-858b-e7eb1e424530",
-        "exits": [{
-            "uuid": "978e62cc-92cf-40af-af7d-32ec2ae446a8",
-            "destination_uuid": null
-        }, {
-            "uuid": "60231158-413d-4081-bb64-f5768cc4065b",
-            "destination_uuid": null
-        }],
-        "router": {
-            "type": "switch",
-            "cases": [{
-                "type": "has_only_text",
-                "uuid": "b560e4b1-8296-451c-a01d-a73b014d3a26",
-                "arguments": ["completed"],
-                "category_uuid": "f6239474-a881-4831-990b-613cbc1198ac"
-            }, {
-                "type": "has_only_text",
-                "uuid": "f587631c-69f3-4151-8064-fe7a5ef0069b",
-                "arguments": ["expired"],
-                "category_uuid": "9dd5042b-1376-4d13-85a1-2a4ef5c421a4"
-            }],
-            "operand": "@child.run.status",
-            "categories": [{
-                "name": "Complete",
-                "uuid": "f6239474-a881-4831-990b-613cbc1198ac",
-                "exit_uuid": "978e62cc-92cf-40af-af7d-32ec2ae446a8"
-            }, {
-                "name": "Expired",
-                "uuid": "9dd5042b-1376-4d13-85a1-2a4ef5c421a4",
-                "exit_uuid": "60231158-413d-4081-bb64-f5768cc4065b"
-            }],
-            "default_category_uuid": "9dd5042b-1376-4d13-85a1-2a4ef5c421a4"
-        },
-        "actions": [{
+            "uuid": "bb3c506d-0a27-411d-acdc-1f572dbbd44f"
+          }
+        ],
+        "exits": [
+          {
+            "destination_uuid": null,
+            "uuid": "3c27376a-4195-48f5-9457-a74d73033f6d"
+          }
+        ],
+        "uuid": "c5120b2b-380f-4864-9a3b-a5ec9a9eabfd"
+      },
+      {
+        "actions": [
+          {
             "flow": {
-                "name": "Activity",
-                "uuid": "ACTIVITY_UUID"
+              "name": "Activity",
+              "uuid": "ACTIVITY_UUID"
             },
             "type": "enter_flow",
             "uuid": "3964acf1-4821-4f75-b891-0af826211ef4"
-        }]
-    }],
-    "language": "base",
-    "localization": {
-        "hi": {
-            "248c1143-55a4-45a6-8c08-bc1b9b146bf7": {
-                "name": ["अन्य"]
+          }
+        ],
+        "exits": [
+          {
+            "destination_uuid": null,
+            "uuid": "978e62cc-92cf-40af-af7d-32ec2ae446a8"
+          },
+          {
+            "destination_uuid": null,
+            "uuid": "60231158-413d-4081-bb64-f5768cc4065b"
+          }
+        ],
+        "router": {
+          "cases": [
+            {
+              "arguments": [
+                "completed"
+              ],
+              "category_uuid": "f6239474-a881-4831-990b-613cbc1198ac",
+              "type": "has_only_text",
+              "uuid": "b560e4b1-8296-451c-a01d-a73b014d3a26"
             },
-            "4b880e98-bef4-43f7-9012-767b7fddd8d4": {
-                "text": ["ओह, यह ठीक नहीं है! आप अपनी गतिविधि प्रकार बदल सकते हैं"]
-            },
-            "5b2bcaf0-b751-443e-8347-421066b7d9d2": {
-                "name": ["नहीं समझे"]
-            },
-            "826c265b-45d3-4ec5-b699-197533c8ab46": {
-                "name": ["समझ लिया"]
-            },
-            "bb3c506d-0a27-411d-acdc-1f572dbbd44f": {
-                "text": ["एक दम बढ़िया! एक बार काम पूरा होने के बाद हम आपके साथ आपकी गतिविधि देखकर खुश होंगे।"]
-            },
-            "bbf9e196-e538-480b-a2fa-abfd9f5c62bc": {
-                "text": ["क्या आप गतिविधि का आनंद ले रहे हैं?\n\n1. टाइप 1 यदि आप इस गतिविधि को समझ गए हैं\n2. टाइप 2 अगर आपको इस गतिविधि को समझने में परेशानी हो रही है"]
+            {
+              "arguments": [
+                "expired"
+              ],
+              "category_uuid": "9dd5042b-1376-4d13-85a1-2a4ef5c421a4",
+              "type": "has_only_text",
+              "uuid": "f587631c-69f3-4151-8064-fe7a5ef0069b"
             }
-        }
-    },
+          ],
+          "categories": [
+            {
+              "exit_uuid": "978e62cc-92cf-40af-af7d-32ec2ae446a8",
+              "name": "Complete",
+              "uuid": "f6239474-a881-4831-990b-613cbc1198ac"
+            },
+            {
+              "exit_uuid": "60231158-413d-4081-bb64-f5768cc4065b",
+              "name": "Expired",
+              "uuid": "9dd5042b-1376-4d13-85a1-2a4ef5c421a4"
+            }
+          ],
+          "default_category_uuid": "9dd5042b-1376-4d13-85a1-2a4ef5c421a4",
+          "operand": "@child.run.status",
+          "type": "switch"
+        },
+        "uuid": "9bd028bb-bdd0-4383-858b-e7eb1e424530"
+      }
+    ],
     "spec_version": "13.1.0",
-    "expire_after_minutes": 10080
-}
+    "type": "messaging",
+    "uuid": "FEEDBACK_UUID",
+    "vars": [
+      "FEEDBACK_UUID"
+    ]
+  }
