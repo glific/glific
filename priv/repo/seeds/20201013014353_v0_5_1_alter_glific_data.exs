@@ -55,8 +55,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_1 do
           })
       end
 
-    # will remove this tag later and use the language tag with flow tag as parent
-    flow_languages_tag =
       case Repo.fetch_by(Tag, %{shortcode: "languages", organization_id: organization_id}) do
         {:ok, flow_languages_tag} ->
           flow_languages_tag
