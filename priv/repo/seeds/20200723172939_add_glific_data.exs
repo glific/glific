@@ -8,6 +8,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Contacts.Contact,
     Contacts.ContactsField,
     Flows.Flow,
+    Flows.FlowLabel,
     Flows.FlowRevision,
     Partners,
     Partners.Organization,
@@ -829,9 +830,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.insert_all(Tag, flow_tags)
 
     flow_labels = [
-      %{name: "Activities"},
-      %{name: "Feedback"},
-      %{name: "Registration"},
+      %{name: "activities"},
+      %{name: "feedback"},
+      %{name: "registration"},
       %{name: "poetry"},
       %{name: "visualarts"},
       %{name: "theatre"},
@@ -844,8 +845,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{name: "hindi"},
       %{name: "english"}
     ]
-
-    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     flow_labels =
       Enum.map(
