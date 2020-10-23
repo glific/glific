@@ -1,150 +1,41 @@
 {
-  "name": "Optout Workflow",
-  "type": "messaging",
-  "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
-  "vars": [
-    "bc1622f8-64f8-4b3d-b767-bb6bbfb65104"
-  ],
-  "nodes": [
-    {
-      "uuid": "5aa44454-eecc-495c-a2ed-f91ba5ee4f61",
-      "exits": [
-        {
-          "uuid": "d8cebf35-8764-42cb-9062-4e963be8492d",
-          "destination_uuid": "83bb3351-0a23-4e17-9aff-76085c8648ab"
-        }
-      ],
-      "actions": [
-        {
-          "text": "We are sorry to see you go. You will be opted out in the next five minutes.\nType 1⃣ to confirm.\nType 2⃣ to cancel.",
-          "type": "send_msg",
-          "uuid": "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
-          "all_urns": false,
-          "attachments": [],
-          "quick_replies": []
-        }
-      ]
-    },
-    {
-      "uuid": "83bb3351-0a23-4e17-9aff-76085c8648ab",
-      "exits": [
-        {
-          "uuid": "3db7fe9d-7e59-42b7-8969-47374148247a",
-          "destination_uuid": "5a45afa3-88c8-4dab-9bc0-afeebaeb172f"
+  "_ui": {
+    "nodes": {
+      "5a45afa3-88c8-4dab-9bc0-afeebaeb172f": {
+        "position": {
+          "left": 460,
+          "top": 320
         },
-        {
-          "uuid": "cafda8fe-62b7-4408-aea0-e556299e4b80",
-          "destination_uuid": "73597ecb-744b-4699-92c1-03e8582708b2"
-        },
-        {
-          "uuid": "a2b9ed29-cde9-48e6-b16c-b455102e1e02",
-          "destination_uuid": "5aa44454-eecc-495c-a2ed-f91ba5ee4f61"
-        },
-        {
-          "uuid": "9850ac4c-0a80-4108-8cdf-d679dac1b94c",
-          "destination_uuid": "5a45afa3-88c8-4dab-9bc0-afeebaeb172f"
-        }
-      ],
-      "router": {
-        "type": "switch",
-        "wait": {
-          "type": "msg",
-          "timeout": {
-            "seconds": 300,
-            "category_uuid": "c9b68c27-553c-4e31-9375-41622f52a8cb"
-          }
-        },
-        "cases": [
-          {
-            "type": "has_any_word",
-            "uuid": "49d4c9d6-00c5-401b-8266-9843751eebc9",
-            "arguments": [
-              "1"
-            ],
-            "category_uuid": "50487534-9d53-4332-ba3f-1000f90ccb57"
-          },
-          {
-            "type": "has_any_word",
-            "uuid": "07687172-5db9-4aa6-bba6-22245b4193c3",
-            "arguments": [
-              "2"
-            ],
-            "category_uuid": "65f27232-047d-4f4a-a919-ed3d8ac72bdc"
-          }
-        ],
-        "operand": "@input.text",
-        "categories": [
-          {
-            "name": "One",
-            "uuid": "50487534-9d53-4332-ba3f-1000f90ccb57",
-            "exit_uuid": "3db7fe9d-7e59-42b7-8969-47374148247a"
-          },
-          {
-            "name": "Two",
-            "uuid": "65f27232-047d-4f4a-a919-ed3d8ac72bdc",
-            "exit_uuid": "cafda8fe-62b7-4408-aea0-e556299e4b80"
-          },
-          {
-            "name": "Other",
-            "uuid": "0279e10e-440a-4904-abd5-9c64d48a1a75",
-            "exit_uuid": "a2b9ed29-cde9-48e6-b16c-b455102e1e02"
-          },
-          {
-            "name": "No Response",
-            "uuid": "c9b68c27-553c-4e31-9375-41622f52a8cb",
-            "exit_uuid": "9850ac4c-0a80-4108-8cdf-d679dac1b94c"
-          }
-        ],
-        "default_category_uuid": "0279e10e-440a-4904-abd5-9c64d48a1a75"
+        "type": "execute_actions"
       },
-      "actions": []
-    },
-    {
-      "uuid": "73597ecb-744b-4699-92c1-03e8582708b2",
-      "exits": [
-        {
-          "uuid": "40db7372-40ee-4e2a-8009-dccdcb6baff7",
-          "destination_uuid": null
-        }
-      ],
-      "actions": [
-        {
-          "text": "Thank you for staying with us. You are still enrolled in the system.",
-          "type": "send_msg",
-          "uuid": "dad792ce-366f-487e-94a0-f6b92124b8c3",
-          "attachments": [],
-          "quick_replies": []
-        }
-      ]
-    },
-    {
-      "uuid": "5a45afa3-88c8-4dab-9bc0-afeebaeb172f",
-      "exits": [
-        {
-          "uuid": "a04ef75e-921c-429e-877b-57ebb1380cfe",
-          "destination_uuid": null
-        }
-      ],
-      "actions": [
-        {
-          "text": "You have been opted out from the system.",
-          "type": "send_msg",
-          "uuid": "8b2818dd-27ed-47a8-bcb4-691da82d5523",
-          "attachments": [],
-          "quick_replies": []
+      "5aa44454-eecc-495c-a2ed-f91ba5ee4f61": {
+        "position": {
+          "left": 80,
+          "top": 80
         },
-        {
-          "type": "set_contact_field",
-          "uuid": "4d647b94-4c85-411a-82a8-134cbf67510d",
-          "field": {
-            "key": "settings",
-            "name": "Settings"
-          },
-          "value": "optout"
-        }
-      ]
-    }
-  ],
+        "type": "execute_actions"
+      },
+      "73597ecb-744b-4699-92c1-03e8582708b2": {
+        "position": {
+          "left": 780,
+          "top": 240
+        },
+        "type": "execute_actions"
+      },
+      "83bb3351-0a23-4e17-9aff-76085c8648ab": {
+        "config": {
+          "cases": {}
+        },
+        "position": {
+          "left": 440,
+          "top": 80
+        },
+        "type": "wait_for_response"
+      }
+    },
+    "stickies": {}
+  },
+  "expire_after_minutes": 10080,
   "language": "base",
   "localization": {
     "hi": {
@@ -153,49 +44,158 @@
           "आपको सिस्टम से बाहर कर दिया गया है। "
         ]
       },
-      "bc1622f8-64f8-4b3d-b767-bb6bbfb65104": {
+      "OPTOUT_UUID": {
         "text": [
           "हमें आपके जाने का अफसोस है। आपको अगले पांच मिनट में सिस्टम से बाहर कर दिया जाएगा।\n1⃣ दबाएं - पुष्टि करने के लिए। \n2⃣ दबाएं - रद्द करने के लिए। "
         ]
       }
     }
   },
-  "spec_version": "13.1.0",
-  "expire_after_minutes": 10080,
-  "_ui": {
-    "nodes": {
-      "5a45afa3-88c8-4dab-9bc0-afeebaeb172f": {
-        "type": "execute_actions",
-        "position": {
-          "top": 320,
-          "left": 460
+  "name": "Optout Workflow",
+  "nodes": [
+    {
+      "actions": [
+        {
+          "all_urns": false,
+          "attachments": [],
+          "quick_replies": [],
+          "text": "We are sorry to see you go. You will be opted out in the next five minutes.\nType 1⃣ to confirm.\nType 2⃣ to cancel.",
+          "type": "send_msg",
+          "uuid": "OPTOUT_UUID"
         }
-      },
-      "5aa44454-eecc-495c-a2ed-f91ba5ee4f61": {
-        "type": "execute_actions",
-        "position": {
-          "top": 80,
-          "left": 80
+      ],
+      "exits": [
+        {
+          "destination_uuid": "83bb3351-0a23-4e17-9aff-76085c8648ab",
+          "uuid": "d8cebf35-8764-42cb-9062-4e963be8492d"
         }
-      },
-      "73597ecb-744b-4699-92c1-03e8582708b2": {
-        "type": "execute_actions",
-        "position": {
-          "top": 240,
-          "left": 780
-        }
-      },
-      "83bb3351-0a23-4e17-9aff-76085c8648ab": {
-        "type": "wait_for_response",
-        "config": {
-          "cases": {}
-        },
-        "position": {
-          "top": 80,
-          "left": 440
-        }
-      }
+      ],
+      "uuid": "5aa44454-eecc-495c-a2ed-f91ba5ee4f61"
     },
-    "stickies": {}
-  }
+    {
+      "actions": [],
+      "exits": [
+        {
+          "destination_uuid": "5a45afa3-88c8-4dab-9bc0-afeebaeb172f",
+          "uuid": "3db7fe9d-7e59-42b7-8969-47374148247a"
+        },
+        {
+          "destination_uuid": "73597ecb-744b-4699-92c1-03e8582708b2",
+          "uuid": "cafda8fe-62b7-4408-aea0-e556299e4b80"
+        },
+        {
+          "destination_uuid": "5aa44454-eecc-495c-a2ed-f91ba5ee4f61",
+          "uuid": "a2b9ed29-cde9-48e6-b16c-b455102e1e02"
+        },
+        {
+          "destination_uuid": "5a45afa3-88c8-4dab-9bc0-afeebaeb172f",
+          "uuid": "9850ac4c-0a80-4108-8cdf-d679dac1b94c"
+        }
+      ],
+      "router": {
+        "cases": [
+          {
+            "arguments": [
+              "1"
+            ],
+            "category_uuid": "50487534-9d53-4332-ba3f-1000f90ccb57",
+            "type": "has_any_word",
+            "uuid": "49d4c9d6-00c5-401b-8266-9843751eebc9"
+          },
+          {
+            "arguments": [
+              "2"
+            ],
+            "category_uuid": "65f27232-047d-4f4a-a919-ed3d8ac72bdc",
+            "type": "has_any_word",
+            "uuid": "07687172-5db9-4aa6-bba6-22245b4193c3"
+          }
+        ],
+        "categories": [
+          {
+            "exit_uuid": "3db7fe9d-7e59-42b7-8969-47374148247a",
+            "name": "One",
+            "uuid": "50487534-9d53-4332-ba3f-1000f90ccb57"
+          },
+          {
+            "exit_uuid": "cafda8fe-62b7-4408-aea0-e556299e4b80",
+            "name": "Two",
+            "uuid": "65f27232-047d-4f4a-a919-ed3d8ac72bdc"
+          },
+          {
+            "exit_uuid": "a2b9ed29-cde9-48e6-b16c-b455102e1e02",
+            "name": "Other",
+            "uuid": "0279e10e-440a-4904-abd5-9c64d48a1a75"
+          },
+          {
+            "exit_uuid": "9850ac4c-0a80-4108-8cdf-d679dac1b94c",
+            "name": "No Response",
+            "uuid": "c9b68c27-553c-4e31-9375-41622f52a8cb"
+          }
+        ],
+        "default_category_uuid": "0279e10e-440a-4904-abd5-9c64d48a1a75",
+        "operand": "@input.text",
+        "type": "switch",
+        "wait": {
+          "timeout": {
+            "category_uuid": "c9b68c27-553c-4e31-9375-41622f52a8cb",
+            "seconds": 300
+          },
+          "type": "msg"
+        }
+      },
+      "uuid": "83bb3351-0a23-4e17-9aff-76085c8648ab"
+    },
+    {
+      "actions": [
+        {
+          "attachments": [],
+          "quick_replies": [],
+          "text": "Thank you for staying with us. You are still enrolled in the system.",
+          "type": "send_msg",
+          "uuid": "dad792ce-366f-487e-94a0-f6b92124b8c3"
+        }
+      ],
+      "exits": [
+        {
+          "destination_uuid": null,
+          "uuid": "40db7372-40ee-4e2a-8009-dccdcb6baff7"
+        }
+      ],
+      "uuid": "73597ecb-744b-4699-92c1-03e8582708b2"
+    },
+    {
+      "actions": [
+        {
+          "attachments": [],
+          "quick_replies": [],
+          "text": "You have been opted out from the system.",
+          "type": "send_msg",
+          "uuid": "8b2818dd-27ed-47a8-bcb4-691da82d5523"
+        },
+        {
+          "field": {
+            "key": "settings",
+            "name": "Settings"
+          },
+          "type": "set_contact_field",
+          "uuid": "4d647b94-4c85-411a-82a8-134cbf67510d",
+          "value": "optout"
+        }
+      ],
+      "exits": [
+        {
+          "destination_uuid": null,
+          "uuid": "a04ef75e-921c-429e-877b-57ebb1380cfe"
+        }
+      ],
+      "uuid": "5a45afa3-88c8-4dab-9bc0-afeebaeb172f"
+    }
+  ],
+  "spec_version": "13.1.0",
+  "type": "messaging",
+  "uuid": "OPTOUT_UUID",
+  "vars": [
+    "OPTOUT_UUID"
+  ]
 }
