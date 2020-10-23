@@ -6,13 +6,15 @@ defmodule Glific.Flows.Action do
   alias __MODULE__
 
   use Ecto.Schema
+  import Ecto.Query
 
   alias Glific.{
     Flows,
     Groups,
     Messages,
     Messages.Message,
-    Tags
+    Tags,
+    Repo
   }
 
   alias Glific.Flows.{
@@ -258,21 +260,12 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "add_input_labels"} = action, context, messages) do
     ## We will soon figure out how we will manage the UUID with tags
-    _list =
-      Enum.reduce(
-        action.labels,
-        [],
-        fn label, _acc ->
-          {:ok, tag_id} = Glific.parse_maybe_integer(label["uuid"])
-
-          Tags.create_message_tag(%{
-            message_id: context.last_message.id,
-            tag_id: tag_id,
-            organization_id: context.contact.organization_id
-          })
-        end
-      )
-
+    flow_label= action.labels
+                |>Enum.map(fn label -> label["name"] end)
+                |>Enum.join(", ")
+    Repo.get(Message, context.last_message.id)
+    |> Message.changeset(%{flow_label: flow_label})
+    |> Repo.update()
     {:ok, context, messages}
   end
 
