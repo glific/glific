@@ -197,16 +197,26 @@ defmodule Glific.BigquerySchema do
         name: "receiver_phone",
         type: "STRING",
         mode: "REQUIRED"
-      },
+      }
       %{
         name: "contact_phone",
         type: "STRING",
         mode: "REQUIRED"
       },
       %{
-        name: "user_phone",
+        name: "contact_name",
         type: "STRING",
         mode: "REQUIRED"
+      },
+      %{
+        name: "user_phone",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "user_name",
+        type: "STRING",
+        mode: "NULLABLE"
       },
       %{
         name: "media_url",
