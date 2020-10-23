@@ -70,9 +70,6 @@ defmodule Glific.Flows.FlowLabel do
   """
   @spec create_flow_label(map(), non_neg_integer) :: {:ok, FlowLabel.t()} | {:error, Ecto.Changeset.t()}
   def create_flow_label(attrs, organization_id) do
-
-    IO.inspect(attrs)
-    IO.inspect("Debug001 -attrs")
     uuid = Ecto.UUID.generate
     attrs = attrs
             |>Map.put(:uuid, uuid)
