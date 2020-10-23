@@ -112,7 +112,9 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec labels_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels_post(conn, params) do
-    {:ok, flow_label} = FlowLabel.create_flow_label(%{name: params["name"]}, conn.assigns[:organization_id])
+    {:ok, flow_label} =
+      FlowLabel.create_flow_label(%{name: params["name"]}, conn.assigns[:organization_id])
+
     json(conn, %{uuid: flow_label.uuid, name: flow_label.name, count: 0})
   end
 

@@ -5,7 +5,6 @@ defmodule Glific.Repo.Migrations.CreateFlowLabelTable do
     flow_label()
   end
 
-
   @doc """
   Create flow label to associate flow messages with label
   """

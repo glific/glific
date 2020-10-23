@@ -55,21 +55,21 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_1 do
           })
       end
 
-      case Repo.fetch_by(Tag, %{shortcode: "languages", organization_id: organization_id}) do
-        {:ok, flow_languages_tag} ->
-          flow_languages_tag
+    case Repo.fetch_by(Tag, %{shortcode: "languages", organization_id: organization_id}) do
+      {:ok, flow_languages_tag} ->
+        flow_languages_tag
 
-        {:error, _} ->
-          Repo.insert!(%Tag{
-            label: "Languages",
-            shortcode: "languages",
-            description: "Marking message received for an language flow",
-            is_reserved: false,
-            language_id: en_us.id,
-            parent_id: flow_tag.id,
-            organization_id: organization_id
-          })
-      end
+      {:error, _} ->
+        Repo.insert!(%Tag{
+          label: "Languages",
+          shortcode: "languages",
+          description: "Marking message received for an language flow",
+          is_reserved: false,
+          language_id: en_us.id,
+          parent_id: flow_tag.id,
+          organization_id: organization_id
+        })
+    end
 
     if {:error, ["Elixir.Glific.Tags.Tag", "Resource not found"]} ==
          Repo.fetch_by(Tag, %{shortcode: "poetry", organization_id: organization_id}) do
