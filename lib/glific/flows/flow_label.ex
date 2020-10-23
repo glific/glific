@@ -55,4 +55,30 @@ defmodule Glific.Flows.FlowLabel do
         |> where([m], m.organization_id == ^organization_id)
       Repo.all(query)
   end
+
+  @doc """
+  Creates a flow_label.
+
+  ## Examples
+
+      iex> create_flow_label(%{field: value})
+      {:ok, %FlowLabel{}}
+
+      iex> create_flow_label(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec create_flow_label(map(), non_neg_integer) :: {:ok, FlowLabel.t()} | {:error, Ecto.Changeset.t()}
+  def create_flow_label(attrs, organization_id) do
+
+    IO.inspect(attrs)
+    IO.inspect("Debug001 -attrs")
+    uuid = Ecto.UUID.generate
+    attrs = attrs
+            |>Map.put(:uuid, uuid)
+            |>Map.put(:organization_id, organization_id)
+    %FlowLabel{}
+    |> FlowLabel.changeset(attrs)
+    |> Repo.insert()
+  end
 end
