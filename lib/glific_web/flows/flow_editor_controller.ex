@@ -98,6 +98,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
       |> Enum.reduce([], fn flow, acc ->
         [%{uuid: "#{flow.uuid}", name: flow.name} | acc]
       end)
+
     json(conn, %{results: flow_list})
   end
 
@@ -109,7 +110,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   """
   @spec labels_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
-  def labels_post(conn, _params) do
+  def labels_post(conn, params) do
     json(conn, %{})
   end
 

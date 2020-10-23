@@ -9,7 +9,6 @@ defmodule Glific.Flows.FlowLabel do
 
   alias __MODULE__
   alias Glific.{
-    Flows.Flow,
     Flows.FlowLabel,
     Partners.Organization,
     Repo
@@ -49,6 +48,7 @@ defmodule Glific.Flows.FlowLabel do
   @doc """
   Given a organization id, retrieve all the flow labels for organization
   """
+  @spec get_all_flowlabel(non_neg_integer) :: [FlowLabel.t()]
   def get_all_flowlabel(organization_id) do
       query =
         FlowLabel
