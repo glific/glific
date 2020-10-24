@@ -98,7 +98,8 @@ defmodule Glific.Jobs.BigQueryWorker do
           receiver_phone: row.receiver.phone,
           contact_phone: row.contact.phone,
           contact_name: row.contact.name,
-          tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
+          tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end),
+          flow_label: row.flow_label
         }
 
         message_row =
@@ -263,7 +264,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         contact_name: msg["contact_name"],
         user_phone: msg["user_phone"],
         user_name: msg["user_name"],
-        tags: msg["tags"]
+        tags: msg["tags"],
+        flow_label: msg["flow_label"]
       }
     }
   end
