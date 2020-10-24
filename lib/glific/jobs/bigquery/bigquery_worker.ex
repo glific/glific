@@ -98,19 +98,24 @@ defmodule Glific.Jobs.BigQueryWorker do
           receiver_phone: row.receiver.phone,
           contact_phone: row.contact.phone,
           contact_name: row.contact.name,
-          tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end),
-          flow_label: row.flow_label
+          user_phone: if(!is_nil(row.user), do: row.user.phone),
+          user_name: if(!is_nil(row.user), do: row.user.name),
+          tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
         }
 
         message_row =
-          if row.user != nil do
+          if row.flow_label != nil do
             message_row
             |> Map.merge(%{
-              user_phone: row.user.phone,
-              user_name: row.user.name
+              flow_labels:
+                String.split(row.flow_label, ", ")
+                |> Enum.map(fn flow_label -> %{flow_label: flow_label} end)
             })
           else
             message_row
+            |> Map.merge(%{
+              flow_labels: []
+            })
           end
 
         [message_row | acc]
@@ -265,7 +270,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         user_phone: msg["user_phone"],
         user_name: msg["user_name"],
         tags: msg["tags"],
-        flow_label: msg["flow_label"]
+        flow_labels: msg["flow_labels"]
       }
     }
   end

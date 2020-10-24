@@ -246,9 +246,16 @@ defmodule Glific.BigquerySchema do
         ]
       },
       %{
-        name: "flow_label",
-        type: "STRING",
-        mode: "NULLABLE"
+        name: "flow_labels",
+        type: "RECORD",
+        mode: "REPEATED",
+        fields: [
+          %{
+            name: "flow_label",
+            type: "STRING",
+            mode: "REQUIRED"
+          }
+        ]
       }
     ]
   end
