@@ -42,8 +42,8 @@ defmodule Glific.CSV.File do
   Read a csv file, and split it up into a bunch of tuples that we are interested in. Assuming
   that the csv file is valid for now
   """
-  @spec process_csv_file(String.t(), String.t()) :: map()
-  def process_csv_file(file, output) do
+  @spec process_csv_file(String.t(), String.t(), non_neg_integer) :: map()
+  def process_csv_file(file, output, organization_id) do
     summary =
       file
       |> Path.expand(__DIR__)
@@ -54,7 +54,7 @@ defmodule Glific.CSV.File do
       |> parse_header()
       |> parse_rows(%{})
 
-    json_map = Flow.gen_flow(summary.menus[0])
+    json_map = Flow.gen_flow(summary.menus[0], organization_id)
     {:ok, json} = Jason.encode_to_iodata(json_map, pretty: true)
 
     :ok =

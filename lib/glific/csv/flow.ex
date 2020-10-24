@@ -11,14 +11,15 @@ defmodule Glific.CSV.Flow do
   @default_width 200
 
   alias Glific.{
-    CSV.Menu
+    CSV.Menu,
+    Flows.FlowLabel
   }
 
   @doc """
   Given a menu + content structure, generate the flow for it that matches floweditor input
   """
-  @spec gen_flow(Menu.t()) :: map()
-  def gen_flow(root) do
+  @spec gen_flow(Menu.t(), non_neg_integer) :: map()
+  def gen_flow(root, organization_id) do
     json_map = %{
       name: "LAHI Grade 9",
       expire_after_minutes: 10_080,
@@ -31,14 +32,17 @@ defmodule Glific.CSV.Flow do
       localization: %{},
       _ui: %{
         nodes: %{}
-      }
+      },
+      organization_id: organization_id
     }
 
-    # first generate the nodes and localization (and later _ui) for
-    # this node, then do it recursively for each of its menu items
+    # first generate the nodes and localization for this node
+    # then do it recursively for each of its menu items
     json_map = gen_flow_helper(json_map, root)
 
-    Map.put(json_map, :nodes, Enum.reverse(json_map.nodes))
+    json_map
+    |> Map.put(:nodes, Enum.reverse(json_map.nodes))
+    |> Map.delete(:organization_id)
   end
 
   @spec gen_flow_helper(map(), Menu.t()) :: map()
@@ -50,15 +54,18 @@ defmodule Glific.CSV.Flow do
     end
   end
 
-  defp add_label(actions, %{label: nil} = _node), do: actions
+  defp add_label(actions, %{label: nil}, _organization_id), do: actions
 
-  defp add_label(actions, %{label: label} = _node),
-    do: [
+  defp add_label(actions, %{label: name}, organization_id) do
+    {:ok, label} =
+      FlowLabel.get_or_create_flow_label(%{name: name, organization_id: organization_id})
+
+    [
       %{
         labels: [
           %{
-            name: label,
-            uuid: 1
+            name: name,
+            uuid: label.uuid
           }
         ],
         type: "add_input_labels",
@@ -66,6 +73,7 @@ defmodule Glific.CSV.Flow do
       }
       | actions
     ]
+  end
 
   # this is a menu node
   # generate the message and the localization
@@ -82,7 +90,7 @@ defmodule Glific.CSV.Flow do
           type: "send_msg"
         }
       ]
-      |> add_label(node)
+      |> add_label(node, json_map.organization_id)
 
     node_json = %{
       uuid: node.uuids.node,
@@ -146,7 +154,7 @@ defmodule Glific.CSV.Flow do
         }
       )
 
-      put_in(json_map, [:_ui, :nodes], nodes)
+    put_in(json_map, [:_ui, :nodes], nodes)
   end
 
   defp add_ui(json_map, node, :menu) do
@@ -268,7 +276,7 @@ defmodule Glific.CSV.Flow do
           type: "send_msg"
         }
       ]
-      |> add_label(node)
+      |> add_label(node, json_map.organization_id)
 
     node_json = %{
       uuid: node.uuids.node,
