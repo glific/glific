@@ -204,7 +204,11 @@ if Code.ensure_loaded?(Faker) do
         "Response to Activity with menu options {1, Visual Arts}, {2, Poetry}, {3, Theatre}"
       )
       |> create_message_to_glific(
-        Enum.random([{1, "Visual Arts"}, {2, "Poetry"}, {3, "Theatre"}]),
+        Enum.random([
+          {1, "Visual Arts"}, {1, "Visual Arts"}, {1, "Visual Arts"}, {1, "Visual Arts"},
+          {2, "Poetry"}, {2, "Poetry"}, {2, "Poetry"},
+          {3, "Theatre"}, {3, "Theatre"},
+        ]),
         dropout: @dropout_percent
       )
       |> create_message_from_glific(
@@ -216,7 +220,7 @@ if Code.ensure_loaded?(Faker) do
           {1, "Understood"},
           {1, "Understood"},
           {1, "Understood"},
-          {1, "Understood"},
+          {2, "Not Understood"},
           {2, "Not Understood"}
         ]),
         stop: 2,
@@ -225,7 +229,11 @@ if Code.ensure_loaded?(Faker) do
       |> create_message_from_glific(
         "Response to Understood selection with menu options {1, Loved}, {2, OK}, {3, Not Great}"
       )
-      |> create_message_to_glific(Enum.random([{1, "Loved"}, {2, "OK"}, {3, "Not Great"}]))
+      |> create_message_to_glific(Enum.random([
+            {1, "Loved"}, {1, "Loved"},
+            {2, "OK"}, {2, "OK"}, {2, "OK"}, {2, "OK"},
+            {3, "Not Great"}, {3, "Not Great"}, {3, "Not Great"}
+          ]))
       |> create_message_from_glific("Thank you for your response")
       |> Map.get(:messages)
       |> Enum.reverse()
