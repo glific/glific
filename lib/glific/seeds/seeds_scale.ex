@@ -227,7 +227,6 @@ if Code.ensure_loaded?(Faker) do
       )
       |> create_message_to_glific(Enum.random([{1, "Loved"}, {2, "OK"}, {3, "Not Great"}]))
       |> create_message_from_glific("Thank you for your response")
-
       |> create_message_from_glific(
         "Response to Main Menu Selection with menu options {1, Age Group less than 10}, {2, Age Group 11 to 14}, {3, Age Group 15 to 18}, {4, Age Group 19 or above}"
       )
@@ -236,7 +235,7 @@ if Code.ensure_loaded?(Faker) do
           {1, "Age Group less than 10"},
           {2, "Age Group 11 to 14"},
           {3, "Age Group 15 to 18"},
-          {4, "Age Group 19 or above"},
+          {4, "Age Group 19 or above"}
         ]),
         dropout: @dropout_percent
       )

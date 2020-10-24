@@ -312,15 +312,13 @@ defmodule Glific.Jobs.BigQueryWorker do
 
     # In case of error response error will be stored in the oban job
     {:ok, %{insertErrors: nil}} =
-      IO.inspect(
-        Tabledata.bigquery_tabledata_insert_all(
-          conn,
-          project_id,
-          dataset_id,
-          table_id,
-          [body: %{rows: data}],
-          []
-        )
+      Tabledata.bigquery_tabledata_insert_all(
+        conn,
+        project_id,
+        dataset_id,
+        table_id,
+        [body: %{rows: data}],
+        []
       )
 
     :ok
