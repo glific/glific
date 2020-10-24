@@ -129,7 +129,8 @@ defmodule Glific.MixProject do
       {:google_api_big_query, "~> 0.47.0"},
       {:waffle, "~> 1.1"},
       {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
-      {:waffle_ecto, "~> 0.0"}
+      {:waffle_ecto, "~> 0.0"},
+      {:csv, "~> 2.4"}
     ]
   end
 

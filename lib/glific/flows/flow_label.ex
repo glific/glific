@@ -70,9 +70,9 @@ defmodule Glific.Flows.FlowLabel do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_flow_label(map(), non_neg_integer) ::
+  @spec create_flow_label(map()) ::
           {:ok, FlowLabel.t()} | {:error, Ecto.Changeset.t()}
-  def create_flow_label(attrs, organization_id) do
+  def create_flow_label(%{organization_id: organization_id} = attrs) do
     uuid = Ecto.UUID.generate()
 
     attrs =
@@ -82,6 +82,22 @@ defmodule Glific.Flows.FlowLabel do
 
     %FlowLabel{}
     |> FlowLabel.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(
+      on_conflict: [set: [name: attrs.name]],
+      conflict_target: [:name, :organization_id],
+      returning: true
+    )
+  end
+
+  @doc """
+  Try to first get the flow label, if not present, create it. We dont use the upsert function, since
+  it consumes id's for every failure. we expect a lot more gets, than inserts
+  """
+  @spec get_or_create_flow_label(map()) :: {:ok, FlowLabel.t()} | {:error, Ecto.Changeset.t()}
+  def get_or_create_flow_label(attrs) do
+    case Repo.fetch_by(FlowLabel, attrs) do
+      {:ok, flow_label} -> {:ok, flow_label}
+      _ -> create_flow_label(attrs)
+    end
   end
 end
