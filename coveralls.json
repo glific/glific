@@ -21,12 +21,17 @@
         "lib/glific_web/providers/glifproxy",
         "lib/glific_web/schema",
         "lib/glific.ex",
-        "lib/glific/dialogflow/intents.ex",
+        "lib/glific/csv",
+        "lib/glific/dialogflow",
+        "lib/glific/dialogflow.ex",
+        "lib/glific/jobs",
+        "lib/glific/jobs.ex",
         "lib/glific/flows/webhook.ex",
         "lib/glific/jobs/minute_worker.ex",
         "lib/glific_web/plugs/subdomain_plug_config.ex",
         "lib/glific_web/plugs/ensure_plug_config.ex",
         "lib/glific_web/plugs/absinthe_plug.ex",
+        "lib/glific_web/uploaders",
         "test/support"
     ]
 }
