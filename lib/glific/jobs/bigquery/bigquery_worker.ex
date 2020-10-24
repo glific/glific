@@ -311,7 +311,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     conn = Connection.new(token.token)
 
     # In case of error response error will be stored in the oban job
-    {:ok, %{insertErrors: nil}} =
+    {:ok, _} =
       Tabledata.bigquery_tabledata_insert_all(
         conn,
         project_id,

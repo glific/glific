@@ -578,7 +578,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         organization_id: organization.id
       })
 
-   defp flow_labels(organization) do
+  defp flow_labels(organization) do
     flow_labels = [
       %{name: "Poetry"},
       %{name: "Visual Arts"},
@@ -609,7 +609,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     # seed multiple flow labels
     Repo.insert_all(FlowLabel, flow_labels)
   end
-
 
   def flows(organization) do
     uuid_map = %{
@@ -661,7 +660,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         end
       )
 
-
   defp replace_label_uuids(json, flow_labels_id_map),
     do:
       Enum.reduce(
@@ -676,8 +674,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         end
       )
 
-
-   defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
+  defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
     f =
       Repo.insert!(%Flow{
         name: name,
