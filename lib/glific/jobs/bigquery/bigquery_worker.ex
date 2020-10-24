@@ -66,7 +66,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([m], m.organization_id == ^organization_id)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:tags, :receiver, :sender, :contact])
+      |> preload([:tags, :receiver, :sender, :contact, :media])
 
     Repo.all(query)
     |> Enum.reduce(
@@ -87,6 +87,7 @@ defmodule Glific.Jobs.BigQueryWorker do
             receiver_phone: row.receiver.phone,
             contact_phone: row.contact.phone,
             user_phone: row.contact.phone,
+            media: media_url(row.media),
             tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
           }
           | acc
@@ -121,15 +122,7 @@ defmodule Glific.Jobs.BigQueryWorker do
             optout_time: format_date(row.optout_time),
             last_message_at: format_date(row.last_message_at),
             inserted_at: format_date(row.inserted_at),
-            fields:
-              Enum.map(row.fields, fn {_key, field} ->
-                %{
-                  label: field["label"],
-                  inserted_at: format_date(field["inserted_at"]),
-                  type: field["type"],
-                  value: field["value"]
-                }
-              end),
+            fields: Enum.map(row.fields, fn {_key, field} -> %{label: field["label"], inserted_at: format_date(field["inserted_at"]), type: field["type"], value: field["value"] }  end),
             settings: row.settings,
             groups: Enum.map(row.groups, fn group -> %{label: group.label} end),
             tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
@@ -168,15 +161,17 @@ defmodule Glific.Jobs.BigQueryWorker do
     end
   end
 
+  defp media_url(nil), do: nil
+  defp media_url(media), do: media.url
+
   @spec format_date(DateTime.t() | nil) :: any()
   defp format_date(nil),
     do: nil
 
   defp format_date(date) when is_binary(date),
-    do:
-      Timex.parse(date, "{RFC3339z}")
-      |> elem(1)
-      |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+    do: Timex.parse(date, "{RFC3339z}")
+    |> elem(1)
+    |>Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
 
   defp format_date(date),
     do: Timex.format!(date, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
@@ -230,7 +225,9 @@ defmodule Glific.Jobs.BigQueryWorker do
         receiver_phone: msg["receiver_phone"],
         contact_phone: msg["contact_phone"],
         user_phone: msg["user_phone"],
-        tags: msg["tags"]
+        tags: msg["tags"],
+        media_url: msg["media"]
+
       }
     }
   end
