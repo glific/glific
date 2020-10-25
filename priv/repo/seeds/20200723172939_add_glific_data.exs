@@ -10,6 +10,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Flows.Flow,
     Flows.FlowLabel,
     Flows.FlowRevision,
+    Jobs.BigqueryJob,
     Partners,
     Partners.Organization,
     Partners.Provider,
@@ -56,6 +57,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     flows(organization)
 
     contacts_field(organization)
+
+    bigquery_jobs(organization)
+
   end
 
   def down(_repo) do
@@ -877,5 +881,26 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     # seed multiple tags
     Repo.insert_all(Tag, flow_tags)
+  end
+
+  defp bigquery_jobs(organization) do
+
+    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Repo.insert!(%BigqueryJob{
+      table: "messages",
+      table_id: 0,
+      organization_id: organization.id,
+      inserted_at: utc_now,
+      updated_at: utc_now
+    })
+
+    Repo.insert!(%BigqueryJob{
+      table: "contacts",
+      table_id: 0,
+      organization_id: organization.id,
+      inserted_at: utc_now,
+      updated_at: utc_now
+    })
   end
 end
