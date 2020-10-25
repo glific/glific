@@ -593,7 +593,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         organization_id: organization.id
       })
 
-   defp flow_labels(organization) do
+  defp flow_labels(organization) do
     case Repo.fetch_by(FlowLabel, %{name: "Languages", organization_id: organization.id}) do
       {:ok, flow_languages_lable} ->
         flow_languages_lable
@@ -607,7 +607,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     end
 
     case Repo.fetch_by(FlowLabel, %{name: "Poetry", organization_id: organization.id}) do
-      {:ok, flow_label} -> flow_label
+      {:ok, flow_label} ->
+        flow_label
+
       {:error, _} ->
         Repo.insert!(%FlowLabel{
           name: "Poetry",
@@ -617,7 +619,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     end
 
     case Repo.fetch_by(FlowLabel, %{name: "Visual Arts", organization_id: organization.id}) do
-      {:ok, flow_label} -> flow_label
+      {:ok, flow_label} ->
+        flow_label
+
       {:error, _} ->
         Repo.insert!(%FlowLabel{
           name: "Visual Arts",
@@ -627,7 +631,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     end
 
     case Repo.fetch_by(FlowLabel, %{name: "Theatre", organization_id: organization.id}) do
-      {:ok, flow_label} -> flow_label
+      {:ok, flow_label} ->
+        flow_label
+
       {:error, _} ->
         Repo.insert!(%FlowLabel{
           name: "Theatre",
@@ -636,7 +642,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         })
     end
   end
-
 
   def flows(organization) do
     uuid_map = %{
@@ -688,7 +693,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         end
       )
 
-
   defp replace_label_uuids(json, flow_labels_id_map),
     do:
       Enum.reduce(
@@ -703,8 +707,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         end
       )
 
-
-   defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
+  defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
     f =
       Repo.insert!(%Flow{
         name: name,
