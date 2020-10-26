@@ -597,6 +597,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{name: "New Activity"}
     ]
 
+    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
     flow_labels =
       Enum.map(
         flow_labels,
@@ -604,6 +606,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
           tag
           |> Map.put(:organization_id, organization.id)
           |> Map.put(:uuid, Ecto.UUID.generate())
+          |> Map.put(:inserted_at, utc_now)
+          |> Map.put(:updated_at, utc_now)
         end
       )
 
