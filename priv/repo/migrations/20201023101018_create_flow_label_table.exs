@@ -3,6 +3,7 @@ defmodule Glific.Repo.Migrations.CreateFlowLabelTable do
 
   def change do
     flow_labels()
+    add_flow_lable_to_message()
   end
 
   @doc """
@@ -20,5 +21,12 @@ defmodule Glific.Repo.Migrations.CreateFlowLabelTable do
     end
 
     create unique_index(:flow_labels, [:name, :organization_id])
+  end
+
+  def add_flow_lable_to_message() do
+    alter table(:messages) do
+      # The body of the message
+      add :flow_label, :string, null: true
+    end
   end
 end
