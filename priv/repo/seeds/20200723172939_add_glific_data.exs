@@ -325,7 +325,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.insert_all(Tag, tags)
 
     # seed tags for flows
-    add_flow_tags(organization, en_us, flow_tag)
+    add_flow_labels(organization)
   end
 
   def providers(0 = _count_organizations) do
@@ -757,128 +757,39 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     })
   end
 
-  defp add_flow_tags(organization, en_us, flow_tag) do
-    flow_activity_tag =
-      Repo.insert!(%Tag{
-        label: "Activities",
-        shortcode: "activities",
-        description: "Marking message received for an activity",
-        is_reserved: false,
-        language_id: en_us.id,
-        parent_id: flow_tag.id,
-        organization_id: organization.id
-      })
-
-    feedback_tag =
-      Repo.insert!(%Tag{
-        label: "Feedback",
-        shortcode: "feedback",
-        description: "Marking message received for the feedback flow",
-        is_reserved: false,
-        language_id: en_us.id,
-        parent_id: flow_tag.id,
-        organization_id: organization.id
-      })
-
-    registration_tag =
-      Repo.insert!(%Tag{
-        label: "Registration",
-        shortcode: "registration",
-        description: "Marking message received for the registration flow",
-        is_reserved: false,
-        language_id: en_us.id,
-        parent_id: flow_tag.id,
-        organization_id: organization.id
-      })
-
-    {:ok, language_tag} =
-      Repo.fetch_by(Tag, %{shortcode: "language", organization_id: organization.id})
-
-    flow_tags = [
-      %{
-        label: "Poetry",
-        shortcode: "poetry",
-        description: "Marking message received for the activity: poetry",
-        parent_id: flow_activity_tag.id
-      },
-      %{
-        label: "Visual Arts",
-        shortcode: "visualarts",
-        description: "Marking message received for the activity: visual arts",
-        parent_id: flow_activity_tag.id
-      },
-      %{
-        label: "Theatre",
-        shortcode: "theatre",
-        description: "Marking message received for the activity: theatre",
-        parent_id: flow_activity_tag.id
-      },
-      %{
-        label: "Understood",
-        shortcode: "understood",
-        description: "Marking message received for the feedback flow: understood",
-        parent_id: feedback_tag.id
-      },
-      %{
-        label: "Not Understood",
-        shortcode: "notunderstood",
-        description: "Marking message received for the feedback flow: not understood",
-        parent_id: feedback_tag.id
-      },
-      %{
-        label: "Age Group less than 10",
-        shortcode: "agegrouplessthan10",
-        description: "Marking message received for the registration flow: age group less than 10",
-        parent_id: registration_tag.id
-      },
-      %{
-        label: "Age Group 11 to 14",
-        shortcode: "agegroup11to14",
-        description: "Marking message received for the registration flow: age group 11 to 14",
-        parent_id: registration_tag.id
-      },
-      %{
-        label: "Age Group 15 to 18",
-        shortcode: "agegroup15to18",
-        description: "Marking message received for the registration flow: Age Group 15 to 18",
-        parent_id: registration_tag.id
-      },
-      %{
-        label: "Age Group 19 or above",
-        shortcode: "agegroup19orabove",
-        description: "Marking message received for the registration flow: age group 19 or above",
-        parent_id: registration_tag.id
-      },
-      %{
-        label: "Hindi",
-        shortcode: "hindi",
-        description: "Marking message received for the language flow: Hindi",
-        parent_id: language_tag.id
-      },
-      %{
-        label: "English",
-        shortcode: "english",
-        description: "Marking message received for the language flow: English",
-        parent_id: language_tag.id
-      }
+  defp add_flow_labels(organization) do
+    flow_labels = [
+      %{name: "activities"},
+      %{name: "feedback"},
+      %{name: "registration"},
+      %{name: "poetry"},
+      %{name: "visualarts"},
+      %{name: "theatre"},
+      %{name: "understood"},
+      %{name: "notunderstood"},
+      %{name: "agegrouplessthan10"},
+      %{name: "agegroup11to14"},
+      %{name: "agegroup15to18"},
+      %{name: "agegroup19orabove"},
+      %{name: "hindi"},
+      %{name: "english"}
     ]
 
     utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    flow_tags =
+    flow_labels =
       Enum.map(
-        flow_tags,
-        fn tag ->
-          tag
+        flow_labels,
+        fn label ->
+          label
           |> Map.put(:organization_id, organization.id)
-          |> Map.put(:language_id, en_us.id)
-          |> Map.put(:is_reserved, false)
+          |> Map.put(:uuid, Ecto.UUID.generate())
           |> Map.put(:inserted_at, utc_now)
           |> Map.put(:updated_at, utc_now)
         end
       )
 
-    # seed multiple tags
-    Repo.insert_all(Tag, flow_tags)
+    # seed multiple labels
+    Repo.insert_all(FlowLabel, flow_labels)
   end
 end
