@@ -25,13 +25,6 @@
         },
         "type": "execute_actions"
       },
-      "3f17a176-2e13-4c87-96e7-6098693616b7": {
-        "position": {
-          "left": 180,
-          "top": 1180
-        },
-        "type": "execute_actions"
-      },
       "513ec456-777b-4e6e-9b63-d945e28d331b": {
         "position": {
           "left": 380,
@@ -611,7 +604,7 @@
           "uuid": "f911bf28-2805-4697-99ba-e0cebce32d8e"
         },
         {
-          "destination_uuid": "3f17a176-2e13-4c87-96e7-6098693616b7",
+          "destination_uuid": "9d9b8ce4-fc8e-4f00-bffd-ddcf45b801ce",
           "uuid": "456b9c84-a043-4776-afed-044ae49193c6"
         },
         {
@@ -685,27 +678,6 @@
         }
       ],
       "uuid": "ee54a9a3-0c09-4c07-9069-ceb45e962b30"
-    },
-    {
-      "actions": [
-        {
-          "labels": [
-            {
-              "name": "Exit Feedback",
-              "uuid": "Exit Feedback:ID"
-            }
-          ],
-          "type": "add_input_labels",
-          "uuid": "115126c4-e993-487d-a36d-b3dcd614157d"
-        }
-      ],
-      "exits": [
-        {
-          "destination_uuid": "9d9b8ce4-fc8e-4f00-bffd-ddcf45b801ce",
-          "uuid": "852611bf-1fb7-40bc-9ed6-0d635cb134b2"
-        }
-      ],
-      "uuid": "3f17a176-2e13-4c87-96e7-6098693616b7"
     },
     {
       "actions": [
