@@ -217,6 +217,7 @@ if Code.ensure_loaded?(Faker) do
         |> third_message_set()
         |> fourth_message_set()
         |> create_message_from_glific("Thank you for your response")
+        |> age_group_message_set()
 
       if opts.restart do
         opts
@@ -372,6 +373,23 @@ if Code.ensure_loaded?(Faker) do
     end
 
     defp fourth_message_set(opts), do: opts
+
+    defp age_group_message_set(opts) do
+      _opts =
+        opts
+        |> create_message_from_glific(
+          "Response to Registration Menu Selection with menu options {1, Age Group less than 10}, {2, Age Group 11 to 14}, {3, Age Group 15 to 18}, {4, Age Group 19 or above}"
+        )
+        |> create_message_to_glific(
+          Enum.random([
+            {1, "Age Group less than 10"},
+            {2, "Age Group 11 to 14"},
+            {3, "Age Group 15 to 18"},
+            {4, "Age Group 19 or above"}
+          ]),
+          dropout: @dropout_percent
+        )
+    end
 
     defp create_message_common(opts, body, difference) do
       message =

@@ -592,7 +592,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{name: "Age Group 15 to 18"},
       %{name: "Age Group 19 or above"},
       %{name: "Hindi"},
-      %{name: "English"}
+      %{name: "English"},
+      %{name: "Help"},
+      %{name: "New Activity"}
     ]
 
     flow_labels =
