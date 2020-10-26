@@ -46,7 +46,7 @@
       },
       "OPTOUT_UUID": {
         "text": [
-          "हमें आपके जाने का अफसोस है। आपको अगले पांच मिनट में सिस्टम से बाहर कर दिया जाएगा।\n1⃣ दबाएं - पुष्टि करने के लिए। \n2⃣ दबाएं - रद्द करने के लिए। "
+          "हमें आपके जाने का अफसोस है। आपको अगले पांच मिनट में सिस्टम से बाहर कर दिया जाएगा।\n1️⃣ दबाएं - पुष्टि करने के लिए। \n2️⃣ दबाएं - रद्द करने के लिए। "
         ]
       }
     }
@@ -59,7 +59,7 @@
           "all_urns": false,
           "attachments": [],
           "quick_replies": [],
-          "text": "We are sorry to see you go. You will be opted out in the next five minutes.\nType 1⃣ to confirm.\nType 2⃣ to cancel.",
+          "text": "We are sorry to see you go. You will be opted out in the next five minutes.\nType 1️⃣ to confirm.\nType 2️⃣ to cancel.",
           "type": "send_msg",
           "uuid": "OPTOUT_UUID"
         }

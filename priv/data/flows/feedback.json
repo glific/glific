@@ -186,7 +186,7 @@
         {
           "attachments": [],
           "quick_replies": [],
-          "text": "Hi, Did you understand this activity?🤔\n\nPress 1⃣ - Yes I did understand the activity\nPress 2⃣ - No, I didn't understand the activity",
+          "text": "Hi, Did you understand this activity?🤔\n\nPress 1️⃣ - Yes I did understand the activity\nPress 2️⃣ - No, I didn't understand the activity",
           "type": "send_msg",
           "uuid": "bbf9e196-e538-480b-a2fa-abfd9f5c62bc"
         }
@@ -309,7 +309,7 @@
           "all_urns": false,
           "attachments": [],
           "quick_replies": [],
-          "text": "Did you like this activity?\n\nPress 1⃣ - Yes, I liked the activity.\nPress 2⃣ - No, the activity is boring",
+          "text": "Did you like this activity?\n\nPress 1️⃣ - Yes, I liked the activity.\nPress 2️⃣ - No, the activity is boring",
           "type": "send_msg",
           "uuid": "2fc81f9f-cc9f-49b5-b59e-e238b26c4b1d"
         }
@@ -327,7 +327,7 @@
         {
           "attachments": [],
           "quick_replies": [],
-          "text": "I am so sorry to hear that!😔 How can we help you with that\n\nPress 1⃣ - For Help\nPress 2⃣ - To try out a new activity",
+          "text": "I am so sorry to hear that!😔 How can we help you with that\n\nPress 1️⃣ - For Help\nPress 2️⃣ - To try out a new activity",
           "type": "send_msg",
           "uuid": "4b880e98-bef4-43f7-9012-767b7fddd8d4"
         }
@@ -511,7 +511,7 @@
         {
           "attachments": [],
           "quick_replies": [],
-          "text": "Thank you! We are so happy to hear that. Would you like to try one more activity? 😊\n\nPress 1⃣ - Yes, want to try one more\nPress 2⃣ - No, not today",
+          "text": "Thank you! We are so happy to hear that. Would you like to try one more activity? 😊\n\nPress 1️⃣ - Yes, want to try one more\nPress 2️⃣ - No, not today",
           "type": "send_msg",
           "uuid": "bb3c506d-0a27-411d-acdc-1f572dbbd44f"
         }
