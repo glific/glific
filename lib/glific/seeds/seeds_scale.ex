@@ -152,7 +152,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @contact_range 10..40
-    @dropout_percent 20
+    @dropout_percent 10
     @day_range 31..0
 
     defp seed_flows(contact_ids, sender_id, organization_id),
@@ -195,15 +195,41 @@ if Code.ensure_loaded?(Faker) do
         organization: organization_id,
         current_time: DateTime.utc_now() |> DateTime.add(sub_time),
         messages: [],
-        halt: false
+        halt: false,
+        restart: false,
+        second_num: 0,
+        third_num: 0
       }
 
       opts
-      |> create_message_to_glific("I am ready to start Activity Flow")
-      |> create_message_from_glific(
-        "Response to Activity with menu options {1, Visual Arts}, {2, Poetry}, {3, Theatre}"
-      )
-      |> create_message_to_glific(
+      |> message_sets()
+      |> Map.get(:messages)
+      |> Enum.reverse()
+    end
+
+    defp message_sets(opts) do
+      opts =
+        opts
+        |> create_message_to_glific("I am ready to start Activity Flow")
+        |> first_message_set()
+        # this calls third_message_set which depends on the output of second
+        |> second_message_set()
+        |> third_message_set()
+        |> fourth_message_set()
+        |> create_message_from_glific("Thank you for your response")
+
+      if opts.restart do
+        opts
+        |> Map.put(:halt, false)
+        |> Map.put(:restart, false)
+        |> message_sets()
+      else
+        opts
+      end
+    end
+
+    defp first_message_set(opts) do
+      first_choice =
         Enum.random([
           {1, "Visual Arts"},
           {1, "Visual Arts"},
@@ -213,57 +239,139 @@ if Code.ensure_loaded?(Faker) do
           {2, "Poetry"},
           {2, "Poetry"},
           {3, "Theatre"},
-          {3, "Theatre"}
-        ]),
-        dropout: @dropout_percent
-      )
-      |> create_message_from_glific(
-        "Response to Main Menu Selection with menu options {1, Understood}, {2, Not Understood}"
-      )
-      # we are ensuring more people understood. simple but works
-      |> create_message_to_glific(
+          {3, "Theatre"},
+          {4, "Help"},
+          {5, "Other"}
+        ])
+
+      {num, _label} = first_choice
+
+      opts =
+        opts
+        |> create_message_from_glific(
+          "Response to Activity with menu options {1, Visual Arts}, {2, Poetry}, {3, Theatre}, {4, Help}, {5, Other}"
+        )
+        |> create_message_to_glific(
+          first_choice,
+          stop: 4,
+          dropout: @dropout_percent
+        )
+
+      if num == 5 and opts.halt == false,
+        do: first_message_set(opts),
+        else: opts
+    end
+
+    defp second_message_set(opts) do
+      second_choice =
         Enum.random([
           {1, "Understood"},
           {1, "Understood"},
           {1, "Understood"},
           {2, "Not Understood"},
-          {2, "Not Understood"}
-        ]),
-        stop: 2,
-        dropout: @dropout_percent
-      )
-      |> create_message_from_glific(
-        "Response to Understood selection with menu options {1, Loved}, {2, OK}, {3, Not Great}"
-      )
-      |> create_message_to_glific(
-        Enum.random([
-          {1, "Loved"},
-          {1, "Loved"},
-          {2, "OK"},
-          {2, "OK"},
-          {2, "OK"},
-          {2, "OK"},
-          {3, "Not Great"},
-          {3, "Not Great"},
-          {3, "Not Great"}
+          {2, "Not Understood"},
+          {3, "Other"}
         ])
-      )
-      |> create_message_from_glific("Thank you for your response")
-      |> create_message_from_glific(
-        "Response to Main Menu Selection with menu options {1, Age Group less than 10}, {2, Age Group 11 to 14}, {3, Age Group 15 to 18}, {4, Age Group 19 or above}"
-      )
-      |> create_message_to_glific(
-        Enum.random([
-          {1, "Age Group less than 10"},
-          {2, "Age Group 11 to 14"},
-          {3, "Age Group 15 to 18"},
-          {4, "Age Group 19 or above"}
-        ]),
-        dropout: @dropout_percent
-      )
-      |> Map.get(:messages)
-      |> Enum.reverse()
+
+      {num, _label} = second_choice
+
+      opts =
+        opts
+        |> create_message_from_glific(
+          "Response to Main Menu Selection with menu options {1, Understood}, {2, Not Understood}"
+        )
+        |> create_message_to_glific(
+          second_choice,
+          dropout: @dropout_percent
+        )
+        |> Map.put(:second_num, num)
+
+      if num == 3 and opts.halt == false,
+        do: second_message_set(opts),
+        else: opts
     end
+
+    defp third_message_set(%{halt: true} = opts), do: opts
+
+    defp third_message_set(opts) do
+      {third_message, third_choice} =
+        case opts.second_num do
+          1 ->
+            {
+              "Response to Understood selection with menu options {1, Loved}, {2, OK}, {3, Not Great}",
+              Enum.random([
+                {1, "Interesting"},
+                {1, "Interesting"},
+                {1, "Interesting"},
+                {2, "Boring"},
+                {2, "Boring"},
+                {3, "Other"}
+              ])
+            }
+
+          2 ->
+            {
+              "Response to Not Understood selection with menu options {1, Help}, {2, New Activity}",
+              Enum.random([
+                {1, "Help"},
+                {1, "Help"},
+                {2, "New Activity"},
+                {2, "New Activity"},
+                {2, "New Activity"},
+                {2, "New Activity"},
+                {3, "Other"}
+              ])
+            }
+
+          # we should never get here, since we should have halted
+          _ ->
+            {nil, nil}
+        end
+
+      {num, _label} = third_choice
+
+      opts =
+        opts
+        |> create_message_from_glific(third_message)
+        |> create_message_to_glific(third_choice)
+        |> set_restart(opts.second_num == 2 and num == 2)
+        |> Map.put(:third_num, num)
+
+      if num == 3 and opts.halt == false,
+        do: third_message_set(opts),
+        else: opts
+    end
+
+    defp fourth_message_set(%{halt: true} = opts), do: opts
+
+    defp fourth_message_set(%{third_num: third_num} = opts) when third_num == 2 do
+      fourth_choice =
+        Enum.random([
+          {1, "Help"},
+          {1, "Help"},
+          {1, "Help"},
+          {2, "New Activity"},
+          {3, "Other"}
+        ])
+
+      {num, _label} = fourth_choice
+
+      opts =
+        opts
+        |> create_message_from_glific(
+          "Response to Boring with menu options {1, Help}, {2, New Activity}, {3, Other}"
+        )
+        |> create_message_to_glific(
+          fourth_choice,
+          dropout: @dropout_percent * 3
+        )
+
+      if num == 3 and opts.halt == false,
+        do: fourth_message_set(opts),
+        else: opts
+    end
+
+    defp fourth_message_set(opts), do: opts
 
     defp create_message_common(opts, body, difference) do
       message =
@@ -333,6 +441,9 @@ if Code.ensure_loaded?(Faker) do
         do: Map.put(opts, :halt, true),
         else: opts
     end
+
+    defp set_restart(opts, false), do: opts
+    defp set_restart(opts, true), do: Map.put(opts, :restart, true) |> Map.put(:halt, true)
 
     defp seed_message_tags(organization) do
       Repo.query!("ALTER TABLE messages_tags DISABLE TRIGGER update_search_message_trigger;")
@@ -472,7 +583,7 @@ if Code.ensure_loaded?(Faker) do
       opts =
         opts
         |> Keyword.put_new(:organization, 1)
-        |> Keyword.put_new(:contacts, 500)
+        |> Keyword.put_new(:contacts, 250)
 
       organization = Partners.get_organization!(opts[:organization])
 
