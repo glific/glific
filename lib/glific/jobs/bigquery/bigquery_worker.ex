@@ -27,16 +27,23 @@ defmodule Glific.Jobs.BigQueryWorker do
     V2.Connection
   }
 
+  @simulater_phone "9876543210"
+
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
   and queue them up for delivery to bigquery
   """
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
-    Jobs.get_bigquery_jobs(organization_id)
-    |> Enum.each(&perform_for_table(&1, organization_id))
-
-    :ok
+    organization = Partners.organization(organization_id)
+    credential = organization.services["bigquery"]
+    if credential do
+      Jobs.get_bigquery_jobs(organization_id)
+      |> Enum.each(&perform_for_table(&1, organization_id))
+      :ok
+    else
+      :ok
+    end
   end
 
   @spec perform_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
@@ -66,32 +73,58 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([m], m.organization_id == ^organization_id)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:tags, :receiver, :sender, :contact, :media])
+      |> preload([:tags, :receiver, :sender, :contact, :user, :media])
+
+    query =
+      case Repo.fetch_by(Contact, %{phone: @simulater_phone, organization_id: organization_id}) do
+        {:ok, simulator_contact} ->
+          query
+          |> where([m], m.contact_id != ^simulator_contact.id)
+
+        {:error, _} ->
+          query
+      end
 
     Repo.all(query)
     |> Enum.reduce(
       [],
       fn row, acc ->
-        [
-          %{
-            type: row.type,
-            user_id: row.contact_id,
-            message: row.body,
-            inserted_at: format_date(row.inserted_at),
-            sent_at: format_date(row.sent_at),
-            uuid: row.uuid,
-            id: row.id,
-            flow: row.flow,
-            status: row.status,
-            sender_phone: row.sender.phone,
-            receiver_phone: row.receiver.phone,
-            contact_phone: row.contact.phone,
-            user_phone: row.contact.phone,
-            media: media_url(row.media),
-            tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
-          }
-          | acc
-        ]
+        message_row = %{
+          type: row.type,
+          user_id: row.contact_id,
+          message: row.body,
+          inserted_at: format_date(row.inserted_at, organization_id),
+          sent_at: format_date(row.sent_at, organization_id),
+          uuid: row.uuid,
+          id: row.id,
+          flow: row.flow,
+          status: row.status,
+          sender_phone: row.sender.phone,
+          receiver_phone: row.receiver.phone,
+          contact_phone: row.contact.phone,
+          contact_name: row.contact.name,
+          user_phone: if(!is_nil(row.user), do: row.user.phone),
+          user_name: if(!is_nil(row.user), do: row.user.name),
+          media: media_url(row.media),
+          tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
+        }
+
+        message_row =
+          if row.flow_label != nil do
+            message_row
+            |> Map.merge(%{
+              flow_labels:
+                String.split(row.flow_label, ", ")
+                |> Enum.map(fn flow_label -> %{flow_label: flow_label} end)
+            })
+          else
+            message_row
+            |> Map.merge(%{
+              flow_labels: []
+            })
+          end
+
+        [message_row | acc]
       end
     )
     |> Enum.chunk_every(100)
@@ -102,6 +135,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     query =
       Contact
       |> where([m], m.organization_id == ^organization_id)
+      |> where([m], m.phone != @simulater_phone)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups])
@@ -118,15 +152,15 @@ defmodule Glific.Jobs.BigQueryWorker do
             provider_status: row.bsp_status,
             status: row.status,
             language: row.language.label,
-            optin_time: format_date(row.optin_time),
-            optout_time: format_date(row.optout_time),
-            last_message_at: format_date(row.last_message_at),
-            inserted_at: format_date(row.inserted_at),
+            optin_time: format_date(row.optin_time, organization_id),
+            optout_time: format_date(row.optout_time, organization_id),
+            last_message_at: format_date(row.last_message_at, organization_id),
+            inserted_at: format_date(row.inserted_at, organization_id),
             fields:
               Enum.map(row.fields, fn {_key, field} ->
                 %{
                   label: field["label"],
-                  inserted_at: format_date(field["inserted_at"]),
+                  inserted_at: format_date(field["inserted_at"], organization_id),
                   type: field["type"],
                   value: field["value"]
                 }
@@ -172,18 +206,26 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp media_url(nil), do: nil
   defp media_url(media), do: media.url
 
-  @spec format_date(DateTime.t() | nil) :: any()
-  defp format_date(nil),
+  @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
+  defp format_date(nil, _),
     do: nil
 
-  defp format_date(date) when is_binary(date),
-    do:
-      Timex.parse(date, "{RFC3339z}")
-      |> elem(1)
-      |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+  defp format_date(date, organization_id) when is_binary(date) do
+    timezone = Partners.organization(organization_id).timezone
 
-  defp format_date(date),
-    do: Timex.format!(date, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
+    Timex.parse(date, "{RFC3339z}")
+    |> elem(1)
+    |> Timex.Timezone.convert(timezone)
+    |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+  end
+
+  defp format_date(date, organization_id) do
+    timezone = Partners.organization(organization_id).timezone
+
+    date
+    |> Timex.Timezone.convert(timezone)
+    |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+  end
 
   @spec token(map()) :: any()
   defp token(credentials) do
@@ -233,11 +275,13 @@ defmodule Glific.Jobs.BigQueryWorker do
         sender_phone: msg["sender_phone"],
         receiver_phone: msg["receiver_phone"],
         contact_phone: msg["contact_phone"],
+        contact_name: msg["contact_name"],
         user_phone: msg["user_phone"],
+        user_name: msg["user_name"],
         tags: msg["tags"],
+        flow_labels: msg["flow_labels"],
         media_url: msg["media"]
-
-      }
+     }
     }
   end
 
@@ -281,14 +325,16 @@ defmodule Glific.Jobs.BigQueryWorker do
     token = token(credentials)
     conn = Connection.new(token.token)
 
-    Tabledata.bigquery_tabledata_insert_all(
-      conn,
-      project_id,
-      dataset_id,
-      table_id,
-      [body: %{rows: data}],
-      []
-    )
+    # In case of error response error will be stored in the oban job
+    {:ok, _} =
+      Tabledata.bigquery_tabledata_insert_all(
+        conn,
+        project_id,
+        dataset_id,
+        table_id,
+        [body: %{rows: data}],
+        []
+      )
 
     :ok
   end

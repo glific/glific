@@ -204,9 +204,19 @@ defmodule Glific.BigquerySchema do
         mode: "REQUIRED"
       },
       %{
-        name: "user_phone",
+        name: "contact_name",
         type: "STRING",
         mode: "REQUIRED"
+      },
+      %{
+        name: "user_phone",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "user_name",
+        type: "STRING",
+        mode: "NULLABLE"
       },
       %{
         name: "media_url",
@@ -230,6 +240,18 @@ defmodule Glific.BigquerySchema do
         fields: [
           %{
             name: "label",
+            type: "STRING",
+            mode: "REQUIRED"
+          }
+        ]
+      },
+      %{
+        name: "flow_labels",
+        type: "RECORD",
+        mode: "REPEATED",
+        fields: [
+          %{
+            name: "flow_label",
             type: "STRING",
             mode: "REQUIRED"
           }

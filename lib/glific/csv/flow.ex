@@ -12,6 +12,7 @@ defmodule Glific.CSV.Flow do
 
   alias Glific.{
     CSV.Menu,
+    CSV.Template,
     Flows.FlowLabel
   }
 
@@ -272,7 +273,7 @@ defmodule Glific.CSV.Flow do
           uuid: node.uuids.action,
           attachmnents: [],
           quick_replies: [],
-          text: language_content(node.content["en"], "en"),
+          text: language_content(node.content["en"], node.menu_content.content, "en"),
           type: "send_msg"
         }
       ]
@@ -298,21 +299,27 @@ defmodule Glific.CSV.Flow do
   end
 
   # Get the content for language
-  @spec language_content(map(), String.t()) :: String.t()
-  defp language_content(content, _language) do
-    Enum.join(Map.values(content), "\n")
+  @spec language_content(map(), map(), String.t()) :: any()
+  defp language_content(content, menu_content, language) do
+    template = Template.get_template(:content, language)
+
+    EEx.eval_string(
+      template,
+      language: language,
+      items: content,
+      menu_item: Map.get(menu_content, language)
+    )
   end
 
   # get the content for a menu and language
-  @spec menu_content(map(), String.t()) :: String.t()
-  defp menu_content(content, _language) do
-    content
-    |> indexed_content()
-    |> Enum.reduce(
-      "",
-      fn {str, index}, acc ->
-        "#{acc} #{to_string(index)}. #{str}\n"
-      end
+  @spec menu_content(map(), String.t()) :: any()
+  defp menu_content(content, language) do
+    template = Template.get_template(:menu, language)
+
+    EEx.eval_string(
+      template,
+      language: language,
+      items: indexed_content(content)
     )
   end
 
@@ -329,7 +336,7 @@ defmodule Glific.CSV.Flow do
             text =
               if type == :menu,
                 do: menu_content(content, lang),
-                else: language_content(content, lang)
+                else: language_content(content, node.menu_content.content, lang)
 
             Map.update(
               acc,

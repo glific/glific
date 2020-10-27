@@ -330,9 +330,6 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # The body of the message
       add :body, :text
 
-      # The body of the message
-      add :flow_label, :string, null: true
-
       # Options are: text, audio, video, image, contact, location, file
       add :type, :message_type_enum
 

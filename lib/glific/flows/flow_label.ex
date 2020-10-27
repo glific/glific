@@ -23,14 +23,18 @@ defmodule Glific.Flows.FlowLabel do
           uuid: Ecto.UUID.t() | nil,
           name: String.t() | nil,
           organization_id: non_neg_integer | nil,
-          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
         }
 
-  schema "flow_label" do
+  schema "flow_labels" do
     field :uuid, Ecto.UUID
     field :name, :string
 
     belongs_to :organization, Organization
+
+    timestamps(type: :utc_datetime)
   end
 
   @doc """
