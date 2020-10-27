@@ -24,6 +24,11 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :delete_contact_messages_result do
+    field :success, :boolean
+    field :errors, list_of(:input_error)
+  end
+
   object :message do
     field :id, :id
     field :body, :string
@@ -169,6 +174,12 @@ defmodule GlificWeb.Schema.MessageTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Messages.delete_message/3)
+    end
+
+    field :clear_chat, :clear_chat_result do
+      arg(:contact_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Messages.clear_chat/3)
     end
   end
 
