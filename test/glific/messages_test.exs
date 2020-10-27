@@ -336,13 +336,14 @@ defmodule Glific.MessagesTest do
     end
 
     test "clear_messages/1 deletes all the messages of a contact", attrs do
-      {:ok, message_media} = Messages.create_message_media(%{
-        caption: "some caption",
-        source_url: "some source_url",
-        thumbnail: "some thumbnail",
-        url: "some url",
-        provider_media_id: "some provider_media_id"
-      })
+      {:ok, message_media} =
+        Messages.create_message_media(%{
+          caption: "some caption",
+          source_url: "some source_url",
+          thumbnail: "some thumbnail",
+          url: "some url",
+          provider_media_id: "some provider_media_id"
+        })
 
       message = message_fixture(attrs |> Map.merge(%{media_id: message_media.id}))
       message = message |> Repo.preload(:contact)
