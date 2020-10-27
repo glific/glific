@@ -35,10 +35,15 @@ defmodule Glific.Jobs.BigQueryWorker do
   """
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
-    Jobs.get_bigquery_jobs(organization_id)
-    |> Enum.each(&perform_for_table(&1, organization_id))
-
-    :ok
+    organization = Partners.organization(organization_id)
+    credential = organization.services["bigquery"]
+    if credential do
+      Jobs.get_bigquery_jobs(organization_id)
+      |> Enum.each(&perform_for_table(&1, organization_id))
+      :ok
+    else
+      :ok
+    end
   end
 
   @spec perform_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
@@ -68,7 +73,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([m], m.organization_id == ^organization_id)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:tags, :receiver, :sender, :contact, :user])
+      |> preload([:tags, :receiver, :sender, :contact, :user, :media])
 
     query =
       case Repo.fetch_by(Contact, %{phone: @simulater_phone, organization_id: organization_id}) do
@@ -100,6 +105,7 @@ defmodule Glific.Jobs.BigQueryWorker do
           contact_name: row.contact.name,
           user_phone: if(!is_nil(row.user), do: row.user.phone),
           user_name: if(!is_nil(row.user), do: row.user.name),
+          media: media_url(row.media),
           tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
         }
 
@@ -197,6 +203,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     end
   end
 
+  defp media_url(nil), do: nil
+  defp media_url(media), do: media.url
+
   @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
   defp format_date(nil, _),
     do: nil
@@ -270,8 +279,9 @@ defmodule Glific.Jobs.BigQueryWorker do
         user_phone: msg["user_phone"],
         user_name: msg["user_name"],
         tags: msg["tags"],
-        flow_labels: msg["flow_labels"]
-      }
+        flow_labels: msg["flow_labels"],
+        media_url: msg["media"]
+     }
     }
   end
 
