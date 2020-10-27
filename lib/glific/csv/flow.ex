@@ -299,31 +299,27 @@ defmodule Glific.CSV.Flow do
   end
 
   # Get the content for language
-  @spec language_content(map(), map(), String.t()) :: String.t()
+  @spec language_content(map(), map(), String.t()) :: any()
   defp language_content(content, menu_content, language) do
     template = Template.get_template(:content, language)
 
     EEx.eval_string(
       template,
-      [
-        language: language,
-        items: content,
-        menu_item: Map.get(menu_content, language)
-      ]
+      language: language,
+      items: content,
+      menu_item: Map.get(menu_content, language)
     )
   end
 
   # get the content for a menu and language
-  @spec menu_content(map(), String.t()) :: String.t()
+  @spec menu_content(map(), String.t()) :: any()
   defp menu_content(content, language) do
     template = Template.get_template(:menu, language)
 
     EEx.eval_string(
       template,
-      [
-        language: language,
-        items: indexed_content(content)
-      ]
+      language: language,
+      items: indexed_content(content)
     )
   end
 

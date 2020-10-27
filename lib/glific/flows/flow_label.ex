@@ -35,7 +35,6 @@ defmodule Glific.Flows.FlowLabel do
     belongs_to :organization, Organization
 
     timestamps(type: :utc_datetime)
-
   end
 
   @doc """
