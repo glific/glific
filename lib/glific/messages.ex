@@ -816,8 +816,8 @@ defmodule Glific.Messages do
   @doc """
   Delete all messages of a contact
   """
-  @spec delete_contact_messages(Contact.t()) :: {integer(), nil}
-  def delete_contact_messages(%Contact{} = contact) do
+  @spec clear_messages(Contact.t()) :: {:ok}
+  def clear_messages(%Contact{} = contact) do
     # add messages to bigquery oban jobs worker
     BigQueryWorker.perform_periodic(contact.organization_id)
 
@@ -837,5 +837,9 @@ defmodule Glific.Messages do
     |> where([m], m.contact_id == ^contact.id)
     |> where([m], m.organization_id == ^contact.organization_id)
     |> Repo.delete_all()
+
+    Communications.publish_data(contact, :cleared_messages, contact.organization_id)
+
+    {:ok}
   end
 end

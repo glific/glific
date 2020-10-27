@@ -24,7 +24,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :errors, list_of(:input_error)
   end
 
-  object :delete_contact_messages_result do
+  object :clear_messages_result do
     field :success, :boolean
     field :errors, list_of(:input_error)
   end
@@ -176,10 +176,10 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.delete_message/3)
     end
 
-    field :clear_chat, :clear_chat_result do
+    field :clear_messages, :clear_messages_result do
       arg(:contact_id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Messages.clear_chat/3)
+      resolve(&Resolvers.Messages.clear_messages/3)
     end
   end
 
@@ -198,6 +198,14 @@ defmodule GlificWeb.Schema.MessageTypes do
       config(&Schema.config_fun/2)
 
       resolve(&Resolvers.Messages.publish_message/3)
+    end
+
+    field :cleared_messages, :contact do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(fn contact, _, _ -> {:ok, contact} end)
     end
   end
 end

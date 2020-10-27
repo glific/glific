@@ -77,12 +77,12 @@ defmodule GlificWeb.Resolvers.Messages do
   @doc """
   Delete all messages of a contact
   """
-  @spec clear_chat(Absinthe.Resolution.t(), %{contact_id: integer}, %{context: map()}) ::
+  @spec clear_messages(Absinthe.Resolution.t(), %{contact_id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def clear_chat(_, %{contact_id: contact_id}, %{context: %{current_user: user}}) do
+  def clear_messages(_, %{contact_id: contact_id}, %{context: %{current_user: user}}) do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
-         {_messages_count, nil} <- Messages.delete_contact_messages(contact) do
+         {:ok} <- Messages.clear_messages(contact) do
       {:ok, %{success: true}}
     end
   end
