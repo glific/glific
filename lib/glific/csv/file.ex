@@ -53,7 +53,6 @@ defmodule Glific.CSV.File do
       |> Enum.map(fn {:ok, l} -> l end)
       |> parse_header()
       |> parse_rows(%{})
-      |> IO.inspect()
 
     json_map = Flow.gen_flow(summary.menus[0], organization_id)
     {:ok, json} = Jason.encode_to_iodata(json_map, pretty: true)
