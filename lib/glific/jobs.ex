@@ -7,7 +7,7 @@ defmodule Glific.Jobs do
   alias Glific.{
     Jobs.BigqueryJob,
     Jobs.ChatbaseJob,
-    Jobs.GcsJob
+    Jobs.GcsJob,
     Repo
   }
 
