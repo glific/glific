@@ -33,6 +33,7 @@ defmodule Glific.Flows.Flow do
           keywords: [String.t()] | nil,
           ignore_keywords: boolean() | nil,
           flow_type: String.t() | nil,
+          status: String.t(),
           definition: map() | nil,
           localization: Localization.t() | nil,
           nodes: [Node.t()] | nil,
@@ -54,6 +55,8 @@ defmodule Glific.Flows.Flow do
     field :uuid_map, :map, virtual: true
     field :nodes, :map, virtual: true
     field :localization, :map, virtual: true
+
+    field :status, :string, virtual: true, default: "done"
 
     field :keywords, {:array, :string}, default: []
     field :ignore_keywords, :boolean, default: false
@@ -232,8 +235,8 @@ defmodule Glific.Flows.Flow do
   end
 
   @doc """
-    Helper function to load a active flow from
-    the database and build an object
+  Helper function to load a active flow from
+  the database and build an object
   """
   @spec get_loaded_flow(non_neg_integer, String.t(), map()) :: map()
   def get_loaded_flow(organization_id, status, args) do
@@ -248,11 +251,13 @@ defmodule Glific.Flows.Flow do
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,
           organization_id: f.organization_id,
-          definition: fr.definition
+          definition: fr.definition,
+          status: status
         }
 
     flow =
       query
+      |> status_clause(status)
       |> args_clause(args)
       |> Repo.one()
 
@@ -273,4 +278,10 @@ defmodule Glific.Flows.Flow do
     do: query |> where([f, _fr], ^keyword in f.keywords)
 
   defp args_clause(query, _args), do: query
+
+  defp status_clause(query, "done" = status),
+    do: query |> where([_f, fr], fr.status == ^status)
+
+  defp status_clause(query, "draft"),
+    do: query |> where([_f, fr], fr.revision_number == 0)
 end
