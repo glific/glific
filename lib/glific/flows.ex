@@ -219,6 +219,11 @@ defmodule Glific.Flows do
       |> FlowRevision.changeset(%{definition: definition, flow_id: flow.id})
       |> Repo.insert()
 
+    # Now also delete the caches for the draft status, so we can reload
+    # note that we dont bother reloading the cache, since we dont expect
+    # draft simulator to run often, and drafts are being saved quite often
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
+
     revision
   end
 
@@ -319,8 +324,6 @@ defmodule Glific.Flows do
   Update latest flow revision status as done
   Reset old published flow revision status as draft
   Update cached flow definition
-
-  PLEASE FIX THE update_cached flow status when we add code to create a new "test" or "beta" version
   """
   @spec publish_flow(Flow.t()) :: {:ok, Flow.t()}
   def publish_flow(%Flow{} = flow) do
