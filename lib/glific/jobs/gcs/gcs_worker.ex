@@ -66,24 +66,19 @@ defmodule Glific.Jobs.GcsWorker do
     Repo.all(query)
     |> Enum.reduce(
       [],
-      fn row, acc ->
+      fn row, _acc ->
         [id, url] = row
-
-        [
-          %{
+        %{
             url: url,
             id: id
-          }
-          | acc
-        ]
+        }
+        |> make_job(organization_id)
       end
     )
-    |> Enum.chunk_every(1)
-    |> Enum.each(&make_job(&1, organization_id))
   end
 
-  defp make_job(urls, organization_id) do
-    __MODULE__.new(%{organization_id: organization_id, urls: urls})
+  defp make_job(media, organization_id) do
+    __MODULE__.new(%{organization_id: organization_id, media: media})
     |> Oban.insert()
   end
 
@@ -92,22 +87,37 @@ defmodule Glific.Jobs.GcsWorker do
   """
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
-  def perform(%Oban.Job{args: %{"urls" => urls}}) do
-    # we'll get the gcs key from here
-    {:ok, link} = CloudStorage.put(
-                                    Glific.Media,
-                                    :original,
-                                    {%Waffle.File{path: Path.expand("~/Downloads/hello.png", __DIR__),
-                                    file_name: "signal.png"}, "1"}
-                                  )
-    gcs_url = Enum.join(["https://storage.googleapis.com", link.id], "/")
-              |>String.replace("/#{link.generation}", "")
-    Enum.each(urls, fn url -> update_gcs_url(url["id"], gcs_url) end)
+  def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
+    # We will download the file form internet and then upload it to gsc and then remove it.
+    extension =  "png"
+    file_name = "#{Ecto.UUID.generate()}.#{extension}"
+    path = Path.expand("temp/#{file_name}", __DIR__)
+
+    Download.from(media["url"], [path: path])
+    |> case do
+      {:ok, _} ->
+        {:ok, response} = upload_file_on_gcs(path, organization_id, file_name)
+        get_public_link(response)
+        |> update_gcs_url(media["id"])
+
+        File.rm(path)
+    end
     :ok
   end
-  defp update_gcs_url(id, gcs_url) do
+
+  defp get_public_link(response) do
+    Enum.join(["https://storage.googleapis.com", response.id], "/")
+      |> String.replace("/#{response.generation}", "")
+  end
+
+  defp upload_file_on_gcs(path, org_id, file_name) do
+    CloudStorage.put(Glific.Media, :original, {%Waffle.File{path: path, file_name: file_name}, org_id})
+  end
+
+  defp update_gcs_url(gcs_url, id) do
     Repo.get(MessageMedia, id)
     |> MessageMedia.changeset(%{gcs_url: gcs_url})
     |> Glific.Repo.update()
   end
+
 end
