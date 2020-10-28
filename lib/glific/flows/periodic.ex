@@ -85,6 +85,8 @@ defmodule Glific.Flows.Periodic do
     )
   end
 
+  @final_phrase "done"
+
   @spec common_flow(map(), String.t(), Message.t(), DateTime.t()) :: {map(), boolean}
   defp common_flow(state, period, message, since) do
     flow_id = get_in(state, [:flows, period])
@@ -92,9 +94,11 @@ defmodule Glific.Flows.Periodic do
     if !is_nil(flow_id) and
          !Flows.flow_activated(flow_id, message.contact_id, since) do
       {:ok, flow} =
-        Flows.get_cached_flow(message.organization_id, {:flow_id, flow_id}, %{id: flow_id})
+        Flows.get_cached_flow(message.organization_id, {:flow_id, flow_id, @final_phrase}, %{
+          id: flow_id
+        })
 
-      FlowContext.init_context(flow, message.contact)
+      FlowContext.init_context(flow, message.contact, @final_phrase)
       {state, true}
     else
       {state, false}

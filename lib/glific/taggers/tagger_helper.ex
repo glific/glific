@@ -28,7 +28,8 @@ defmodule Glific.Taggers.TaggerHelper do
   """
   @spec tag_outbound_message(map()) :: {:ok, Message.t()}
   def tag_outbound_message(message) do
-    message =  if is_struct(message), do: message, else: Glific.Messages.get_message!(message["id"])
+    message =
+      if is_struct(message), do: message, else: Glific.Messages.get_message!(message["id"])
 
     message
     |> add_not_responded_tag()

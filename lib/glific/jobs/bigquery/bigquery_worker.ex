@@ -37,9 +37,11 @@ defmodule Glific.Jobs.BigQueryWorker do
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
     credential = organization.services["bigquery"]
+
     if credential do
       Jobs.get_bigquery_jobs(organization_id)
       |> Enum.each(&perform_for_table(&1, organization_id))
+
       :ok
     else
       :ok
@@ -281,7 +283,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         tags: msg["tags"],
         flow_labels: msg["flow_labels"],
         media_url: msg["media"]
-     }
+      }
     }
   end
 

@@ -20,7 +20,7 @@ defmodule Glific.Flows.FlowContext do
     Repo
   }
 
-  @required_fields [:contact_id, :flow_id, :flow_uuid]
+  @required_fields [:contact_id, :flow_id, :flow_uuid, :status]
   @optional_fields [
     :node_uuid,
     :parent_id,
@@ -46,6 +46,7 @@ defmodule Glific.Flows.FlowContext do
           flow_id: non_neg_integer | nil,
           flow_uuid: Ecto.UUID.t() | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          status: String.t() | nil,
           parent_id: non_neg_integer | nil,
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
@@ -67,6 +68,8 @@ defmodule Glific.Flows.FlowContext do
 
     field :node_uuid, Ecto.UUID
     field :flow_uuid, Ecto.UUID
+
+    field :status, :string, default: "done"
 
     field :wakeup_at, :utc_datetime, default: nil
     field :completed_at, :utc_datetime, default: nil
@@ -133,7 +136,9 @@ defmodule Glific.Flows.FlowContext do
       parent = active_context(context.contact_id, context.parent_id)
 
       parent
-      |> load_context(Flow.get_flow(context.flow.organization_id, parent.flow_uuid))
+      |> load_context(
+        Flow.get_flow(context.flow.organization_id, parent.flow_uuid, context.status)
+      )
       |> step_forward(Messages.create_temp_message(context.flow.organization_id, "completed"))
     end
   end
@@ -239,9 +244,12 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Start a new context, if there is an existing context, blow it away
   """
-  @spec init_context(Flow.t(), Contact.t(), non_neg_integer | nil, non_neg_integer | 0) ::
+  @spec init_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def init_context(flow, contact, parent_id \\ nil, current_delay \\ 0) do
+  def init_context(flow, contact, status, opts \\ []) do
+    parent_id = Keyword.get(opts, :parent_id)
+    current_delay = Keyword.get(opts, :delay, 0)
+
     # set all previous context to be completed if we are not starting a sub flow
     if is_nil(parent_id) do
       now = DateTime.utc_now()
@@ -260,6 +268,7 @@ defmodule Glific.Flows.FlowContext do
         parent_id: parent_id,
         node_uuid: node.uuid,
         flow_uuid: flow.uuid,
+        status: status,
         node: node,
         results: %{},
         flow_id: flow.id,
@@ -352,9 +361,11 @@ defmodule Glific.Flows.FlowContext do
     {:ok, context} = FlowContext.update_flow_context(context, %{wakeup_at: nil})
 
     {:ok, flow} =
-      Flows.get_cached_flow(context.flow.organization_id, {:flow_uuid, context.flow_uuid}, %{
-        uuid: context.flow_uuid
-      })
+      Flows.get_cached_flow(
+        context.flow.organization_id,
+        {:flow_uuid, context.flow_uuid, context.status},
+        %{uuid: context.flow_uuid}
+      )
 
     {:ok, context} =
       context
