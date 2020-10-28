@@ -335,6 +335,30 @@ defmodule Glific.MessagesTest do
       assert_raise Ecto.NoResultsError, fn -> Messages.get_message!(message.id) end
     end
 
+    test "clear_messages/1 deletes all the messages of a contact", attrs do
+      {:ok, message_media} =
+        Messages.create_message_media(%{
+          caption: "some caption",
+          source_url: "some source_url",
+          thumbnail: "some thumbnail",
+          url: "some url",
+          provider_media_id: "some provider_media_id"
+        })
+
+      message = message_fixture(attrs |> Map.merge(%{media_id: message_media.id}))
+      message = message |> Repo.preload(:contact)
+      assert {:ok} = Messages.clear_messages(message.contact)
+
+      assert {:error, ["Elixir.Glific.Messages.Message", "Resource not found"]} =
+               Repo.fetch_by(Message, %{
+                 contact_id: message.contact_id,
+                 organization_id: message.organization_id
+               })
+
+      # message media should be deleted
+      assert {:error, _} = Repo.fetch(MessageMedia, message_media.id)
+    end
+
     test "change_message/1 returns a message changeset", attrs do
       message = message_fixture(attrs)
       assert %Ecto.Changeset{} = Messages.change_message(message)

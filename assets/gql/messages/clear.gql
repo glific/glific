@@ -1,0 +1,10 @@
+
+mutation clearMessages($contactId: ID!) {
+  clearMessages(contactId: $contactId) {
+    success
+    errors {
+      key
+      message
+    }
+  }
+}
