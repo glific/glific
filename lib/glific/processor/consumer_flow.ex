@@ -53,8 +53,8 @@ defmodule Glific.Processor.ConsumerFlow do
           Map.has_key?(state.flow_keywords, body) ->
             check_flows(message, body, state, false)
 
-          is_beta_keyword?(state, body) ->
-            check_flows(message, body, state, true)
+        is_beta_keyword?(state, message.body) ->
+          check_flows(message, message.body, state, true)
 
           true ->
             check_contexts(context, message, body, state)

@@ -244,15 +244,14 @@ defmodule Glific.Flows.Flow do
       from f in Flow,
         join: fr in assoc(f, :revisions),
         where: f.organization_id == ^organization_id,
-        where: fr.flow_id == f.id and fr.status == ^status,
+        where: fr.flow_id == f.id,
         select: %Flow{
           id: f.id,
           uuid: f.uuid,
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,
           organization_id: f.organization_id,
-          definition: fr.definition,
-          status: status
+          definition: fr.definition
         }
 
     flow =
@@ -260,6 +259,7 @@ defmodule Glific.Flows.Flow do
       |> status_clause(status)
       |> args_clause(args)
       |> Repo.one()
+      |> Map.put(:status, status)
 
     flow.definition
     |> clean_definition()
