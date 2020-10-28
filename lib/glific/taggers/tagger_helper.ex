@@ -27,14 +27,15 @@ defmodule Glific.Taggers.TaggerHelper do
   Helper function to update tags of outbound message
   """
   @spec tag_outbound_message(map()) :: {:ok, Message.t()}
-  def tag_outbound_message(message) do
-    message = Glific.Messages.get_message!(message["id"])
-
+  def tag_outbound_message(message)  do
+    message =  if is_struct(message), do: message, else: Glific.Messages.get_message!(message["id"])
     message
     |> add_not_responded_tag()
 
     {:ok, message}
   end
+
+
 
   @spec add_tag(Message.t(), String.t()) :: Message.t()
   defp add_tag(message, tag_shortcode) do
