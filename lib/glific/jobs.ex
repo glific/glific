@@ -73,7 +73,7 @@ defmodule Glific.Jobs do
     Repo.insert!(
       changeset,
       returning: true,
-      on_conflict: [set: [message_id: attrs.message_id]],
+      on_conflict: [set: [message_media_id: attrs.message_media_id]],
       conflict_target: :organization_id
     )
   end

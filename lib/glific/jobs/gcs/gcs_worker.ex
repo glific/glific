@@ -14,6 +14,8 @@ defmodule Glific.Jobs.GcsWorker do
     max_attempts: 1,
     priority: 0
 
+  alias Waffle.Storage.Google.CloudStorage
+
   alias Glific.{
     Jobs,
     Messages.MessageMedia,
@@ -37,81 +39,55 @@ defmodule Glific.Jobs.GcsWorker do
     query =
       MessageMedia
       |> select([m], max(m.id))
-      |> where([m], m.organization_id == ^organization_id)
 
     max_id = Repo.one(query)
 
     if max_id > message_media_id do
       Jobs.upsert_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
-      queue_messages(organization_id, message_media_id, max_id)
+      queue_urls(organization_id, message_media_id, max_id)
     end
 
     :ok
   end
 
-  @spec queue_messages(non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
-  defp queue_messages(organization_id, min_id, max_id) do
+  @spec queue_urls(non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
+  defp queue_urls(organization_id, min_id, max_id) do
     query =
       MessageMedia
-      |> select([m], [m.id, m.body, m.flow, m.inserted_at, m.contact_id])
-      |> where([m], m.organization_id == ^organization_id)
-      |> where([m], m.id > ^min_id and m.id <= ^max_id)
+      |> select([m], [m.id, m.url, m.inserted_at])
       |> order_by([m], [m.inserted_at, m.id])
 
     Repo.all(query)
     |> Enum.reduce(
       [],
       fn row, acc ->
-        [_id, body, flow, inserted_at, contact_id] = row
+        [_id, url, inserted_at] = row
 
         [
           %{
-            type: if(flow == :inbound, do: :user, else: :agent),
-            platform: "WhatsApp",
-            user_id: contact_id,
-            message: body,
-            time_stamp: DateTime.to_unix(inserted_at)
+            url: url
           }
           | acc
         ]
       end
     )
-    |> Enum.chunk_every(100)
+    |> Enum.chunk_every(1)
     |> Enum.each(&make_job(&1, organization_id))
   end
 
-  defp make_job(messages, organization_id) do
-    __MODULE__.new(%{organization_id: organization_id, messages: messages})
+  defp make_job(urls, organization_id) do
+    __MODULE__.new(%{organization_id: organization_id, urls: urls})
     |> Oban.insert()
   end
-
-  @gcs_url "https://gcs.com/api/messages"
 
   @doc """
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
-  def perform(%Oban.Job{args: %{"messages" => messages, "organization_id" => organization_id}}) do
+  def perform(%Oban.Job{args: %{"urls" => urls, "organization_id" => organization_id}}) do
     # we'll get the gcs key from here
-    organization = Partners.organization(organization_id)
-    credential = organization.services["gcs"]
-    api_key = if credential, do: credential.secrets["api_key"], else: nil
-
-    if api_key do
-      # api_key = organization.services.gcs.api_key
-      messages = Enum.map(messages, fn m -> Map.put(m, "api_key", api_key) end)
-      data = %{"messages" => messages}
-
-      case Tesla.post(@gcs_url, Poison.encode!(data)) do
-        {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
-          :ok
-
-        _ ->
-          {:error, "Gcs returned an unexpected result"}
-      end
-    else
-      :ok
-    end
+    CloudStorage.put(Glific.Media, :original, {%Waffle.File{path: Path.expand("~/Downloads/hello.png", __DIR__), file_name: "te.png"}, "1"})
+    :ok
   end
 end
