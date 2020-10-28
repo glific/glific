@@ -20,7 +20,6 @@ defmodule Glific.Jobs.GcsWorker do
     Jobs,
     Messages.Message,
     Messages.MessageMedia,
-    Partners,
     Repo
   }
 
@@ -58,7 +57,7 @@ defmodule Glific.Jobs.GcsWorker do
   defp queue_urls(organization_id, min_id, max_id) do
     query =
       MessageMedia
-      |> select([m], [m.id, m.url, m.inserted_at])
+      |> select([m], [m.id, m.url])
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m, msg], msg.organization_id == ^organization_id)
@@ -68,7 +67,7 @@ defmodule Glific.Jobs.GcsWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        [id, url, inserted_at] = row
+        [id, url] = row
 
         [
           %{
@@ -93,9 +92,14 @@ defmodule Glific.Jobs.GcsWorker do
   """
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
-  def perform(%Oban.Job{args: %{"urls" => urls, "organization_id" => organization_id}}) do
+  def perform(%Oban.Job{args: %{"urls" => urls}}) do
     # we'll get the gcs key from here
-    {:ok, link} = CloudStorage.put(Glific.Media, :original, {%Waffle.File{path: Path.expand("~/Downloads/hello.png", __DIR__), file_name: "saver.png"}, "1"})
+    {:ok, link} = CloudStorage.put(
+                                    Glific.Media,
+                                    :original,
+                                    {%Waffle.File{path: Path.expand("~/Downloads/hello.png", __DIR__),
+                                    file_name: "signal.png"}, "1"}
+                                  )
     gcs_url = Enum.join(["https://storage.googleapis.com", link.id], "/")
               |>String.replace("/#{link.generation}", "")
     Enum.each(urls, fn url -> update_gcs_url(url["id"], gcs_url) end)
