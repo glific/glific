@@ -18,6 +18,7 @@ defmodule Glific.Jobs.GcsWorker do
 
   alias Glific.{
     Jobs,
+    Messages.Message,
     Messages.MessageMedia,
     Partners,
     Repo
@@ -25,6 +26,7 @@ defmodule Glific.Jobs.GcsWorker do
 
   @spec perform_periodic(non_neg_integer) :: :ok
   @doc """
+  Glific.Jobs.GcsWorker.perform_periodic(1)
   This is called from the cron job on a regular schedule. we sweep the messages table
   and queue them up for delivery to gcs
   """
@@ -39,6 +41,8 @@ defmodule Glific.Jobs.GcsWorker do
     query =
       MessageMedia
       |> select([m], max(m.id))
+      |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
+      |> where([m, msg], msg.organization_id == ^organization_id)
 
     max_id = Repo.one(query)
 
@@ -55,17 +59,21 @@ defmodule Glific.Jobs.GcsWorker do
     query =
       MessageMedia
       |> select([m], [m.id, m.url, m.inserted_at])
+      |> where([m], m.id > ^min_id and m.id <= ^max_id)
+      |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
+      |> where([m, msg], msg.organization_id == ^organization_id)
       |> order_by([m], [m.inserted_at, m.id])
 
     Repo.all(query)
     |> Enum.reduce(
       [],
       fn row, acc ->
-        [_id, url, inserted_at] = row
+        [id, url, inserted_at] = row
 
         [
           %{
-            url: url
+            url: url,
+            id: id
           }
           | acc
         ]
@@ -87,7 +95,15 @@ defmodule Glific.Jobs.GcsWorker do
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(%Oban.Job{args: %{"urls" => urls, "organization_id" => organization_id}}) do
     # we'll get the gcs key from here
-    CloudStorage.put(Glific.Media, :original, {%Waffle.File{path: Path.expand("~/Downloads/hello.png", __DIR__), file_name: "te.png"}, "1"})
+    {:ok, link} = CloudStorage.put(Glific.Media, :original, {%Waffle.File{path: Path.expand("~/Downloads/hello.png", __DIR__), file_name: "saver.png"}, "1"})
+    gcs_url = Enum.join(["https://storage.googleapis.com", link.id], "/")
+              |>String.replace("/#{link.generation}", "")
+    Enum.each(urls, fn url -> update_gcs_url(url["id"], gcs_url) end)
     :ok
+  end
+  defp update_gcs_url(id, gcs_url) do
+    Repo.get(MessageMedia, id)
+    |> MessageMedia.changeset(%{gcs_url: gcs_url})
+    |> Glific.Repo.update()
   end
 end
