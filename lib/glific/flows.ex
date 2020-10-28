@@ -266,11 +266,11 @@ defmodule Glific.Flows do
   end
 
   # Get a list of all the keys to cache the flow.
-  @spec keys_to_cache_flow(Flow.t()) :: list()
-  defp keys_to_cache_flow(flow),
+  @spec keys_to_cache_flow(Flow.t(), String.t()) :: list()
+  defp keys_to_cache_flow(flow, status),
     do:
-      Enum.map(flow.keywords, fn keyword -> {:flow_keyword, keyword} end)
-      |> Enum.concat([{:flow_uuid, flow.uuid}, {:flow_id, flow.id}])
+      Enum.map(flow.keywords, fn keyword -> {:flow_keyword, keyword, status} end)
+      |> Enum.concat([{:flow_uuid, flow.uuid, status}, {:flow_id, flow.id, status}])
 
   @doc """
   A helper function to interact with the Caching API and get the cached flow.
@@ -279,10 +279,10 @@ defmodule Glific.Flows do
   @spec get_cached_flow(non_neg_integer, any, any) :: {atom, any} | atom()
   def get_cached_flow(nil, _key, _args), do: {:ok, nil}
 
-  def get_cached_flow(organization_id, key, args) do
+  def get_cached_flow(organization_id, {_atom, _value, status} = key, args) do
     with {:ok, false} <- Caches.get(organization_id, key) do
-      flow = Flow.get_loaded_flow(organization_id, args)
-      Caches.set(organization_id, keys_to_cache_flow(flow), flow)
+      flow = Flow.get_loaded_flow(organization_id, status, args)
+      Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
     end
   end
 
@@ -290,10 +290,10 @@ defmodule Glific.Flows do
   Update the cached flow from db. This typically happens when the flow definition is updated
   via the UI
   """
-  @spec update_cached_flow(Flow.t()) :: {atom, any}
-  def update_cached_flow(flow) do
-    Caches.remove(flow.organization_id, keys_to_cache_flow(flow))
-    get_cached_flow(flow.organization_id, {:flow_uuid, flow.uuid}, %{uuid: flow.uuid})
+  @spec update_cached_flow(Flow.t(), String.t()) :: {atom, any}
+  def update_cached_flow(flow, status) do
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, status))
+    get_cached_flow(flow.organization_id, {:flow_uuid, flow.uuid, status}, %{uuid: flow.uuid})
   end
 
   @doc """
@@ -319,6 +319,8 @@ defmodule Glific.Flows do
   Update latest flow revision status as done
   Reset old published flow revision status as draft
   Update cached flow definition
+
+  PLEASE FIX THE update_cached flow status when we add code to create a new "test" or "beta" version
   """
   @spec publish_flow(Flow.t()) :: {:ok, Flow.t()}
   def publish_flow(%Flow{} = flow) do
@@ -338,7 +340,8 @@ defmodule Glific.Flows do
         |> FlowRevision.changeset(%{status: "done"})
         |> Repo.update()
 
-      update_cached_flow(flow)
+      # we need to fix this depending on where we are making the flow a beta or the done version
+      update_cached_flow(flow, "done")
     end
 
     {:ok, flow}
@@ -349,10 +352,13 @@ defmodule Glific.Flows do
   """
   @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
-    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow.id}, %{id: flow.id})
+    status = "done"
+
+    {:ok, flow} =
+      get_cached_flow(contact.organization_id, {:flow_id, flow.id, status}, %{id: flow.id})
 
     if Contacts.can_send_message_to?(contact),
-      do: process_contact_flow([contact], flow),
+      do: process_contact_flow([contact], flow, status),
       else: {:error, ["contact", "Cannot send the message to the contact."]}
   end
 
@@ -361,16 +367,21 @@ defmodule Glific.Flows do
   """
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
   def start_group_flow(%Flow{} = flow, %Group{} = group) do
-    {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id}, %{id: flow.id})
+    status = "done"
+
+    {:ok, flow} =
+      get_cached_flow(group.organization_id, {:flow_id, flow.id, status}, %{id: flow.id})
+
     group = group |> Repo.preload([:contacts])
-    process_contact_flow(group.contacts, flow)
+    process_contact_flow(group.contacts, flow, status)
   end
 
-  @spec process_contact_flow(list(), Flow.t()) :: {:ok, Flow.t()}
-  defp process_contact_flow(contacts, flow) do
+  @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
+  defp process_contact_flow(contacts, flow, status) do
     _list =
       Enum.map(contacts, fn contact ->
-        if Contacts.can_send_message_to?(contact), do: FlowContext.init_context(flow, contact)
+        if Contacts.can_send_message_to?(contact),
+          do: FlowContext.init_context(flow, contact, status)
       end)
 
     {:ok, flow}

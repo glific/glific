@@ -59,7 +59,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     contacts_field(organization)
 
     bigquery_jobs(organization)
-
   end
 
   def down(_repo) do
@@ -734,7 +733,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   defp bigquery_jobs(organization) do
-
     utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     Repo.insert!(%BigqueryJob{

@@ -39,7 +39,7 @@ defmodule Glific.Processor.ConsumerFlow do
          {:ok, flow} <-
            Flows.get_cached_flow(
              message.organization_id,
-             {:flow_uuid, context.flow_uuid},
+             {:flow_uuid, context.flow_uuid, context.status},
              %{uuid: context.flow_uuid}
            ),
          true <- flow.ignore_keywords do
@@ -47,23 +47,52 @@ defmodule Glific.Processor.ConsumerFlow do
     else
       _ ->
         cond do
-          Map.get(state, :newcontact, false) == true -> check_flows(message, "newcontact", state)
-          Map.has_key?(state.flow_keywords, body) -> check_flows(message, body, state)
-          true -> check_contexts(context, message, body, state)
+          Map.get(state, :newcontact, false) == true ->
+            check_flows(message, "newcontact", state, false)
+
+          Map.has_key?(state.flow_keywords, body) ->
+            check_flows(message, body, state, false)
+
+          is_beta_keyword?(state, body) ->
+            check_flows(message, body, state, true)
+
+          true ->
+            check_contexts(context, message, body, state)
         end
     end
+  end
+
+  @beta_phrase "test:"
+  @final_phrase "done"
+
+  @spec is_beta_keyword?(map(), String.t()) :: boolean()
+  defp is_beta_keyword?(state, body) do
+    if String.starts_with?(body, @beta_phrase) and
+         Map.has_key?(state.flow_keywords, String.replace_leading(body, @beta_phrase, "")),
+       do: true,
+       else: false
   end
 
   @doc """
   Start a flow or reactivate a flow if needed. This will be linked to the entire
   trigger mechanism once we have that under control.
   """
-  @spec check_flows(atom() | Message.t(), String.t(), map()) :: {Message.t(), map()}
-  def check_flows(message, body, state) do
-    {:ok, flow} =
-      Flows.get_cached_flow(message.organization_id, {:flow_keyword, body}, %{keyword: body})
+  @spec check_flows(atom() | Message.t(), String.t(), map(), boolean()) :: {Message.t(), map()}
+  def check_flows(message, body, state, is_beta) do
+    {status, body} =
+      if is_beta do
+        {String.replace_trailing(@beta_phrase, ":", ""),
+         String.replace_leading(body, @beta_phrase, "")}
+      else
+        {@final_phrase, body}
+      end
 
-    FlowContext.init_context(flow, message.contact)
+    {:ok, flow} =
+      Flows.get_cached_flow(message.organization_id, {:flow_keyword, body, status}, %{
+        keyword: body
+      })
+
+    FlowContext.init_context(flow, message.contact, status)
     {message, state}
   end
 
@@ -79,9 +108,11 @@ defmodule Glific.Processor.ConsumerFlow do
 
   def check_contexts(context, message, _body, state) do
     {:ok, flow} =
-      Flows.get_cached_flow(message.organization_id, {:flow_uuid, context.flow_uuid}, %{
-        uuid: context.flow_uuid
-      })
+      Flows.get_cached_flow(
+        message.organization_id,
+        {:flow_uuid, context.flow_uuid, context.status},
+        %{uuid: context.flow_uuid}
+      )
 
     context
     |> Map.merge(%{last_message: message})
