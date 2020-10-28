@@ -114,7 +114,10 @@ defmodule Glific.Seeds.Credentials do
       is_active: true,
       keys: %{},
       secrets: %{
-        email: Keyword.get(gcs, :email)
+        email: Keyword.get(gcs, :email),
+        bucket: Keyword.get(gcs, :bucket),
+        service_account: Keyword.get(gcs, :service_account)
+
       }
     })
   end
