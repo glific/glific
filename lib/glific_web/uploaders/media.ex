@@ -51,7 +51,7 @@ defmodule Glific.Media do
   #   [content_type: MIME.from_path(file.file_name)]
   # end
 
-  def gcs_object_headers(version, {file, _scope}) do
+  def gcs_object_headers(_version, {file, _scope}) do
     %{contentType: MIME.from_path(file.file_name)}
   end
 end

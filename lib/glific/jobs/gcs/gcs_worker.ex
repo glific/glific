@@ -1,7 +1,7 @@
 defmodule Glific.Jobs.GcsWorker do
   @moduledoc """
   Process the  media table for each organization. Chunk number of message medias
-  in groups of 128 and create a Gcs Worker Job to deliver the message to
+  in groups of 128 and create a Gcs Worker Job to deliver the message media url to
   the gcs servers
 
   We centralize both the cron job and the worker job in one module
@@ -25,7 +25,7 @@ defmodule Glific.Jobs.GcsWorker do
 
   @spec perform_periodic(non_neg_integer) :: :ok
   @doc """
-  This is called from the cron job on a regular schedule. we sweep the messages table
+  This is called from the cron job on a regular schedule. we sweep the message media url  table
   and queue them up for delivery to gcs
   """
   def perform_periodic(organization_id) do
@@ -105,6 +105,7 @@ defmodule Glific.Jobs.GcsWorker do
     :ok
   end
 
+  @spec get_public_link(map()) :: String.t()
   defp get_public_link(response) do
     Enum.join(["https://storage.googleapis.com", response.id], "/")
       |> String.replace("/#{response.generation}", "")
@@ -114,12 +115,14 @@ defmodule Glific.Jobs.GcsWorker do
     CloudStorage.put(Glific.Media, :original, {%Waffle.File{path: path, file_name: file_name}, org_id})
   end
 
+  @spec update_gcs_url(String.t(), integer()) :: {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   defp update_gcs_url(gcs_url, id) do
     Repo.get(MessageMedia, id)
     |> MessageMedia.changeset(%{gcs_url: gcs_url})
-    |> Glific.Repo.update()
+    |> Repo.update()
   end
 
+  @spec get_media_extension(atom()) :: String.t()
   defp get_media_extension(type) do
     %{
       image: "png",
