@@ -20,6 +20,7 @@ defmodule Glific.Jobs.GcsWorker do
     Jobs,
     Messages.Message,
     Messages.MessageMedia,
+    Partners,
     Repo
   }
 
@@ -30,7 +31,7 @@ defmodule Glific.Jobs.GcsWorker do
   """
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
-    credential = organization.services["bigquery"]
+    credential = organization.services["google_cloud_storage"]
     if credential do
       jobs(organization_id)
       :ok
