@@ -56,20 +56,21 @@ defmodule Glific.Jobs.GcsWorker do
   defp queue_urls(organization_id, min_id, max_id) do
     query =
       MessageMedia
-      |> select([m], [m.id, m.url])
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m, msg], msg.organization_id == ^organization_id)
+      |> select([m, msg], [m.id, m.url, msg.type])
       |> order_by([m], [m.inserted_at, m.id])
 
-    Repo.all(query)
+    Repo.all(query)|>IO.inspect()
     |> Enum.reduce(
       [],
       fn row, _acc ->
-        [id, url] = row
+        [id, url, type] = row
         %{
             url: url,
-            id: id
+            id: id,
+            type: type
         }
         |> make_job(organization_id)
       end
@@ -88,7 +89,8 @@ defmodule Glific.Jobs.GcsWorker do
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
     # We will download the file from internet and then upload it to gsc and then remove it.
-    extension =  "png"
+    # extension =  get_media_extension(type)
+    extension =  get_media_extension(media["type"])
     file_name = "#{Ecto.UUID.generate()}.#{extension}"
     path = "#{System.tmp_dir!()}/#{file_name}"
     Download.from(media["url"], [path: path])
@@ -116,6 +118,15 @@ defmodule Glific.Jobs.GcsWorker do
     Repo.get(MessageMedia, id)
     |> MessageMedia.changeset(%{gcs_url: gcs_url})
     |> Glific.Repo.update()
+  end
+
+  defp get_media_extension(type) do
+    %{
+      image: "png",
+      video: "mp4",
+      audio: "mp3"
+    }
+    |> Map.get(type, "png")
   end
 
 end

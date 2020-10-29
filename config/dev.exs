@@ -92,7 +92,7 @@ config :goth,
 
 config :waffle,
   storage: Waffle.Storage.Google.CloudStorage,
-  bucket: "grasshopper",
+  bucket: "media.glific.io",
   token_fetcher: Glific.Partners
 
 import_config "dev.secret.exs"
