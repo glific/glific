@@ -253,14 +253,14 @@ defmodule Glific.CSV.Flow do
   defp add_main_case(content, %{level: level} = _node, _) when level <= 1, do: content
 
   defp add_main_case(content, _node, true) do
-    [{"Press 9 to return to Main Menu", 9} | content]
+    content ++ [{"Press 9 to return to Main Menu", 9}]
   end
 
   defp add_back_case(content, _node, false), do: content
   defp add_back_case(content, %{level: level} = _node, _) when level <= 2, do: content
 
   defp add_back_case(content, _node, true) do
-    [{"Press 8 to return to previous menu", 8} | content]
+    content ++ [{"Press 8 to return to previous menu", 8}]
   end
 
   defp get_categories(menu_content, exits, cases) do
