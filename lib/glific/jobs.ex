@@ -7,6 +7,7 @@ defmodule Glific.Jobs do
   alias Glific.{
     Jobs.BigqueryJob,
     Jobs.ChatbaseJob,
+    Jobs.GcsJob,
     Repo
   }
 
@@ -44,6 +45,35 @@ defmodule Glific.Jobs do
       changeset,
       returning: true,
       on_conflict: [set: [message_id: attrs.message_id]],
+      conflict_target: :organization_id
+    )
+  end
+
+  @doc """
+  Gets a single job entry for the organization.
+
+  Raises `Ecto.NoResultsError` if the User does not exist.
+  """
+  @spec get_gcs_job(integer) :: GcsJob.t() | nil
+  def get_gcs_job(organization_id),
+    do:
+      Repo.get_by(
+        GcsJob,
+        %{organization_id: organization_id}
+      )
+
+  @doc """
+  Create or update a gcs_job with the message_id and
+  organization_id
+  """
+  @spec upsert_gcs_job(map()) :: {:ok, GcsJob.t()} | {:error, Ecto.Changeset.t()}
+  def upsert_gcs_job(attrs) do
+    changeset = GcsJob.changeset(%GcsJob{}, attrs)
+
+    Repo.insert!(
+      changeset,
+      returning: true,
+      on_conflict: [set: [message_media_id: attrs.message_media_id]],
       conflict_target: :organization_id
     )
   end

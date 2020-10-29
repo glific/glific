@@ -17,7 +17,8 @@ defmodule Glific.Messages.MessageMedia do
   @optional_fields [
     :thumbnail,
     :provider_media_id,
-    :caption
+    :caption,
+    :gcs_url
   ]
 
   @type t() :: %__MODULE__{
@@ -29,7 +30,8 @@ defmodule Glific.Messages.MessageMedia do
           thumbnail: String.t() | nil,
           provider_media_id: String.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          gcs_url:  String.t() | nil
         }
 
   schema "messages_media" do
@@ -38,6 +40,7 @@ defmodule Glific.Messages.MessageMedia do
     field :thumbnail, :string
     field :caption, :string
     field :provider_media_id, :string
+    field :gcs_url, :string
 
     timestamps(type: :utc_datetime)
   end

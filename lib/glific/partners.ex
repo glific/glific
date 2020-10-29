@@ -563,9 +563,9 @@ defmodule Glific.Partners do
 
   @spec load_goth_config(any(), non_neg_integer) :: :ok
   defp load_goth_config(:error, org_id) do
-    credential = organization(org_id).services["goth"]
+    credential = organization(org_id).services["google_cloud_storage"]
 
-    credential.secrets["json"]
+    credential.secrets["service_account"]
     |> Jason.decode!()
     |> Goth.Config.add_config()
 
