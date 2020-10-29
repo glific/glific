@@ -74,7 +74,7 @@ defmodule Glific.Jobs.GcsWorker do
       |> select([m, msg], [m.id, m.url, msg.type])
       |> order_by([m], [m.inserted_at, m.id])
 
-    Repo.all(query)|>IO.inspect()
+    Repo.all(query)
     |> Enum.reduce(
       [],
       fn row, _acc ->
