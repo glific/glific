@@ -24,6 +24,11 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :clear_messages_result do
+    field :success, :boolean
+    field :errors, list_of(:input_error)
+  end
+
   object :message do
     field :id, :id
     field :body, :string
@@ -170,6 +175,12 @@ defmodule GlificWeb.Schema.MessageTypes do
       middleware(Authorize, :admin)
       resolve(&Resolvers.Messages.delete_message/3)
     end
+
+    field :clear_messages, :clear_messages_result do
+      arg(:contact_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Messages.clear_messages/3)
+    end
   end
 
   object :message_subscriptions do
@@ -187,6 +198,14 @@ defmodule GlificWeb.Schema.MessageTypes do
       config(&Schema.config_fun/2)
 
       resolve(&Resolvers.Messages.publish_message/3)
+    end
+
+    field :cleared_messages, :contact do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(fn contact, _, _ -> {:ok, contact} end)
     end
   end
 end

@@ -54,7 +54,9 @@ defmodule Glific.CSV.File do
       |> parse_header()
       |> parse_rows(%{})
 
-    json_map = Flow.gen_flow(summary.menus[0], organization_id)
+    json_map =
+      Flow.gen_flow(summary.menus[0], organization_id, main_menu_item: true, back_menu_item: false)
+
     {:ok, json} = Jason.encode_to_iodata(json_map, pretty: true)
 
     :ok =
@@ -73,9 +75,7 @@ defmodule Glific.CSV.File do
   items which helps us when parsing each row
   """
   @spec parse_header(list()) :: {list(), map()}
-  def parse_header(rows) do
-    header = hd(rows)
-
+  def parse_header([header | _rest] = rows) do
     meta_data = %{
       language: get_languages(header),
       menu: get_keyword_maps(header, "menu"),
@@ -139,7 +139,6 @@ defmodule Glific.CSV.File do
 
     root = %Menu{
       uuids: %{
-        main: root_uuid,
         node: Ecto.UUID.generate(),
         action: Ecto.UUID.generate(),
         exit: Ecto.UUID.generate(),
@@ -227,8 +226,8 @@ defmodule Glific.CSV.File do
 
         sub_menu =
           create_menu(
-            summary.menus[0].uuids.main,
-            summary.menus[idx - 1].uuids.main,
+            summary.menus[0].uuids.node,
+            summary.menus[idx - 1].uuids.node,
             sr_no: num,
             label: labels[idx],
             level: level,
@@ -271,7 +270,6 @@ defmodule Glific.CSV.File do
   defp create_menu(root, parent, attrs) do
     defaults = [
       uuids: %{
-        main: Ecto.UUID.generate(),
         node: Ecto.UUID.generate(),
         action: Ecto.UUID.generate(),
         exit: Ecto.UUID.generate(),

@@ -319,6 +319,67 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#messageresult">MessageResult</a> | An error object or empty
 
+## Delete a Messages of a contact
+
+```graphql
+mutation clearMessages($contactId: ID!) {
+  clearMessages(contactId: $contactId) {
+    success
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "contactId": "26"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "clearMessages": {
+      "errors": null,
+      "success": true
+    }
+  }
+}
+```
+
+In case of errors, all the above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "clearMessages": {
+      "errors": [
+        {
+          "key": "Elixir.Glific.Contacts.Contact",
+          "message": "Resource not found"
+        }
+      ],
+      "success": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+contactId | <a href="#id">ID</a>! | required ||
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#clearmessagesresult">ClearMessagesResult</a> | An error object or empty
+
+
 
 ## Create and send Message
 
@@ -818,6 +879,31 @@ Parameter | Type | Default | Description
 <tr>
 <td colspan="2" valign="top"><strong>contactIds</strong></td>
 <td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### ClearMessagesResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>success</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
 </tbody>

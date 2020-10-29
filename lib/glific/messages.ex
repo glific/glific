@@ -11,6 +11,7 @@ defmodule Glific.Messages do
     Conversations.Conversation,
     Flows.MessageVarParser,
     Groups.Group,
+    Jobs.BigQueryWorker,
     Messages.Message,
     Messages.MessageVariables,
     Partners,
@@ -810,5 +811,35 @@ defmodule Glific.Messages do
       _ ->
         Ecto.UUID.generate()
     end
+  end
+
+  @doc """
+  Delete all messages of a contact
+  """
+  @spec clear_messages(Contact.t()) :: {:ok}
+  def clear_messages(%Contact{} = contact) do
+    # add messages to bigquery oban jobs worker
+    BigQueryWorker.perform_periodic(contact.organization_id)
+
+    # get and delete all messages media
+    messages_media_ids =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> where([m], m.organization_id == ^contact.organization_id)
+      |> select([m], m.media_id)
+      |> Repo.all()
+
+    MessageMedia
+    |> where([m], m.id in ^messages_media_ids)
+    |> Repo.delete_all()
+
+    Message
+    |> where([m], m.contact_id == ^contact.id)
+    |> where([m], m.organization_id == ^contact.organization_id)
+    |> Repo.delete_all()
+
+    Communications.publish_data(contact, :cleared_messages, contact.organization_id)
+
+    {:ok}
   end
 end
