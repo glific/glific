@@ -2,7 +2,6 @@ defmodule Glific.Media do
   @moduledoc """
   This is an auto generated file from waffle, that is used to control storage behavior
   """
-
   use Waffle.Definition
 
   # Include ecto support (requires package waffle_ecto installed):
@@ -51,4 +50,8 @@ defmodule Glific.Media do
   # def s3_object_headers(version, {file, scope}) do
   #   [content_type: MIME.from_path(file.file_name)]
   # end
+
+  def gcs_object_headers(version, {_file, _scope}) do
+    [content_type: "image/png"]
+  end
 end

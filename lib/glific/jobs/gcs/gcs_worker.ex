@@ -88,11 +88,10 @@ defmodule Glific.Jobs.GcsWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
-    # We will download the file form internet and then upload it to gsc and then remove it.
+    # We will download the file from internet and then upload it to gsc and then remove it.
     extension =  "png"
     file_name = "#{Ecto.UUID.generate()}.#{extension}"
-    path = Path.expand("temp/#{file_name}", __DIR__)
-
+    path = "#{System.tmp_dir!()}/#{file_name}"
     Download.from(media["url"], [path: path])
     |> case do
       {:ok, _} ->
@@ -111,7 +110,7 @@ defmodule Glific.Jobs.GcsWorker do
   end
 
   defp upload_file_on_gcs(path, org_id, file_name) do
-    CloudStorage.put(Glific.Media, :original, {%Waffle.File{path: path, file_name: file_name}, org_id})
+    CloudStorage.put(Glific.Media, :original, {%Waffle.File{path: path, file_name: file_name}, org_id})|>IO.inspect()
   end
 
   defp update_gcs_url(gcs_url, id) do
