@@ -19,22 +19,23 @@ defmodule Glific.CSV.Flow do
   @doc """
   Given a menu + content structure, generate the flow for it that matches floweditor input
   """
-  @spec gen_flow(Menu.t(), non_neg_integer) :: map()
-  def gen_flow(root, organization_id) do
+  @spec gen_flow(Menu.t(), non_neg_integer, Keyword.t()) :: map()
+  def gen_flow(root, organization_id, opts \\ []) do
     json_map = %{
       name: "LAHI Grade 9",
       expire_after_minutes: 10_080,
       spec_version: "13.1.0",
       type: "messaging",
-      uuid: root.uuids.main,
-      vars: [root.uuids.main],
+      uuid: root.uuids.root,
+      vars: [root.uuids.root],
       language: "base",
       nodes: [],
       localization: %{},
       _ui: %{
         nodes: %{}
       },
-      organization_id: organization_id
+      organization_id: organization_id,
+      opts: opts
     }
 
     # first generate the nodes and localization for this node
@@ -44,6 +45,7 @@ defmodule Glific.CSV.Flow do
     json_map
     |> Map.put(:nodes, Enum.reverse(json_map.nodes))
     |> Map.delete(:organization_id)
+    |> Map.delete(:opts)
   end
 
   @spec gen_flow_helper(map(), Menu.t()) :: map()
@@ -87,7 +89,7 @@ defmodule Glific.CSV.Flow do
           uuid: node.uuids.action,
           quick_replies: [],
           attachments: [],
-          text: menu_content(node.content["en"], "en"),
+          text: menu_content(node.content["en"], "en", node, json_map),
           type: "send_msg"
         }
       ]
@@ -98,30 +100,30 @@ defmodule Glific.CSV.Flow do
       exits: [
         %{
           uuid: node.uuids.exit,
-          # At some stage for all content nodes, we'll basically go back to main menu
-          # for any key pressed
-          # we need to set this as null if there is no node with this UUID
           destination_uuid: node.uuids.router
         }
       ],
       actions: actions
     }
 
-    exits =
-      Enum.reverse(get_exits(node.content["en"], get_destination_uuids(node), node.uuids.node))
+    menu_content =
+      node.content["en"]
+      |> indexed_content(node, json_map)
 
-    cases = Enum.reverse(get_cases(node.content["en"]))
-    {categories, default_category_uuid} = get_categories(node.content["en"], exits, cases)
+    exits = get_exits(menu_content, get_destination_uuids(node), node.uuids.node)
+
+    cases = get_cases(menu_content)
+    {categories, default_category_uuid} = get_categories(menu_content, exits, cases)
 
     router_json = %{
       uuid: node.uuids.router,
       actions: [],
-      exits: exits,
+      exits: Map.values(exits),
       router: %{
-        cases: [cases],
+        cases: Map.values(cases),
         wait: %{type: "msg"},
         operand: "@input.text",
-        categories: categories,
+        categories: Map.values(categories),
         default_category_uuid: default_category_uuid,
         type: "switch"
       }
@@ -180,87 +182,120 @@ defmodule Glific.CSV.Flow do
     put_in(json_map, [:_ui, :nodes], nodes)
   end
 
+  defp add_back_main_uuids(acc, node),
+    do:
+      acc
+      |> Map.put(8, node.uuids.root)
+      |> Map.put(9, node.uuids.parent)
+
   defp get_destination_uuids(node) do
     # collect all the destination uuids from the sub_menu
     node.sub_menus
+    |> Enum.with_index(1)
     |> Enum.reduce(
-      [],
-      fn s, acc -> [s.uuids.node | acc] end
+      %{},
+      fn {s, idx}, acc -> Map.put(acc, idx, s.uuids.node) end
     )
-    |> Enum.reverse()
+    # add the back and main menu uuids
+    |> add_back_main_uuids(node)
   end
 
-  defp indexed_content(content),
-    do: content |> Map.values() |> Enum.with_index(1)
+  defp indexed_content(content, node, json_map) do
+    content
+    |> Map.values()
+    |> Enum.with_index(1)
+    |> add_back_case(node, Keyword.get(json_map.opts, :back_menu_item, false))
+    |> add_main_case(node, Keyword.get(json_map.opts, :main_menu_item, false))
+  end
 
-  defp get_exits(content, destination_uuids, node_uuid) do
+  defp get_exits(menu_content, destination_uuids, node_uuid) do
     exits =
-      content
-      |> indexed_content()
+      menu_content
       |> Enum.reduce(
-        [],
+        %{},
         fn {_str, idx}, acc ->
-          [
-            %{uuid: Ecto.UUID.generate(), destination_uuid: Enum.at(destination_uuids, idx - 1)}
-            | acc
-          ]
+          Map.put(
+            acc,
+            idx,
+            %{uuid: Ecto.UUID.generate(), destination_uuid: Map.get(destination_uuids, idx)}
+          )
         end
       )
 
     # also add Other (and soon no response)
-    [%{uuid: Ecto.UUID.generate(), destination_uuid: node_uuid} | exits]
+    exits
+    |> Map.put(
+      10,
+      %{uuid: Ecto.UUID.generate(), destination_uuid: node_uuid}
+    )
   end
 
-  defp get_cases(content) do
-    content
-    |> indexed_content()
+  defp get_cases(menu_content) do
+    menu_content
     |> Enum.reduce(
-      [],
+      %{},
       fn {_str, index}, acc ->
-        [
+        Map.put(
+          acc,
+          index,
           %{
             arguments: [to_string(index)],
             type: "has_number_eq",
             uuid: Ecto.UUID.generate(),
             category_uuid: Ecto.UUID.generate()
           }
-          | acc
-        ]
+        )
       end
     )
   end
 
-  defp get_categories(content, exits, cases) do
+  defp add_main_case(content, _node, false), do: content
+  defp add_main_case(content, %{level: level} = _node, _) when level <= 1, do: content
+
+  defp add_main_case(content, _node, true) do
+    [{"Press 9 to return to Main Menu", 9} | content]
+  end
+
+  defp add_back_case(content, _node, false), do: content
+  defp add_back_case(content, %{level: level} = _node, _) when level <= 2, do: content
+
+  defp add_back_case(content, _node, true) do
+    [{"Press 8 to return to previous menu", 8} | content]
+  end
+
+  defp get_categories(menu_content, exits, cases) do
     categories =
-      content
-      |> indexed_content()
+      menu_content
       |> Enum.reduce(
-        [],
+        %{},
         fn {_str, index}, acc ->
-          [
+          Map.put(
+            acc,
+            index,
             %{
-              uuid: Enum.at(cases, index - 1).category_uuid,
+              uuid: Map.get(cases, index).category_uuid,
               name: to_string(index),
-              exit_uuid: Enum.at(exits, index - 1).uuid
+              exit_uuid: Map.get(exits, index).uuid
             }
-            | acc
-          ]
+          )
         end
       )
 
     # Add Other category
     default_category_uuid = Ecto.UUID.generate()
 
-    categories = [
-      %{
-        uuid: default_category_uuid,
-        name: "Other",
-        exit_uuid: List.last(exits).uuid
-      }
-      | categories
-    ]
+    categories =
+      Map.put(
+        categories,
+        10,
+        %{
+          uuid: default_category_uuid,
+          name: "Other",
+          exit_uuid: Map.get(exits, 10).uuid
+        }
+      )
 
-    {Enum.reverse(categories), default_category_uuid}
+    {categories, default_category_uuid}
   end
 
   # this is a content node
@@ -312,14 +347,14 @@ defmodule Glific.CSV.Flow do
   end
 
   # get the content for a menu and language
-  @spec menu_content(map(), String.t()) :: any()
-  defp menu_content(content, language) do
+  @spec menu_content(map(), String.t(), map(), map()) :: any()
+  defp menu_content(content, language, node, json_map) do
     template = Template.get_template(:menu, language)
 
     EEx.eval_string(
       template,
       language: language,
-      items: indexed_content(content)
+      items: indexed_content(content, node, json_map)
     )
   end
 
@@ -335,17 +370,15 @@ defmodule Glific.CSV.Flow do
           else
             text =
               if type == :menu,
-                do: menu_content(content, lang),
+                do: menu_content(content, lang, node, json_map),
                 else: language_content(content, node.menu_content.content, lang)
 
             Map.update(
               acc,
               lang,
-              %{
-                lang => %{
-                  node.uuids.action => %{text: [text]}
-                }
-              },
+               %{
+                 node.uuids.action => %{text: [text]}
+               },
               fn l -> Map.put(l, node.uuids.action, %{text: [text]}) end
             )
           end
