@@ -29,6 +29,17 @@ defmodule Glific.Jobs.GcsWorker do
   and queue them up for delivery to gcs
   """
   def perform_periodic(organization_id) do
+    organization = Partners.organization(organization_id)
+    credential = organization.services["bigquery"]
+    if credential do
+      jobs(organization_id)
+      :ok
+    else
+      :ok
+    end
+  end
+
+  defp jobs(organization_id) do
     gcs_job = Jobs.get_gcs_job(organization_id)
 
     message_media_id =
