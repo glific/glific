@@ -33,6 +33,7 @@ defmodule Glific.Flows.Flow do
           keywords: [String.t()] | nil,
           ignore_keywords: boolean() | nil,
           flow_type: String.t() | nil,
+          status: String.t(),
           definition: map() | nil,
           localization: Localization.t() | nil,
           nodes: [Node.t()] | nil,
@@ -54,6 +55,8 @@ defmodule Glific.Flows.Flow do
     field :uuid_map, :map, virtual: true
     field :nodes, :map, virtual: true
     field :localization, :map, virtual: true
+
+    field :status, :string, virtual: true, default: "done"
 
     field :keywords, {:array, :string}, default: []
     field :ignore_keywords, :boolean, default: false
@@ -212,32 +215,36 @@ defmodule Glific.Flows.Flow do
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def start_sub_flow(context, uuid) do
     # we might want to put the current one under some sort of pause status
-    flow = get_flow(context.flow.organization_id, uuid)
+    flow = get_flow(context.flow.organization_id, uuid, context.status)
 
-    FlowContext.init_context(flow, context.contact, context.id, context.delay)
+    FlowContext.init_context(flow, context.contact, context.status,
+      parent_id: context.id,
+      delay: context.delay
+    )
   end
 
   @doc """
   Return a flow for a specific uuid. Cache is not present in cache
   """
-  @spec get_flow(non_neg_integer, Ecto.UUID.t()) :: map()
-  def get_flow(organization_id, uuid) do
-    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, uuid}, %{uuid: uuid})
+  @spec get_flow(non_neg_integer, Ecto.UUID.t(), String.t()) :: map()
+  def get_flow(organization_id, uuid, status) do
+    {:ok, flow} =
+      Flows.get_cached_flow(organization_id, {:flow_uuid, uuid, status}, %{uuid: uuid})
 
     flow
   end
 
   @doc """
-    Helper function to load a active flow from
-    the database and build an object
+  Helper function to load a active flow from
+  the database and build an object
   """
-  @spec get_loaded_flow(non_neg_integer, map()) :: map()
-  def get_loaded_flow(organization_id, args) do
+  @spec get_loaded_flow(non_neg_integer, String.t(), map()) :: map()
+  def get_loaded_flow(organization_id, status, args) do
     query =
       from f in Flow,
         join: fr in assoc(f, :revisions),
         where: f.organization_id == ^organization_id,
-        where: fr.flow_id == f.id and fr.status == "done",
+        where: fr.flow_id == f.id,
         select: %Flow{
           id: f.id,
           uuid: f.uuid,
@@ -249,8 +256,10 @@ defmodule Glific.Flows.Flow do
 
     flow =
       query
+      |> status_clause(status)
       |> args_clause(args)
       |> Repo.one()
+      |> Map.put(:status, status)
 
     flow.definition
     |> clean_definition()
@@ -269,4 +278,10 @@ defmodule Glific.Flows.Flow do
     do: query |> where([f, _fr], ^keyword in f.keywords)
 
   defp args_clause(query, _args), do: query
+
+  defp status_clause(query, "done" = status),
+    do: query |> where([_f, fr], fr.status == ^status)
+
+  defp status_clause(query, "draft"),
+    do: query |> where([_f, fr], fr.revision_number == 0)
 end

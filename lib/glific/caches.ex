@@ -16,13 +16,12 @@ defmodule Glific.Caches do
 
   @doc false
   @impl Glific.Caches.CacheBehaviour
-  @spec set(non_neg_integer, list(), any()) :: {:ok, any()}
+  @spec set(non_neg_integer, any(), any()) :: {:ok, any()}
   def set(organization_id, keys, value) when is_list(keys),
     do: set_to_cache(organization_id, keys, value)
 
   @doc false
   @impl Glific.Caches.CacheBehaviour
-  @spec set(non_neg_integer, String.t() | atom(), any()) :: {:ok, any()}
   def set(organization_id, key, value), do: set_to_cache(organization_id, [key], value)
 
   @doc false
@@ -41,7 +40,7 @@ defmodule Glific.Caches do
   Get a cached value based on a key
   """
   @impl Glific.Caches.CacheBehaviour
-  @spec get(non_neg_integer, String.t() | atom()) :: {:ok, any()} | {:ok, false}
+  @spec get(non_neg_integer, any()) :: {:ok, any()} | {:ok, false}
   def get(organization_id, key) do
     case Cachex.exists?(@cache_bucket, {organization_id, key}) do
       {:ok, true} -> Cachex.get(@cache_bucket, {organization_id, key})

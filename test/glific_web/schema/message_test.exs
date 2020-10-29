@@ -45,6 +45,7 @@ defmodule GlificWeb.Schema.MessageTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/messages/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/messages/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/messages/delete.gql")
+  load_gql(:clear, GlificWeb.Schema, "assets/gql/messages/clear.gql")
 
   test "messages field returns list of messages", %{staff: user} do
     result = auth_query_gql_by(:list, user)
@@ -232,6 +233,23 @@ defmodule GlificWeb.Schema.MessageTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "deleteMessage", "errors", Access.at(0), "message"])
+    assert message == "Resource not found"
+  end
+
+  test "clear messages of a contact", %{user: user} do
+    body = "Default message body"
+    {:ok, message} = Repo.fetch_by(Message, %{body: body, organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:clear, user, variables: %{"contactId" => message.contact_id})
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "clearMessages", "errors"]) == nil
+    assert get_in(query_data, [:data, "clearMessages", "success"]) == true
+
+    result = auth_query_gql_by(:clear, user, variables: %{"contactId" => 9_999_999})
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "clearMessages", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
   end
 
