@@ -124,7 +124,7 @@ defmodule Glific.Jobs.GcsWorker do
   end
 
   defp upload_file_on_gcs(path, org_id, file_name) do
-    CloudStorage.put(Glific.Media, :original, {%Waffle.File{path: path, file_name: file_name}, org_id})
+     CloudStorage.put(Glific.Media, :original, {%Waffle.File{path: path, file_name: file_name}, Integer.to_string(org_id)})
   end
 
   @spec update_gcs_url(String.t(), integer()) :: {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
