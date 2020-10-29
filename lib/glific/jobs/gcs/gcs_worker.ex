@@ -25,7 +25,6 @@ defmodule Glific.Jobs.GcsWorker do
 
   @spec perform_periodic(non_neg_integer) :: :ok
   @doc """
-  Glific.Jobs.GcsWorker.perform_periodic(1)
   This is called from the cron job on a regular schedule. we sweep the messages table
   and queue them up for delivery to gcs
   """
@@ -110,7 +109,7 @@ defmodule Glific.Jobs.GcsWorker do
   end
 
   defp upload_file_on_gcs(path, org_id, file_name) do
-    CloudStorage.put(Glific.Media, :original, {%Waffle.File{path: path, file_name: file_name}, org_id})|>IO.inspect()
+    CloudStorage.put(Glific.Media, :original, {%Waffle.File{path: path, file_name: file_name}, org_id})
   end
 
   defp update_gcs_url(gcs_url, id) do
