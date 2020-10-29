@@ -54,7 +54,9 @@ defmodule Glific.CSV.File do
       |> parse_header()
       |> parse_rows(%{})
 
-    json_map = Flow.gen_flow(summary.menus[0], organization_id, [main_menu_item: true, back_menu_item: false])
+    json_map =
+      Flow.gen_flow(summary.menus[0], organization_id, main_menu_item: true, back_menu_item: false)
+
     {:ok, json} = Jason.encode_to_iodata(json_map, pretty: true)
 
     :ok =
@@ -78,7 +80,7 @@ defmodule Glific.CSV.File do
       language: get_languages(header),
       menu: get_keyword_maps(header, "menu"),
       content: get_keyword_maps(header, "content"),
-      label: get_keyword_maps(header, "label", true),
+      label: get_keyword_maps(header, "label", true)
     }
 
     {rows, meta_data}

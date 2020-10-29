@@ -376,9 +376,9 @@ defmodule Glific.CSV.Flow do
             Map.update(
               acc,
               lang,
-               %{
-                 node.uuids.action => %{text: [text]}
-               },
+              %{
+                node.uuids.action => %{text: [text]}
+              },
               fn l -> Map.put(l, node.uuids.action, %{text: [text]}) end
             )
           end
