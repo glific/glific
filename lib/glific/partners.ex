@@ -556,7 +556,8 @@ defmodule Glific.Partners do
   @spec get_token(binary) :: binary
   def get_token(organization_id) when is_binary(organization_id) do
     organization_id = String.to_integer(organization_id)
-    get_goth_token(organization_id, "google_cloud_storage")
+    token = get_goth_token(organization_id, "google_cloud_storage")
+    token.token
   end
 
   @doc """
