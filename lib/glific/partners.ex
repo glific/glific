@@ -563,7 +563,7 @@ defmodule Glific.Partners do
   @doc """
     Common function to get the goth config
   """
-  @spec get_goth_token(non_neg_integer, String.t()) :: binary
+  @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
   def get_goth_token(organization_id, provider_shortcode) do
     organization = organization(organization_id)
 
