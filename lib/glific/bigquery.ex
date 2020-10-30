@@ -13,7 +13,7 @@ defmodule Glific.Bigquery do
   }
 
   @spec token(map()) :: any()
-  defp token(credentials) do
+  def token(credentials) do
     config =
       case Jason.decode(credentials.secrets["service_account"]) do
         {:ok, config} -> config

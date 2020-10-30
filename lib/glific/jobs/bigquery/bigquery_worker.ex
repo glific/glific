@@ -15,6 +15,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     priority: 0
 
   alias Glific.{
+    Bigquery,
     Contacts.Contact,
     Jobs,
     Messages.Message,
@@ -229,22 +230,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
   end
 
-  @spec token(map()) :: any()
-  defp token(credentials) do
-    config =
-      case Jason.decode(credentials.secrets["service_account"]) do
-        {:ok, config} -> config
-        _ -> :error
-      end
-
-    Goth.Config.add_config(config)
-
-    {:ok, token} =
-      Goth.Token.for_scope({credentials.secrets["project_email"], credentials.keys["url"]})
-
-    token
-  end
-
   @doc """
   Standard perform method to use Oban worker
   """
@@ -324,7 +309,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     project_id = credentials.secrets["project_id"]
     dataset_id = organization.contact.phone
     table_id = table
-    token = token(credentials)
+    token = Bigquery.token(credentials)
     conn = Connection.new(token.token)
 
     # In case of error response error will be stored in the oban job
