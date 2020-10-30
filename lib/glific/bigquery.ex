@@ -12,8 +12,11 @@ defmodule Glific.Bigquery do
     Connection
   }
 
+  @doc """
+  Generating Goth token
+  """
   @spec token(map()) :: any()
-  defp token(credentials) do
+  def token(credentials) do
     config =
       case Jason.decode(credentials.secrets["service_account"]) do
         {:ok, config} -> config
@@ -44,7 +47,6 @@ defmodule Glific.Bigquery do
 
     project_id = credentials.secrets["project_id"]
     token = token(credentials)
-
     conn = Connection.new(token.token)
 
     case create_dataset(conn, project_id, dataset_id) do

@@ -293,12 +293,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               default: nil,
               view_only: false
             },
-            dataset_id: %{
-              type: :string,
-              label: "Dataset ID",
-              default: nil,
-              view_only: false
-            },
             service_account: %{
               type: :string,
               label: "Goth Credentials ",
