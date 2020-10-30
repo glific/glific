@@ -90,8 +90,4 @@ config :appsignal, :config,
 config :goth,
   disabled: true
 
-config :waffle,
-  storage: Waffle.Storage.Google.CloudStorage,
-  token_fetcher: Glific.Partners
-
 import_config "dev.secret.exs"

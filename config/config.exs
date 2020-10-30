@@ -91,6 +91,10 @@ config :goth,
 
 config :glific, Glific.Vault, ciphers: false
 
+config :waffle,
+  storage: Waffle.Storage.Google.CloudStorage,
+  token_fetcher: Glific.Partners
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
