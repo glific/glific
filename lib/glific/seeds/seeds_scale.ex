@@ -155,12 +155,17 @@ if Code.ensure_loaded?(Faker) do
     @dropout_percent 10
     @day_range 31..0
 
-    defp seed_flows(contact_ids, sender_id, organization_id),
-      do:
-        Enum.each(
-          @day_range,
-          &seed_flows(contact_ids, sender_id, organization_id, &1)
-        )
+    defp seed_flows(contact_ids, sender_id, organization_id) do
+      # lets cheat here and use an ets table to keep track of
+      # which contacts we have set the age group for
+      # not recommended to do in general, but ok for this case
+      :ets.new(:new_contacts, [:set, :private, :named_table])
+
+      Enum.each(
+        @day_range,
+        &seed_flows(contact_ids, sender_id, organization_id, &1)
+      )
+    end
 
     defp seed_flows(contact_ids, sender_id, organization_id, day) when is_list(contact_ids) do
       num_contacts = div(length(contact_ids) * Enum.random(@contact_range), 100)
@@ -184,6 +189,7 @@ if Code.ensure_loaded?(Faker) do
       # If 2 chosen, stop here
       # Glific -> User: "Response to Understood selection with menu options {1, "Loved"}, {2, "OK"}, {3, "Not Great"}"
       # User -> Glific: random tuple between {1, "Loved"}, {2, "OK"}, {3, "Not Great"}
+      # also set age group
       # Glific -> User: "Thank you for your response"
 
       # get time here
@@ -216,8 +222,8 @@ if Code.ensure_loaded?(Faker) do
         |> second_message_set()
         |> third_message_set()
         |> fourth_message_set()
-        |> create_message_from_glific("Thank you for your response")
         |> age_group_message_set()
+        |> create_message_from_glific("Thank you for your response")
 
       if opts.restart do
         opts
@@ -375,7 +381,9 @@ if Code.ensure_loaded?(Faker) do
     defp fourth_message_set(opts), do: opts
 
     defp age_group_message_set(opts) do
-      _opts =
+      if Enum.empty?(:ets.lookup(:new_contacts, opts.contact)) do
+        :ets.insert(:new_contacts, {opts.contact, true})
+
         opts
         |> create_message_from_glific(
           "Response to Registration Menu Selection with menu options {1, Age Group less than 10}, {2, Age Group 11 to 14}, {3, Age Group 15 to 18}, {4, Age Group 19 or above}"
@@ -387,8 +395,11 @@ if Code.ensure_loaded?(Faker) do
             {3, "Age Group 15 to 18"},
             {4, "Age Group 19 or above"}
           ]),
-          dropout: @dropout_percent
+        dropout: @dropout_percent
         )
+      else
+        opts
+      end
     end
 
     defp create_message_common(opts, body, difference) do
