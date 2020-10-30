@@ -395,7 +395,7 @@ if Code.ensure_loaded?(Faker) do
             {3, "Age Group 15 to 18"},
             {4, "Age Group 19 or above"}
           ]),
-        dropout: @dropout_percent
+          dropout: @dropout_percent
         )
       else
         opts
