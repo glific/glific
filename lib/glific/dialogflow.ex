@@ -50,9 +50,7 @@ defmodule Glific.Dialogflow do
   # ---------------------------------------------------------------------------
   @spec headers(String.t(), non_neg_integer) :: list
   defp headers(email, org_id) do
-    Partners.check_and_load_goth_config(email, org_id)
-    {:ok, token} = Token.for_scope({email, "https://www.googleapis.com/auth/cloud-platform"})
-
+    token = Partners.get_goth_token(org_id, "dialogflow")
     [
       {"Authorization", "Bearer #{token.token}"},
       {"Content-Type", "application/json"}

@@ -13,25 +13,6 @@ defmodule Glific.Bigquery do
   }
 
   @doc """
-  Generating Goth token
-  """
-  @spec token(map()) :: any()
-  def token(credentials) do
-    config =
-      case Jason.decode(credentials.secrets["service_account"]) do
-        {:ok, config} -> config
-        _ -> :error
-      end
-
-    Goth.Config.add_config(config)
-
-    {:ok, token} =
-      Goth.Token.for_scope({credentials.secrets["project_email"], credentials.keys["url"]})
-
-    token
-  end
-
-  @doc """
   Creating a dataset with messages and contacts as tables
   """
   @spec bigquery_dataset(String.t(), non_neg_integer) :: :ok
@@ -46,7 +27,7 @@ defmodule Glific.Bigquery do
       end
 
     project_id = credentials.secrets["project_id"]
-    token = token(credentials)
+    token = Partners.get_goth_token(organization_id, "bigquery")
     conn = Connection.new(token.token)
 
     case create_dataset(conn, project_id, dataset_id) do

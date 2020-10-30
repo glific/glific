@@ -309,7 +309,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     project_id = credentials.secrets["project_id"]
     dataset_id = organization.contact.phone
     table_id = table
-    token = Bigquery.token(credentials)
+    token = Partners.get_goth_token(organization_id, "bigquery")
     conn = Connection.new(token.token)
 
     # In case of error response error will be stored in the oban job
