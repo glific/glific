@@ -41,9 +41,9 @@ config :glific, Oban,
   crontab: [
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :fun_with_flags}},
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
+    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
+    {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
+    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}}
   ]
 

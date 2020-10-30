@@ -91,6 +91,10 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
+        tags_label =
+          Enum.map(row.tags, fn tag -> tag.label end)
+          |> Enum.join(", ")
+
         message_row = %{
           type: row.type,
           user_id: row.contact_id,
@@ -108,23 +112,9 @@ defmodule Glific.Jobs.BigQueryWorker do
           user_phone: if(!is_nil(row.user), do: row.user.phone),
           user_name: if(!is_nil(row.user), do: row.user.name),
           media: media_url(row.media),
-          tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
+          tags_label: tags_label,
+          flow_label: row.flow_label
         }
-
-        message_row =
-          if row.flow_label != nil do
-            message_row
-            |> Map.merge(%{
-              flow_labels:
-                String.split(row.flow_label, ", ")
-                |> Enum.map(fn flow_label -> %{flow_label: flow_label} end)
-            })
-          else
-            message_row
-            |> Map.merge(%{
-              flow_labels: []
-            })
-          end
 
         [message_row | acc]
       end
@@ -264,8 +254,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         contact_name: msg["contact_name"],
         user_phone: msg["user_phone"],
         user_name: msg["user_name"],
-        tags: msg["tags"],
-        flow_labels: msg["flow_labels"],
+        tags_label: msg["tags_label"],
+        flow_label: msg["flow_label"],
         media_url: msg["media"]
       }
     }
