@@ -5,7 +5,6 @@ defmodule Glific.Repo.Migrations.AddGcsColumn do
     add_gcs_url_to_message_media()
 
     gcs_jobs()
-
   end
 
   defp add_gcs_url_to_message_media() do

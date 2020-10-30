@@ -551,44 +551,42 @@ defmodule Glific.Partners do
     response
   end
 
-  @doc """
-    we will check if the goth config are loaded for the email
-    if not we will load them again.
-  """
-  @spec check_and_load_goth_config(String.t(), non_neg_integer) :: :ok
-  def check_and_load_goth_config(email, org_id) do
-    Goth.Config.get(email, :oauth_jwt)
-    |> load_goth_config(org_id)
-  end
-
-  @spec load_goth_config(any(), non_neg_integer) :: :ok
-  defp load_goth_config(:error, org_id) do
-    credential = organization(org_id).services["google_cloud_storage"]
-
-    credential.secrets["service_account"]
-    |> Jason.decode!()
-    |> Goth.Config.add_config()
-
-    :ok
-  end
-
-  defp load_goth_config(_, _), do: :ok
-
+  # This is required for GCS
   @impl Waffle.Storage.Google.Token.Fetcher
   @spec get_token(binary) :: binary
   def get_token(organization_id) when is_binary(organization_id) do
     organization_id = String.to_integer(organization_id)
+    token = get_goth_token(organization_id, "google_cloud_storage")
+    token.token
+  end
 
+  @doc """
+    Common function to get the goth config
+  """
+  @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
+  def get_goth_token(organization_id, provider_shortcode) do
     organization = organization(organization_id)
 
-    gcs = organization.services["google_cloud_storage"]
+    organization.services[provider_shortcode]
+    |> case do
+      nil ->
+        nil
 
-    # we need to do this once only when setting the cache
-    # move for both gcs and dialogflow
-    email = gcs.secrets["email"]
-    check_and_load_goth_config(email, organization_id)
+      credentials ->
+        config =
+          case Jason.decode(credentials.secrets["service_account"]) do
+            {:ok, config} -> config
+            _ -> :error
+          end
 
-    {:ok, token} = Goth.Token.for_scope({email, "https://www.googleapis.com/auth/cloud-platform"})
-    token.token
+        Goth.Config.add_config(config)
+
+        {:ok, token} =
+          Goth.Token.for_scope(
+            {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
+          )
+
+        token
+    end
   end
 end

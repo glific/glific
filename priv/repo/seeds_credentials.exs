@@ -46,7 +46,8 @@ defmodule Glific.Seeds.Credentials do
       },
       secrets: %{
         project_id: Keyword.get(dflow, :project_id),
-        project_email: Keyword.get(dflow, :project_email)
+        project_email: Keyword.get(dflow, :project_email),
+        service_account: Keyword.get(dflow, :service_account)
       }
     })
   end
@@ -117,7 +118,6 @@ defmodule Glific.Seeds.Credentials do
         email: Keyword.get(gcs, :email),
         bucket: Keyword.get(gcs, :bucket),
         service_account: Keyword.get(gcs, :service_account)
-
       }
     })
   end

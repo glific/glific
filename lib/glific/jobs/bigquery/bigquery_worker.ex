@@ -15,7 +15,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     priority: 0
 
   alias Glific.{
-    Bigquery,
     Contacts.Contact,
     Jobs,
     Messages.Message,
@@ -297,8 +296,10 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec make_insert_query(list(), String.t(), non_neg_integer) :: :ok
   defp make_insert_query(data, table, organization_id) do
-    organization = Partners.organization(organization_id)
-                    |> Repo.preload(:contact)
+    organization =
+      Partners.organization(organization_id)
+      |> Repo.preload(:contact)
+
     credentials =
       organization.services["bigquery"]
       |> case do
@@ -309,7 +310,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     project_id = credentials.secrets["project_id"]
     dataset_id = organization.contact.phone
     table_id = table
-    token = Bigquery.token(credentials)
+    token = Partners.get_goth_token(organization_id, "bigquery")
     conn = Connection.new(token.token)
 
     # In case of error response error will be stored in the oban job

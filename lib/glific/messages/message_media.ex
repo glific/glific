@@ -31,7 +31,7 @@ defmodule Glific.Messages.MessageMedia do
           provider_media_id: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
-          gcs_url:  String.t() | nil
+          gcs_url: String.t() | nil
         }
 
   schema "messages_media" do

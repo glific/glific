@@ -8,7 +8,6 @@ defmodule Glific.Dialogflow do
   """
 
   alias Glific.Partners
-  alias Goth.Token
 
   @doc """
   The request controller which sends and parses requests. We should move this to Tesla
@@ -49,9 +48,8 @@ defmodule Glific.Dialogflow do
   # Headers for all subsequent API calls
   # ---------------------------------------------------------------------------
   @spec headers(String.t(), non_neg_integer) :: list
-  defp headers(email, org_id) do
-    Partners.check_and_load_goth_config(email, org_id)
-    {:ok, token} = Token.for_scope({email, "https://www.googleapis.com/auth/cloud-platform"})
+  defp headers(_email, org_id) do
+    token = Partners.get_goth_token(org_id, "dialogflow")
 
     [
       {"Authorization", "Bearer #{token.token}"},

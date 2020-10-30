@@ -132,7 +132,6 @@ defmodule Glific.MixProject do
       {:waffle_ecto, "~> 0.0"},
       {:csv, "~> 2.4"},
       {:download, "~> 0.0.4"}
-
     ]
   end
 
