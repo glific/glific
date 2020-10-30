@@ -15,7 +15,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     priority: 0
 
   alias Glific.{
-    Bigquery,
     Contacts.Contact,
     Jobs,
     Messages.Message,
@@ -297,8 +296,10 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec make_insert_query(list(), String.t(), non_neg_integer) :: :ok
   defp make_insert_query(data, table, organization_id) do
-    organization = Partners.organization(organization_id)
-                    |> Repo.preload(:contact)
+    organization =
+      Partners.organization(organization_id)
+      |> Repo.preload(:contact)
+
     credentials =
       organization.services["bigquery"]
       |> case do

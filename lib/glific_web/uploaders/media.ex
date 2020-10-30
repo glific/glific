@@ -17,9 +17,10 @@ defmodule Glific.Media do
   # Override the bucket on a per definition basis:
   def bucket({_file, org_id}) do
     organization = Partners.organization(org_id)
+
     organization.services["google_cloud_storage"]
     |> case do
-      nil ->  :custom_bucket_name
+      nil -> :custom_bucket_name
       credentials -> credentials.secrets["bucket"]
     end
   end

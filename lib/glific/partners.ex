@@ -559,25 +559,34 @@ defmodule Glific.Partners do
     get_goth_token(organization_id, "google_cloud_storage")
   end
 
-
+  @doc """
+    Common function to get the goth config
+  """
+  @spec get_goth_token(non_neg_integer, String.t()) :: binary
   def get_goth_token(organization_id, provider_shortcode) do
     organization = organization(organization_id)
+
     organization.services[provider_shortcode]
     |> case do
-      nil -> nil
+      nil ->
+        nil
+
       credentials ->
-          config =
-            case Jason.decode(credentials.secrets["service_account"]) do
-              {:ok, config} -> config
-              _ -> :error
-            end
+        config =
+          case Jason.decode(credentials.secrets["service_account"]) do
+            {:ok, config} -> config
+            _ -> :error
+          end
 
-            Goth.Config.add_config(config)
-            {:ok, token} =
-              Goth.Token.for_scope({credentials.secrets["project_email"], "https://www.googleapis.com/auth/cloud-platform"})
+        Goth.Config.add_config(config)
 
-            token
+        {:ok, token} =
+          Goth.Token.for_scope(
+            {credentials.secrets["project_email"],
+             "https://www.googleapis.com/auth/cloud-platform"}
+          )
+
+        token
     end
   end
-
 end

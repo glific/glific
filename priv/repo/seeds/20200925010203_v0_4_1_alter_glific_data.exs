@@ -328,14 +328,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               default: nil,
               view_only: false
             },
-
             bucket: %{
               type: :string,
               label: "Bucket",
               default: nil,
               view_only: false
             },
-
             service_account: %{
               type: :string,
               label: "Goth Credentials ",
