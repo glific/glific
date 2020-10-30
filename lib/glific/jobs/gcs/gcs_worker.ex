@@ -108,14 +108,12 @@ defmodule Glific.Jobs.GcsWorker do
     file_name = "#{Ecto.UUID.generate()}.#{extension}"
     path = "#{System.tmp_dir!()}/#{file_name}"
 
-    Download.from(media["url"], path: path)
+    download_file_to_temp(media["url"], path)
     |> case do
       {:ok, _} ->
         {:ok, response} = upload_file_on_gcs(path, organization_id, file_name)
-
         get_public_link(response)
         |> update_gcs_url(media["id"])
-
         File.rm(path)
     end
 
@@ -152,5 +150,11 @@ defmodule Glific.Jobs.GcsWorker do
       audio: "mp3"
     }
     |> Map.get(type, "png")
+  end
+
+  defp download_file_to_temp(url, path) do
+    %HTTPoison.Response{body: data} = HTTPoison.get!(url)
+    File.write!(path, data)
+    {:ok, path}
   end
 end
