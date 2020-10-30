@@ -112,8 +112,10 @@ defmodule Glific.Jobs.GcsWorker do
     |> case do
       {:ok, _} ->
         {:ok, response} = upload_file_on_gcs(path, organization_id, file_name)
+
         get_public_link(response)
         |> update_gcs_url(media["id"])
+
         File.rm(path)
     end
 

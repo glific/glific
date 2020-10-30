@@ -16,9 +16,9 @@ defmodule Glific.Media do
 
   # Override the bucket on a per definition basis:
   def bucket({_file, org_id}) when is_binary(org_id) do
-     organization =
-        String.to_integer(org_id)
-        |> Partners.organization()
+    organization =
+      String.to_integer(org_id)
+      |> Partners.organization()
 
     organization.services["google_cloud_storage"]
     |> case do

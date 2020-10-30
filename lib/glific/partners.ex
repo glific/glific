@@ -569,7 +569,9 @@ defmodule Glific.Partners do
 
     organization.services[provider_shortcode]
     |> case do
-      nil -> nil
+      nil ->
+        nil
+
       credentials ->
         config =
           case Jason.decode(credentials.secrets["service_account"]) do
@@ -578,8 +580,12 @@ defmodule Glific.Partners do
           end
 
         Goth.Config.add_config(config)
+
         {:ok, token} =
-          Goth.Token.for_scope( {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"})
+          Goth.Token.for_scope(
+            {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
+          )
+
         token
     end
   end
