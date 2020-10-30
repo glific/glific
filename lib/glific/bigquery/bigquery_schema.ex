@@ -234,12 +234,12 @@ defmodule Glific.BigquerySchema do
         mode: "NULLABLE"
       },
       %{
-        name: "tag_labels",
+        name: "tags_label",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        name: "flow_labels",
+        name: "flow_label",
         type: "STRING",
         mode: "NULLABLE"
       }
