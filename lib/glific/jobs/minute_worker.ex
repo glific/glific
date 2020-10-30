@@ -4,7 +4,8 @@ defmodule Glific.Jobs.MinuteWorker do
   """
 
   use Oban.Worker,
-    queue: :crontab
+    queue: :crontab,
+    max_attempts: 3
 
   alias Glific.{
     Contacts,

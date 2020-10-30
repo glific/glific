@@ -90,8 +90,13 @@ defmodule Glific.Jobs.BigQueryWorker do
     Repo.all(query)
     |> Enum.reduce(
       [],
-      fn row, acc ->
-        message_row = %{
+    fn row, acc ->
+      tags =
+      if Enum.empty?(row.tags),
+        do: [%{label: "No Tag"}],
+        else: row.tags
+
+      message_row = %{
           type: row.type,
           user_id: row.contact_id,
           message: row.body,
@@ -108,7 +113,7 @@ defmodule Glific.Jobs.BigQueryWorker do
           user_phone: if(!is_nil(row.user), do: row.user.phone),
           user_name: if(!is_nil(row.user), do: row.user.name),
           media: media_url(row.media),
-          tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
+          tags: Enum.map(tags, fn tag -> %{label: tag.label} end)
         }
 
         message_row =
@@ -122,7 +127,7 @@ defmodule Glific.Jobs.BigQueryWorker do
           else
             message_row
             |> Map.merge(%{
-              flow_labels: []
+               flow_labels: [%{flow_label: "No Label"}]
             })
           end
 
