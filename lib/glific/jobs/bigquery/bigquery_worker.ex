@@ -313,7 +313,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec make_insert_query(list(), String.t(), non_neg_integer) :: :ok
   defp make_insert_query(data, table, organization_id) do
     organization = Partners.organization(organization_id)
-
+                    |> Repo.preload(:contact)
     credentials =
       organization.services["bigquery"]
       |> case do
@@ -322,7 +322,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
 
     project_id = credentials.secrets["project_id"]
-    dataset_id = credentials.secrets["dataset_id"]
+    dataset_id = organization.contact.phone
     table_id = table
     token = token(credentials)
     conn = Connection.new(token.token)
