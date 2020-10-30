@@ -91,13 +91,8 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        tags =
-          if Enum.empty?(row.tags),
-            do: [%{label: "No Tag"}],
-            else: row.tags
-
         tag_labels =
-          Enum.map(tags, fn tag -> tag.label end)
+          Enum.map(row.tags, fn tag -> tag.label end)
           |> Enum.join(", ")
 
         message_row = %{
