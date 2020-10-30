@@ -22,7 +22,7 @@ defmodule Glific.Media do
 
     organization.services["google_cloud_storage"]
     |> case do
-      nil -> :custom_bucket_name
+      nil -> "custom_bucket_name"
       credentials -> credentials.secrets["bucket"]
     end
   end
