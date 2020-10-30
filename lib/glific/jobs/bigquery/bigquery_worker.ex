@@ -90,13 +90,17 @@ defmodule Glific.Jobs.BigQueryWorker do
     Repo.all(query)
     |> Enum.reduce(
       [],
-    fn row, acc ->
-      tags =
-      if Enum.empty?(row.tags),
-        do: [%{label: "No Tag"}],
-        else: row.tags
+      fn row, acc ->
+        tags =
+          if Enum.empty?(row.tags),
+            do: [%{label: "No Tag"}],
+            else: row.tags
 
-      message_row = %{
+        tag_labels =
+          Enum.map(tags, fn tag -> tag.label end)
+          |> Enum.join(", ")
+
+        message_row = %{
           type: row.type,
           user_id: row.contact_id,
           message: row.body,
@@ -113,23 +117,9 @@ defmodule Glific.Jobs.BigQueryWorker do
           user_phone: if(!is_nil(row.user), do: row.user.phone),
           user_name: if(!is_nil(row.user), do: row.user.name),
           media: media_url(row.media),
-          tags: Enum.map(tags, fn tag -> %{label: tag.label} end)
+          tag_labels: tag_labels,
+          flow_labels: row.flow_label
         }
-
-        message_row =
-          if row.flow_label != nil do
-            message_row
-            |> Map.merge(%{
-              flow_labels:
-                String.split(row.flow_label, ", ")
-                |> Enum.map(fn flow_label -> %{flow_label: flow_label} end)
-            })
-          else
-            message_row
-            |> Map.merge(%{
-               flow_labels: [%{flow_label: "No Label"}]
-            })
-          end
 
         [message_row | acc]
       end
@@ -285,7 +275,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         contact_name: msg["contact_name"],
         user_phone: msg["user_phone"],
         user_name: msg["user_name"],
-        tags: msg["tags"],
+        tag_labels: msg["tag_labels"],
         flow_labels: msg["flow_labels"],
         media_url: msg["media"]
       }

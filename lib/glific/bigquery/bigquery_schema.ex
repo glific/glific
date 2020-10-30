@@ -234,28 +234,14 @@ defmodule Glific.BigquerySchema do
         mode: "NULLABLE"
       },
       %{
-        name: "tags",
-        type: "RECORD",
-        mode: "REPEATED",
-        fields: [
-          %{
-            name: "label",
-            type: "STRING",
-            mode: "REQUIRED"
-          }
-        ]
+        name: "tag_labels",
+        type: "STRING",
+        mode: "NULLABLE"
       },
       %{
         name: "flow_labels",
-        type: "RECORD",
-        mode: "REPEATED",
-        fields: [
-          %{
-            name: "flow_label",
-            type: "STRING",
-            mode: "REQUIRED"
-          }
-        ]
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end
