@@ -47,13 +47,10 @@ defmodule Glific.Bigquery do
 
     project_id = credentials.secrets["project_id"]
     token = token(credentials)
-    IO.inspect("debug001-goth-token")
-    IO.inspect(token)
     conn = Connection.new(token.token)
 
     case create_dataset(conn, project_id, dataset_id) do
       {:ok, _} ->
-        IO.inspect("debug001-table being created")
         table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
         table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
 
@@ -65,7 +62,6 @@ defmodule Glific.Bigquery do
   end
 
   defp create_dataset(conn, project_id, dataset_id) do
-    IO.inspect("debug001-Query for dataset")
     Datasets.bigquery_datasets_insert(
       conn,
       project_id,
