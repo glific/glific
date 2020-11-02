@@ -35,6 +35,7 @@ defmodule Glific.Messages.Message do
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           user_id: non_neg_integer | nil,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
+          flow_id: non_neg_integer | nil,
           media_id: non_neg_integer | nil,
           media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -71,6 +72,7 @@ defmodule Glific.Messages.Message do
     :send_at,
     :sent_at,
     :user_id,
+    :flow_id,
     :session_uuid
   ]
 
@@ -95,6 +97,7 @@ defmodule Glific.Messages.Message do
     field :sent_at, :utc_datetime
     field :message_number, :integer, default: 0
     field :session_uuid, Ecto.UUID
+    field :flow_id, :integer
 
     belongs_to :sender, Contact
     belongs_to :receiver, Contact
