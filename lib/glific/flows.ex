@@ -180,7 +180,8 @@ defmodule Glific.Flows do
               created_on: revision.inserted_at,
               id: revision.id,
               version: "13.0.0",
-              revision: revision.id
+              revision: revision.id,
+              status: revision.status
             }
             | acc
           ]
