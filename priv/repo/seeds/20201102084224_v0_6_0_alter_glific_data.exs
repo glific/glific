@@ -16,10 +16,10 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_6_0 do
     if {:error, ["Elixir.Glific.Settings.Language", "Resource not found"]} ==
          Repo.fetch_by(Language, %{label: "Urdu"}) do
       Repo.insert!(%Language{
-          label: "Urdu",
-          label_locale: "اُردُو",
-          locale: "ur"
-        })
+        label: "Urdu",
+        label_locale: "اُردُو",
+        locale: "ur"
+      })
     end
   end
 end
