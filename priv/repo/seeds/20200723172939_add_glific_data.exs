@@ -707,7 +707,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       definition: definition,
       flow_id: f.id,
       status: "done",
-      version: 1,
+      version: 1
     })
   end
 
