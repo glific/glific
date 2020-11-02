@@ -143,7 +143,7 @@ defmodule Glific.Jobs.GcsWorker do
     |> Repo.update()
   end
 
-  @spec get_media_extension(atom()) :: String.t()
+  @spec get_media_extension(String.t()) :: String.t()
   defp get_media_extension(type) do
     %{
       image: "png",
