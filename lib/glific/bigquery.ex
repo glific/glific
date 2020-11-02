@@ -19,24 +19,24 @@ defmodule Glific.Bigquery do
   def bigquery_dataset(dataset_id, organization_id) do
     organization = Partners.organization(organization_id)
 
-    credentials =
-      organization.services["bigquery"]
-      |> case do
-        nil -> %{url: nil, id: nil, email: nil}
-        credentials -> credentials
-      end
+    organization.services["bigquery"]
+    |> case do
+      nil ->
+        %{url: nil, id: nil, email: nil}
 
-    project_id = credentials.secrets["project_id"]
-    token = Partners.get_goth_token(organization_id, "bigquery")
-    conn = Connection.new(token.token)
+      credentials ->
+        project_id = credentials.secrets["project_id"]
+        token = Partners.get_goth_token(organization_id, "bigquery")
+        conn = Connection.new(token.token)
 
-    case create_dataset(conn, project_id, dataset_id) do
-      {:ok, _} ->
-        table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
-        table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
+        case create_dataset(conn, project_id, dataset_id) do
+          {:ok, _} ->
+            table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
+            table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
 
-      {:error, _} ->
-        nil
+          {:error, _} ->
+            nil
+        end
     end
 
     :ok
