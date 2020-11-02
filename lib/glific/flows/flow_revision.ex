@@ -21,6 +21,7 @@ defmodule Glific.Flows.FlowRevision do
           id: non_neg_integer | nil,
           definition: map() | nil,
           revision_number: integer() | nil,
+          version: integer() | nil,
           status: String.t() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -30,9 +31,19 @@ defmodule Glific.Flows.FlowRevision do
 
   schema "flow_revisions" do
     field :definition, :map
+
+    # this value is only needed for revisions that are published at any point
+    # this basically allows us to map specific data to a specific flow versio
+    field :version, :integer, default: 0
+
     field :revision_number, :integer
+
+    # the values for status are: draft, published, archived
+    # archived is for versions which were published previously
     field :status, :string, default: "draft"
+
     belongs_to :flow, Flow
+
     timestamps(type: :utc_datetime)
   end
 
