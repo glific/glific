@@ -150,7 +150,7 @@ defmodule Glific.Jobs.GcsWorker do
       video: "mp4",
       audio: "mp3"
     }
-    |> Map.get(String.to_existing_atom(type), "png")|>IO.inspect()
+    |> Map.get(String.to_existing_atom(type), "png")
   end
 
   defp download_file_to_temp(url, path) do
