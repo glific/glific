@@ -151,12 +151,12 @@ defmodule Glific.Jobs.GcsWorker do
       video: "mp4",
       audio: "mp3"
     }
-    |> Map.get(type, "png")
+    |> Map.get(String.to_atom(type), "png")
   end
 
   defp download_file_to_temp(url, path) do
     %HTTPoison.Response{body: data} = HTTPoison.get!(url)
-    File.write!(String.to_atom(type), data)
+    File.write!(path, data)
     {:ok, path}
   end
 end
