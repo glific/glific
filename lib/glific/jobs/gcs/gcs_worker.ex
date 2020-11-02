@@ -143,14 +143,14 @@ defmodule Glific.Jobs.GcsWorker do
     |> Repo.update()
   end
 
-  @spec get_media_extension(String.t()) :: String.t()
+  @spec get_media_extension(atom()) :: String.t()
   defp get_media_extension(type) do
     %{
       image: "png",
       video: "mp4",
       audio: "mp3"
     }
-    |> Map.get(String.to_atom(type), "png")
+    |> Map.get(String.to_existing_atom(type), "png")|>IO.inspect()
   end
 
   defp download_file_to_temp(url, path) do

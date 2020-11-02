@@ -293,12 +293,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               default: nil,
               view_only: false
             },
-            project_email: %{
-              type: :string,
-              label: "Project Email",
-              default: nil,
-              view_only: false
-            },
             service_account: %{
               type: :string,
               label: "Goth Credentials ",
