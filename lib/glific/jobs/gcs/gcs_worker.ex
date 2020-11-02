@@ -156,7 +156,7 @@ defmodule Glific.Jobs.GcsWorker do
 
   defp download_file_to_temp(url, path) do
     %HTTPoison.Response{body: data} = HTTPoison.get!(url)
-    File.write!(path, data)
+    File.write!(String.to_atom(type), data)
     {:ok, path}
   end
 end
