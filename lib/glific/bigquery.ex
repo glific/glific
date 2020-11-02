@@ -33,6 +33,7 @@ defmodule Glific.Bigquery do
           {:ok, _} ->
             table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
             table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
+            contacts_messages_view(conn, dataset_id, project_id)
 
           {:error, _} ->
             nil
@@ -73,6 +74,35 @@ defmodule Glific.Bigquery do
             },
             schema: %{
               fields: schema
+            }
+          }
+        ],
+        []
+      )
+
+    response
+  end
+
+  defp contacts_messages_view(conn, dataset_id, project_id) do
+    {:ok, response} =
+      Tables.bigquery_tables_insert(
+        conn,
+        project_id,
+        dataset_id,
+        [
+          body: %{
+            tableReference: %{
+              datasetId: dataset_id,
+              projectId: project_id,
+              tableId: "contacts_messages"
+            },
+            view: %{
+              query:
+                "SELECT messages.id, contact_phone, phone, name, optin_time, language, flow_label, messages.tags_label, messages.inserted_at, media_url
+              FROM `#{project_id}.#{dataset_id}.messages` as messages
+              JOIN `#{project_id}.#{dataset_id}.contacts` as contacts
+              ON messages.contact_phone = contacts.phone",
+              useLegacySql: false
             }
           }
         ],
