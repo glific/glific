@@ -31,7 +31,6 @@ defmodule Glific.Flows.FlowContextTest do
     flow_context
     |> Repo.preload(:contact)
     |> Repo.preload(:flow)
-
   end
 
   test "create_flow_context/1 will create a new flow context" do
