@@ -32,6 +32,9 @@ defmodule Glific.Bigquery do
         contacts_messages_view(conn, dataset_id, project_id)
 
       {:error, _} ->
+        # when organization re-activates the credentials, update with new schema
+        alter_bigquery_tables(dataset_id, organization_id)
+
         nil
     end
 
@@ -39,7 +42,8 @@ defmodule Glific.Bigquery do
   end
 
   @doc """
-  Alter bigquery table schema
+  Alter bigquery table schema,
+  if required this function should be called from iex
   """
   @spec alter_bigquery_tables(String.t(), non_neg_integer) :: :ok
   def alter_bigquery_tables(dataset_id, organization_id) do
