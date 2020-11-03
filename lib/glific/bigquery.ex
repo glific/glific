@@ -29,14 +29,22 @@ defmodule Glific.Bigquery do
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
 
-        case create_dataset(conn, project_id, dataset_id) do
+        case Datasets.bigquery_datasets_get(conn, project_id, dataset_id) do
           {:ok, _} ->
-            table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
-            table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
-            contacts_messages_view(conn, dataset_id, project_id)
+            alter_table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
+            alter_table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
+            alter_contacts_messages_view(conn, dataset_id, project_id)
 
           {:error, _} ->
-            nil
+            case create_dataset(conn, project_id, dataset_id) do
+              {:ok, _} ->
+                table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
+                table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
+                contacts_messages_view(conn, dataset_id, project_id)
+
+              {:error, _} ->
+                nil
+            end
         end
     end
 
@@ -83,6 +91,31 @@ defmodule Glific.Bigquery do
     response
   end
 
+  defp alter_table(schema, conn, dataset_id, project_id, table_id) do
+    {:ok, response} =
+      Tables.bigquery_tables_update(
+        conn,
+        project_id,
+        dataset_id,
+        table_id,
+        [
+          body: %{
+            tableReference: %{
+              datasetId: dataset_id,
+              projectId: project_id,
+              tableId: table_id
+            },
+            schema: %{
+              fields: schema
+            }
+          }
+        ],
+        []
+      )
+
+    response
+  end
+
   defp contacts_messages_view(conn, dataset_id, project_id) do
     {:ok, response} =
       Tables.bigquery_tables_insert(
@@ -99,6 +132,36 @@ defmodule Glific.Bigquery do
             view: %{
               query:
                 "SELECT messages.id, contact_phone, phone, name, optin_time, language, flow_label, messages.tags_label, messages.inserted_at, media_url
+              FROM `#{project_id}.#{dataset_id}.messages` as messages
+              JOIN `#{project_id}.#{dataset_id}.contacts` as contacts
+              ON messages.contact_phone = contacts.phone",
+              useLegacySql: false
+            }
+          }
+        ],
+        []
+      )
+
+    response
+  end
+
+  defp alter_contacts_messages_view(conn, dataset_id, project_id) do
+    {:ok, response} =
+      Tables.bigquery_tables_update(
+        conn,
+        project_id,
+        dataset_id,
+        "contacts_messages",
+        [
+          body: %{
+            tableReference: %{
+              datasetId: dataset_id,
+              projectId: project_id,
+              tableId: "contacts_messages"
+            },
+            view: %{
+              query:
+                "SELECT messages.id, uuid, contact_phone, phone, name, optin_time, language, flow_label, messages.tags_label, messages.inserted_at, media_url
               FROM `#{project_id}.#{dataset_id}.messages` as messages
               JOIN `#{project_id}.#{dataset_id}.contacts` as contacts
               ON messages.contact_phone = contacts.phone",
