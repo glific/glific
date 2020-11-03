@@ -44,7 +44,8 @@ config :glific, Oban,
     {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
     {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
     {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}}
+    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
+    {"@daily", Glific.Jobs.DailyWorker, args: %{job: :delete_flow_contexts}},
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
