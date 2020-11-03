@@ -14,13 +14,13 @@ defmodule Glific.Flows.FlowResult do
     Repo
   }
 
-  @required_fields [:contact_id, :flow_id, :flow_version, :organization_id]
-  @optional_fields [:fields]
+  @required_fields [:contact_id, :flow_id, :flow_uuid, :flow_version, :organization_id]
+  @optional_fields [:results]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
-          fields: map() | nil,
+          results: map() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           flow_id: non_neg_integer | nil,
@@ -34,7 +34,7 @@ defmodule Glific.Flows.FlowResult do
         }
 
   schema "flow_results" do
-    field :fields, :map, default: %{}
+    field :results, :map, default: %{}
 
     field :flow_version, :integer
 
@@ -58,10 +58,13 @@ defmodule Glific.Flows.FlowResult do
   end
 
   @doc false
-  @spec create_flow_result(map()) :: {:ok, FlowResult.t()} | {:error, Ecto.Changeset.t()}
-  def create_flow_result(attrs \\ %{}) do
-    %FlowResult{}
-    |> FlowResult.changeset(attrs)
-    |> Repo.insert()
+  @spec upsert_flow_result(map()) :: {:ok, FlowResult.t()} | {:error, Ecto.Changeset.t()}
+  def upsert_flow_result(attrs) do
+    Repo.insert(
+      changeset(%FlowResult{}, attrs),
+      returning: true,
+      conflict_target: [:contact_id, :flow_id, :flow_version],
+      on_conflict: [set: [results: attrs.results]]
+    )
   end
 end

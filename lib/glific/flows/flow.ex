@@ -48,6 +48,7 @@ defmodule Glific.Flows.Flow do
   schema "flows" do
     field :name, :string
 
+    # this is the flow editor version number
     field :version_number, :string
     field :flow_type, FlowType
     field :uuid, Ecto.UUID
@@ -61,8 +62,11 @@ defmodule Glific.Flows.Flow do
     field :keywords, {:array, :string}, default: []
     field :ignore_keywords, :boolean, default: false
 
-    # we use this to store the latest definition for this flow
+    # we use this to store the latest definition and versionfrom flow_revisions for this flow
     field :definition, :map, virtual: true
+
+    # this is the version of the flow revision
+    field :version, :integer, virtual: true, default: 0
 
     belongs_to :organization, Organization
 
@@ -251,7 +255,8 @@ defmodule Glific.Flows.Flow do
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,
           organization_id: f.organization_id,
-          definition: fr.definition
+          definition: fr.definition,
+          version: fr.version
         }
 
     flow =

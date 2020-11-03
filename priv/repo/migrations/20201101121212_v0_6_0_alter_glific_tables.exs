@@ -23,7 +23,7 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
     # questions across time
     create table(:flow_results) do
       # This is a key value map of the results saved during this flow run
-      add :fields, :map, default: %{}
+      add :results, :map, default: %{}
 
       add :contact_id, references(:contacts, on_delete: :delete_all), null: false
 
