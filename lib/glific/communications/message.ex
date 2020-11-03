@@ -127,11 +127,10 @@ defmodule Glific.Communications.Message do
   defp do_receive_message(%{organization_id: organization_id} = message_params, type) do
     # get session uuid of contact's messages
     session_uuid = Messages.get_session_uuid(message_params)
-
+    IO.inspect(session_uuid)
     {:ok, contact} =
       message_params.sender
       |> Map.put(:organization_id, organization_id)
-      |> Map.put(:last_message_at, DateTime.utc_now())
       |> Contacts.upsert()
 
     {:ok, contact} = Contacts.set_session_status(contact, :session)
