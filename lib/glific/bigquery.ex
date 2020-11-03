@@ -29,23 +29,41 @@ defmodule Glific.Bigquery do
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
 
-        case Datasets.bigquery_datasets_get(conn, project_id, dataset_id) do
+        case create_dataset(conn, project_id, dataset_id) do
           {:ok, _} ->
-            alter_table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
-            alter_table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
-            alter_contacts_messages_view(conn, dataset_id, project_id)
+            table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
+            table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
+            contacts_messages_view(conn, dataset_id, project_id)
 
           {:error, _} ->
-            case create_dataset(conn, project_id, dataset_id) do
-              {:ok, _} ->
-                table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
-                table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
-                contacts_messages_view(conn, dataset_id, project_id)
-
-              {:error, _} ->
-                nil
-            end
+            nil
         end
+    end
+
+    :ok
+  end
+
+  @doc """
+  Alter bigquery table schema
+  """
+  @spec alter_bigquery_tables(String.t(), non_neg_integer) :: :ok
+  def alter_bigquery_tables(dataset_id, organization_id) do
+    organization = Partners.organization(organization_id)
+
+    credentials = organization.services["bigquery"]
+
+    project_id = credentials.secrets["project_id"]
+    token = Partners.get_goth_token(organization_id, "bigquery")
+    conn = Connection.new(token.token)
+
+    case Datasets.bigquery_datasets_get(conn, project_id, dataset_id) do
+      {:ok, _} ->
+        alter_table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
+        alter_table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
+        alter_contacts_messages_view(conn, dataset_id, project_id)
+
+      {:error, _} ->
+        nil
     end
 
     :ok
