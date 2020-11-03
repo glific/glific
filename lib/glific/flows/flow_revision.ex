@@ -14,7 +14,7 @@ defmodule Glific.Flows.FlowRevision do
   }
 
   @required_fields [:definition, :flow_id]
-  @optional_fields [:revision_number, :status]
+  @optional_fields [:revision_number, :status, :version]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
