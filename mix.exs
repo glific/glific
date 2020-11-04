@@ -8,7 +8,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "0.5.0",
+      version: "0.6.1",
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -99,7 +99,7 @@ defmodule Glific.MixProject do
       {:httpoison, "~> 1.6"},
       {:poison, "~> 4.0"},
       {:ex_rated, "~> 1.2"},
-      {:absinthe, "~> 1.5"},
+      {:absinthe, "~> 1.5.3", override: true},
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
       {:absinthe_relay, "~> 1.5"},
@@ -125,7 +125,7 @@ defmodule Glific.MixProject do
       {:appsignal, "~> 1.0"},
       {:poolboy, "~> 1.5"},
       {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"},
-      {:cloak_ecto, "~> 1.0.1"},
+      {:cloak_ecto, "~> 1.1"},
       {:google_api_big_query, "~> 0.47.0"},
       {:waffle, "~> 1.1"},
       {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},

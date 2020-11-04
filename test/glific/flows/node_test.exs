@@ -196,7 +196,10 @@ defmodule Glific.Flows.NodeTest do
         flow_uuid: Ecto.UUID.generate()
       })
 
-    context = Repo.preload(context, :contact)
+    context =
+      context
+      |> Repo.preload(:contact)
+      |> Map.put(:flow, %{version: 1})
 
     message = Messages.create_temp_message(Fixtures.get_org_id(), "completed")
     message_stream = [message]
