@@ -92,9 +92,10 @@ defmodule Glific.Repo do
   @spec count_filter(
           map(),
           atom(),
-          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t())
+    (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
+  Keyword.t()
         ) :: integer
-  def count_filter(args \\ %{}, object, filter_with_fn) do
+  def count_filter(args \\ %{}, object, filter_with_fn, opts \\ []) do
     args
     |> Enum.reduce(object, fn
       {:filter, filter}, query ->
@@ -103,7 +104,7 @@ defmodule Glific.Repo do
       _, query ->
         query
     end)
-    |> Repo.aggregate(:count)
+    |> Repo.aggregate(:count, opts)
   end
 
   @doc """
@@ -241,6 +242,7 @@ defmodule Glific.Repo do
         {Ecto.Query.where(query, organization_id: ^organization_id), opts}
 
       true ->
+        IO.inspect(query)
         raise "expected organization_id or skip_organization_id to be set"
     end
   end
