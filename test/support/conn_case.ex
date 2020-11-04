@@ -56,6 +56,7 @@ defmodule GlificWeb.ConnCase do
 
     # organization_id = Fixtures.get_org_id()
     organization_id = 1
+    Glific.Repo.put_organization_id(1)
 
     {
       :ok,

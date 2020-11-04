@@ -145,14 +145,14 @@ defmodule Glific.ContactsTest do
       assert contact.bsp_status == :hsm
 
       # Contact should be created with organization's default language
-      {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
+      {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"}, skip_organization_id: true)
 
       assert contact.language_id == organization.default_language_id
     end
 
     test "create_contact/1 with language id creates a contact",
          %{organization_id: _organization_id} = attrs do
-      {:ok, language} = Repo.fetch_by(Language, %{locale: "hi"})
+      {:ok, language} = Repo.fetch_by(Language, %{locale: "hi"}, skip_organization_id: true)
 
       attrs =
         attrs

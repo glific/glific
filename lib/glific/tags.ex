@@ -451,7 +451,7 @@ defmodule Glific.Tags do
   def create_template_tag(attrs \\ %{}) do
     %TemplateTag{}
     |> TemplateTag.changeset(attrs)
-    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:template_id, :tag_id])
+    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:template_id, :tag_id], skip_organization_id: true)
   end
 
   @doc """
@@ -461,6 +461,6 @@ defmodule Glific.Tags do
   def delete_template_tag_by_ids(template_id, tag_ids) when is_list(tag_ids) do
     TemplateTag
     |> where([m], m.template_id == ^template_id and m.tag_id in ^tag_ids)
-    |> Repo.delete_all()
+    |> Repo.delete_all(skip_organization_id: true)
   end
 end
