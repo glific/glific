@@ -247,7 +247,7 @@ defmodule Glific.Repo do
 
   @spec is_oban_query?(atom(), Ecto.Query.t()) :: boolean()
   defp is_oban_query?(operation, query) do
-      Ecto.Adapters.SQL.to_sql(operation, Glific.Repo, query)
+      Repo.to_sql(operation, query)
       |> elem(0)
       |> String.contains?(["oban_jobs"])
   end
