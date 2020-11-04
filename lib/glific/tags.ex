@@ -225,7 +225,7 @@ defmodule Glific.Tags do
   """
   @spec get_message_tag!(integer) :: MessageTag.t()
   def get_message_tag!(id) do
-    Repo.get!(MessageTag, id)
+    Repo.get!(MessageTag, id, skip_organization_id: true)
   end
 
   @doc """
@@ -321,7 +321,7 @@ defmodule Glific.Tags do
   """
   @spec get_contact_tag!(integer) :: ContactTag.t()
   def get_contact_tag!(id) do
-    Repo.get!(ContactTag, id)
+    Repo.get!(ContactTag, id, skip_organization_id: true)
   end
 
   @doc """
@@ -398,14 +398,16 @@ defmodule Glific.Tags do
       from mt in MessageTag,
         join: m in assoc(mt, :message),
         join: t in assoc(mt, :tag),
-        where: m.contact_id == ^contact_id and t.shortcode in ^tag_shortcode_list
+        where: m.contact_id == ^contact_id,
+        where: m.organization_id == ^organization_id,
+        where: t.shortcode in ^tag_shortcode_list
 
-    Repo.all(query)
+    Repo.all(query, skip_organization_id: true)
     |> publish_delete_message(organization_id)
 
     {_, deleted_rows} =
       select(query, [mt], [mt.message_id])
-      |> Repo.delete_all()
+      |> Repo.delete_all(skip_organization_id: true)
 
     List.flatten(deleted_rows)
   end

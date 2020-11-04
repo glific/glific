@@ -45,11 +45,16 @@ defmodule Glific.TagsTest do
     }
 
     def tag_fixture(attrs \\ %{}) do
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
+      language = get_hindi()
 
       Map.put(attrs, :language_id, language.id)
       |> Fixtures.tag_fixture()
     end
+
+    defp get_hindi,
+      do:
+        Repo.fetch_by(Language, %{label: "Hindi"}, skip_organization_id: true)
+        |> elem(1)
 
     test "list_tags/1 returns all tags", %{organization_id: _organization_id} = attrs do
       tag = tag_fixture(attrs)
@@ -79,7 +84,7 @@ defmodule Glific.TagsTest do
     end
 
     test "create_tag/1 with valid data creates a tag", %{organization_id: organization_id} do
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
+      language = get_hindi()
 
       attrs =
         Map.merge(@valid_attrs, %{language_id: language.id, organization_id: organization_id})
@@ -99,7 +104,7 @@ defmodule Glific.TagsTest do
 
     test "update_tag/2 with valid data updates the tag", %{organization_id: organization_id} do
       tag = tag_fixture(%{organization_id: organization_id})
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
+      language = get_hindi()
       attrs = Map.merge(@update_attrs, %{language_id: language.id})
       assert {:ok, %Tag{} = tag} = Tags.update_tag(tag, attrs)
       assert tag.description == "some updated description"
@@ -190,7 +195,7 @@ defmodule Glific.TagsTest do
     end
 
     test "keywords can be added to tags", %{organization_id: organization_id} do
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
+      language = get_hindi()
       keywords = ["Hello", "hi", "hola", "namaste", "good morning"]
 
       attrs =
@@ -238,7 +243,7 @@ defmodule Glific.TagsTest do
     end
 
     test "invalid shortcode will throw an error", %{organization_id: organization_id} do
-      language = Repo.fetch_by(Language, %{label: "Hindi"}) |> elem(1)
+      language = get_hindi()
 
       attrs =
         Map.merge(@valid_attrs, %{
