@@ -131,7 +131,6 @@ defmodule Glific.Communications.Message do
     {:ok, contact} =
       message_params.sender
       |> Map.put(:organization_id, organization_id)
-      |> Map.put(:last_message_at, DateTime.utc_now())
       |> Contacts.upsert()
 
     {:ok, contact} = Contacts.set_session_status(contact, :session)

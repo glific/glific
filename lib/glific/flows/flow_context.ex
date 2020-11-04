@@ -14,6 +14,7 @@ defmodule Glific.Flows.FlowContext do
     Contacts.Contact,
     Flows,
     Flows.Flow,
+    Flows.FlowResult,
     Flows.Node,
     Messages,
     Messages.Message,
@@ -172,6 +173,17 @@ defmodule Glific.Flows.FlowContext do
 
     results = Map.put(results, key, %{"input" => input, "category" => category})
     {:ok, context} = update_flow_context(context, %{results: results})
+
+    {:ok, _flow_result} =
+      FlowResult.upsert_flow_result(%{
+        results: results,
+        contact_id: context.contact_id,
+        flow_id: context.flow_id,
+        flow_version: context.flow.version,
+        flow_uuid: context.flow_uuid,
+        organization_id: context.contact.organization_id
+      })
+
     context
   end
 

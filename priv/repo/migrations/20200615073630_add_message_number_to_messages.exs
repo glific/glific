@@ -10,6 +10,7 @@ defmodule Glific.Repo.Migrations.AddMessageNumberToMessages do
       IF (TG_OP = 'INSERT') THEN
         UPDATE messages set message_number = message_number + 1 where contact_id = NEW.contact_id and id < NEW.id;
         UPDATE messages  set message_number = 0 where id = NEW.id;
+        UPDATE contacts  set last_message_at = CURRENT_TIMESTAMP where id = NEW.contact_id;
         RETURN NEW;
       END IF;
       RETURN NULL;

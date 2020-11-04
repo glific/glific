@@ -103,7 +103,6 @@ defmodule Glific.Jobs.GcsWorker do
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
     # We will download the file from internet and then upload it to gsc and then remove it.
-    # extension =  get_media_extension(type)
     extension = get_media_extension(media["type"])
     file_name = "#{Ecto.UUID.generate()}.#{extension}"
     path = "#{System.tmp_dir!()}/#{file_name}"
@@ -144,14 +143,14 @@ defmodule Glific.Jobs.GcsWorker do
     |> Repo.update()
   end
 
-  @spec get_media_extension(atom()) :: String.t()
+  @spec get_media_extension(String.t()) :: String.t()
   defp get_media_extension(type) do
     %{
       image: "png",
       video: "mp4",
       audio: "mp3"
     }
-    |> Map.get(type, "png")
+    |> Map.get(String.to_existing_atom(type), "png")
   end
 
   defp download_file_to_temp(url, path) do
