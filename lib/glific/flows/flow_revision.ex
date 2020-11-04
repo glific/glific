@@ -13,7 +13,7 @@ defmodule Glific.Flows.FlowRevision do
     Repo
   }
 
-  @required_fields [:definition, :flow_id]
+  @required_fields [:definition, :flow_id, :organization_id]
   @optional_fields [:revision_number, :status, :version]
 
   @type t() :: %__MODULE__{
@@ -25,6 +25,8 @@ defmodule Glific.Flows.FlowRevision do
           status: String.t() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -43,6 +45,7 @@ defmodule Glific.Flows.FlowRevision do
     field :status, :string, default: "draft"
 
     belongs_to :flow, Flow
+    belongs_to :organization, Organization
 
     timestamps(type: :utc_datetime)
   end

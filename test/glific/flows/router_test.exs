@@ -21,9 +21,12 @@ defmodule Glific.Flows.RouterTest do
   }
 
   def flow_context_fixture(attrs \\ %{}) do
+    contact = Fixtures.contact_fixture()
+
     {:ok, flow_context} =
       attrs
-      |> Map.put(:contact_id, Fixtures.contact_fixture().id)
+      |> Map.put(:contact_id, contact.id)
+      |> Map.put(:organization_id, contact.organization_id)
       |> Enum.into(@valid_attrs)
       |> FlowContext.create_flow_context()
 

@@ -125,7 +125,8 @@ defmodule Glific.Flows.NodeTest do
         contact_id: contact.id,
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
-        uuid_map: uuid_map
+        uuid_map: uuid_map,
+        organization_id: attrs.organization_id
       })
 
     context = Repo.preload(context, :contact)
@@ -193,7 +194,8 @@ defmodule Glific.Flows.NodeTest do
         contact_id: contact.id,
         flow_id: 1,
         uuid_map: uuid_map,
-        flow_uuid: Ecto.UUID.generate()
+        flow_uuid: Ecto.UUID.generate(),
+        organization_id: attrs.organization_id
       })
 
     context =

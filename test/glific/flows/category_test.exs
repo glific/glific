@@ -31,7 +31,7 @@ defmodule Glific.Flows.CategoryTest do
     assert_raise ArgumentError, fn -> Category.process(json, %{}) end
   end
 
-  test "test category execute with exit node with null destination" do
+  test "test category execute with exit node with null destination", attrs do
     node = %Node{uuid: Ecto.UUID.generate()}
     exit_uuid = Ecto.UUID.generate()
     json = %{"uuid" => exit_uuid, "destination_uuid" => nil}
@@ -51,7 +51,8 @@ defmodule Glific.Flows.CategoryTest do
         contact_id: 1,
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
-        uuid_map: uuid_map
+        uuid_map: uuid_map,
+        organization_id: attrs.organization_id
       })
 
     result = Category.execute(category, context, [])

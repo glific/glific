@@ -9,6 +9,8 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
     flow_results()
 
     flow_revisions()
+
+    add_organization_id()
   end
 
   defp flow_revisions do
@@ -44,5 +46,22 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
 
     create unique_index(:flow_results, [:contact_id, :flow_id, :flow_version])
     create index(:flow_results, [:contact_id, :organization_id])
+  end
+
+  defp add_organization_id do
+    # foreign key to organization restricting scope of this table to this organization only
+    # keeping the field nullable so that migration can run with production data
+
+    alter table(:flow_contexts) do
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+    end
+
+    # alter table(:flow_counts) do
+    #   add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+    # end
+
+    alter table(:flow_revisions) do
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+    end
   end
 end
