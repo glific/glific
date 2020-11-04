@@ -83,7 +83,7 @@ defmodule Glific.Settings do
   def create_language(attrs \\ %{}) do
     %Language{}
     |> Language.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(skip_organization_id: true)
   end
 
   @doc """
@@ -102,7 +102,7 @@ defmodule Glific.Settings do
   def update_language(%Language{} = language, attrs) do
     language
     |> Language.changeset(attrs)
-    |> Repo.update()
+    |> Repo.update(skip_organization_id: true)
   end
 
   @doc """
@@ -121,7 +121,7 @@ defmodule Glific.Settings do
   def delete_language(%Language{} = language) do
     language
     |> Language.delete_changeset()
-    |> Repo.delete()
+    |> Repo.delete(skip_organization_id: true)
   end
 
   @doc """
@@ -163,7 +163,7 @@ defmodule Glific.Settings do
     Language
     |> where([l], l.is_active == true)
     |> select([:id, :locale])
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.locale, language.id) end)
   end
 
@@ -175,6 +175,6 @@ defmodule Glific.Settings do
     Language
     |> where([l], l.is_active == true)
     |> where([l], ilike(l.label, ^"#{term}%") or ilike(l.locale, ^"#{term}%"))
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
   end
 end

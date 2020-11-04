@@ -18,7 +18,9 @@ defmodule Glific.Flows.ContactSettingTest do
 
   test "set contact language", attrs do
     language_label = "English (United States)"
-    {:ok, language} = Repo.fetch_by(Language, %{label: language_label})
+
+    {:ok, language} =
+      Repo.fetch_by(Language, %{label: language_label}, skip_organization_id: true)
 
     [contact | _] =
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})

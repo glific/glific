@@ -99,9 +99,8 @@ defmodule Glific.MessagesTest do
         |> Map.merge(attrs)
         |> Messages.create_message()
 
-      session_uuid = Messages.get_session_uuid(message |> Repo.preload([:sender]))
-      message = message |> Map.put(:session_uuid, session_uuid)
-      message
+      # we do this to get the session_uuid which is computed by a trigger
+      Messages.get_message!(message.id)
     end
 
     test "list_messages/1 returns all messages", attrs do
@@ -145,8 +144,8 @@ defmodule Glific.MessagesTest do
         })
         |> Messages.create_message()
 
-      session_uuid = Messages.get_session_uuid(message |> Repo.preload([:sender]))
-      message = message |> Map.put(:session_uuid, session_uuid)
+      # we do this to get the session_uuid which is computed by a trigger
+      message = Messages.get_message!(message.id)
 
       assert [message] ==
                Messages.list_messages(%{filter: Map.merge(attrs, %{sender: sender.name})})

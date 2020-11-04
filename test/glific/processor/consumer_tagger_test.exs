@@ -43,14 +43,14 @@ defmodule Glific.Processor.ConsumerTaggerTest do
       fn c ->
         message =
           Fixtures.message_fixture(%{body: elem(@checks[rem(c, @checks_size)], 0)})
-          |> Repo.preload(contact: [:language])
+          |> Repo.preload([contact: [:language]], skip_organization_id: true)
 
         ConsumerTagger.process_message({message, state}, message.body)
       end
     )
 
     # ensure we have a few message tags in the DB
-    assert Repo.aggregate(MessageTag, :count) > 0
+    assert Repo.aggregate(MessageTag, :count, skip_organization_id: true) > 0
 
     # check the message tags
     tags = ["language", "unread", "greeting", "thankyou", "numeric", "goodbye"]

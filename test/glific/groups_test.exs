@@ -226,7 +226,7 @@ defmodule Glific.GroupsTest do
         UserGroup
         |> where([ug], ug.user_id == ^user.id)
         |> select([ug], ug.group_id)
-        |> Repo.all()
+        |> Repo.all(skip_organization_id: true)
 
       assert user_group_ids == [group_1.id, group_2.id]
 
@@ -241,7 +241,7 @@ defmodule Glific.GroupsTest do
         UserGroup
         |> where([ug], ug.user_id == ^user.id)
         |> select([ug], ug.group_id)
-        |> Repo.all()
+        |> Repo.all(skip_organization_id: true)
 
       assert user_group_ids == [group_1.id, group_3.id]
     end
