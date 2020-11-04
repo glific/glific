@@ -33,6 +33,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def up(_repo) do
     # check if this is the first organization that we are adding
     # to the DB
+
     count_organizations = Partners.count_organizations()
 
     en_us = languages(count_organizations)
@@ -40,6 +41,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     provider = providers(count_organizations)
 
     organization = organization(count_organizations, provider, en_us)
+
+    ## Added organization id in the query
+    Glific.Repo.put_organization_id(organization.id)
 
     # calling it gtags, since tags is a macro in philcolumns
     gtags(organization, en_us)

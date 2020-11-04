@@ -65,9 +65,10 @@ defmodule Glific.Repo do
           map(),
           atom(),
           (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
-          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t())
+          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
+          Keyword.t()
         ) :: [any]
-  def list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn) do
+  def list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn, repo_opts \\ []) do
     args
     |> Enum.reduce(object, fn
       {:opts, opts}, query ->
@@ -81,7 +82,7 @@ defmodule Glific.Repo do
       _, query ->
         query
     end)
-    |> Repo.all()
+    |> Repo.all(repo_opts)
   end
 
   @doc """
@@ -92,9 +93,10 @@ defmodule Glific.Repo do
   @spec count_filter(
           map(),
           atom(),
-          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t())
+          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
+          Keyword.t()
         ) :: integer
-  def count_filter(args \\ %{}, object, filter_with_fn) do
+  def count_filter(args \\ %{}, object, filter_with_fn, opts \\ []) do
     args
     |> Enum.reduce(object, fn
       {:filter, filter}, query ->
@@ -103,7 +105,7 @@ defmodule Glific.Repo do
       _, query ->
         query
     end)
-    |> Repo.aggregate(:count)
+    |> Repo.aggregate(:count, opts)
   end
 
   @doc """

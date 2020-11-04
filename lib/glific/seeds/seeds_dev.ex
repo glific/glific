@@ -121,7 +121,7 @@ if Code.ensure_loaded?(Faker) do
     @doc false
     @spec seed_organizations(non_neg_integer | nil) :: Organization.t() | nil
     def seed_organizations(_organization_id \\ nil) do
-      Organization |> Ecto.Query.first() |> Repo.one()
+      Organization |> Ecto.Query.first() |> Repo.one(skip_organization_id: true)
     end
 
     @doc false
@@ -323,7 +323,7 @@ if Code.ensure_loaded?(Faker) do
 
       password = "12345678"
 
-      {:ok, en_us} = Repo.fetch_by(Language, %{label_locale: "English"})
+      {:ok, en_us} = Repo.fetch_by(Language, %{label_locale: "English"}, skip_organization_id: true)
 
       utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 

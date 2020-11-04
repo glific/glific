@@ -20,8 +20,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
   defp update_exisiting_providers() do
     # add pseudo credentials for gupshup and glifproxy
-    {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
-    {:ok, glifproxy} = Repo.fetch_by(Provider, %{shortcode: "glifproxy"})
+    {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"}, skip_organization_id: true)
+    {:ok, glifproxy} = Repo.fetch_by(Provider, %{shortcode: "glifproxy"}, skip_organization_id: true)
 
     # update providers gupshup and glifproxy with values for:
     # shortcode, group, is_required, keys and secrets
@@ -73,7 +73,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             }
           }
         }
-      )
+      ),
+
+      skip_organization_id: true
     )
 
     Repo.update!(
@@ -111,7 +113,9 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           },
           secrets: %{}
         }
-      )
+      ),
+
+      skip_organization_id: true
     )
 
     add_credentials(gupshup, glifproxy)
@@ -178,7 +182,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     query = from p in Provider, where: p.shortcode == "dialogflow"
 
     # add dialogflow
-    if !Repo.exists?(query),
+    if !Repo.exists?(query, skip_organization_id: true),
       do:
         Repo.insert!(%Provider{
           name: "Dialogflow",
@@ -213,14 +217,14 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               view_only: false
             }
           }
-        })
+        }, skip_organization_id: true)
   end
 
   defp add_goth do
     # add goth (since we'll be using other google services also)
     query = from p in Provider, where: p.shortcode == "goth"
 
-    if !Repo.exists?(query),
+    if !Repo.exists?(query, skip_organization_id: true),
       do:
         Repo.insert!(%Provider{
           name: "GOTH",
@@ -243,14 +247,14 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               view_only: false
             }
           }
-        })
+        }, skip_organization_id: true)
   end
 
   defp add_chatbase() do
     # add chatbase
     query = from p in Provider, where: p.shortcode == "chatbase"
 
-    if !Repo.exists?(query),
+    if !Repo.exists?(query, skip_organization_id: true),
       do:
         Repo.insert!(%Provider{
           name: "Chatbase",
@@ -266,12 +270,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               view_only: false
             }
           }
-        })
+        }, skip_organization_id: true)
 
     # add bigquery
     query = from p in Provider, where: p.shortcode == "bigquery"
 
-    if !Repo.exists?(query),
+    if !Repo.exists?(query, skip_organization_id: true),
       do:
         Repo.insert!(%Provider{
           name: "BigQuery",
@@ -300,14 +304,14 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               view_only: false
             }
           }
-        })
+        }, skip_organization_id: true)
   end
 
   defp add_google_cloud_storage() do
     query = from p in Provider, where: p.shortcode == "google_cloud_storage"
 
     # add google cloud storage (gcs)
-    if !Repo.exists?(query),
+    if !Repo.exists?(query, skip_organization_id: true),
       do:
         Repo.insert!(%Provider{
           name: "Google Cloud Storage",
@@ -335,6 +339,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               view_only: false
             }
           }
-        })
+        }, skip_organization_id: true)
   end
 end
