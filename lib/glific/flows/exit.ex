@@ -63,6 +63,7 @@ defmodule Glific.Flows.Exit do
       uuid: exit.uuid,
       destination_uuid: exit.destination_node_uuid,
       flow_uuid: context.flow_uuid,
+      organization_id: context.organization_id,
       type: "exit",
       recent_message: get_recent_messages(context.recent_inbound)
     })
