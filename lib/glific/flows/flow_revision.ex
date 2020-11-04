@@ -10,6 +10,7 @@ defmodule Glific.Flows.FlowRevision do
 
   alias Glific.{
     Flows.Flow,
+    Partners.Organization,
     Repo
   }
 
