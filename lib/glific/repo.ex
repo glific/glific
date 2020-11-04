@@ -249,9 +249,7 @@ defmodule Glific.Repo do
 
   @spec is_oban_query?(Ecto.Query.t()) :: boolean()
   defp is_oban_query?(query),
-    do:
-  Map.has_key?(query, :from) and
-  Map.has_key?(query.from, :source) and
+    do: !is_nil(query.from) and
   String.contains?(elem(query.from.source, 0), "oban")
 
   @organization_key {__MODULE__, :organization_id}

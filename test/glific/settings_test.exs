@@ -40,7 +40,7 @@ defmodule Glific.SettingsTest do
     end
 
     test "list_languages/1 with multiple items with various opts" do
-      language_count = Repo.aggregate(Language, :count)
+      language_count = Repo.aggregate(Language, :count, skip_organization_id: true)
 
       _language1 = language_fixture()
       language2 = language_fixture(%{label: "AAA label"})
@@ -59,7 +59,7 @@ defmodule Glific.SettingsTest do
     end
 
     test "count_languages/0 returns count of all languages" do
-      language_count = Repo.aggregate(Language, :count)
+      language_count = Repo.aggregate(Language, :count, skip_organization_id: true)
       _ = language_fixture()
       assert Settings.count_languages() == language_count + 1
     end

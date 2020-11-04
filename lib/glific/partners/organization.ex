@@ -118,7 +118,7 @@ defmodule Glific.Partners.Organization do
     language_ids =
       Language
       |> select([l], l.id)
-      |> Repo.all()
+      |> Repo.all(skip_organization_id: true)
 
     changeset
     |> validate_subset(:active_language_ids, language_ids)
