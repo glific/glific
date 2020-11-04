@@ -281,14 +281,17 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_messages_media :: nil
-    def seed_messages_media do
+    @spec seed_messages_media(Organization.t() | nil) :: nil
+    def seed_messages_media(organization \\ nil) do
+      organization = get_organization(organization)
+
       Repo.insert!(%MessageMedia{
         url: Faker.Avatar.image_url(),
         source_url: Faker.Avatar.image_url(),
         thumbnail: Faker.Avatar.image_url(),
         caption: "default caption",
-        provider_media_id: Faker.String.base64(10)
+        provider_media_id: Faker.String.base64(10),
+        organization_id: organization.id
       })
 
       Repo.insert!(%MessageMedia{
@@ -296,7 +299,8 @@ if Code.ensure_loaded?(Faker) do
         source_url: Faker.Avatar.image_url(),
         thumbnail: Faker.Avatar.image_url(),
         caption: Faker.String.base64(10),
-        provider_media_id: Faker.String.base64(10)
+        provider_media_id: Faker.String.base64(10),
+        organization_id: organization.id
       })
 
       Repo.insert!(%MessageMedia{
@@ -304,7 +308,8 @@ if Code.ensure_loaded?(Faker) do
         source_url: Faker.Avatar.image_url(),
         thumbnail: Faker.Avatar.image_url(),
         caption: Faker.String.base64(10),
-        provider_media_id: Faker.String.base64(10)
+        provider_media_id: Faker.String.base64(10),
+        organization_id: organization.id
       })
 
       Repo.insert!(%MessageMedia{
@@ -312,7 +317,8 @@ if Code.ensure_loaded?(Faker) do
         source_url: Faker.Avatar.image_url(),
         thumbnail: Faker.Avatar.image_url(),
         caption: Faker.String.base64(10),
-        provider_media_id: Faker.String.base64(10)
+        provider_media_id: Faker.String.base64(10),
+        organization_id: organization.id
       })
     end
 
@@ -486,7 +492,7 @@ if Code.ensure_loaded?(Faker) do
 
       seed_messages(organization)
 
-      seed_messages_media()
+      seed_messages_media(organization)
 
       seed_flows(organization)
 

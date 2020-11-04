@@ -72,5 +72,9 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
     alter table(:flow_revisions) do
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
     end
+
+    alter table(:messages_media) do
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+    end
   end
 end
