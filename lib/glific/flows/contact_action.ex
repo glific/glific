@@ -94,6 +94,7 @@ defmodule Glific.Flows.ContactAction do
         session_template,
         %{
           receiver_id: context.contact_id,
+          flow_id: context.flow_id,
           send_at: DateTime.add(DateTime.utc_now(), context.delay)
         }
       )
