@@ -236,7 +236,7 @@ defmodule Glific.Repo do
   @spec prepare_query(atom(), Ecto.Query.t(), Keyword.t()) :: {Ecto.Query.t(), Keyword.t()}
   def prepare_query(_operation, query, opts) do
     cond do
-      opts[:skip_organization_id] || opts[:schema_migration] || is_oban_query?(query) ->
+      opts[:skip_organization_id] || opts[:schema_migration] || is_external_query?(query) ->
         {query, opts}
 
       organization_id = opts[:organization_id] ->
@@ -247,10 +247,11 @@ defmodule Glific.Repo do
     end
   end
 
-  @spec is_oban_query?(Ecto.Query.t()) :: boolean()
-  defp is_oban_query?(query),
+  @spec is_external_query?(Ecto.Query.t()) :: boolean()
+  defp is_external_query?(query),
     do: !is_nil(query.from) and
-  String.contains?(elem(query.from.source, 0), "oban")
+  String.contains?(elem(query.from.source, 0), ["oban", "fun_"])
+
 
   @organization_key {__MODULE__, :organization_id}
 

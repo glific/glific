@@ -411,8 +411,8 @@ defmodule Glific.Partners do
       Credential
       |> where([c], c.organization_id == ^organization.id)
       |> where([c], c.is_active == true)
-      |> Repo.preload(:provider)
-      |> Repo.all()
+      |> preload(:provider)
+      |> Repo.all(skip_organization_id: true)
 
     services_map =
       Enum.reduce(credentials, %{}, fn credential, acc ->
