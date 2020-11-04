@@ -99,6 +99,8 @@ defmodule Glific.MessagesTest do
         |> Map.merge(attrs)
         |> Messages.create_message()
 
+        session_uuid = Messages.get_session_uuid(message|> Repo.preload([:sender]))
+        message = message|> Map.put(:session_uuid, session_uuid)
       message
     end
 
@@ -142,7 +144,8 @@ defmodule Glific.MessagesTest do
           organization_id: sender.organization_id
         })
         |> Messages.create_message()
-
+      session_uuid = Messages.get_session_uuid(message|> Repo.preload([:sender]))
+      message = message|> Map.put(:session_uuid, session_uuid)
       assert [message] ==
                Messages.list_messages(%{filter: Map.merge(attrs, %{sender: sender.name})})
 

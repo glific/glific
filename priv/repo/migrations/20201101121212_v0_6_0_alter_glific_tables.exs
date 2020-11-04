@@ -10,6 +10,8 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
 
     flow_revisions()
 
+    messages()
+
     add_organization_id()
   end
 
@@ -46,6 +48,13 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
 
     create unique_index(:flow_results, [:contact_id, :flow_id, :flow_version])
     create index(:flow_results, [:contact_id, :organization_id])
+  end
+
+  defp messages do
+    alter table(:messages) do
+      # it will be null for regular messages
+      add :flow_id, references(:flows, on_delete: :nilify_all), null: true
+    end
   end
 
   defp add_organization_id do
