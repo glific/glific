@@ -18,10 +18,11 @@ defmodule Glific.Flows.FlowContext do
     Flows.Node,
     Messages,
     Messages.Message,
+    Partners.Organization,
     Repo
   }
 
-  @required_fields [:contact_id, :flow_id, :flow_uuid, :status]
+  @required_fields [:contact_id, :flow_id, :flow_uuid, :status, :organization_id]
   @optional_fields [
     :node_uuid,
     :parent_id,
@@ -47,6 +48,8 @@ defmodule Glific.Flows.FlowContext do
           flow_id: non_neg_integer | nil,
           flow_uuid: Ecto.UUID.t() | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           status: String.t() | nil,
           parent_id: non_neg_integer | nil,
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -84,6 +87,7 @@ defmodule Glific.Flows.FlowContext do
 
     belongs_to :contact, Contact
     belongs_to :flow, Flow
+    belongs_to :organization, Organization
     belongs_to :parent, FlowContext, foreign_key: :parent_id
 
     timestamps(type: :utc_datetime)
@@ -285,6 +289,7 @@ defmodule Glific.Flows.FlowContext do
         results: %{},
         flow_id: flow.id,
         flow: flow,
+        organization_id: flow.organization_id,
         uuid_map: flow.uuid_map,
         delay: current_delay
       })

@@ -35,7 +35,7 @@ defmodule Glific.Flows.ExitTest do
     assert_raise ArgumentError, fn -> Exit.process(json, %{}, node) end
   end
 
-  test "execute when the destination node is nil" do
+  test "execute when the destination node is nil", attrs do
     exit_uuid = Ecto.UUID.generate()
     node = %Node{uuid: "Test UUID"}
     json = %{"uuid" => exit_uuid, "destination_uuid" => nil}
@@ -46,7 +46,8 @@ defmodule Glific.Flows.ExitTest do
         contact_id: 1,
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
-        uuid_map: %{}
+        uuid_map: %{},
+        organization_id: attrs.organization_id
       })
 
     {exit, _uuid_map} = Exit.process(json, %{}, node)
@@ -60,7 +61,7 @@ defmodule Glific.Flows.ExitTest do
 
   # lets set up a node where the execute fails. A lot easier for us to test that
   # exit works as normal and sends it to the right place
-  test "execute when the destination node is valid " do
+  test "execute when the destination node is valid ", attrs do
     exit_uuid = Ecto.UUID.generate()
     node_uuid = Ecto.UUID.generate()
     node = %Node{uuid: node_uuid, actions: [], router: nil}
@@ -75,7 +76,8 @@ defmodule Glific.Flows.ExitTest do
         contact_id: 1,
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
-        uuid_map: uuid_map
+        uuid_map: uuid_map,
+        organization_id: attrs.organization_id
       })
 
     result = Exit.execute(exit, context, ["will this disappear"])
