@@ -543,7 +543,7 @@ defmodule Glific.Partners do
       |> Credential.changeset(attrs)
       |> Repo.update()
 
-    if credential.provider.shortcode == "bigquery" and credential.provider.is_active == true do
+    if credential.provider.shortcode == "bigquery" do
       org = credential.organization |> Repo.preload(:contact)
       Bigquery.bigquery_dataset(org.contact.phone, org.id)
     end
