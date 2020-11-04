@@ -22,9 +22,12 @@ defmodule Glific.Flows.FlowContextTest do
   }
 
   def flow_context_fixture(attrs \\ %{}) do
+    contact = Fixtures.contact_fixture()
+
     {:ok, flow_context} =
       attrs
-      |> Map.put(:contact_id, Fixtures.contact_fixture().id)
+      |> Map.put(:contact_id, contact.id)
+      |> Map.put(:organization_id, contact.organization_id)
       |> Enum.into(@valid_attrs)
       |> FlowContext.create_flow_context()
 
@@ -33,20 +36,21 @@ defmodule Glific.Flows.FlowContextTest do
     |> Repo.preload(:flow)
   end
 
-  test "create_flow_context/1 will create a new flow context" do
+  test "create_flow_context/1 will create a new flow context", attrs do
     # create a simple flow context
     {:ok, context} =
       FlowContext.create_flow_context(%{
         contact_id: Fixtures.contact_fixture().id,
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
-        uuid_map: %{}
+        uuid_map: %{},
+        organization_id: attrs.organization_id
       })
 
     assert context.id != nil
   end
 
-  test "reset_context/1 will reset the context" do
+  test "reset_context/1 will reset the context", attrs do
     node = %Node{uuid: Ecto.UUID.generate()}
 
     json = %{
@@ -62,7 +66,8 @@ defmodule Glific.Flows.FlowContextTest do
         contact_id: Fixtures.contact_fixture().id,
         flow_id: 1,
         flow_uuid: json["flow"]["uuid"],
-        uuid_map: uuid_map
+        uuid_map: uuid_map,
+        organization_id: attrs.organization_id
       })
 
     FlowContext.reset_context(context_2)

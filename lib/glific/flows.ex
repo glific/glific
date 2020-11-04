@@ -96,7 +96,8 @@ defmodule Glific.Flows do
       {:ok, _} =
         FlowRevision.create_flow_revision(%{
           definition: FlowRevision.default_definition(flow),
-          flow_id: flow.id
+          flow_id: flow.id,
+          organization_id: flow.organization_id
         })
 
       {:ok, flow}
@@ -217,7 +218,11 @@ defmodule Glific.Flows do
 
     {:ok, revision} =
       %FlowRevision{}
-      |> FlowRevision.changeset(%{definition: definition, flow_id: flow.id})
+      |> FlowRevision.changeset(%{
+        definition: definition,
+        flow_id: flow.id,
+        organization_id: flow.organization_id
+      })
       |> Repo.insert()
 
     # Now also delete the caches for the draft status, so we can reload

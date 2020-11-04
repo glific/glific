@@ -11,6 +11,8 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
     flow_revisions()
 
     messages()
+
+    add_organization_id()
   end
 
   defp flow_revisions do
@@ -52,6 +54,27 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
     alter table(:messages) do
       # it will be null for regular messages
       add :flow_id, references(:flows, on_delete: :nilify_all), null: true
+    end
+  end
+
+  defp add_organization_id do
+    # foreign key to organization restricting scope of this table to this organization only
+    # keeping the field nullable so that migration can run with production data
+
+    alter table(:flow_contexts) do
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+    end
+
+    alter table(:flow_counts) do
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+    end
+
+    alter table(:flow_revisions) do
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+    end
+
+    alter table(:messages_media) do
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
     end
   end
 end
