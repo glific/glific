@@ -157,7 +157,7 @@ defmodule Glific.Partners do
     Organization
     |> where([q], q.is_active == true)
     |> select([q], [q.id, q.name])
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(%{}, fn row, acc ->
       [id, value] = row
       Map.put(acc, id, value)
@@ -169,11 +169,13 @@ defmodule Glific.Partners do
   """
   @spec count_organizations(map()) :: integer
   def count_organizations(args \\ %{}),
-    do: Repo.count_filter(args,
-          Organization,
-          &filter_organization_with/2,
-          [skip_organization_id: true]
-        )
+    do:
+      Repo.count_filter(
+        args,
+        Organization,
+        &filter_organization_with/2,
+        skip_organization_id: true
+      )
 
   # codebeat:disable[ABC]
   @spec filter_organization_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
@@ -218,7 +220,7 @@ defmodule Glific.Partners do
 
   """
   @spec get_organization!(integer) :: Organization.t()
-  def get_organization!(id), do: Repo.get!(Organization, id)
+  def get_organization!(id), do: Repo.get!(Organization, id, skip_organization_id: true)
 
   @doc ~S"""
   Creates a organization.
@@ -236,7 +238,7 @@ defmodule Glific.Partners do
   def create_organization(attrs \\ %{}) do
     %Organization{}
     |> Organization.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(skip_organization_id: true)
   end
 
   @doc ~S"""
@@ -259,7 +261,7 @@ defmodule Glific.Partners do
 
     organization
     |> Organization.changeset(attrs)
-    |> Repo.update()
+    |> Repo.update(skip_organization_id: true)
   end
 
   @doc ~S"""
@@ -277,7 +279,7 @@ defmodule Glific.Partners do
   @spec delete_organization(Organization.t()) ::
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def delete_organization(%Organization{} = organization) do
-    Repo.delete(organization)
+    Repo.delete(organization, skip_organization_id: true)
   end
 
   @doc ~S"""

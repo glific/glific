@@ -65,9 +65,10 @@ defmodule Glific.Repo do
           map(),
           atom(),
           (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
-          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t())
+          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
+          Keyword.t()
         ) :: [any]
-  def list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn) do
+  def list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn, repo_opts \\ []) do
     args
     |> Enum.reduce(object, fn
       {:opts, opts}, query ->
@@ -81,7 +82,7 @@ defmodule Glific.Repo do
       _, query ->
         query
     end)
-    |> Repo.all()
+    |> Repo.all(repo_opts)
   end
 
   @doc """
@@ -92,8 +93,8 @@ defmodule Glific.Repo do
   @spec count_filter(
           map(),
           atom(),
-    (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
-  Keyword.t()
+          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
+          Keyword.t()
         ) :: integer
   def count_filter(args \\ %{}, object, filter_with_fn, opts \\ []) do
     args
@@ -233,9 +234,9 @@ defmodule Glific.Repo do
 
   @doc false
   @spec prepare_query(atom(), Ecto.Query.t(), Keyword.t()) :: {Ecto.Query.t(), Keyword.t()}
-  def prepare_query(_operation, query, opts) do
+  def prepare_query(operation, query, opts) do
     cond do
-      opts[:skip_organization_id] || opts[:schema_migration] ->
+      opts[:skip_organization_id] || opts[:schema_migration] || is_oban_query?(operation, query) ->
         {query, opts}
 
       organization_id = opts[:organization_id] ->
@@ -245,6 +246,13 @@ defmodule Glific.Repo do
         IO.inspect(query)
         raise "expected organization_id or skip_organization_id to be set"
     end
+  end
+
+  @spec is_oban_query?(atom(), Ecto.Query.t()) :: boolean()
+  defp is_oban_query?(operation, query) do
+    Repo.to_sql(operation, query)
+    |> elem(0)
+    |> String.contains?(["oban_jobs"])
   end
 
   @organization_key {__MODULE__, :organization_id}

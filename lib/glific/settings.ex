@@ -18,7 +18,10 @@ defmodule Glific.Settings do
   """
   @spec list_languages(map()) :: [Language.t(), ...]
   def list_languages(args \\ %{}),
-    do: Repo.list_filter(args, Language, &Repo.opts_with_label/2, &filter_with/2)
+    do:
+      Repo.list_filter(args, Language, &Repo.opts_with_label/2, &filter_with/2,
+        skip_organization_id: true
+      )
 
   @doc """
   Return the count of languages, using the same filter as list_languages

@@ -13,12 +13,21 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
   end
 
   defp update_exisiting_providers() do
-    {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
-    {:ok, glifproxy} = Repo.fetch_by(Provider, %{shortcode: "glifproxy"})
-    {:ok, dialogflow} = Repo.fetch_by(Provider, %{shortcode: "dialogflow"})
-    {:ok, goth} = Repo.fetch_by(Provider, %{shortcode: "goth"})
-    {:ok, chatbase} = Repo.fetch_by(Provider, %{shortcode: "chatbase"})
-    {:ok, google_cloud_storage} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
+    {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"}, skip_organization_id: true)
+
+    {:ok, glifproxy} =
+      Repo.fetch_by(Provider, %{shortcode: "glifproxy"}, skip_organization_id: true)
+
+    {:ok, dialogflow} =
+      Repo.fetch_by(Provider, %{shortcode: "dialogflow"}, skip_organization_id: true)
+
+    {:ok, goth} = Repo.fetch_by(Provider, %{shortcode: "goth"}, skip_organization_id: true)
+
+    {:ok, chatbase} =
+      Repo.fetch_by(Provider, %{shortcode: "chatbase"}, skip_organization_id: true)
+
+    {:ok, google_cloud_storage} =
+      Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"}, skip_organization_id: true)
 
     updated_gupshup_keys =
       Map.merge(gupshup.keys, %{
