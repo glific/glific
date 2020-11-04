@@ -31,8 +31,10 @@ defmodule Glific.Partners do
   """
   @spec list_providers(map()) :: [%Provider{}, ...]
   def list_providers(args \\ %{}),
-    do: Repo.list_filter(args, Provider, &Repo.opts_with_name/2,
-          &filter_provider_with/2, skip_organization_id: true)
+    do:
+      Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2,
+        skip_organization_id: true
+      )
 
   @doc """
   Return the count of providers, using the same filter as list_providers
@@ -148,8 +150,10 @@ defmodule Glific.Partners do
   """
   @spec list_organizations(map()) :: [Organization.t()]
   def list_organizations(args \\ %{}),
-    do: Repo.list_filter(args, Organization, &Repo.opts_with_name/2,
-          &filter_organization_with/2, skip_organization_id: true)
+    do:
+      Repo.list_filter(args, Organization, &Repo.opts_with_name/2, &filter_organization_with/2,
+        skip_organization_id: true
+      )
 
   @doc """
   List of organizations that are active within the system
@@ -537,7 +541,8 @@ defmodule Glific.Partners do
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
     # when updating the bsp credentials fetch list of opted in contacts
-    credential = credential |> Repo.preload([:provider, :organization], skip_organization_id: true)
+    credential =
+      credential |> Repo.preload([:provider, :organization], skip_organization_id: true)
 
     if credential.provider.group == "bsp" do
       fetch_opted_in_contacts(attrs)

@@ -111,9 +111,7 @@ defmodule Glific do
       end)
       |> Enum.into(%{})
 
-      def atomize_keys(value), do: value
+  def atomize_keys(value), do: value
 
-      def stacktrace, do:
-      IO.inspect(Process.info(self(), :current_stacktrace), label: "STACKTRACE")
-
+  def stacktrace, do: IO.inspect(Process.info(self(), :current_stacktrace), label: "STACKTRACE")
 end

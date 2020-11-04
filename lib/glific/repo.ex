@@ -249,9 +249,9 @@ defmodule Glific.Repo do
 
   @spec is_external_query?(Ecto.Query.t()) :: boolean()
   defp is_external_query?(query),
-    do: !is_nil(query.from) and
-  String.contains?(elem(query.from.source, 0), ["oban", "fun_"])
-
+    do:
+      !is_nil(query.from) and
+        String.contains?(elem(query.from.source, 0), ["oban", "fun_"])
 
   @organization_key {__MODULE__, :organization_id}
 

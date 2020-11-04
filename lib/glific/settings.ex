@@ -28,9 +28,7 @@ defmodule Glific.Settings do
   """
   @spec count_languages(map()) :: integer
   def count_languages(args \\ %{}),
-    do: Repo.count_filter(args, Language, &filter_with/2,
-          skip_organization_id: true
-        )
+    do: Repo.count_filter(args, Language, &filter_with/2, skip_organization_id: true)
 
   # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
