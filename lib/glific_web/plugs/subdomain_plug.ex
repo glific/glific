@@ -25,6 +25,8 @@ if Code.ensure_loaded?(Plug) do
     @doc false
     @spec call(Conn.t(), map()) :: Conn.t()
     def call(conn, config) do
+      organization_id = get_subdomain(conn, config)
+      Glific.Repo.put_organization_id(organization_id)
       Plug.put_organization(conn, get_subdomain(conn, config), config)
     end
 
