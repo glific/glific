@@ -7,6 +7,7 @@ defmodule Glific.Messages.Message do
 
   alias Glific.{
     Contacts.Contact,
+    Flows.Flow,
     Messages.MessageMedia,
     Partners.Organization,
     Tags.Tag,
@@ -35,6 +36,8 @@ defmodule Glific.Messages.Message do
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           user_id: non_neg_integer | nil,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
+          flow_id: non_neg_integer | nil,
+          flow_object: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           media_id: non_neg_integer | nil,
           media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -71,6 +74,7 @@ defmodule Glific.Messages.Message do
     :send_at,
     :sent_at,
     :user_id,
+    :flow_id,
     :session_uuid
   ]
 
@@ -100,6 +104,7 @@ defmodule Glific.Messages.Message do
     belongs_to :receiver, Contact
     belongs_to :contact, Contact
     belongs_to :user, User
+    belongs_to :flow_object, Flow, foreign_key: :flow_id
     belongs_to :media, MessageMedia
     belongs_to :organization, Organization
 

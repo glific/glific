@@ -60,6 +60,7 @@ defmodule Glific.Flows.ContactActionTest do
       |> Repo.one()
 
     assert message.body == "This is test message"
+    assert message.flow_id == context.flow_id
   end
 
   test "send message template", attrs do
@@ -96,5 +97,6 @@ defmodule Glific.Flows.ContactActionTest do
       |> Repo.one()
 
     assert message.body == "Your OTP for var_1 is var_2. This is valid for var_3."
+    assert message.flow_id == context.flow_id
   end
 end

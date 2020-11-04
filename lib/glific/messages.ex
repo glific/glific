@@ -315,6 +315,7 @@ defmodule Glific.Messages do
       sender_id: Partners.organization_contact_id(session_template.organization_id),
       receiver_id: args[:receiver_id],
       send_at: args[:send_at],
+      flow_id: args[:flow_id],
       organization_id: session_template.organization_id
     }
 
