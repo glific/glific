@@ -232,9 +232,9 @@ defmodule Glific.Repo do
 
   @doc false
   @spec prepare_query(atom(), Ecto.Query.t(), Keyword.t()) :: {Ecto.Query.t(), Keyword.t()}
-  def prepare_query(_operation, query, opts) do
+  def prepare_query(operation, query, opts) do
     cond do
-      opts[:skip_organization_id] || opts[:schema_migration] ->
+      opts[:skip_organization_id] || opts[:schema_migration] || is_oban_query?(operation, query) ->
         {query, opts}
 
       organization_id = opts[:organization_id] ->
@@ -243,6 +243,13 @@ defmodule Glific.Repo do
       true ->
         raise "expected organization_id or skip_organization_id to be set"
     end
+  end
+
+  defp is_oban_query?(operation, query) do
+    {query_string, _meta} =
+      Ecto.Adapters.SQL.to_sql(operation, Glific.Repo, query)
+      |> elem(0)
+      |> String.contains?(["oban_jobs"])
   end
 
   @organization_key {__MODULE__, :organization_id}
