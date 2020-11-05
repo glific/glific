@@ -259,7 +259,7 @@ defmodule Glific.Repo do
     "MessageTag",
     "Organization",
     "Provider",
-    "UserGroup",
+    "UserGroup"
   ]
 
   @spec is_external_query?(Ecto.Query.t()) :: boolean()
