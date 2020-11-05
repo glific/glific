@@ -411,6 +411,47 @@ defmodule Glific.Flows do
     process_contact_flow(group.contacts, flow, status)
   end
 
+  @doc """
+  Make a copy of a flow
+  """
+  @spec copy_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, String.t()}
+  def copy_flow(%Flow{} = flow, attrs) do
+    attrs =
+      attrs
+      |> Map.merge(%{
+        version_number: flow.version_number,
+        flow_type: flow.flow_type,
+        organization_id: flow.organization_id,
+        uuid: Ecto.UUID.generate()
+      })
+
+    with {:ok, flow_copy} <-
+           %Flow{}
+           |> Flow.changeset(attrs)
+           |> Repo.insert() do
+      copy_flow_revision(flow, flow_copy)
+
+      {:ok, flow_copy}
+    end
+  end
+
+  @spec copy_flow_revision(Flow.t(), Flow.t()) :: {:ok, FlowRevision.t()} | {:error, String.t()}
+  defp copy_flow_revision(flow, flow_copy) do
+    with {:ok, latest_flow_revision} <-
+           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
+      definition_copy =
+        latest_flow_revision.definition
+        |> Map.merge(%{"uuid" => flow_copy.uuid})
+
+      {:ok, _} =
+        FlowRevision.create_flow_revision(%{
+          definition: definition_copy,
+          flow_id: flow_copy.id,
+          organization_id: flow_copy.organization_id
+        })
+    end
+  end
+
   @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
   defp process_contact_flow(contacts, flow, status) do
     _list =
