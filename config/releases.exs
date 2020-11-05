@@ -42,7 +42,7 @@ config :glific, GlificWeb.Endpoint,
 config :appsignal, :config,
   name: "Glific",
   # we need to make this dynamic at some point
-  hostname:System.get_env("APPSIGNAL_HOSTNAME"),
+  hostname: System.get_env("APPSIGNAL_HOSTNAME"),
   active: true,
   revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: System.get_env("APPSIGNAL_PUSH_API_KEY")
