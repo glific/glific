@@ -160,4 +160,35 @@ defmodule Glific.Flows.FlowContextTest do
     assert FlowContext.get_result_value(flow_context, "@results.test_key") ==
              %{"category" => "Default Category", "input" => "test_input"}
   end
+
+  test "delete_completed_flow_contexts will delete all completed contexts older than a day" do
+    flow_context =
+      flow_context_fixture(%{
+        completed_at: DateTime.utc_now()
+      })
+
+    yesterday = DateTime.utc_now() |> DateTime.add(-25 * 60 * 60, :second)
+
+    FlowContext
+    |> where([f], f.id == ^flow_context.id)
+    |> Repo.update_all(set: [inserted_at: yesterday])
+
+    FlowContext.delete_completed_flow_contexts()
+
+    assert {:error, _} = Glific.Repo.fetch(FlowContext, flow_context.id)
+  end
+
+  test "delete_old_flow_contexts will delete all contexts older than 30 days" do
+    flow_context = flow_context_fixture()
+
+    last_month_date = DateTime.utc_now() |> DateTime.add(-31 * 24 * 60 * 60, :second)
+
+    FlowContext
+    |> where([f], f.id == ^flow_context.id)
+    |> Repo.update_all(set: [inserted_at: last_month_date])
+
+    # FlowContext.delete_old_flow_contexts()
+
+    assert {:error, _} = Glific.Repo.fetch(FlowContext, flow_context.id)
+  end
 end
