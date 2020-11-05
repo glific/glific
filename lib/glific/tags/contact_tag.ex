@@ -4,11 +4,17 @@ defmodule Glific.Tags.ContactTag do
   """
 
   alias __MODULE__
-  alias Glific.{Contacts.Contact, Tags.Tag}
+
+  alias Glific.{
+    Contacts.Contact,
+    Tags.Tag,
+    Partners.Organization
+  }
+
   use Ecto.Schema
   import Ecto.Changeset
 
-  @required_fields [:contact_id, :tag_id]
+  @required_fields [:contact_id, :tag_id, :organization_id]
   @optional_fields [:value]
 
   @type t() :: %__MODULE__{
@@ -16,7 +22,9 @@ defmodule Glific.Tags.ContactTag do
           id: non_neg_integer | nil,
           value: String.t() | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
-          tag: Tag.t() | Ecto.Association.NotLoaded.t() | nil
+          tag: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "contacts_tags" do
@@ -24,6 +32,7 @@ defmodule Glific.Tags.ContactTag do
 
     belongs_to :contact, Contact
     belongs_to :tag, Tag
+    belongs_to :organization, Organization
   end
 
   @doc """
