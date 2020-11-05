@@ -25,8 +25,6 @@ if Code.ensure_loaded?(Plug) do
     @doc false
     @spec call(Conn.t(), map()) :: Conn.t()
     def call(conn, config) do
-      organization_id = get_subdomain(conn, config)
-      Glific.Repo.put_organization_id(organization_id)
       Plug.put_organization(conn, get_subdomain(conn, config), config)
     end
 
@@ -41,10 +39,11 @@ if Code.ensure_loaded?(Plug) do
          ) do
       root_host = endpoint.config(:url)[:host]
 
-      if host in [root_host, "localhost", "127.0.0.1", "0.0.0.0"] do
+      if host in [root_host, "localhost", "127.0.0.1", "0.0.0.0", "www.example.com"] do
         nil
       else
-        String.replace(host, ~r/.?#{root_host}/, "")
+        host
+        |> String.replace(~r/.?#{root_host}/, "")
         |> String.replace("api.", "")
       end
     end

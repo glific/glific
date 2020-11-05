@@ -249,17 +249,18 @@ defmodule Glific.Repo do
   end
 
   @spec is_external_query?(Ecto.Query.t()) :: boolean()
-  defp is_external_query?(query),
-    do:
-      !is_nil(query.from) and
-        String.contains?(elem(query.from.source, 0), ["oban", "fun_"])
+  defp is_external_query?(query) do
+    !is_nil(query.from) and
+    String.contains?(to_string(elem(query.from.source, 1)), ["Oban", "FunWith", "Language", "Provider"])
+  end
 
   @organization_key {__MODULE__, :organization_id}
 
   @doc false
   @spec put_organization_id(non_neg_integer) :: non_neg_integer | nil
-  def put_organization_id(organization_id),
-    do: Process.put(@organization_key, organization_id)
+  def put_organization_id(organization_id) do
+    Process.put(@organization_key, organization_id)
+  end
 
   @doc false
   @spec get_organization_id() :: non_neg_integer | nil

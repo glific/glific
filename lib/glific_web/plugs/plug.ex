@@ -41,12 +41,14 @@ if Code.ensure_loaded?(Plug) do
         conn
       else
         conn = Conn.assign(conn, @raw_organization_assign, organization)
-        organization = organization_handler(organization, config.organization_handler)
+        organization_id = organization_handler(organization, config.organization_handler)
+
+        Glific.Repo.put_organization_id(organization_id)
 
         if GlificWeb.Tenants.reserved_organization?(organization) do
           conn
         else
-          Conn.assign(conn, config.assign, organization)
+          Conn.assign(conn, config.assign, organization_id)
         end
       end
     end

@@ -113,5 +113,7 @@ defmodule Glific do
 
   def atomize_keys(value), do: value
 
-  def stacktrace, do: IO.inspect(Process.info(self(), :current_stacktrace), label: "STACKTRACE")
+  def stacktrace(label \\ "StackTrace") do
+    IO.inspect(Process.info(self(), :current_stacktrace), label: label)
+  end
 end
