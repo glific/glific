@@ -428,8 +428,16 @@ defmodule Glific.Flows do
     with {:ok, flow_copy} <-
            %Flow{}
            |> Flow.changeset(attrs)
-           |> Repo.insert(),
-         {:ok, latest_flow_revision} <-
+           |> Repo.insert() do
+      copy_flow_revision(flow, flow_copy)
+
+      {:ok, flow_copy}
+    end
+  end
+
+  @spec copy_flow(Flow.t(), Flow.t()) :: {:ok, FlowRevision.t()} | {:error, String.t()}
+  defp copy_flow_revision(flow, flow_copy) do
+    with {:ok, latest_flow_revision} <-
            Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
       definition_copy =
         latest_flow_revision.definition
@@ -439,10 +447,8 @@ defmodule Glific.Flows do
         FlowRevision.create_flow_revision(%{
           definition: definition_copy,
           flow_id: flow_copy.id,
-          organization_id: flow.organization_id
+          organization_id: flow_copy.organization_id
         })
-
-      {:ok, flow_copy}
     end
   end
 

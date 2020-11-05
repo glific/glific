@@ -318,7 +318,8 @@ defmodule Glific.FLowsTest do
       assert {:ok, copied_flow_revision} =
                Repo.fetch_by(FlowRevision, %{flow_id: copied_flow.id, revision_number: 0})
 
-      assert copied_flow_revision.definition == flow_revision.definition
+      assert copied_flow_revision.definition ==
+               flow_revision.definition |> Map.merge(%{"uuid" => copied_flow.uuid})
 
       # copy a flow without a name gives an error
       assert {:error, %Ecto.Changeset{}} = Flows.copy_flow(flow, %{})
