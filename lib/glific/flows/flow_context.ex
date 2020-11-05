@@ -161,7 +161,9 @@ defmodule Glific.Flows.FlowContext do
       [%{"message" => body, "date" => now} | Map.get(context, type)]
       |> Enum.slice(0..@max_message_len)
 
-    {:ok, context} = update_flow_context(context, %{type => messages})
+    # since we have recd a message, we also ensure that we are not going to be woken
+    # up by a timer if present.
+    {:ok, context} = update_flow_context(context, %{type => messages, wakeup_at: nil})
     context
   end
 
