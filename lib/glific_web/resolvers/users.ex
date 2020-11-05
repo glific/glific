@@ -78,7 +78,11 @@ defmodule GlificWeb.Resolvers.Users do
     with {:ok, user} <- Repo.fetch_by(User, %{id: id, organization_id: user.organization_id}),
          {:ok, user} <- Users.update_user(user, params) do
       if Map.has_key?(params, :group_ids) do
-        Groups.update_user_groups(%{user_id: user.id, group_ids: params.group_ids})
+        Groups.update_user_groups(%{
+          user_id: user.id,
+          group_ids: params.group_ids,
+          organization_id: user.organization_id
+        })
       end
 
       {:ok, %{user: user}}

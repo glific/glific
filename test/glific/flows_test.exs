@@ -289,8 +289,19 @@ defmodule Glific.FLowsTest do
       group = Fixtures.group_fixture()
       contact = Fixtures.contact_fixture()
       contact2 = Fixtures.contact_fixture()
-      Groups.create_contact_group(%{group_id: group.id, contact_id: contact.id})
-      Groups.create_contact_group(%{group_id: group.id, contact_id: contact2.id})
+
+      Groups.create_contact_group(%{
+        group_id: group.id,
+        contact_id: contact.id,
+        organization_id: attrs.organization_id
+      })
+
+      Groups.create_contact_group(%{
+        group_id: group.id,
+        contact_id: contact2.id,
+        organization_id: attrs.organization_id
+      })
+
       {:ok, flow} = Flows.start_group_flow(flow, group)
       first_action = hd(hd(flow.nodes).actions)
 

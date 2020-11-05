@@ -490,7 +490,11 @@ defmodule Glific.TagsTest do
       {:ok, _template_tag} = Tags.create_template_tag(attrs)
 
       assert {:ok, %TemplateTag{}} =
-               Tags.create_template_tag(%{template_id: template.id, tag_id: tag.id})
+               Tags.create_template_tag(%{
+                 template_id: template.id,
+                 tag_id: tag.id,
+                 organization_id: organization_id
+               })
     end
   end
 end
