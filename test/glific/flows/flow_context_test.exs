@@ -187,7 +187,7 @@ defmodule Glific.Flows.FlowContextTest do
     |> where([f], f.id == ^flow_context.id)
     |> Repo.update_all(set: [inserted_at: last_month_date])
 
-    # FlowContext.delete_old_flow_contexts()
+    FlowContext.delete_old_flow_contexts()
 
     assert {:error, _} = Glific.Repo.fetch(FlowContext, flow_context.id)
   end
