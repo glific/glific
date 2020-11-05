@@ -248,11 +248,25 @@ defmodule Glific.Repo do
     end
   end
 
+  @external_tables [
+    "Oban",
+    "FunWith",
+    # Glific Tables
+    "ContactGroup",
+    "ContactTag",
+    "Language",
+    "Location",
+    "MessageTag",
+    "Organization",
+    "Provider",
+    "UserGroup",
+  ]
+
   @spec is_external_query?(Ecto.Query.t()) :: boolean()
-  defp is_external_query?(query) do
-    !is_nil(query.from) and
-    String.contains?(to_string(elem(query.from.source, 1)), ["Oban", "FunWith", "Language", "Provider"])
-  end
+  defp is_external_query?(%{from: %{source: source}} = _query) when is_tuple(source),
+    do: String.contains?(to_string(elem(source, 1)), @external_tables)
+
+  defp is_external_query?(_query), do: false
 
   @organization_key {__MODULE__, :organization_id}
 
