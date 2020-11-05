@@ -406,15 +406,29 @@ defmodule Glific.Flows.FlowContext do
   def get_result_value(_context, value), do: value
 
   @doc """
-  Delete all the contexts which are older than a day
+  Delete all the completed contexts which are older than a day
   """
-  @spec delete_old_flow_contexts() :: :ok
-  def delete_old_flow_contexts() do
-
+  @spec delete_completed_flow_contexts() :: :ok
+  def delete_completed_flow_contexts() do
     yesterday = DateTime.utc_now() |> DateTime.add(-24 * 60 * 60, :second)
 
     FlowContext
-    |> where([fc], fc.updated_at < ^yesterday)
+    |> where([fc], fc.inserted_at < ^yesterday)
+    |> where([fc], not is_nil(fc.completed_at))
+    |> Repo.delete_all()
+
+    :ok
+  end
+
+  @doc """
+  Delete all the contexts which are older than 30 days
+  """
+  @spec delete_old_flow_contexts() :: :ok
+  def delete_old_flow_contexts() do
+    last_month_date = DateTime.utc_now() |> DateTime.add(-30 * 24 * 60 * 60, :second)
+
+    FlowContext
+    |> where([fc], fc.inserted_at < ^last_month_date)
     |> Repo.delete_all()
 
     :ok
