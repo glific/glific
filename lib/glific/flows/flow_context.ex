@@ -409,7 +409,7 @@ defmodule Glific.Flows.FlowContext do
   Delete all the completed contexts which are older than a day
   """
   @spec delete_completed_flow_contexts() :: :ok
-  def delete_completed_flow_contexts() do
+  def delete_completed_flow_contexts do
     yesterday = DateTime.utc_now() |> DateTime.add(-24 * 60 * 60, :second)
 
     FlowContext
@@ -424,7 +424,7 @@ defmodule Glific.Flows.FlowContext do
   Delete all the contexts which are older than 30 days
   """
   @spec delete_old_flow_contexts() :: :ok
-  def delete_old_flow_contexts() do
+  def delete_old_flow_contexts do
     last_month_date = DateTime.utc_now() |> DateTime.add(-30 * 24 * 60 * 60, :second)
 
     FlowContext
