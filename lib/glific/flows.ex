@@ -430,11 +430,14 @@ defmodule Glific.Flows do
            |> Flow.changeset(attrs)
            |> Repo.insert(),
          {:ok, latest_flow_revision} <-
-           FlowRevision
-           |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0}) do
+           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
+      definition_copy =
+        latest_flow_revision.definition
+        |> Map.merge(%{"uuid" => flow_copy.uuid})
+
       {:ok, _} =
         FlowRevision.create_flow_revision(%{
-          definition: latest_flow_revision.definition,
+          definition: definition_copy,
           flow_id: flow_copy.id,
           organization_id: flow.organization_id
         })
