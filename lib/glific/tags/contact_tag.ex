@@ -7,8 +7,8 @@ defmodule Glific.Tags.ContactTag do
 
   alias Glific.{
     Contacts.Contact,
-    Tags.Tag,
-    Partners.Organization
+    Partners.Organization,
+    Tags.Tag
   }
 
   use Ecto.Schema

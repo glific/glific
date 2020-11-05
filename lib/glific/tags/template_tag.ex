@@ -6,9 +6,9 @@ defmodule Glific.Tags.TemplateTag do
   alias __MODULE__
 
   alias Glific.{
+    Partners.Organization,
     Tags.Tag,
-    Templates.SessionTemplate,
-    Partners.Organization
+    Templates.SessionTemplate
   }
 
   use Ecto.Schema

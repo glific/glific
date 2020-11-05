@@ -6,8 +6,8 @@ defmodule Glific.Groups.UserGroup do
   alias Glific.{
     Groups.Group,
     Groups.UserGroup,
-    Users.User,
-    Partners.Organization
+    Partners.Organization,
+    Users.User
   }
 
   use Ecto.Schema
