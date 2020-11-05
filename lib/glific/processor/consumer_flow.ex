@@ -114,6 +114,10 @@ defmodule Glific.Processor.ConsumerFlow do
         %{uuid: context.flow_uuid}
       )
 
+    {:ok, message} =
+      message
+      |> Messages.update_message(%{flow_id: context.flow_id})
+
     context
     |> Map.merge(%{last_message: message})
     |> FlowContext.load_context(flow)

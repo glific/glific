@@ -133,8 +133,9 @@ defmodule GlificWeb.Resolvers.Messages do
   """
   @spec message_media(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def message_media(_, %{id: id}, _) do
-    with {:ok, message_media} <- Repo.fetch(MessageMedia, id),
+  def message_media(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, message_media} <-
+           Repo.fetch_by(MessageMedia, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{message_media: message_media}}
   end
 
@@ -167,8 +168,9 @@ defmodule GlificWeb.Resolvers.Messages do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def update_message_media(_, %{id: id, input: params}, _) do
-    with {:ok, message_media} <- Repo.fetch(MessageMedia, id),
+  def update_message_media(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, message_media} <-
+           Repo.fetch_by(MessageMedia, %{id: id, organization_id: user.organization_id}),
          {:ok, message_media} <- Messages.update_message_media(message_media, params) do
       {:ok, %{message_media: message_media}}
     end
@@ -177,8 +179,9 @@ defmodule GlificWeb.Resolvers.Messages do
   @doc false
   @spec delete_message_media(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_message_media(_, %{id: id}, _) do
-    with {:ok, message_media} <- Repo.fetch(MessageMedia, id),
+  def delete_message_media(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, message_media} <-
+           Repo.fetch_by(MessageMedia, %{id: id, organization_id: user.organization_id}),
          {:ok, message_media} <- Messages.delete_message_media(message_media) do
       {:ok, message_media}
     end

@@ -10,29 +10,44 @@ defmodule Glific.Flows.FlowRevision do
 
   alias Glific.{
     Flows.Flow,
+    Partners.Organization,
     Repo
   }
 
-  @required_fields [:definition, :flow_id]
-  @optional_fields [:revision_number, :status]
+  @required_fields [:definition, :flow_id, :organization_id]
+  @optional_fields [:revision_number, :status, :version]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           definition: map() | nil,
           revision_number: integer() | nil,
+          version: integer() | nil,
           status: String.t() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
   schema "flow_revisions" do
     field :definition, :map
+
+    # this value is only needed for revisions that are published at any point
+    # this basically allows us to map specific data to a specific flow versio
+    field :version, :integer, default: 0
+
     field :revision_number, :integer
+
+    # the values for status are: draft, published, archived
+    # archived is for versions which were published previously
     field :status, :string, default: "draft"
+
     belongs_to :flow, Flow
+    belongs_to :organization, Organization
+
     timestamps(type: :utc_datetime)
   end
 

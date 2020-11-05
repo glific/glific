@@ -42,7 +42,8 @@ defmodule Glific.Flows.ContactActionTest do
     attrs = %{
       flow_id: 1,
       flow_uuid: Ecto.UUID.generate(),
-      contact_id: contact.id
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
     }
 
     # preload contact
@@ -60,6 +61,7 @@ defmodule Glific.Flows.ContactActionTest do
       |> Repo.one()
 
     assert message.body == "This is test message"
+    assert message.flow_id == context.flow_id
   end
 
   test "send message template", attrs do
@@ -96,5 +98,6 @@ defmodule Glific.Flows.ContactActionTest do
       |> Repo.one()
 
     assert message.body == "Your OTP for var_1 is var_2. This is valid for var_3."
+    assert message.flow_id == context.flow_id
   end
 end

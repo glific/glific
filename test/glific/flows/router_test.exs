@@ -13,6 +13,28 @@ defmodule Glific.Flows.RouterTest do
     Router
   }
 
+  @valid_attrs %{
+    flow_id: 1,
+    flow_uuid: Ecto.UUID.generate(),
+    uuid_map: %{},
+    node_uuid: Ecto.UUID.generate()
+  }
+
+  def flow_context_fixture(attrs \\ %{}) do
+    contact = Fixtures.contact_fixture()
+
+    {:ok, flow_context} =
+      attrs
+      |> Map.put(:contact_id, contact.id)
+      |> Map.put(:organization_id, contact.organization_id)
+      |> Enum.into(@valid_attrs)
+      |> FlowContext.create_flow_context()
+
+    flow_context
+    |> Repo.preload(:contact)
+    |> Repo.preload(:flow)
+  end
+
   test "process extracts the right values from json" do
     json = %{
       "operand" => "@input.text",
@@ -139,13 +161,7 @@ defmodule Glific.Flows.RouterTest do
     {router, uuid_map} = Router.process(json, uuid_map, node)
 
     # create a simple flow context
-    {:ok, context} =
-      FlowContext.create_flow_context(%{
-        contact_id: 1,
-        flow_id: 1,
-        flow_uuid: Ecto.UUID.generate(),
-        uuid_map: uuid_map
-      })
+    context = flow_context_fixture(%{uuid_map: uuid_map})
 
     message = Messages.create_temp_message(Fixtures.get_org_id(), "23")
     result = Router.execute(router, context, [message])
@@ -154,14 +170,7 @@ defmodule Glific.Flows.RouterTest do
     assert result == {:ok, nil, []}
 
     # need to recreate the context, since we blew it away when the previous
-    # flow finished
-    {:ok, context} =
-      FlowContext.create_flow_context(%{
-        contact_id: 1,
-        flow_id: 1,
-        flow_uuid: Ecto.UUID.generate(),
-        uuid_map: uuid_map
-      })
+    context = flow_context_fixture(%{uuid_map: uuid_map})
 
     # lets ensure the default category route also works
     message = Messages.create_temp_message(Fixtures.get_org_id(), "123")
@@ -216,13 +225,7 @@ defmodule Glific.Flows.RouterTest do
     {router, uuid_map} = Router.process(json, uuid_map, node)
 
     # create a simple flow context
-    {:ok, context} =
-      FlowContext.create_flow_context(%{
-        contact_id: 1,
-        flow_id: 1,
-        flow_uuid: Ecto.UUID.generate(),
-        uuid_map: uuid_map
-      })
+    context = flow_context_fixture(%{uuid_map: uuid_map})
 
     message = Messages.create_temp_message(Fixtures.get_org_id(), "alpha")
     result = Router.execute(router, context, [message])
@@ -232,13 +235,7 @@ defmodule Glific.Flows.RouterTest do
 
     # need to recreate the context, since we blew it away when the previous
     # flow finished
-    {:ok, context} =
-      FlowContext.create_flow_context(%{
-        contact_id: 1,
-        flow_id: 1,
-        flow_uuid: Ecto.UUID.generate(),
-        uuid_map: uuid_map
-      })
+    context = flow_context_fixture(%{uuid_map: uuid_map})
 
     # lets ensure the default category route also works
     message = Messages.create_temp_message(Fixtures.get_org_id(), "123")

@@ -94,7 +94,7 @@ defmodule Glific.CommunicationsTest do
       |> Repo.preload([:receiver, :sender, :media])
     end
 
-    defp message_media_fixture(attrs \\ %{}) do
+    def message_media_fixture(attrs \\ %{}) do
       {:ok, message_media} =
         attrs
         |> Enum.into(@valid_media_attrs)
@@ -193,7 +193,7 @@ defmodule Glific.CommunicationsTest do
     end
 
     test "send media message should update the provider message id", attrs do
-      message_media = message_media_fixture()
+      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
 
       # image message
       message =

@@ -96,7 +96,8 @@ defmodule Glific.Flows do
       {:ok, _} =
         FlowRevision.create_flow_revision(%{
           definition: FlowRevision.default_definition(flow),
-          flow_id: flow.id
+          flow_id: flow.id,
+          organization_id: flow.organization_id
         })
 
       {:ok, flow}
@@ -217,7 +218,11 @@ defmodule Glific.Flows do
 
     {:ok, revision} =
       %FlowRevision{}
-      |> FlowRevision.changeset(%{definition: definition, flow_id: flow.id})
+      |> FlowRevision.changeset(%{
+        definition: definition,
+        flow_id: flow.id,
+        organization_id: flow.organization_id
+      })
       |> Repo.insert()
 
     # Now also delete the caches for the draft status, so we can reload
@@ -322,26 +327,19 @@ defmodule Glific.Flows do
   end
 
   @doc """
-  Update latest flow revision status as done
-  Reset old published flow revision status as draft
+  Update latest flow revision status as done and increment the version
   Update cached flow definition
   """
   @spec publish_flow(Flow.t()) :: {:ok, Flow.t()}
   def publish_flow(%Flow{} = flow) do
-    with {:ok, old_published_revision} <-
-           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, status: "done"}) do
-      {:ok, _} =
-        old_published_revision
-        |> FlowRevision.changeset(%{status: "draft"})
-        |> Repo.update()
-    end
+    last_version = get_last_version_and_update_old_revisions(flow)
 
     with {:ok, latest_revision} <-
            FlowRevision
            |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0}) do
       {:ok, _} =
         latest_revision
-        |> FlowRevision.changeset(%{status: "done"})
+        |> FlowRevision.changeset(%{status: "done", version: last_version + 1})
         |> Repo.update()
 
       # we need to fix this depending on where we are making the flow a beta or the done version
@@ -349,6 +347,39 @@ defmodule Glific.Flows do
     end
 
     {:ok, flow}
+  end
+
+  # Get version of last published flow revision
+  # Archive the last published flow revision
+  @spec get_last_version_and_update_old_revisions(Flow.t()) :: integer
+  defp get_last_version_and_update_old_revisions(flow) do
+    FlowRevision
+    |> Repo.fetch_by(%{flow_id: flow.id, status: "done"})
+    |> case do
+      {:ok, last_published_revision} ->
+        {:ok, _} =
+          last_published_revision
+          |> FlowRevision.changeset(%{status: "archived"})
+          |> Repo.update()
+
+        delete_old_draft_flow_revisions(flow, last_published_revision)
+
+        last_published_revision.version
+
+      {:error, _} ->
+        0
+    end
+  end
+
+  # Delete all old draft flow revisions,
+  # except the ones which are created after the last archived flow revision
+  @spec delete_old_draft_flow_revisions(Flow.t(), FlowRevision.t()) :: {integer(), nil | [term()]}
+  defp delete_old_draft_flow_revisions(flow, old_published_revision) do
+    FlowRevision
+    |> where([fr], fr.flow_id == ^flow.id)
+    |> where([fr], fr.id < ^old_published_revision.id)
+    |> where([fr], fr.status == "draft")
+    |> Repo.delete_all()
   end
 
   @doc """
@@ -378,6 +409,47 @@ defmodule Glific.Flows do
 
     group = group |> Repo.preload([:contacts])
     process_contact_flow(group.contacts, flow, status)
+  end
+
+  @doc """
+  Make a copy of a flow
+  """
+  @spec copy_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, String.t()}
+  def copy_flow(%Flow{} = flow, attrs) do
+    attrs =
+      attrs
+      |> Map.merge(%{
+        version_number: flow.version_number,
+        flow_type: flow.flow_type,
+        organization_id: flow.organization_id,
+        uuid: Ecto.UUID.generate()
+      })
+
+    with {:ok, flow_copy} <-
+           %Flow{}
+           |> Flow.changeset(attrs)
+           |> Repo.insert() do
+      copy_flow_revision(flow, flow_copy)
+
+      {:ok, flow_copy}
+    end
+  end
+
+  @spec copy_flow_revision(Flow.t(), Flow.t()) :: {:ok, FlowRevision.t()} | {:error, String.t()}
+  defp copy_flow_revision(flow, flow_copy) do
+    with {:ok, latest_flow_revision} <-
+           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
+      definition_copy =
+        latest_flow_revision.definition
+        |> Map.merge(%{"uuid" => flow_copy.uuid})
+
+      {:ok, _} =
+        FlowRevision.create_flow_revision(%{
+          definition: definition_copy,
+          flow_id: flow_copy.id,
+          organization_id: flow_copy.organization_id
+        })
+    end
   end
 
   @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}

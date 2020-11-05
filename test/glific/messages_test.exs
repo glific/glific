@@ -99,6 +99,8 @@ defmodule Glific.MessagesTest do
         |> Map.merge(attrs)
         |> Messages.create_message()
 
+      session_uuid = Messages.get_session_uuid(message |> Repo.preload([:sender]))
+      message = message |> Map.put(:session_uuid, session_uuid)
       message
     end
 
@@ -142,6 +144,9 @@ defmodule Glific.MessagesTest do
           organization_id: sender.organization_id
         })
         |> Messages.create_message()
+
+      session_uuid = Messages.get_session_uuid(message |> Repo.preload([:sender]))
+      message = message |> Map.put(:session_uuid, session_uuid)
 
       assert [message] ==
                Messages.list_messages(%{filter: Map.merge(attrs, %{sender: sender.name})})
@@ -342,7 +347,8 @@ defmodule Glific.MessagesTest do
           source_url: "some source_url",
           thumbnail: "some thumbnail",
           url: "some url",
-          provider_media_id: "some provider_media_id"
+          provider_media_id: "some provider_media_id",
+          organization_id: attrs.organization_id
         })
 
       message = message_fixture(attrs |> Map.merge(%{media_id: message_media.id}))
@@ -564,23 +570,28 @@ defmodule Glific.MessagesTest do
       message_media
     end
 
-    test "list_messages_media/0 returns all message_media" do
-      message_media = message_media_fixture()
+    test "list_messages_media/0 returns all message_media", attrs do
+      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert Messages.list_messages_media() == [message_media]
     end
 
-    test "count_messages_media/0 returns count of all message media" do
-      _ = message_media_fixture()
+    test "count_messages_media/0 returns count of all message media", attrs do
+      _ = message_media_fixture(%{organization_id: attrs.organization_id})
       assert Messages.count_messages_media() == 1
     end
 
-    test "get_message_media!/1 returns the message_media with given id" do
-      message_media = message_media_fixture()
+    test "get_message_media!/1 returns the message_media with given id", attrs do
+      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert Messages.get_message_media!(message_media.id) == message_media
     end
 
-    test "create_message_media/1 with valid data creates a message_media" do
-      assert {:ok, %MessageMedia{} = message_media} = Messages.create_message_media(@valid_attrs)
+    test "create_message_media/1 with valid data creates a message_media", attrs do
+      assert {:ok, %MessageMedia{} = message_media} =
+               Messages.create_message_media(
+                 @valid_attrs
+                 |> Map.merge(%{organization_id: attrs.organization_id})
+               )
+
       assert message_media.caption == "some caption"
       assert message_media.source_url == "some source_url"
       assert message_media.thumbnail == "some thumbnail"
@@ -592,8 +603,8 @@ defmodule Glific.MessagesTest do
       assert {:error, %Ecto.Changeset{}} = Messages.create_message_media(@invalid_attrs)
     end
 
-    test "update_message_media/2 with valid data updates the message_media" do
-      message_media = message_media_fixture()
+    test "update_message_media/2 with valid data updates the message_media", attrs do
+      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
 
       assert {:ok, %MessageMedia{} = message_media} =
                Messages.update_message_media(message_media, @update_attrs)
@@ -605,8 +616,8 @@ defmodule Glific.MessagesTest do
       assert message_media.provider_media_id == "some updated provider_media_id"
     end
 
-    test "update_message_media/2 with invalid data returns error changeset" do
-      message_media = message_media_fixture()
+    test "update_message_media/2 with invalid data returns error changeset", attrs do
+      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
 
       assert {:error, %Ecto.Changeset{}} =
                Messages.update_message_media(message_media, @invalid_attrs)
@@ -614,14 +625,14 @@ defmodule Glific.MessagesTest do
       assert message_media == Messages.get_message_media!(message_media.id)
     end
 
-    test "delete_message_media/1 deletes the message_media" do
-      message_media = message_media_fixture()
+    test "delete_message_media/1 deletes the message_media", attrs do
+      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert {:ok, %MessageMedia{}} = Messages.delete_message_media(message_media)
       assert_raise Ecto.NoResultsError, fn -> Messages.get_message_media!(message_media.id) end
     end
 
-    test "change_message_media/1 returns a message_media changeset" do
-      message_media = message_media_fixture()
+    test "change_message_media/1 returns a message_media changeset", attrs do
+      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert %Ecto.Changeset{} = Messages.change_message_media(message_media)
     end
   end

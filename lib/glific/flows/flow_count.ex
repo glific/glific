@@ -11,10 +11,11 @@ defmodule Glific.Flows.FlowCount do
 
   alias Glific.{
     Flows.Flow,
+    Partners.Organization,
     Repo
   }
 
-  @required_fields [:uuid, :flow_id, :type, :flow_uuid]
+  @required_fields [:uuid, :flow_id, :type, :flow_uuid, :organization_id]
   @optional_fields [:destination_uuid, :recent_messages]
 
   @type t() :: %__MODULE__{
@@ -24,6 +25,8 @@ defmodule Glific.Flows.FlowCount do
           flow_id: non_neg_integer | nil,
           flow_uuid: Ecto.UUID.t() | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           type: String.t() | nil,
           count: integer() | nil,
           destination_uuid: Ecto.UUID.t() | nil,
@@ -36,6 +39,7 @@ defmodule Glific.Flows.FlowCount do
     field :uuid, Ecto.UUID
     field :flow_uuid, Ecto.UUID
     belongs_to :flow, Flow
+    belongs_to :organization, Organization
     field :type, :string
     field :count, :integer
     field :destination_uuid, Ecto.UUID

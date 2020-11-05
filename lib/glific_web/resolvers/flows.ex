@@ -69,7 +69,9 @@ defmodule GlificWeb.Resolvers.Flows do
     end
   end
 
-  @doc false
+  @doc """
+  Publish a flow
+  """
   @spec publish_flow(Absinthe.Resolution.t(), %{uuid: String.t()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def publish_flow(_, %{uuid: uuid}, _) do
@@ -79,7 +81,9 @@ defmodule GlificWeb.Resolvers.Flows do
     end
   end
 
-  @doc false
+  @doc """
+  Start a flow for a contact
+  """
   @spec start_contact_flow(Absinthe.Resolution.t(), %{flow_id: integer, contact_id: integer}, %{
           context: map()
         }) ::
@@ -96,7 +100,9 @@ defmodule GlificWeb.Resolvers.Flows do
     end
   end
 
-  @doc false
+  @doc """
+  Start a flow for all contacts of a group
+  """
   @spec start_group_flow(Absinthe.Resolution.t(), %{flow_id: integer, group_id: integer}, %{
           context: map()
         }) ::
@@ -110,6 +116,20 @@ defmodule GlificWeb.Resolvers.Flows do
            Repo.fetch_by(Group, %{id: group_id, organization_id: user.organization_id}),
          {:ok, _flow} <- Flows.start_group_flow(flow, group) do
       {:ok, %{success: true}}
+    end
+  end
+
+  @doc """
+  Make a copy a flow
+  """
+  @spec copy_flow(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def copy_flow(_, %{id: id, input: params}, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
+         {:ok, flow} <- Flows.copy_flow(flow, params) do
+      {:ok, %{flow: flow}}
     end
   end
 end

@@ -23,6 +23,7 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:publish, GlificWeb.Schema, "assets/gql/flows/publish.gql")
   load_gql(:contact_flow, GlificWeb.Schema, "assets/gql/flows/contact_flow.gql")
   load_gql(:group_flow, GlificWeb.Schema, "assets/gql/flows/group_flow.gql")
+  load_gql(:copy, GlificWeb.Schema, "assets/gql/flows/copy.gql")
 
   test "flows field returns list of flows", %{staff: user} do
     result = auth_query_gql_by(:list, user)
@@ -200,5 +201,25 @@ defmodule GlificWeb.Schema.FlowTest do
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "startGroupFlow", "success"]) == true
+  end
+
+  test "copy a flow and test possible scenarios and errors", %{manager: user} do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    name = "Flow Test Name"
+    keywords = ["test_keyword"]
+
+    result =
+      auth_query_gql_by(:copy, user,
+        variables: %{
+          "id" => flow.id,
+          "input" => %{"name" => name, "keywords" => keywords}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert name == get_in(query_data, [:data, "copyFlow", "flow", "name"])
   end
 end

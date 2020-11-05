@@ -30,8 +30,8 @@ defmodule Glific.Flows.ContactAction do
     message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
     body = MessageVarParser.parse(text, message_vars)
 
-    {type, media_id} = get_media_from_attachment(action.attachments, action.text)
-    organization_id = context.contact.organization_id
+    organization_id = context.organization_id
+    {type, media_id} = get_media_from_attachment(action.attachments, action.text, organization_id)
 
     attrs = %{
       uuid: action.uuid,
@@ -40,6 +40,7 @@ defmodule Glific.Flows.ContactAction do
       media_id: media_id,
       receiver_id: context.contact_id,
       organization_id: organization_id,
+      flow_id: context.flow_id,
       send_at: DateTime.add(DateTime.utc_now(), context.delay)
     }
 
@@ -82,7 +83,7 @@ defmodule Glific.Flows.ContactAction do
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
     session_template = Messages.parse_template_vars(templating.template, vars)
 
-    {type, media_id} = get_media_from_attachment(attachments, "")
+    {type, media_id} = get_media_from_attachment(attachments, "", context.organization_id)
 
     session_template =
       session_template
@@ -93,6 +94,7 @@ defmodule Glific.Flows.ContactAction do
         session_template,
         %{
           receiver_id: context.contact_id,
+          flow_id: context.flow_id,
           send_at: DateTime.add(DateTime.utc_now(), context.delay)
         }
       )
@@ -101,11 +103,11 @@ defmodule Glific.Flows.ContactAction do
     {:ok, %{context | delay: context.delay + @min_delay}, messages}
   end
 
-  @spec get_media_from_attachment(any(), any()) :: any()
-  defp get_media_from_attachment(attachment, _) when attachment == %{} or is_nil(attachment),
+  @spec get_media_from_attachment(any(), any(), non_neg_integer()) :: any()
+  defp get_media_from_attachment(attachment, _, _) when attachment == %{} or is_nil(attachment),
     do: {:text, nil}
 
-  defp get_media_from_attachment(attachment, caption) do
+  defp get_media_from_attachment(attachment, caption, organization_id) do
     [type | _tail] = Map.keys(attachment)
 
     url =
@@ -120,7 +122,8 @@ defmodule Glific.Flows.ContactAction do
         url: url,
         source_url: url,
         thumbnail: url,
-        caption: caption
+        caption: caption,
+        organization_id: organization_id
       }
       |> Messages.create_message_media()
 
