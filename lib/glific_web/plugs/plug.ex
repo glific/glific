@@ -46,8 +46,8 @@ if Code.ensure_loaded?(Plug) do
         if GlificWeb.Tenants.reserved_organization?(organization) do
           conn
         else
-          Conn.assign(conn, config.assign, organization_id)
           Glific.Repo.put_organization_id(organization_id)
+          Conn.assign(conn, config.assign, organization_id)
         end
       end
     end
