@@ -149,11 +149,10 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
     end)
 
     # Fix for seeds of message_media without a message
-    MessageMedia
     from([mm] in MessageMedia,
-        where: is_nil(mm.organization_id),
-        update: [set: [organization_id: 1]]
-      )
+      where: is_nil(mm.organization_id),
+      update: [set: [organization_id: 1]]
+    )
     |> Repo.update_all([])
   end
 end
