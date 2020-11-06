@@ -1,6 +1,5 @@
 defmodule Glific.SettingsTest do
   use Glific.DataCase
-  @global_schema Application.fetch_env!(:glific, :global_schema)
 
   alias Glific.{
     Seeds.SeedsDev,
@@ -41,7 +40,7 @@ defmodule Glific.SettingsTest do
     end
 
     test "list_languages/1 with multiple items with various opts" do
-      language_count = Repo.aggregate(Language, :count, prefix: @global_schema)
+      language_count = Repo.aggregate(Language, :count)
 
       _language1 = language_fixture()
       language2 = language_fixture(%{label: "AAA label"})
@@ -60,7 +59,7 @@ defmodule Glific.SettingsTest do
     end
 
     test "count_languages/0 returns count of all languages" do
-      language_count = Repo.aggregate(Language, :count, prefix: @global_schema)
+      language_count = Repo.aggregate(Language, :count)
       _ = language_fixture()
       assert Settings.count_languages() == language_count + 1
     end

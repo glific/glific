@@ -2,7 +2,6 @@ defmodule Glific.ContactsTest do
   use Glific.DataCase, async: true
 
   alias Faker.Phone
-  @global_schema Application.fetch_env!(:glific, :global_schema)
 
   alias Glific.{
     Contacts,
@@ -154,7 +153,7 @@ defmodule Glific.ContactsTest do
 
     test "create_contact/1 with language id creates a contact",
          %{organization_id: _organization_id} = attrs do
-      {:ok, language} = Repo.fetch_by(Language, %{locale: "hi"}, prefix: @global_schema)
+      {:ok, language} = Repo.fetch_by(Language, %{locale: "hi"})
 
       attrs =
         attrs

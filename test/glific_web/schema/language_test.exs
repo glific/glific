@@ -1,7 +1,6 @@
 defmodule GlificWeb.Schema.LanguageTest do
   use GlificWeb.ConnCase, async: true
   use Wormwood.GQLCase
-  @global_schema Application.fetch_env!(:glific, :global_schema)
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/languages/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/languages/list.gql")
@@ -30,7 +29,7 @@ defmodule GlificWeb.Schema.LanguageTest do
     label = "English (United States)"
 
     {:ok, lang} =
-      Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label}, prefix: @global_schema)
+      Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => lang.id})
     assert {:ok, query_data} = result
@@ -81,7 +80,7 @@ defmodule GlificWeb.Schema.LanguageTest do
     label = "English (United States)"
 
     {:ok, lang} =
-      Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label}, prefix: @global_schema)
+      Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
 
     result =
       auth_query_gql_by(:update, user,
