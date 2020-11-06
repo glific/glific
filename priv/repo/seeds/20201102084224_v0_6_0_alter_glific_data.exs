@@ -46,7 +46,10 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_6_0 do
     )
     |> Glific.Repo.update_all([])
 
-    messages = Glific.Messages.Message |> preload(:media) |> Glific.Repo.all()
+    messages = Glific.Messages.Message
+      |> where([m], not is_nil(m.media_id))
+      |> preload(:media)
+      |> Glific.Repo.all()
 
     messages
     |> Enum.each(fn message ->
