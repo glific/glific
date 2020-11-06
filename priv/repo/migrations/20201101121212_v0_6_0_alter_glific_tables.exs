@@ -62,19 +62,19 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
     # keeping the field nullable so that migration can run with production data
 
     alter table(:flow_contexts) do
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: true
     end
 
     alter table(:flow_counts) do
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: true
     end
 
     alter table(:flow_revisions) do
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: true
     end
 
     alter table(:messages_media) do
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: true
     end
   end
 end
