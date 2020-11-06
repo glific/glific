@@ -5,6 +5,8 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
   v0.4.1 Alter Glific tables
   """
 
+  @global_schema Application.fetch_env!(:glific, :global_schema)
+
   def change do
     credentials()
 
@@ -18,7 +20,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
   end
 
   defp providers do
-    alter table("providers") do
+    alter table("providers", prefix: @global_schema) do
       add :shortcode, :string
       add :group, :string
 
@@ -36,7 +38,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       remove :worker
     end
 
-    create unique_index(:providers, :shortcode)
+    create unique_index(:providers, :shortcode, prefix: @global_schema)
   end
 
   defp credentials do
@@ -53,7 +55,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       add :is_valid, :boolean, default: true
 
       # foreign key to provider id
-      add :provider_id, references(:providers, on_delete: :nilify_all), null: false
+      add :provider_id, references(:providers, on_delete: :nilify_all, prefix: @global_schema), null: false
 
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false

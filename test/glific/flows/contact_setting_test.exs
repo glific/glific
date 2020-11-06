@@ -1,5 +1,6 @@
 defmodule Glific.Flows.ContactSettingTest do
   use Glific.DataCase, async: true
+  @global_schema Application.fetch_env!(:glific, :global_schema)
 
   alias Glific.{
     Contacts,
@@ -20,7 +21,7 @@ defmodule Glific.Flows.ContactSettingTest do
     language_label = "English (United States)"
 
     {:ok, language} =
-      Repo.fetch_by(Language, %{label: language_label}, skip_organization_id: true)
+      Repo.fetch_by(Language, %{label: language_label}, prefix: @global_schema)
 
     [contact | _] =
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})

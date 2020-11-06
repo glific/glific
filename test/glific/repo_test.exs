@@ -1,6 +1,8 @@
 defmodule Glific.RepoTest do
   use Glific.DataCase, async: true
 
+  @global_schema Application.fetch_env!(:glific, :global_schema)
+
   alias Glific.{
     Settings,
     Settings.Language
@@ -34,9 +36,9 @@ defmodule Glific.RepoTest do
       en = language_fixture()
       hi = language_fixture(@valid_hindi_attrs)
 
-      assert {:ok, hi} == Repo.fetch(Language, hi.id, skip_organization_id: true)
-      assert {:ok, en} == Repo.fetch(Language, en.id, skip_organization_id: true)
-      assert :error == elem(Repo.fetch(Language, 123, skip_organization_id: true), 0)
+      assert {:ok, hi} == Repo.fetch(Language, hi.id, prefix: @global_schema)
+      assert {:ok, en} == Repo.fetch(Language, en.id, prefix: @global_schema)
+      assert :error == elem(Repo.fetch(Language, 123, prefix: @global_schema), 0)
     end
 
     test "fetch_by returns the right language" do
@@ -44,14 +46,14 @@ defmodule Glific.RepoTest do
       hi = language_fixture(@valid_hindi_attrs)
 
       assert {:ok, hi} ==
-               Repo.fetch_by(Language, %{label: "Faker Hindi (India)"}, skip_organization_id: true)
+               Repo.fetch_by(Language, %{label: "Faker Hindi (India)"}, prefix: @global_schema)
 
       assert {:ok, en} ==
-               Repo.fetch_by(Language, %{locale: "faker_en_US"}, skip_organization_id: true)
+               Repo.fetch_by(Language, %{locale: "faker_en_US"}, prefix: @global_schema)
 
       assert :error ==
                elem(
-                 Repo.fetch_by(Language, %{locale: "does not exist"}, skip_organization_id: true),
+                 Repo.fetch_by(Language, %{locale: "does not exist"}, prefix: @global_schema),
                  0
                )
     end

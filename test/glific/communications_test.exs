@@ -16,6 +16,8 @@ defmodule Glific.CommunicationsTest do
     Tags.Tag
   }
 
+  @global_schema Application.fetch_env!(:glific, :global_schema)
+
   setup do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
@@ -106,7 +108,7 @@ defmodule Glific.CommunicationsTest do
     test "send message should update the provider message id", attrs do
       message = message_fixture(attrs)
       Communications.Message.send_message(message)
-      assert_enqueued(worker: Worker)
+      assert_enqueued(worker: Worker, prefix: @global_schema)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
       assert message.bsp_message_id != nil
@@ -162,7 +164,7 @@ defmodule Glific.CommunicationsTest do
         )
 
       Communications.Message.send_message(message_2)
-      assert_enqueued(worker: Worker)
+      assert_enqueued(worker: Worker, prefix: @global_schema)
       Oban.drain_queue(queue: :gupshup)
 
       assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message1_tag.id) end
@@ -183,7 +185,7 @@ defmodule Glific.CommunicationsTest do
 
       message = message_fixture(attrs)
       Communications.Message.send_message(message)
-      assert_enqueued(worker: Worker)
+      assert_enqueued(worker: Worker, prefix: @global_schema)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
       assert message.bsp_message_id == nil
@@ -205,7 +207,7 @@ defmodule Glific.CommunicationsTest do
         )
 
       Communications.Message.send_message(message)
-      assert_enqueued(worker: Worker)
+      assert_enqueued(worker: Worker, prefix: @global_schema)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
       assert message.bsp_message_id != nil
@@ -219,7 +221,7 @@ defmodule Glific.CommunicationsTest do
 
       message = Repo.preload(message, [:receiver, :sender, :media])
       Communications.Message.send_message(message)
-      assert_enqueued(worker: Worker)
+      assert_enqueued(worker: Worker, prefix: @global_schema)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
       assert message.bsp_message_id != nil
@@ -232,7 +234,7 @@ defmodule Glific.CommunicationsTest do
 
       message = Repo.preload(message, [:receiver, :sender, :media])
       Communications.Message.send_message(message)
-      assert_enqueued(worker: Worker)
+      assert_enqueued(worker: Worker, prefix: @global_schema)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
       assert message.bsp_message_id != nil
@@ -245,7 +247,7 @@ defmodule Glific.CommunicationsTest do
 
       message = Repo.preload(message, [:receiver, :sender, :media])
       Communications.Message.send_message(message)
-      assert_enqueued(worker: Worker)
+      assert_enqueued(worker: Worker, prefix: @global_schema)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
       assert message.bsp_message_id != nil
@@ -322,7 +324,7 @@ defmodule Glific.CommunicationsTest do
 
       Communications.Message.send_message(message)
 
-      assert_enqueued(worker: Worker)
+      assert_enqueued(worker: Worker, prefix: @global_schema)
       Oban.drain_queue(queue: :gupshup)
       message = Messages.get_message!(message.id)
 
@@ -333,7 +335,7 @@ defmodule Glific.CommunicationsTest do
       assert message.flow == :outbound
 
       # Verify job scheduled
-      assert_enqueued(worker: Worker, scheduled_at: {scheduled_time, delta: 10})
+      assert_enqueued(worker: Worker, scheduled_at: {scheduled_time, delta: 10}, prefix: @global_schema)
     end
   end
 end

@@ -29,6 +29,7 @@ defmodule Glific.Partners.Provider do
           secrets: map() | nil
         }
 
+  @schema_prefix "global"
   schema "providers" do
     field :name, :string
     field :shortcode, :string

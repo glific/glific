@@ -179,7 +179,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
         filter: %{organization_id: conn.assigns[:organization_id]}
       })
       |> Enum.reduce([], fn template, acc ->
-        template = Glific.Repo.preload(template, :language, skip_organization_id: true)
+        template = Glific.Repo.preload(template, :language)
         language = template.language
 
         [

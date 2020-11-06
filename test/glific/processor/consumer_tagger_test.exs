@@ -43,7 +43,7 @@ defmodule Glific.Processor.ConsumerTaggerTest do
       fn c ->
         message =
           Fixtures.message_fixture(%{body: elem(@checks[rem(c, @checks_size)], 0)})
-          |> Repo.preload([contact: [:language]], skip_organization_id: true)
+          |> Repo.preload([contact: [:language]])
 
         ConsumerTagger.process_message({message, state}, message.body)
       end

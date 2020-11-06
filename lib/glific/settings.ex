@@ -2,7 +2,6 @@ defmodule Glific.Settings do
   @moduledoc """
   The Settings context. This includes language for now.
   """
-
   import Ecto.Query, warn: false
   alias Glific.Repo
   alias Glific.Settings.Language
@@ -19,16 +18,14 @@ defmodule Glific.Settings do
   @spec list_languages(map()) :: [Language.t(), ...]
   def list_languages(args \\ %{}),
     do:
-      Repo.list_filter(args, Language, &Repo.opts_with_label/2, &filter_with/2,
-        skip_organization_id: true
-      )
+      Repo.list_filter(args, Language, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
   Return the count of languages, using the same filter as list_languages
   """
   @spec count_languages(map()) :: integer
   def count_languages(args \\ %{}),
-    do: Repo.count_filter(args, Language, &filter_with/2, skip_organization_id: true)
+    do: Repo.count_filter(args, Language, &filter_with/2)
 
   # codebeat:disable[ABC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -65,7 +62,7 @@ defmodule Glific.Settings do
 
   """
   @spec get_language!(integer) :: Language.t()
-  def get_language!(id), do: Repo.get!(Language, id, skip_organization_id: true)
+  def get_language!(id), do: Repo.get!(Language, id)
 
   @doc """
   Creates a language.
@@ -83,7 +80,7 @@ defmodule Glific.Settings do
   def create_language(attrs \\ %{}) do
     %Language{}
     |> Language.changeset(attrs)
-    |> Repo.insert(skip_organization_id: true)
+    |> Repo.insert()
   end
 
   @doc """
@@ -102,7 +99,7 @@ defmodule Glific.Settings do
   def update_language(%Language{} = language, attrs) do
     language
     |> Language.changeset(attrs)
-    |> Repo.update(skip_organization_id: true)
+    |> Repo.update()
   end
 
   @doc """
@@ -121,7 +118,7 @@ defmodule Glific.Settings do
   def delete_language(%Language{} = language) do
     language
     |> Language.delete_changeset()
-    |> Repo.delete(skip_organization_id: true)
+    |> Repo.delete()
   end
 
   @doc """
@@ -149,7 +146,7 @@ defmodule Glific.Settings do
         change_language(%Language{}, attrs),
         on_conflict: [set: [label: attrs.label]],
         conflict_target: [:label, :locale],
-        skip_organization_id: true
+
       )
 
     {:ok, language}
@@ -163,7 +160,7 @@ defmodule Glific.Settings do
     Language
     |> where([l], l.is_active == true)
     |> select([:id, :locale])
-    |> Repo.all(skip_organization_id: true)
+    |> Repo.all()
     |> Enum.reduce(%{}, fn language, acc -> Map.put(acc, language.locale, language.id) end)
   end
 
@@ -175,6 +172,6 @@ defmodule Glific.Settings do
     Language
     |> where([l], l.is_active == true)
     |> where([l], ilike(l.label, ^"#{term}%") or ilike(l.locale, ^"#{term}%"))
-    |> Repo.all(skip_organization_id: true)
+    |> Repo.all()
   end
 end

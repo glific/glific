@@ -17,6 +17,8 @@ defmodule Glific.MessagesTest do
     Templates.SessionTemplate
   }
 
+  @global_schema Application.fetch_env!(:glific, :global_schema)
+
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_contacts(organization)
@@ -404,7 +406,7 @@ defmodule Glific.MessagesTest do
       assert {:ok, [contact1_id, contact2_id | _]} =
                Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
 
-      assert_enqueued(worker: Worker)
+      assert_enqueued(worker: Worker, prefix: @global_schema)
       Oban.drain_queue(queue: :gupshup)
 
       assert {:ok, message1} =
@@ -506,7 +508,7 @@ defmodule Glific.MessagesTest do
       {:ok, message} =
         Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
 
-      assert_enqueued(worker: Worker)
+      assert_enqueued(worker: Worker, prefix: @global_schema)
       Oban.drain_queue(queue: :gupshup)
 
       message = Messages.get_message!(message.id)

@@ -12,7 +12,7 @@ defmodule GlificWeb.Resolvers.Settings do
   @spec language(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def language(_, %{id: id}, _) do
-    with {:ok, language} <- Repo.fetch(Language, id, skip_organization_id: true),
+    with {:ok, language} <- Repo.fetch(Language, id),
          do: {:ok, %{language: language}}
   end
 
@@ -50,7 +50,7 @@ defmodule GlificWeb.Resolvers.Settings do
   @spec update_language(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_language(_, %{id: id, input: params}, _) do
-    with {:ok, language} <- Repo.fetch(Language, id, skip_organization_id: true),
+    with {:ok, language} <- Repo.fetch(Language, id),
          {:ok, language} <- Settings.update_language(language, params) do
       {:ok, %{language: language}}
     end
@@ -60,7 +60,7 @@ defmodule GlificWeb.Resolvers.Settings do
   @spec delete_language(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_language(_, %{id: id}, _) do
-    with {:ok, language} <- Repo.fetch(Language, id, skip_organization_id: true),
+    with {:ok, language} <- Repo.fetch(Language, id),
          {:ok, language} <- Settings.delete_language(language) do
       {:ok, language}
     end

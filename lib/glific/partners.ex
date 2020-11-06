@@ -32,8 +32,7 @@ defmodule Glific.Partners do
   @spec list_providers(map()) :: [%Provider{}, ...]
   def list_providers(args \\ %{}),
     do:
-      Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2,
-        skip_organization_id: true
+      Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2
       )
 
   @doc """
@@ -41,7 +40,7 @@ defmodule Glific.Partners do
   """
   @spec count_providers(map()) :: integer
   def count_providers(args \\ %{}),
-    do: Repo.count_filter(args, Provider, &filter_provider_with/2, skip_organization_id: true)
+    do: Repo.count_filter(args, Provider, &filter_provider_with/2)
 
   @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_provider_with(query, filter) do
@@ -64,7 +63,7 @@ defmodule Glific.Partners do
 
   """
   @spec get_provider!(id :: integer) :: %Provider{}
-  def get_provider!(id), do: Repo.get!(Provider, id, skip_organization_id: true)
+  def get_provider!(id), do: Repo.get!(Provider, id)
 
   @doc """
   Creates a provider.
@@ -82,7 +81,7 @@ defmodule Glific.Partners do
   def create_provider(attrs \\ %{}) do
     %Provider{}
     |> Provider.changeset(attrs)
-    |> Repo.insert(skip_organization_id: true)
+    |> Repo.insert()
   end
 
   @doc """
@@ -101,7 +100,7 @@ defmodule Glific.Partners do
   def update_provider(%Provider{} = provider, attrs) do
     provider
     |> Provider.changeset(attrs)
-    |> Repo.update(skip_organization_id: true)
+    |> Repo.update()
   end
 
   @doc """
@@ -122,7 +121,7 @@ defmodule Glific.Partners do
     |> Ecto.Changeset.change()
     |> Ecto.Changeset.no_assoc_constraint(:organizations, name: "organizations_provider_id_fkey")
     |> Ecto.Changeset.no_assoc_constraint(:credential)
-    |> Repo.delete(skip_organization_id: true)
+    |> Repo.delete()
   end
 
   @doc ~S"""
@@ -388,7 +387,7 @@ defmodule Glific.Partners do
     languages =
       Language
       |> where([l], l.id in ^organization.active_language_ids)
-      |> Repo.all(skip_organization_id: true)
+      |> Repo.all()
 
     organization
     |> Map.put(:languages, languages)
