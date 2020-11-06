@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation copyFlow($id: ID!, $input: FlowInput!) {
+  copyFlow(id: $id, input: $input) {
+    ...FlowFields
+
+    ...ErrorFields
+  }
+}

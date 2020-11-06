@@ -34,7 +34,7 @@ defmodule Glific.Repo.Migrations.AddMessageNumberToMessages do
 
         END IF;
 
-        UPDATE contacts  set last_message_at = CURRENT_TIMESTAMP where id = NEW.contact_id;
+        UPDATE contacts set last_message_at = (CURRENT_TIMESTAMP at time zone 'utc') where id = NEW.contact_id;
         RETURN NEW;
       END IF;
       RETURN NULL;

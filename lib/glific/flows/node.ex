@@ -105,7 +105,7 @@ defmodule Glific.Flows.Node do
     cond do
       # if both are non-empty, it means that we have either a
       #    * sub-flow option
-      #    # callung a web hook
+      #    # calling a web hook
       !Enum.empty?(node.actions) && !is_nil(node.router) ->
         # need a better way to figure out if we should handle router or action
         # this is a hack for now

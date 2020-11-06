@@ -220,13 +220,16 @@ defmodule Glific.Flows.Action do
     {:ok, context, messages}
   end
 
-  def execute(%{type: "enter_flow"} = action, context, messages) do
+  def execute(%{type: "enter_flow"} = action, context, _messages) do
     # we start off a new context here and dont really modify the current context
     # hence ignoring the return value of start_sub_flow
     # for now, we'll just delay by at least min_delay second
     context = %{context | delay: min(context.delay + @min_delay, @min_delay)}
     Flow.start_sub_flow(context, action.enter_flow_uuid)
-    {:ok, context, messages}
+
+    # We null the messages here, since we are going into a different flow
+    # this clears any potential errors
+    {:ok, context, []}
   end
 
   def execute(%{type: "call_webhook"} = action, context, messages) do

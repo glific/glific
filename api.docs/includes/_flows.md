@@ -536,6 +536,62 @@ Type | Description
 --------- | ---- | ------- | -----------
 <a href="#startflowresult">StartFlowResult</a> | An error object or success response true
 
+
+## Copy a Flow
+
+```graphql
+mutation copyFlow($id: ID!, $input:FlowInput!) {
+  copyFlow(id: $id, input: $input) {
+    flow {
+      id
+      name
+      keywords
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "id": "1",
+  "input": {
+    "name": "new name"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "copyFlow": {
+      "errors": null,
+      "flow": {
+        "id": "32",
+        "keywords": [],
+        "name": "new name"
+      }
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+id | <a href="#id">ID</a>! | required ||
+input | <a href="#flowinput">FlowInput</a> | required ||
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#flowresult">FlowResult</a> | The copied flow object
+
+
 ## Flow Objects
 
 ### Flow
