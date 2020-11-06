@@ -17,8 +17,6 @@ defmodule Glific.MessagesTest do
     Templates.SessionTemplate
   }
 
-  @global_schema Application.fetch_env!(:glific, :global_schema)
-
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_contacts(organization)
@@ -380,7 +378,7 @@ defmodule Glific.MessagesTest do
     end
 
     test "create and send message to multiple contacts should update the bsp_message_id field in message",
-         %{organization_id: organization_id} = attrs do
+         %{organization_id: organization_id, global_schema: global_schema} = attrs do
       {:ok, receiver_1} =
         Contacts.create_contact(
           @receiver_attrs
@@ -406,7 +404,7 @@ defmodule Glific.MessagesTest do
       assert {:ok, [contact1_id, contact2_id | _]} =
                Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
 
-      assert_enqueued(worker: Worker, prefix: @global_schema)
+      assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)
 
       assert {:ok, message1} =
@@ -483,7 +481,7 @@ defmodule Glific.MessagesTest do
     end
 
     test "send hsm message incorrect parameters",
-         %{organization_id: organization_id} = attrs do
+         %{organization_id: organization_id, global_schema: global_schema} = attrs do
       contact = Fixtures.contact_fixture(attrs)
 
       shortcode = "otp"
@@ -508,7 +506,7 @@ defmodule Glific.MessagesTest do
       {:ok, message} =
         Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
 
-      assert_enqueued(worker: Worker, prefix: @global_schema)
+      assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)
 
       message = Messages.get_message!(message.id)
