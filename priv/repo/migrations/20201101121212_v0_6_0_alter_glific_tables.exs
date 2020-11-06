@@ -17,11 +17,11 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
   import Ecto.Query, warn: false
 
   def change do
-    # flow_results()
+    flow_results()
 
-    # flow_revisions()
+    flow_revisions()
 
-    # messages()
+    messages()
 
     add_organization_id()
   end
