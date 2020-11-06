@@ -10,8 +10,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_6_0 do
 
   def up(_repo) do
     add_languages()
-
-    update_organization_id()
   end
 
   defp add_languages() do
