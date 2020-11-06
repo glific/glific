@@ -34,7 +34,7 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
 
     alter table(:credentials) do
       # foreign key to provider id
-      modify :provider_id, references(:providers, on_delete: :nothing), null: false
+      modify :provider_id, references(:providers, on_delete: :nothing, prefix: "global"), null: false
     end
   end
 
@@ -48,7 +48,7 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
   end
 
   defp providers do
-    alter table("providers") do
+    alter table("providers", prefix: "global") do
       add :description, :string
     end
   end

@@ -2,7 +2,7 @@ defmodule Glific.Repo.Migrations.AddObanJobsTable do
   use Ecto.Migration
 
   def change do
-    Oban.Migrations.up()
+    Oban.Migrations.up(prefix: "global")
   end
 
   # We specify `version: 1` in `down`, ensuring that we'll roll all the way back down if

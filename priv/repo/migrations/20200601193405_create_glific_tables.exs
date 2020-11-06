@@ -7,6 +7,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
   use Ecto.Migration
 
   def change do
+
+    execute("CREATE SCHEMA IF NOT EXISTS global")
+
     providers()
 
     languages()
@@ -89,7 +92,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       add :email, :string, null: false
 
-      add :provider_id, references(:providers, on_delete: :nothing), null: false
+      add :provider_id, references(:providers, on_delete: :nothing, prefix: "global"), null: false
       add :provider_appname, :string, null: false
 
       # WhatsApp Business API Phone (this is the primary point of identification)
@@ -426,7 +429,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
   Information of all the Business Service Providers (APIs) responsible for the communications.
   """
   def providers do
-    create table(:providers) do
+    create table(:providers, prefix: "global") do
       # The name of Provider
       add :name, :string, null: false
 
@@ -443,7 +446,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:providers, :name)
+    create unique_index(:providers, :name, prefix: "global")
   end
 
   @doc """
