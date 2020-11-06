@@ -51,7 +51,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_6_0 do
     )
     |> Glific.Repo.update_all([])
 
-    messages = Message
+    messages =
+      Message
       |> where([m], not is_nil(m.media_id))
       |> preload(:media)
       |> Repo.all()
