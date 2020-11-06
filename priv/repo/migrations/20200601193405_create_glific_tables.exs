@@ -6,7 +6,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
   use Ecto.Migration
 
+  @global_schema Application.fetch_env!(:glific, :global_schema)
+
   def change do
+
 
     execute("CREATE SCHEMA IF NOT EXISTS global")
 
@@ -60,7 +63,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
   own table. This allows us to optimize and switch languages relatively quickly
   """
   def languages do
-    create table(:languages, prefix: "global") do
+    create table(:languages, prefix: @global_schema) do
       # The language label, typically the full name, like English (US) or Hindi
       add :label, :string, null: false
 
@@ -79,7 +82,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:languages, [:label, :locale], prefix: "global")
+    create unique_index(:languages, [:label, :locale], prefix: @global_schema)
   end
 
   @doc """
@@ -92,7 +95,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       add :email, :string, null: false
 
-      add :provider_id, references(:providers, on_delete: :nothing, prefix: "global"), null: false
+      add :provider_id, references(:providers, on_delete: :nothing, prefix: @global_schema), null: false
       add :provider_appname, :string, null: false
 
       # WhatsApp Business API Phone (this is the primary point of identification)
@@ -104,7 +107,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       # choose active languages from the supported languages
       # organization default language
-      add :default_language_id, references(:languages, on_delete: :restrict, prefix: "global"), null: false
+      add :default_language_id, references(:languages, on_delete: :restrict, prefix: @global_schema), null: false
 
       # choose active languages from the supported languages
       add :active_language_ids, {:array, :integer}, default: []
@@ -166,7 +169,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :color_code, :string, default: "#0C976D"
 
       # foreign key to language
-      add :language_id, references(:languages, on_delete: :restrict, prefix: "global"), null: false
+      add :language_id, references(:languages, on_delete: :restrict, prefix:   @global_schema), null: false
 
       # All child tags point to the parent tag, this allows us a to organize tags as needed
       add :parent_id, references(:tags, on_delete: :nilify_all), null: true
@@ -222,7 +225,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :number_parameters, :integer, null: true
 
       # Messages are in a specific language
-      add :language_id, references(:languages, on_delete: :restrict, prefix: "global"), null: false
+      add :language_id, references(:languages, on_delete: :restrict, prefix:   @global_schema), null: false
 
       # All child messages point to the root message, so we can propagate changes downstream
       add :parent_id, references(:session_templates, on_delete: :nilify_all), null: true
@@ -265,7 +268,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :status, :contact_status_enum, null: false, default: "valid"
 
       # contact language for templates and other communications
-      add :language_id, references(:languages, on_delete: :restrict, prefix: "global"), null: false
+      add :language_id, references(:languages, on_delete: :restrict, prefix:   @global_schema), null: false
 
       # the times when we recorded either an optin or an optout
       # at some point, we will need to create an events table for this and track all changes
@@ -429,7 +432,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
   Information of all the Business Service Providers (APIs) responsible for the communications.
   """
   def providers do
-    create table(:providers, prefix: "global") do
+    create table(:providers, prefix: @global_schema) do
       # The name of Provider
       add :name, :string, null: false
 
@@ -446,7 +449,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:providers, :name, prefix: "global")
+    create unique_index(:providers, :name, prefix: @global_schema)
   end
 
   @doc """
