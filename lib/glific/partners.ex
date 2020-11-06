@@ -4,7 +4,6 @@ defmodule Glific.Partners do
   and Provider information.
   """
   @behaviour Waffle.Storage.Google.Token.Fetcher
-  @global_schema Application.fetch_env!(:glific, :global_schema)
 
   use Publicist
 
@@ -33,8 +32,7 @@ defmodule Glific.Partners do
   @spec list_providers(map()) :: [%Provider{}, ...]
   def list_providers(args \\ %{}),
     do:
-      Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2,
-      prefix: @global_schema
+      Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2
       )
 
   @doc """
@@ -42,7 +40,7 @@ defmodule Glific.Partners do
   """
   @spec count_providers(map()) :: integer
   def count_providers(args \\ %{}),
-    do: Repo.count_filter(args, Provider, &filter_provider_with/2, prefix: @global_schema)
+    do: Repo.count_filter(args, Provider, &filter_provider_with/2)
 
   @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_provider_with(query, filter) do
@@ -65,7 +63,7 @@ defmodule Glific.Partners do
 
   """
   @spec get_provider!(id :: integer) :: %Provider{}
-  def get_provider!(id), do: Repo.get!(Provider, id, prefix: @global_schema)
+  def get_provider!(id), do: Repo.get!(Provider, id)
 
   @doc """
   Creates a provider.
@@ -83,7 +81,7 @@ defmodule Glific.Partners do
   def create_provider(attrs \\ %{}) do
     %Provider{}
     |> Provider.changeset(attrs)
-    |> Repo.insert(prefix: @global_schema)
+    |> Repo.insert()
   end
 
   @doc """
@@ -102,7 +100,7 @@ defmodule Glific.Partners do
   def update_provider(%Provider{} = provider, attrs) do
     provider
     |> Provider.changeset(attrs)
-    |> Repo.update(prefix: @global_schema)
+    |> Repo.update()
   end
 
   @doc """
@@ -123,7 +121,7 @@ defmodule Glific.Partners do
     |> Ecto.Changeset.change()
     |> Ecto.Changeset.no_assoc_constraint(:organizations, name: "organizations_provider_id_fkey")
     |> Ecto.Changeset.no_assoc_constraint(:credential)
-    |> Repo.delete(prefix: @global_schema)
+    |> Repo.delete()
   end
 
   @doc ~S"""
@@ -389,7 +387,7 @@ defmodule Glific.Partners do
     languages =
       Language
       |> where([l], l.id in ^organization.active_language_ids)
-      |> Repo.all(prefix: @global_schema)
+      |> Repo.all()
 
     organization
     |> Map.put(:languages, languages)

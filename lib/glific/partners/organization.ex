@@ -6,8 +6,6 @@ defmodule Glific.Partners.Organization do
   import Ecto.Changeset
   import Ecto.Query, warn: false
 
-  @global_schema Application.fetch_env!(:glific, :global_schema)
-
   alias __MODULE__
 
   alias Glific.{
@@ -120,7 +118,7 @@ defmodule Glific.Partners.Organization do
     language_ids =
       Language
       |> select([l], l.id)
-      |> Repo.all(prefix: @global_schema)
+      |> Repo.all()
 
     changeset
     |> validate_subset(:active_language_ids, language_ids)

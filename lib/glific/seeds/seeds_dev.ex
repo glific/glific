@@ -3,8 +3,6 @@ if Code.ensure_loaded?(Faker) do
     @moduledoc """
     Script for populating the database. We can call this from tests and/or /priv/repo
     """
-    @global_schema Application.fetch_env!(:glific, :global_schema)
-
     alias Glific.{
       Contacts,
       Contacts.Contact,
@@ -332,7 +330,7 @@ if Code.ensure_loaded?(Faker) do
       password = "12345678"
 
       {:ok, en_us} =
-        Repo.fetch_by(Language, %{label_locale: "English"}, prefix: @global_schema)
+        Repo.fetch_by(Language, %{label_locale: "English"})
 
       utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
