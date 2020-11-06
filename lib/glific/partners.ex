@@ -31,9 +31,7 @@ defmodule Glific.Partners do
   """
   @spec list_providers(map()) :: [%Provider{}, ...]
   def list_providers(args \\ %{}),
-    do:
-      Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2
-      )
+    do: Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
 
   @doc """
   Return the count of providers, using the same filter as list_providers
@@ -415,7 +413,7 @@ defmodule Glific.Partners do
       |> where([c], c.organization_id == ^organization.id)
       |> where([c], c.is_active == true)
       |> preload(:provider)
-      |> Repo.all(skip_organization_id: true)
+      |> Repo.all()
 
     services_map =
       Enum.reduce(credentials, %{}, fn credential, acc ->
@@ -500,7 +498,7 @@ defmodule Glific.Partners do
   @spec get_credential(map()) ::
           {:ok, Credential.t()} | {:error, String.t() | [String.t()]}
   def get_credential(%{organization_id: organization_id, shortcode: shortcode}) do
-    case Repo.fetch_by(Provider, %{shortcode: shortcode}, skip_organization_id: true) do
+    case Repo.fetch_by(Provider, %{shortcode: shortcode}) do
       {:ok, provider} ->
         Repo.fetch_by(Credential, %{
           organization_id: organization_id,

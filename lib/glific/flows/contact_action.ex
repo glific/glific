@@ -149,7 +149,7 @@ defmodule Glific.Flows.ContactAction do
   defp get_contact_field_map(contact_id) do
     contact =
       Contacts.get_contact!(contact_id)
-      |> Repo.preload(:language, skip_organization_id: true)
+      |> Repo.preload(:language)
       |> Map.from_struct()
 
     put_in(contact, [:fields, :language], %{label: contact.language.label})

@@ -55,7 +55,8 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       add :is_valid, :boolean, default: true
 
       # foreign key to provider id
-      add :provider_id, references(:providers, on_delete: :nilify_all, prefix: @global_schema), null: false
+      add :provider_id, references(:providers, on_delete: :nilify_all, prefix: @global_schema),
+        null: false
 
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false

@@ -22,8 +22,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     # add pseudo credentials for gupshup and glifproxy
     {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
-    {:ok, glifproxy} =
-      Repo.fetch_by(Provider, %{shortcode: "glifproxy"})
+    {:ok, glifproxy} = Repo.fetch_by(Provider, %{shortcode: "glifproxy"})
 
     # update providers gupshup and glifproxy with values for:
     # shortcode, group, is_required, keys and secrets
@@ -182,42 +181,40 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     # add dialogflow
     if !Repo.exists?(query),
       do:
-        Repo.insert!(
-          %Provider{
-            name: "Dialogflow",
-            shortcode: "dialogflow",
-            group: nil,
-            is_required: false,
-            keys: %{
-              url: %{
-                type: :string,
-                label: "Dialogdlow Home Page",
-                default: "https://dialogflow.cloud.google.com/",
-                view_only: true
-              }
+        Repo.insert!(%Provider{
+          name: "Dialogflow",
+          shortcode: "dialogflow",
+          group: nil,
+          is_required: false,
+          keys: %{
+            url: %{
+              type: :string,
+              label: "Dialogdlow Home Page",
+              default: "https://dialogflow.cloud.google.com/",
+              view_only: true
+            }
+          },
+          secrets: %{
+            project_id: %{
+              type: :string,
+              label: "Project ID",
+              default: nil,
+              view_only: false
             },
-            secrets: %{
-              project_id: %{
-                type: :string,
-                label: "Project ID",
-                default: nil,
-                view_only: false
-              },
-              project_email: %{
-                type: :string,
-                label: "Project Email",
-                default: nil,
-                view_only: false
-              },
-              service_account: %{
-                type: :string,
-                label: "Goth Credentials ",
-                default: nil,
-                view_only: false
-              }
+            project_email: %{
+              type: :string,
+              label: "Project Email",
+              default: nil,
+              view_only: false
+            },
+            service_account: %{
+              type: :string,
+              label: "Goth Credentials ",
+              default: nil,
+              view_only: false
             }
           }
-        )
+        })
   end
 
   defp add_goth do
@@ -226,30 +223,28 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
     if !Repo.exists?(query),
       do:
-        Repo.insert!(
-          %Provider{
-            name: "GOTH",
-            shortcode: "goth",
-            group: nil,
-            is_required: false,
-            keys: %{
-              url: %{
-                type: :string,
-                label: "Goth Url",
-                default: "https://dialogflow.clients6.google.com",
-                view_only: true
-              }
-            },
-            secrets: %{
-              json: %{
-                type: :string,
-                label: "JSON Credentials ",
-                default: nil,
-                view_only: false
-              }
+        Repo.insert!(%Provider{
+          name: "GOTH",
+          shortcode: "goth",
+          group: nil,
+          is_required: false,
+          keys: %{
+            url: %{
+              type: :string,
+              label: "Goth Url",
+              default: "https://dialogflow.clients6.google.com",
+              view_only: true
+            }
+          },
+          secrets: %{
+            json: %{
+              type: :string,
+              label: "JSON Credentials ",
+              default: nil,
+              view_only: false
             }
           }
-        )
+        })
   end
 
   defp add_chatbase() do
@@ -258,59 +253,55 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
 
     if !Repo.exists?(query),
       do:
-        Repo.insert!(
-          %Provider{
-            name: "Chatbase",
-            shortcode: "chatbase",
-            group: nil,
-            is_required: false,
-            keys: %{},
-            secrets: %{
-              api_key: %{
-                type: :string,
-                label: "API Key",
-                default: nil,
-                view_only: false
-              }
+        Repo.insert!(%Provider{
+          name: "Chatbase",
+          shortcode: "chatbase",
+          group: nil,
+          is_required: false,
+          keys: %{},
+          secrets: %{
+            api_key: %{
+              type: :string,
+              label: "API Key",
+              default: nil,
+              view_only: false
             }
           }
-        )
+        })
 
     # add bigquery
     query = from p in Provider, where: p.shortcode == "bigquery"
 
     if !Repo.exists?(query),
       do:
-        Repo.insert!(
-          %Provider{
-            name: "BigQuery",
-            shortcode: "bigquery",
-            group: nil,
-            is_required: false,
-            keys: %{
-              url: %{
-                type: :string,
-                label: "Bigquery Url",
-                default: "https://www.googleapis.com/auth/cloud-platform",
-                view_only: true
-              }
+        Repo.insert!(%Provider{
+          name: "BigQuery",
+          shortcode: "bigquery",
+          group: nil,
+          is_required: false,
+          keys: %{
+            url: %{
+              type: :string,
+              label: "Bigquery Url",
+              default: "https://www.googleapis.com/auth/cloud-platform",
+              view_only: true
+            }
+          },
+          secrets: %{
+            project_id: %{
+              type: :string,
+              label: "Project ID",
+              default: nil,
+              view_only: false
             },
-            secrets: %{
-              project_id: %{
-                type: :string,
-                label: "Project ID",
-                default: nil,
-                view_only: false
-              },
-              service_account: %{
-                type: :string,
-                label: "Goth Credentials ",
-                default: nil,
-                view_only: false
-              }
+            service_account: %{
+              type: :string,
+              label: "Goth Credentials ",
+              default: nil,
+              view_only: false
             }
           }
-        )
+        })
   end
 
   defp add_google_cloud_storage() do
@@ -319,34 +310,32 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     # add google cloud storage (gcs)
     if !Repo.exists?(query),
       do:
-        Repo.insert!(
-          %Provider{
-            name: "Google Cloud Storage",
-            shortcode: "google_cloud_storage",
-            group: nil,
-            is_required: false,
-            keys: %{},
-            secrets: %{
-              email: %{
-                type: :string,
-                label: "Email",
-                default: nil,
-                view_only: false
-              },
-              bucket: %{
-                type: :string,
-                label: "Bucket",
-                default: nil,
-                view_only: false
-              },
-              service_account: %{
-                type: :string,
-                label: "Goth Credentials ",
-                default: nil,
-                view_only: false
-              }
+        Repo.insert!(%Provider{
+          name: "Google Cloud Storage",
+          shortcode: "google_cloud_storage",
+          group: nil,
+          is_required: false,
+          keys: %{},
+          secrets: %{
+            email: %{
+              type: :string,
+              label: "Email",
+              default: nil,
+              view_only: false
+            },
+            bucket: %{
+              type: :string,
+              label: "Bucket",
+              default: nil,
+              view_only: false
+            },
+            service_account: %{
+              type: :string,
+              label: "Goth Credentials ",
+              default: nil,
+              view_only: false
             }
           }
-        )
+        })
   end
 end
