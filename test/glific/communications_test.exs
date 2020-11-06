@@ -192,8 +192,8 @@ defmodule Glific.CommunicationsTest do
       assert message.sent_at == nil
     end
 
-    test "send media message should update the provider message id", attrs do
-      message_media = message_media_fixture(%{organization_id: attrs.organization_id, global_schema: global_schema})
+    test "send media message should update the provider message id", %{global_schema: global_schema} = attrs do
+      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
 
       # image message
       message =
@@ -312,7 +312,7 @@ defmodule Glific.CommunicationsTest do
       assert message.bsp_status == :read
     end
 
-    test "send message at a specific time should not send it immediately", %{global_schema: global_schema} attrs do
+    test "send message at a specific time should not send it immediately", %{global_schema: global_schema} = attrs do
       scheduled_time = Timex.shift(DateTime.utc_now(), hours: 2)
 
       message =
