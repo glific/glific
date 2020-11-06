@@ -145,8 +145,7 @@ defmodule Glific.Settings do
       Repo.insert!(
         change_language(%Language{}, attrs),
         on_conflict: [set: [label: attrs.label]],
-        conflict_target: [:label, :locale],
-
+        conflict_target: [:label, :locale]
       )
 
     {:ok, language}
