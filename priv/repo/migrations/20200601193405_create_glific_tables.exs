@@ -169,7 +169,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :color_code, :string, default: "#0C976D"
 
       # foreign key to language
-      add :language_id, references(:languages, on_delete: :restrict, prefix:   @global_schema), null: false
+      add :language_id, references(:languages, on_delete: :restrict, prefix: @global_schema), null: false
 
       # All child tags point to the parent tag, this allows us a to organize tags as needed
       add :parent_id, references(:tags, on_delete: :nilify_all), null: true
@@ -225,7 +225,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :number_parameters, :integer, null: true
 
       # Messages are in a specific language
-      add :language_id, references(:languages, on_delete: :restrict, prefix:   @global_schema), null: false
+      add :language_id, references(:languages, on_delete: :restrict, prefix: @global_schema), null: false
 
       # All child messages point to the root message, so we can propagate changes downstream
       add :parent_id, references(:session_templates, on_delete: :nilify_all), null: true
@@ -268,7 +268,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :status, :contact_status_enum, null: false, default: "valid"
 
       # contact language for templates and other communications
-      add :language_id, references(:languages, on_delete: :restrict, prefix:   @global_schema), null: false
+      add :language_id, references(:languages, on_delete: :restrict, prefix: @global_schema), null: false
 
       # the times when we recorded either an optin or an optout
       # at some point, we will need to create an events table for this and track all changes

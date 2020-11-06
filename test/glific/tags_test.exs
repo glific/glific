@@ -1,5 +1,6 @@
 defmodule Glific.TagsTest do
   use Glific.DataCase
+  @global_schema Application.fetch_env!(:glific, :global_schema)
 
   alias Glific.{
     Fixtures,
@@ -53,7 +54,7 @@ defmodule Glific.TagsTest do
 
     defp get_hindi,
       do:
-        Repo.fetch_by(Language, %{label: "Hindi"}, skip_organization_id: true)
+        Repo.fetch_by(Language, %{label: "Hindi"}, prefix: @global_schema)
         |> elem(1)
 
     test "list_tags/1 returns all tags", %{organization_id: _organization_id} = attrs do

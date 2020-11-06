@@ -330,7 +330,7 @@ if Code.ensure_loaded?(Faker) do
       password = "12345678"
 
       {:ok, en_us} =
-        Repo.fetch_by(Language, %{label_locale: "English"}, skip_organization_id: true)
+        Repo.fetch_by(Language, %{label_locale: "English"}, prefix: @global_schema)
 
       utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 

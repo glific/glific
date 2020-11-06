@@ -6,6 +6,8 @@
 defmodule Glific.Seeds.Credentials do
   import Ecto.Query
 
+  @global_schema Application.fetch_env!(:glific, :global_schema)
+
   alias Glific.{
     Partners.Credential,
     Partners.Provider,
@@ -36,7 +38,7 @@ defmodule Glific.Seeds.Credentials do
 
   def insert_dialogflow_credentials(dflow, organization_id) do
     {:ok, dialogflow} =
-      Repo.fetch_by(Provider, %{shortcode: "dialogflow"}, skip_organization_id: true)
+      Repo.fetch_by(Provider, %{shortcode: "dialogflow"}, prefix: @global_schema)
 
     Repo.insert!(%Credential{
       organization_id: organization_id,
@@ -56,7 +58,7 @@ defmodule Glific.Seeds.Credentials do
   def insert_goth_credentials(nil = _goth, _organization_id), do: nil
 
   def insert_goth_credentials(goth, organization_id) do
-    {:ok, goth_db} = Repo.fetch_by(Provider, %{shortcode: "goth"}, skip_organization_id: true)
+    {:ok, goth_db} = Repo.fetch_by(Provider, %{shortcode: "goth"}, prefix: @global_schema)
 
     Repo.insert!(%Credential{
       organization_id: organization_id,
@@ -73,7 +75,7 @@ defmodule Glific.Seeds.Credentials do
 
   def insert_chatbase_credentials(chatbase, organization_id) do
     {:ok, chatbase_db} =
-      Repo.fetch_by(Provider, %{shortcode: "chatbase"}, skip_organization_id: true)
+      Repo.fetch_by(Provider, %{shortcode: "chatbase"}, prefix: @global_schema)
 
     Repo.insert!(%Credential{
       organization_id: organization_id,
@@ -90,7 +92,7 @@ defmodule Glific.Seeds.Credentials do
 
   def insert_biqquery_credentials(bigquery, organization_id) do
     {:ok, bigquery_db} =
-      Repo.fetch_by(Provider, %{shortcode: "bigquery"}, skip_organization_id: true)
+      Repo.fetch_by(Provider, %{shortcode: "bigquery"}, prefix: @global_schema)
 
     Repo.insert!(%Credential{
       organization_id: organization_id,
@@ -111,7 +113,7 @@ defmodule Glific.Seeds.Credentials do
 
   def insert_gcs_credentials(gcs, organization_id) do
     {:ok, gcs_db} =
-      Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"}, skip_organization_id: true)
+      Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"}, prefix: @global_schema)
 
     Repo.insert!(%Credential{
       organization_id: organization_id,
