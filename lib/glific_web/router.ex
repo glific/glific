@@ -105,6 +105,10 @@ defmodule GlificWeb.Router do
     post "/revisions/*vars", FlowEditorController, :save_revisions
   end
 
+  scope "/webhook", GlificWeb.Flows do
+    post "/stir/survey", WebhookController, :stir_survey
+  end
+
   # defp debug_response(conn, _) do
   #  Plug.Conn.register_before_send(conn, fn conn ->
   #    conn.resp_body |> IO.puts()

@@ -234,12 +234,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
     # first call the webhook
-    json =
-      Webhook.get(
-        action.url,
-        Keyword.new(action.headers, fn {k, v} -> {String.to_existing_atom(k), v} end),
-        action.body
-      )
+    json = Webhook.execute(action, context)
 
     if is_nil(json) or is_nil(action.result_name) do
       {:ok, context,

@@ -32,8 +32,7 @@ defmodule GlificWeb.Tenants do
       "information_schema",
       ~r/^pg_/,
       ~r/^db\d+$/,
-      "www",
-      "api"
+      "www"
     ]
   end
 

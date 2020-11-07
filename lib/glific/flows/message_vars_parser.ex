@@ -65,6 +65,11 @@ defmodule Glific.Flows.MessageVarParser do
   defp stringify_keys(value),
     do: value
 
+  @doc """
+  Interpolates the values from results into the message body. Might need to integrate
+  it with the substitution above
+  """
+  @spec parse_results(String.t(), map()) :: String.t()
   def parse_results(body, results) do
     if String.contains?(body, "@results.") do
       Enum.reduce(
@@ -72,13 +77,12 @@ defmodule Glific.Flows.MessageVarParser do
         body,
         fn {key, value}, acc ->
           key = String.downcase(key)
-          value = value["input"]
-          acc = String.replace(acc, "@results." <> key, value)
+          value = to_string(value["input"])
+          String.replace(acc, "@results." <> key, value)
         end
       )
     else
       body
     end
   end
-
 end
