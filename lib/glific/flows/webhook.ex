@@ -52,7 +52,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   # Send a get request, and if success, sned the json map back
-  @spec get(Action.t(), Keyword.t()) :: map() | nil
+  @spec get(atom() | Action.t(), Keyword.t()) :: map() | nil
   defp get(action, headers) do
     case Tesla.get(action.url, action.body, headers: headers) do
       {:ok, %Tesla.Env{status: 200} = message} ->
