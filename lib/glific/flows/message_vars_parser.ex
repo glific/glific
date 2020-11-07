@@ -12,7 +12,8 @@ defmodule Glific.Flows.MessageVarParser do
   def parse(input, binding) do
     binding = stringify_keys(binding)
 
-    String.replace(input, ~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
+    input
+    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
     |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, binding))
   end
 
@@ -63,4 +64,21 @@ defmodule Glific.Flows.MessageVarParser do
 
   defp stringify_keys(value),
     do: value
+
+  def parse_results(body, results) do
+    if String.contains?(body, "@results.") do
+      Enum.reduce(
+        results,
+        body,
+        fn {key, value}, acc ->
+          key = String.downcase(key)
+          value = value["input"]
+          acc = String.replace(acc, "@results." <> key, value)
+        end
+      )
+    else
+      body
+    end
+  end
+
 end

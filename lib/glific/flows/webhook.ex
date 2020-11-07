@@ -5,6 +5,22 @@ defmodule Glific.Flows.Webhook do
   """
 
   @doc """
+  Execute a webhook action, could be either get or post for now
+  """
+  @spec execute(Action.t(), FlowContext.t()) :: map() | nil
+  def execute(action, context) do
+    headers = Keyword.new(
+      action.headers,
+      fn {k, v} -> {String.to_existing_atom(k), v} end
+    )
+    if acrion.method == "get" do
+      get(action.url, headers, action.body)
+    else
+      post(action.url, headers, action.body)
+    end
+  end
+
+  @doc """
   Send a get request, and if success, sned the json map back
   """
   @spec get(String.t(), Keyword.t(), String.t() | nil) :: map() | nil
