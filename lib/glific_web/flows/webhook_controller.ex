@@ -57,7 +57,7 @@ defmodule GlificWeb.Flows.WebhookController do
     %{
       status: to_string(status),
       content: content,
-      score: to_string(score),
+      score: to_string(score)
     }
   end
 end
