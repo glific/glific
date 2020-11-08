@@ -45,15 +45,19 @@ defmodule GlificWeb.Flows.WebhookController do
   end
 
   defp get_content(score) do
-    content =
+    {status, content} =
       cond do
-        rem(score, 7) == 0 -> "Your score: #{score} is divisible by 7"
-        rem(score, 5) == 0 -> "Your score: #{score} is divisible by 5"
-        rem(score, 3) == 0 -> "Your score: #{score} is divisible by 3"
-        rem(score, 2) == 0 -> "Your score: #{score} is divisible by 2"
-        true -> "Your score: #{score} is not divisible by 2, 3, 5 or 7"
+        rem(score, 7) == 0 -> {1, "Your score: #{score} is divisible by 7"}
+        rem(score, 5) == 0 -> {2, "Your score: #{score} is divisible by 5"}
+        rem(score, 3) == 0 -> {3, "Your score: #{score} is divisible by 3"}
+        rem(score, 2) == 0 -> {4, "Your score: #{score} is divisible by 2"}
+        true -> {5, "Your score: #{score} is not divisible by 2, 3, 5 or 7"}
       end
 
-    %{content: content, score: score}
+    %{
+      status: to_string(status),
+      content: content,
+      score: to_string(score),
+    }
   end
 end

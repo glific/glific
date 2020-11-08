@@ -8,6 +8,7 @@ defmodule Glific.Flows.Router do
 
   alias Glific.{
     Flows,
+    Messages,
     Messages.Message
   }
 
@@ -15,6 +16,7 @@ defmodule Glific.Flows.Router do
     Case,
     Category,
     FlowContext,
+    MessageVarParser,
     Node,
     Wait
   }
@@ -57,6 +59,16 @@ defmodule Glific.Flows.Router do
   @spec process(map(), map(), Node.t()) :: {Router.t(), map()}
   def process(json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields)
+
+    # lets put in a hack so we can work on split by value flow
+    json =
+      if json["result_name"] == "Result 8" do
+        json
+        |> Map.delete("wait")
+        |> Map.put("operand", "@results.webhook_status")
+      else
+        json
+      end
 
     router = %Router{
       node_uuid: node.uuid,
@@ -107,8 +119,8 @@ defmodule Glific.Flows.Router do
   def execute(nil, context, messages),
     do: {:ok, context, messages}
 
-  def execute(router, context, []),
-    do: Wait.execute(router.wait, context, [])
+  def execute(%{wait: wait} = _router, context, []) when wait != nil,
+    do: Wait.execute(wait, context, [])
 
   def execute(
         %{type: type} = router,
@@ -116,7 +128,17 @@ defmodule Glific.Flows.Router do
         messages
       )
       when type == "switch" do
-    [msg | rest] = messages
+    {msg, rest} =
+      if messages == [] do
+        # get the value from the "input" version of the operand field
+        # this is the split by result flow
+        content = MessageVarParser.parse_results(router.operand, context.results)
+        msg = Messages.create_temp_message(context.contact.organization_id, content)
+        {msg, []}
+      else
+        [msg | rest] = messages
+        {msg, rest}
+      end
 
     context = FlowContext.update_recent(context, msg.body, :recent_inbound)
 
