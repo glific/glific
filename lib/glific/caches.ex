@@ -53,7 +53,9 @@ defmodule Glific.Caches do
   end
 
   @doc """
+  Get a cached value based on string as key
   """
+  @impl Glific.Caches.CacheBehaviour
   @spec get(String.t()) :: {:ok, any()} | {:ok, false}
   def get(shortcode) do
     case Cachex.exists?(@cache_bucket, {"organizations_list", shortcode}) do
