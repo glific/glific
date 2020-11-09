@@ -217,7 +217,11 @@ defmodule Glific.Groups do
   Updates user groups entries
   """
   @spec update_user_groups(map()) :: :ok
-  def update_user_groups(%{user_id: user_id, group_ids: group_ids}) do
+  def update_user_groups(%{
+        user_id: user_id,
+        group_ids: group_ids,
+        organization_id: organization_id
+      }) do
     user_group_ids =
       UserGroup
       |> where([ug], ug.user_id == ^user_id)
@@ -230,7 +234,7 @@ defmodule Glific.Groups do
 
     new_group_entries =
       Enum.map(add_group_ids, fn group_id ->
-        %{user_id: user_id, group_id: group_id}
+        %{user_id: user_id, group_id: group_id, organization_id: organization_id}
       end)
 
     UserGroup

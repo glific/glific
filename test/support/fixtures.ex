@@ -315,19 +315,22 @@ defmodule Glific.Fixtures do
     {:ok, cg1} =
       Groups.create_contact_group(%{
         contact_id: c1.id,
-        group_id: g1.id
+        group_id: g1.id,
+        organization_id: attrs.filter.organization_id
       })
 
     {:ok, cg2} =
       Groups.create_contact_group(%{
         contact_id: c2.id,
-        group_id: g1.id
+        group_id: g1.id,
+        organization_id: attrs.filter.organization_id
       })
 
     {:ok, cg3} =
       Groups.create_contact_group(%{
         contact_id: c1.id,
-        group_id: g2.id
+        group_id: g2.id,
+        organization_id: attrs.filter.organization_id
       })
 
     [cg1, cg2, cg3]

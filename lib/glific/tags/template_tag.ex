@@ -6,6 +6,7 @@ defmodule Glific.Tags.TemplateTag do
   alias __MODULE__
 
   alias Glific.{
+    Partners.Organization,
     Tags.Tag,
     Templates.SessionTemplate
   }
@@ -13,7 +14,7 @@ defmodule Glific.Tags.TemplateTag do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @required_fields [:template_id, :tag_id]
+  @required_fields [:template_id, :tag_id, :organization_id]
   @optional_fields [:value]
 
   @type t() :: %__MODULE__{
@@ -21,7 +22,9 @@ defmodule Glific.Tags.TemplateTag do
           id: non_neg_integer | nil,
           value: String.t() | nil,
           template: SessionTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
-          tag: Tag.t() | Ecto.Association.NotLoaded.t() | nil
+          tag: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "templates_tags" do
@@ -29,6 +32,7 @@ defmodule Glific.Tags.TemplateTag do
 
     belongs_to :template, SessionTemplate
     belongs_to :tag, Tag
+    belongs_to :organization, Organization
   end
 
   @doc """
