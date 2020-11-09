@@ -2,7 +2,7 @@ defmodule Glific.Repo.Migrations.V0_6_2_AlterGlificTables do
   use Ecto.Migration
 
   @moduledoc """
-  v0.7.0 Alter Glific tables
+  v0.6.2 Alter Glific tables
   """
 
   alias Glific.{
