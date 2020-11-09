@@ -25,6 +25,12 @@ defmodule Glific.Caches do
   def set(organization_id, key, value), do: set_to_cache(organization_id, [key], value)
 
   @doc false
+  @impl Glific.Caches.CacheBehaviour
+  @spec set(String.t(), any()) :: {:ok, any()}
+  def set(shortcode, value),
+    do: set_to_cache(shortcode, value)
+
+  @doc false
   @spec set_to_cache(non_neg_integer, list(), any) :: {:ok, any()}
   defp set_to_cache(organization_id, keys, value) do
     keys = Enum.reduce(keys, [], fn key, acc -> [{{organization_id, key}, value} | acc] end)
@@ -34,6 +40,26 @@ defmodule Glific.Caches do
 
     {:ok, true} = Cachex.put_many(@cache_bucket, keys)
     {:ok, value}
+  end
+
+  @doc false
+  @spec set_to_cache(String.t(), any) :: {:ok, any()}
+  def set_to_cache(shortcode, value) do
+    # also update the reload key for consumers to refresh caches
+    # keys = [{{organization_id, :cache_reload_key}, Ecto.UUID.generate()} | keys]
+
+    {:ok, true} = Cachex.put(@cache_bucket, {"organizations_list", shortcode}, value)
+    {:ok, value}
+  end
+
+  @doc """
+  """
+  @spec get(String.t()) :: {:ok, any()} | {:ok, false}
+  def get(shortcode) do
+    case Cachex.exists?(@cache_bucket, {"organizations_list", shortcode}) do
+      {:ok, true} -> Cachex.get(@cache_bucket, {"organizations_list", shortcode})
+      _ -> {:ok, false}
+    end
   end
 
   @doc """

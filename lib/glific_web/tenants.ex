@@ -11,6 +11,7 @@ defmodule GlificWeb.Tenants do
   """
 
   alias Glific.{
+    Caches,
     Partners.Organization,
     Repo
   }
@@ -71,7 +72,19 @@ defmodule GlificWeb.Tenants do
   end
 
   def organization_handler(shortcode) do
-    case Repo.fetch_by(Organization, %{shortcode: shortcode}) do
+    case Caches.get("organizations_list", shortcode) do
+      {:ok, value} when value in [nil, false] ->
+        case Repo.fetch_by(Organization, %{shortcode: shortcode}) do
+          {:ok, organization} ->
+            Caches.set(shortcode, organization)
+            organization.id
+
+          # in the normal case we'll redirect them here to glific.io
+          # and halt this connection
+          _ ->
+            organization_handler()
+        end
+
       {:ok, organization} ->
         organization.id
 

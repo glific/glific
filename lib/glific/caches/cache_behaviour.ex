@@ -9,7 +9,11 @@ defmodule Glific.Caches.CacheBehaviour do
 
   @callback set(non_neg_integer, String.t() | atom(), any()) :: {:ok, any()}
 
+  @callback set(String.t(), any()) :: {:ok, any()}
+
   @callback get(non_neg_integer, String.t() | atom()) :: {:ok, any()} | {:ok, false}
+
+  @callback get(String.t()) :: {:ok, any()} | {:ok, false}
 
   @callback fetch(non_neg_integer, String.t() | atom(), (any() -> any())) ::
               {:ok, any()} | {:ok, false}
