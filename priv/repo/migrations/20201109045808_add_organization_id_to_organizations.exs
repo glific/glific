@@ -1,12 +1,10 @@
-defmodule Glific.Repo.Migrations.AddOrganizationIdToOrganization do
+defmodule Glific.Repo.Migrations.AddOrganizationIdToOrganizations do
   use Ecto.Migration
 
   def up do
     alter table(:organizations) do
       add :organization_id, :bigint, null: true
     end
-
-    # flush()
 
     execute """
     CREATE OR REPLACE FUNCTION update_organization_id()
