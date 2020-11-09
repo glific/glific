@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.V0_7_0_AlterGlificTables do
+defmodule Glific.Repo.Migrations.V0_6_2_AlterGlificTables do
   use Ecto.Migration
 
   @moduledoc """
@@ -75,30 +75,30 @@ defmodule Glific.Repo.Migrations.V0_7_0_AlterGlificTables do
       join: f in assoc(fc, :group),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Glific.Repo.update_all([])
+    |> Repo.update_all([])
 
     from([fc] in ContactGroup,
       join: f in assoc(fc, :group),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Glific.Repo.update_all([])
+    |> Repo.update_all([])
 
     from([fc] in ContactTag,
       join: f in assoc(fc, :tag),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Glific.Repo.update_all([])
+    |> Repo.update_all([])
 
     from([fc] in MessageTag,
       join: f in assoc(fc, :tag),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Glific.Repo.update_all([])
+    |> Repo.update_all([])
 
     from([fc] in TemplateTag,
       join: f in assoc(fc, :tag),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Glific.Repo.update_all([])
+    |> Repo.update_all([])
   end
 end
