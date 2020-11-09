@@ -146,7 +146,7 @@ defmodule Glific.ContactsTest do
 
       # Contact should be created with organization's default language
       {:ok, organization} =
-        Repo.fetch_by(Organization, %{name: "Glific"}, skip_organization_id: true)
+        Repo.fetch_by(Organization, %{name: "Glific"})
 
       assert contact.language_id == organization.default_language_id
     end

@@ -494,7 +494,7 @@ defmodule Glific.PartnersTest do
 
     test "organization/1 should return cached active languages" do
       organization =
-        organization_fixture() |> Repo.preload(:default_language, skip_organization_id: true)
+        organization_fixture() |> Repo.preload(:default_language)
 
       default_language = organization.default_language
       organization = Partners.organization(organization.id)

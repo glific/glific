@@ -121,7 +121,7 @@ if Code.ensure_loaded?(Faker) do
     @doc false
     @spec seed_organizations(non_neg_integer | nil) :: Organization.t() | nil
     def seed_organizations(_organization_id \\ nil) do
-      Organization |> Ecto.Query.first() |> Repo.one(skip_organization_id: true)
+      Organization |> Ecto.Query.first() |> Repo.one()
     end
 
     @doc false

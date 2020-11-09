@@ -147,10 +147,7 @@ defmodule Glific.Partners do
   """
   @spec list_organizations(map()) :: [Organization.t()]
   def list_organizations(args \\ %{}),
-    do:
-      Repo.list_filter(args, Organization, &Repo.opts_with_name/2, &filter_organization_with/2,
-        skip_organization_id: true
-      )
+    do: Repo.list_filter(args, Organization, &Repo.opts_with_name/2, &filter_organization_with/2)
 
   @doc """
   List of organizations that are active within the system
@@ -160,7 +157,7 @@ defmodule Glific.Partners do
     Organization
     |> where([q], q.is_active == true)
     |> select([q], [q.id, q.name])
-    |> Repo.all(skip_organization_id: true)
+    |> Repo.all()
     |> Enum.reduce(%{}, fn row, acc ->
       [id, value] = row
       Map.put(acc, id, value)
@@ -176,8 +173,7 @@ defmodule Glific.Partners do
       Repo.count_filter(
         args,
         Organization,
-        &filter_organization_with/2,
-        skip_organization_id: true
+        &filter_organization_with/2
       )
 
   # codebeat:disable[ABC]
@@ -223,7 +219,7 @@ defmodule Glific.Partners do
 
   """
   @spec get_organization!(integer) :: Organization.t()
-  def get_organization!(id), do: Repo.get!(Organization, id, skip_organization_id: true)
+  def get_organization!(id), do: Repo.get!(Organization, id)
 
   @doc ~S"""
   Creates a organization.
@@ -241,7 +237,7 @@ defmodule Glific.Partners do
   def create_organization(attrs \\ %{}) do
     %Organization{}
     |> Organization.changeset(attrs)
-    |> Repo.insert(skip_organization_id: true)
+    |> Repo.insert()
   end
 
   @doc ~S"""
@@ -264,7 +260,7 @@ defmodule Glific.Partners do
 
     organization
     |> Organization.changeset(attrs)
-    |> Repo.update(skip_organization_id: true)
+    |> Repo.update()
   end
 
   @doc ~S"""
@@ -282,7 +278,7 @@ defmodule Glific.Partners do
   @spec delete_organization(Organization.t()) ::
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def delete_organization(%Organization{} = organization) do
-    Repo.delete(organization, skip_organization_id: true)
+    Repo.delete(organization)
   end
 
   @doc ~S"""
@@ -311,7 +307,7 @@ defmodule Glific.Partners do
         organization =
           get_organization!(organization_id)
           |> set_credentials()
-          |> Repo.preload(:bsp, skip_organization_id: true)
+          |> Repo.preload(:bsp)
           |> set_bsp_info()
           |> set_out_of_office_values()
           |> set_languages()
@@ -515,7 +511,7 @@ defmodule Glific.Partners do
   """
   @spec create_credential(map()) :: {:ok, Credential.t()} | {:error, any()}
   def create_credential(attrs) do
-    case Repo.fetch_by(Provider, %{shortcode: attrs[:shortcode]}, skip_organization_id: true) do
+    case Repo.fetch_by(Provider, %{shortcode: attrs[:shortcode]}) do
       {:ok, provider} ->
         # first delete the cached organization
         Caches.remove(attrs.organization_id, ["organization"])
@@ -539,7 +535,7 @@ defmodule Glific.Partners do
   def update_credential(%Credential{} = credential, attrs) do
     # when updating the bsp credentials fetch list of opted in contacts
     credential =
-      credential |> Repo.preload([:provider, :organization], skip_organization_id: true)
+      credential |> Repo.preload([:provider, :organization])
 
     if credential.provider.group == "bsp" do
       fetch_opted_in_contacts(attrs)

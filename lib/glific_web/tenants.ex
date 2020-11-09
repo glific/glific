@@ -66,13 +66,13 @@ defmodule GlificWeb.Tenants do
     # in the normal case we'll redirect them here to glific.io
     # and halt this connection
     {:ok, default} =
-      Repo.fetch_by(Organization, %{shortcode: "glific"}, skip_organization_id: true)
+      Repo.fetch_by(Organization, %{shortcode: "glific"})
 
     default.id
   end
 
   def organization_handler(shortcode) do
-    case Repo.fetch_by(Organization, %{shortcode: shortcode}, skip_organization_id: true) do
+    case Repo.fetch_by(Organization, %{shortcode: shortcode}) do
       {:ok, organization} ->
         organization.id
 

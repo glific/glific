@@ -28,7 +28,7 @@ defmodule Glific.Fixtures do
   """
   @spec get_org_id :: integer
   def get_org_id do
-    organization = Organization |> Ecto.Query.first() |> Repo.one(skip_organization_id: true)
+    organization = Organization |> Ecto.Query.first() |> Repo.one()
     organization.id
   end
 
