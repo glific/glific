@@ -76,25 +76,5 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
     alter table(:messages_media) do
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
     end
-
-    alter table(:users_groups) do
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
-    end
-
-    alter table(:contacts_groups) do
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
-    end
-
-    alter table(:contacts_tags) do
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
-    end
-
-    alter table(:messages_tags) do
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
-    end
-
-    alter table(:templates_tags) do
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
-    end
   end
 end
