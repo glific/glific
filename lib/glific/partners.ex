@@ -336,15 +336,16 @@ defmodule Glific.Partners do
         if is_integer(cache_key) do
           get_organization!(cache_key) |> fill_cache()
         else
-
           case Repo.fetch_by(Organization, %{shortcode: cache_key}, skip_organization_id: true) do
             {:ok, organization} ->
               # will need to find a better place to put this.
               # for now it's solving a purpose when we fetch the organization
-              #to cache for the first time.
+              # to cache for the first time.
               Glific.Repo.put_organization_id(organization.id)
               organization |> fill_cache()
-            _ -> nil
+
+            _ ->
+              nil
           end
         end
 

@@ -170,7 +170,8 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Update the contact results state as we step through the flow
   """
-  @spec update_results(FlowContext.t(), String.t(), String.t(), String.t()) :: FlowContext.t()
+  @spec update_results(FlowContext.t(), String.t(), String.t() | map(), String.t()) ::
+          FlowContext.t()
   def update_results(context, key, input, category) do
     results =
       if is_nil(context.results),
@@ -198,13 +199,15 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec update_results(FlowContext.t(), String.t(), map()) :: FlowContext.t()
   def update_results(context, key, json) do
-    Enum.reduce(
-      json,
+    json
+    |> Enum.reduce(
       context,
       fn {k, v}, context ->
         update_results(context, key <> "_" <> k, v, key)
       end
     )
+    # also add the entire json object in case folks want to access that
+    |> update_results(key, json, key)
   end
 
   @doc """

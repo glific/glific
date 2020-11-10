@@ -10,8 +10,8 @@ defmodule GlificWeb.Flows.WebhookController do
   Example implementation of survey computation for STiR
   """
   @spec stir_survey(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def stir_survey(conn, params) do
-    json = compute_survey_score(params["results"])
+  def stir_survey(conn, %{"results" => results} = _params) do
+    json = compute_survey_score(results)
 
     conn
     |> json(%{results: json})

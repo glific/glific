@@ -60,16 +60,6 @@ defmodule Glific.Flows.Router do
   def process(json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields)
 
-    # lets put in a hack so we can work on split by value flow
-    json =
-      if json["result_name"] == "Result 8" do
-        json
-        |> Map.delete("wait")
-        |> Map.put("operand", "@results.webhook_status")
-      else
-        json
-      end
-
     router = %Router{
       node_uuid: node.uuid,
       type: json["type"],
@@ -132,7 +122,12 @@ defmodule Glific.Flows.Router do
       if messages == [] do
         # get the value from the "input" version of the operand field
         # this is the split by result flow
-        content = MessageVarParser.parse_results(router.operand, context.results)
+        content =
+          router.operand
+          |> MessageVarParser.parse_results(context.results)
+          # Once we have the content, we send it over to EEx to execute
+          |> EEx.eval_string()
+
         msg = Messages.create_temp_message(context.contact.organization_id, content)
         {msg, []}
       else

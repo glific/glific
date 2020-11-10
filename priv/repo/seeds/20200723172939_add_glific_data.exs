@@ -632,7 +632,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       outofoffice: generate_uuid(organization, "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7"),
       activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
       feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
-      optout: generate_uuid(organization, "bc1622f8-64f8-4b3d-b767-bb6bbfb65104")
+      optout: generate_uuid(organization, "bc1622f8-64f8-4b3d-b767-bb6bbfb65104"),
+      survey: generate_uuid(organization, "8333fce2-63d3-4849-bfd9-3543eb8b0430")
     }
 
     flow_labels_id_map =
@@ -652,7 +653,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
        "out_of_office.json"},
       {"Activity", ["activity"], uuid_map.activity, false, "activity.json"},
       {"Feedback", ["feedback"], uuid_map.feedback, false, "feedback.json"},
-      {"Optout Workflow", ["optout"], uuid_map.optout, false, "optout.json"}
+      {"Optout Workflow", ["optout"], uuid_map.optout, false, "optout.json"},
+      {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"}
     ]
 
     Enum.map(data, &flow(&1, organization, uuid_map, flow_labels_id_map))
