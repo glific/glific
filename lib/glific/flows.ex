@@ -52,7 +52,6 @@ defmodule Glific.Flows do
           [flow, flow_revision: flow_revision],
           flow_revision.status == ^status
         )
-        |> distinct([flow], flow.id)
 
       _, query ->
         query
