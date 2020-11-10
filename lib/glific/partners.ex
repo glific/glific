@@ -304,6 +304,9 @@ defmodule Glific.Partners do
 
   @spec fill_cache(Organization.t()) :: Organization.t()
   defp fill_cache(organization) do
+    # For this process, lets set the organization id
+    Glific.Repo.put_organization_id(organization.id)
+
     organization =
       organization
       |> set_credentials()
@@ -338,10 +341,6 @@ defmodule Glific.Partners do
         else
           case Repo.fetch_by(Organization, %{shortcode: cache_key}, skip_organization_id: true) do
             {:ok, organization} ->
-              # will need to find a better place to put this.
-              # for now it's solving a purpose when we fetch the organization
-              # to cache for the first time.
-              Glific.Repo.put_organization_id(organization.id)
               organization |> fill_cache()
 
             _ ->
@@ -350,6 +349,7 @@ defmodule Glific.Partners do
         end
 
       {:ok, organization} ->
+        Glific.Repo.put_organization_id(organization.id)
         organization
     end
   end
