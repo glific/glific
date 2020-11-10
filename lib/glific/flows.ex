@@ -52,7 +52,8 @@ defmodule Glific.Flows do
           [flow, flow_revision: flow_revision],
           flow_revision.status == ^status
         )
-        |> distinct([flow], flow.id)
+        # this is a temporary fix,
+        # it won't work for flow statuses other than "done"
 
       _, query ->
         query
