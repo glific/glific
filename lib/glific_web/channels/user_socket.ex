@@ -39,6 +39,8 @@ defmodule GlificWeb.UserSocket do
           |> assign(:organization_id, user.organization_id)
           |> Absinthe.Phoenix.Socket.put_options(context: %{current_user: user})
 
+        Glific.Repo.put_organization_id(user.organization_id)
+
         {:ok, socket}
     end
   end

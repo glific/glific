@@ -407,17 +407,20 @@ if Code.ensure_loaded?(Faker) do
 
       Repo.insert!(%Groups.ContactGroup{
         contact_id: c2.id,
-        group_id: g1.id
+        group_id: g1.id,
+        organization_id: organization.id
       })
 
       Repo.insert!(%Groups.ContactGroup{
         contact_id: c1.id,
-        group_id: g1.id
+        group_id: g1.id,
+        organization_id: organization.id
       })
 
       Repo.insert!(%Groups.ContactGroup{
         contact_id: c2.id,
-        group_id: g2.id
+        group_id: g2.id,
+        organization_id: organization.id
       })
     end
 
@@ -431,17 +434,20 @@ if Code.ensure_loaded?(Faker) do
 
       Repo.insert!(%Groups.UserGroup{
         user_id: u1.id,
-        group_id: g1.id
+        group_id: g1.id,
+        organization_id: organization.id
       })
 
       Repo.insert!(%Groups.UserGroup{
         user_id: u2.id,
-        group_id: g1.id
+        group_id: g1.id,
+        organization_id: organization.id
       })
 
       Repo.insert!(%Groups.UserGroup{
         user_id: u1.id,
-        group_id: g2.id
+        group_id: g2.id,
+        organization_id: organization.id
       })
     end
 

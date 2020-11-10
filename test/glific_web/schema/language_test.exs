@@ -27,6 +27,7 @@ defmodule GlificWeb.Schema.LanguageTest do
 
   test "language id returns one language or nil", %{staff: user} do
     label = "English (United States)"
+
     {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => lang.id})
@@ -76,6 +77,7 @@ defmodule GlificWeb.Schema.LanguageTest do
 
   test "update a language and test possible scenarios and errors", %{manager: user} do
     label = "English (United States)"
+
     {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
 
     result =

@@ -135,7 +135,10 @@ defmodule GlificWeb.Schema do
   def context(ctx) do
     loader =
       Dataloader.new()
-      |> Dataloader.add_source(Repo, Dataloader.Ecto.new(Repo))
+      |> Dataloader.add_source(
+        Repo,
+        Dataloader.Ecto.new(Repo, repo_opts: [organization_id: ctx.current_user.organization_id])
+      )
 
     Map.put(ctx, :loader, loader)
   end

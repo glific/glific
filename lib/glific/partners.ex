@@ -173,7 +173,12 @@ defmodule Glific.Partners do
   """
   @spec count_organizations(map()) :: integer
   def count_organizations(args \\ %{}),
-    do: Repo.count_filter(args, Organization, &filter_organization_with/2)
+    do:
+      Repo.count_filter(
+        args,
+        Organization,
+        &filter_organization_with/2
+      )
 
   # codebeat:disable[ABC]
   @spec filter_organization_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::

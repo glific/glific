@@ -112,4 +112,13 @@ defmodule Glific do
       |> Enum.into(%{})
 
   def atomize_keys(value), do: value
+
+  @doc """
+      We remove this soon
+  """
+  @spec stacktrace(any) :: :ok
+  def stacktrace(label \\ "StackTrace") do
+    IO.puts(Process.info(self(), :current_stacktrace), label: label)
+    :ok
+  end
 end

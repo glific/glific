@@ -47,7 +47,8 @@ defmodule Glific.TemplateTagsTest do
       TemplateTags.update_template_tags(%{
         template_id: template.id,
         add_tag_ids: [tag_1.id, tag_2.id],
-        delete_tag_ids: []
+        delete_tag_ids: [],
+        organization_id: attrs.organization_id
       })
 
     assert length(template_tags.template_tags) == 2
@@ -57,7 +58,8 @@ defmodule Glific.TemplateTagsTest do
       TemplateTags.update_template_tags(%{
         template_id: template.id,
         add_tag_ids: [tag_1.id, tag_2.id] ++ ["-1"],
-        delete_tag_ids: []
+        delete_tag_ids: [],
+        organization_id: attrs.organization_id
       })
 
     assert length(template_tags.template_tags) == 2
@@ -67,7 +69,8 @@ defmodule Glific.TemplateTagsTest do
       TemplateTags.update_template_tags(%{
         template_id: template.id,
         add_tag_ids: [],
-        delete_tag_ids: [tag_1.id, tag_2.id]
+        delete_tag_ids: [tag_1.id, tag_2.id],
+        organization_id: attrs.organization_id
       })
 
     assert template_tags.template_tags == []

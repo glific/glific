@@ -225,7 +225,7 @@ defmodule Glific.Tags do
   """
   @spec get_message_tag!(integer) :: MessageTag.t()
   def get_message_tag!(id) do
-    Repo.get!(MessageTag, id)
+    Repo.get!(MessageTag, id, skip_organization_id: true)
   end
 
   @doc """
@@ -245,7 +245,11 @@ defmodule Glific.Tags do
     {status, response} =
       %MessageTag{}
       |> MessageTag.changeset(attrs)
-      |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])
+      |> Repo.insert(
+        on_conflict: :replace_all,
+        conflict_target: [:message_id, :tag_id],
+        skip_organization_id: true
+      )
 
     if status == :ok,
       do: Communications.publish_data(response, :created_message_tag, organization_id)
@@ -285,10 +289,10 @@ defmodule Glific.Tags do
       MessageTag
       |> where([m], m.message_id == ^message_id and m.tag_id in ^tag_ids)
 
-    Repo.all(query)
+    Repo.all(query, skip_organization_id: true)
     |> publish_delete_message(organization_id)
 
-    Repo.delete_all(query)
+    Repo.delete_all(query, skip_organization_id: true)
   end
 
   @doc """
@@ -321,7 +325,7 @@ defmodule Glific.Tags do
   """
   @spec get_contact_tag!(integer) :: ContactTag.t()
   def get_contact_tag!(id) do
-    Repo.get!(ContactTag, id)
+    Repo.get!(ContactTag, id, skip_organization_id: true)
   end
 
   @doc """
@@ -398,14 +402,16 @@ defmodule Glific.Tags do
       from mt in MessageTag,
         join: m in assoc(mt, :message),
         join: t in assoc(mt, :tag),
-        where: m.contact_id == ^contact_id and t.shortcode in ^tag_shortcode_list
+        where: m.contact_id == ^contact_id,
+        where: m.organization_id == ^organization_id,
+        where: t.shortcode in ^tag_shortcode_list
 
-    Repo.all(query)
+    Repo.all(query, skip_organization_id: true)
     |> publish_delete_message(organization_id)
 
     {_, deleted_rows} =
       select(query, [mt], [mt.message_id])
-      |> Repo.delete_all()
+      |> Repo.delete_all(skip_organization_id: true)
 
     List.flatten(deleted_rows)
   end
@@ -449,7 +455,11 @@ defmodule Glific.Tags do
   def create_template_tag(attrs \\ %{}) do
     %TemplateTag{}
     |> TemplateTag.changeset(attrs)
-    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:template_id, :tag_id])
+    |> Repo.insert(
+      on_conflict: :replace_all,
+      conflict_target: [:template_id, :tag_id],
+      skip_organization_id: true
+    )
   end
 
   @doc """
@@ -459,6 +469,6 @@ defmodule Glific.Tags do
   def delete_template_tag_by_ids(template_id, tag_ids) when is_list(tag_ids) do
     TemplateTag
     |> where([m], m.template_id == ^template_id and m.tag_id in ^tag_ids)
-    |> Repo.delete_all()
+    |> Repo.delete_all(skip_organization_id: true)
   end
 end
