@@ -117,7 +117,6 @@ defmodule Glific.FlagsTest do
            ) == false
   end
 
-  # @tag :pending
   test "out_of_office_check/1 should activate out_of_office_active flag" do
     organization = Fixtures.organization_fixture()
 
