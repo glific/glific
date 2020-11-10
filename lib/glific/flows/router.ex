@@ -8,6 +8,7 @@ defmodule Glific.Flows.Router do
 
   alias Glific.{
     Flows,
+    Messages,
     Messages.Message
   }
 
@@ -15,6 +16,7 @@ defmodule Glific.Flows.Router do
     Case,
     Category,
     FlowContext,
+    MessageVarParser,
     Node,
     Wait
   }
@@ -107,8 +109,8 @@ defmodule Glific.Flows.Router do
   def execute(nil, context, messages),
     do: {:ok, context, messages}
 
-  def execute(router, context, []),
-    do: Wait.execute(router.wait, context, [])
+  def execute(%{wait: wait} = _router, context, []) when wait != nil,
+    do: Wait.execute(wait, context, [])
 
   def execute(
         %{type: type} = router,
@@ -116,7 +118,22 @@ defmodule Glific.Flows.Router do
         messages
       )
       when type == "switch" do
-    [msg | rest] = messages
+    {msg, rest} =
+      if messages == [] do
+        # get the value from the "input" version of the operand field
+        # this is the split by result flow
+        content =
+          router.operand
+          |> MessageVarParser.parse_results(context.results)
+          # Once we have the content, we send it over to EEx to execute
+          |> EEx.eval_string()
+
+        msg = Messages.create_temp_message(context.contact.organization_id, content)
+        {msg, []}
+      else
+        [msg | rest] = messages
+        {msg, rest}
+      end
 
     context = FlowContext.update_recent(context, msg.body, :recent_inbound)
 
