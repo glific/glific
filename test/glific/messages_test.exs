@@ -145,7 +145,7 @@ defmodule Glific.MessagesTest do
         |> Messages.create_message()
 
       # this gets the session_uuid set by the trigger
-        message = Messages.get_message!(message.id)
+      message = Messages.get_message!(message.id)
 
       assert [message] ==
                Messages.list_messages(%{filter: Map.merge(attrs, %{sender: sender.name})})
