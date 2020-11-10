@@ -2,7 +2,6 @@ defmodule Glific.Settings do
   @moduledoc """
   The Settings context. This includes language for now.
   """
-
   import Ecto.Query, warn: false
   alias Glific.Repo
   alias Glific.Settings.Language

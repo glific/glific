@@ -32,8 +32,7 @@ defmodule GlificWeb.Tenants do
       "information_schema",
       ~r/^pg_/,
       ~r/^db\d+$/,
-      "www",
-      "api"
+      "www"
     ]
   end
 
@@ -67,6 +66,7 @@ defmodule GlificWeb.Tenants do
     # in the normal case we'll redirect them here to glific.io
     # and halt this connection
     {:ok, default} = Repo.fetch_by(Organization, %{shortcode: "glific"})
+
     default.id
   end
 

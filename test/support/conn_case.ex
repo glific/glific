@@ -56,6 +56,7 @@ defmodule GlificWeb.ConnCase do
 
     # organization_id = Fixtures.get_org_id()
     organization_id = 1
+    Glific.Repo.put_organization_id(1)
 
     {
       :ok,
@@ -64,7 +65,8 @@ defmodule GlificWeb.ConnCase do
       user: Fixtures.user_fixture(),
       manager: Fixtures.user_fixture(%{roles: ["manager"]}),
       staff: Fixtures.user_fixture(%{roles: ["staff"]}),
-      glific_admin: Fixtures.user_fixture(%{roles: ["glific_admin"]})
+      glific_admin: Fixtures.user_fixture(%{roles: ["glific_admin"]}),
+      global_schema: Application.fetch_env!(:glific, :global_schema)
     }
   end
 end

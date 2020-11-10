@@ -155,7 +155,11 @@ defmodule Glific.GroupsTest do
       group = group_fixture(attrs)
 
       {:ok, contact_group} =
-        Groups.create_contact_group(%{contact_id: contact.id, group_id: group.id})
+        Groups.create_contact_group(%{
+          contact_id: contact.id,
+          group_id: group.id,
+          organization_id: attrs.organization_id
+        })
 
       assert contact_group.contact_id == contact.id
       assert contact_group.group_id == group.id
@@ -195,7 +199,14 @@ defmodule Glific.GroupsTest do
     test "create_users_group/1 with valid data creates a group", attrs do
       [user | _] = Users.list_users(%{filter: attrs})
       group = group_fixture(attrs)
-      {:ok, user_group} = Groups.create_user_group(%{user_id: user.id, group_id: group.id})
+
+      {:ok, user_group} =
+        Groups.create_user_group(%{
+          user_id: user.id,
+          group_id: group.id,
+          organization_id: user.organization_id
+        })
+
       assert user_group.user_id == user.id
       assert user_group.group_id == group.id
     end
@@ -219,14 +230,15 @@ defmodule Glific.GroupsTest do
       :ok =
         Groups.update_user_groups(%{
           user_id: user.id,
-          group_ids: ["#{group_1.id}", "#{group_2.id}"]
+          group_ids: ["#{group_1.id}", "#{group_2.id}"],
+          organization_id: user.organization_id
         })
 
       user_group_ids =
         UserGroup
         |> where([ug], ug.user_id == ^user.id)
         |> select([ug], ug.group_id)
-        |> Repo.all()
+        |> Repo.all(skip_organization_id: true)
 
       assert user_group_ids == [group_1.id, group_2.id]
 
@@ -234,14 +246,15 @@ defmodule Glific.GroupsTest do
       :ok =
         Groups.update_user_groups(%{
           user_id: user.id,
-          group_ids: ["#{group_1.id}", "#{group_3.id}"]
+          group_ids: ["#{group_1.id}", "#{group_3.id}"],
+          organization_id: user.organization_id
         })
 
       user_group_ids =
         UserGroup
         |> where([ug], ug.user_id == ^user.id)
         |> select([ug], ug.group_id)
-        |> Repo.all()
+        |> Repo.all(skip_organization_id: true)
 
       assert user_group_ids == [group_1.id, group_3.id]
     end

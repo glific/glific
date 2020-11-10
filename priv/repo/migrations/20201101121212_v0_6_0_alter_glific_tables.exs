@@ -116,19 +116,19 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
       join: f in assoc(fc, :flow),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Glific.Repo.update_all([])
+    |> Glific.Repo.update_all([], skip_organization_id: true)
 
     from([fc] in FlowCount,
       join: f in assoc(fc, :flow),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Glific.Repo.update_all([])
+    |> Glific.Repo.update_all([], skip_organization_id: true)
 
     from([fc] in FlowRevision,
       join: f in assoc(fc, :flow),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Glific.Repo.update_all([])
+    |> Glific.Repo.update_all([], skip_organization_id: true)
   end
 
   defp update_org_id_of_message_media do
@@ -137,7 +137,7 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
       Message
       |> where([m], not is_nil(m.media_id))
       |> preload(:media)
-      |> Repo.all()
+      |> Repo.all(skip_organization_id: true)
 
     messages
     |> Enum.each(fn message ->
@@ -145,7 +145,7 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
         where: mm.id == ^message.media_id,
         update: [set: [organization_id: ^message.organization_id]]
       )
-      |> Repo.update_all([])
+      |> Repo.update_all([], skip_organization_id: true)
     end)
 
     # Fix for seeds of message_media without a message
@@ -153,6 +153,6 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
       where: is_nil(mm.organization_id),
       update: [set: [organization_id: 1]]
     )
-    |> Repo.update_all([])
+    |> Repo.update_all([], skip_organization_id: true)
   end
 end

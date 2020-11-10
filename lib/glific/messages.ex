@@ -80,7 +80,7 @@ defmodule Glific.Messages do
           MessageTag
           |> where([p], p.tag_id in ^tags_included)
           |> select([p], p.message_id)
-          |> Repo.all()
+          |> Repo.all(skip_organization_id: true)
 
         query |> where([m], m.id in ^message_ids)
 
@@ -89,7 +89,7 @@ defmodule Glific.Messages do
           MessageTag
           |> where([p], p.tag_id in ^tags_excluded)
           |> select([p], p.message_id)
-          |> Repo.all()
+          |> Repo.all(skip_organization_id: true)
 
         query |> where([m], m.id not in ^message_ids)
 
