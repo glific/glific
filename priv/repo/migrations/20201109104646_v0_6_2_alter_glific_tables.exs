@@ -75,30 +75,30 @@ defmodule Glific.Repo.Migrations.V0_6_2_AlterGlificTables do
       join: f in assoc(fc, :group),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Repo.update_all([])
+    |> Repo.update_all([], skip_organization_id: true)
 
     from([fc] in ContactGroup,
       join: f in assoc(fc, :group),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Repo.update_all([])
+    |> Repo.update_all([], skip_organization_id: true)
 
     from([fc] in ContactTag,
       join: f in assoc(fc, :tag),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Repo.update_all([])
+    |> Repo.update_all([], skip_organization_id: true)
 
     from([fc] in MessageTag,
       join: f in assoc(fc, :tag),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Repo.update_all([])
+    |> Repo.update_all([], skip_organization_id: true)
 
     from([fc] in TemplateTag,
       join: f in assoc(fc, :tag),
       update: [set: [organization_id: f.organization_id]]
     )
-    |> Repo.update_all([])
+    |> Repo.update_all([], skip_organization_id: true)
   end
 end

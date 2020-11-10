@@ -534,8 +534,7 @@ defmodule Glific.Partners do
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
     # when updating the bsp credentials fetch list of opted in contacts
-    credential =
-      credential |> Repo.preload([:provider, :organization])
+    credential = credential |> Repo.preload([:provider, :organization])
 
     if credential.provider.group == "bsp" do
       fetch_opted_in_contacts(attrs)

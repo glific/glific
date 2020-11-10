@@ -65,8 +65,7 @@ defmodule GlificWeb.Tenants do
   def organization_handler(nil) do
     # in the normal case we'll redirect them here to glific.io
     # and halt this connection
-    {:ok, default} =
-      Repo.fetch_by(Organization, %{shortcode: "glific"})
+    {:ok, default} = Repo.fetch_by(Organization, %{shortcode: "glific"})
 
     default.id
   end
