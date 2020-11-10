@@ -44,16 +44,14 @@ defmodule Glific.Flows do
 
       {:status, status}, query ->
         query
-        |> join(:left, [flow], flow_revision in FlowRevision,
-          as: :flow_revision,
-          on: flow_revision.flow_id == flow.id
-        )
         |> where(
-          [flow, flow_revision: flow_revision],
-          flow_revision.status == ^status
+          [f],
+          f.id in subquery(
+            FlowRevision
+            |> where([fr], fr.status == ^status)
+            |> select([fr], fr.flow_id)
+          )
         )
-        # this is a temporary fix,
-        # it won't work for flow statuses other than "done"
 
       _, query ->
         query
