@@ -140,10 +140,10 @@ defmodule Glific.Searches do
   defp filter_active_contacts_of_organization(contact_ids, organization_id)
        when is_list(contact_ids) do
     Contact
-    |> where([contact: c], c.id in ^contact_ids)
-    |> where([contact: c], c.organization_id == ^organization_id)
-    |> where([contact: c], c.status != ^:blocked)
-    |> select([contact: c], c.id)
+    |> where([c], c.id in ^contact_ids)
+    |> where([c], c.organization_id == ^organization_id)
+    |> where([c], c.status != ^:blocked)
+    |> select([c], c.id)
   end
 
   @spec get_restricted_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()

@@ -8,6 +8,8 @@ defmodule Glific.Repo do
 
   alias __MODULE__
 
+  alias Glific.Users.User
+
   import Ecto.Query
 
   use Ecto.Repo,

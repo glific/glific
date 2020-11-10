@@ -84,11 +84,10 @@ defmodule Glific.UsersTest do
     test "count_users/1 returns count of all users",
          %{organization_id: _organization_id} = attrs do
       users_count = Users.count_users(%{filter: attrs})
-
-      _ = user_fixture(attrs)
+      _ = user_fixture(Map.put(attrs, :name, "A real unique name"))
 
       assert Users.count_users(%{filter: attrs}) == users_count + 1
-      assert Users.count_users(%{filter: Map.merge(attrs, %{name: "some name"})}) == 1
+      assert Users.count_users(%{filter: Map.merge(attrs, %{name: "A real unique name"})}) == 1
     end
 
     test "get_user!/1 returns the user with given id",

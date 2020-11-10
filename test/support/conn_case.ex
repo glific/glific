@@ -56,14 +56,17 @@ defmodule GlificWeb.ConnCase do
 
     # organization_id = Fixtures.get_org_id()
     organization_id = 1
+    manager = Fixtures.user_fixture(%{roles: ["manager"]})
+
     Glific.Repo.put_organization_id(1)
+    Glific.Repo.put_current_user(manager)
 
     {
       :ok,
       conn: Phoenix.ConnTest.build_conn() |> Plug.Conn.assign(:organization_id, organization_id),
       organization_id: organization_id,
       user: Fixtures.user_fixture(),
-      manager: Fixtures.user_fixture(%{roles: ["manager"]}),
+      manager: manager,
       staff: Fixtures.user_fixture(%{roles: ["staff"]}),
       glific_admin: Fixtures.user_fixture(%{roles: ["glific_admin"]}),
       global_schema: Application.fetch_env!(:glific, :global_schema)
