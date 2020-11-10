@@ -8,13 +8,16 @@ defmodule Glific.Searches do
   alias Glific.{
     Contacts.Contact,
     Conversations.Conversation,
+    Groups.ContactGroup,
+    Groups.UserGroup,
     Messages.Message,
     Repo,
     Search.Full,
     Searches.SavedSearch,
     Searches.Search,
     Tags.MessageTag,
-    Tags.Tag
+    Tags.Tag,
+    Users.User
   }
 
   @doc """
@@ -137,10 +140,31 @@ defmodule Glific.Searches do
   defp filter_active_contacts_of_organization(contact_ids, organization_id)
        when is_list(contact_ids) do
     Contact
-    |> where([c], c.id in ^contact_ids)
-    |> where([c], c.organization_id == ^organization_id)
-    |> where([c], c.status != ^:blocked)
-    |> select([c], c.id)
+    |> where([contact: c], c.id in ^contact_ids)
+    |> where([contact: c], c.organization_id == ^organization_id)
+    |> where([contact: c], c.status != ^:blocked)
+    |> select([contact: c], c.id)
+  end
+
+  @spec get_restricted_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
+  defp get_restricted_permission(query, user) do
+    # for now we'll just give access to odd contacts for odd users
+    # and even contacts for even users
+    query
+    |> join(:inner, [m], ug in UserGroup, as: :ug, on: ug.user_id == ^user.id)
+    |> join(:inner, [m, ug: ug], cg in ContactGroup, as: :cg, on: ug.group_id == cg.group_id)
+    |> where([m, cg: cg], m.contact_id == cg.contact_id)
+  end
+
+  @spec get_permission(Ecto.Query.t()) :: Ecto.Query.t()
+  defp get_permission(query) do
+    user = Glific.Repo.get_current_user()
+
+    if is_nil(user), do: raise(RuntimeError, message: "Invalid user")
+
+    if user.is_restricted and Enum.member?(user.roles, :staff),
+      do: get_restricted_permission(query, user),
+      else: query
   end
 
   # common function to build query between count and search
@@ -153,6 +177,7 @@ defmodule Glific.Searches do
     |> where([m], m.message_number == 0)
     |> where([m], m.organization_id == ^args.filter.organization_id)
     |> order_by([m], desc: m.inserted_at)
+    |> get_permission()
     |> Full.run(term, args)
   end
 
@@ -217,7 +242,7 @@ defmodule Glific.Searches do
     Message
     # we are only interested in the latest message
     |> where([m], m.organization_id == ^args.filter.organization_id and m.message_number == 0)
-    |> join(:left, [m], c in Contact, as: :contact, on: c.id == m.contact_id)
+    |> join(:inner, [m], c in Contact, as: :contact, on: c.id == m.contact_id)
     |> where([contact: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
     |> order_by([m], desc: m.inserted_at)
     |> limit(^limit)

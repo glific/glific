@@ -273,15 +273,25 @@ defmodule Glific.Repo do
   defp is_external_query?(_query), do: false
 
   @organization_key {__MODULE__, :organization_id}
+  @user_key {__MODULE__, :user}
 
   @doc false
   @spec put_organization_id(non_neg_integer) :: non_neg_integer | nil
-  def put_organization_id(organization_id) do
-    Process.put(@organization_key, organization_id)
-  end
+  def put_organization_id(organization_id),
+    do: Process.put(@organization_key, organization_id)
 
   @doc false
   @spec get_organization_id() :: non_neg_integer | nil
   def get_organization_id,
     do: Process.get(@organization_key)
+
+  @doc false
+  @spec put_current_user(User.t()) :: User.t() | nil
+  def put_current_user(user),
+    do: Process.put(@user_key, user)
+
+  @doc false
+  @spec get_current_user :: User.t() | nil
+  def get_current_user,
+    do: Process.get(@user_key)
 end

@@ -29,7 +29,7 @@ defmodule Glific.Search.Full do
   defp block_contacts(query) do
     query
     |> join(:inner, [m], c in Contact, as: :contact, on: m.contact_id == c.id)
-    |> where([m, c], c.status != ^:blocked)
+    |> where([m, contact: c], c.status != ^:blocked)
   end
 
   defmacro matching_contact_ids_and_ranks(term, args) do

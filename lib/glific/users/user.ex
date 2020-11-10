@@ -21,6 +21,8 @@ defmodule Glific.Users.User do
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          roles: [String.t()] | nil,
+          is_restricted: boolean(),
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -33,6 +35,9 @@ defmodule Glific.Users.User do
   schema "users" do
     field :name, :string
     field :roles, {:array, UserRoles}, default: [:none]
+
+    # is this user restricted to contacts only in groups that they are part of
+    field :is_restricted, :boolean, default: false
 
     belongs_to :contact, Contact
     belongs_to :organization, Organization
