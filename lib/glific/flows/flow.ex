@@ -57,6 +57,9 @@ defmodule Glific.Flows.Flow do
     field :nodes, :map, virtual: true
     field :localization, :map, virtual: true
 
+    # This is the dynamic status that we use primarily during
+    # flow execution. It tells us if we are using the draft version
+    # or the published version of the flow
     field :status, :string, virtual: true, default: "done"
 
     field :keywords, {:array, :string}, default: []
