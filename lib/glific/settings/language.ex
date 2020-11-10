@@ -23,6 +23,7 @@ defmodule Glific.Settings.Language do
           updated_at: :utc_datetime | nil
         }
 
+  @schema_prefix "global"
   schema "languages" do
     field :label, :string
     field :label_locale, :string

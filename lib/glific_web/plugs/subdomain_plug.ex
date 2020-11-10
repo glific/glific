@@ -39,10 +39,11 @@ if Code.ensure_loaded?(Plug) do
          ) do
       root_host = endpoint.config(:url)[:host]
 
-      if host in [root_host, "localhost", "127.0.0.1", "0.0.0.0"] do
+      if host in [root_host, "localhost", "127.0.0.1", "0.0.0.0", "www.example.com"] do
         nil
       else
-        String.replace(host, ~r/.?#{root_host}/, "")
+        host
+        |> String.replace(~r/.?#{root_host}/, "")
         |> String.replace("api.", "")
       end
     end

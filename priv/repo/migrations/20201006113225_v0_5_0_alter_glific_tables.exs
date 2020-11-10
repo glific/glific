@@ -5,6 +5,8 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
   v0.5.0 Alter Glific tables
   """
 
+  @global_schema Application.fetch_env!(:glific, :global_schema)
+
   def change do
     credentials()
 
@@ -34,7 +36,8 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
 
     alter table(:credentials) do
       # foreign key to provider id
-      modify :provider_id, references(:providers, on_delete: :nothing), null: false
+      modify :provider_id, references(:providers, on_delete: :nothing, prefix: @global_schema),
+        null: false
     end
   end
 
@@ -48,7 +51,7 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
   end
 
   defp providers do
-    alter table("providers") do
+    alter table("providers", prefix: @global_schema) do
       add :description, :string
     end
   end

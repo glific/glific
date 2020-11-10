@@ -39,6 +39,7 @@ defmodule Glific.Processor.ConsumerWorker do
   end
 
   defp load_state(organization_id) do
+    Glific.Repo.put_organization_id(organization_id)
     {:ok, cache_reload_key} = Caches.get(organization_id, :cache_reload_key)
 
     %{

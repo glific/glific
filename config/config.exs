@@ -9,6 +9,7 @@ import Config
 
 config :glific,
   ecto_repos: [Glific.Repo],
+  global_schema: "global",
   # Settings for provider key
   provider_key_1: "Please replace this value in the secrets file"
 
@@ -36,6 +37,7 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
 # Configure Oban, its queues and crontab entries
 config :glific, Oban,
+  prefix: "global",
   repo: Glific.Repo,
   queues: [default: 10, dialogflow: 10, gupshup: 10, webhook: 10, crontab: 10],
   crontab: [
@@ -44,7 +46,9 @@ config :glific, Oban,
     {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
     {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
     {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}}
+    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
+    {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_completed_flow_contexts}},
+    {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_old_flow_contexts}}
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney

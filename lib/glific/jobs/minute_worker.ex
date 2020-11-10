@@ -52,5 +52,15 @@ defmodule Glific.Jobs.MinuteWorker do
     :ok
   end
 
+  def perform(%Oban.Job{args: %{"job" => "delete_completed_flow_contexts"}} = _job) do
+    FlowContext.delete_completed_flow_contexts()
+    :ok
+  end
+
+  def perform(%Oban.Job{args: %{"job" => "delete_old_flow_contexts"}} = _job) do
+    FlowContext.delete_old_flow_contexts()
+    :ok
+  end
+
   def perform(_job), do: {:error, "This job is not handled"}
 end

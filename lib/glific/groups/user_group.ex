@@ -6,25 +6,29 @@ defmodule Glific.Groups.UserGroup do
   alias Glific.{
     Groups.Group,
     Groups.UserGroup,
+    Partners.Organization,
     Users.User
   }
 
   use Ecto.Schema
   import Ecto.Changeset
 
-  @required_fields [:user_id, :group_id]
+  @required_fields [:user_id, :group_id, :organization_id]
   @optional_fields []
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
-          group: Group.t() | Ecto.Association.NotLoaded.t() | nil
+          group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "users_groups" do
     belongs_to :user, User
     belongs_to :group, Group
+    belongs_to :organization, Organization
   end
 
   @doc """

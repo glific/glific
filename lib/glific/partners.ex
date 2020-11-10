@@ -169,7 +169,12 @@ defmodule Glific.Partners do
   """
   @spec count_organizations(map()) :: integer
   def count_organizations(args \\ %{}),
-    do: Repo.count_filter(args, Organization, &filter_organization_with/2)
+    do:
+      Repo.count_filter(
+        args,
+        Organization,
+        &filter_organization_with/2
+      )
 
   # codebeat:disable[ABC]
   @spec filter_organization_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
@@ -543,7 +548,7 @@ defmodule Glific.Partners do
       |> Credential.changeset(attrs)
       |> Repo.update()
 
-    if credential.provider.shortcode == "bigquery" and credential.provider.is_active == true do
+    if credential.provider.shortcode == "bigquery" and credential.is_active == true do
       org = credential.organization |> Repo.preload(:contact)
       Bigquery.bigquery_dataset(org.contact.phone, org.id)
     end
