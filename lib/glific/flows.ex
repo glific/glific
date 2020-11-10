@@ -42,6 +42,18 @@ defmodule Glific.Flows do
       {:uuid, uuid}, query ->
         from q in query, where: q.uuid == ^uuid
 
+      {:status, status}, query ->
+        query
+        |> join(:left, [flow], flow_revision in FlowRevision,
+          as: :flow_revision,
+          on: flow_revision.flow_id == flow.id
+        )
+        |> where(
+          [flow, flow_revision: flow_revision],
+          flow_revision.status == ^status
+        )
+        |> distinct([flow], flow.id)
+
       _, query ->
         query
     end)
