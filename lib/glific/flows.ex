@@ -339,7 +339,7 @@ defmodule Glific.Flows do
   end
 
   @doc """
-  Update latest flow revision status as done and increment the version
+  Update latest flow revision status as published and increment the version
   Update cached flow definition
   """
   @spec publish_flow(Flow.t()) :: {:ok, Flow.t()}
@@ -351,11 +351,11 @@ defmodule Glific.Flows do
            |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0}) do
       {:ok, _} =
         latest_revision
-        |> FlowRevision.changeset(%{status: "done", version: last_version + 1})
+        |> FlowRevision.changeset(%{status: "published", version: last_version + 1})
         |> Repo.update()
 
-      # we need to fix this depending on where we are making the flow a beta or the done version
-      update_cached_flow(flow, "done")
+      # we need to fix this depending on where we are making the flow a beta or the published version
+      update_cached_flow(flow, "published")
     end
 
     {:ok, flow}
@@ -366,7 +366,7 @@ defmodule Glific.Flows do
   @spec get_last_version_and_update_old_revisions(Flow.t()) :: integer
   defp get_last_version_and_update_old_revisions(flow) do
     FlowRevision
-    |> Repo.fetch_by(%{flow_id: flow.id, status: "done"})
+    |> Repo.fetch_by(%{flow_id: flow.id, status: "published"})
     |> case do
       {:ok, last_published_revision} ->
         {:ok, _} =
@@ -399,7 +399,7 @@ defmodule Glific.Flows do
   """
   @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
-    status = "done"
+    status = "published"
 
     {:ok, flow} =
       get_cached_flow(contact.organization_id, {:flow_id, flow.id, status}, %{id: flow.id})
@@ -414,7 +414,7 @@ defmodule Glific.Flows do
   """
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
   def start_group_flow(%Flow{} = flow, %Group{} = group) do
-    status = "done"
+    status = "published"
 
     {:ok, flow} =
       get_cached_flow(group.organization_id, {:flow_id, flow.id, status}, %{id: flow.id})

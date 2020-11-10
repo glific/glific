@@ -781,7 +781,7 @@ Filtering options for flows
 <tr>
   <td colspan="2" valign="top"><strong>status</strong></td>
   <td valign="top"><a href="#string">String</a></td>
-  <td>Match the status of flow revision draft/archived/done</td>
+  <td>Match the status of flow revision draft/archived/published</td>
 </tr>
 </tbody>
 </table>

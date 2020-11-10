@@ -57,7 +57,7 @@ defmodule Glific.Flows.Flow do
     field :nodes, :map, virtual: true
     field :localization, :map, virtual: true
 
-    field :status, :string, virtual: true, default: "done"
+    field :status, :string, virtual: true, default: "published"
 
     field :keywords, {:array, :string}, default: []
     field :ignore_keywords, :boolean, default: false
@@ -284,7 +284,7 @@ defmodule Glific.Flows.Flow do
 
   defp args_clause(query, _args), do: query
 
-  defp status_clause(query, "done" = status),
+  defp status_clause(query, "published" = status),
     do: query |> where([_f, fr], fr.status == ^status)
 
   defp status_clause(query, "draft"),
