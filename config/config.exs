@@ -47,9 +47,9 @@ config :glific, Oban,
     {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
     {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
-    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gupshupbalance}},
     {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_completed_flow_contexts}},
-    {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_old_flow_contexts}}
+    {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_old_flow_contexts}},
+    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bspbalance}},
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney

@@ -14,7 +14,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Jobs.BigQueryWorker,
     Jobs.ChatbaseWorker,
     Jobs.GcsWorker,
-    Jobs.GupshupbalanceWorker,
+    Jobs.GupshupBalanceWorker,
     Partners
   }
 
@@ -52,12 +52,6 @@ defmodule Glific.Jobs.MinuteWorker do
     Partners.perform_all(&GcsWorker.perform_periodic/1, nil)
     :ok
   end
-
-  def perform(%Oban.Job{args: %{"job" => "gupshupbalance"}} = _job) do
-    Partners.perform_all(&GupshupbalanceWorker.perform_periodic/1, nil)
-    :ok
-  end
-
   def perform(%Oban.Job{args: %{"job" => "delete_completed_flow_contexts"}} = _job) do
     FlowContext.delete_completed_flow_contexts()
     :ok
@@ -68,5 +62,13 @@ defmodule Glific.Jobs.MinuteWorker do
     :ok
   end
 
+  def perform(%Oban.Job{args: %{"job" => "bspbalance"}} = _job) do
+    Partners.perform_all(&GupshupBalanceWorker.perform_periodic/1, nil)
+    :ok
+  end
+
   def perform(_job), do: {:error, "This job is not handled"}
+
+
+
 end
