@@ -240,8 +240,8 @@ defmodule Glific.Repo do
       opts[:skip_organization_id] ||
         opts[:schema_migration] ||
         opts[:prefix] == "global" ||
-        query.from.prefix == "global"
-        ->
+        query.from.prefix == "global" ||
+          is_external_query?(query) ->
         {query, opts}
 
       organization_id = opts[:organization_id] ->
@@ -253,10 +253,8 @@ defmodule Glific.Repo do
   end
 
   @external_tables [
-    "Oban",
     "FunWith",
-    # Glific Tables
-    "Organization",
+    "Organization"
   ]
 
   @spec is_external_query?(Ecto.Query.t()) :: boolean()
