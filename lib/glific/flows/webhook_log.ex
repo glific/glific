@@ -15,8 +15,8 @@ defmodule Glific.Flows.WebhookLog do
     Repo
   }
 
-  @required_fields [:request_json, :response_json, :flow_id, :flow_uuid, :organization_id]
-  @optional_fields []
+  @required_fields [:request_json, :flow_id, :flow_uuid, :organization_id]
+  @optional_fields [:response_json]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),

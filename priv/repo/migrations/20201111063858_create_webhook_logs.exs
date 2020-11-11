@@ -3,8 +3,8 @@ defmodule Glific.Repo.Migrations.CreateWebhookLogs do
 
   def change do
     create table(:webhook_logs) do
-      add :request_json, :jsonb, default: "{}"
-      add :response_json, :jsonb, default: "{}"
+      add :request_json, :jsonb, default: "{}", null: false
+      add :response_json, :jsonb, default: "{}", null: true
 
       add :flow_id, references(:flows, on_delete: :delete_all), null: false
 
