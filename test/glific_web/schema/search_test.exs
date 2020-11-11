@@ -414,7 +414,7 @@ defmodule GlificWeb.Schema.SearchTest do
   test "conversations filtered by a contact id", %{staff: user} do
     # if we send in an invalid id, we should not see any conversations
     {:ok, result} =
-      auth_query_gql_by(:search,
+      auth_query_gql_by(:search, user,
         variables: %{
           "contactOpts" => %{"limit" => 3},
           "messageOpts" => %{"limit" => 3},

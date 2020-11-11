@@ -245,7 +245,10 @@ defmodule Glific.Tags do
     {status, response} =
       %MessageTag{}
       |> MessageTag.changeset(attrs)
-      |> Repo.insert(on_conflict: :replace_all, conflict_target: [:message_id, :tag_id])
+      |> Repo.insert(
+        on_conflict: :replace_all,
+        conflict_target: [:message_id, :tag_id]
+      )
 
     if status == :ok,
       do: Communications.publish_data(response, :created_message_tag, organization_id)
@@ -398,7 +401,9 @@ defmodule Glific.Tags do
       from mt in MessageTag,
         join: m in assoc(mt, :message),
         join: t in assoc(mt, :tag),
-        where: m.contact_id == ^contact_id and t.shortcode in ^tag_shortcode_list
+        where: m.contact_id == ^contact_id,
+        where: m.organization_id == ^organization_id,
+        where: t.shortcode in ^tag_shortcode_list
 
     Repo.all(query)
     |> publish_delete_message(organization_id)
@@ -449,7 +454,10 @@ defmodule Glific.Tags do
   def create_template_tag(attrs \\ %{}) do
     %TemplateTag{}
     |> TemplateTag.changeset(attrs)
-    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:template_id, :tag_id])
+    |> Repo.insert(
+      on_conflict: :replace_all,
+      conflict_target: [:template_id, :tag_id]
+    )
   end
 
   @doc """

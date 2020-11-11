@@ -27,8 +27,14 @@ defmodule Glific.Flows.ContactAction do
 
     # Since we are saving the data after loading the flow
     # so we have to fetch the latest contact fields
-    message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
-    body = MessageVarParser.parse(text, message_vars)
+    message_vars = %{
+      "contact" => get_contact_field_map(context.contact_id)
+    }
+
+    body =
+      text
+      |> MessageVarParser.parse(message_vars)
+      |> MessageVarParser.parse_results(context.results)
 
     organization_id = context.organization_id
     {type, media_id} = get_media_from_attachment(action.attachments, action.text, organization_id)
@@ -149,7 +155,7 @@ defmodule Glific.Flows.ContactAction do
   defp get_contact_field_map(contact_id) do
     contact =
       Contacts.get_contact!(contact_id)
-      |> Repo.preload([:language])
+      |> Repo.preload(:language)
       |> Map.from_struct()
 
     put_in(contact, [:fields, :language], %{label: contact.language.label})

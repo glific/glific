@@ -20,6 +20,10 @@ defmodule Glific.Partners do
     Settings.Language
   }
 
+  # We cache organization info under this id since when we want to retrieve
+  # by shortcode we do not have an organization id to retrieve it from.
+  @global_organization_id 0
+
   @doc """
   Returns the list of providers.
 
@@ -147,7 +151,14 @@ defmodule Glific.Partners do
   """
   @spec list_organizations(map()) :: [Organization.t()]
   def list_organizations(args \\ %{}),
-    do: Repo.list_filter(args, Organization, &Repo.opts_with_name/2, &filter_organization_with/2)
+    do:
+      Repo.list_filter(
+        args,
+        Organization,
+        &Repo.opts_with_name/2,
+        &filter_organization_with/2,
+        skip_organization_id: true
+      )
 
   @doc """
   List of organizations that are active within the system
@@ -157,7 +168,7 @@ defmodule Glific.Partners do
     Organization
     |> where([q], q.is_active == true)
     |> select([q], [q.id, q.name])
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(%{}, fn row, acc ->
       [id, value] = row
       Map.put(acc, id, value)
@@ -169,7 +180,13 @@ defmodule Glific.Partners do
   """
   @spec count_organizations(map()) :: integer
   def count_organizations(args \\ %{}),
-    do: Repo.count_filter(args, Organization, &filter_organization_with/2)
+    do:
+      Repo.count_filter(
+        args,
+        Organization,
+        &filter_organization_with/2,
+        skip_organization_id: true
+      )
 
   # codebeat:disable[ABC]
   @spec filter_organization_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
@@ -214,7 +231,7 @@ defmodule Glific.Partners do
 
   """
   @spec get_organization!(integer) :: Organization.t()
-  def get_organization!(id), do: Repo.get!(Organization, id)
+  def get_organization!(id), do: Repo.get!(Organization, id, skip_organization_id: true)
 
   @doc ~S"""
   Creates a organization.
@@ -232,7 +249,7 @@ defmodule Glific.Partners do
   def create_organization(attrs \\ %{}) do
     %Organization{}
     |> Organization.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(skip_organization_id: true)
   end
 
   @doc ~S"""
@@ -251,11 +268,14 @@ defmodule Glific.Partners do
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def update_organization(%Organization{} = organization, attrs) do
     # first delete the cached organization
-    Caches.remove(organization.id, ["organization"])
+    Caches.remove(
+      @global_organization_id,
+      [{:organization, organization.id}, {:organization, organization.shortcode}]
+    )
 
     organization
     |> Organization.changeset(attrs)
-    |> Repo.update()
+    |> Repo.update(skip_organization_id: true)
   end
 
   @doc ~S"""
@@ -290,31 +310,54 @@ defmodule Glific.Partners do
     Organization.changeset(organization, attrs)
   end
 
+  @spec fill_cache(Organization.t()) :: Organization.t()
+  defp fill_cache(organization) do
+    # For this process, lets set the organization id
+    Glific.Repo.put_organization_id(organization.id)
+
+    organization =
+      organization
+      |> set_credentials()
+      |> Repo.preload(:bsp)
+      |> set_bsp_info()
+      |> set_out_of_office_values()
+      |> set_languages()
+
+    Caches.set(
+      @global_organization_id,
+      [{:organization, organization.id}, {:organization, organization.shortcode}],
+      organization
+    )
+
+    # also update the flags table with updated values
+    Flags.init(organization.id)
+
+    organization
+  end
+
   @doc """
   Cache the entire organization structure.
 
   In v0.4, we should cache it based on organization id, and that should be a parameter
   """
-  @spec organization(non_neg_integer) :: Organization.t()
-  def organization(organization_id) do
-    case Caches.get(organization_id, "organization") do
+  @spec organization(non_neg_integer | String.t()) :: Organization.t() | nil
+  def organization(cache_key) do
+    case Caches.get(@global_organization_id, {:organization, cache_key}) do
       {:ok, value} when value in [nil, false] ->
-        organization =
-          get_organization!(organization_id)
-          |> set_credentials()
-          |> Repo.preload(:bsp)
-          |> set_bsp_info()
-          |> set_out_of_office_values()
-          |> set_languages()
+        if is_integer(cache_key) do
+          get_organization!(cache_key) |> fill_cache()
+        else
+          case Repo.fetch_by(Organization, %{shortcode: cache_key}, skip_organization_id: true) do
+            {:ok, organization} ->
+              organization |> fill_cache()
 
-        Caches.set(organization_id, "organization", organization)
-
-        # also update the flags table with updated values
-        Flags.init(organization.id)
-
-        organization
+            _ ->
+              nil
+          end
+        end
 
       {:ok, organization} ->
+        Glific.Repo.put_organization_id(organization.id)
         organization
     end
   end
@@ -509,7 +552,12 @@ defmodule Glific.Partners do
     case Repo.fetch_by(Provider, %{shortcode: attrs[:shortcode]}) do
       {:ok, provider} ->
         # first delete the cached organization
-        Caches.remove(attrs.organization_id, ["organization"])
+        organization = organization(attrs.organization_id)
+
+        Caches.remove(
+          @global_organization_id,
+          [{:organization, organization.id}, {:organization, organization.shortcode}]
+        )
 
         attrs = Map.merge(attrs, %{provider_id: provider.id})
 
@@ -536,7 +584,12 @@ defmodule Glific.Partners do
     end
 
     # delete the cached organization and associated credentials
-    Caches.remove(credential.organization_id, ["organization"])
+    organization = organization(credential.organization_id)
+
+    Caches.remove(
+      @global_organization_id,
+      [{:organization, organization.id}, {:organization, organization.shortcode}]
+    )
 
     response =
       credential

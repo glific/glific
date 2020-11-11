@@ -228,7 +228,8 @@ defmodule Glific.PartnersTest do
         is_active: true
       })
 
-      organization
+      # we need to retrieve it this way to get the right values from the triggers
+      Partners.get_organization!(organization.id)
     end
 
     test "list_organizations/0 returns all organizations" do
@@ -422,6 +423,9 @@ defmodule Glific.PartnersTest do
         })
         |> Partners.create_organization()
 
+      # we need this to ensure we get the right values set by triggers
+      organization = Partners.get_organization!(organization.id)
+
       assert [organization] == Partners.list_organizations(%{filter: %{bsp: provider.name}})
 
       assert [organization] ==
@@ -494,6 +498,7 @@ defmodule Glific.PartnersTest do
 
     test "organization/1 should return cached active languages" do
       organization = organization_fixture() |> Repo.preload(:default_language)
+
       default_language = organization.default_language
       organization = Partners.organization(organization.id)
 

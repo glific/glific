@@ -56,15 +56,15 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
 
     test "enqueued status should update the message status", setup_config = %{conn: conn} do
       # when message enqueued
-      conn = post(conn, "/gupshup", setup_config.message_params)
-      json_response(conn, 200)
+      success_conn = post(conn, "/gupshup", setup_config.message_params)
+      json_response(success_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
       assert message.bsp_status == :enqueued
 
       # when message failed
       message_params = put_in(setup_config.message_params, ["payload", "type"], "failed")
-      conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      failed_conn = post(conn, "/gupshup", message_params)
+      json_response(failed_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
       assert message.bsp_status == :error
       assert message.errors != nil
@@ -72,22 +72,22 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
 
       # when message sent
       message_params = put_in(setup_config.message_params, ["payload", "type"], "sent")
-      conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      sent_conn = post(conn, "/gupshup", message_params)
+      json_response(sent_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
       assert message.bsp_status == :sent
 
       # when message read
       message_params = put_in(setup_config.message_params, ["payload", "type"], "read")
-      conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      read_conn = post(conn, "/gupshup", message_params)
+      json_response(read_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
       assert message.bsp_status == :read
 
       # when message delivered
       message_params = put_in(setup_config.message_params, ["payload", "type"], "delivered")
-      conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      delivered_conn = post(conn, "/gupshup", message_params)
+      json_response(delivered_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
       assert message.bsp_status == :delivered
     end

@@ -10,10 +10,7 @@ defmodule GlificWeb.Tenants do
   inside and outside the organization without much boilerplate code.
   """
 
-  alias Glific.{
-    Partners.Organization,
-    Repo
-  }
+  alias Glific.Partners
 
   @doc """
   Returns the list of reserved organizations.
@@ -32,8 +29,7 @@ defmodule GlificWeb.Tenants do
       "information_schema",
       ~r/^pg_/,
       ~r/^db\d+$/,
-      "www",
-      "api"
+      "www"
     ]
   end
 
@@ -66,19 +62,19 @@ defmodule GlificWeb.Tenants do
   def organization_handler(nil) do
     # in the normal case we'll redirect them here to glific.io
     # and halt this connection
-    {:ok, default} = Repo.fetch_by(Organization, %{shortcode: "glific"})
+    default = Partners.organization("glific")
     default.id
   end
 
   def organization_handler(shortcode) do
-    case Repo.fetch_by(Organization, %{shortcode: shortcode}) do
-      {:ok, organization} ->
-        organization.id
+    organization = Partners.organization(shortcode)
 
+    if is_nil(organization) do
       # in the normal case we'll redirect them here to glific.io
       # and halt this connection
-      _ ->
-        organization_handler()
+      organization_handler()
+    else
+      organization.id
     end
   end
 end

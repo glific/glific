@@ -65,9 +65,10 @@ defmodule Glific.Repo do
           map(),
           atom(),
           (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
-          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t())
+          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
+          Keyword.t()
         ) :: [any]
-  def list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn) do
+  def list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn, repo_opts \\ []) do
     args
     |> Enum.reduce(object, fn
       {:opts, opts}, query ->
@@ -81,7 +82,7 @@ defmodule Glific.Repo do
       _, query ->
         query
     end)
-    |> Repo.all()
+    |> Repo.all(repo_opts)
   end
 
   @doc """
@@ -92,9 +93,10 @@ defmodule Glific.Repo do
   @spec count_filter(
           map(),
           atom(),
-          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t())
+          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
+          Keyword.t()
         ) :: integer
-  def count_filter(args \\ %{}, object, filter_with_fn) do
+  def count_filter(args \\ %{}, object, filter_with_fn, opts \\ []) do
     args
     |> Enum.reduce(object, fn
       {:filter, filter}, query ->
@@ -103,7 +105,7 @@ defmodule Glific.Repo do
       _, query ->
         query
     end)
-    |> Repo.aggregate(:count)
+    |> Repo.aggregate(:count, opts)
   end
 
   @doc """
@@ -134,7 +136,12 @@ defmodule Glific.Repo do
   a 'name/body/label' in its schema (which is true for a fair number of Glific's
   data types)
   """
-  @spec opts_with_field(Ecto.Queryable.t(), map(), :name | :body | :label) :: Ecto.Queryable.t()
+  @spec opts_with_field(
+          Ecto.Queryable.t(),
+          map(),
+          :name | :body | :label
+        ) ::
+          Ecto.Queryable.t()
   def opts_with_field(query, opts, field) do
     Enum.reduce(opts, query, fn
       {:order, order}, query ->
@@ -218,4 +225,58 @@ defmodule Glific.Repo do
     |> where([m], field(m, ^key_1) == ^value_1 and field(m, ^key_2) in ^values_2)
     |> Repo.delete_all()
   end
+
+  @doc false
+  @spec default_options(atom()) :: Keyword.t()
+  def default_options(_operation) do
+    [organization_id: get_organization_id()]
+  end
+
+  @doc false
+  @spec prepare_query(atom(), Ecto.Query.t(), Keyword.t()) :: {Ecto.Query.t(), Keyword.t()}
+  def prepare_query(_operation, query, opts) do
+    # Glific.stacktrace()
+    cond do
+      opts[:skip_organization_id] ||
+        opts[:schema_migration] ||
+        opts[:prefix] == "global" ||
+        query.from.prefix == "global" ||
+          is_external_query?(query) ->
+        {query, opts}
+
+      organization_id = opts[:organization_id] ->
+        {Ecto.Query.where(query, organization_id: ^organization_id), opts}
+
+      true ->
+        raise "expected organization_id or skip_organization_id to be set"
+    end
+  end
+
+  @external_tables [
+    "FunWith",
+    "Organization"
+  ]
+
+  @spec is_external_query?(Ecto.Query.t()) :: boolean()
+  defp is_external_query?(%{from: %{source: source}} = _query) when is_tuple(source),
+    do: String.contains?(to_string(elem(source, 1)), @external_tables)
+
+  # lets ignore all subqueries
+  defp is_external_query?(%{from: %{source: %Ecto.SubQuery{}}} = _query),
+    do: true
+
+  defp is_external_query?(_query), do: false
+
+  @organization_key {__MODULE__, :organization_id}
+
+  @doc false
+  @spec put_organization_id(non_neg_integer) :: non_neg_integer | nil
+  def put_organization_id(organization_id) do
+    Process.put(@organization_key, organization_id)
+  end
+
+  @doc false
+  @spec get_organization_id() :: non_neg_integer | nil
+  def get_organization_id,
+    do: Process.get(@organization_key)
 end

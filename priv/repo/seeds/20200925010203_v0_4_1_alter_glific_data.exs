@@ -21,6 +21,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   defp update_exisiting_providers() do
     # add pseudo credentials for gupshup and glifproxy
     {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
     {:ok, glifproxy} = Repo.fetch_by(Provider, %{shortcode: "glifproxy"})
 
     # update providers gupshup and glifproxy with values for:

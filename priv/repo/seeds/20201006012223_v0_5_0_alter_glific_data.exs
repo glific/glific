@@ -14,10 +14,15 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
 
   defp update_exisiting_providers() do
     {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
     {:ok, glifproxy} = Repo.fetch_by(Provider, %{shortcode: "glifproxy"})
+
     {:ok, dialogflow} = Repo.fetch_by(Provider, %{shortcode: "dialogflow"})
+
     {:ok, goth} = Repo.fetch_by(Provider, %{shortcode: "goth"})
+
     {:ok, chatbase} = Repo.fetch_by(Provider, %{shortcode: "chatbase"})
+
     {:ok, google_cloud_storage} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
 
     updated_gupshup_keys =

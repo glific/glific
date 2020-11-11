@@ -763,8 +763,8 @@ defmodule Glific.Messages do
   to add those messages, which trigger specific actions within flows. e.g. include:
   Completed, Failure, Success etc
   """
-  @spec create_temp_message(non_neg_integer, String.t(), Keyword.t()) :: Message.t()
-  def create_temp_message(organization_id, body, attrs \\ Keyword.new()) do
+  @spec create_temp_message(non_neg_integer, any(), Keyword.t()) :: Message.t()
+  def create_temp_message(organization_id, body, attrs \\ []) do
     body = String.trim(body || "")
 
     opts =

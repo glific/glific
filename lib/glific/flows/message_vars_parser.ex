@@ -12,7 +12,8 @@ defmodule Glific.Flows.MessageVarParser do
   def parse(input, binding) do
     binding = stringify_keys(binding)
 
-    String.replace(input, ~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
+    input
+    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
     |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, binding))
   end
 
@@ -63,4 +64,30 @@ defmodule Glific.Flows.MessageVarParser do
 
   defp stringify_keys(value),
     do: value
+
+  @doc """
+  Interpolates the values from results into the message body. Might need to integrate
+  it with the substitution above
+  """
+  @spec parse_results(String.t(), map()) :: String.t()
+  def parse_results(body, results) do
+    if String.contains?(body, "@results.") do
+      Enum.reduce(
+        results,
+        body,
+        fn {key, value}, acc ->
+          key = String.downcase(key)
+
+          if Map.has_key?(value, "input") and !is_map(value["input"]) do
+            value = to_string(value["input"])
+            String.replace(acc, "@results." <> key, value)
+          else
+            acc
+          end
+        end
+      )
+    else
+      body
+    end
+  end
 end

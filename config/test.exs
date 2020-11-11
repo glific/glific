@@ -27,6 +27,7 @@ config :logger,
 config :glific, :environment, :test
 
 config :glific, Oban,
+  prefix: "global",
   crontab: false,
   queues: false,
   plugins: false

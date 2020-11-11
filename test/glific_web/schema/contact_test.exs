@@ -213,7 +213,8 @@ defmodule GlificWeb.Schema.ContactTest do
         message_id: message.id,
         contact_id: contact.id,
         longitude: Faker.Address.longitude(),
-        latitude: Faker.Address.latitude()
+        latitude: Faker.Address.latitude(),
+        organization_id: user.organization_id
       })
 
     # get contact location
