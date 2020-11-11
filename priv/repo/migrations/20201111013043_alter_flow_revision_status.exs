@@ -15,14 +15,14 @@ defmodule Glific.Repo.Migrations.AlterFlowRevisionStatus do
       where: fr.status == "done",
       update: [set: [status: "published"]]
     )
-    |> Repo.update_all([])
+    |> Repo.update_all([], skip_organization_id: true)
 
     # update status of flow context
     from([fc] in FlowContext,
       where: fc.status == "done",
       update: [set: [status: "published"]]
     )
-    |> Repo.update_all([])
+    |> Repo.update_all([], skip_organization_id: true)
   end
 
   def down do
@@ -31,13 +31,13 @@ defmodule Glific.Repo.Migrations.AlterFlowRevisionStatus do
       where: fr.status == "published",
       update: [set: [status: "done"]]
     )
-    |> Repo.update_all([])
+    |> Repo.update_all([], skip_organization_id: true)
 
     # update status of flow context
     from([fc] in FlowContext,
       where: fc.status == "published",
       update: [set: [status: "done"]]
     )
-    |> Repo.update_all([])
+    |> Repo.update_all([], skip_organization_id: true)
   end
 end
