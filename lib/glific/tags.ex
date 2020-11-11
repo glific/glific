@@ -225,7 +225,7 @@ defmodule Glific.Tags do
   """
   @spec get_message_tag!(integer) :: MessageTag.t()
   def get_message_tag!(id) do
-    Repo.get!(MessageTag, id, skip_organization_id: true)
+    Repo.get!(MessageTag, id)
   end
 
   @doc """
@@ -247,8 +247,7 @@ defmodule Glific.Tags do
       |> MessageTag.changeset(attrs)
       |> Repo.insert(
         on_conflict: :replace_all,
-        conflict_target: [:message_id, :tag_id],
-        skip_organization_id: true
+        conflict_target: [:message_id, :tag_id]
       )
 
     if status == :ok,
@@ -289,10 +288,10 @@ defmodule Glific.Tags do
       MessageTag
       |> where([m], m.message_id == ^message_id and m.tag_id in ^tag_ids)
 
-    Repo.all(query, skip_organization_id: true)
+    Repo.all(query)
     |> publish_delete_message(organization_id)
 
-    Repo.delete_all(query, skip_organization_id: true)
+    Repo.delete_all(query)
   end
 
   @doc """
@@ -325,7 +324,7 @@ defmodule Glific.Tags do
   """
   @spec get_contact_tag!(integer) :: ContactTag.t()
   def get_contact_tag!(id) do
-    Repo.get!(ContactTag, id, skip_organization_id: true)
+    Repo.get!(ContactTag, id)
   end
 
   @doc """
@@ -406,12 +405,12 @@ defmodule Glific.Tags do
         where: m.organization_id == ^organization_id,
         where: t.shortcode in ^tag_shortcode_list
 
-    Repo.all(query, skip_organization_id: true)
+    Repo.all(query)
     |> publish_delete_message(organization_id)
 
     {_, deleted_rows} =
       select(query, [mt], [mt.message_id])
-      |> Repo.delete_all(skip_organization_id: true)
+      |> Repo.delete_all()
 
     List.flatten(deleted_rows)
   end
@@ -457,8 +456,7 @@ defmodule Glific.Tags do
     |> TemplateTag.changeset(attrs)
     |> Repo.insert(
       on_conflict: :replace_all,
-      conflict_target: [:template_id, :tag_id],
-      skip_organization_id: true
+      conflict_target: [:template_id, :tag_id]
     )
   end
 
@@ -469,6 +467,6 @@ defmodule Glific.Tags do
   def delete_template_tag_by_ids(template_id, tag_ids) when is_list(tag_ids) do
     TemplateTag
     |> where([m], m.template_id == ^template_id and m.tag_id in ^tag_ids)
-    |> Repo.delete_all(skip_organization_id: true)
+    |> Repo.delete_all()
   end
 end

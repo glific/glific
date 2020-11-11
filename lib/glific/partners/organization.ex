@@ -31,7 +31,8 @@ defmodule Glific.Partners.Organization do
     :is_active,
     :timezone,
     :active_language_ids,
-    :session_limit
+    :session_limit,
+    :organization_id
     # commenting this out, since the tests were giving me an error
     # about cast_embed etc
     # :out_of_office
@@ -58,6 +59,7 @@ defmodule Glific.Partners.Organization do
           active_language_ids: [integer] | [],
           languages: [Language.t()] | nil,
           session_limit: non_neg_integer | nil,
+          organization_id: non_neg_integer | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -92,6 +94,9 @@ defmodule Glific.Partners.Organization do
     field :languages, {:array, :any}, virtual: true
 
     field :session_limit, :integer, default: 60
+
+    # this is just to make our friends in org id enforcer happy and to keep the code clean
+    field :organization_id, :integer, default: 60
 
     timestamps(type: :utc_datetime)
   end

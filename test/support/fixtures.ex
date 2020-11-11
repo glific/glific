@@ -156,7 +156,8 @@ defmodule Glific.Fixtures do
     # load state into flag options
     Flags.init(organization.id)
 
-    organization
+    # ensure we get the triggered values in this refresh
+    Partners.get_organization!(organization.id)
   end
 
   @doc false
