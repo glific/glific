@@ -357,11 +357,11 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  @spec wakeup() :: :ok
+  @spec wakeup_flows() :: :ok
   @doc """
   Find all the contexts which need to be woken up and processed
   """
-  def wakeup do
+  def wakeup_flows do
     FlowContext
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))

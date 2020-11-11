@@ -163,17 +163,24 @@ defmodule Glific.Partners do
   @doc """
   List of organizations that are active within the system
   """
-  @spec active_organizations :: map()
-  def active_organizations do
+  @spec active_organizations(list()) :: map()
+  def active_organizations(orgs \\ []) do
     Organization
     |> where([q], q.is_active == true)
     |> select([q], [q.id, q.name])
+    |> restrict_orgs(orgs)
     |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(%{}, fn row, acc ->
       [id, value] = row
       Map.put(acc, id, value)
     end)
   end
+
+  @spec restrict_orgs(Ecto.Query.t(), list()) :: Ecto.Query.t()
+  defp restrict_orgs(query, []), do: query
+
+  defp restrict_orgs(query, org_list),
+    do: query |> where([q], q.id in ^org_list)
 
   @doc """
   Return the count of organizations, using the same filter as list_organizations
@@ -467,10 +474,10 @@ defmodule Glific.Partners do
   The handler is expected to take the organization id as its first argument. The second argument
   is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
   """
-  @spec perform_all((... -> nil), map() | nil) :: :ok
-  def perform_all(handler, handler_args) do
+  @spec perform_all((... -> nil), map() | nil, list()) :: :ok
+  def perform_all(handler, handler_args, org_list \\ []) do
     # We need to do this for all the active organizations
-    active_organizations()
+    active_organizations(org_list)
     |> Enum.each(fn {id, name} ->
       if is_nil(handler_args),
         do: handler.(id),
