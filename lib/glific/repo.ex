@@ -240,7 +240,8 @@ defmodule Glific.Repo do
       opts[:skip_organization_id] ||
         opts[:schema_migration] ||
         opts[:prefix] == "global" ||
-        query.from.prefix == "global" ->
+        query.from.prefix == "global" ||
+        is_sub_query?(query) ->
         {query, opts}
 
       organization_id = opts[:organization_id] ->
@@ -250,6 +251,10 @@ defmodule Glific.Repo do
         raise "expected organization_id or skip_organization_id to be set"
     end
   end
+
+  # lets ignore all subqueries
+  defp is_sub_query?(%{from: %{source: %Ecto.SubQuery{}}} = _query), do: true
+  defp is_sub_query?(_query), do: false
 
   @organization_key {__MODULE__, :organization_id}
 
