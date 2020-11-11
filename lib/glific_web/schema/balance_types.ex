@@ -10,7 +10,7 @@ defmodule GlificWeb.Schema.BalanceTypes do
 
       config(&Schema.config_fun/2)
 
-      resolve(&Communications.publish_message/3)
+      resolve(&Communications.publish_data/3)
     end
 
 end
