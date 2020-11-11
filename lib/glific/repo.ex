@@ -240,7 +240,7 @@ defmodule Glific.Repo do
       opts[:skip_organization_id] ||
         opts[:schema_migration] ||
         opts[:prefix] == "global" ||
-        query.from.prefix == "global"
+        query.from.prefix == "global" ->
         {query, opts}
 
       organization_id = opts[:organization_id] ->
