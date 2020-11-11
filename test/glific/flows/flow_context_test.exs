@@ -104,9 +104,9 @@ defmodule Glific.Flows.FlowContextTest do
        %{organization_id: organization_id} = attrs do
     [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
     [keyword | _] = flow.keywords
-    flow = Flow.get_loaded_flow(organization_id, "done", %{keyword: keyword})
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: keyword})
     contact = Fixtures.contact_fixture()
-    {:ok, flow_context, _} = FlowContext.init_context(flow, contact, "done")
+    {:ok, flow_context, _} = FlowContext.init_context(flow, contact, "published")
     assert flow_context.id != nil
   end
 
@@ -118,9 +118,9 @@ defmodule Glific.Flows.FlowContextTest do
   test "execute an context should return ok tuple", %{organization_id: organization_id} = attrs do
     [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
     [keyword | _] = flow.keywords
-    flow = Flow.get_loaded_flow(organization_id, "done", %{keyword: keyword})
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: keyword})
     contact = Fixtures.contact_fixture()
-    {:ok, flow_context, _} = FlowContext.init_context(flow, contact, "done")
+    {:ok, flow_context, _} = FlowContext.init_context(flow, contact, "published")
     message = Messages.create_temp_message(Fixtures.get_org_id(), "Test")
     assert {:ok, _, _} = FlowContext.execute(flow_context, [message])
   end
@@ -133,7 +133,7 @@ defmodule Glific.Flows.FlowContextTest do
 
   test "load_context/2 will load all the nodes and actions in memory for the context",
        %{organization_id: organization_id} = _attrs do
-    flow = Flow.get_loaded_flow(organization_id, "done", %{keyword: "help"})
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
     flow_context = FlowContext.load_context(flow_context, flow)
@@ -142,7 +142,7 @@ defmodule Glific.Flows.FlowContextTest do
 
   test "step_forward/2 will set the context to next node ",
        %{organization_id: organization_id} = _attrs do
-    flow = Flow.get_loaded_flow(organization_id, "done", %{keyword: "help"})
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
     flow_context = FlowContext.load_context(flow_context, flow)

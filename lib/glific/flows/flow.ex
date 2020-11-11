@@ -60,7 +60,7 @@ defmodule Glific.Flows.Flow do
     # This is the dynamic status that we use primarily during
     # flow execution. It tells us if we are using the draft version
     # or the published version of the flow
-    field :status, :string, virtual: true, default: "done"
+    field :status, :string, virtual: true, default: "published"
 
     field :keywords, {:array, :string}, default: []
     field :ignore_keywords, :boolean, default: false
@@ -287,7 +287,7 @@ defmodule Glific.Flows.Flow do
 
   defp args_clause(query, _args), do: query
 
-  defp status_clause(query, "done" = status),
+  defp status_clause(query, "published" = status),
     do: query |> where([_f, fr], fr.status == ^status)
 
   defp status_clause(query, "draft"),

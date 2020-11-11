@@ -63,7 +63,7 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   @beta_phrase "draft:"
-  @final_phrase "done"
+  @final_phrase "published"
 
   @spec is_beta_keyword?(map(), String.t()) :: boolean()
   defp is_beta_keyword?(state, body) do

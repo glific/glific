@@ -295,7 +295,9 @@ defmodule GlificWeb.Flows.FlowEditorController do
       case vars do
         [] ->
           ## We need to fix this before merging this branch
-          Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+          Flows.list_flows(%{
+            filter: %{organization_id: conn.assigns[:organization_id], status: "published"}
+          })
           |> Enum.reduce([], fn flow, acc ->
             [
               %{
