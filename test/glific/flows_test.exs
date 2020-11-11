@@ -204,7 +204,7 @@ defmodule Glific.FLowsTest do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
 
       {:ok, loaded_flow} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "done"}, %{uuid: flow.uuid})
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}, %{uuid: flow.uuid})
 
       assert loaded_flow.nodes != nil
 
@@ -212,7 +212,7 @@ defmodule Glific.FLowsTest do
       Flows.delete_flow(flow)
 
       {:ok, loaded_flow_2} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "done"}, %{uuid: flow.uuid})
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}, %{uuid: flow.uuid})
 
       assert loaded_flow_2 == loaded_flow
     end
@@ -222,13 +222,13 @@ defmodule Glific.FLowsTest do
       [flow | _tail] = Flows.list_flows(%{filter: %{organization_id: organization_id}})
 
       {:ok, loaded_flow} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "done"}, %{uuid: flow.uuid})
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}, %{uuid: flow.uuid})
 
       Flows.update_flow(flow, %{:keywords => ["flow_new"]})
-      Flows.update_cached_flow(flow, "done")
+      Flows.update_cached_flow(flow, "published")
 
       {:ok, loaded_flow_new} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "done"}, %{uuid: flow.uuid})
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}, %{uuid: flow.uuid})
 
       assert loaded_flow.keywords == flow.keywords
       assert loaded_flow_new.keywords != loaded_flow.keywords
@@ -238,24 +238,24 @@ defmodule Glific.FLowsTest do
          %{organization_id: organization_id} = _attrs do
       flow = flow_fixture() |> Repo.preload([:revisions])
 
-      # should set status of recent flow revision as "done"
+      # should set status of recent flow revision as "published"
       assert {:ok, %Flow{}} = Flows.publish_flow(flow)
 
       {:ok, revision} =
         FlowRevision
         |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})
 
-      assert revision.status == "done"
+      assert revision.status == "published"
 
       [revision] = flow.revisions
       # should update the cached flow definition
       {:ok, loaded_flow} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "done"}, %{uuid: flow.uuid})
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}, %{uuid: flow.uuid})
 
       assert loaded_flow.definition == revision.definition
 
       # If a flow revision is already published
-      # should reset previously published flow revision and set status of recent one as "done"
+      # should reset previously published flow revision and set status of recent one as "published"
       new_definition = revision.definition |> Map.merge(%{"revision" => 2})
       Flows.create_flow_revision(new_definition)
 
@@ -265,11 +265,11 @@ defmodule Glific.FLowsTest do
         FlowRevision
         |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})
 
-      assert revision.status == "done"
+      assert revision.status == "published"
 
       # should update the cached flow definition
       {:ok, loaded_flow} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "done"}, %{uuid: flow.uuid})
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}, %{uuid: flow.uuid})
 
       assert loaded_flow.definition == new_definition
     end
