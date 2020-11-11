@@ -6,7 +6,8 @@ defmodule Glific.Contacts.Location do
   alias Glific.{
     Contacts.Contact,
     Contacts.Location,
-    Messages.Message
+    Messages.Message,
+    Partners.Organization
   }
 
   use Ecto.Schema
@@ -16,7 +17,8 @@ defmodule Glific.Contacts.Location do
     :contact_id,
     :message_id,
     :longitude,
-    :latitude
+    :latitude,
+    :organization_id
   ]
   @optional_fields []
 
@@ -27,6 +29,8 @@ defmodule Glific.Contacts.Location do
           latitude: float | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -37,6 +41,7 @@ defmodule Glific.Contacts.Location do
 
     belongs_to :contact, Contact
     belongs_to :message, Message
+    belongs_to :organization, Organization
 
     timestamps(type: :utc_datetime)
   end
