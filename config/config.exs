@@ -9,9 +9,7 @@ import Config
 
 config :glific,
   ecto_repos: [Glific.Repo],
-  global_schema: "global",
-  # Settings for provider key
-  provider_key_1: "Please replace this value in the secrets file"
+  global_schema: "global"
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,
@@ -79,6 +77,7 @@ config :fun_with_flags, :cache,
   ttl: 900
 
 # Use ecto.sql persistence adapter is the default, no need to set this.
+# Note that we are setting global directly in the table name
 config :fun_with_flags, :persistence,
   adapter: FunWithFlags.Store.Persistent.Ecto,
   repo: Glific.Repo,

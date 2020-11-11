@@ -39,7 +39,7 @@ defmodule Glific.Groups do
   def contacts_count(%{id: group_id}) do
     ContactGroup
     |> where([cg], cg.group_id == ^group_id)
-    |> Repo.aggregate(:count, skip_organization_id: true)
+    |> Repo.aggregate(:count)
   end
 
   @doc """
@@ -49,7 +49,7 @@ defmodule Glific.Groups do
   def users_count(%{id: group_id}) do
     UserGroup
     |> where([cg], cg.group_id == ^group_id)
-    |> Repo.aggregate(:count, skip_organization_id: true)
+    |> Repo.aggregate(:count)
   end
 
   @doc """
@@ -226,7 +226,7 @@ defmodule Glific.Groups do
       UserGroup
       |> where([ug], ug.user_id == ^user_id)
       |> select([ug], ug.group_id)
-      |> Repo.all(skip_organization_id: true)
+      |> Repo.all()
 
     group_ids = Enum.map(group_ids, fn x -> String.to_integer(x) end)
     add_group_ids = group_ids -- user_group_ids
@@ -238,11 +238,11 @@ defmodule Glific.Groups do
       end)
 
     UserGroup
-    |> Repo.insert_all(new_group_entries, skip_organization_id: true)
+    |> Repo.insert_all(new_group_entries)
 
     UserGroup
     |> where([ug], ug.user_id == ^user_id and ug.group_id in ^delete_group_ids)
-    |> Repo.delete_all(skip_organization_id: true)
+    |> Repo.delete_all()
 
     :ok
   end

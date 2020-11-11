@@ -237,7 +237,11 @@ defmodule Glific.Repo do
   def prepare_query(_operation, query, opts) do
     # Glific.stacktrace()
     cond do
-      opts[:skip_organization_id] || opts[:schema_migration] || is_external_query?(query) ->
+      opts[:skip_organization_id] ||
+        opts[:schema_migration] ||
+        opts[:prefix] == "global" ||
+        query.from.prefix == "global" ||
+          is_external_query?(query) ->
         {query, opts}
 
       organization_id = opts[:organization_id] ->
@@ -249,17 +253,8 @@ defmodule Glific.Repo do
   end
 
   @external_tables [
-    "Oban",
     "FunWith",
-    # Glific Tables
-    "ContactGroup",
-    "ContactTag",
-    "Language",
-    "Location",
-    "MessageTag",
-    "Organization",
-    "Provider",
-    "UserGroup"
+    "Organization"
   ]
 
   @spec is_external_query?(Ecto.Query.t()) :: boolean()
