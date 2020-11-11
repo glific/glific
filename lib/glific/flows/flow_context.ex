@@ -73,7 +73,7 @@ defmodule Glific.Flows.FlowContext do
     field :node_uuid, Ecto.UUID
     field :flow_uuid, Ecto.UUID
 
-    field :status, :string, default: "done"
+    field :status, :string, default: "published"
 
     field :wakeup_at, :utc_datetime, default: nil
     field :completed_at, :utc_datetime, default: nil

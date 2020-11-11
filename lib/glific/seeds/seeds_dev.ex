@@ -468,7 +468,7 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert!(%FlowRevision{
         definition: FlowRevision.default_definition(test_flow),
         flow_id: test_flow.id,
-        status: "done",
+        status: "published",
         organization_id: organization.id
       })
     end

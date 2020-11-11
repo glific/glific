@@ -85,7 +85,7 @@ defmodule Glific.Flows.Periodic do
     )
   end
 
-  @final_phrase "done"
+  @final_phrase "published"
 
   @spec common_flow(map(), String.t(), Message.t(), DateTime.t()) :: {map(), boolean}
   defp common_flow(state, period, message, since) do
