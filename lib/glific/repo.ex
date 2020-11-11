@@ -241,7 +241,7 @@ defmodule Glific.Repo do
         opts[:schema_migration] ||
         opts[:prefix] == "global" ||
         query.from.prefix == "global" ||
-          is_external_query?(query) ->
+        is_sub_query?(query) ->
         {query, opts}
 
       organization_id = opts[:organization_id] ->
@@ -252,20 +252,9 @@ defmodule Glific.Repo do
     end
   end
 
-  @external_tables [
-    "FunWith",
-    "Organization"
-  ]
-
-  @spec is_external_query?(Ecto.Query.t()) :: boolean()
-  defp is_external_query?(%{from: %{source: source}} = _query) when is_tuple(source),
-    do: String.contains?(to_string(elem(source, 1)), @external_tables)
-
   # lets ignore all subqueries
-  defp is_external_query?(%{from: %{source: %Ecto.SubQuery{}}} = _query),
-    do: true
-
-  defp is_external_query?(_query), do: false
+  defp is_sub_query?(%{from: %{source: %Ecto.SubQuery{}}} = _query), do: true
+  defp is_sub_query?(_query), do: false
 
   @organization_key {__MODULE__, :organization_id}
 
