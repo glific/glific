@@ -10,22 +10,29 @@ defmodule Glific.Flows.WebhookLog do
   alias __MODULE__
 
   alias Glific.{
+    Contacts.Contact,
     Flows.Flow,
     Partners.Organization,
     Repo
   }
 
-  @required_fields [:request_json, :flow_id, :flow_uuid, :organization_id]
-  @optional_fields [:response_json]
+  @required_fields [:url, :method, :flow_id, :contact_id, :organization_id]
+  @optional_fields [:request_json, :response_json, :status_code, :response_headers, :error]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
+          url: String.t() | nil,
+          method: String.t() | nil,
           request_json: map() | nil,
           response_json: map() | nil,
+          status_code: non_neg_integer | nil,
+          response_headers: [map()] | nil,
+          error: String.t() | nil,
           flow_id: non_neg_integer | nil,
-          flow_uuid: Ecto.UUID.t() | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          contact_id: non_neg_integer | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -33,11 +40,18 @@ defmodule Glific.Flows.WebhookLog do
         }
 
   schema "webhook_logs" do
+    field :url, :string
+    field :method, :string
     field :request_json, :map, default: %{}
-    field :response_json, :map, default: %{}
 
-    field :flow_uuid, Ecto.UUID
+    field :response_json, :map, default: %{}
+    field :status_code, :integer
+    field :response_headers, {:array, :map}, default: []
+
+    field :error, :string
+
     belongs_to :flow, Flow
+    belongs_to :contact, Contact
     belongs_to :organization, Organization
 
     timestamps(type: :utc_datetime)
