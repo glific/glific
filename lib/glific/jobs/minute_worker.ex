@@ -20,7 +20,7 @@ defmodule Glific.Jobs.MinuteWorker do
 
   @global_organization_id 0
 
-  defp get_organization_services do
+  def get_organization_services do
     case Caches.get(@global_organization_id, "organization_services") do
       {:ok, false} ->
         Caches.set(
@@ -95,7 +95,8 @@ defmodule Glific.Jobs.MinuteWorker do
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"job" => job}} = _args)
-      when job in ["wakeup_flows", "delete_completed_flow_contexts", "delete_old_flow_contexts"] do
+  when job in ["wakeup_flows", "delete_completed_flow_contexts", "delete_old_flow_contexts"] do
+    # lets put a dummy organization id
     apply(FlowContext, String.to_existing_atom(job), [])
     :ok
   end

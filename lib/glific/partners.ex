@@ -177,7 +177,7 @@ defmodule Glific.Partners do
   end
 
   @spec restrict_orgs(Ecto.Query.t(), list()) :: Ecto.Query.t()
-  defp restrict_orgs(query, []), do: query
+  defp restrict_orgs(query, list) when is_nil(list) or list == [], do: query
 
   defp restrict_orgs(query, org_list),
     do: query |> where([q], q.id in ^org_list)
