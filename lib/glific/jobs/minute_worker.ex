@@ -14,6 +14,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Jobs.BigQueryWorker,
     Jobs.ChatbaseWorker,
     Jobs.GcsWorker,
+    Jobs.GupshupbalanceWorker,
     Partners
   }
 
@@ -49,6 +50,11 @@ defmodule Glific.Jobs.MinuteWorker do
 
   def perform(%Oban.Job{args: %{"job" => "gcs"}} = _job) do
     Partners.perform_all(&GcsWorker.perform_periodic/1, nil)
+    :ok
+  end
+
+  def perform(%Oban.Job{args: %{"job" => "gupshupbalance"}} = _job) do
+    Partners.perform_all(&GupshupbalanceWorker.perform_periodic/1, nil)
     :ok
   end
 
