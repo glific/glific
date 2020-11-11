@@ -9,9 +9,7 @@ import Config
 
 config :glific,
   ecto_repos: [Glific.Repo],
-  global_schema: "global",
-  # Settings for provider key
-  provider_key_1: "Please replace this value in the secrets file"
+  global_schema: "global"
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,

@@ -177,7 +177,8 @@ defmodule Glific.Partners do
       Repo.count_filter(
         args,
         Organization,
-        &filter_organization_with/2
+        &filter_organization_with/2,
+        skip_organization_id: true
       )
 
   # codebeat:disable[ABC]
