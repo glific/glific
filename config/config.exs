@@ -79,9 +79,10 @@ config :fun_with_flags, :cache,
 # Use ecto.sql persistence adapter is the default, no need to set this.
 # Note that we are setting global directly in the table name
 config :fun_with_flags, :persistence,
-  adapter: FunWithFlags.Store.Persistent.Ecto,
+  adapter: Glific.FunWithFlags.Store.Persistent.Ecto,
   repo: Glific.Repo,
-  ecto_table_name: "fun_with_flags_toggles"
+  ecto_table_name: "fun_with_flags_toggles",
+  ecto_prefix: "global"
 
 config :fun_with_flags, :cache_bust_notifications,
   enabled: true,

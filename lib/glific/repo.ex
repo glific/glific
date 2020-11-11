@@ -253,13 +253,13 @@ defmodule Glific.Repo do
   end
 
   @external_tables [
-    "FunWith",
-    "Organization"
+    "FunWith"
   ]
 
   @spec is_external_query?(Ecto.Query.t()) :: boolean()
-  defp is_external_query?(%{from: %{source: source}} = _query) when is_tuple(source),
-    do: String.contains?(to_string(elem(source, 1)), @external_tables)
+  defp is_external_query?(%{from: %{source: source}} = _query) when is_tuple(source) do
+    String.contains?(to_string(elem(source, 1)), @external_tables)
+  end
 
   # lets ignore all subqueries
   defp is_external_query?(%{from: %{source: %Ecto.SubQuery{}}} = _query),
