@@ -4,13 +4,6 @@ defmodule Glific.Jobs.GupshupbalanceWorker do
   Glific.Jobs.GupshupbalanceWorker.perform_periodic(1)
   """
 
-  import Ecto.Query
-
-  use Oban.Worker,
-    queue: :default,
-    max_attempts: 1,
-    priority: 0
-
   alias Glific.{
     Communications,
     Partners,
@@ -28,8 +21,8 @@ defmodule Glific.Jobs.GupshupbalanceWorker do
     case Tesla.get(@gupshup_balance_url, headers: [{"apikey", api_key}]) do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, data} = Jason.decode(body)
-        Communications.publish_data(data["balance"], :glific, organization_id)
-      _ ->
+        IO.inspect(data["balance"])
+        _ ->
         {:error, "Invalid key"}
     end
 
