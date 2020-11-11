@@ -12,11 +12,11 @@ defmodule Glific.Jobs.GupshupbalanceWorker do
     priority: 0
 
   alias Glific.{
-    Jobs,
+    Communications,
     Partners,
-    Repo
   }
 
+  Communications.publish_data(data, topic, organization_id)
   @spec perform_periodic(non_neg_integer) :: :ok
   @doc """
   periodic function for making calls to gupshup for remaining balance
@@ -26,21 +26,14 @@ defmodule Glific.Jobs.GupshupbalanceWorker do
     organization = Partners.organization(organization_id)
     credentials = organization.services["gupshup"]
     api_key = credentials.secrets["api_key"]
-    {:ok, response} = Tesla.get(@gupshup_balance_url, headers: [{"apikey", api_key}])
-    {:ok, data} = Jason.decode(response.body)
-    IO.inspect(data["balance"])
-
-  #   case Tesla.get(@gupshup_balance_url, headers: [{"apikey", api_key}]) do
-  #     {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
-  #       :ok
-
-  #     _ ->
-  #       {:error, "Chatbase returned an unexpected result"}
-  #   end
-  # else
-  #   :ok
-  # end
-
+    case Tesla.get(@gupshup_balance_url, headers: [{"apikey", api_key}]) do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        {:ok, data} = Jason.decode(body)
+        Communications.publish_data(data["balance"], topic, organization_id)
+        IO.inspect(data["balance"])
+      _ ->
+        {:error, "Invalid key"}
+    end
 
   end
 end
