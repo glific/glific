@@ -782,39 +782,6 @@ defmodule Glific.Messages do
   end
 
   @doc """
-  Get session uuid of contact's last inbound message
-  """
-  @spec get_session_uuid(map()) :: Ecto.UUID.t()
-  def get_session_uuid(message_params) do
-    organization = Partners.organization(message_params.organization_id)
-
-    with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{
-             phone: message_params.sender.phone,
-             organization_id: organization.id
-           }),
-         true <-
-           Timex.diff(DateTime.utc_now(), contact.last_message_at, :minutes) <
-             organization.session_limit,
-         false <-
-           is_nil(
-             last_inbound_message =
-               Message
-               |> where([m], m.contact_id == ^contact.id)
-               |> where([m], m.organization_id == ^organization.id)
-               |> where([m], m.flow == "inbound")
-               |> order_by([m], desc: m.id)
-               |> first()
-               |> Repo.one()
-           ) do
-      last_inbound_message.session_uuid
-    else
-      _ ->
-        Ecto.UUID.generate()
-    end
-  end
-
-  @doc """
   Delete all messages of a contact
   """
   @spec clear_messages(Contact.t()) :: {:ok}
