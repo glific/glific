@@ -482,7 +482,7 @@ defmodule Glific.Partners do
   list == [ values ] - the actions should be performed only for organizations in the values list
   """
   @spec perform_all((... -> nil), map() | nil, list()) :: :ok
-  def perform_all(_handler, _handler_args, nil = _list) do: :ok
+  def perform_all(_handler, _handler_args, nil = _list), do: :ok
 
   def perform_all(handler, handler_args, list) do
     # We need to do this for all the active organizations
