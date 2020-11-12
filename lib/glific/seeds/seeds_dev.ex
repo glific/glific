@@ -374,6 +374,8 @@ if Code.ensure_loaded?(Faker) do
           organization_id: organization.id
         })
 
+      Repo.put_current_user(user)
+
       user
     end
 
