@@ -721,7 +721,6 @@ defmodule Glific.PartnersTest do
           secrets: %{
             "service_account" => "{\"private_key\":\"test\"}"
           },
-          project_id: "glific2",
           is_active: true,
           organization_id: organization_id
         }
