@@ -1,6 +1,8 @@
 defmodule Glific.PartnersTest do
   alias Faker.{Person, Phone}
   use Glific.DataCase, async: true
+  import Mock
+
   alias Glific.Partners
 
   describe "provider" do
@@ -684,6 +686,51 @@ defmodule Glific.PartnersTest do
                Contacts.list_contacts(%{
                  filter: %{organization_id: organization_id, phone: @opted_in_contact_phone}
                })
+    end
+
+    test "update_credential/2 for bigquery should call create bigquery dataset",
+         %{organization_id: organization_id} = _attrs do
+      valid_attrs = %{
+        shortcode: "bigquery",
+        secrets: %{},
+        organization_id: organization_id
+      }
+
+      {:ok, credential} = Partners.create_credential(valid_attrs)
+
+      valid_update_attrs = %{
+        secrets: %{"service_account" => %{}},
+        is_active: false,
+        organization_id: organization_id
+      }
+
+      {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
+    end
+
+    test "get_goth_token/2 should return goth token",
+         %{organization_id: organization_id} = _attrs do
+      with_mocks([
+        {
+          Goth.Token,
+          [:passthrough],
+          [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        }
+      ]) do
+        valid_attrs = %{
+          shortcode: "bigquery",
+          secrets: %{
+            "service_account" => "{\"private_key\":\"test\"}"
+          },
+          is_active: true,
+          organization_id: organization_id
+        }
+
+        {:ok, _credential} = Partners.create_credential(valid_attrs)
+
+        token = Partners.get_goth_token(organization_id, "bigquery")
+
+        assert token != nil
+      end
     end
   end
 end
