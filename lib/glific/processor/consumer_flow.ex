@@ -31,6 +31,13 @@ defmodule Glific.Processor.ConsumerFlow do
 
   @spec do_process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   defp do_process_message({message, state}, body) do
+    # check if draft keyword, if so bypass ignore keywords
+    # and start draft flow, issue #621
+    is_beta = is_beta_keyword?(state, message.body)
+
+    if is_beta,
+      do: FlowContext.mark_flows_complete(message.contact_id)
+
     context = FlowContext.active_context(message.contact_id)
     # if we are in a flow and the flow is set to ignore keywords
     # then send control to the flow directly
@@ -53,7 +60,7 @@ defmodule Glific.Processor.ConsumerFlow do
           Map.has_key?(state.flow_keywords, body) ->
             check_flows(message, body, state, false)
 
-          is_beta_keyword?(state, message.body) ->
+          is_beta ->
             check_flows(message, message.body, state, true)
 
           true ->
@@ -81,6 +88,8 @@ defmodule Glific.Processor.ConsumerFlow do
   def check_flows(message, body, state, is_beta) do
     {status, body} =
       if is_beta do
+        # lets complete all existing flows for this contact
+
         {String.replace_trailing(@beta_phrase, ":", ""),
          String.replace_leading(body, @beta_phrase, "")}
       else

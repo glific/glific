@@ -47,7 +47,7 @@ defmodule Glific.Flows.Webhook do
     webhook_log
   end
 
-  @spec update_log(map(), WebhookLog.t()):: {:ok, WebhookLog.t()}
+  @spec update_log(map(), WebhookLog.t()) :: {:ok, WebhookLog.t()}
   defp update_log(message, webhook_log) when is_map(message) do
     attrs = %{
       response_json: message.body |> Jason.decode!(),
@@ -58,7 +58,7 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @spec update_log(String.t(), WebhookLog.t()):: {:ok, WebhookLog.t()}
+  @spec update_log(String.t(), WebhookLog.t()) :: {:ok, WebhookLog.t()}
   defp update_log(error_message, webhook_log) do
     attrs = %{
       error: error_message
@@ -94,8 +94,10 @@ defmodule Glific.Flows.Webhook do
         nil
 
       {:error, error_message} ->
-        Kernel.inspect(error_message)
+        error_message
+        |> inspect()
         |> update_log(webhook_log)
+
         nil
     end
   end
@@ -115,6 +117,7 @@ defmodule Glific.Flows.Webhook do
       {:error, error_message} ->
         Kernel.inspect(error_message)
         |> update_log(webhook_log)
+
         nil
     end
   end

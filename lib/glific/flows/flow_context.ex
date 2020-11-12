@@ -263,6 +263,19 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Set all the flows for a specific context to be completed
+  """
+  @spec mark_flows_complete(non_neg_integer) :: nil
+  def mark_flows_complete(contact_id) do
+    now = DateTime.utc_now()
+
+    FlowContext
+    |> where([fc], fc.contact_id == ^contact_id)
+    |> where([fc], is_nil(fc.completed_at))
+    |> Repo.update_all(set: [completed_at: now, updated_at: now])
+  end
+
+  @doc """
   Start a new context, if there is an existing context, blow it away
   """
   @spec init_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
@@ -273,12 +286,7 @@ defmodule Glific.Flows.FlowContext do
 
     # set all previous context to be completed if we are not starting a sub flow
     if is_nil(parent_id) do
-      now = DateTime.utc_now()
-
-      FlowContext
-      |> where([fc], fc.contact_id == ^contact.id)
-      |> where([fc], is_nil(fc.completed_at))
-      |> Repo.update_all(set: [completed_at: now, updated_at: now])
+      mark_flows_complete(contact.id)
     end
 
     node = hd(flow.nodes)
