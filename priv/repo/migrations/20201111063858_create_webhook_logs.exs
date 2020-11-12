@@ -5,11 +5,11 @@ defmodule Glific.Repo.Migrations.CreateWebhookLogs do
     create table(:webhook_logs) do
       add :url, :string, null: false
       add :method, :string, null: false
+      add :request_headers, :jsonb, default: "[]"
       add :request_json, :jsonb, default: "{}"
 
       add :response_json, :jsonb, default: "{}"
       add :status_code, :integer, null: true
-      add :request_headers, :jsonb, default: "[]"
 
       add :error, :string, null: true
 

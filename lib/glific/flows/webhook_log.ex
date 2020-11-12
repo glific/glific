@@ -16,18 +16,18 @@ defmodule Glific.Flows.WebhookLog do
     Repo
   }
 
-  @required_fields [:url, :method, :flow_id, :contact_id, :organization_id]
-  @optional_fields [:request_json, :response_json, :status_code, :request_headers, :error]
+  @required_fields [:url, :method, :request_headers, :flow_id, :contact_id, :organization_id]
+  @optional_fields [:request_json, :response_json, :status_code, :error]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           url: String.t() | nil,
           method: String.t() | nil,
+          request_headers: [map()] | nil,
           request_json: map() | nil,
           response_json: map() | nil,
           status_code: non_neg_integer | nil,
-          request_headers: [map()] | nil,
           error: String.t() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -42,11 +42,11 @@ defmodule Glific.Flows.WebhookLog do
   schema "webhook_logs" do
     field :url, :string
     field :method, :string
+    field :request_headers, {:array, :map}, default: []
     field :request_json, :map, default: %{}
 
     field :response_json, :map, default: %{}
     field :status_code, :integer
-    field :request_headers, {:array, :map}, default: []
 
     field :error, :string
 
