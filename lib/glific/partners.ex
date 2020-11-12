@@ -473,9 +473,16 @@ defmodule Glific.Partners do
 
   The handler is expected to take the organization id as its first argument. The second argument
   is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
+
+  The list is a restricted list of organizations, so we dont repeatedly do work. The convention is as
+  follows:
+
+  list == nil - the action should not be performed for any organization
+  list == [] (empty list) - the action should be performed for all organizations
+  list == [ values ] - the actions should be performed only for organizations in the values list
   """
   @spec perform_all((... -> nil), map() | nil, list()) :: :ok
-  def perform_all(_handler, _handler_args, list) when is_nil(list), do: :ok
+  def perform_all(_handler, _handler_args, nil = _list) do: :ok
 
   def perform_all(handler, handler_args, list) do
     # We need to do this for all the active organizations
