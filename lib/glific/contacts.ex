@@ -12,7 +12,8 @@ defmodule Glific.Contacts do
     Groups.ContactGroup,
     Partners,
     Repo,
-    Tags.ContactTag
+    Tags.ContactTag,
+    Users.User
   }
 
   @doc """
