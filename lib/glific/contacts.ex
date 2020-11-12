@@ -4,6 +4,8 @@ defmodule Glific.Contacts do
   """
   import Ecto.Query, warn: false
 
+  alias __MODULE__
+
   alias Glific.{
     Contacts.Contact,
     Contacts.Location,
@@ -12,6 +14,18 @@ defmodule Glific.Contacts do
     Repo,
     Tags.ContactTag
   }
+
+  @doc """
+  Add permissioning specific to groups, in this case we want to restrict the visibility of
+  groups that the user can see
+  """
+  @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
+  def add_permission(query, user) do
+    query
+    |> join(:inner, [c], ug in UserGroup, as: :ug, on: ug.user_id == ^user.id)
+    |> join(:inner, [ug: ug], cg in ContactGroup, as: :cg, on: ug.group_id == cg.group_id)
+    |> where([c, cg: cg], c.id == cg.contact_id)
+  end
 
   @doc """
   Returns the list of contacts.
@@ -26,15 +40,22 @@ defmodule Glific.Contacts do
   Include contacts only if have list of tags
   """
   @spec list_contacts(map()) :: [Contact.t()]
-  def list_contacts(%{filter: %{organization_id: _organization_id}} = args),
-    do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &filter_with/2)
+  def list_contacts(%{filter: %{organization_id: _organization_id}} = args) do
+    args
+    |> Repo.list_filter_query(Contact, &Repo.opts_with_name/2, &filter_with/2)
+    |> Repo.add_permission(&Contacts.add_permission/2)
+    |> Repo.all()
+  end
 
   @doc """
   Return the count of contacts, using the same filter as list_contacts
   """
   @spec count_contacts(map()) :: integer
   def count_contacts(%{filter: %{organization_id: _organization_id}} = args) do
-    Repo.count_filter(args, Contact, &filter_with/2)
+    args
+    |> Repo.list_filter_query(Contact, nil, &filter_with/2)
+    |> Repo.add_permission(&Contacts.add_permission/2)
+    |> Repo.aggregate(:count)
   end
 
   # codebeat:disable[ABC, LOC]
