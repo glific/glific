@@ -6,7 +6,8 @@ defmodule Glific.Flows.Webhook do
 
   alias Glific.Flows.{
     Action,
-    FlowContext
+    FlowContext,
+    WebhookLog
   }
 
   @doc """
@@ -20,15 +21,55 @@ defmodule Glific.Flows.Webhook do
         fn {k, v} -> {String.to_existing_atom(k), v} end
       )
 
-    if action.method == "get" do
-      get(action, headers)
+    webhook_log = create_log(action, context)
+
+    if action.method == "GET" do
+      get(action, headers, webhook_log)
     else
-      post(action, context, headers)
+      post(action, context, headers, webhook_log)
     end
   end
 
-  @spec post(Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
-  defp post(action, context, headers) do
+  @spec create_log(Action.t(), FlowContext.t()) :: WebhookLog.t()
+  defp create_log(action, context) do
+    {:ok, webhook_log} =
+      %{
+        request_json: action.body,
+        request_headers: [action.headers],
+        url: action.url,
+        method: action.method,
+        organization_id: context.organization_id,
+        flow_id: context.flow_id,
+        contact_id: context.contact.id
+      }
+      |> WebhookLog.create_webhook_log()
+
+    webhook_log
+  end
+
+  @spec update_log(map(), WebhookLog.t()):: {:ok, WebhookLog.t()}
+  defp update_log(message, webhook_log) when is_map(message) do
+    attrs = %{
+      response_json: message.body |> Jason.decode!(),
+      status_code: message.status
+    }
+
+    webhook_log
+    |> WebhookLog.update_webhook_log(attrs)
+  end
+
+  @spec update_log(String.t(), WebhookLog.t()):: {:ok, WebhookLog.t()}
+  defp update_log(error_message, webhook_log) do
+    attrs = %{
+      error: error_message
+    }
+
+    webhook_log
+    |> WebhookLog.update_webhook_log(attrs)
+  end
+
+  @spec post(Action.t(), FlowContext.t(), Keyword.t(), WebhookLog.t()) :: map() | nil
+  defp post(action, context, headers, webhook_log) do
     {:ok, body} =
       %{
         contact: %{
@@ -42,23 +83,38 @@ defmodule Glific.Flows.Webhook do
 
     case Tesla.post(action.url, body, headers: headers) do
       {:ok, %Tesla.Env{status: 200} = message} ->
+        update_log(message, webhook_log)
+
         message.body
         |> Jason.decode!()
         |> Map.get("results")
 
-      _ ->
+      {:ok, %Tesla.Env{} = message} ->
+        update_log(message, webhook_log)
+        nil
+
+      {:error, error_message} ->
+        Kernel.inspect(error_message)
+        |> update_log(webhook_log)
         nil
     end
   end
 
   # Send a get request, and if success, sned the json map back
-  @spec get(atom() | Action.t(), Keyword.t()) :: map() | nil
-  defp get(action, headers) do
-    case Tesla.get(action.url, action.body, headers: headers) do
+  @spec get(atom() | Action.t(), Keyword.t(), WebhookLog.t()) :: map() | nil
+  defp get(action, headers, webhook_log) do
+    case Tesla.get(action.url, headers: headers) do
       {:ok, %Tesla.Env{status: 200} = message} ->
-        message.body |> Jason.decode!() |> get_in(["results", Access.at(0)])
+        update_log(message, webhook_log)
+        message.body |> Jason.decode!()
 
-      _ ->
+      {:ok, %Tesla.Env{} = message} ->
+        update_log(message, webhook_log)
+        nil
+
+      {:error, error_message} ->
+        Kernel.inspect(error_message)
+        |> update_log(webhook_log)
         nil
     end
   end
