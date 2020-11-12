@@ -36,11 +36,11 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     count_organizations = Partners.count_organizations()
 
-    en_us = languages(count_organizations)
+    [en_us, hi] = languages(count_organizations)
 
     provider = providers(count_organizations)
 
-    organization = organization(count_organizations, provider, en_us)
+    organization = organization(count_organizations, provider, [en_us, hi])
 
     ## Added organization id in the query
     Glific.Repo.put_organization_id(organization.id)
@@ -94,8 +94,14 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         locale: "en_US"
       })
 
+    hi =
+      Repo.insert!(%Language{
+        label: "Hindi",
+        label_locale: "हिंदी",
+        locale: "hi"
+      })
+
     languages = [
-      {"Hindi", "हिंदी", "hi"},
       {"Tamil", "தமிழ்", "ta"},
       {"Kannada", "ಕನ್ನಡ", "kn"},
       {"Malayalam", "മലയാളം", "ml"},
@@ -127,12 +133,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     # seed languages
     Repo.insert_all(Language, languages)
 
-    en_us
+    [en_us, hi]
   end
 
   def languages(_count_organizations) do
     {:ok, en_us} = Repo.fetch_by(Language, %{label: "English (United States)"})
-    en_us
+    {:ok, hi} = Repo.fetch_by(Language, %{label: "Hindi"})
+    [en_us, hi]
   end
 
   def gtags(organization, en_us) do
@@ -428,19 +435,19 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     admin
   end
 
-  defp create_org(0 = _count_organizations, provider, en_us, out_of_office_default_data) do
+  defp create_org(0 = _count_organizations, provider, [en_us, hi], out_of_office_default_data) do
     Repo.insert!(%Organization{
       name: "Glific",
       shortcode: "glific",
       email: "ADMIN@REPLACE_ME.NOW",
       bsp_id: provider.id,
-      active_language_ids: [en_us.id],
+      active_language_ids: [en_us.id, hi.id],
       default_language_id: en_us.id,
       out_of_office: out_of_office_default_data
     })
   end
 
-  defp create_org(count_organizations, provider, en_us, out_of_office_default_data) do
+  defp create_org(count_organizations, provider, [en_us, hi], out_of_office_default_data) do
     org_uniq_id = Integer.to_string(count_organizations + 1)
 
     Repo.insert!(%Organization{
@@ -448,13 +455,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       shortcode: "shortcode " <> org_uniq_id,
       email: "ADMIN_#{org_uniq_id}@REPLACE_ME.NOW",
       bsp_id: provider.id,
-      active_language_ids: [en_us.id],
+      active_language_ids: [en_us.id, hi.id],
       default_language_id: en_us.id,
       out_of_office: out_of_office_default_data
     })
   end
 
-  def organization(count_organization, provider, en_us) do
+  def organization(count_organization, provider, [en_us, hi]) do
     out_of_office_default_data = %{
       enabled: true,
       start_time: elem(Time.new(9, 0, 0), 1),
@@ -470,7 +477,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       ]
     }
 
-    create_org(count_organization, provider, en_us, out_of_office_default_data)
+    create_org(count_organization, provider, [en_us, hi], out_of_office_default_data)
   end
 
   def users(admin, organization) do
@@ -712,7 +719,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.insert(%FlowRevision{
       definition: definition,
       flow_id: f.id,
-      status: "done",
+      status: "published",
       version: 1,
       organization_id: organization.id
     })

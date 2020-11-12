@@ -151,22 +151,36 @@ defmodule Glific.Partners do
   """
   @spec list_organizations(map()) :: [Organization.t()]
   def list_organizations(args \\ %{}),
-    do: Repo.list_filter(args, Organization, &Repo.opts_with_name/2, &filter_organization_with/2)
+    do:
+      Repo.list_filter(
+        args,
+        Organization,
+        &Repo.opts_with_name/2,
+        &filter_organization_with/2,
+        skip_organization_id: true
+      )
 
   @doc """
   List of organizations that are active within the system
   """
-  @spec active_organizations :: map()
-  def active_organizations do
+  @spec active_organizations(list()) :: map()
+  def active_organizations(orgs) do
     Organization
     |> where([q], q.is_active == true)
     |> select([q], [q.id, q.name])
-    |> Repo.all()
+    |> restrict_orgs(orgs)
+    |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(%{}, fn row, acc ->
       [id, value] = row
       Map.put(acc, id, value)
     end)
   end
+
+  @spec restrict_orgs(Ecto.Query.t(), list()) :: Ecto.Query.t()
+  defp restrict_orgs(query, list) when list == [], do: query
+
+  defp restrict_orgs(query, org_list),
+    do: query |> where([q], q.id in ^org_list)
 
   @doc """
   Return the count of organizations, using the same filter as list_organizations
@@ -177,7 +191,8 @@ defmodule Glific.Partners do
       Repo.count_filter(
         args,
         Organization,
-        &filter_organization_with/2
+        &filter_organization_with/2,
+        skip_organization_id: true
       )
 
   # codebeat:disable[ABC]
@@ -223,7 +238,7 @@ defmodule Glific.Partners do
 
   """
   @spec get_organization!(integer) :: Organization.t()
-  def get_organization!(id), do: Repo.get!(Organization, id)
+  def get_organization!(id), do: Repo.get!(Organization, id, skip_organization_id: true)
 
   @doc ~S"""
   Creates a organization.
@@ -241,7 +256,7 @@ defmodule Glific.Partners do
   def create_organization(attrs \\ %{}) do
     %Organization{}
     |> Organization.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(skip_organization_id: true)
   end
 
   @doc ~S"""
@@ -267,7 +282,7 @@ defmodule Glific.Partners do
 
     organization
     |> Organization.changeset(attrs)
-    |> Repo.update()
+    |> Repo.update(skip_organization_id: true)
   end
 
   @doc ~S"""
@@ -458,11 +473,20 @@ defmodule Glific.Partners do
 
   The handler is expected to take the organization id as its first argument. The second argument
   is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
+
+  The list is a restricted list of organizations, so we dont repeatedly do work. The convention is as
+  follows:
+
+  list == nil - the action should not be performed for any organization
+  list == [] (empty list) - the action should be performed for all organizations
+  list == [ values ] - the actions should be performed only for organizations in the values list
   """
-  @spec perform_all((... -> nil), map() | nil) :: :ok
-  def perform_all(handler, handler_args) do
+  @spec perform_all((... -> nil), map() | nil, list()) :: :ok
+  def perform_all(_handler, _handler_args, nil = _list), do: :ok
+
+  def perform_all(handler, handler_args, list) do
     # We need to do this for all the active organizations
-    active_organizations()
+    active_organizations(list)
     |> Enum.each(fn {id, name} ->
       if is_nil(handler_args),
         do: handler.(id),
@@ -588,7 +612,7 @@ defmodule Glific.Partners do
       |> Credential.changeset(attrs)
       |> Repo.update()
 
-    if credential.provider.shortcode == "bigquery" and credential.is_active == true do
+    if credential.provider.shortcode == "bigquery" do
       org = credential.organization |> Repo.preload(:contact)
       Bigquery.bigquery_dataset(org.contact.phone, org.id)
     end

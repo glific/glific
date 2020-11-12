@@ -506,19 +506,21 @@ if Code.ensure_loaded?(Faker) do
       _ =
         Repo.all(query)
         |> Enum.shuffle()
-        |> Enum.reduce([], fn x, acc -> create_message_tag_generic(x, tag_ids, acc) end)
+        |> Enum.reduce([], fn x, acc ->
+          create_message_tag_generic(x, tag_ids, organization.id, acc)
+        end)
         |> Enum.chunk_every(1000)
         |> Enum.map(&Repo.insert_all(MessageTag, &1))
     end
 
-    defp create_message_tag_generic(message_id, tag_ids, acc) do
+    defp create_message_tag_generic(message_id, tag_ids, organization_id, acc) do
       x = Enum.random(0..100)
       [t0, t1, t2] = Enum.take_random(tag_ids, 3)
 
       [m0, m1, m2] = [
-        %{message_id: message_id, tag_id: t0},
-        %{message_id: message_id, tag_id: t1},
-        %{message_id: message_id, tag_id: t2}
+        %{message_id: message_id, tag_id: t0, organization_id: organization_id},
+        %{message_id: message_id, tag_id: t1, organization_id: organization_id},
+        %{message_id: message_id, tag_id: t2, organization_id: organization_id}
       ]
 
       # seed message_tags on received messages only: 10% no tags etc
@@ -545,18 +547,20 @@ if Code.ensure_loaded?(Faker) do
           from m in "messages", select: m.id, where: m.receiver_id == 1 and m.message_number == 0
         )
         |> Enum.shuffle()
-        |> Enum.reduce([], fn x, acc -> create_message_tag_unread(x, tag_ids, acc) end)
+        |> Enum.reduce([], fn x, acc ->
+          create_message_tag_unread(x, tag_ids, organization.id, acc)
+        end)
         |> Enum.chunk_every(1000)
         |> Enum.map(&Repo.insert_all(MessageTag, &1))
     end
 
-    defp create_message_tag_unread(message_id, tag_ids, acc) do
+    defp create_message_tag_unread(message_id, tag_ids, organization_id, acc) do
       x = Enum.random(0..100)
       [t0, t1] = Enum.take_random(tag_ids, 2)
 
       [m0, m1] = [
-        %{message_id: message_id, tag_id: t0},
-        %{message_id: message_id, tag_id: t1}
+        %{message_id: message_id, tag_id: t0, organization_id: organization_id},
+        %{message_id: message_id, tag_id: t1, organization_id: organization_id}
       ]
 
       # seed message_tags on received messages only: 10% no tags etc
@@ -582,16 +586,18 @@ if Code.ensure_loaded?(Faker) do
           from m in "messages", select: m.id, where: m.receiver_id != 1 and m.message_number == 0
         )
         |> Enum.shuffle()
-        |> Enum.reduce([], fn x, acc -> create_message_tag_not_responded(x, tag_ids, acc) end)
+        |> Enum.reduce([], fn x, acc ->
+          create_message_tag_not_responded(x, tag_ids, organization.id, acc)
+        end)
         |> Enum.chunk_every(1000)
         |> Enum.map(&Repo.insert_all(MessageTag, &1))
     end
 
-    defp create_message_tag_not_responded(message_id, tag_ids, acc) do
+    defp create_message_tag_not_responded(message_id, tag_ids, organization_id, acc) do
       x = Enum.random(0..100)
       [t0] = Enum.take_random(tag_ids, 1)
 
-      m0 = %{message_id: message_id, tag_id: t0}
+      m0 = %{message_id: message_id, tag_id: t0, organization_id: organization_id}
 
       # seed message_tags on received messages only: 10% no tags etc
       if x < 50,
@@ -615,6 +621,8 @@ if Code.ensure_loaded?(Faker) do
         |> Keyword.put_new(:contacts, 250)
 
       organization = Partners.get_organization!(opts[:organization])
+
+      Repo.put_organization_id(organization.id)
 
       # create seed for deterministic random data
       start = organization.id * 100

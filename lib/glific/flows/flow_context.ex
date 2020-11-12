@@ -73,7 +73,7 @@ defmodule Glific.Flows.FlowContext do
     field :node_uuid, Ecto.UUID
     field :flow_uuid, Ecto.UUID
 
-    field :status, :string, default: "done"
+    field :status, :string, default: "published"
 
     field :wakeup_at, :utc_datetime, default: nil
     field :completed_at, :utc_datetime, default: nil
@@ -263,6 +263,19 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Set all the flows for a specific context to be completed
+  """
+  @spec mark_flows_complete(non_neg_integer) :: nil
+  def mark_flows_complete(contact_id) do
+    now = DateTime.utc_now()
+
+    FlowContext
+    |> where([fc], fc.contact_id == ^contact_id)
+    |> where([fc], is_nil(fc.completed_at))
+    |> Repo.update_all(set: [completed_at: now, updated_at: now])
+  end
+
+  @doc """
   Start a new context, if there is an existing context, blow it away
   """
   @spec init_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
@@ -273,12 +286,7 @@ defmodule Glific.Flows.FlowContext do
 
     # set all previous context to be completed if we are not starting a sub flow
     if is_nil(parent_id) do
-      now = DateTime.utc_now()
-
-      FlowContext
-      |> where([fc], fc.contact_id == ^contact.id)
-      |> where([fc], is_nil(fc.completed_at))
-      |> Repo.update_all(set: [completed_at: now, updated_at: now])
+      mark_flows_complete(contact.id)
     end
 
     node = hd(flow.nodes)
@@ -357,16 +365,16 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  @spec wakeup() :: :ok
+  @spec wakeup_flows() :: :ok
   @doc """
   Find all the contexts which need to be woken up and processed
   """
-  def wakeup do
+  def wakeup_flows do
     FlowContext
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
     |> preload(:flow)
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
     |> Enum.each(&wakeup_one(&1))
 
     :ok
@@ -419,7 +427,7 @@ defmodule Glific.Flows.FlowContext do
 
     FlowContext
     |> where([fc], fc.completed_at < ^back_date)
-    |> Repo.delete_all()
+    |> Repo.delete_all(skip_organization_id: true)
 
     :ok
   end
@@ -433,7 +441,7 @@ defmodule Glific.Flows.FlowContext do
 
     FlowContext
     |> where([fc], fc.inserted_at < ^last_month_date)
-    |> Repo.delete_all()
+    |> Repo.delete_all(skip_organization_id: true)
 
     :ok
   end

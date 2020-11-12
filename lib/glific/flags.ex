@@ -24,7 +24,7 @@ defmodule Glific.Flags do
   @doc false
   @spec init :: :ok
   def init do
-    Partners.active_organizations()
+    Partners.active_organizations([])
     |> Enum.each(fn {id, _name} ->
       init(id)
     end)
