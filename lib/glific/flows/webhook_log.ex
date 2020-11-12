@@ -17,7 +17,7 @@ defmodule Glific.Flows.WebhookLog do
   }
 
   @required_fields [:url, :method, :flow_id, :contact_id, :organization_id]
-  @optional_fields [:request_json, :response_json, :status_code, :response_headers, :error]
+  @optional_fields [:request_json, :response_json, :status_code, :request_headers, :error]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -27,7 +27,7 @@ defmodule Glific.Flows.WebhookLog do
           request_json: map() | nil,
           response_json: map() | nil,
           status_code: non_neg_integer | nil,
-          response_headers: [map()] | nil,
+          request_headers: [map()] | nil,
           error: String.t() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -46,7 +46,7 @@ defmodule Glific.Flows.WebhookLog do
 
     field :response_json, :map, default: %{}
     field :status_code, :integer
-    field :response_headers, {:array, :map}, default: []
+    field :request_headers, {:array, :map}, default: []
 
     field :error, :string
 

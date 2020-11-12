@@ -9,7 +9,7 @@ defmodule Glific.Repo.Migrations.CreateWebhookLogs do
 
       add :response_json, :jsonb, default: "{}"
       add :status_code, :integer, null: true
-      add :response_headers, :jsonb, default: "[]"
+      add :request_headers, :jsonb, default: "[]"
 
       add :error, :string, null: true
 
