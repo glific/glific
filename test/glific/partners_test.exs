@@ -479,7 +479,7 @@ defmodule Glific.PartnersTest do
 
     test "active_organizations/0 should return list of active organizations" do
       organization = organization_fixture()
-      organizations = Partners.active_organizations()
+      organizations = Partners.active_organizations([])
       assert organizations[organization.id] != nil
 
       {:ok, _} = Partners.update_organization(organization, %{is_active: false})
@@ -534,7 +534,7 @@ defmodule Glific.PartnersTest do
       assert days != nil
     end
 
-    test "perform_all/2 should run handler for all active organizations" do
+    test "perform_all/3 should run handler for all active organizations" do
       contact =
         Fixtures.contact_fixture(%{
           bsp_status: :session_and_hsm,
@@ -545,7 +545,7 @@ defmodule Glific.PartnersTest do
       organization_fixture(%{contact_id: contact.id})
 
       Partners.active_organizations([])
-      Partners.perform_all(&Contacts.update_contact_status/2, %{})
+      Partners.perform_all(&Contacts.update_contact_status/2, %{}, [])
 
       updated_contact = Contacts.get_contact!(contact.id)
       assert updated_contact.bsp_status == :hsm

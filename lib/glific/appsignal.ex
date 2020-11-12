@@ -1,8 +1,13 @@
 defmodule Glific.Appsignal do
+  @moduledoc """
+  A simple interface that connect Oban job status to Appsignal
+  """
+
   alias Appsignal.Error
   alias Appsignal.Transaction
 
   @doc false
+  @spec handle_event(list(), any(), any(), any()) :: any()
   def handle_event([:oban, event], measurement, meta, _) when event in [:success, :failure] do
     transaction = record_event(measurement, meta)
 
