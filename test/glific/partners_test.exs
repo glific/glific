@@ -685,5 +685,24 @@ defmodule Glific.PartnersTest do
                  filter: %{organization_id: organization_id, phone: @opted_in_contact_phone}
                })
     end
+
+    test "update_credential/2 for bigquery should call create bigquery dataset",
+         %{organization_id: organization_id} = _attrs do
+      valid_attrs = %{
+        shortcode: "bigquery",
+        secrets: %{},
+        organization_id: organization_id
+      }
+
+      {:ok, credential} = Partners.create_credential(valid_attrs)
+
+      valid_update_attrs = %{
+        secrets: %{"service_account" => %{}},
+        is_active: false,
+        organization_id: organization_id
+      }
+
+      {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
+    end
   end
 end
