@@ -5,6 +5,8 @@ defmodule Glific.Searches do
 
   import Ecto.Query, warn: false
 
+  alias __MODULE__
+
   alias Glific.{
     Contacts.Contact,
     Conversations.Conversation,
@@ -146,25 +148,16 @@ defmodule Glific.Searches do
     |> select([c], c.id)
   end
 
-  @spec get_restricted_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
-  defp get_restricted_permission(query, user) do
-    # for now we'll just give access to odd contacts for odd users
-    # and even contacts for even users
+  @doc """
+  Add permissioning specific to searches, in this case we want to restrict the visibility of
+  contact ids
+  """
+  @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
+  def add_permission(query, user) do
     query
     |> join(:inner, [m], ug in UserGroup, as: :ug, on: ug.user_id == ^user.id)
     |> join(:inner, [m, ug: ug], cg in ContactGroup, as: :cg, on: ug.group_id == cg.group_id)
     |> where([m, cg: cg], m.contact_id == cg.contact_id)
-  end
-
-  @spec get_permission(Ecto.Query.t()) :: Ecto.Query.t()
-  defp get_permission(query) do
-    user = Glific.Repo.get_current_user()
-
-    if is_nil(user), do: raise(RuntimeError, message: "Invalid user")
-
-    if user.is_restricted and Enum.member?(user.roles, :staff),
-      do: get_restricted_permission(query, user),
-      else: query
   end
 
   # common function to build query between count and search
@@ -177,7 +170,7 @@ defmodule Glific.Searches do
     |> where([m], m.message_number == 0)
     |> where([m], m.organization_id == ^args.filter.organization_id)
     |> order_by([m], desc: m.inserted_at)
-    |> get_permission()
+    |> Repo.add_permission(&Searches.add_permission/2)
     |> Full.run(term, args)
   end
 

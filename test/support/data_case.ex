@@ -17,9 +17,10 @@ defmodule Glific.DataCase do
   use ExUnit.CaseTemplate
 
   alias Ecto.Adapters.SQL.Sandbox
+
   alias Glific.{
     Fixtures,
-    Repo,
+    Repo
   }
 
   using do

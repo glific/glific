@@ -4,13 +4,22 @@ defmodule Glific.Groups do
   """
   import Ecto.Query, warn: false
 
-  alias Glific.Repo
+  alias __MODULE__
 
-  alias Glific.Groups.{
-    ContactGroup,
-    Group,
-    UserGroup
-  }
+  alias Glific.{Repo, Users.User}
+
+  alias Glific.Groups.{ContactGroup, Group, UserGroup}
+
+  @doc """
+  Add permissioning specific to groups, in this case we want to restrict the visibility of
+  groups that the user can see
+  """
+  @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
+  def add_permission(query, user) do
+    query
+    |> join(:inner, [g], ug in UserGroup, as: :ug, on: ug.user_id == ^user.id)
+    |> where([g, ug: ug], g.id == ug.group_id)
+  end
 
   @doc """
   Returns the list of groups.
@@ -22,15 +31,23 @@ defmodule Glific.Groups do
 
   """
   @spec list_groups(map()) :: [Group.t()]
-  def list_groups(%{filter: %{organization_id: _organization_id}} = args),
-    do: Repo.list_filter(args, Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
+  def list_groups(%{filter: %{organization_id: _organization_id}} = args) do
+    args
+    |> Repo.list_filter_query(Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
+    |> Repo.add_permission(&Groups.add_permission/2)
+    |> Repo.all()
+  end
 
   @doc """
   Return the count of groups, using the same filter as list_groups
   """
   @spec count_groups(map()) :: integer
-  def count_groups(%{filter: %{organization_id: _organization_id}} = args),
-    do: Repo.count_filter(args, Group, &Repo.filter_with/2)
+  def count_groups(%{filter: %{organization_id: _organization_id}} = args) do
+    args
+    |> Repo.list_filter_query(Group, nil, &Repo.filter_with/2)
+    |> Repo.add_permission(&Groups.add_permission/2)
+    |> Repo.aggregate(:count)
+  end
 
   @doc """
   Return the count of group contacts

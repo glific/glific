@@ -72,11 +72,38 @@ defmodule Glific.Repo do
         ) :: [any]
   def list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn, repo_opts \\ []) do
     args
+    |> list_filter_query(object, opts_with_fn, filter_with_fn)
+    |> Repo.all(repo_opts)
+  end
+
+  @spec add_opts(
+          Ecto.Queryable.t(),
+          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()) | nil,
+          map()
+        ) :: Ecto.Queryable.t()
+  defp add_opts(query, nil, _opts), do: query
+
+  defp add_opts(query, opts_with_fn, opts),
+    do:
+      query
+      |> opts_with_fn.(opts)
+      |> limit_offset(opts)
+
+  @doc """
+  This function builds the query, and is used in places where we want to
+  layer permissioning on top of the query
+  """
+  @spec list_filter_query(
+          map(),
+          atom(),
+          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()) | nil,
+          (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t())
+        ) :: Ecto.Queryable.t()
+  def list_filter_query(args \\ %{}, object, opts_with_fn, filter_with_fn) do
+    args
     |> Enum.reduce(object, fn
       {:opts, opts}, query ->
-        query
-        |> opts_with_fn.(opts)
-        |> limit_offset(opts)
+        query |> add_opts(opts_with_fn, opts)
 
       {:filter, filter}, query ->
         query |> filter_with_fn.(filter)
@@ -84,7 +111,6 @@ defmodule Glific.Repo do
       _, query ->
         query
     end)
-    |> Repo.all(repo_opts)
   end
 
   @doc """
@@ -98,16 +124,10 @@ defmodule Glific.Repo do
           (Ecto.Queryable.t(), %{optional(atom()) => any} -> Ecto.Queryable.t()),
           Keyword.t()
         ) :: integer
-  def count_filter(args \\ %{}, object, filter_with_fn, opts \\ []) do
+  def count_filter(args \\ %{}, object, filter_with_fn, repo_opts \\ []) do
     args
-    |> Enum.reduce(object, fn
-      {:filter, filter}, query ->
-        query |> filter_with_fn.(filter)
-
-      _, query ->
-        query
-    end)
-    |> Repo.aggregate(:count, opts)
+    |> list_filter_query(object, nil, filter_with_fn)
+    |> Repo.aggregate(:count, repo_opts)
   end
 
   @doc """
@@ -130,8 +150,8 @@ defmodule Glific.Repo do
   @doc """
   An empty function for objects that ignore the opts
   """
-  @spec opts_with_nil(any, any) :: any
-  def opts_with_nil(_opts, query), do: query
+  @spec opts_with_nil(Ecto.Queryable.t(), any) :: Ecto.Queryable.t()
+  def opts_with_nil(query, _opts), do: query
 
   @doc """
   A funtion which handles the order clause for a data type that has
@@ -210,6 +230,22 @@ defmodule Glific.Repo do
       _, query ->
         query
     end)
+  end
+
+  @doc """
+  Implement permissioning support via groups. This is the basic wrapper, it uses
+  a context specific permissioning wrapper to add the actual clauses
+  """
+  @spec add_permission(Ecto.Query.t(), (Ecto.Query.t(), User.t() -> Ecto.Query.t())) ::
+          Ecto.Query.t()
+  def add_permission(query, permission_fn) do
+    user = Glific.Repo.get_current_user()
+
+    cond do
+      is_nil(user) -> raise(RuntimeError, message: "Invalid user")
+      user.is_restricted and Enum.member?(user.roles, :staff) -> permission_fn.(query, user)
+      true -> query
+    end
   end
 
   # codebeat:enable[ABC, LOC]
