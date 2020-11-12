@@ -488,6 +488,8 @@ if Code.ensure_loaded?(Faker) do
     def seed do
       organization = get_organization()
 
+      Repo.put_organization_id(organization.id)
+
       seed_providers()
 
       seed_contacts(organization)

@@ -20,7 +20,8 @@ defmodule Glific.Jobs.MinuteWorker do
 
   @global_organization_id 0
 
-  def get_organization_services do
+  @spec get_organization_services :: map()
+  defp get_organization_services do
     case Caches.get(@global_organization_id, "organization_services") do
       {:ok, false} ->
         Caches.set(
@@ -35,8 +36,9 @@ defmodule Glific.Jobs.MinuteWorker do
     end
   end
 
+  @spec load_organization_services :: map()
   defp load_organization_services do
-    Partners.active_organizations()
+    Partners.active_organizations([])
     |> Enum.reduce(
       %{},
       fn {id, _name}, acc ->
@@ -46,6 +48,7 @@ defmodule Glific.Jobs.MinuteWorker do
     |> combine_services()
   end
 
+  @spec load_organization_service(non_neg_integer, map()) :: map()
   defp load_organization_service(organization_id, services) do
     organization = Partners.organization(organization_id)
 
@@ -63,6 +66,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Map.put(services, organization_id, service)
   end
 
+  @spec add_service(map(), String.t(), boolean(), non_neg_integer) :: map()
   defp add_service(acc, _name, false, _org_id), do: acc
 
   defp add_service(acc, name, true, org_id) do
@@ -70,6 +74,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Map.put(acc, name, [org_id | value])
   end
 
+  @spec combine_services(map()) :: map()
   defp combine_services(services) do
     combined =
       services
@@ -95,7 +100,7 @@ defmodule Glific.Jobs.MinuteWorker do
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"job" => job}} = _args)
-  when job in ["wakeup_flows", "delete_completed_flow_contexts", "delete_old_flow_contexts"] do
+      when job in ["wakeup_flows", "delete_completed_flow_contexts", "delete_old_flow_contexts"] do
     # lets put a dummy organization id
     apply(FlowContext, String.to_existing_atom(job), [])
     :ok
@@ -110,7 +115,7 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
 
       "contact_status" ->
-        Partners.perform_all(&Contacts.update_contact_status/2, args)
+        Partners.perform_all(&Contacts.update_contact_status/2, args, [])
 
       "chatbase" ->
         Partners.perform_all(&ChatbaseWorker.perform_periodic/1, nil, services["chatbase"])

@@ -483,7 +483,7 @@ defmodule Glific.PartnersTest do
       assert organizations[organization.id] != nil
 
       {:ok, _} = Partners.update_organization(organization, %{is_active: false})
-      organizations = Partners.active_organizations()
+      organizations = Partners.active_organizations([])
       assert organizations[organization.id] == nil
     end
 
@@ -544,7 +544,7 @@ defmodule Glific.PartnersTest do
 
       organization_fixture(%{contact_id: contact.id})
 
-      Partners.active_organizations()
+      Partners.active_organizations([])
       Partners.perform_all(&Contacts.update_contact_status/2, %{})
 
       updated_contact = Contacts.get_contact!(contact.id)
