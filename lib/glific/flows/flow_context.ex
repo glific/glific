@@ -357,16 +357,16 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  @spec wakeup() :: :ok
+  @spec wakeup_flows() :: :ok
   @doc """
   Find all the contexts which need to be woken up and processed
   """
-  def wakeup do
+  def wakeup_flows do
     FlowContext
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
     |> preload(:flow)
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
     |> Enum.each(&wakeup_one(&1))
 
     :ok
@@ -419,7 +419,7 @@ defmodule Glific.Flows.FlowContext do
 
     FlowContext
     |> where([fc], fc.completed_at < ^back_date)
-    |> Repo.delete_all()
+    |> Repo.delete_all(skip_organization_id: true)
 
     :ok
   end
@@ -433,7 +433,7 @@ defmodule Glific.Flows.FlowContext do
 
     FlowContext
     |> where([fc], fc.inserted_at < ^last_month_date)
-    |> Repo.delete_all()
+    |> Repo.delete_all(skip_organization_id: true)
 
     :ok
   end
