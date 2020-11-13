@@ -10,6 +10,25 @@ defmodule Glific.Groups do
 
   alias Glific.Groups.{ContactGroup, Group, UserGroup}
 
+  @spec has_permission?(non_neg_integer) :: boolean()
+  defp has_permission?(id) do
+    if Repo.skip_permission?() == true do
+      true
+    else
+      group =
+        Group
+        |> Ecto.Queryable.to_query()
+        |> Repo.add_permission(&Groups.add_permission/2)
+        |> where([g], g.id == ^id)
+      |> select([g], g.id)
+      |> Repo.one()
+
+      if group == nil,
+        do: false,
+        else: true
+    end
+  end
+
   @doc """
   Add permissioning specific to groups, in this case we want to restrict the visibility of
   groups that the user can see
@@ -85,7 +104,8 @@ defmodule Glific.Groups do
   """
   @spec get_group!(integer) :: Group.t()
   def get_group!(id) do
-    Ecto.Queryable.to_query(Group)
+    Group
+    |> Ecto.Queryable.to_query()
     |> Repo.add_permission(&Groups.add_permission/2)
     |> Repo.get!(id)
   end
@@ -123,9 +143,13 @@ defmodule Glific.Groups do
   """
   @spec update_group(Group.t(), map()) :: {:ok, Group.t()} | {:error, Ecto.Changeset.t()}
   def update_group(%Group{} = group, attrs) do
-    group
-    |> Group.changeset(attrs)
-    |> Repo.update()
+    if has_permission?(group.id) do
+      group
+      |> Group.changeset(attrs)
+      |> Repo.update()
+    else
+      raise "Permission denied"
+    end
   end
 
   @doc """
@@ -142,7 +166,9 @@ defmodule Glific.Groups do
   """
   @spec delete_group(Group.t()) :: {:ok, Group.t()} | {:error, Ecto.Changeset.t()}
   def delete_group(%Group{} = group) do
-    Repo.delete(group)
+    if has_permission?(group.id),
+      do: Repo.delete(group),
+      else: raise "Permission denied"
   end
 
   @doc """

@@ -120,6 +120,25 @@ defmodule Glific.Contacts do
   defp filter_contacts_with_blocked_status(query, _),
     do: from(q in query, where: q.status != "blocked")
 
+  @spec has_permission?(non_neg_integer) :: boolean()
+  defp has_permission?(id) do
+    if Repo.skip_permission?() == true do
+      true
+    else
+      contact =
+        Contact
+        |> Ecto.Queryable.to_query()
+        |> Repo.add_permission(&Contacts.add_permission/2)
+        |> where([c], c.id == ^id)
+        |> select([c], c.id)
+        |> Repo.one()
+
+      if contact == nil,
+        do: false,
+        else: true
+    end
+  end
+
   @doc """
   Gets a single contact.
 
@@ -136,7 +155,8 @@ defmodule Glific.Contacts do
   """
   @spec get_contact!(integer) :: Contact.t()
   def get_contact!(id) do
-    Ecto.Queryable.to_query(Contact)
+    Contact
+    |> Ecto.Queryable.to_query()
     |> Repo.add_permission(&Contacts.add_permission/2)
     |> Repo.get!(id)
   end
@@ -181,9 +201,13 @@ defmodule Glific.Contacts do
   """
   @spec update_contact(Contact.t(), map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def update_contact(%Contact{} = contact, attrs) do
-    contact
-    |> Contact.changeset(attrs)
-    |> Repo.update()
+    if has_permission?(contact.id) do
+      contact
+      |> Contact.changeset(attrs)
+      |> Repo.update()
+    else
+      raise "Permission denied"
+    end
   end
 
   @doc """
@@ -200,7 +224,9 @@ defmodule Glific.Contacts do
   """
   @spec delete_contact(Contact.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def delete_contact(%Contact{} = contact) do
-    Repo.delete(contact)
+    if has_permission?(contact.id),
+      do: Repo.delete(contact),
+      else: raise "Permission denied"
   end
 
   @doc """

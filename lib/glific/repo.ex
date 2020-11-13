@@ -233,18 +233,30 @@ defmodule Glific.Repo do
   end
 
   @doc """
+  Can we skip checking permissions for this user. This eliminates a DB call
+  in many a case
+  """
+  @spec skip_permission? :: User.t() | true
+  def skip_permission? do
+    user = Glific.Repo.get_current_user()
+
+    cond do
+      is_nil(user) -> raise(RuntimeError, message: "Invalid user")
+      user.is_restricted and Enum.member?(user.roles, :staff) -> user
+      true -> true
+    end
+  end
+
+  @doc """
   Implement permissioning support via groups. This is the basic wrapper, it uses
   a context specific permissioning wrapper to add the actual clauses
   """
   @spec add_permission(Ecto.Query.t(), (Ecto.Query.t(), User.t() -> Ecto.Query.t())) ::
           Ecto.Query.t()
   def add_permission(query, permission_fn) do
-    user = Glific.Repo.get_current_user()
-
-    cond do
-      is_nil(user) -> raise(RuntimeError, message: "Invalid user")
-      user.is_restricted and Enum.member?(user.roles, :staff) -> permission_fn.(query, user)
+    case skip_permission?() do
       true -> query
+      user -> permission_fn.(query, user)
     end
   end
 
