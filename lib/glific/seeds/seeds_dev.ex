@@ -95,6 +95,7 @@ if Code.ensure_loaded?(Faker) do
             updated_at: utc_now,
             organization_id: organization.id,
             last_message_at: utc_now,
+            last_communication_at: utc_now,
             bsp_status: :session
           }
           |> Map.merge(contact_entry)
@@ -340,6 +341,7 @@ if Code.ensure_loaded?(Faker) do
           language_id: en_us.id,
           optin_time: utc_now,
           last_message_at: utc_now,
+          last_communication_at: utc_now,
           organization_id: organization.id
         })
 
@@ -350,6 +352,7 @@ if Code.ensure_loaded?(Faker) do
           language_id: en_us.id,
           optin_time: utc_now,
           last_message_at: utc_now,
+          last_communication_at: utc_now,
           organization_id: organization.id
         })
 

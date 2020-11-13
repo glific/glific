@@ -428,7 +428,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         name: "Glific Admin",
         organization_id: organization.id,
         language_id: en_us.id,
-        last_message_at: utc_now
+        last_message_at: utc_now,
+        last_communication_at: utc_now,
       })
 
     Repo.update!(change(organization, contact_id: admin.id))

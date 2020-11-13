@@ -176,10 +176,14 @@ defmodule Glific.Contacts do
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(%{organization_id: organization_id} = attrs) do
     attrs =
-      Map.put(
-        attrs,
+      attrs
+      |> Map.put(
         :language_id,
         attrs[:language_id] || Partners.organization_language_id(organization_id)
+      )
+      |> Map.put(
+        :last_communication_at,
+        attrs[:last_communication_at] || DateTime.utc_now()
       )
 
     %Contact{}

@@ -33,6 +33,7 @@ if Code.ensure_loaded?(Faker) do
         language_id: organization.default_language_id,
         organization_id: organization.id,
         last_message_at: DateTime.utc_now() |> DateTime.truncate(:second),
+        last_communication_at: DateTime.utc_now() |> DateTime.truncate(:second),
         inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
         updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
