@@ -84,7 +84,11 @@ defmodule Glific.Groups do
 
   """
   @spec get_group!(integer) :: Group.t()
-  def get_group!(id), do: Repo.get!(Group, id)
+  def get_group!(id) do
+    Ecto.Queryable.to_query(Group)
+    |> Repo.add_permission(&Groups.add_permission/2)
+    |> Repo.get!(id)
+  end
 
   @doc """
   Creates a group.

@@ -10,6 +10,7 @@ defmodule Glific.Contacts do
     Contacts.Contact,
     Contacts.Location,
     Groups.ContactGroup,
+    Groups.UserGroup,
     Partners,
     Repo,
     Tags.ContactTag,
@@ -22,10 +23,14 @@ defmodule Glific.Contacts do
   """
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def add_permission(query, user) do
+    sub_query =
+      ContactGroup
+      |> select([cg], cg.contact_id)
+      |> join(:inner, [cg], ug in UserGroup, as: :ug, on: ug.group_id == cg.group_id)
+      |> where([cg, ug: ug], ug.user_id == ^user.id)
+
     query
-    |> join(:inner, [c], ug in UserGroup, as: :ug, on: ug.user_id == ^user.id)
-    |> join(:inner, [ug: ug], cg in ContactGroup, as: :cg, on: ug.group_id == cg.group_id)
-    |> where([c, cg: cg], c.id == cg.contact_id)
+    |> where([c], c.id == ^user.contact_id or c.id in subquery(sub_query))
   end
 
   @doc """
@@ -130,7 +135,11 @@ defmodule Glific.Contacts do
 
   """
   @spec get_contact!(integer) :: Contact.t()
-  def get_contact!(id), do: Repo.get!(Contact, id)
+  def get_contact!(id) do
+    Ecto.Queryable.to_query(Contact)
+    |> Repo.add_permission(&Contacts.add_permission/2)
+    |> Repo.get!(id)
+  end
 
   @doc """
   Creates a contact.

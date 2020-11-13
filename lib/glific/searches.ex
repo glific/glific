@@ -154,10 +154,14 @@ defmodule Glific.Searches do
   """
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def add_permission(query, user) do
+    sub_query =
+      ContactGroup
+      |> select([cg], cg.contact_id)
+      |> join(:inner, [cg], ug in UserGroup, as: :ug, on: ug.group_id == cg.group_id)
+      |> where([cg, ug: ug], ug.user_id == ^user.id)
+
     query
-    |> join(:inner, [m], ug in UserGroup, as: :ug, on: ug.user_id == ^user.id)
-    |> join(:inner, [m, ug: ug], cg in ContactGroup, as: :cg, on: ug.group_id == cg.group_id)
-    |> where([m, cg: cg], m.contact_id == cg.contact_id)
+    |> where([m], m.contact_id == ^user.contact_id or m.contact_id in subquery(sub_query))
   end
 
   # common function to build query between count and search
