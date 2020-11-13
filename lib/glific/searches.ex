@@ -161,7 +161,7 @@ defmodule Glific.Searches do
       |> where([cg, ug: ug], ug.user_id == ^user.id)
 
     query
-    |> where([m], m.contact_id == ^user.contact_id or m.contact_id in subquery(sub_query))
+    |> where([m: m], m.contact_id == ^user.contact_id or m.contact_id in subquery(sub_query))
   end
 
   # common function to build query between count and search
@@ -169,11 +169,13 @@ defmodule Glific.Searches do
   # so that conversation with latest message will be on the top
   @spec search_query(String.t(), map()) :: Ecto.Query.t()
   defp search_query(term, args) do
-    Message
-    |> select([m], m.contact_id)
-    |> where([m], m.message_number == 0)
-    |> where([m], m.organization_id == ^args.filter.organization_id)
-    |> order_by([m], desc: m.inserted_at)
+    query = from c in Contact, as: :c
+
+    query
+    |> join(:left, [c], m in Message, as: :m, on: c.id == m.contact_id)
+    |> select([c: c], c.id)
+    |> where([m: m], m.message_number == 0 or is_nil(m.message_number))
+    |> order_by([c: c], desc: c.last_communication_at)
     |> Repo.add_permission(&Searches.add_permission/2)
     |> Full.run(term, args)
   end

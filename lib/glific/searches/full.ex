@@ -6,7 +6,6 @@ defmodule Glific.Search.Full do
   import Ecto.Query
 
   alias Glific.{
-    Contacts.Contact,
     Groups.ContactGroup
   }
 
@@ -28,8 +27,7 @@ defmodule Glific.Search.Full do
   @spec block_contacts(Ecto.Query.t()) :: Ecto.Query.t()
   defp block_contacts(query) do
     query
-    |> join(:inner, [m], c in Contact, as: :contact, on: m.contact_id == c.id)
-    |> where([m, contact: c], c.status != ^:blocked)
+    |> where([c: c], c.status != ^:blocked)
   end
 
   defmacro matching_contact_ids_and_ranks(term, args) do
@@ -68,7 +66,7 @@ defmodule Glific.Search.Full do
       end)
 
     query
-    |> join(:inner, [m], cg in ContactGroup, as: :cg, on: cg.contact_id == m.contact_id)
+    |> join(:inner, [m: m], cg in ContactGroup, as: :cg, on: cg.contact_id == m.contact_id)
     |> where([cg: cg], cg.group_id in ^group_ids)
   end
 
@@ -77,7 +75,7 @@ defmodule Glific.Search.Full do
   @spec run_helper(Ecto.Queryable.t(), String.t(), map()) :: Ecto.Queryable.t()
   defp run_helper(query, term, args) when term != nil and term != "" do
     query
-    |> join(:inner, [m], id_and_rank in matching_contact_ids_and_ranks(term, args),
+    |> join(:inner, [m: m], id_and_rank in matching_contact_ids_and_ranks(term, args),
       as: :id_and_rank,
       on: id_and_rank.contact_id == m.contact_id
     )
