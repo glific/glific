@@ -241,6 +241,7 @@ defmodule Glific.Searches do
     |> where([m], m.organization_id == ^args.filter.organization_id and m.message_number == 0)
     |> join(:inner, [m], c in Contact, as: :contact, on: c.id == m.contact_id)
     |> where([contact: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
+    |> Repo.add_permission(&Searches.add_permission/2)
     |> order_by([m], desc: m.inserted_at)
     |> limit(^limit)
     |> offset(^offset)
@@ -253,6 +254,7 @@ defmodule Glific.Searches do
     Message
     |> where([m], m.organization_id == ^args.filter.organization_id)
     |> where([m], ilike(m.body, ^"%#{term}%"))
+    |> Repo.add_permission(&Searches.add_permission/2)
     |> order_by([m], desc: m.inserted_at)
     |> limit(^limit)
     |> offset(^offset)
@@ -267,6 +269,7 @@ defmodule Glific.Searches do
     |> join(:left, [m], mt in MessageTag, as: :mt, on: m.id == mt.message_id)
     |> join(:left, [mt: mt], t in Tag, as: :t, on: t.id == mt.tag_id)
     |> where([t: t], ilike(t.label, ^"%#{term}%") or ilike(t.shortcode, ^"%#{term}%"))
+    |> Repo.add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)
     |> Repo.all()

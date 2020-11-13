@@ -226,7 +226,7 @@ defmodule Glific.Contacts do
   def delete_contact(%Contact{} = contact) do
     if has_permission?(contact.id),
       do: Repo.delete(contact),
-      else: raise "Permission denied"
+      else: raise("Permission denied")
   end
 
   @doc """

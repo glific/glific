@@ -20,8 +20,8 @@ defmodule Glific.Groups do
         |> Ecto.Queryable.to_query()
         |> Repo.add_permission(&Groups.add_permission/2)
         |> where([g], g.id == ^id)
-      |> select([g], g.id)
-      |> Repo.one()
+        |> select([g], g.id)
+        |> Repo.one()
 
       if group == nil,
         do: false,
@@ -168,7 +168,7 @@ defmodule Glific.Groups do
   def delete_group(%Group{} = group) do
     if has_permission?(group.id),
       do: Repo.delete(group),
-      else: raise "Permission denied"
+      else: raise("Permission denied")
   end
 
   @doc """
