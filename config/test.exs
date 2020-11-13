@@ -26,6 +26,10 @@ config :logger,
 # setting the state of the environment for use within code base
 config :glific, :environment, :test
 
+# config :absinthe, Absinthe.Logger,
+#  pipeline: true,
+#  level: :debug
+
 config :glific, Oban,
   prefix: "global",
   crontab: false,
