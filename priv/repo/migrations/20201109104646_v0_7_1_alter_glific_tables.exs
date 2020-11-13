@@ -19,14 +19,6 @@ defmodule Glific.Repo.Migrations.V0_7_1_AlterGlificTables do
 
   def change do
     add_organization_id()
-
-    users()
-  end
-
-  defp users() do
-    alter table(:users) do
-      add :is_restricted, :boolean, default: false
-    end
   end
 
   defp add_organization_id do
