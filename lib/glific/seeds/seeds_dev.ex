@@ -323,62 +323,68 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    def create_contact_user(
+          {organization, en_us, utc_now},
+          {name, phone, roles}
+        ) do
+      password = "12345678"
+
+      contact =
+        Repo.insert!(%Contact{
+          phone: phone,
+          name: name,
+          language_id: en_us.id,
+          optin_time: utc_now,
+          last_message_at: utc_now,
+          last_communication_at: utc_now,
+          organization_id: organization.id
+        })
+
+      {:ok, user} =
+        Users.create_user(%{
+          name: name,
+          phone: phone,
+          password: password,
+          confirm_password: password,
+          roles: roles,
+          contact_id: contact.id,
+          organization_id: organization.id
+        })
+
+      {contact, user}
+    end
+
     @doc false
     @spec seed_users(Organization.t() | nil) :: Users.User.t()
     def seed_users(organization \\ nil) do
       organization = get_organization(organization)
 
-      password = "12345678"
-
       {:ok, en_us} = Repo.fetch_by(Language, %{label_locale: "English"})
 
       utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-      contact1 =
-        Repo.insert!(%Contact{
-          phone: "919820112345",
-          name: "NGO Basic User 1",
-          language_id: en_us.id,
-          optin_time: utc_now,
-          last_message_at: utc_now,
-          last_communication_at: utc_now,
-          organization_id: organization.id
-        })
+      create_contact_user(
+        {organization, en_us, utc_now},
+        {"NGO Staff", "919820112345", ["staff"]}
+      )
 
-      contact2 =
-        Repo.insert!(%Contact{
-          phone: "919876543210",
-          name: "NGO Admin",
-          language_id: en_us.id,
-          optin_time: utc_now,
-          last_message_at: utc_now,
-          last_communication_at: utc_now,
-          organization_id: organization.id
-        })
+      create_contact_user(
+        {organization, en_us, utc_now},
+        {"NGO Manager", "9101234567890", ["manager"]}
+      )
 
-      Users.create_user(%{
-        name: "NGO Basic User 1",
-        phone: "919820112345",
-        password: password,
-        confirm_password: password,
-        roles: ["staff"],
-        contact_id: contact1.id,
-        organization_id: organization.id
-      })
+      create_contact_user(
+        {organization, en_us, utc_now},
+        {"NGO Admin", "919876543210", ["admin"]}
+      )
 
-      {:ok, user} =
-        Users.create_user(%{
-          name: "NGO Admin",
-          phone: "919876543210",
-          password: password,
-          confirm_password: password,
-          roles: ["admin"],
-          contact_id: contact2.id,
-          organization_id: organization.id
-        })
+      {_, user} =
+        create_contact_user(
+          {organization, en_us, utc_now},
+          {"NGO Person who left", "919988776655", ["none"]}
+        )
 
       Repo.put_current_user(user)
-
       user
     end
 
