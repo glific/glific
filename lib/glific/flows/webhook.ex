@@ -10,6 +10,26 @@ defmodule Glific.Flows.Webhook do
     WebhookLog
   }
 
+  @spec signature(non_neg_integer, String.t(), non_neg_integer) :: String.t()
+  defp signature(organization_id, body, timestamp) do
+    secret = Partners.Organization.organization(organization_id).signature_phrase
+
+    signed_payload = "#{timestamp}.#{body}"
+    hmac = :crypto.mac(:hmac, :sha256, "secret", signed_payload)
+    Base.encode16(hmac, case: :lower)
+  end
+
+  @spec add_signature(Keyword.t(), non_neg_integer, String.t()) :: Keyword.t()
+  defp add_signature(headers, organization_id, body) do
+    now = System.system_time(:second)
+    sig = "t=#{now},v1=#{signature(organization_id, body, now)}"
+
+    [
+      {"X-Glific-Signature", sig}
+      | headers
+    ]
+  end
+
   @doc """
   Execute a webhook action, could be either get or post for now
   """
@@ -81,6 +101,9 @@ defmodule Glific.Flows.Webhook do
       }
       |> Jason.encode()
 
+
+    headers = add_signature(headers, context.organization_id, body)
+
     case Tesla.post(action.url, body, headers: headers) do
       {:ok, %Tesla.Env{status: 200} = message} ->
         update_log(message, webhook_log)
@@ -105,6 +128,9 @@ defmodule Glific.Flows.Webhook do
   # Send a get request, and if success, sned the json map back
   @spec get(atom() | Action.t(), Keyword.t(), WebhookLog.t()) :: map() | nil
   defp get(action, headers, webhook_log) do
+    # The get is an empty body
+    headers = add_signature(headers, context.organization_id, "")
+
     case Tesla.get(action.url, headers: headers) do
       {:ok, %Tesla.Env{status: 200} = message} ->
         update_log(message, webhook_log)
