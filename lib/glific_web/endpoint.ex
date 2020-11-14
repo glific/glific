@@ -47,10 +47,23 @@ defmodule GlificWeb.Endpoint do
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
-  plug Plug.Parsers,
+  plug :parse_body
+
+  opts = [
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
     json_decoder: Phoenix.json_library()
+  ]
+
+  @parser_without_cache Plug.Parsers.init(opts)
+  @parser_with_cache Plug.Parsers.init([body_reader: {GlificWeb.Misc.BodyReader, :cache_raw_body, []}] ++ opts)
+
+  # All endpoints that start with "webhooks" have their body cached.
+  defp parse_body(%{path_info: ["webhook" | _]} = conn, _),
+    do: Plug.Parsers.call(conn, @parser_with_cache)
+
+  defp parse_body(conn, _),
+    do: Plug.Parsers.call(conn, @parser_without_cache)
 
   plug Plug.MethodOverride
   plug Plug.Head
