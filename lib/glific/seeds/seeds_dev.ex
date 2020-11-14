@@ -323,10 +323,10 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
-    def create_contact_user(
-          {organization, en_us, utc_now},
-          {name, phone, roles}
-        ) do
+    defp create_contact_user(
+           {organization, en_us, utc_now},
+           {name, phone, roles}
+         ) do
       password = "12345678"
 
       contact =

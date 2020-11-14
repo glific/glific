@@ -140,7 +140,7 @@ defmodule GlificWeb.Schema.UserGroupTest do
     {:ok, group} =
       Repo.fetch_by(Group, %{label: label, organization_id: auth_user.organization_id})
 
-    name = "NGO Basic User 1"
+    name = "NGO Staff"
     {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: auth_user.organization_id})
 
     result =

@@ -5,8 +5,8 @@ if Code.ensure_loaded?(Faker) do
     """
     alias Glific.{
       Contacts.Contact,
-      Groups.Group,
       Groups.ContactGroup,
+      Groups.Group,
       Messages.Message,
       Partners,
       Repo,
