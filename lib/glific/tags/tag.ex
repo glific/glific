@@ -43,9 +43,9 @@ defmodule Glific.Tags.Tag do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           parent_id: non_neg_integer | nil,
           parent: Tag.t() | Ecto.Association.NotLoaded.t() | nil,
+          ancestors: list() | [],
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil,
-          ancestors: list() | []
+          updated_at: :utc_datetime | nil
         }
 
   schema "tags" do

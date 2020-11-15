@@ -30,10 +30,10 @@ defmodule Glific.Flows.Webhook do
 
     webhook_log = create_log(action, context)
 
-    if action.method == "GET" do
-      get(action, context, headers, webhook_log)
-    else
-      post(action, context, headers, webhook_log)
+    case String.downcase(action.method) do
+      "get" -> get(action, context, headers, webhook_log)
+      "post" -> post(action, context, headers, webhook_log)
+      "patch" -> patch(action, context, headers, webhook_log)
     end
   end
 
@@ -127,10 +127,17 @@ defmodule Glific.Flows.Webhook do
         nil
 
       {:error, error_message} ->
-        Kernel.inspect(error_message)
+        error_message
+        |> inspect()
         |> update_log(webhook_log)
 
         nil
     end
+  end
+
+  # we special case the patch request for now to call a module and function that is specific to the
+  # organization. We dynamically compile and load this code
+  @spec patch(atom() | Action.t(), FlowContext.t(), Keyword.t(), WebhookLog.t()) :: map() | nil
+  defp patch(_action, _context, _headers, _webhook_log) do
   end
 end

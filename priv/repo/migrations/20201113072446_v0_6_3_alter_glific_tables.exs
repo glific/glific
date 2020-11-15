@@ -7,7 +7,7 @@ defmodule Glific.Repo.Migrations.V0_6_3_AlterGlificTables do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Contacts.Contact, Repo}
+  alias Glific.{Partners.Organization, Repo}
 
   def change do
     organizations()
@@ -28,5 +28,4 @@ defmodule Glific.Repo.Migrations.V0_6_3_AlterGlificTables do
     )
     |> Repo.update_all([], skip_organization_id: true)
   end
-
 end
