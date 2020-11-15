@@ -1,24 +1,30 @@
 defmodule GlificWeb.Misc.HTTPSignature do
+  @moduledoc """
+  Verify that the signature matches from the incoming webhook
+  """
+
   @behaviour Plug
 
   import Plug.Conn
 
   @impl true
+  @doc false
   def init(opts), do: opts
 
   @impl true
+  @doc false
   def call(conn, _opts) do
-    with {:ok, header} <- get_req_header(conn, "X-Glific-Signature"),
+    with header <- get_req_header(conn, "X-Glific-Signature"),
          {:ok, body} <- raw_body(conn),
          :ok <- verify(header, body, conn) do
       conn
     else
-      {:error, error} ->
+      _ ->
         conn
         |> send_resp(
           400,
           Jason.encode(%{
-            "error" => %{"status" => "400", "title" => "HTTP Signature is invalid: #{error}"}
+            "error" => %{"status" => "400", "title" => "HTTP Signature is invalid:"}
           })
         )
         |> halt()
@@ -39,7 +45,7 @@ defmodule GlificWeb.Misc.HTTPSignature do
   @valid_period_in_seconds 60
   @schema "v1"
 
-  def verify(header, payload, conn) do
+  defp verify(header, payload, conn) do
     with {:ok, timestamp, hash} <- parse(header, @schema) do
       current_timestamp = System.system_time(:second)
 
@@ -49,7 +55,7 @@ defmodule GlificWeb.Misc.HTTPSignature do
 
         not Plug.Crypto.secure_compare(
           hash,
-          Glific.Flows.Webhook.signature(conn.assigns[:organization_id], payload, timestamp)
+          Glific.signature(conn.assigns[:organization_id], payload, timestamp)
         ) ->
           {:error, "signature is incorrect"}
 

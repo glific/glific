@@ -4,26 +4,12 @@ defmodule Glific.Flows.Webhook do
   a better handle on the breadth and depth of webhooks
   """
 
-  alias Glific.Partners
-
   alias Glific.Flows.{Action, FlowContext, WebhookLog}
-
-  @doc """
-  Compute the signature at a specific time for the body
-  """
-  @spec signature(non_neg_integer, String.t(), non_neg_integer) :: String.t()
-  def signature(organization_id, body, timestamp) do
-    secret = Partners.organization(organization_id).signature_phrase
-
-    signed_payload = "#{timestamp}.#{body}"
-    hmac = :crypto.mac(:hmac, :sha256, secret, signed_payload)
-    Base.encode16(hmac, case: :lower)
-  end
 
   @spec add_signature(Keyword.t(), non_neg_integer, String.t()) :: Keyword.t()
   defp add_signature(headers, organization_id, body) do
     now = System.system_time(:second)
-    sig = "t=#{now},v1=#{signature(organization_id, body, now)}"
+    sig = "t=#{now},v1=#{Glific.signature(organization_id, body, now)}"
 
     [
       {"X-Glific-Signature", sig}
