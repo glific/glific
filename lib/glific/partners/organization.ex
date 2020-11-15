@@ -33,7 +33,7 @@ defmodule Glific.Partners.Organization do
     :active_language_ids,
     :session_limit,
     :organization_id,
-    :signature_phrase,
+    :signature_phrase
     # commenting this out, since the tests were giving me an error
     # about cast_embed etc
     # :out_of_office

@@ -56,7 +56,9 @@ defmodule GlificWeb.Endpoint do
   ]
 
   @parser_without_cache Plug.Parsers.init(opts)
-  @parser_with_cache Plug.Parsers.init([body_reader: {GlificWeb.Misc.BodyReader, :cache_raw_body, []}] ++ opts)
+  @parser_with_cache Plug.Parsers.init(
+                       [body_reader: {GlificWeb.Misc.BodyReader, :cache_raw_body, []}] ++ opts
+                     )
 
   # All endpoints that start with "webhooks" have their body cached.
   defp parse_body(%{path_info: ["webhook" | _]} = conn, _),

@@ -1,23 +1,27 @@
 defmodule GlificWeb.Misc.HTTPSignature do
   @behaviour Plug
 
+  import Plug.Conn
+
   @impl true
   def init(opts), do: opts
 
   @impl true
-  def call(conn, opts) do
-    with {:ok, header} <- signature_header(conn),
+  def call(conn, _opts) do
+    with {:ok, header} <- get_req_header(conn, "X-Glific-Signature"),
          {:ok, body} <- raw_body(conn),
-           :ok <- verify(header, body, "secret", opts) do
+         :ok <- verify(header, body, conn) do
       conn
     else
       {:error, error} ->
         conn
-        |> put_status(400)
-        |> json(%{
+        |> send_resp(
+          400,
+          Jason.encode(%{
             "error" => %{"status" => "400", "title" => "HTTP Signature is invalid: #{error}"}
-                })
-                |> halt()
+          })
+        )
+        |> halt()
     end
   end
 
@@ -32,7 +36,10 @@ defmodule GlificWeb.Misc.HTTPSignature do
     end
   end
 
-  def verify(header, payload, secret, opts \\ []) do
+  @valid_period_in_seconds 60
+  @schema "v1"
+
+  def verify(header, payload, conn) do
     with {:ok, timestamp, hash} <- parse(header, @schema) do
       current_timestamp = System.system_time(:second)
 
@@ -40,7 +47,10 @@ defmodule GlificWeb.Misc.HTTPSignature do
         timestamp + @valid_period_in_seconds < current_timestamp ->
           {:error, "signature is too old"}
 
-        not Plug.Crypto.secure_compare(hash, hash(timestamp, payload, secret)) ->
+        not Plug.Crypto.secure_compare(
+          hash,
+          Glific.Flows.Webhook.signature(conn.assigns[:organization_id], payload, timestamp)
+        ) ->
           {:error, "signature is incorrect"}
 
         true ->
@@ -51,10 +61,10 @@ defmodule GlificWeb.Misc.HTTPSignature do
 
   defp parse(signature, schema) do
     parsed =
-    for pair <- String.split(signature, ","),
-      destructure([key, value], String.split(pair, "=", parts: 2)),
- do: {key, value},
-      into: %{}
+      for pair <- String.split(signature, ","),
+          destructure([key, value], String.split(pair, "=", parts: 2)),
+          do: {key, value},
+          into: %{}
 
     with %{"t" => timestamp, ^schema => hash} <- parsed,
          {timestamp, ""} <- Integer.parse(timestamp) do

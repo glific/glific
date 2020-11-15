@@ -4,18 +4,19 @@ defmodule Glific.Flows.Webhook do
   a better handle on the breadth and depth of webhooks
   """
 
-  alias Glific.Flows.{
-    Action,
-    FlowContext,
-    WebhookLog
-  }
+  alias Glific.Partners
 
+  alias Glific.Flows.{Action, FlowContext, WebhookLog}
+
+  @doc """
+  Compute the signature at a specific time for the body
+  """
   @spec signature(non_neg_integer, String.t(), non_neg_integer) :: String.t()
-  defp signature(organization_id, body, timestamp) do
-    secret = Partners.Organization.organization(organization_id).signature_phrase
+  def signature(organization_id, body, timestamp) do
+    secret = Partners.organization(organization_id).signature_phrase
 
     signed_payload = "#{timestamp}.#{body}"
-    hmac = :crypto.mac(:hmac, :sha256, "secret", signed_payload)
+    hmac = :crypto.mac(:hmac, :sha256, secret, signed_payload)
     Base.encode16(hmac, case: :lower)
   end
 
@@ -44,7 +45,7 @@ defmodule Glific.Flows.Webhook do
     webhook_log = create_log(action, context)
 
     if action.method == "GET" do
-      get(action, headers, webhook_log)
+      get(action, context, headers, webhook_log)
     else
       post(action, context, headers, webhook_log)
     end
@@ -101,7 +102,6 @@ defmodule Glific.Flows.Webhook do
       }
       |> Jason.encode()
 
-
     headers = add_signature(headers, context.organization_id, body)
 
     case Tesla.post(action.url, body, headers: headers) do
@@ -126,8 +126,8 @@ defmodule Glific.Flows.Webhook do
   end
 
   # Send a get request, and if success, sned the json map back
-  @spec get(atom() | Action.t(), Keyword.t(), WebhookLog.t()) :: map() | nil
-  defp get(action, headers, webhook_log) do
+  @spec get(atom() | Action.t(), FlowContext.t(), Keyword.t(), WebhookLog.t()) :: map() | nil
+  defp get(action, context, headers, webhook_log) do
     # The get is an empty body
     headers = add_signature(headers, context.organization_id, "")
 
