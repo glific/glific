@@ -101,9 +101,9 @@ defmodule Glific.Fixtures do
   @spec organization_fixture(map()) :: Partners.Organization.t()
   def organization_fixture(attrs \\ %{}) do
     contact =
-    if Map.get(attrs, :contact_id),
-      do: Contacts.get_contact!(attrs.contact_id),
-      else: contact_fixture()
+      if Map.get(attrs, :contact_id),
+        do: Contacts.get_contact!(attrs.contact_id),
+        else: contact_fixture()
 
     valid_attrs = %{
       name: "Fixture Organization",
@@ -140,8 +140,9 @@ defmodule Glific.Fixtures do
 
     attrs = %{
       organization_id: organization.id,
-      contact_id: contact.id,
+      contact_id: contact.id
     }
+
     _user = user_fixture(attrs)
 
     Application.put_env(
