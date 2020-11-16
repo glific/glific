@@ -1,4 +1,4 @@
-defmodule Glific.Jobs.BalanceWorker do
+defmodule Glific.Jobs.BSPBalanceWorker do
   @moduledoc """
   Module for checking gupshup remaining balance
   """

@@ -14,7 +14,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Jobs.BigQueryWorker,
     Jobs.ChatbaseWorker,
     Jobs.GcsWorker,
-    Jobs.BalanceWorker,
+    Jobs.BSPBalanceWorker,
     Partners
   }
 
@@ -63,7 +63,7 @@ defmodule Glific.Jobs.MinuteWorker do
   end
 
   def perform(%Oban.Job{args: %{"job" => "bspbalance"}} = _job) do
-    Partners.perform_all(&BalanceWorker.perform_periodic/1, nil)
+    Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil)
     :ok
   end
 
