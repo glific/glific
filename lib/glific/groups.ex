@@ -49,11 +49,11 @@ defmodule Glific.Groups do
       [%Group{}, ...]
 
   """
-  @spec list_groups(map()) :: [Group.t()]
-  def list_groups(%{filter: %{organization_id: _organization_id}} = args) do
+  @spec list_groups(map(), boolean()) :: [Group.t()]
+  def list_groups(args, skip_permission \\ false) do
     args
     |> Repo.list_filter_query(Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
-    |> Repo.add_permission(&Groups.add_permission/2)
+    |> Repo.add_permission(&Groups.add_permission/2, skip_permission)
     |> Repo.all()
   end
 

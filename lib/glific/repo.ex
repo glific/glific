@@ -251,10 +251,10 @@ defmodule Glific.Repo do
   Implement permissioning support via groups. This is the basic wrapper, it uses
   a context specific permissioning wrapper to add the actual clauses
   """
-  @spec add_permission(Ecto.Query.t(), (Ecto.Query.t(), User.t() -> Ecto.Query.t())) ::
+  @spec add_permission(Ecto.Query.t(), (Ecto.Query.t(), User.t() -> Ecto.Query.t()), boolean()) ::
           Ecto.Query.t()
-  def add_permission(query, permission_fn) do
-    case skip_permission?() do
+  def add_permission(query, permission_fn, skip_permission \\ false) do
+    case skip_permission or skip_permission?() do
       true -> query
       user -> permission_fn.(query, user)
     end

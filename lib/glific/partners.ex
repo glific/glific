@@ -17,7 +17,8 @@ defmodule Glific.Partners do
     Partners.Organization,
     Partners.Provider,
     Repo,
-    Settings.Language
+    Settings.Language,
+    Users.User
   }
 
   # We cache organization info under this id since when we want to retrieve
@@ -324,6 +325,7 @@ defmodule Glific.Partners do
 
     organization =
       organization
+      |> set_root_user()
       |> set_credentials()
       |> Repo.preload(:bsp)
       |> set_bsp_info()
@@ -390,6 +392,12 @@ defmodule Glific.Partners do
   @spec organization_timezone(non_neg_integer) :: String.t()
   def organization_timezone(organization_id),
     do: organization(organization_id).timezone
+
+  @spec set_root_user(Organization.t()) :: Organization.t()
+  defp set_root_user(organization) do
+    {:ok, root_user} = Repo.fetch_by(User, %{contact_id: organization.contact_id})
+    Map.put(organization, :root_user, root_user)
+  end
 
   @spec set_out_of_office_values(Organization.t()) :: Organization.t()
   defp set_out_of_office_values(organization) do

@@ -197,9 +197,15 @@ defmodule Glific.Communications.Message do
   end
 
   defp process_message(message) do
+    # lets transfer the organization id and current user to the poolboy worker
+    process_state = {
+      Repo.get_organization_id(),
+      Repo.get_current_user()
+    }
+
     :poolboy.transaction(
       Glific.Application.message_poolname(),
-      fn pid -> GenServer.cast(pid, {message, self()}) end
+      fn pid -> GenServer.cast(pid, {message, process_state, self()}) end
     )
   end
 end

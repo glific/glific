@@ -1,13 +1,26 @@
 defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
   @moduledoc """
-   A Gupshup shunt which will redirect all the incoming requests to the gupshup router based on there event type.
+  A Gupshup shunt which will redirect all the incoming requests to the gupshup router based on there event type.
   """
-  alias GlificWeb.Providers.Gupshup.Router
+
   alias Plug.Conn
+
+  alias Glific.{Partners, Repo}
+  alias GlificWeb.Providers.Gupshup.Router
 
   @doc false
   @spec init(Plug.opts()) :: Plug.opts()
   def init(opts), do: opts
+
+  @doc """
+  Build the context with the root user for all gupshup calls, this
+  gives us permission to update contacts etc
+  """
+  @spec build_context(Conn.t()) :: nil
+  def build_context(conn) do
+    organization = Partners.organization(conn.assigns[:organization_id])
+    Repo.put_current_user(organization.root_user)
+  end
 
   @doc false
   @spec call(
@@ -17,6 +30,8 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
           Plug.opts()
         ) :: Plug.Conn.t()
   def call(%Conn{params: %{"type" => type, "payload" => %{"type" => payload_type}}} = conn, opts) do
+    build_context(conn)
+
     conn
     |> change_path_info(["gupshup", type, payload_type])
     |> Router.call(opts)
