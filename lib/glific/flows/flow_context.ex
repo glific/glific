@@ -365,16 +365,16 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  @spec wakeup_flows() :: :ok
+  @spec wakeup_flows(non_neg_integer) :: :ok
   @doc """
   Find all the contexts which need to be woken up and processed
   """
-  def wakeup_flows do
+  def wakeup_flows(_organization_id) do
     FlowContext
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
     |> preload(:flow)
-    |> Repo.all(skip_organization_id: true)
+    |> Repo.all()
     |> Enum.each(&wakeup_one(&1))
 
     :ok
@@ -401,7 +401,7 @@ defmodule Glific.Flows.FlowContext do
       context
       |> FlowContext.load_context(flow)
       |> FlowContext.step_forward(
-        Messages.create_temp_message(context.flow.organization_id, "No Response")
+        Messages.create_temp_message(context.organization_id, "No Response")
       )
 
     {:ok, context, []}

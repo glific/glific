@@ -496,6 +496,8 @@ defmodule Glific.Partners do
     # We need to do this for all the active organizations
     active_organizations(list)
     |> Enum.each(fn {id, name} ->
+      Repo.put_process_state(id)
+
       if is_nil(handler_args),
         do: handler.(id),
         else:

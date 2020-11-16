@@ -8,7 +8,7 @@ defmodule Glific.Repo do
 
   alias __MODULE__
 
-  alias Glific.Users.User
+  alias Glific.{Partners, Users.User}
 
   import Ecto.Query
 
@@ -328,4 +328,11 @@ defmodule Glific.Repo do
   @spec get_current_user :: User.t() | nil
   def get_current_user,
     do: Process.get(@user_key)
+
+  @doc false
+  @spec put_process_state(non_neg_integer) :: non_neg_integer
+  def put_process_state(organization_id) do
+    put_current_user(Partners.organization(organization_id).root_user)
+    put_organization_id(organization_id)
+  end
 end
