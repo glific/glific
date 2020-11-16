@@ -104,7 +104,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:message_tag_subscriptions)
 
-    import_fields(:gupshup_balance)
+    import_fields(:bsp_balance)
   end
 
   @doc """

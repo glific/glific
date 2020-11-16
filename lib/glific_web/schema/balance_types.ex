@@ -10,7 +10,7 @@ defmodule GlificWeb.Schema.BalanceTypes do
   alias GlificWeb.{
     Schema,
   }
-  object :gupshup_balance do
+  object :bsp_balance do
     field :balance, :string do
       arg(:organization_id, non_null(:id))
 
