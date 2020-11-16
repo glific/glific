@@ -17,6 +17,12 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :bsp_balance do
+    field :balance, :integer
+  end
+
+
+
   object :enabled_day do
     field :id, :integer
     field :enabled, :boolean
@@ -170,6 +176,15 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.delete_organization/3)
+    end
+  end
+
+  object :organization_subscriptions do
+    field :bsp_balance, :bsp_balance do
+      arg(:organization_id, non_null(:id))
+      config(&Schema.config_fun/2)
+      resolve(fn _, _, _ -> {:ok, Tzdata.zone_list()}end)
+
     end
   end
 end
