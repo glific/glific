@@ -12,7 +12,6 @@ defmodule GlificWeb.Schema do
   import_types(Absinthe.Type.Custom)
 
   import_types(__MODULE__.ContactTypes)
-  import_types(__MODULE__.BalanceTypes)
   import_types(__MODULE__.ContactTagTypes)
   import_types(__MODULE__.EnumTypes)
   import_types(__MODULE__.GenericTypes)
@@ -104,7 +103,6 @@ defmodule GlificWeb.Schema do
 
     import_fields(:message_tag_subscriptions)
 
-    import_fields(:bsp_balance)
   end
 
   @doc """
