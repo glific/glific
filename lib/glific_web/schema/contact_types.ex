@@ -21,7 +21,17 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   object :contact do
     field :id, :id
-    field :name, :string
+
+    field :name, :string do
+      resolve(fn contact, _, _ ->
+        if is_nil(contact.name) or contact.name == "" do
+          masked_phone = Contact.populate_masked_phone(contact).masked_phone
+          {:ok, masked_phone}
+        else
+          {:ok, contact.name}
+        end
+      end)
+    end
 
     field :masked_phone, :string do
       middleware(Authorize, :staff)
