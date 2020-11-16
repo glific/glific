@@ -75,8 +75,8 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @spec post(Action.t(), FlowContext.t(), Keyword.t(), WebhookLog.t()) :: map() | nil
-  defp post(action, context, headers, webhook_log) do
+  @spec create_body(FlowContext.t()) :: String.t()
+  defp create_body(context) do
     {:ok, body} =
       %{
         contact: %{
@@ -88,6 +88,12 @@ defmodule Glific.Flows.Webhook do
       }
       |> Jason.encode()
 
+    body
+  end
+
+  @spec post(Action.t(), FlowContext.t(), Keyword.t(), WebhookLog.t()) :: map() | nil
+  defp post(action, context, headers, webhook_log) do
+    body = create_body(context)
     headers = add_signature(headers, context.organization_id, body)
 
     case Tesla.post(action.url, body, headers: headers) do
@@ -138,6 +144,20 @@ defmodule Glific.Flows.Webhook do
   # we special case the patch request for now to call a module and function that is specific to the
   # organization. We dynamically compile and load this code
   @spec patch(atom() | Action.t(), FlowContext.t(), Keyword.t(), WebhookLog.t()) :: map() | nil
-  defp patch(_action, _context, _headers, _webhook_log) do
+  defp patch(_action, context, headers, webhook_log) do
+    body = create_body(context)
+    headers = add_signature(headers, context.organization_id, body)
+
+    name = Keyword.get(headers, :extension)
+
+    case Extensions.execute(name, body) do
+      {:ok, result} ->
+        update_log(result, webhook_log)
+        result |> Jason.decode!()
+
+      {:error, error} ->
+        update_log(error, webhook_log)
+        nil
+    end
   end
 end

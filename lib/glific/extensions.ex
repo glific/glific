@@ -115,4 +115,24 @@ defmodule Glific.Extensions do
   def change_extension(%Extension{} = extension, attrs \\ %{}) do
     Extension.changeset(extension, attrs)
   end
+
+  @doc """
+  Given an extension name. It first requires the file and if that succeeds, it then
+  calls the function in the specified module and returns the json result
+  """
+  @spec execute(String.t() | Extension.t(), String.t(), Keyword.t()) :: String.t()
+  def execute(name, body) when is_binary(name) do
+    case Repo.fetch_by(Extension, %{name: name}) do
+      {:ok, extension} -> execute(extension, body)
+
+      _ -> raise "Could not find extension with name #{name}"
+    end
+  end
+
+  def execute(extension, body) do
+    # first compile the file in the extension
+    # at a later stage, we'll actually use a supervisor tree to take care of all this and ensure
+    # things work
+    modules = Code.require_file(extension.code)
+  end
 end
