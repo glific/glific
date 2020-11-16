@@ -18,7 +18,7 @@ defmodule Glific.Jobs.BalanceWorker do
     api_key = credentials.secrets["api_key"]
 
     case credentials.keys["url"] do
-      "https://gupshup.io/" -> Wallet.balance(api_key)
+      "https://gupshup.io/" -> Wallet.balance(api_key, organization_id)
       _ -> {:error, "Invalid provider"}
     end
 
