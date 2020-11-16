@@ -7,6 +7,7 @@ defmodule Glific.Providers.Gupshup.Wallet do
     Partners,
   }
 
+  @spec balance(String.t()) :: integer
   @doc """
   function for making calls to gupshup for remaining balance
   """
