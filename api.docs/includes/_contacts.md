@@ -10,6 +10,7 @@ query contacts($filter: ContactFilter, $opts: Opts) {
     optinTime
     optoutTime
     phone
+    maskedPhone
     bspStatus
     status
     tags {
@@ -48,6 +49,7 @@ query contacts($filter: ContactFilter, $opts: Opts) {
         "optinTime": null,
         "optoutTime": null,
         "phone": "917834811231",
+        "maskedPhone": "9178******31",
         "bspStatus": "SESSION_AND_HSM",
         "status": "VALID",
         "tags": []
@@ -648,6 +650,11 @@ Type | Description
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>phone</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>maskedPhone</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>

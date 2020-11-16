@@ -3,6 +3,7 @@ fragment ContactFields on ContactResult {
     id
     name
     phone
+    maskedPhone
     fields
     settings
     language {
