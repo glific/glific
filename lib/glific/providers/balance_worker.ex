@@ -10,6 +10,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
 
   @spec perform_periodic(non_neg_integer) :: :ok
   @doc """
+  Glific.Jobs.BSPBalanceWorker. perform_periodic(1)
   periodic function for making calls to gupshup for remaining balance
   """
   def perform_periodic(organization_id) do
@@ -21,6 +22,6 @@ defmodule Glific.Jobs.BSPBalanceWorker do
       "https://gupshup.io/" -> Wallet.balance(api_key, organization_id)
       _ -> {:error, "Invalid provider"}
     end
-
+    :ok
   end
 end
