@@ -21,6 +21,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
       "https://gupshup.io/" -> Wallet.balance(api_key, organization_id)
       _ -> {:error, "Invalid provider"}
     end
+
     :ok
   end
 end
