@@ -9,5 +9,6 @@
   {":0:unknown_function Function Phoenix.LiveReloader.init/1 does not exist."},
   {"lib/glific_web/live/page_live.html.leex"},
   {"lib/glific_web/channels/user_socket.ex"},
+  {"lib/glific_web/misc/http_signature.ex"},
   {"lib/glific/flags/ecto.ex"}
 ]

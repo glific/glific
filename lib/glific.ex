@@ -12,6 +12,8 @@ defmodule Glific do
   a new file
   """
 
+  alias Glific.Partners
+
   @doc """
   Wrapper to return :ok/:error when parsing strings to potential integers
   """
@@ -120,5 +122,17 @@ defmodule Glific do
   def stacktrace do
     inspect(Process.info(self(), :current_stacktrace))
     :ok
+  end
+
+  @doc """
+  Compute the signature at a specific time for the body
+  """
+  @spec signature(non_neg_integer, String.t(), non_neg_integer) :: String.t()
+  def signature(organization_id, body, timestamp) do
+    secret = Partners.organization(organization_id).signature_phrase
+
+    signed_payload = "#{timestamp}.#{body}"
+    hmac = :crypto.mac(:hmac, :sha256, secret, signed_payload)
+    Base.encode16(hmac, case: :lower)
   end
 end

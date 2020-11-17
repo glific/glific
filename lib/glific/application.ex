@@ -53,8 +53,14 @@ defmodule Glific.Application do
       nil
     )
 
-    :telemetry.attach("oban-failure", [:oban, :failure], &Glific.Appsignal.handle_event/4, nil)
-    :telemetry.attach("oban-success", [:oban, :success], &Glific.Appsignal.handle_event/4, nil)
+    :telemetry.attach(
+      "oban-failure",
+      [:oban, :job, :exception],
+      &Glific.Appsignal.handle_event/4,
+      nil
+    )
+
+    :telemetry.attach("oban-success", [:oban, :job, :stop], &Glific.Appsignal.handle_event/4, nil)
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

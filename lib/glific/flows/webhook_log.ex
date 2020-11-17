@@ -24,7 +24,7 @@ defmodule Glific.Flows.WebhookLog do
           id: non_neg_integer | nil,
           url: String.t() | nil,
           method: String.t() | nil,
-          request_headers: [map()] | nil,
+          request_headers: map() | nil,
           request_json: map() | nil,
           response_json: map() | nil,
           status_code: non_neg_integer | nil,
@@ -42,7 +42,7 @@ defmodule Glific.Flows.WebhookLog do
   schema "webhook_logs" do
     field :url, :string
     field :method, :string
-    field :request_headers, {:array, :map}, default: []
+    field :request_headers, :map, default: %{}
     field :request_json, :map, default: %{}
 
     field :response_json, :map, default: %{}

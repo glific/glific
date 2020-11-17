@@ -8,10 +8,11 @@ defmodule Glific.Appsignal do
 
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
-  def handle_event([:oban, event], measurement, meta, _) when event in [:success, :failure] do
+  def handle_event([:oban, :job, event], measurement, meta, _)
+      when event in [:stop, :exception] do
     transaction = record_event(measurement, meta)
 
-    if event == :failure && meta.attempt >= meta.max_attempts do
+    if event == :exception && meta.attempt >= meta.max_attempts do
       {reason, message, stack} = normalize_error(meta)
       Transaction.set_error(transaction, reason, message, stack)
     end
