@@ -1,6 +1,6 @@
 defmodule Glific.Jobs.BSPBalanceWorker do
   @moduledoc """
-  Module for checking gupshup remaining balance
+  Module for checking remaining balance
   """
 
   alias Glific.{
@@ -9,9 +9,9 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   }
 
   @doc """
-  periodic function for making calls to gupshup for remaining balance
+  periodic function for making calls to bsp for remaining balance
   """
-  @spec perform_periodic(non_neg_integer) :: {:ok}
+  @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
     credentials = organization.services["bsp"]
