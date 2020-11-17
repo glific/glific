@@ -2,7 +2,7 @@ defmodule Glific.Repo.Migrations.V0_7_2_AlterGlificTables do
   use Ecto.Migration
 
   @moduledoc """
-  v07.2 Alter Glific tables
+  v0.7.2 Alter Glific tables
   """
 
   import Ecto.Query, warn: false
