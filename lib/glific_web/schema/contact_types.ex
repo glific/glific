@@ -6,7 +6,11 @@ defmodule GlificWeb.Schema.ContactTypes do
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
-  alias Glific.Repo
+  alias Glific.{
+    Contacts.Contact,
+    Repo
+  }
+
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -18,7 +22,21 @@ defmodule GlificWeb.Schema.ContactTypes do
   object :contact do
     field :id, :id
     field :name, :string
-    field :phone, :string
+
+    field :masked_phone, :string do
+      resolve(fn contact, _, _ ->
+        masked_phone = Contact.populate_masked_phone(contact).masked_phone
+        {:ok, masked_phone}
+      end)
+    end
+
+    field :phone, :string do
+      resolve(fn contact, _, %{context: %{current_user: user}} ->
+        if Enum.member?(user.roles, :staff),
+          do: {:ok, ""},
+          else: {:ok, contact.phone}
+      end)
+    end
 
     field :status, :contact_status_enum
     field :bsp_status, :contact_provider_status_enum

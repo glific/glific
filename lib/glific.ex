@@ -116,11 +116,11 @@ defmodule Glific do
   def atomize_keys(value), do: value
 
   @doc """
-      We remove this soon
+  easy way for glific developers to get a stacktrace when debugging
   """
-  @spec stacktrace(any) :: :ok
-  def stacktrace(label \\ "StackTrace") do
-    IO.puts(Process.info(self(), :current_stacktrace), label: label)
+  @spec stacktrace :: :ok
+  def stacktrace do
+    inspect(Process.info(self(), :current_stacktrace))
     :ok
   end
 

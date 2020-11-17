@@ -121,6 +121,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   defp add_credentials(gupshup, glifproxy) do
     Partners.active_organizations([])
     |> Enum.each(fn {org_id, _name} ->
+      Glific.Repo.put_organization_id(org_id)
+
       query =
         from c in Credential,
           where: c.organization_id == ^org_id and c.provider_id == ^gupshup.id

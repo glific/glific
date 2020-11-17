@@ -13,7 +13,9 @@ defmodule Glific.Jobs.MinuteWorker do
     Flags,
     Flows.FlowContext,
     Jobs.BigQueryWorker,
+    Jobs.BSPBalanceWorker,
     Jobs.ChatbaseWorker,
+    Jobs.CollectionCountWorker,
     Jobs.GcsWorker,
     Partners
   }
@@ -100,7 +102,7 @@ defmodule Glific.Jobs.MinuteWorker do
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"job" => job}} = _args)
-      when job in ["wakeup_flows", "delete_completed_flow_contexts", "delete_old_flow_contexts"] do
+      when job in ["delete_completed_flow_contexts", "delete_old_flow_contexts"] do
     # lets put a dummy organization id
     apply(FlowContext, String.to_existing_atom(job), [])
     :ok
@@ -117,6 +119,9 @@ defmodule Glific.Jobs.MinuteWorker do
       "contact_status" ->
         Partners.perform_all(&Contacts.update_contact_status/2, args, [])
 
+      "wakeup_flows" ->
+        Partners.perform_all(&FlowContext.wakeup_flows/1, nil, [])
+
       "chatbase" ->
         Partners.perform_all(&ChatbaseWorker.perform_periodic/1, nil, services["chatbase"])
 
@@ -125,6 +130,12 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "gcs" ->
         Partners.perform_all(&GcsWorker.perform_periodic/1, nil, services["google_cloud_storage"])
+
+      "bspbalance" ->
+        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [])
+
+      "collectioncount" ->
+        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"

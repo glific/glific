@@ -102,6 +102,8 @@ defmodule GlificWeb.Schema do
     import_fields(:message_subscriptions)
 
     import_fields(:message_tag_subscriptions)
+
+    import_fields(:organization_subscriptions)
   end
 
   @doc """

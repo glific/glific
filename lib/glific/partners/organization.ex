@@ -48,6 +48,7 @@ defmodule Glific.Partners.Organization do
           bsp_id: non_neg_integer | nil,
           bsp: Provider.t() | Ecto.Association.NotLoaded.t() | nil,
           services: map(),
+          root_user: map() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           default_language_id: non_neg_integer | nil,
@@ -74,6 +75,11 @@ defmodule Glific.Partners.Organization do
 
     # we'll cache all the services here
     field :services, :map, virtual: true, default: %{}
+
+    # we'll cache the root user of the org here, this gives
+    # us a permissioning object for calls from gupshup and
+    # floweditor
+    field :root_user, :map, virtual: true
 
     # lets cache the start/end hours in here
     # to make it easier on the flows

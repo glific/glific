@@ -27,6 +27,7 @@ defmodule Glific.Contacts.Contact do
     :optin_time,
     :optout_time,
     :last_message_at,
+    :last_communication_at,
     :settings,
     :fields
   ]
@@ -36,6 +37,7 @@ defmodule Glific.Contacts.Contact do
           id: non_neg_integer | nil,
           name: String.t() | nil,
           phone: String.t() | nil,
+          masked_phone: String.t() | nil,
           status: ContactStatus | nil,
           bsp_status: ContactProviderStatus | nil,
           language_id: non_neg_integer | nil,
@@ -45,6 +47,7 @@ defmodule Glific.Contacts.Contact do
           optin_time: :utc_datetime | nil,
           optout_time: :utc_datetime | nil,
           last_message_at: :utc_datetime | nil,
+          last_communication_at: :utc_datetime | nil,
           settings: map() | nil,
           fields: map() | nil,
           inserted_at: :utc_datetime | nil,
@@ -54,6 +57,7 @@ defmodule Glific.Contacts.Contact do
   schema "contacts" do
     field :name, :string
     field :phone, :string
+    field :masked_phone, :string, virtual: true
 
     field :status, ContactStatus
     field :bsp_status, ContactProviderStatus
@@ -64,6 +68,7 @@ defmodule Glific.Contacts.Contact do
     field :optin_time, :utc_datetime
     field :optout_time, :utc_datetime
     field :last_message_at, :utc_datetime
+    field :last_communication_at, :utc_datetime
 
     field :settings, :map, default: %{}
     field :fields, :map, default: %{}
@@ -85,5 +90,16 @@ defmodule Glific.Contacts.Contact do
     |> validate_required(@required_fields)
     |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
+  end
+
+  @doc """
+  Populate virtual field of masked phone number
+  """
+  @spec populate_masked_phone(%Contact{}) :: %Contact{}
+  def populate_masked_phone(%Contact{phone: phone} = contact) do
+    masked_phone =
+      "#{elem(String.split_at(phone, 4), 0)}******#{elem(String.split_at(phone, -2), 1)}"
+
+    %{contact | masked_phone: masked_phone}
   end
 end

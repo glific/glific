@@ -44,10 +44,9 @@ defmodule GlificWeb.Schema.UserTest do
     users = get_in(query_data, [:data, "users"])
     assert length(users) > 0
 
-    res =
-      users |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Basic User 1" end)
+    res = users |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Staff" end)
 
-    assert res == "NGO Basic User 1"
+    assert res == "NGO Staff"
 
     [user | _] = users
     assert user["groups"] == []
@@ -97,13 +96,13 @@ defmodule GlificWeb.Schema.UserTest do
     assert get_in(query_data, [:data, "countUsers"]) == 0
 
     {:ok, query_data} =
-      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "NGO Basic User 1"}})
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "NGO Staff"}})
 
     assert get_in(query_data, [:data, "countUsers"]) == 1
   end
 
   test "user by id returns one user or nil", %{staff: user_auth} do
-    name = "NGO Basic User 1"
+    name = "NGO Staff"
     {:ok, user} = Repo.fetch_by(User, %{name: name, organization_id: user_auth.organization_id})
 
     result = auth_query_gql_by(:by_id, user_auth, variables: %{"id" => user.id})
@@ -193,7 +192,7 @@ defmodule GlificWeb.Schema.UserTest do
 
   test "update a user and test possible scenarios and errors", %{manager: user_auth} do
     {:ok, user} =
-      Repo.fetch_by(User, %{name: "NGO Basic User 1", organization_id: user_auth.organization_id})
+      Repo.fetch_by(User, %{name: "NGO Staff", organization_id: user_auth.organization_id})
 
     name = "User Test Name New"
     roles = ["Staff", "Admin"]

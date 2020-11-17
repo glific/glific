@@ -100,6 +100,11 @@ defmodule Glific.Fixtures do
   @doc false
   @spec organization_fixture(map()) :: Partners.Organization.t()
   def organization_fixture(attrs \\ %{}) do
+    contact =
+      if Map.get(attrs, :contact_id),
+        do: Contacts.get_contact!(attrs.contact_id),
+        else: contact_fixture()
+
     valid_attrs = %{
       name: "Fixture Organization",
       shortcode: "fixture_org_shortcode",
@@ -108,7 +113,7 @@ defmodule Glific.Fixtures do
       bsp_id: 1,
       # lets just hope its there :)
       default_language_id: 1,
-      contact_id: contact_fixture().id,
+      contact_id: contact.id,
       active_language_ids: [1],
       out_of_office: %{
         enabled: true,
@@ -130,6 +135,15 @@ defmodule Glific.Fixtures do
       attrs
       |> Enum.into(valid_attrs)
       |> Partners.create_organization()
+
+    contact = Map.put(contact, :organization_id, organization.id)
+
+    attrs = %{
+      organization_id: organization.id,
+      contact_id: contact.id
+    }
+
+    _user = user_fixture(attrs)
 
     Application.put_env(
       :glific,

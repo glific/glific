@@ -1,15 +1,12 @@
-query searchMulti( 
-    $contactOpts: Opts!, 
-    $messageOpts: Opts!, 
+query searchMulti(
+    $contactOpts: Opts!,
+    $messageOpts: Opts!,
     $filter: SearchFilter
   ) {
     searchMulti(contactOpts: $contactOpts, messageOpts: $messageOpts, filter: $filter) {
       contacts {
         id
-        body
-        contact {
-            name
-        }
+        name
       }
       messages {
         id

@@ -4,13 +4,41 @@ defmodule Glific.Groups do
   """
   import Ecto.Query, warn: false
 
-  alias Glific.Repo
+  alias __MODULE__
 
-  alias Glific.Groups.{
-    ContactGroup,
-    Group,
-    UserGroup
-  }
+  alias Glific.{Repo, Users.User}
+
+  alias Glific.Groups.{ContactGroup, Group, UserGroup}
+
+  @spec has_permission?(non_neg_integer) :: boolean()
+  defp has_permission?(id) do
+    if Repo.skip_permission?() == true do
+      true
+    else
+      group =
+        Group
+        |> Ecto.Queryable.to_query()
+        |> Repo.add_permission(&Groups.add_permission/2)
+        |> where([g], g.id == ^id)
+        |> select([g], g.id)
+        |> Repo.one()
+
+      if group == nil,
+        do: false,
+        else: true
+    end
+  end
+
+  @doc """
+  Add permissioning specific to groups, in this case we want to restrict the visibility of
+  groups that the user can see
+  """
+  @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
+  def add_permission(query, user) do
+    query
+    |> join(:inner, [g], ug in UserGroup, as: :ug, on: ug.user_id == ^user.id)
+    |> where([g, ug: ug], g.id == ug.group_id)
+  end
 
   @doc """
   Returns the list of groups.
@@ -21,16 +49,24 @@ defmodule Glific.Groups do
       [%Group{}, ...]
 
   """
-  @spec list_groups(map()) :: [Group.t()]
-  def list_groups(%{filter: %{organization_id: _organization_id}} = args),
-    do: Repo.list_filter(args, Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
+  @spec list_groups(map(), boolean()) :: [Group.t()]
+  def list_groups(args, skip_permission \\ false) do
+    args
+    |> Repo.list_filter_query(Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
+    |> Repo.add_permission(&Groups.add_permission/2, skip_permission)
+    |> Repo.all()
+  end
 
   @doc """
   Return the count of groups, using the same filter as list_groups
   """
   @spec count_groups(map()) :: integer
-  def count_groups(%{filter: %{organization_id: _organization_id}} = args),
-    do: Repo.count_filter(args, Group, &Repo.filter_with/2)
+  def count_groups(%{filter: %{organization_id: _organization_id}} = args) do
+    args
+    |> Repo.list_filter_query(Group, nil, &Repo.filter_with/2)
+    |> Repo.add_permission(&Groups.add_permission/2)
+    |> Repo.aggregate(:count)
+  end
 
   @doc """
   Return the count of group contacts
@@ -67,7 +103,12 @@ defmodule Glific.Groups do
 
   """
   @spec get_group!(integer) :: Group.t()
-  def get_group!(id), do: Repo.get!(Group, id)
+  def get_group!(id) do
+    Group
+    |> Ecto.Queryable.to_query()
+    |> Repo.add_permission(&Groups.add_permission/2)
+    |> Repo.get!(id)
+  end
 
   @doc """
   Creates a group.
@@ -102,9 +143,13 @@ defmodule Glific.Groups do
   """
   @spec update_group(Group.t(), map()) :: {:ok, Group.t()} | {:error, Ecto.Changeset.t()}
   def update_group(%Group{} = group, attrs) do
-    group
-    |> Group.changeset(attrs)
-    |> Repo.update()
+    if has_permission?(group.id) do
+      group
+      |> Group.changeset(attrs)
+      |> Repo.update()
+    else
+      raise "Permission denied"
+    end
   end
 
   @doc """
@@ -121,7 +166,9 @@ defmodule Glific.Groups do
   """
   @spec delete_group(Group.t()) :: {:ok, Group.t()} | {:error, Ecto.Changeset.t()}
   def delete_group(%Group{} = group) do
-    Repo.delete(group)
+    if has_permission?(group.id),
+      do: Repo.delete(group),
+      else: raise("Permission denied")
   end
 
   @doc """

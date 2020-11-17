@@ -3,7 +3,7 @@ defmodule Glific.PartnersTest do
   use Glific.DataCase, async: true
   import Mock
 
-  alias Glific.Partners
+  alias Glific.{Fixtures, Partners}
 
   describe "provider" do
     alias Glific.Partners.Provider
@@ -114,7 +114,7 @@ defmodule Glific.PartnersTest do
     end
 
     test "ensure that delete_provider/1 with foreign key constraints give error" do
-      organization = organization_fixture()
+      organization = Fixtures.organization_fixture()
       provider = Partners.get_provider!(organization.bsp_id)
       # check for no assoc constraint on credentials and organizations
       assert {:error, _} = Partners.delete_provider(provider)
@@ -194,63 +194,23 @@ defmodule Glific.PartnersTest do
       contact
     end
 
-    def organization_fixture(attrs \\ %{}) do
-      default_language = default_language_fixture(attrs)
-      bsp_provider = provider_fixture(%{name: Person.name(), shortcode: Person.name()})
-
-      {:ok, organization} =
-        attrs
-        |> Enum.into(@valid_org_attrs)
-        |> Map.merge(%{
-          bsp_id: bsp_provider.id,
-          default_language_id: default_language.id,
-          active_language_ids: [default_language.id]
-        })
-        |> Partners.create_organization()
-
-      Application.put_env(
-        :glific,
-        String.to_atom("provider_key_#{organization.id}"),
-        "This is a fake key"
-      )
-
-      Repo.insert!(%Glific.Partners.Credential{
-        organization_id: organization.id,
-        provider_id: organization.bsp_id,
-        keys: %{
-          url: "test_url",
-          api_end_point: "test_api_end_point",
-          handler: "Glific.Providers.Gupshup.Message",
-          worker: "Glific.Providers.Gupshup.Worker"
-        },
-        secrets: %{
-          api_key: "Please enter your key here",
-          app_name: "Please enter your App Name here"
-        },
-        is_active: true
-      })
-
-      # we need to retrieve it this way to get the right values from the triggers
-      Partners.get_organization!(organization.id)
-    end
-
     test "list_organizations/0 returns all organizations" do
-      _organization = organization_fixture()
+      _organization = Fixtures.organization_fixture()
       assert length(Partners.list_organizations()) >= 1
     end
 
     test "count_organizations/0 returns count of all organizations" do
-      organization_fixture()
+      Fixtures.organization_fixture()
       assert Partners.count_organizations() >= 1
 
-      organization_fixture(@valid_org_attrs_1)
+      Fixtures.organization_fixture(@valid_org_attrs_1)
       assert Partners.count_organizations() >= 2
 
       assert Partners.count_organizations(%{filter: %{name: "Organization Name 1"}}) == 1
     end
 
     test "get_organization!/1 returns the organization with given id" do
-      organization = organization_fixture()
+      organization = Fixtures.organization_fixture()
       assert Partners.get_organization!(organization.id) == organization
     end
 
@@ -293,7 +253,7 @@ defmodule Glific.PartnersTest do
     end
 
     test "update_organization/2 with valid data updates the organization" do
-      organization = organization_fixture()
+      organization = Fixtures.organization_fixture()
 
       assert {:ok, %Organization{} = organization} =
                Partners.update_organization(organization, @update_org_attrs)
@@ -302,7 +262,7 @@ defmodule Glific.PartnersTest do
     end
 
     test "update_organization/2 with invalid data returns error changeset" do
-      organization = organization_fixture()
+      organization = Fixtures.organization_fixture()
 
       assert {:error, %Ecto.Changeset{}} =
                Partners.update_organization(organization, @invalid_org_attrs)
@@ -311,7 +271,7 @@ defmodule Glific.PartnersTest do
     end
 
     test "update_organization/2 should validate default language and active languages" do
-      organization = organization_fixture()
+      organization = Fixtures.organization_fixture()
       another_language = Fixtures.language_fixture()
 
       assert {:error, _} =
@@ -329,7 +289,7 @@ defmodule Glific.PartnersTest do
     end
 
     test "update_organization/2 with oraganization settings" do
-      organization = organization_fixture()
+      organization = Fixtures.organization_fixture()
 
       update_org_attrs =
         @update_org_attrs
@@ -375,26 +335,26 @@ defmodule Glific.PartnersTest do
     end
 
     test "delete_organization/1 deletes the organization" do
-      organization = organization_fixture()
+      organization = Fixtures.organization_fixture()
       assert {:ok, %Organization{}} = Partners.delete_organization(organization)
       assert_raise Ecto.NoResultsError, fn -> Partners.get_organization!(organization.id) end
     end
 
     test "change_organization/1 returns a organization changeset" do
-      organization = organization_fixture()
+      organization = Fixtures.organization_fixture()
       assert %Ecto.Changeset{} = Partners.change_organization(organization)
     end
 
     test "list_contacts/1 with multiple contacts" do
-      _org0 = organization_fixture(@valid_org_attrs)
-      _org1 = organization_fixture(@valid_org_attrs_1)
+      _org0 = Fixtures.organization_fixture(@valid_org_attrs)
+      _org1 = Fixtures.organization_fixture(@valid_org_attrs_1)
 
       assert length(Partners.list_organizations()) >= 2
     end
 
     test "list_organization/1 with multiple organization filteres" do
-      _org0 = organization_fixture(@valid_org_attrs)
-      org1 = organization_fixture(@valid_org_attrs_1)
+      _org0 = Fixtures.organization_fixture(@valid_org_attrs)
+      org1 = Fixtures.organization_fixture(@valid_org_attrs_1)
 
       org_list = Partners.list_organizations(%{filter: %{name: org1.name}})
       assert org_list == [org1]
@@ -443,7 +403,7 @@ defmodule Glific.PartnersTest do
     end
 
     test "ensure that creating organization  with same whats app number give an error" do
-      organization = organization_fixture(@valid_org_attrs)
+      organization = Fixtures.organization_fixture(@valid_org_attrs)
 
       assert {:error, %Ecto.Changeset{}} =
                Map.merge(@valid_org_attrs, %{bsp_id: organization.bsp_id})
@@ -451,11 +411,11 @@ defmodule Glific.PartnersTest do
     end
 
     test "set_out_of_office_values/1 should set values for hours and days" do
-      organization = organization_fixture()
+      organization = Fixtures.organization_fixture()
 
       updated_organization = Partners.set_out_of_office_values(organization)
-      assert updated_organization.hours == []
-      assert updated_organization.days == []
+      assert updated_organization.hours == [~T[09:00:00], ~T[20:00:00]]
+      assert updated_organization.days == [1, 2, 3, 4, 5]
 
       update_org_attrs =
         @update_org_attrs
@@ -480,7 +440,7 @@ defmodule Glific.PartnersTest do
     end
 
     test "active_organizations/0 should return list of active organizations" do
-      organization = organization_fixture()
+      organization = Fixtures.organization_fixture()
       organizations = Partners.active_organizations([])
       assert organizations[organization.id] != nil
 
@@ -499,7 +459,7 @@ defmodule Glific.PartnersTest do
     end
 
     test "organization/1 should return cached active languages" do
-      organization = organization_fixture() |> Repo.preload(:default_language)
+      organization = Fixtures.organization_fixture() |> Repo.preload(:default_language)
 
       default_language = organization.default_language
       organization = Partners.organization(organization.id)
@@ -514,7 +474,7 @@ defmodule Glific.PartnersTest do
     end
 
     test "organization_language_id/1 by id should return cached organization's default langauage id" do
-      organization = organization_fixture()
+      organization = Fixtures.organization_fixture()
       Partners.organization(organization.id)
 
       assert Partners.organization_language_id(organization.id) ==
@@ -527,7 +487,7 @@ defmodule Glific.PartnersTest do
     end
 
     test "organization_out_of_office_summary/1 by id should return cached data" do
-      organization = organization_fixture()
+      organization = Fixtures.organization_fixture()
       organization = Partners.organization(organization.id)
 
       hours = organization.hours
@@ -537,14 +497,15 @@ defmodule Glific.PartnersTest do
     end
 
     test "perform_all/3 should run handler for all active organizations" do
+      organization = Fixtures.organization_fixture()
+
       contact =
         Fixtures.contact_fixture(%{
           bsp_status: :session_and_hsm,
           optin_time: Timex.shift(DateTime.utc_now(), hours: -25),
-          last_message_at: Timex.shift(DateTime.utc_now(), hours: -24)
+          last_message_at: Timex.shift(DateTime.utc_now(), hours: -24),
+          organization_id: organization.id
         })
-
-      organization_fixture(%{contact_id: contact.id})
 
       Partners.active_organizations([])
       Partners.perform_all(&Contacts.update_contact_status/2, %{}, [])
