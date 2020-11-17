@@ -5,7 +5,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
 
   alias Glific.{
     Partners,
-    Providers.Gupshup.Wallet
+    Providers.Gupshup.GupshupWallet
   }
 
   @doc """
@@ -18,7 +18,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     api_key = credentials.secrets["api_key"]
 
     case organization.bsp.shortcode do
-      "gupshup" -> Wallet.balance(api_key, organization_id)
+      "gupshup" -> GupshupWallet.balance(api_key, organization_id)
       _ -> {:error, "Invalid provider"}
     end
 

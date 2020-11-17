@@ -1,4 +1,4 @@
-defmodule Glific.Providers.Gupshup.Wallet do
+defmodule Glific.Providers.Gupshup.GupshupWallet do
   @moduledoc """
   Module for checking gupshup remaining balance
   """
