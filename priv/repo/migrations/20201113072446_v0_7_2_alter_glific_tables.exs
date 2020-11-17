@@ -7,7 +7,7 @@ defmodule Glific.Repo.Migrations.V0_7_2_AlterGlificTables do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Contacts.Contact, Partners.Organization, Repo}
+  alias Glific.{Contacts.Contact, Repo}
 
   def change do
     users()
