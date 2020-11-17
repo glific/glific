@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.V0_6_2_AlterGlificTables do
+defmodule Glific.Repo.Migrations.V0_7_1_AlterGlificTables do
   use Ecto.Migration
 
   @moduledoc """
@@ -6,6 +6,7 @@ defmodule Glific.Repo.Migrations.V0_6_2_AlterGlificTables do
   """
 
   alias Glific.{
+    Contacts.Location,
     Groups.UserGroup,
     Groups.ContactGroup,
     Tags.ContactTag,
@@ -44,6 +45,10 @@ defmodule Glific.Repo.Migrations.V0_6_2_AlterGlificTables do
       add :organization_id, references(:organizations, on_delete: :delete_all), null: true
     end
 
+    alter table(:locations) do
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: true
+    end
+
     # Flush and update organization id of existing data
     flush()
     update_org_id_of_join_tables()
@@ -66,6 +71,10 @@ defmodule Glific.Repo.Migrations.V0_6_2_AlterGlificTables do
     end
 
     alter table(:templates_tags) do
+      modify :organization_id, :bigint, null: false
+    end
+
+    alter table(:locations) do
       modify :organization_id, :bigint, null: false
     end
   end
@@ -98,6 +107,12 @@ defmodule Glific.Repo.Migrations.V0_6_2_AlterGlificTables do
     from([fc] in TemplateTag,
       join: f in assoc(fc, :tag),
       update: [set: [organization_id: f.organization_id]]
+    )
+    |> Repo.update_all([], skip_organization_id: true)
+
+    from([cl] in Location,
+      join: c in assoc(cl, :contact),
+      update: [set: [organization_id: c.organization_id]]
     )
     |> Repo.update_all([], skip_organization_id: true)
   end

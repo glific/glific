@@ -121,7 +121,7 @@ if Code.ensure_loaded?(Faker) do
     @doc false
     @spec seed_organizations(non_neg_integer | nil) :: Organization.t() | nil
     def seed_organizations(_organization_id \\ nil) do
-      Organization |> Ecto.Query.first() |> Repo.one()
+      Organization |> Ecto.Query.first() |> Repo.one(skip_organization_id: true)
     end
 
     @doc false
@@ -468,7 +468,7 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert!(%FlowRevision{
         definition: FlowRevision.default_definition(test_flow),
         flow_id: test_flow.id,
-        status: "done",
+        status: "published",
         organization_id: organization.id
       })
     end
@@ -487,6 +487,8 @@ if Code.ensure_loaded?(Faker) do
     @spec seed :: nil
     def seed do
       organization = get_organization()
+
+      Repo.put_organization_id(organization.id)
 
       seed_providers()
 

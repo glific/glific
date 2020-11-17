@@ -80,7 +80,7 @@ defmodule Glific.Messages do
           MessageTag
           |> where([p], p.tag_id in ^tags_included)
           |> select([p], p.message_id)
-          |> Repo.all(skip_organization_id: true)
+          |> Repo.all()
 
         query |> where([m], m.id in ^message_ids)
 
@@ -89,7 +89,7 @@ defmodule Glific.Messages do
           MessageTag
           |> where([p], p.tag_id in ^tags_excluded)
           |> select([p], p.message_id)
-          |> Repo.all(skip_organization_id: true)
+          |> Repo.all()
 
         query |> where([m], m.id not in ^message_ids)
 
@@ -779,39 +779,6 @@ defmodule Glific.Messages do
 
     Message
     |> struct(opts)
-  end
-
-  @doc """
-  Get session uuid of contact's last inbound message
-  """
-  @spec get_session_uuid(map()) :: Ecto.UUID.t()
-  def get_session_uuid(message_params) do
-    organization = Partners.organization(message_params.organization_id)
-
-    with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{
-             phone: message_params.sender.phone,
-             organization_id: organization.id
-           }),
-         true <-
-           Timex.diff(DateTime.utc_now(), contact.last_message_at, :minutes) <
-             organization.session_limit,
-         false <-
-           is_nil(
-             last_inbound_message =
-               Message
-               |> where([m], m.contact_id == ^contact.id)
-               |> where([m], m.organization_id == ^organization.id)
-               |> where([m], m.flow == "inbound")
-               |> order_by([m], desc: m.id)
-               |> first()
-               |> Repo.one()
-           ) do
-      last_inbound_message.session_uuid
-    else
-      _ ->
-        Ecto.UUID.generate()
-    end
   end
 
   @doc """

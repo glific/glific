@@ -13,6 +13,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   }
 
   def up(_repo) do
+
     update_exisiting_providers()
 
     add_providers()
@@ -119,13 +120,16 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp add_credentials(gupshup, glifproxy) do
-    Partners.active_organizations()
+    Partners.active_organizations([])
     |> Enum.each(fn {org_id, _name} ->
+
+      Glific.Repo.put_organization_id(org_id)
+
       query =
         from c in Credential,
           where: c.organization_id == ^org_id and c.provider_id == ^gupshup.id
 
-      if !Repo.exists?(query),
+      if !Repo.exists?(query) ,
         do:
           Repo.insert!(%Credential{
             organization_id: org_id,

@@ -28,7 +28,7 @@ defmodule Glific.Fixtures do
   """
   @spec get_org_id :: integer
   def get_org_id do
-    organization = Organization |> Ecto.Query.first() |> Repo.one()
+    organization = Organization |> Ecto.Query.first() |> Repo.one(skip_organization_id: true)
     organization.id
   end
 
@@ -156,7 +156,8 @@ defmodule Glific.Fixtures do
     # load state into flag options
     Flags.init(organization.id)
 
-    organization
+    # ensure we get the triggered values in this refresh
+    Partners.get_organization!(organization.id)
   end
 
   @doc false

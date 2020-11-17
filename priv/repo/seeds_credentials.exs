@@ -92,13 +92,13 @@ defmodule Glific.Seeds.Credentials do
     Repo.insert!(%Credential{
       organization_id: organization_id,
       provider_id: bigquery_db.id,
+      is_active: true,
       keys: %{
         url: Keyword.get(bigquery, :url)
       },
       secrets: %{
         project_id: Keyword.get(bigquery, :project_id),
         project_email: Keyword.get(bigquery, :project_email),
-        dataset_id: Keyword.get(bigquery, :dataset_id),
         service_account: Keyword.get(bigquery, :service_account)
       }
     })
@@ -122,15 +122,18 @@ defmodule Glific.Seeds.Credentials do
     })
   end
 
+  @organization_id 1
+
   # Start adding the crednetials
   def execute do
+    Glific.Repo.put_organization_id(@organization_id)
     secrets = get_secrets()
-    update_gupshup_credentials(Keyword.get(secrets, :gupshup), 1)
-    insert_dialogflow_credentials(Keyword.get(secrets, :dialogflow), 1)
-    insert_goth_credentials(Keyword.get(secrets, :goth), 1)
-    insert_chatbase_credentials(Keyword.get(secrets, :chatbase), 1)
-    insert_biqquery_credentials(Keyword.get(secrets, :bigquery), 1)
-    insert_gcs_credentials(Keyword.get(secrets, :gcs), 1)
+    update_gupshup_credentials(Keyword.get(secrets, :gupshup), @organization_id)
+    insert_dialogflow_credentials(Keyword.get(secrets, :dialogflow), @organization_id)
+    insert_goth_credentials(Keyword.get(secrets, :goth), @organization_id)
+    insert_chatbase_credentials(Keyword.get(secrets, :chatbase), @organization_id)
+    insert_biqquery_credentials(Keyword.get(secrets, :bigquery), @organization_id)
+    insert_gcs_credentials(Keyword.get(secrets, :gcs), @organization_id)
   end
 end
 

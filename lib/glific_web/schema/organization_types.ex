@@ -19,7 +19,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :errors, list_of(:input_error)
   end
 
-
   object :bsp_balance_result do
     field :balance, :float
   end
@@ -183,7 +182,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   object :organization_subscriptions do
     field :bsp_balance, :bsp_balance_result do
       arg(:organization_id, non_null(:id))
-
       config(&Schema.config_fun/2)
       resolve(fn data, _, _ ->
         {:ok, data}

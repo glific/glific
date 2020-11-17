@@ -96,21 +96,36 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(query_data, [:data, "countContacts"]) == 1
   end
 
-  test "contact id returns one contact or nil", %{staff: user} do
+  test "contact by id returns one contact or nil", %{staff: user} do
     name = "Glific Admin"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
     assert {:ok, query_data} = result
 
-    contact = get_in(query_data, [:data, "contact", "contact", "name"])
-    assert contact == name
+    fetched_contact = get_in(query_data, [:data, "contact", "contact"])
+    assert fetched_contact["name"] == name
+    # staff role should not have access to phone
+    assert fetched_contact["phone"] == nil
+    assert fetched_contact["maskedPhone"] != contact.phone
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "contact", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "contact by id returns one contact with phone for manager/admin role", %{manager: user} do
+    name = "Glific Admin"
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
+    assert {:ok, query_data} = result
+
+    fetched_contact = get_in(query_data, [:data, "contact", "contact"])
+    assert fetched_contact["phone"] == contact.phone
+    assert fetched_contact["maskedPhone"] != nil
   end
 
   test "create a contact and test possible scenarios and errors", %{manager: user} do
@@ -213,7 +228,8 @@ defmodule GlificWeb.Schema.ContactTest do
         message_id: message.id,
         contact_id: contact.id,
         longitude: Faker.Address.longitude(),
-        latitude: Faker.Address.latitude()
+        latitude: Faker.Address.latitude(),
+        organization_id: user.organization_id
       })
 
     # get contact location

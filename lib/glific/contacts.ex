@@ -348,7 +348,7 @@ defmodule Glific.Contacts do
     |> where([c], c.last_message_at <= ^t)
     |> where([c], c.organization_id == ^organization_id)
     |> select([c], c.id)
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
     |> set_session_status(:none)
   end
 
@@ -367,12 +367,12 @@ defmodule Glific.Contacts do
     Contact
     |> where([c], is_nil(c.optin_time))
     |> where([c], c.id in ^contact_ids)
-    |> Repo.update_all(set: [bsp_status: :none])
+    |> Repo.update_all([set: [bsp_status: :none]], skip_organization_id: true)
 
     Contact
     |> where([c], not is_nil(c.optin_time))
     |> where([c], c.id in ^contact_ids)
-    |> Repo.update_all(set: [bsp_status: :hsm])
+    |> Repo.update_all([set: [bsp_status: :hsm]], skip_organization_id: true)
 
     :ok
   end

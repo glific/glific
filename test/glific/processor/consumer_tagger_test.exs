@@ -50,7 +50,7 @@ defmodule Glific.Processor.ConsumerTaggerTest do
     )
 
     # ensure we have a few message tags in the DB
-    assert Repo.aggregate(MessageTag, :count, skip_organization_id: true) > 0
+    assert Repo.aggregate(MessageTag, :count) > 0
 
     # check the message tags
     tags = ["language", "unread", "greeting", "thankyou", "numeric", "goodbye"]

@@ -6,7 +6,7 @@ defmodule Glific.Repo.Migrations.FunWithFlags do
   # change this migration accordingly.
 
   def up do
-    create table(:fun_with_flags_toggles, primary_key: false) do
+    create table(:fun_with_flags_toggles, primary_key: false, prefix: "global") do
       add :id, :bigserial, primary_key: true
       add :flag_name, :string, null: false
       add :gate_type, :string, null: false
@@ -18,7 +18,8 @@ defmodule Glific.Repo.Migrations.FunWithFlags do
              :fun_with_flags_toggles,
              [:flag_name, :gate_type, :target],
              unique: true,
-             name: "fwf_flag_name_gate_target_idx"
+             name: "fwf_flag_name_gate_target_idx",
+             prefix: "global"
            )
   end
 

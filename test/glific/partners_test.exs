@@ -1,6 +1,8 @@
 defmodule Glific.PartnersTest do
   alias Faker.{Person, Phone}
   use Glific.DataCase, async: true
+  import Mock
+
   alias Glific.Partners
 
   describe "provider" do
@@ -228,7 +230,8 @@ defmodule Glific.PartnersTest do
         is_active: true
       })
 
-      organization
+      # we need to retrieve it this way to get the right values from the triggers
+      Partners.get_organization!(organization.id)
     end
 
     test "list_organizations/0 returns all organizations" do
@@ -422,6 +425,9 @@ defmodule Glific.PartnersTest do
         })
         |> Partners.create_organization()
 
+      # we need this to ensure we get the right values set by triggers
+      organization = Partners.get_organization!(organization.id)
+
       assert [organization] == Partners.list_organizations(%{filter: %{bsp: provider.name}})
 
       assert [organization] ==
@@ -475,11 +481,11 @@ defmodule Glific.PartnersTest do
 
     test "active_organizations/0 should return list of active organizations" do
       organization = organization_fixture()
-      organizations = Partners.active_organizations()
+      organizations = Partners.active_organizations([])
       assert organizations[organization.id] != nil
 
       {:ok, _} = Partners.update_organization(organization, %{is_active: false})
-      organizations = Partners.active_organizations()
+      organizations = Partners.active_organizations([])
       assert organizations[organization.id] == nil
     end
 
@@ -530,7 +536,7 @@ defmodule Glific.PartnersTest do
       assert days != nil
     end
 
-    test "perform_all/2 should run handler for all active organizations" do
+    test "perform_all/3 should run handler for all active organizations" do
       contact =
         Fixtures.contact_fixture(%{
           bsp_status: :session_and_hsm,
@@ -540,8 +546,8 @@ defmodule Glific.PartnersTest do
 
       organization_fixture(%{contact_id: contact.id})
 
-      Partners.active_organizations()
-      Partners.perform_all(&Contacts.update_contact_status/2, %{})
+      Partners.active_organizations([])
+      Partners.perform_all(&Contacts.update_contact_status/2, %{}, [])
 
       updated_contact = Contacts.get_contact!(contact.id)
       assert updated_contact.bsp_status == :hsm
@@ -680,6 +686,51 @@ defmodule Glific.PartnersTest do
                Contacts.list_contacts(%{
                  filter: %{organization_id: organization_id, phone: @opted_in_contact_phone}
                })
+    end
+
+    test "update_credential/2 for bigquery should call create bigquery dataset",
+         %{organization_id: organization_id} = _attrs do
+      valid_attrs = %{
+        shortcode: "bigquery",
+        secrets: %{},
+        organization_id: organization_id
+      }
+
+      {:ok, credential} = Partners.create_credential(valid_attrs)
+
+      valid_update_attrs = %{
+        secrets: %{"service_account" => %{}},
+        is_active: false,
+        organization_id: organization_id
+      }
+
+      {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
+    end
+
+    test "get_goth_token/2 should return goth token",
+         %{organization_id: organization_id} = _attrs do
+      with_mocks([
+        {
+          Goth.Token,
+          [:passthrough],
+          [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        }
+      ]) do
+        valid_attrs = %{
+          shortcode: "bigquery",
+          secrets: %{
+            "service_account" => "{\"private_key\":\"test\"}"
+          },
+          is_active: true,
+          organization_id: organization_id
+        }
+
+        {:ok, _credential} = Partners.create_credential(valid_attrs)
+
+        token = Partners.get_goth_token(organization_id, "bigquery")
+
+        assert token != nil
+      end
     end
   end
 end
