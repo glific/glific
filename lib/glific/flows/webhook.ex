@@ -4,6 +4,7 @@ defmodule Glific.Flows.Webhook do
   a better handle on the breadth and depth of webhooks
   """
 
+  alias Glific.Extensions
   alias Glific.Flows.{Action, FlowContext, WebhookLog}
 
   @spec add_signature(Keyword.t(), non_neg_integer, String.t()) :: Keyword.t()
