@@ -106,7 +106,7 @@ defmodule GlificWeb.Schema.ContactTest do
     fetched_contact = get_in(query_data, [:data, "contact", "contact"])
     assert fetched_contact["name"] == name
     # staff role should not have access to phone
-    assert fetched_contact["phone"] == nil
+    assert fetched_contact["phone"] == ""
     assert fetched_contact["maskedPhone"] != contact.phone
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})

@@ -21,6 +21,7 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   object :contact do
     field :id, :id
+    field :name, :string
 
     field :masked_phone, :string do
       resolve(fn contact, _, _ ->
@@ -35,6 +36,7 @@ defmodule GlificWeb.Schema.ContactTypes do
           do: {:ok, ""},
           else: {:ok, contact.phone}
       end)
+    end
 
     field :status, :contact_status_enum
     field :bsp_status, :contact_provider_status_enum
