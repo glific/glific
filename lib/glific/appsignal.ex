@@ -9,7 +9,7 @@ defmodule Glific.Appsignal do
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
   def handle_event([:oban, :job, event], measurement, meta, _)
-      when event in [:success, :failure] do
+      when event in [:stop, :exception] do
     transaction = record_event(measurement, meta)
 
     if event == :exception && meta.attempt >= meta.max_attempts do

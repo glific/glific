@@ -120,7 +120,7 @@ defmodule Glific.Extensions do
   Given an extension name. It first requires the file and if that succeeds, it then
   calls the function in the specified module and returns the json result
   """
-  @spec execute(String.t() | Extension.t(), String.t()) :: String.t()
+  @spec execute(String.t() | Extension.t(), map()) :: map()
   def execute(name, body) when is_binary(name) do
     case Repo.fetch_by(Extension, %{name: name}) do
       {:ok, extension} -> execute(extension, body)
@@ -132,16 +132,12 @@ defmodule Glific.Extensions do
     # first compile the file in the extension
     # at a later stage, we'll actually use a supervisor tree to take care of all this and ensure
     # things work
-    modules =
-      Code.require_file(extension.code, Path.join(:code.priv_dir(:glific), "/data/webhook"))
 
-    module =
-      if is_nil(modules),
-        do: String.to_existing_atom(extension.module),
-        else: elem(hd(modules), 0)
+    # we need to trap errors here
+    Code.require_file(extension.code, Path.join(:code.priv_dir(:glific), "/data/webhook"))
 
-    result = apply(module, String.to_existing_atom(extension.function), [body])
+    module = String.to_existing_atom(extension.module)
 
-    {:ok, result}
+    apply(module, String.to_existing_atom(extension.function), [body])
   end
 end

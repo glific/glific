@@ -146,7 +146,7 @@ defmodule Glific.Flows.Webhook do
 
   # we special case the patch request for now to call a module and function that is specific to the
   # organization. We dynamically compile and load this code
-  @spec patch(atom() | Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
+  @spec patch(Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
   defp patch(action, context, headers) do
     {map, body} = create_body(context)
     headers = add_signature(headers, context.organization_id, body)
@@ -156,14 +156,16 @@ defmodule Glific.Flows.Webhook do
     name = Keyword.get(headers, :Extension)
 
     # For calls within glific, dont create strings, use maps to communicate
-    case Extensions.execute(name, map) do
-      {:ok, result} ->
-        # update_log(result, webhook_log)
-        result
+    result = Extensions.execute(name, map)
 
-      {:error, error} ->
-        update_log(error, webhook_log)
-        nil
-    end
+    webhook_log
+    |> WebhookLog.update_webhook_log(
+      %{
+        response_json: result,
+        status_code: 200
+      }
+    )
+
+    result
   end
 end
