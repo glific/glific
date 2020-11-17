@@ -8,11 +8,10 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     Providers.Gupshup.Wallet
   }
 
-  @spec perform_periodic(non_neg_integer) :: :ok
   @doc """
-  Glific.Jobs.BSPBalanceWorker. perform_periodic(1)
   periodic function for making calls to gupshup for remaining balance
   """
+  @spec perform_periodic(non_neg_integer) :: {:ok}
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
     credentials = organization.services["bsp"]

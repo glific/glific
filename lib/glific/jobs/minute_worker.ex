@@ -128,7 +128,7 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&GcsWorker.perform_periodic/1, nil, services["google_cloud_storage"])
 
       "bspbalance" ->
-        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil)
+        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"

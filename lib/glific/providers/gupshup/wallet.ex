@@ -2,15 +2,14 @@ defmodule Glific.Providers.Gupshup.Wallet do
   @moduledoc """
   Module for checking gupshup remaining balance
   """
-  alias Glific.{
-    Communications,
-  }
+  alias Glific.Communications
 
   @doc """
   function for making calls to gupshup for remaining balance
   """
   @gupshup_balance_url "https://api.gupshup.io/sm/api/v2/wallet/balance"
 
+  @spec balance(String.t(), non_neg_integer) :: boolean()
   def balance(api_key, organization_id) do
     case Tesla.get(@gupshup_balance_url, headers: [{"apikey", api_key}]) do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
@@ -18,6 +17,6 @@ defmodule Glific.Providers.Gupshup.Wallet do
          Communications.publish_data(%{balance: data["balance"]}, :bsp_balance, organization_id)
          _ ->{:error, "Invalid key"}
     end
-
+    {:ok}
   end
 end
