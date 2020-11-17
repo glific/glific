@@ -516,14 +516,22 @@ defmodule Glific.Partners do
       users = response_data["users"]
 
       Enum.each(users, fn user ->
-        {:ok, last_message_at} = DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
+        # handle scenario when contact has not sent a message yet
+        last_message_at =
+          if user["lastMessageTimeStamp"] != 0,
+            do:
+              DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
+              |> elem(1)
+              |> DateTime.truncate(:second),
+            else: nil
+
         {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
 
         phone = user["countryCode"] <> user["phoneCode"]
 
         Glific.Contacts.upsert(%{
           phone: phone,
-          last_message_at: last_message_at |> DateTime.truncate(:second),
+          last_message_at: last_message_at,
           optin_time: optin_time |> DateTime.truncate(:second),
           bsp_status: check_bsp_status(last_message_at),
           organization_id: organization.id,
