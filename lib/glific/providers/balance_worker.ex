@@ -17,8 +17,8 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     credentials = organization.services["bsp"]
     api_key = credentials.secrets["api_key"]
 
-    case credentials.keys["url"] do
-      "https://gupshup.io/" -> Wallet.balance(api_key, organization_id)
+    case organization.bsp.shortcode do
+      "gupshup" -> Wallet.balance(api_key, organization_id)
       _ -> {:error, "Invalid provider"}
     end
 
