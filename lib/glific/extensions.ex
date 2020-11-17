@@ -133,12 +133,14 @@ defmodule Glific.Extensions do
     # first compile the file in the extension
     # at a later stage, we'll actually use a supervisor tree to take care of all this and ensure
     # things work
-    modules = Code.require_file(extension.code)
+    modules = Code.require_file(extension.code, Path.join(:code.priv_dir(:glific), "/data/webhook"))
     module =
-    if modules != nil,
+    if is_nil(modules),
       do: String.to_existing_atom(extension.module),
     else: elem(hd(modules), 0)
 
-    apply(module, String.to_existing_atom(extension.function), [body])
+    result = apply(module, String.to_existing_atom(extension.function), [body])
+
+    {:ok, result}
   end
 end

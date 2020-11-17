@@ -29,21 +29,19 @@ defmodule Glific.Flows.Webhook do
         fn {k, v} -> {String.to_existing_atom(k), v} end
       )
 
-    webhook_log = create_log(action, context)
-
     case String.downcase(action.method) do
-      "get" -> get(action, context, headers, webhook_log)
-      "post" -> post(action, context, headers, webhook_log)
-      "patch" -> patch(action, context, headers, webhook_log)
+      "get" -> get(action, context, headers)
+      "post" -> post(action, context, headers)
+      "patch" -> patch(action, context, headers)
     end
   end
 
-  @spec create_log(Action.t(), FlowContext.t()) :: WebhookLog.t()
-  defp create_log(action, context) do
+  @spec create_log(Action.t(), map(), Keyword.t(), FlowContext.t()) :: WebhookLog.t()
+  defp create_log(action, body, headers, context) do
     {:ok, webhook_log} =
       %{
-        request_json: action.body,
-        request_headers: [action.headers],
+        request_json: body,
+        request_headers: Map.new(headers),
         url: action.url,
         method: action.method,
         organization_id: context.organization_id,
@@ -76,9 +74,9 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @spec create_body(FlowContext.t()) :: String.t()
+  @spec create_body(FlowContext.t()) :: {map(), String.t()}
   defp create_body(context) do
-    {:ok, body} =
+    map =
       %{
         contact: %{
           name: context.contact.name,
@@ -87,15 +85,18 @@ defmodule Glific.Flows.Webhook do
         },
         results: context.results
       }
-      |> Jason.encode()
 
-    body
+    {:ok, body} = Jason.encode(map)
+
+    {map, body}
   end
 
-  @spec post(Action.t(), FlowContext.t(), Keyword.t(), WebhookLog.t()) :: map() | nil
-  defp post(action, context, headers, webhook_log) do
-    body = create_body(context)
+  @spec post(Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
+  defp post(action, context, headers) do
+    {map, body} = create_body(context)
     headers = add_signature(headers, context.organization_id, body)
+
+    webhook_log = create_log(action, map, headers, context)
 
     case Tesla.post(action.url, body, headers: headers) do
       {:ok, %Tesla.Env{status: 200} = message} ->
@@ -119,10 +120,12 @@ defmodule Glific.Flows.Webhook do
   end
 
   # Send a get request, and if success, sned the json map back
-  @spec get(atom() | Action.t(), FlowContext.t(), Keyword.t(), WebhookLog.t()) :: map() | nil
-  defp get(action, context, headers, webhook_log) do
+  @spec get(atom() | Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
+  defp get(action, context, headers) do
     # The get is an empty body
     headers = add_signature(headers, context.organization_id, "")
+
+    webhook_log = create_log(action, %{}, headers, context)
 
     case Tesla.get(action.url, headers: headers) do
       {:ok, %Tesla.Env{status: 200} = message} ->
@@ -144,17 +147,20 @@ defmodule Glific.Flows.Webhook do
 
   # we special case the patch request for now to call a module and function that is specific to the
   # organization. We dynamically compile and load this code
-  @spec patch(atom() | Action.t(), FlowContext.t(), Keyword.t(), WebhookLog.t()) :: map() | nil
-  defp patch(_action, context, headers, webhook_log) do
-    body = create_body(context)
+  @spec patch(atom() | Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
+  defp patch(action, context, headers) do
+    {map, body} = create_body(context)
     headers = add_signature(headers, context.organization_id, body)
 
-    name = Keyword.get(headers, :extension)
+    webhook_log = create_log(action, map, headers, context)
 
-    case Extensions.execute(name, body) do
+    name = Keyword.get(headers, :Extension)
+
+    # For calls within glific, dont create strings, use maps to communicate
+    case Extensions.execute(name, map) do
       {:ok, result} ->
-        update_log(result, webhook_log)
-        result |> Jason.decode!()
+        # update_log(result, webhook_log)
+        result
 
       {:error, error} ->
         update_log(error, webhook_log)
