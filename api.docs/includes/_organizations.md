@@ -499,6 +499,64 @@ Type | Description
 | ---- | -----------
 [<a href="#string">String</a>] | List of timezones
 
+
+## Subscription for Wallet Balance
+
+```graphql
+subscription MySubscription {
+  periodicInfo(organizationId: "1") {
+    key
+    value
+  }
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "periodicInfo": {
+      "key": "bsp_balance",
+      "value": "{\"balance\":0.787}"
+    }
+  }
+}
+```
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#PeriodicInfoResult">PeriodicInfoResult</a> | An error or object
+
+## Subscription for Collection Count
+
+```graphql
+subscription MySubscription {
+  periodicInfo(organizationId: "1") {
+    key
+    value
+  }
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "periodicInfo": {
+      "__typename": "PeriodicInfoResult",
+      "key": "Collection_count",
+      "value": "{\"5\":1}"
+    }
+  }
+}
+```
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#PeriodicInfoResult">PeriodicInfoResult</a> | An error or object
+
 ## Organization Objects
 
 ### Organization

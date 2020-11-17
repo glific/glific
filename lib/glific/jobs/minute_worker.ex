@@ -15,6 +15,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Jobs.BigQueryWorker,
     Jobs.BSPBalanceWorker,
     Jobs.ChatbaseWorker,
+    Jobs.CollectionCountWorker,
     Jobs.GcsWorker,
     Partners
   }
@@ -129,6 +130,9 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "bspbalance" ->
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [])
+
+      "collectioncount" ->
+        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"
