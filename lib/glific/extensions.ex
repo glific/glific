@@ -124,7 +124,6 @@ defmodule Glific.Extensions do
   def execute(name, body) when is_binary(name) do
     case Repo.fetch_by(Extension, %{name: name}) do
       {:ok, extension} -> execute(extension, body)
-
       _ -> raise "Could not find extension with name #{name}"
     end
   end
@@ -133,11 +132,13 @@ defmodule Glific.Extensions do
     # first compile the file in the extension
     # at a later stage, we'll actually use a supervisor tree to take care of all this and ensure
     # things work
-    modules = Code.require_file(extension.code, Path.join(:code.priv_dir(:glific), "/data/webhook"))
+    modules =
+      Code.require_file(extension.code, Path.join(:code.priv_dir(:glific), "/data/webhook"))
+
     module =
-    if is_nil(modules),
-      do: String.to_existing_atom(extension.module),
-    else: elem(hd(modules), 0)
+      if is_nil(modules),
+        do: String.to_existing_atom(extension.module),
+        else: elem(hd(modules), 0)
 
     result = apply(module, String.to_existing_atom(extension.function), [body])
 

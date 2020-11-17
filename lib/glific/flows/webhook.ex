@@ -76,15 +76,14 @@ defmodule Glific.Flows.Webhook do
 
   @spec create_body(FlowContext.t()) :: {map(), String.t()}
   defp create_body(context) do
-    map =
-      %{
-        contact: %{
-          name: context.contact.name,
-          phone: context.contact.phone,
-          fields: context.contact.fields
-        },
-        results: context.results
-      }
+    map = %{
+      contact: %{
+        name: context.contact.name,
+        phone: context.contact.phone,
+        fields: context.contact.fields
+      },
+      results: context.results
+    }
 
     {:ok, body} = Jason.encode(map)
 
