@@ -108,6 +108,7 @@ defmodule Glific.Jobs.MinuteWorker do
     :ok
   end
 
+  # credo:disable-for-lines:50
   def perform(%Oban.Job{args: %{"job" => job}} = args) do
     services = get_organization_services()
 
