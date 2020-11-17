@@ -62,7 +62,7 @@ defmodule Glific.Partners.Organization do
           languages: [Language.t()] | nil,
           session_limit: non_neg_integer | nil,
           organization_id: non_neg_integer | nil,
-          signature_phrase: String.t(),
+          signature_phrase: binary | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -107,7 +107,7 @@ defmodule Glific.Partners.Organization do
     field :organization_id, :integer
 
     # webhook sign phrase, kept encrypted (soon)
-    field :signature_phrase, :string, default: "super secret"
+    field :signature_phrase, Glific.Encrypted.Binary
 
     timestamps(type: :utc_datetime)
   end

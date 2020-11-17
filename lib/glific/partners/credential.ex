@@ -33,7 +33,7 @@ defmodule Glific.Partners.Credential do
 
   schema "credentials" do
     field :keys, :map, default: %{}
-    field :secrets, Glific.EncryptedMap
+    field :secrets, Glific.Encrypted.Map
 
     field :is_active, :boolean, default: false
     field :is_valid, :boolean, default: true

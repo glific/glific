@@ -41,15 +41,7 @@ defmodule Glific.Repo.Migrations.V0_7_2_AlterGlificTables do
     alter table(:organizations) do
       # add the signing phrase for webhooks
       # we will keep this encrypted, and remove the default before release
-      add :signature_phrase, :string, default: "super secret"
+      add :signature_phrase, :binary
     end
-
-    # flush the change to the DB
-    flush()
-
-    from([o] in Organization,
-      update: [set: [signature_phrase: "super secret"]]
-    )
-    |> Repo.update_all([], skip_organization_id: true)
   end
 end

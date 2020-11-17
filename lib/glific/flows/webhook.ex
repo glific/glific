@@ -159,12 +159,10 @@ defmodule Glific.Flows.Webhook do
     result = Extensions.execute(name, map)
 
     webhook_log
-    |> WebhookLog.update_webhook_log(
-      %{
-        response_json: result,
-        status_code: 200
-      }
-    )
+    |> WebhookLog.update_webhook_log(%{
+      response_json: result,
+      status_code: 200
+    })
 
     result
   end
