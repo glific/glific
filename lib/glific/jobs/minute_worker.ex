@@ -13,6 +13,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Flags,
     Flows.FlowContext,
     Jobs.BigQueryWorker,
+    Jobs.BSPBalanceWorker,
     Jobs.ChatbaseWorker,
     Jobs.GcsWorker,
     Partners
@@ -125,6 +126,9 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "gcs" ->
         Partners.perform_all(&GcsWorker.perform_periodic/1, nil, services["google_cloud_storage"])
+
+      "bspbalance" ->
+        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"

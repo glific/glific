@@ -3,14 +3,7 @@ defmodule Glific.Communications do
   Glific interface for all provider communication
   """
 
-  alias Glific.{
-    Contacts.Contact,
-    Messages.Message,
-    Partners,
-    Tags.ContactTag,
-    Tags.MessageTag,
-    Tags.TemplateTag
-  }
+  alias Glific.Partners
 
   @doc """
   Get the current provider handler based on the config
@@ -36,22 +29,11 @@ defmodule Glific.Communications do
 
   For now the data types are Message and all join Tag tables
   """
-  @spec publish_data(
-          {:ok, Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t() | Contact.t()},
-          atom(),
-          non_neg_integer
-        ) ::
-          Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t() | Contact.t()
+  @spec publish_data({:ok, any()} | any(), atom(), non_neg_integer) :: any()
   def publish_data({:ok, data}, topic, organization_id) do
     publish_data(data, topic, organization_id)
   end
 
-  @spec publish_data(
-          Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t() | Contact.t(),
-          atom(),
-          non_neg_integer
-        ) ::
-          Message.t() | MessageTag.t() | TemplateTag.t() | ContactTag.t() | Contact.t()
   def publish_data(data, topic, organization_id) do
     # we will delete the default value setting, the minute we know what to do with tags
     # and how to get the organization id

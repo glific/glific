@@ -12,9 +12,16 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
+  alias GlificWeb.Schema
+
   object :organization_result do
     field :organization, :organization
     field :errors, list_of(:input_error)
+  end
+
+  object :periodic_info_result do
+    field :key, :string
+    field :value, :json
   end
 
   object :enabled_day do
@@ -170,6 +177,17 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.delete_organization/3)
+    end
+  end
+
+  object :organization_subscriptions do
+    field :periodic_info, :periodic_info_result do
+      arg(:organization_id, non_null(:id))
+      config(&Schema.config_fun/2)
+
+      resolve(fn data, _, _ ->
+        {:ok, data}
+      end)
     end
   end
 end
