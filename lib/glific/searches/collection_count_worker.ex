@@ -1,4 +1,4 @@
-defmodule Glific.Jobs.CollectionWorker do
+defmodule Glific.Jobs.CollectionCountWorker do
   @moduledoc """
   Module for checking collection count
   """
