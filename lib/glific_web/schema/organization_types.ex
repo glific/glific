@@ -184,6 +184,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :periodic_info, :periodic_info_result do
       arg(:organization_id, non_null(:id))
       config(&Schema.config_fun/2)
+
       resolve(fn data, _, _ ->
         {:ok, data}
       end)

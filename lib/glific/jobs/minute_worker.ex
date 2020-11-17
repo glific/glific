@@ -140,5 +140,4 @@ defmodule Glific.Jobs.MinuteWorker do
 
     :ok
   end
-
 end
