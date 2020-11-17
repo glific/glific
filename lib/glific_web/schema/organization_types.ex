@@ -21,6 +21,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
   object :periodic_info_result do
     field :balance, :float
+    field :key, :string
+    field :value, :json
   end
 
   object :enabled_day do
