@@ -4,14 +4,34 @@ defmodule Glific.Contacts do
   """
   import Ecto.Query, warn: false
 
+  alias __MODULE__
+
   alias Glific.{
     Contacts.Contact,
     Contacts.Location,
     Groups.ContactGroup,
+    Groups.UserGroup,
     Partners,
     Repo,
-    Tags.ContactTag
+    Tags.ContactTag,
+    Users.User
   }
+
+  @doc """
+  Add permissioning specific to groups, in this case we want to restrict the visibility of
+  groups that the user can see
+  """
+  @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
+  def add_permission(query, user) do
+    sub_query =
+      ContactGroup
+      |> select([cg], cg.contact_id)
+      |> join(:inner, [cg], ug in UserGroup, as: :ug, on: ug.group_id == cg.group_id)
+      |> where([cg, ug: ug], ug.user_id == ^user.id)
+
+    query
+    |> where([c], c.id == ^user.contact_id or c.id in subquery(sub_query))
+  end
 
   @doc """
   Returns the list of contacts.
@@ -26,15 +46,22 @@ defmodule Glific.Contacts do
   Include contacts only if have list of tags
   """
   @spec list_contacts(map()) :: [Contact.t()]
-  def list_contacts(%{filter: %{organization_id: _organization_id}} = args),
-    do: Repo.list_filter(args, Contact, &Repo.opts_with_name/2, &filter_with/2)
+  def list_contacts(%{filter: %{organization_id: _organization_id}} = args) do
+    args
+    |> Repo.list_filter_query(Contact, &Repo.opts_with_name/2, &filter_with/2)
+    |> Repo.add_permission(&Contacts.add_permission/2)
+    |> Repo.all()
+  end
 
   @doc """
   Return the count of contacts, using the same filter as list_contacts
   """
   @spec count_contacts(map()) :: integer
   def count_contacts(%{filter: %{organization_id: _organization_id}} = args) do
-    Repo.count_filter(args, Contact, &filter_with/2)
+    args
+    |> Repo.list_filter_query(Contact, nil, &filter_with/2)
+    |> Repo.add_permission(&Contacts.add_permission/2)
+    |> Repo.aggregate(:count)
   end
 
   # codebeat:disable[ABC, LOC]
@@ -93,6 +120,25 @@ defmodule Glific.Contacts do
   defp filter_contacts_with_blocked_status(query, _),
     do: from(q in query, where: q.status != "blocked")
 
+  @spec has_permission?(non_neg_integer) :: boolean()
+  defp has_permission?(id) do
+    if Repo.skip_permission?() == true do
+      true
+    else
+      contact =
+        Contact
+        |> Ecto.Queryable.to_query()
+        |> Repo.add_permission(&Contacts.add_permission/2)
+        |> where([c], c.id == ^id)
+        |> select([c], c.id)
+        |> Repo.one()
+
+      if contact == nil,
+        do: false,
+        else: true
+    end
+  end
+
   @doc """
   Gets a single contact.
 
@@ -108,7 +154,12 @@ defmodule Glific.Contacts do
 
   """
   @spec get_contact!(integer) :: Contact.t()
-  def get_contact!(id), do: Repo.get!(Contact, id)
+  def get_contact!(id) do
+    Contact
+    |> Ecto.Queryable.to_query()
+    |> Repo.add_permission(&Contacts.add_permission/2)
+    |> Repo.get!(id)
+  end
 
   @doc """
   Creates a contact.
@@ -125,10 +176,14 @@ defmodule Glific.Contacts do
   @spec create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_contact(%{organization_id: organization_id} = attrs) do
     attrs =
-      Map.put(
-        attrs,
+      attrs
+      |> Map.put(
         :language_id,
         attrs[:language_id] || Partners.organization_language_id(organization_id)
+      )
+      |> Map.put(
+        :last_communication_at,
+        attrs[:last_communication_at] || DateTime.utc_now()
       )
 
     %Contact{}
@@ -150,9 +205,13 @@ defmodule Glific.Contacts do
   """
   @spec update_contact(Contact.t(), map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def update_contact(%Contact{} = contact, attrs) do
-    contact
-    |> Contact.changeset(attrs)
-    |> Repo.update()
+    if has_permission?(contact.id) do
+      contact
+      |> Contact.changeset(attrs)
+      |> Repo.update()
+    else
+      raise "Permission denied"
+    end
   end
 
   @doc """
@@ -169,7 +228,9 @@ defmodule Glific.Contacts do
   """
   @spec delete_contact(Contact.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def delete_contact(%Contact{} = contact) do
-    Repo.delete(contact)
+    if has_permission?(contact.id),
+      do: Repo.delete(contact),
+      else: raise("Permission denied")
   end
 
   @doc """

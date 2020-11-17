@@ -22,6 +22,9 @@ defmodule GlificWeb.Context do
   def build_context(conn) do
     current_user = conn.assigns[:current_user]
 
+    # Add the current_user to the Process memory
+    Glific.Repo.put_current_user(current_user)
+
     if current_user != nil do
       %{current_user: current_user}
     else

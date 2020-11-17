@@ -38,7 +38,7 @@ defmodule GlificWeb.Schema.SearchTypes do
   end
 
   object :search_cup do
-    field :contacts, list_of(:message)
+    field :contacts, list_of(:contact)
     field :messages, list_of(:message)
     field :tags, list_of(:message)
   end

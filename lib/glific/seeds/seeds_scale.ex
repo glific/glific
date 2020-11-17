@@ -5,6 +5,8 @@ if Code.ensure_loaded?(Faker) do
     """
     alias Glific.{
       Contacts.Contact,
+      Groups.ContactGroup,
+      Groups.Group,
       Messages.Message,
       Partners,
       Repo,
@@ -33,6 +35,7 @@ if Code.ensure_loaded?(Faker) do
         language_id: organization.default_language_id,
         organization_id: organization.id,
         last_message_at: DateTime.utc_now() |> DateTime.truncate(:second),
+        last_communication_at: DateTime.utc_now() |> DateTime.truncate(:second),
         inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
         updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
@@ -121,6 +124,42 @@ if Code.ensure_loaded?(Faker) do
       contact_entries
       |> Enum.chunk_every(300)
       |> Enum.map(&Repo.insert_all(Contact, &1))
+    end
+
+    defp seed_contact_groups(contacts_count, organization) do
+      Repo.query!("DELETE FROM contacts_groups where organization_id = #{organization.id}")
+
+      {:ok, restricted_group} = Repo.fetch_by(Group, %{label: "Restricted Group"})
+      {:ok, default_group} = Repo.fetch_by(Group, %{label: "Default Group"})
+
+      query =
+        from c in Contact,
+          select: c.id,
+          where: c.organization_id == ^organization.id
+
+      {restricted, default} =
+        query
+        |> Repo.all()
+        |> Enum.shuffle()
+        |> Enum.split(div(contacts_count, 4))
+
+      seed_contact_group(restricted, restricted_group, organization)
+      seed_contact_group(default, default_group, organization)
+    end
+
+    defp seed_contact_group(contacts, group, organization) do
+      contacts
+      |> Enum.reduce(
+        [],
+        fn contact_id, acc ->
+          [
+            %{contact_id: contact_id, group_id: group.id, organization_id: organization.id}
+            | acc
+          ]
+        end
+      )
+      |> Enum.chunk_every(1000)
+      |> Enum.map(&Repo.insert_all(ContactGroup, &1))
     end
 
     defp seed_messages(organization, sender_id) do
@@ -504,7 +543,8 @@ if Code.ensure_loaded?(Faker) do
               m.message_number != 0
 
       _ =
-        Repo.all(query)
+        query
+        |> Repo.all()
         |> Enum.shuffle()
         |> Enum.reduce([], fn x, acc ->
           create_message_tag_generic(x, tag_ids, organization.id, acc)
@@ -631,6 +671,8 @@ if Code.ensure_loaded?(Faker) do
       sender_id = organization.contact_id
 
       seed_contacts(opts[:contacts], organization)
+
+      seed_contact_groups(opts[:contacts], organization)
 
       seed_messages(organization, sender_id)
 

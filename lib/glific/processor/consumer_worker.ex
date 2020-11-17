@@ -39,7 +39,6 @@ defmodule Glific.Processor.ConsumerWorker do
   end
 
   defp load_state(organization_id) do
-    Glific.Repo.put_organization_id(organization_id)
     {:ok, cache_reload_key} = Caches.get(organization_id, :cache_reload_key)
 
     %{
@@ -63,18 +62,25 @@ defmodule Glific.Processor.ConsumerWorker do
       )
 
   @doc false
-  def handle_call({message, _}, _, state) do
-    {message, state} = handle_common(message, state)
+  def handle_call({message, process_state, _}, _, state) do
+    {message, state} = handle_common(message, process_state, state)
     {:reply, message, state}
   end
 
   @doc false
-  def handle_cast({message, _}, state) do
-    {_message, state} = handle_common(message, state)
+  def handle_cast({message, process_state, _}, state) do
+    {_message, state} = handle_common(message, process_state, state)
     {:noreply, state}
   end
 
-  defp handle_common(message, state) do
+  defp handle_process_state({organization_id, user} = _process_state) do
+    Repo.put_organization_id(organization_id)
+    Repo.put_current_user(user)
+  end
+
+  defp handle_common(message, process_state, state) do
+    handle_process_state(process_state)
+
     state = reload(state, message.organization_id)
     message = process_message(message, state.organizations[message.organization_id])
     {message, state}
