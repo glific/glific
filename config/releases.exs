@@ -43,7 +43,7 @@ config :appsignal, :config,
   name: "Glific",
   # we need to make this dynamic at some point
   hostname: System.get_env("APPSIGNAL_HOSTNAME"),
-  active: true,
+  active: false,
   revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: System.get_env("APPSIGNAL_PUSH_API_KEY")
 
