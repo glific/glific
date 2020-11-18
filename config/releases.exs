@@ -38,6 +38,7 @@ config :glific, GlificWeb.Endpoint,
   secret_key_base: secret_key_base,
   url: [host: System.get_env("BASE_URL")]
 
+
 # AppSignal configs
 config :appsignal, :config,
   name: "Glific",
