@@ -10,7 +10,7 @@ jobs:
     # only run this job if the verify job succeeds
 
     # only run this job if the workflow is running on the feature/master branch
-    #if: github.ref == 'refs/heads/feature/master'
+    if: github.ref == 'refs/heads/feature/master'
 
     runs-on: ubuntu-latest
 
@@ -27,4 +27,3 @@ jobs:
           GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
           GIGALIXIR_APP: ${{ secrets.GIGALIXIR_APPNAME }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          MIGRATIONS: false
