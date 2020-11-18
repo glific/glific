@@ -71,17 +71,12 @@ jobs:
       - run: mix format --check-formatted
       - run: mix test
     
-
-   script:
-    - git remote add staging2 https://akhileshnegi3.an%40gmail.com:37de35de-4e8a-4921-a310-dc63523400d3@git.gigalixir.com/glifics.git
-    - git push staging2 master
-    
   deploy:
     # only run this job if the verify job succeeds
     needs: verify
 
-    # only run this job if the workflow is running on the master branch
-    if: github.ref == 'refs/heads/master'
+    # only run this job if the workflow is running on the feature/gigalixir-cd branch
+    if: github.ref == 'refs/heads/feature/gigalixir-cd'
 
     runs-on: ubuntu-latest
 
@@ -89,9 +84,9 @@ jobs:
       - uses: actions/checkout@v2
         
         # actions/checkout@v2 only checks out the latest commit,
-        # so we need to tell it to check out the entire master branch
+        # so we need to tell it to check out the entire feature/gigalixir-cd branch
         with:
-          ref: master
+          ref: feature/gigalixir-cd
           fetch-depth: 0
 
       # configure the gigalixir-actions with our credentials and app name
