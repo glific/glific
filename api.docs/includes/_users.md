@@ -549,6 +549,11 @@ Type | Description
 <td valign="top">[<a href="#group">Group</a>]</td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>isRestricted</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
@@ -662,6 +667,11 @@ Match the phone
 <tr>
 <td colspan="2" valign="top"><strong>groupIds</strong></td>
 <td valign="top">[<a href="#id">ID</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isRestricted</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
 </tbody>
