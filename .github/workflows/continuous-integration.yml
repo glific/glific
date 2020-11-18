@@ -81,18 +81,15 @@ jobs:
     # only run this job if the verify job succeeds
     needs: test
 
-    # only run this job if the workflow is running on the feature/master branch
-    if: github.ref == 'refs/heads/feature/master'
-
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
         
         # actions/checkout@v2 only checks out the latest commit,
-        # so we need to tell it to check out the entire feature/master branch
+        # so we need to tell it to check out the entire feature/gigalixir-cd branch
         with:
-          ref: feature/master
+          ref: feature/gigalixir-cd
           fetch-depth: 0
           
       - uses: actions/cache@v1
