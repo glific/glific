@@ -506,6 +506,9 @@ defmodule Glific.Flows do
         %{},
         fn flow, acc ->
           Enum.reduce(flow.keywords, acc, fn keyword, acc ->
+            ## Keyword matching for the flow is case insenstive.
+            ## So let's clean the keywords before generating the map.
+            keyword = Glific.string_clean(keyword)
             Map.put(acc, keyword, flow.id)
           end)
         end
