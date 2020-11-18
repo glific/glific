@@ -3,7 +3,7 @@ name: Continuous Deployment
 
 on:
   push:
-    branches: [ test-cd ]
+    branches: [ master]
 
 jobs:
   deploy:
