@@ -76,3 +76,46 @@ jobs:
 
       - name: Code coverage
         run: bash <(curl -s https://codecov.io/bash)
+
+  deploy:
+    # only run this job if the verify job succeeds
+    needs: verify
+
+    # only run this job if the workflow is running on the feature/gigalixir-cd branch
+    if: github.ref == 'refs/heads/feature/gigalixir-cd'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        
+        # actions/checkout@v2 only checks out the latest commit,
+        # so we need to tell it to check out the entire feature/gigalixir-cd branch
+        with:
+          ref: feature/gigalixir-cd
+          fetch-depth: 0
+          
+      - uses: actions/cache@v1
+        id: build-cache
+        with:
+          path: _build
+          key: ${{ runner.os }}-build-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+
+      - name: Find yarn cache location
+        id: yarn-cache
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - uses: actions/cache@v1
+        with:
+          path: ${{ steps.yarn-cache.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      # configure the gigalixir-actions with our credentials and app name
+      - uses: mhanberg/gigalixir-action@v0.1.0
+        with:
+          GIGALIXIR_USERNAME: 'akhileshnegi3.an@gmail.com'
+          GIGALIXIR_PASSWORD: 'Akki120220'
+          GIGALIXIR_APP: 'glifics'
+          SSH_PRIVATE_KEY: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDpgOv/VwCyCiWBwkvAeHjO8WEuWrQDkUfu2LY9Rf5m5ciDBuNddj8yOK34c7zbZ4gIa/I60caOXSnGbDj2Pm+9e4Jl9dhmdnDPwnMnj5Lsk6YjL6QmqpxzjLEGon6d3/8X2aAMA11A2SK4tUxguuIfbGnLbHwYulan70zwjSUF/LrjgGgfOPku5f/Ntf+Rx2RCi4VxSakDiAXgti21hpX7TN1CY/6X1T0Q0EkVasw/D2I1rvvlb6z9YoGrinshJsqGC30+9CB3raOP6r/naFBJBiC/Lr1d8ypc3md4djRuw7MtamKEwfAXPwPm5Xsk0tX2WPjEPZK07irzJuS4CgYF akhil@LAPTOP-34EQNM5N'
