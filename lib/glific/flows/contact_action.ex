@@ -89,11 +89,11 @@ defmodule Glific.Flows.ContactAction do
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
     session_template = Messages.parse_template_vars(templating.template, vars)
 
-    {type, media_id} = get_media_from_attachment(attachments, "", context.organization_id)
+    {type, media_id} = get_media_from_attachment(attachments, "", context.organization_id) |> IO.inspect()
 
     session_template =
       session_template
-      |> Map.merge(%{media_id: media_id, type: type})
+      |> Map.merge(%{message_media_id: media_id, type: type})
 
     {:ok, _message} =
       Messages.create_and_send_session_template(

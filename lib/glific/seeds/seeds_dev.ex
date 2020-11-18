@@ -456,18 +456,32 @@ if Code.ensure_loaded?(Faker) do
       })
 
       Repo.insert!(%SessionTemplate{
-        label: "Movie Ticket",
-        type: :text,
-        shortcode: "movie_ticket",
-        is_hsm: true,
-        number_parameters: 2,
-        language_id: en_us.id,
-        organization_id: organization.id,
-        body:
-          "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{2}}]",
-        uuid: Ecto.UUID.generate()
-      })
+            label: "Movie Ticket",
+            type: :text,
+            shortcode: "movie_ticket",
+            is_hsm: true,
+            number_parameters: 2,
+            language_id: en_us.id,
+            organization_id: organization.id,
+            body:
+            "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{2}}]",
+            uuid: Ecto.UUID.generate()
+                   })
+
+      Repo.insert!(%SessionTemplate{
+            label: "Personalized Bill",
+            type: :text,
+            shortcode: "personalized_bill",
+            is_hsm: true,
+            number_parameters: 1,
+            language_id: en_us.id,
+            organization_id: organization.id,
+            body: "Hi {{1}},\nPlease find the attached bill.",
+            uuid: Ecto.UUID.generate()
+                   })
     end
+
+
 
     @doc false
     @spec seed_group_users(Organization.t() | nil) :: nil
