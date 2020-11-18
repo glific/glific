@@ -24,7 +24,7 @@ defmodule GlificWeb.Schema.UserTypes do
     field :is_restricted, :boolean do
       resolve(fn user, _, %{context: %{current_user: current_user}} ->
         if Enum.member?(current_user.roles, :staff),
-          do: {:ok, ""},
+          do: {:ok, nil},
           else: {:ok, user.is_restricted}
       end)
     end
