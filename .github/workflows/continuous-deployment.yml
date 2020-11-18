@@ -1,0 +1,103 @@
+name: Continuous Deployment
+
+
+on:
+  push:
+    branches: [ feature/gigalixir-cd ]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:  # build matrix for the job
+        elixir: [1.10.4]
+        otp: [23.0.2]
+
+    services:
+      postgres:
+        image: postgres:12 # postgres image for test database.
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: glific_test
+        ports:
+        - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 13.8.0
+
+      - name: Setup elixir
+        uses: actions/setup-elixir@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - uses: actions/cache@v1
+        id: deps-cache
+        with:
+          path: deps
+          key: ${{ runner.os }}-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+
+      - uses: actions/cache@v1
+        id: build-cache
+        with:
+          path: _build
+          key: ${{ runner.os }}-build-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+
+      - name: Find yarn cache location
+        id: yarn-cache
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - uses: actions/cache@v1
+        with:
+          path: ${{ steps.yarn-cache.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install deps
+        run: |
+          mix deps.get
+          (cd assets && yarn)
+
+      - run: mix format --check-formatted
+      - run: mix test
+    
+
+   script:
+    - git remote add staging2 https://akhileshnegi3.an%40gmail.com:37de35de-4e8a-4921-a310-dc63523400d3@git.gigalixir.com/glifics.git
+    - git push staging2 master
+    
+  deploy:
+    # only run this job if the verify job succeeds
+    needs: verify
+
+    # only run this job if the workflow is running on the master branch
+    if: github.ref == 'refs/heads/master'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        
+        # actions/checkout@v2 only checks out the latest commit,
+        # so we need to tell it to check out the entire master branch
+        with:
+          ref: master
+          fetch-depth: 0
+
+      # configure the gigalixir-actions with our credentials and app name
+      - uses: glific/gigalixir-action@v0.1.0
+        with:
+          GIGALIXIR_USERNAME: 'akhileshnegi3.an@gmail.com'
+          GIGALIXIR_PASSWORD: 'Akki120220'
+          GIGALIXIR_APP: 'glifics'
+          SSH_PRIVATE_KEY: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDpgOv/VwCyCiWBwkvAeHjO8WEuWrQDkUfu2LY9Rf5m5ciDBuNddj8yOK34c7zbZ4gIa/I60caOXSnGbDj2Pm+9e4Jl9dhmdnDPwnMnj5Lsk6YjL6QmqpxzjLEGon6d3/8X2aAMA11A2SK4tUxguuIfbGnLbHwYulan70zwjSUF/LrjgGgfOPku5f/Ntf+Rx2RCi4VxSakDiAXgti21hpX7TN1CY/6X1T0Q0EkVasw/D2I1rvvlb6z9YoGrinshJsqGC30+9CB3raOP6r/naFBJBiC/Lr1d8ypc3md4djRuw7MtamKEwfAXPwPm5Xsk0tX2WPjEPZK07irzJuS4CgYF akhil@LAPTOP-34EQNM5N'
