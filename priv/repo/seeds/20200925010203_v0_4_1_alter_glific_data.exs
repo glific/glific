@@ -120,7 +120,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp add_credentials(gupshup, glifproxy) do
-    Partners.active_organizations([])
+    Partners.active_organizations()
     |> Enum.each(fn {org_id, _name} ->
 
       Glific.Repo.put_organization_id(org_id)
