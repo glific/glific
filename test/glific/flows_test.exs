@@ -349,10 +349,17 @@ defmodule Glific.FLowsTest do
     end
 
     test "flow keyword map keys are always in lower case", attrs do
-        flow = flow_fixture()
-        assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, %{keywords: ["Hello", "Greetings", "ABCD"]})
-        keyowrd_map = Flows.flow_keywords_map(attrs.organization_id)
-        assert nil == Enum.find(keyowrd_map, fn {keyword, _flow_id} -> keyword != Glific.string_clean(keyword) end)
+      flow = flow_fixture()
+
+      assert {:ok, %Flow{} = flow} =
+               Flows.update_flow(flow, %{keywords: ["Hello", "Greetings", "ABCD"]})
+
+      keyowrd_map = Flows.flow_keywords_map(attrs.organization_id)
+
+      assert nil ==
+               Enum.find(keyowrd_map, fn {keyword, _flow_id} ->
+                 keyword != Glific.string_clean(keyword)
+               end)
     end
   end
 end

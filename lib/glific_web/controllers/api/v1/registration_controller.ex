@@ -17,6 +17,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Partners,
     Repo,
     Tags,
     Users,
@@ -105,10 +106,19 @@ defmodule GlificWeb.API.V1.RegistrationController do
          do: {:ok, "Staff tag added to the user contatct"}
   end
 
+  # we need to give user permissions here so we can retrive and send messages
+  # in some cases
+  defp build_context(organization_id) do
+    organization = Partners.organization(organization_id)
+    Repo.put_current_user(organization.root_user)
+  end
+
   @doc false
   @spec send_otp(Conn.t(), map()) :: Conn.t()
   def send_otp(conn, %{"user" => %{"phone" => phone}} = user_params) do
     organization_id = conn.assigns[:organization_id]
+    build_context(organization_id)
+
     registration = user_params["user"]["registration"]
 
     with {:ok, contact} <- can_send_otp_to_phone?(organization_id, phone),
