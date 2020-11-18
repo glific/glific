@@ -67,7 +67,6 @@ jobs:
         run: |
           mix deps.get
           (cd assets && yarn)
-          
 
       - run: mix format --check-formatted
       - run: mix test
