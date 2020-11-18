@@ -41,7 +41,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       # configure the gigalixir-actions with our credentials and app name
-      - uses: mhanberg/gigalixir-action@v0.1.0
+      - uses: mhanberg/gigalixir-action@v0.4.0
         with:
           GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
           GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
