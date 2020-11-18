@@ -18,6 +18,7 @@ if Code.ensure_loaded?(Faker) do
       Settings,
       Settings.Language,
       Tags.Tag,
+      Templates.SessionTemplate,
       Users
     }
 
@@ -436,6 +437,39 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
+    @spec seed_session_templates(Organization.t() | nil) :: nil
+    def seed_session_templates(organization) do
+      [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+
+      Repo.insert!(%SessionTemplate{
+            label: "Account Balance",
+            type: :text,
+            shortcode: "account_balance",
+            is_hsm: true,
+            number_parameters: 1,
+            language_id: en_us.id,
+            organization_id: organization.id,
+            # spaces are important here, since gupshup pattern matches on it
+            body: "You can now view your Account Balance or Mini statement for Account ending with {{1}} simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
+            uuid:  Ecto.UUID.generate()
+                   })
+
+      Repo.insert!(%SessionTemplate{
+            label: "Movie Ticket",
+            type: :text,
+            shortcode: "movie_ticket",
+            is_hsm: true,
+            number_parameters: 2,
+            language_id: en_us.id,
+            organization_id: organization.id,
+            body: "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{2}}]",
+            uuid:  Ecto.UUID.generate()
+                   })
+
+
+
+    end
+    @doc false
     @spec seed_group_users(Organization.t() | nil) :: nil
     def seed_group_users(organization \\ nil) do
       organization = get_organization(organization)
@@ -508,6 +542,8 @@ if Code.ensure_loaded?(Faker) do
       seed_users(organization)
 
       seed_tag(organization)
+
+      seed_session_templates(organization)
 
       seed_messages(organization)
 
