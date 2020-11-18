@@ -55,31 +55,31 @@ jobs:
           mix local.hex --force
           mix deps.get
 
-      - name: Retrieve PLT Cache
-        uses: actions/cache@v1
-        id: elixir-plt-cache #id to use in retrieve action
-        with:
-          path: priv/plts
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+      # - name: Retrieve PLT Cache
+      #   uses: actions/cache@v1
+      #   id: elixir-plt-cache #id to use in retrieve action
+      #   with:
+      #     path: priv/plts
+      #     key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-plts-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
 
-      - name: Create PLTs
-        if: steps.elixir-plt-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p priv/plts
-          mix dialyzer --plt
+      # - name: Create PLTs
+      #   if: steps.elixir-plt-cache.outputs.cache-hit != 'true'
+      #   run: |
+      #     mkdir -p priv/plts
+      #     mix dialyzer --plt
 
-      - name: Run check
-        run: mix check
+      # - name: Run check
+      #   run: mix check
 
-      - name: Coveralls for code covarage
-        run: mix do compile --warnings-as-errors, coveralls.json
+      # - name: Coveralls for code covarage
+      #   run: mix do compile --warnings-as-errors, coveralls.json
 
-      - name: Code coverage
-        run: bash <(curl -s https://codecov.io/bash)
+      # - name: Code coverage
+      #   run: bash <(curl -s https://codecov.io/bash)
 
   deploy:
     # only run this job if the verify job succeeds
-    needs: verify
+    needs: test
 
     # only run this job if the workflow is running on the feature/gigalixir-cd branch
     if: github.ref == 'refs/heads/feature/gigalixir-cd'
