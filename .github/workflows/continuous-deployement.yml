@@ -20,7 +20,7 @@ jobs:
         # actions/checkout@v2 only checks out the latest commit,
         # so we need to tell it to check out the entire feature/master branch
         with:
-          ref: test-cd
+          ref: master
           fetch-depth: 0
           
       - uses: actions/cache@v1
