@@ -27,3 +27,4 @@ jobs:
           GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
           GIGALIXIR_APP: ${{ secrets.GIGALIXIR_APPNAME }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          MIGRATIONS: false
