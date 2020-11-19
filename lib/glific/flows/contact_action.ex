@@ -89,11 +89,27 @@ defmodule Glific.Flows.ContactAction do
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
     session_template = Messages.parse_template_vars(templating.template, vars)
 
-    {type, media_id} = get_media_from_attachment(attachments, "", context.organization_id) |> IO.inspect()
+    {type, media_id} =
+      if is_nil(attachments) or attachments == %{} do
+        {session_template.type, session_template.message_media_id}
+      else
+        get_media_from_attachment(attachments, "", context.organization_id)
+      end
+
+    {type, media_id}
+    |> IO.inspect()
 
     session_template =
       session_template
       |> Map.merge(%{message_media_id: media_id, type: type})
+
+
+    ## This is bit expansive and we will optimize it bit more
+    #session_template =
+    if (type in [:image, :video, :audio] and media_id != nil) do
+      Messages.get_message_media!(media_id)
+      |> Messages.update_message_media(%{caption: session_template.body})
+    end
 
     {:ok, _message} =
       Messages.create_and_send_session_template(

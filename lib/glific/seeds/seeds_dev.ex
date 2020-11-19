@@ -479,6 +479,19 @@ if Code.ensure_loaded?(Faker) do
             body: "Hi {{1}},\nPlease find the attached bill.",
             uuid: Ecto.UUID.generate()
                    })
+
+      Repo.insert!(%SessionTemplate{
+            label: "Account Update",
+            type: :image,
+            shortcode: "account_update",
+            is_hsm: true,
+            number_parameters: 3,
+            language_id: en_us.id,
+            organization_id: organization.id,
+            body: "Hi {{1}},\n\nYour account image was updated on {{2}} by {{3}} with above",
+            uuid: Ecto.UUID.generate()
+                   })
+
     end
 
 
