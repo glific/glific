@@ -13,7 +13,10 @@ defmodule Glific.Flows.WebhookTest do
     @valid_attrs %{
       url: "some url",
       method: "GET",
-      request_headers: %{},
+      request_headers: %{
+        :Accept => "application/json",
+        :X-Glific-Signature => "random signature"
+      },
       request_json: %{}
     }
     @update_attrs %{
