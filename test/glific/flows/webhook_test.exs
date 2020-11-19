@@ -7,7 +7,6 @@ defmodule Glific.Flows.WebhookTest do
   }
 
   describe "webhook" do
-
   end
 
   describe "webhook logs" do
@@ -48,7 +47,9 @@ defmodule Glific.Flows.WebhookTest do
 
       {:ok, webhook_log} = WebhookLog.create_webhook_log(valid_attrs)
 
-      assert {:ok, %WebhookLog{} = webhook_log} = WebhookLog.update_webhook_log(webhook_log, @update_attrs)
+      assert {:ok, %WebhookLog{} = webhook_log} =
+               WebhookLog.update_webhook_log(webhook_log, @update_attrs)
+
       assert webhook_log.status_code == 200
     end
   end
