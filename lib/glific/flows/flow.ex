@@ -88,6 +88,7 @@ defmodule Glific.Flows.Flow do
       |> cast(attrs, @required_fields ++ @optional_fields)
       |> validate_required(@required_fields)
       |> unique_constraint([:name, :organization_id])
+      |> update_change(:keywords, &Enum.map(&1, fn keyword -> String.downcase(keyword) end))
 
     validate_keywords(changeset, get_change(changeset, :keywords))
   end
