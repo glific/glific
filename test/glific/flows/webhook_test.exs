@@ -15,7 +15,7 @@ defmodule Glific.Flows.WebhookTest do
       method: "GET",
       request_headers: %{
         :Accept => "application/json",
-        :X-Glific-Signature => "random signature"
+        :"X-Glific-Signature" => "random signature"
       },
       request_json: %{}
     }
