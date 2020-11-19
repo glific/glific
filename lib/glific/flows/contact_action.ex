@@ -90,9 +90,9 @@ defmodule Glific.Flows.ContactAction do
     session_template = Messages.parse_template_vars(templating.template, vars)
 
     {type, media_id} =
-    if is_nil(attachments) or attachments == %{},
-      do: {session_template.type, session_template.message_media_id},
-      else: get_media_from_attachment(attachments, "", context.organization_id)
+      if is_nil(attachments) or attachments == %{},
+        do: {session_template.type, session_template.message_media_id},
+        else: get_media_from_attachment(attachments, "", context.organization_id)
 
     session_template =
       session_template
