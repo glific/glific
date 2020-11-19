@@ -10,6 +10,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
     Providers.Gupshup
   }
 
+  @simulater_phone "9876543210"
+
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
   def handler(conn, _params, _msg) do
@@ -17,9 +19,35 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   end
 
   @doc """
-  Parse text message payload and convert that into Glific message struct
+  Proxy text message from simulator to make it optin
   """
   @spec text(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def text(
+        conn,
+        %{
+          "payload" => %{
+            "payload" => %{"text" => "proxy"},
+            "sender" => %{"name" => "Simulator", "phone" => @simulater_phone}
+          }
+        } = params
+      ) do
+    timestamp = DateTime.utc_now()
+
+    @simulater_phone
+    |> Glific.Contacts.contact_opted_in(conn.assigns[:organization_id], timestamp)
+
+    params["payload"]["payload"]["text"]
+    |> put_in("proxy message to optin simulator")
+    |> Gupshup.Message.receive_text()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Communications.Message.receive_message()
+
+    handler(conn, params, "text handler")
+  end
+
+  @doc """
+  Parse text message payload and convert that into Glific message struct
+  """
   def text(conn, params) do
     params
     |> Gupshup.Message.receive_text()
