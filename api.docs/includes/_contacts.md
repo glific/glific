@@ -684,6 +684,11 @@ Type | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>lastCommunicationAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>language</strong></td>
 <td valign="top"><a href="#language">Language</a></td>
 <td></td>

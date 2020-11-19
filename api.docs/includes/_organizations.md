@@ -503,7 +503,7 @@ Type | Description
 ## Subscription for Wallet Balance
 
 ```graphql
-subscription MySubscription {
+subscription PeriodicInfo {
   periodicInfo(organizationId: "1") {
     key
     value
@@ -531,7 +531,7 @@ Parameter | Type | Default | Description
 ## Subscription for Collection Count
 
 ```graphql
-subscription MySubscription {
+subscription PeriodicInfo {
   periodicInfo(organizationId: "1") {
     key
     value
@@ -630,6 +630,11 @@ Parameter | Type | Default | Description
 <td colspan="2" valign="top"><strong>sessionLimit</strong></td>
 <td valign="top"><a href="#integer">Integer</a></td>
 <td>(in minutes)</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>signaturePhrase</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -864,6 +869,11 @@ Unique
 <td colspan="2" valign="top"><strong>sessionLimit</strong></td>
 <td valign="top"><a href="#integer">Integer</a></td>
 <td>(in minutes)</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>signaturePhrase</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
 </tr>
 </tbody>
 </table>
