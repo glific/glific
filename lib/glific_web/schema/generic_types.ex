@@ -114,6 +114,10 @@ defmodule GlificWeb.Schema.GenericTypes do
 
   @spec parse_label(Absinthe.Blueprint.Input.String.t()) :: {:ok, String.t()} | :error
   @spec parse_label(Absinthe.Blueprint.Input.Null.t()) :: {:ok, nil}
+  defp parse_label(%Absinthe.Blueprint.Input.String{value: "No access"}) do
+    {:ok, :none}
+  end
+
   defp parse_label(%Absinthe.Blueprint.Input.String{value: label}) do
     if is_binary(label) do
       label =
@@ -132,6 +136,10 @@ defmodule GlificWeb.Schema.GenericTypes do
 
   defp parse_label(_) do
     :error
+  end
+
+  defp encode_label(:none) do
+    "No access"
   end
 
   defp encode_label(label) when is_atom(label) do
