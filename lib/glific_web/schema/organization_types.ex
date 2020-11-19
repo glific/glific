@@ -74,6 +74,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
         {:ok, languages}
       end)
     end
+
+    field :signature_phrase, :string do
+      resolve(fn organization, _, %{context: %{current_user: current_user}} ->
+        if Enum.member?(current_user.roles, :staff),
+          do: {:ok, ""},
+          else: {:ok, organization.signature_phrase}
+      end)
+    end
   end
 
   @desc "Filtering options for organizations"
@@ -125,6 +133,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :session_limit, :integer
 
     field :active_language_ids, list_of(:id)
+
+    field :signature_phrase, :string
   end
 
   object :organization_queries do

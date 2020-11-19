@@ -21,6 +21,14 @@ defmodule GlificWeb.Schema.UserTypes do
     field :phone, :string
     field :roles, list_of(:role_label)
 
+    field :is_restricted, :boolean do
+      resolve(fn user, _, %{context: %{current_user: current_user}} ->
+        if Enum.member?(current_user.roles, :staff),
+          do: {:ok, nil},
+          else: {:ok, user.is_restricted}
+      end)
+    end
+
     field :contact, :contact do
       resolve(dataloader(Repo))
     end
@@ -58,6 +66,7 @@ defmodule GlificWeb.Schema.UserTypes do
     field :name, :string
     field :roles, list_of(:role_label)
     field :group_ids, list_of(:id)
+    field :is_restricted, :boolean
   end
 
   object :user_queries do
