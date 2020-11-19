@@ -433,7 +433,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         last_communication_at: utc_now
       })
 
-    simulator =
+    _simulator =
       Repo.insert!(%Contact{
         phone: @simulator_phone,
         name: "Simulator",
