@@ -109,6 +109,17 @@ defmodule Glific.FLowsTest do
       assert {:error, %Ecto.Changeset{}} = Flows.create_flow(invalid_attrs)
     end
 
+    test "create_flow/1 with keywords will covert all keywords to downcase", attrs do
+      attrs = Map.merge(@valid_attrs, attrs)
+
+      assert {:ok, %Flow{} = flow} =
+               attrs
+               |> Map.merge(%{keywords: ["Test_Keyword", "TEST_KEYWORD_2"]})
+               |> Flows.create_flow()
+
+      assert flow.keywords == ["test_keyword", "test_keyword_2"]
+    end
+
     test "create_flow/1 will have a default revision" do
       flow = flow_fixture(@valid_attrs)
       flow = Glific.Repo.preload(flow, [:revisions])
