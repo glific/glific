@@ -44,7 +44,7 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "fourth") == false
     assert wrap_execute(c, nil, "") == false
 
-    c = %Case{type: "has_any_word", arguments: [ "none of these" ]}
+    c = %Case{type: "has_any_word", arguments: ["none of these"]}
     assert wrap_execute(c, nil, "first") == false
     assert wrap_execute(c, nil, "second") == false
     assert wrap_execute(c, nil, "fourth") == false
