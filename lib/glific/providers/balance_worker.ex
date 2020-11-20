@@ -10,6 +10,8 @@ defmodule Glific.Jobs.BSPBalanceWorker do
 
   @doc """
   periodic function for making calls to bsp for remaining balance
+
+  Glific.Jobs.BSPBalanceWorker.perform_periodic(1)
   """
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do

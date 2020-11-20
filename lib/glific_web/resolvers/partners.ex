@@ -11,6 +11,7 @@ defmodule GlificWeb.Resolvers.Partners do
     Partners.Provider,
     Repo
   }
+  @gupshup_balance_url "https://api.gupshup.io/sm/api/v2/wallet/balance"
 
   @doc """
   Get a specific organization by id
@@ -107,6 +108,35 @@ defmodule GlificWeb.Resolvers.Partners do
     {:ok, Partners.count_providers(args)}
   end
 
+  @doc """
+  Get a specific bsp balance by organization id
+  """
+  @spec bspbalance(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def bspbalance(_, _, %{context: %{current_user: user}}) do
+    with balance <- get_balance(user.organization_id),
+         do: {:ok, %{bsp_balance_result: balance}}
+  end
+
+  defp get_balance(organization_id) do
+    organization = Partners.organization(organization_id)
+    credentials = organization.services["bsp"]
+    api_key = credentials.secrets["api_key"]
+    case organization.bsp.shortcode do
+      "gupshup" -> gupshup_balance(api_key)
+      _ -> {:error, "Invalid provider"}
+    end
+  end
+
+  defp gupshup_balance(api_key) do
+    case Tesla.get(@gupshup_balance_url, headers: [{"apikey", api_key}]) do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        {:ok, data} = Jason.decode(body)
+        %{key: "bsp_balance", value: %{balance: data["balance"]}}|>IO.inspect()
+        _ ->
+          {:error, "Invalid key"}
+      end
+  end
   @doc """
   Creates a provider
   """
