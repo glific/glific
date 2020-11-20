@@ -8,7 +8,8 @@ defmodule Glific.Providers.Gupshup.Message do
 
   alias Glific.{
     Communications,
-    Messages.Message
+    Messages.Message,
+    Partners
   }
 
   @doc false
@@ -133,9 +134,14 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @spec format_sender(map()) :: map()
-  defp format_sender(sender) do
-    %{"source" => sender.phone, "src.name" => sender.name}
+  @spec format_sender(Message.t()) :: map()
+  defp format_sender(message) do
+    organization = Partners.organization(message.organization_id)
+
+    %{
+      "source" => message.sender.phone,
+      "src.name" => organization.services["bsp"].secrets["app_name"]
+    }
   end
 
   @doc false
@@ -144,7 +150,7 @@ defmodule Glific.Providers.Gupshup.Message do
   defp send_message(payload, message) do
     request_body =
       %{"channel" => @channel}
-      |> Map.merge(format_sender(message.sender))
+      |> Map.merge(format_sender(message))
       |> Map.put(:destination, message.receiver.phone)
       |> Map.put("message", Jason.encode!(payload))
 
