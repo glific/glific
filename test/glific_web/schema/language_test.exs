@@ -76,7 +76,18 @@ defmodule GlificWeb.Schema.LanguageTest do
   end
 
   test "update a language and test possible scenarios and errors", %{manager: user} do
-    label = "English (United States)"
+    label = "Klingon"
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{"label" => label, "labelLocale" => "Klingon", "locale" => "kl_KL"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    language = get_in(query_data, [:data, "createLanguage", "language", "label"])
+    assert language == label
 
     {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
 

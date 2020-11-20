@@ -15,6 +15,8 @@ defmodule Glific.Repo.Migrations.V0_7_2_AlterGlificTables do
     contacts()
 
     organizations()
+
+    webhook_logs()
   end
 
   defp users() do
@@ -42,6 +44,12 @@ defmodule Glific.Repo.Migrations.V0_7_2_AlterGlificTables do
       # add the signing phrase for webhooks
       # we will keep this encrypted, and remove the default before release
       add :signature_phrase, :binary
+    end
+  end
+
+  defp webhook_logs() do
+    alter table(:webhook_logs) do
+      modify :request_headers, :jsonb, default: "{}"
     end
   end
 end
