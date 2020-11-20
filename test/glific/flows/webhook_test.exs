@@ -26,7 +26,8 @@ defmodule Glific.Flows.WebhookTest do
       "status" => "5"
     }
 
-    test "execute a webhook should return the response body with results", attrs do
+    @tag :pending
+    test "execute a webhook for post method should return the response body with results", attrs do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
