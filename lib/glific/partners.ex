@@ -320,8 +320,9 @@ defmodule Glific.Partners do
   end
 
   @doc ~S"""
-  Returns an `%Ecto.Changeset{}` for tracking organization changes.
+  Returns bsp balance for an organization
   """
+  @spec get_bsp_balance(non_neg_integer) :: {:ok, String.t()} | {:error, String.t()}
   def get_bsp_balance(organization_id) do
     organization = Glific.Partners.organization(organization_id)
     credentials = organization.services["bsp"]

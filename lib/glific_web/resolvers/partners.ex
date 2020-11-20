@@ -113,13 +113,15 @@ defmodule GlificWeb.Resolvers.Partners do
   @spec bspbalance(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def bspbalance(_, _, %{context: %{current_user: user}}) do
-    with {:ok, balance} <- Partners.get_bsp_balance(user.organization_id)
-         do
-        IO.inspect(balance)
-          {:ok, %{bsp_balance_result: balance}}
-        end
+    with {:ok, balance} <- get_balance(user.organization_id) do
+      {:ok, balance}
+    end
   end
 
+  defp get_balance(organization_id) do
+    {:ok, data} = Partners.get_bsp_balance(organization_id)
+    {:ok, %{key: "bsp_balance", value: %{balance: data["balance"]}}}
+  end
   @doc """
   Creates a provider
   """

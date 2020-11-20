@@ -7,6 +7,7 @@ defmodule Glific.Providers.Gupshup.GupshupWallet do
   @doc """
   function for making call to gupshup for remaining balance
   """
+  @spec balance(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def balance(api_key) do
     case Tesla.get(@gupshup_balance_url, headers: [{"apikey", api_key}]) do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
