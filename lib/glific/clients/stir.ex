@@ -1,13 +1,14 @@
-defmodule StirSurvey do
-  @doc """
+defmodule Glific.Clients.Stir do
+  @moduledoc """
   Example implementation of survey computation for STiR
   """
+
+  @doc false
   @spec webhook(map) :: map()
-  def webhook(%{results: results} = input) do
-    input
-    |> IO.inspect()
-    # compute_survey_score(results)
-  end
+  def webhook(%{results: results}),
+    do: compute_survey_score(results)
+
+  def webhook(_), do: %{}
 
   defp get_value(k, v) do
     k = String.downcase(k)

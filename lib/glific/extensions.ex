@@ -129,15 +129,15 @@ defmodule Glific.Extensions do
   end
 
   def execute(extension, body) do
-    # first compile the file in the extension
-    # at a later stage, we'll actually use a supervisor tree to take care of all this and ensure
-    # things work
+    module = String.to_existing_atom("Elixir." <> extension.module)
 
-    # we need to trap errors here
-    Code.require_file(extension.code, Path.join(:code.priv_dir(:glific), "/data/webhook"))
+    condition =
+      if is_nil(extension.condition) or extension.condition == "",
+        do: true,
+        else: apply(module, String.to_existing_atom(extension.condition), extension.args)
 
-    module = String.to_existing_atom(extension.module)
-
-    apply(module, String.to_existing_atom(extension.function), [body])
+    if condition,
+      do: apply(module, String.to_existing_atom(extension.action), [body | extension.args]),
+      else: %{}
   end
 end

@@ -12,19 +12,17 @@ defmodule Glific.Extensions.Extension do
     Partners.Organization
   }
 
-  @required_fields [:name, :code, :module, :function, :orgsnization_id]
-  @optional_fields [:test, :is_valid, :is_pass]
+  @required_fields [:name, :module, :action, :orgsnization_id]
+  @optional_fields [:condition, :args]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
-          code: String.t() | nil,
-          test: String.t() | nil,
           module: String.t() | nil,
-          function: String.t() | nil,
-          is_valid: boolean(),
-          is_pass: boolean(),
+          condition: String.t() | nil,
+          action: String.t() | nil,
+          args: [String.t()] | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -33,13 +31,10 @@ defmodule Glific.Extensions.Extension do
 
   schema "extensions" do
     field :name, :string
-    field :code, :string
-    field :test, :string
     field :module, :string
-    field :function, :string
-
-    field :is_valid, :boolean, default: false
-    field :is_pass, :boolean, default: false
+    field :condition, :string
+    field :action, :string
+    field :args, {:array, :string}, default: []
 
     belongs_to :organization, Organization
 
