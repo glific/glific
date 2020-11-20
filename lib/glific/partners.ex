@@ -322,7 +322,7 @@ defmodule Glific.Partners do
   @doc ~S"""
   Returns bsp balance for an organization
   """
-  @spec get_bsp_balance(non_neg_integer) :: {:ok, String.t()} | {:error, String.t()}
+  @spec get_bsp_balance(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
   def get_bsp_balance(organization_id) do
     organization = Glific.Partners.organization(organization_id)
     credentials = organization.services["bsp"]

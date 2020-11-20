@@ -122,6 +122,7 @@ defmodule GlificWeb.Resolvers.Partners do
     {:ok, data} = Partners.get_bsp_balance(organization_id)
     {:ok, %{key: "bsp_balance", value: %{balance: data["balance"]}}}
   end
+
   @doc """
   Creates a provider
   """
