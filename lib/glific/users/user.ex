@@ -28,7 +28,7 @@ defmodule Glific.Users.User do
         }
 
   @required_fields [:phone, :name, :password, :contact_id, :organization_id]
-  @optional_fields [:name, :roles]
+  @optional_fields [:name, :roles, :is_restricted]
 
   schema "users" do
     field :name, :string
@@ -83,13 +83,13 @@ defmodule Glific.Users.User do
   end
 
   @doc """
-  Simple changeset for update name and roles
+  Simple changeset for update name, roles and is_restricted
   """
   @spec update_fields_changeset(Ecto.Schema.t() | Changeset.t(), map()) ::
           Changeset.t()
   def update_fields_changeset(user_or_changeset, params) do
     user_or_changeset
-    |> Changeset.cast(params, [:name, :roles, :password])
+    |> Changeset.cast(params, [:name, :roles, :password, :is_restricted])
     |> Changeset.validate_required([:name, :roles])
     |> password_changeset(params, @pow_config)
     |> Changeset.unique_constraint(:contact_id)

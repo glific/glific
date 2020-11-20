@@ -208,7 +208,8 @@ defmodule GlificWeb.Schema.UserTest do
           "input" => %{
             "name" => name,
             "roles" => roles,
-            "groupIds" => [group.id]
+            "groupIds" => [group.id],
+            "isRestricted" => true
           }
         }
       )
@@ -220,6 +221,7 @@ defmodule GlificWeb.Schema.UserTest do
     assert user_result["name"] == name
     assert user_result["roles"] == roles
     assert user_result["groups"] == [%{"id" => "#{group.id}"}]
+    assert user_result["isRestricted"] == true
 
     # update user groups
     group_2 = Fixtures.group_fixture(%{label: "new group"})
