@@ -3,9 +3,10 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   Module for checking remaining balance
   """
 
-  alias Glific.Partners
-  alias Glific.Communications
-
+  alias Glific.{
+   Communications,
+   Partners
+  }
   @doc """
   periodic function for making calls to bsp for remaining balance
   """
