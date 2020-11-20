@@ -10,16 +10,10 @@ defmodule Glific.Repo.Migrations.Extensions do
       # the name to refer the extension
       add :name, :string, null: false
 
-      # the module code as a string, module test as a string, module name, and function name
-      add :code, :string, null: false
-      # for now, later on we will make test required also
-      add :test, :string, null: true
       add :module, :string, null: false
-      add :function, :string, null: false
-
-      # check if code is valid and tests have passed
-      add :is_valid, :boolean, default: false
-      add :is_pass, :boolean, default: false
+      add :condition, :string, null: false
+      add :action, :string, null: false
+      add :args, {:array, :string}, default: []
 
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
