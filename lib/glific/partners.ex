@@ -16,6 +16,7 @@ defmodule Glific.Partners do
     Partners.Credential,
     Partners.Organization,
     Partners.Provider,
+    Providers.Gupshup.GupshupWallet,
     Repo,
     Settings.Language,
     Users.User
@@ -316,6 +317,21 @@ defmodule Glific.Partners do
   @spec change_organization(Organization.t(), map()) :: Ecto.Changeset.t()
   def change_organization(%Organization{} = organization, attrs \\ %{}) do
     Organization.changeset(organization, attrs)
+  end
+
+  @doc ~S"""
+  Returns bsp balance for an organization
+  """
+  @spec get_bsp_balance(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
+  def get_bsp_balance(organization_id) do
+    organization = Glific.Partners.organization(organization_id)
+    credentials = organization.services["bsp"]
+    api_key = credentials.secrets["api_key"]
+
+    case organization.bsp.shortcode do
+      "gupshup" -> GupshupWallet.balance(api_key)
+      _ -> {:error, "Invalid provider"}
+    end
   end
 
   @spec fill_cache(Organization.t()) :: Organization.t()

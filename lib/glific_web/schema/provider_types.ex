@@ -12,6 +12,11 @@ defmodule GlificWeb.Schema.ProviderTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :bsp_balance_result do
+    field :key, :string
+    field :value, :json
+  end
+
   object :provider do
     field :id, :id
     field :name, :string
@@ -48,6 +53,11 @@ defmodule GlificWeb.Schema.ProviderTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.provider/3)
+    end
+
+    @desc "getting bsp balance"
+    field :bspbalance, :bsp_balance_result do
+      resolve(&Resolvers.Partners.bspbalance/3)
     end
 
     @desc "Get a list of all providers filtered by various criteria"
