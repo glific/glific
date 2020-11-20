@@ -57,7 +57,6 @@ defmodule GlificWeb.Schema.ProviderTypes do
 
     @desc "getting bsp balance"
     field :bspbalance, :bsp_balance_result do
-      arg(:id, non_null(:id))
       resolve(&Resolvers.Partners.bspbalance/3)
     end
 
