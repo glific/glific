@@ -3,25 +3,22 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   Module for checking remaining balance
   """
 
-  alias Glific.{
-    Partners,
-    Providers.Gupshup.GupshupWallet
-  }
+  alias Glific.Partners
+  alias Glific.Communications
 
   @doc """
   periodic function for making calls to bsp for remaining balance
+  Glific.Jobs.BSPBalanceWorker.perform_periodic(1)
   """
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
-    organization = Partners.organization(organization_id)
-    credentials = organization.services["bsp"]
-    api_key = credentials.secrets["api_key"]
+    {:ok, data} = Partners.get_bsp_balance(organization_id)
 
-    case organization.bsp.shortcode do
-      "gupshup" -> GupshupWallet.balance(api_key, organization_id)
-      _ -> {:error, "Invalid provider"}
-    end
-
+    Communications.publish_data(
+      %{key: "bsp_balance", value: %{balance: data["balance"]}},
+      :periodic_info,
+      organization_id
+    )
     :ok
   end
 end

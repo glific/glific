@@ -114,7 +114,7 @@ defmodule GlificWeb.Resolvers.Partners do
   @spec bspbalance(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def bspbalance(_, _, %{context: %{current_user: user}}) do
-    with balance <- get_balance(user.organization_id),
+    with {:ok, balance} <- get_balance(user.organization_id),
          do: {:ok, %{bsp_balance_result: balance}}
   end
 
@@ -132,7 +132,7 @@ defmodule GlificWeb.Resolvers.Partners do
     case Tesla.get(@gupshup_balance_url, headers: [{"apikey", api_key}]) do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, data} = Jason.decode(body)
-        %{key: "bsp_balance", value: %{balance: data["balance"]}}
+        {:ok, %{key: "bsp_balance", value: %{balance: data["balance"]}}}
         _ ->
           {:error, "Invalid key"}
       end
