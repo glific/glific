@@ -155,6 +155,36 @@ Type | Description
 | ---- | -----------
 <a href="#int">Int</a> | Count of filtered providers
 
+## Get BSP balance for an organization
+
+```graphql
+query bspbalance {
+  bspbalance {
+    key
+    value
+  }
+}
+
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "bspbalance": {
+      "key": "bsp_balance",
+      "value": "{\"balance\":0.628}"
+    }
+  }
+}
+```
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#bsp_balance_result">bsp_balance_result</a> | remaining bsp balance
+
 ## Create a Provider
 
 ```graphql
@@ -373,6 +403,31 @@ Type | Description
 <td colspan="2" valign="top"><strong>secrets</strong></td>
 <td valign="top"><a href="#json">Json</a></td>
 <td>structure for secrets</td>
+</tr>
+</tbody>
+</table>
+
+### Bsp Balance
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>key</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>value</strong></td>
+<td valign="top"><a href="#id">Json</a></td>
+<td></td>
 </tr>
 </tbody>
 </table>
