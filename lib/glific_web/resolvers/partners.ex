@@ -132,7 +132,7 @@ defmodule GlificWeb.Resolvers.Partners do
     case Tesla.get(@gupshup_balance_url, headers: [{"apikey", api_key}]) do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, data} = Jason.decode(body)
-        %{key: "bsp_balance", value: %{balance: data["balance"]}}|>IO.inspect()
+        %{key: "bsp_balance", value: %{balance: data["balance"]}}
         _ ->
           {:error, "Invalid key"}
       end
