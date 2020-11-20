@@ -77,9 +77,6 @@ defmodule Glific.Flows.Case do
   It also returns a boolean, rather than a tuple
   """
   @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
-  def execute(%{type: type} = c, _context, msg) when type == "has_any_word",
-    do: Enum.member?(c.arguments, strip(msg))
-
   def execute(%{type: type} = c, _context, msg) when type == "has_number_eq",
     do: strip(c.arguments) == strip(msg)
 
@@ -101,8 +98,13 @@ defmodule Glific.Flows.Case do
   def execute(%{type: type}, _context, msg) when type == "has_number",
     do: String.contains?(msg.clean_body, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
 
-  def execute(%{type: type} = c, _context, msg) when type == "has_phrase",
-    do: String.contains?(strip(msg), strip(c.arguments))
+  def execute(%{type: type} = c, _context, msg) when type in ["has_phrase", "has_any_word"] do
+    msg = strip(msg)
+
+    if msg == "",
+      do: false,
+      else: String.contains?(msg, strip(c.arguments))
+  end
 
   def execute(%{type: type} = c, _context, msg)
       when type == "has_only_phrase" or type == "has_only_text",
