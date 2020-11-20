@@ -101,7 +101,7 @@ defmodule Glific.Flows.Case do
   def execute(%{type: type} = c, _context, msg) when type in ["has_phrase", "has_any_word"] do
     msg = strip(msg)
 
-    if is_nil(msg) or msg == "",
+    if msg == "",
       do: false,
       else: String.contains?(msg, strip(c.arguments))
   end
