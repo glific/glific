@@ -1,12 +1,63 @@
 defmodule Glific.Flows.WebhookTest do
   use Glific.DataCase, async: true
 
-  alias Glific.{
-    Fixtures,
-    Flows.WebhookLog
+  alias Glific.Flows.{
+    Action,
+    FlowContext,
+    Webhook,
+    WebhookLog
   }
 
+  alias Glific.{
+    Fixtures,
+    Seeds.SeedsDev
+  }
+
+  setup do
+    default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
+    :ok
+  end
+
   describe "webhook" do
+    @results %{
+      "content" => "Your score: 31 is not divisible by 2, 3, 5 or 7",
+      "score" => "31",
+      "status" => "5"
+    }
+
+    test "execute a webhook should return the response body with results", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "results" => @results
+              })
+          }
+      end)
+
+      attrs = %{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: Fixtures.contact_fixture(attrs).id,
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, context} = FlowContext.create_flow_context(attrs)
+      context = Repo.preload(context, :contact)
+
+      action = %Action{
+        headers: %{"Accept" => "application/json"},
+        method: "POST",
+        url: "some url"
+      }
+
+      result = Webhook.execute(action, context)
+
+      assert @results = result
+    end
   end
 
   describe "webhook logs" do
