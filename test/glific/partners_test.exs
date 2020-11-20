@@ -107,6 +107,19 @@ defmodule Glific.PartnersTest do
       assert provider == Partners.get_provider!(provider.id)
     end
 
+    test "bspbalance/1 with invalid data returns error changeset" do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "{\"balance\":0.787,\"status\":\"success\"}"
+          }
+      end)
+      organization = Fixtures.organization_fixture()
+      {:ok, data} = Glific.Partners.get_bsp_balance(organization.id)
+      assert %{"balance" => 0.787, "status" => "success"} == data
+    end
+
     test "delete_provider/1 deletes the provider" do
       provider = provider_fixture()
       assert {:ok, %Provider{}} = Partners.delete_provider(provider)
