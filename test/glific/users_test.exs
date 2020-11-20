@@ -52,7 +52,8 @@ defmodule Glific.UsersTest do
       phone: "some updated phone",
       password: @password,
       password_confirmation: @password,
-      roles: [:staff, :admin]
+      roles: [:staff, :admin],
+      is_restricted: true
     }
     @invalid_attrs %{
       name: nil,
@@ -121,6 +122,7 @@ defmodule Glific.UsersTest do
       assert {:ok, %User{} = user} = Users.update_user(user, @update_attrs)
       assert user.name == "some updated name"
       assert user.roles == [:staff, :admin]
+      assert user.is_restricted == true
 
       # Check phone doesn't get updated
       assert user.phone == "some phone"
