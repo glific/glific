@@ -457,7 +457,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       bsp_id: provider.id,
       active_language_ids: [en_us.id, hi.id],
       default_language_id: en_us.id,
-      out_of_office: out_of_office_default_data
+      out_of_office: out_of_office_default_data,
+      signature_phrase: "Please change me, NOW!",
     })
   end
 
@@ -471,7 +472,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       bsp_id: provider.id,
       active_language_ids: [en_us.id, hi.id],
       default_language_id: en_us.id,
-      out_of_office: out_of_office_default_data
+      out_of_office: out_of_office_default_data,
+      signature_phrase: "Please change me, NOW!",
     })
   end
 
