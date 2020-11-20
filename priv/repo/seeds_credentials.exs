@@ -1,4 +1,4 @@
-# Script for populating the database with developer credentials. You can run it as:
+# Script for populating the database with developer or test credentials. You can run it as:
 #
 #     mix run priv/repo/seeds_credentials.exs
 #
