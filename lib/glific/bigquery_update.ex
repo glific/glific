@@ -1,15 +1,19 @@
 defmodule Glific.BigqueryUpdate do
   @moduledoc """
   Glific Bigquery Dataset and table creation
-  Glific.BigqueryUpdate.sync_query("beginner-290513", "phone", 92099, 87098, 1)
   """
   alias Glific.Partners
   alias GoogleApi.BigQuery.V2.{
     Api.Jobs,
     Connection,
   }
-  def sync_query(project_id, attr, value, valuen, organization_id) do
-    sql = "UPDATE `demo.same` SET #{attr}= #{valuen} WHERE #{attr}= #{value}"
+
+  @doc """
+  Updating existing field in a table
+  Glific.BigqueryUpdate.sync_query("beginner-290513", "phone", 92099, 87098, 1)
+  """
+  def sync_query(project_id, field, old_value, new_value, organization_id) do
+    sql = "UPDATE `demo.same` SET #{field}= #{new_value} WHERE #{field}= #{old_value}"
     token = Partners.get_goth_token(organization_id, "bigquery")
     conn = Connection.new(token.token)
     # Make the API request
@@ -20,5 +24,6 @@ defmodule Glific.BigqueryUpdate do
     )
     IO.inspect("response")
     IO.inspect(response)
+    :ok
   end
 end
