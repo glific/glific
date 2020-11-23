@@ -3,7 +3,6 @@ defmodule Glific.Appsignal do
   A simple interface that connect Oban job status to Appsignal
   """
 
-  alias Appsignal.Error
   alias Appsignal.Transaction
 
   @doc false
@@ -13,8 +12,8 @@ defmodule Glific.Appsignal do
     transaction = record_event(measurement, meta)
 
     if event == :exception && meta.attempt >= meta.max_attempts do
-      {reason, message, stack} = normalize_error(meta)
-      Transaction.set_error(transaction, reason, message, stack)
+      context = inspect(Map.take(meta, [:id, :args, :queue, :worker]))
+      Transaction.set_error(transaction, meta.error, context, meta.stacktrace)
     end
 
     Transaction.complete(transaction)
@@ -32,14 +31,5 @@ defmodule Glific.Appsignal do
     |> Transaction.finish()
 
     transaction
-  end
-
-  defp normalize_error(%{kind: :error, error: error, stack: stack}) do
-    {reason, message} = Error.metadata(error)
-    {inspect(reason), inspect(message), stack}
-  end
-
-  defp normalize_error(%{kind: kind, error: error, stack: stack}) do
-    {inspect(kind), inspect(error), stack}
   end
 end

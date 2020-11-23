@@ -115,6 +115,7 @@ defmodule Glific.PartnersTest do
             body: "{\"balance\":0.787,\"status\":\"success\"}"
           }
       end)
+
       organization = Fixtures.organization_fixture()
       {:ok, data} = Partners.get_bsp_balance(organization.id)
       assert %{"balance" => 0.787, "status" => "success"} == data
