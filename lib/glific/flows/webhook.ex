@@ -57,10 +57,12 @@ defmodule Glific.Flows.Webhook do
   defp update_log(message, webhook_log) when is_map(message) do
     # handle incorrect json body
     json_body =
-      with {:ok, json_body} <- Jason.decode(message.body) do
-        json_body
-      else
-        _ -> nil
+      case Jason.decode(message.body) do
+        {:ok, json_body} ->
+          json_body
+
+        _ ->
+          nil
       end
 
     attrs = %{
