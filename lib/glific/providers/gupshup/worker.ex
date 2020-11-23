@@ -19,7 +19,7 @@ defmodule Glific.Providers.Gupshup.Worker do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok
+  @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"message" => message, "payload" => payload}}) do
     organization = Partners.organization(message["organization_id"])
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
@@ -33,14 +33,22 @@ defmodule Glific.Providers.Gupshup.Worker do
       {:ok, _} ->
         with credential <- organization.services["bsp"],
              false <- is_nil(credential),
-             false <- is_simulater(payload["destination"], message),
-             do: process_to_gupshup(credential, payload, message)
+               false <- is_simulater(payload["destination"], message) do
+          case process_to_gupshup(credential, payload, message) do
+            {:ok, _} -> :ok # discard the message
+            error -> error # return the error tuple
+          end
+        end
+        :ok
 
       _ ->
-        {:error, :rate_limit_exceeded}
+        # lets sleep real briefly, so that we are not firing off many
+        # jobs to the BSP after exceeding the rate limit for this second
+        # so we are artifically slowing down the send rate
+        Process.sleep(250)
+        # we also want this job scheduled as soon as possible
+        {:snooze, 1}
     end
-
-    :ok
   end
 
   defp is_simulater(destination, message) when destination == @simulater_phone do

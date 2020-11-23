@@ -478,7 +478,7 @@ defmodule Glific.Flows do
             FlowContext.init_context(flow, contact, status)
 
             if count + 1 == limit do
-              :timer.sleep(1000)
+              Process.sleep(1000)
               0
             else
               count + 1

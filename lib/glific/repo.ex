@@ -321,13 +321,10 @@ defmodule Glific.Repo do
   def get_organization_id,
     do: Process.get(@organization_key)
 
-  require Logger
-
   @doc false
   @spec put_current_user(User.t()) :: User.t() | nil
   def put_current_user(user) do
     Logger.metadata(user_id: user.id)
-    Logger.debug("Setting user id")
     Process.put(@user_key, user)
   end
 
