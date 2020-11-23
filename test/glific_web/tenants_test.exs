@@ -1,13 +1,8 @@
 defmodule GlificWeb.TenantsTest do
   use GlificWeb.ConnCase
 
-  alias Glific.{
-    Fixtures
-  }
-
-  alias GlificWeb.{
-    Tenants
-  }
+  alias Glific.Fixtures
+  alias GlificWeb.Tenants
 
   describe "tenants" do
     test "reserved_organization?/1 checks for reserved organization name" do
