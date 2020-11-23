@@ -77,6 +77,10 @@ defmodule Glific.Bigquery do
     :ok
   end
 
+  @doc """
+    Updating existing field in a table
+  """
+  @spec update_contact(non_neg_integer, map(), non_neg_integer) :: :ok
   def update_contact(phone_no, updated_values, organization_id) do
     organization = Partners.organization(organization_id)|> Repo.preload(:contact)
     dataset_id = organization.contact.phone
@@ -94,18 +98,19 @@ defmodule Glific.Bigquery do
           project_id,
           [body: %{ query: sql, useLegacySql: false}]
         )
-        IO.inspect("response")
-        IO.inspect(response)
+        response
     end
     :ok
   end
 
-  defp format_update_values(map) do
-    Map.keys(map)
-    |> Enum.map(fn key -> " #{key} = #{map[key]}" end)
+  defp format_update_values(values) do
+    Map.keys(values)
+    |> Enum.map(fn key -> " #{key} = #{get_key(values[key])}" end)
     |> Enum.join(",")
   end
 
+  defp get_key(value) when is_binary(value), do: "'#{value}'"
+  defp get_key(value), do: value
 
   defp create_dataset(conn, project_id, dataset_id) do
     Datasets.bigquery_datasets_insert(
