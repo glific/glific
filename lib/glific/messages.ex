@@ -101,6 +101,8 @@ defmodule Glific.Messages do
     end)
   end
 
+  # codebeat:enable[ABC, LOC]
+
   @doc """
   Gets a single message.
 

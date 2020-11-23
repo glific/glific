@@ -19,6 +19,9 @@ query search(
         tags {
           label
         }
+        user {
+          id
+        }
       }
     }
 }
