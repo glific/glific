@@ -26,7 +26,8 @@ defmodule Glific.Providers.Gupshup.Worker do
     # Refactring because of credo warning
     case ExRated.check_rate(
            organization.shortcode,
-           60_000,
+           # the bsp limit is per organization per shortcode
+           1000,
            organization.services["bsp"].keys["bsp_limit"]
          ) do
       {:ok, _} ->
