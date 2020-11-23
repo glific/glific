@@ -31,7 +31,6 @@
         "lib/glific_web/channels/user_socket.ex",
         "lib/glific/flags/ecto.ex",
         "lib/glific/appsignal.ex",
-        "lib/glific/flows/webhook.ex",
         "lib/glific_web/plugs/subdomain_plug_config.ex",
         "lib/glific_web/plugs/ensure_plug_config.ex",
         "lib/glific_web/plugs/absinthe_plug.ex",

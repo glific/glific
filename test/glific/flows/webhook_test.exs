@@ -59,6 +59,35 @@ defmodule Glific.Flows.WebhookTest do
 
       assert @results = result
     end
+
+    test "execute a webhook for post method should not break and update the webhook log in case of error",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 404,
+            body: ""
+          }
+      end)
+
+      attrs = %{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: Fixtures.contact_fixture(attrs).id,
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, context} = FlowContext.create_flow_context(attrs)
+      context = Repo.preload(context, :contact)
+
+      action = %Action{
+        headers: %{"Accept" => "application/json"},
+        method: "POST",
+        url: "wrong url"
+      }
+
+      assert Webhook.execute(action, context) == nil
+    end
   end
 
   describe "webhook logs" do

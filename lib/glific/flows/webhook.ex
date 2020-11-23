@@ -55,8 +55,16 @@ defmodule Glific.Flows.Webhook do
 
   @spec update_log(map(), WebhookLog.t()) :: {:ok, WebhookLog.t()}
   defp update_log(message, webhook_log) when is_map(message) do
+    # handle incorrect json body
+    json_body =
+      with {:ok, json_body} <- Jason.decode(message.body) do
+        json_body
+      else
+        _ -> nil
+      end
+
     attrs = %{
-      response_json: message.body |> Jason.decode!(),
+      response_json: json_body,
       status_code: message.status
     }
 
