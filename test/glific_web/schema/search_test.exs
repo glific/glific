@@ -560,6 +560,45 @@ defmodule GlificWeb.Schema.SearchTest do
              "#{contact_group.contact_id}"
   end
 
+  test "search with the empty user filter will return the conversation", %{staff: user} do
+    {:ok, receiver} =
+      Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: user.organization_id})
+
+    receiver_id = to_string(receiver.id)
+
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{"term" => "Def", "includeUsers" => []},
+          "contactOpts" => %{"limit" => 1},
+          "messageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == receiver_id
+  end
+
+  test "search with the user filters will return the conversation", %{staff: user} do
+    _message = Fixtures.message_fixture(%{user_id: user.id})
+
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{"term" => "", "includeUsers" => ["#{user.id}"]},
+          # need a fix, for now need to keep contact opts as 10
+          "contactOpts" => %{"limit" => 10},
+          "messageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    messages = get_in(query_data, [:data, "search", Access.at(0), "messages"])
+    assert messages != []
+    assert get_in(messages, [Access.at(0), "user", "id"]) == "#{user.id}"
+  end
+
   test "search with the date range filters will returns the conversations", %{staff: user} do
     message =
       Fixtures.message_fixture()

@@ -115,6 +115,7 @@ defmodule Glific.PartnersTest do
             body: "{\"balance\":0.787,\"status\":\"success\"}"
           }
       end)
+
       organization = Fixtures.organization_fixture()
       {:ok, data} = Partners.get_bsp_balance(organization.id)
       assert %{"balance" => 0.787, "status" => "success"} == data
@@ -155,6 +156,7 @@ defmodule Glific.PartnersTest do
 
   describe "organizations" do
     alias Glific.{
+      Caches,
       Contacts,
       Fixtures,
       Partners.Organization,
@@ -471,6 +473,28 @@ defmodule Glific.PartnersTest do
       assert organization.days != nil
     end
 
+    test "organization/1 should return data if key is a shortcode and cache it" do
+      global_organization_id = 0
+      organization = Fixtures.organization_fixture(%{shortcode: "new_org"})
+
+      # remove organization data from cache which might be added by fixture
+      Caches.remove(global_organization_id, [
+        {:organization, organization.id},
+        {:organization, organization.shortcode}
+      ])
+
+      organization_to_be_cached = Partners.organization(organization.shortcode)
+
+      assert organization_to_be_cached.id == organization.id
+
+      # check whether organization is cached
+      assert {:ok, %Partners.Organization{}} =
+               Caches.get(global_organization_id, {:organization, organization.shortcode})
+
+      #  with wrong shortcode it returns nil
+      assert nil == Partners.organization("wrong_shortcode")
+    end
+
     test "organization/1 should return cached active languages" do
       organization = Fixtures.organization_fixture() |> Repo.preload(:default_language)
 
@@ -702,6 +726,32 @@ defmodule Glific.PartnersTest do
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
         token = Partners.get_goth_token(organization_id, "bigquery")
+
+        assert token != nil
+      end
+    end
+
+    test "get_token/1 should return goth token for gcs",
+         %{organization_id: organization_id} = _attrs do
+      with_mocks([
+        {
+          Goth.Token,
+          [:passthrough],
+          [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        }
+      ]) do
+        valid_attrs = %{
+          shortcode: "google_cloud_storage",
+          secrets: %{
+            "service_account" => "{\"private_key\":\"test\"}"
+          },
+          is_active: true,
+          organization_id: organization_id
+        }
+
+        {:ok, _credential} = Partners.create_credential(valid_attrs)
+
+        token = Partners.get_token("#{organization_id}")
 
         assert token != nil
       end
