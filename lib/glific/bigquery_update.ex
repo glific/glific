@@ -13,13 +13,11 @@ defmodule Glific.BigqueryUpdate do
 
   @doc """
   Updating existing field in a table
-    iex> Glific.BigqueryUpdate.sync_query(9997274468, %{"phone" => 809709, "name" => "PANKAJ2"}, 1)
+    iex> Glific.BigqueryUpdate.sync_query("same", 9997274468, %{"phone" => 809709, "name" => "PANKAJ2"}, 1)
   """
-  def sync_query(phone_no, values, organization_id) do
-    table_name= "same"
+  def sync_query(table_name, phone_no, values, organization_id) do
     organization = Partners.organization(organization_id)|> Repo.preload(:contact)
-    # dataset_id = organization.contact.phone
-    dataset_id = "demo"
+    dataset_id = organization.contact.phone
     organization.services["bigquery"]
     |> case do
       nil ->
