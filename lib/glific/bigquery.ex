@@ -90,7 +90,6 @@ defmodule Glific.Bigquery do
         nil
       credentials ->
         project_id = credentials.secrets["project_id"]
-                IO.inspect("data received")
         Enum.map(updated_fields, fn {_key, field} ->
           fields = %{
             "fields.label"=> field["label"],
