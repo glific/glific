@@ -10,7 +10,7 @@ defmodule GlificWeb.TenantsTest do
   }
 
   describe "tenants" do
-    test "reserved_organization?/1 checks for reserved organization" do
+    test "reserved_organization?/1 checks for reserved organization name" do
       assert true = Tenants.reserved_organization?("www")
       assert true = Tenants.reserved_organization?("public")
       assert true = Tenants.reserved_organization?("pg_reserved")
