@@ -13,18 +13,20 @@ defmodule Glific.BigqueryUpdate do
 
   @doc """
   Updating existing field in a table
-    iex> Glific.BigqueryUpdate.sync_query("name", "same", "'AKHIL23'", "'Akhileshn'", 1)
+    iex> Glific.BigqueryUpdate.sync_query(9997274468, %{"phone" => 809709, "name" => "PANKAJ2"}, 1)
   """
-  def sync_query(field, table_name, old_value, new_value, organization_id) do
+  def sync_query(phone_no, values, organization_id) do
+    table_name= "same"
     organization = Partners.organization(organization_id)|> Repo.preload(:contact)
-    dataset_id = organization.contact.phone
+    # dataset_id = organization.contact.phone
+    dataset_id = "demo"
     organization.services["bigquery"]
     |> case do
       nil ->
         nil
       credentials ->
         project_id = credentials.secrets["project_id"]
-        sql = get_query(dataset_id, table_name, field, new_value, old_value)
+        sql = "UPDATE `#{dataset_id}.#{table_name}` SET #{format_update_values(values)} WHERE phone= #{phone_no}"
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
         {:ok, response} = Jobs.bigquery_jobs_query(
@@ -37,7 +39,14 @@ defmodule Glific.BigqueryUpdate do
     end
     :ok
   end
-  defp get_query(dataset_id, table_name, field, new_value, old_value) do
-    sql = "UPDATE `#{dataset_id}.#{table_name}` SET #{field}= #{new_value} WHERE #{field}= #{old_value}"
+
+  defp format_update_values(map) do
+    Map.keys(map)
+    |> Enum.map(fn key -> " #{key} = #{get_key(map[key])}" end)
+    |> Enum.join(",")
   end
+
+  defp get_key(value) when is_binary(value), do: "'#{value}'"
+  defp get_key(value), do: value
+
 end
