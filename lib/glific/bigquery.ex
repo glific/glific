@@ -81,7 +81,7 @@ defmodule Glific.Bigquery do
     Updating existing field in a table
   """
   @spec update_contact(non_neg_integer, map(), non_neg_integer) :: :ok
-  def update_contact(phone_no, updated_values, organization_id) do
+  def update_contact(phone_no, updated_fields, organization_id) do
     organization = Partners.organization(organization_id)|> Repo.preload(:contact)
     dataset_id = organization.contact.phone
     organization.services["bigquery"]
@@ -90,17 +90,49 @@ defmodule Glific.Bigquery do
         nil
       credentials ->
         project_id = credentials.secrets["project_id"]
-        sql = "UPDATE `#{dataset_id}.contacts` SET #{format_update_values(updated_values)} WHERE phone= #{phone_no}"
-        token = Partners.get_goth_token(organization_id, "bigquery")
-        conn = Connection.new(token.token)
-        {:ok, response} = Jobs.bigquery_jobs_query(
-          conn,
-          project_id,
-          [body: %{ query: sql, useLegacySql: false}]
-        )
-        response
+                IO.inspect("data received")
+        Enum.map(updated_fields, fn {_key, field} ->
+          fields = %{
+            "fields.label"=> field["label"],
+            "fields.inserted_at"=> format_date(field["inserted_at"], organization_id),
+            "fields.type"=> field["type"],
+            "fields.value"=> field["value"]
+          }
+          if fields["fields.inserted_at"] != nil do
+            sql = "UPDATE `#{dataset_id}.contacts` SET #{format_update_values(fields)} WHERE phone= '#{phone_no}'"
+            token = Partners.get_goth_token(organization_id, "bigquery")
+            conn = Connection.new(token.token)
+            {:ok, response} = Jobs.bigquery_jobs_query(
+              conn,
+              project_id,
+              [body: %{ query: sql, useLegacySql: false}]
+            )
+            response
+          end
+        end)
     end
     :ok
+  end
+
+  @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
+  defp format_date(nil, _),
+    do: nil
+
+  defp format_date(date, organization_id) when is_binary(date) do
+    timezone = Partners.organization(organization_id).timezone
+
+    Timex.parse(date, "{RFC3339z}")
+    |> elem(1)
+    |> Timex.Timezone.convert(timezone)
+    |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+  end
+
+  defp format_date(date, organization_id) do
+    timezone = Partners.organization(organization_id).timezone
+
+    date
+    |> Timex.Timezone.convert(timezone)
+    |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
   end
 
   defp format_update_values(values) do
