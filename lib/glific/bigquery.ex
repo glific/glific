@@ -92,7 +92,7 @@ defmodule Glific.Bigquery do
       credentials ->
         project_id = credentials.secrets["project_id"]
         updated_values = Enum.reduce(updated_fields, %{}, fn {key, field}, acc -> Map.put(acc, key, format_field_values(key, field, organization_id)) end)
-        sql = "UPDATE `#{dataset_id}.demo_contacts` SET #{format_update_values(updated_values)} WHERE phone= '#{phone_no}'"
+        sql = "UPDATE `#{dataset_id}.contacts` SET #{format_update_values(updated_values)} WHERE phone= '#{phone_no}'"
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
         {:ok, response} = Jobs.bigquery_jobs_query(conn, project_id, [body: %{ query: sql, useLegacySql: false}])
@@ -112,8 +112,9 @@ defmodule Glific.Bigquery do
 
   defp format_field_values(_key, field, _org_id), do: field
 
+  @spec atomize(map()) :: map()
   defp atomize(map) do
-    map |> Map.new(fn {k, v} -> if is_atom(k) do  {k,v}  else {String.to_atom(k), v} end end)
+    map |> Map.new(fn {k, v} -> if is_atom(k) do {k,v} else {String.to_atom(k), v} end end)
   end
 
   @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
