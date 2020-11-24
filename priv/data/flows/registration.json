@@ -3,50 +3,50 @@
     "nodes": {
       "0d9310ec-62c0-4a4d-8685-c3bea1f9e23e": {
         "position": {
-          "left": 400,
-          "top": 1300
+          "left": 380,
+          "top": 920
         },
         "type": "execute_actions"
       },
       "0ea4f5b1-8b98-4a48-9038-11c406f937c2": {
         "position": {
-          "left": 520,
-          "top": 1420
+          "left": 500,
+          "top": 1000
         },
         "type": "execute_actions"
       },
       "1654b934-1861-4565-891e-73d54aa35a98": {
         "position": {
           "left": 400,
-          "top": 1700
+          "top": 1240
         },
         "type": "execute_actions"
       },
       "1bd815c0-f1b0-4da1-b942-38fd28329ca7": {
         "position": {
-          "left": 640,
-          "top": 1560
+          "left": 620,
+          "top": 1080
         },
         "type": "execute_actions"
       },
       "1d4bdc91-6996-4879-b5ea-c3996b3a03c0": {
         "position": {
-          "left": 1000,
-          "top": 1240
+          "left": 860,
+          "top": 740
         },
         "type": "execute_actions"
       },
       "3631eb12-391d-4d69-afe6-8446ed5ebbca": {
         "position": {
-          "left": 540,
-          "top": 300
+          "left": 440,
+          "top": 0
         },
         "type": "execute_actions"
       },
       "5d13fa3e-29a8-439a-8b40-2c8c85f252a3": {
         "position": {
           "left": 400,
-          "top": 1840
+          "top": 1360
         },
         "type": "execute_actions"
       },
@@ -55,29 +55,29 @@
           "cases": {}
         },
         "position": {
-          "left": 460,
-          "top": 1040
+          "left": 360,
+          "top": 680
         },
         "type": "wait_for_response"
       },
       "93f7697c-f869-47ef-9370-f8325697088b": {
         "position": {
-          "left": 280,
-          "top": 700
+          "left": 180,
+          "top": 360
         },
         "type": "execute_actions"
       },
       "d7f7f4d9-6a4d-4443-9dfd-d92bb919f96b": {
         "position": {
-          "left": 280,
-          "top": 1200
+          "left": 260,
+          "top": 840
         },
         "type": "execute_actions"
       },
       "e109d93a-bd05-4937-8ab7-d99763e87f80": {
         "position": {
-          "left": 540,
-          "top": 700
+          "left": 440,
+          "top": 360
         },
         "type": "execute_actions"
       },
@@ -86,8 +86,8 @@
           "cases": {}
         },
         "position": {
-          "left": 540,
-          "top": 540
+          "left": 440,
+          "top": 200
         },
         "type": "wait_for_response"
       }
@@ -120,7 +120,7 @@
       },
       "4297fca7-9441-4489-ae22-8f65a9534d90": {
         "name": [
-          "अन्य"
+          "सभी प्रतिक्रियाएं"
         ]
       },
       "50d39ac9-9c2b-4aa5-ab3d-bee7dd2cd946": {
@@ -155,7 +155,7 @@
       },
       "bbe57054-0d1c-4001-ba95-d947fe099f05": {
         "text": [
-          "हमारे साथ जुड़ने के लिए एक परिचय वीडियो देखें। और कृपया हमें भी अपना नाम बताएं"
+          "कृपया हमें अपना नाम बताएं"
         ]
       },
       "d03a4c5c-5b30-491b-8d27-4a63862fab55": {
@@ -187,7 +187,7 @@
         {
           "attachments": [],
           "quick_replies": [],
-          "text": "Here's an introductory video of the platform and instructional guide.\n\nPlease also tell us your full name",
+          "text": "You can ask for user's name.\n\nPlease also tell us your full name. ex-\nVikas Singh",
           "type": "send_msg",
           "uuid": "bbe57054-0d1c-4001-ba95-d947fe099f05"
         }
@@ -252,7 +252,7 @@
         {
           "attachments": [],
           "quick_replies": [],
-          "text": "We're glad to know your name @contact.fields.name\n\nTell us how old you are:\nType 1 if you are less than 10 years\nType 2 if you are 11 years to 14 years of age\nType 3 if you are 15 to 18 years\nType 4 if you are 19 or above ",
+          "text": "You can ask for details such as age.\n\nTell us how old you are:\nType 1 if you are less than 10 years\nType 2 if you are 11 years to 14 years of age\nType 3 if you are 15 to 18 years\nType 4 if you are 19 or above ",
           "type": "send_msg",
           "uuid": "a321c893-85a0-4318-b8bd-f65cb2f07e9d"
         }
@@ -364,6 +364,24 @@
     {
       "actions": [
         {
+          "attachments": [],
+          "quick_replies": [],
+          "text": "Sorry, we didn't understand that.\nPlease select one of the options from (1,2,3,4)",
+          "type": "send_msg",
+          "uuid": "50d39ac9-9c2b-4aa5-ab3d-bee7dd2cd946"
+        }
+      ],
+      "exits": [
+        {
+          "destination_uuid": "64b4223e-3dc1-4283-bcfe-7a3b76f11a08",
+          "uuid": "61830b8d-6ceb-4c87-9423-3c03ac04334e"
+        }
+      ],
+      "uuid": "1d4bdc91-6996-4879-b5ea-c3996b3a03c0"
+    },
+    {
+      "actions": [
+        {
           "labels": [
             {
               "name": "Age Group less than 10",
@@ -381,24 +399,6 @@
         }
       ],
       "uuid": "d7f7f4d9-6a4d-4443-9dfd-d92bb919f96b"
-    },
-    {
-      "actions": [
-        {
-          "attachments": [],
-          "quick_replies": [],
-          "text": "Sorry, we didn't understand that.\nPlease select one of the options from (1,2,3,4)",
-          "type": "send_msg",
-          "uuid": "50d39ac9-9c2b-4aa5-ab3d-bee7dd2cd946"
-        }
-      ],
-      "exits": [
-        {
-          "destination_uuid": "64b4223e-3dc1-4283-bcfe-7a3b76f11a08",
-          "uuid": "61830b8d-6ceb-4c87-9423-3c03ac04334e"
-        }
-      ],
-      "uuid": "1d4bdc91-6996-4879-b5ea-c3996b3a03c0"
     },
     {
       "actions": [
