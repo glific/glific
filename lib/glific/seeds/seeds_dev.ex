@@ -522,6 +522,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
+    @spec seed_flow_labels(Organization.t() | nil) :: nil
     def seed_flow_labels(organization \\ nil) do
       organization = get_organization(organization)
 
@@ -555,6 +556,8 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert_all(FlowLabel, flow_labels)
     end
 
+    @doc false
+    @spec seed_flows(Organization.t() | nil) :: nil
     def seed_flows(organization \\ nil) do
       organization = get_organization(organization)
 
