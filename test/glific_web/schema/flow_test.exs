@@ -11,7 +11,7 @@ defmodule GlificWeb.Schema.FlowTest do
   }
 
   setup do
-    SeedsDev.seed_flows()
+    SeedsDev.seed_test_flows()
     :ok
   end
 

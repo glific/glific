@@ -522,6 +522,28 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
+    @spec seed_test_flows(Organization.t() | nil) :: nil
+    def seed_test_flows(organization \\ nil) do
+      organization = get_organization(organization)
+
+      test_flow =
+        Repo.insert!(%Flow{
+          name: "Test Workflow",
+          keywords: ["test"],
+          version_number: "13.1.0",
+          uuid: "defda715-c520-499d-851e-4428be87def6",
+          organization_id: organization.id
+        })
+
+      Repo.insert!(%FlowRevision{
+        definition: FlowRevision.default_definition(test_flow),
+        flow_id: test_flow.id,
+        status: "published",
+        organization_id: organization.id
+      })
+    end
+
+    @doc false
     @spec seed_flow_labels(Organization.t() | nil) :: nil
     def seed_flow_labels(organization \\ nil) do
       organization = get_organization(organization)
