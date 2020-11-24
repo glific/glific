@@ -77,6 +77,7 @@ defmodule Glific.Bigquery do
     :ok
   end
 
+
   @doc """
     Updating existing field in a table
   """
@@ -90,29 +91,27 @@ defmodule Glific.Bigquery do
         nil
       credentials ->
         project_id = credentials.secrets["project_id"]
-        Enum.map(updated_fields, fn {_key, field} ->
-          fields = %{
-            "fields1"=> field["label"],
-            "fields2"=> field["value"],
-            "fields3"=> field["type"],
-            "fields4"=> format_date(field["inserted_at"], organization_id)
-          }
-          if fields["fields4"] != nil do
-            structure = "fields = [ STRUCT <label STRING, value STRING, type STRING, inserted_at DATETIME>(#{format_update_values(fields)})]"
-            sql = "UPDATE `#{dataset_id}.contacts` SET #{structure} WHERE phone= '#{phone_no}'"
-            token = Partners.get_goth_token(organization_id, "bigquery")
-            conn = Connection.new(token.token)
-            {:ok, response} = Jobs.bigquery_jobs_query(
-              conn,
-              project_id,
-              [body: %{ query: sql, useLegacySql: false}]
-            )
-            response
-          end
-        end)
+        updated_values = Enum.reduce(updated_fields, %{}, fn {key, field}, acc -> Map.put(acc, key, format_field_values(key, field, organization_id)) end)
+        sql = "UPDATE `#{dataset_id}.contacts` SET #{format_update_values(updated_values)} WHERE phone= '#{phone_no}'"
+        token = Partners.get_goth_token(organization_id, "bigquery")
+        conn = Connection.new(token.token)
+        {:ok, response} = Jobs.bigquery_jobs_query(conn, project_id, [body: %{ query: sql, useLegacySql: false}])
+        response
     end
     :ok
   end
+
+
+  defp format_field_values("fields", contact_fields, org_id) when is_map(contact_fields) do
+    values = Enum.map(contact_fields, fn {_key, contact_field} ->
+      "(#{contact_field["label"]}, #{contact_field["value"]}, #{contact_field["type"]}, #{format_date(contact_field["inserted_at"], org_id)})"
+    end)
+
+    "[STRUCT<label STRING, value STRING, type STRING, inserted_at DATETIME>#{Enum.join(values, ",")}]"
+  end
+
+  defp format_field_values(_key, field, _org_id), do: field
+
 
   @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
   defp format_date(nil, _),
@@ -137,7 +136,7 @@ defmodule Glific.Bigquery do
 
   defp format_update_values(values) do
     Map.keys(values)
-    |> Enum.map(fn key -> "#{get_key(values[key])}" end)
+    |> Enum.map(fn key -> " #{key} = #{get_key(values[key])}" end)
     |> Enum.join(",")
   end
 

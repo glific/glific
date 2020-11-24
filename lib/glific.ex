@@ -115,6 +115,34 @@ defmodule Glific do
 
   def atomize_keys(value), do: value
 
+  @doc false
+  @spec stringify_keys(map()) :: map() | nil
+  def stringify_keys(nil), do: nil
+
+  def stringify_keys(map) when is_struct(map), do: Map.from_struct(map)
+
+  def stringify_keys(map) when is_map(map) do
+    map
+    |> Enum.map(fn {k, v} ->
+      if is_atom(k), do: {Atom.to_string(k), stringify_keys(v)}, else: {k, stringify_keys(v)}
+    end)
+    |> Enum.into(%{})
+  end
+
+  # Walk the list and stringify the keys of
+  # of any map members
+  def stringify_keys([head | rest] = list) when is_list(list) do
+    [stringify_keys(head) | stringify_keys(rest)]
+  end
+
+  def stringify_keys(value),
+    do: value
+
+  @doc """
+  Interpolates the values from results into the message body. Might need to integrate
+  it with the substitution above
+  """
+
   @doc """
   easy way for glific developers to get a stacktrace when debugging
   """
@@ -135,4 +163,6 @@ defmodule Glific do
     hmac = :crypto.mac(:hmac, :sha256, secret, signed_payload)
     Base.encode16(hmac, case: :lower)
   end
+
+
 end
