@@ -158,7 +158,8 @@ defmodule Glific.Fixtures do
         url: "test_url",
         api_end_point: "test_api_end_point",
         handler: "Glific.Providers.Gupshup.Message",
-        worker: "Glific.Providers.Gupshup.Worker"
+        worker: "Glific.Providers.Gupshup.Worker",
+        bsp_limit: 60,
       },
       secrets: %{
         api_key: "Please enter your key here",
