@@ -33,16 +33,17 @@ defmodule Glific.Providers.Gupshup.Worker do
       {:ok, _} ->
         with credential <- organization.services["bsp"],
              false <- is_nil(credential),
-               false <- is_simulater(payload["destination"], message) do
+             false <- is_simulater(payload["destination"], message) do
           case process_to_gupshup(credential, payload, message) do
-            {:ok, _} -> :ok # discard the message
-            error -> error # return the error tuple
+            # discard the message
+            {:ok, _} -> :ok
+            # return the error tuple
+            error -> error
           end
         else
           # we are suppresssing sending this message, hence returning ok
           _ -> :ok
         end
-
 
       _ ->
         # lets sleep real briefly, so that we are not firing off many
