@@ -136,7 +136,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               url: "https://gupshup.io/",
               api_end_point: "https://api.gupshup.io/sm/api/v1",
               handler: "Glific.Providers.Gupshup.Message",
-              worker: "Glific.Providers.Gupshup.Worker"
+              worker: "Glific.Providers.Gupshup.Worker",
+              bsp_limit: 40
             },
             secrets: %{
               api_key: "This is top secret",
@@ -159,7 +160,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               api_end_point:
                 "We need to figure out how to get this dynamically, maybe in services?",
               handler: "Glific.Providers.Gupshup.Message",
-              worker: "Glific.Providers.Glifproxy.Worker"
+              worker: "Glific.Providers.Glifproxy.Worker",
+              bsp_limit: 40
             },
             secrets: %{},
             is_active: true

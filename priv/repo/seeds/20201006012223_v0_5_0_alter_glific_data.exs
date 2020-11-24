@@ -30,7 +30,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
         bsp_limit: %{
           type: :integer,
           label: "BSP limit",
-          default: 60,
+          default: 40,
           view_only: true
         }
       })
@@ -40,7 +40,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
         bsp_limit: %{
           type: :integer,
           label: "BSP limit",
-          default: 60,
+          default: 40,
           view_only: true
         }
       })

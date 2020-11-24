@@ -311,8 +311,10 @@ defmodule Glific.Repo do
 
   @doc false
   @spec put_organization_id(non_neg_integer) :: non_neg_integer | nil
-  def put_organization_id(organization_id),
-    do: Process.put(@organization_key, organization_id)
+  def put_organization_id(organization_id) do
+    Logger.metadata(org_id: organization_id)
+    Process.put(@organization_key, organization_id)
+  end
 
   @doc false
   @spec get_organization_id() :: non_neg_integer | nil
@@ -321,8 +323,10 @@ defmodule Glific.Repo do
 
   @doc false
   @spec put_current_user(User.t()) :: User.t() | nil
-  def put_current_user(user),
-    do: Process.put(@user_key, user)
+  def put_current_user(user) do
+    Logger.metadata(user_id: user.id)
+    Process.put(@user_key, user)
+  end
 
   @doc false
   @spec get_current_user :: User.t() | nil

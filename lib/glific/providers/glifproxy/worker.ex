@@ -77,7 +77,7 @@ defmodule Glific.Providers.Glifproxy.Worker do
 
     # lets sleep for 1 seconds before posting, to avoid race
     # conditions with flows et al
-    :timer.sleep(1000)
+    Process.sleep(1000)
 
     credential = organization.services["glifproxy"]
 

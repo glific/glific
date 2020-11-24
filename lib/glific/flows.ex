@@ -465,11 +465,29 @@ defmodule Glific.Flows do
 
   @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
   defp process_contact_flow(contacts, flow, status) do
-    _list =
-      Enum.map(contacts, fn contact ->
-        if Contacts.can_send_message_to?(contact),
-          do: FlowContext.init_context(flow, contact, status)
-      end)
+    organization = Partners.organization(flow.organization_id)
+    # lets do 90% of organization bsp limit to allow replies to come in and be processed
+    limit = div(organization.services["bsp"].keys["bsp_limit"] * 90, 100)
+
+    _ignore =
+      Enum.reduce(
+        contacts,
+        0,
+        fn contact, count ->
+          if Contacts.can_send_message_to?(contact) do
+            FlowContext.init_context(flow, contact, status)
+
+            if count + 1 == limit do
+              Process.sleep(1000)
+              0
+            else
+              count + 1
+            end
+          else
+            count
+          end
+        end
+      )
 
     {:ok, flow}
   end
