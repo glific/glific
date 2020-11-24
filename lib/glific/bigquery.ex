@@ -92,13 +92,14 @@ defmodule Glific.Bigquery do
         project_id = credentials.secrets["project_id"]
         Enum.map(updated_fields, fn {_key, field} ->
           fields = %{
-            "fields.label"=> field["label"],
-            "fields.inserted_at"=> format_date(field["inserted_at"], organization_id),
-            "fields.type"=> field["type"],
-            "fields.value"=> field["value"]
+            "fields1"=> field["label"],
+            "fields2"=> field["value"],
+            "fields3"=> field["type"],
+            "fields4"=> format_date(field["inserted_at"], organization_id)
           }
-          if fields["fields.inserted_at"] != nil do
-            sql = "UPDATE `#{dataset_id}.contacts` SET #{format_update_values(fields)} WHERE phone= '#{phone_no}'"
+          if fields["fields4"] != nil do
+            structure = "fields = [ STRUCT <label STRING, value STRING, type STRING, inserted_at DATETIME>(#{format_update_values(fields)})]"
+            sql = "UPDATE `#{dataset_id}.contacts` SET #{structure} WHERE phone= '#{phone_no}'"
             token = Partners.get_goth_token(organization_id, "bigquery")
             conn = Connection.new(token.token)
             {:ok, response} = Jobs.bigquery_jobs_query(
@@ -136,7 +137,7 @@ defmodule Glific.Bigquery do
 
   defp format_update_values(values) do
     Map.keys(values)
-    |> Enum.map(fn key -> " #{key} = #{get_key(values[key])}" end)
+    |> Enum.map(fn key -> "#{get_key(values[key])}" end)
     |> Enum.join(",")
   end
 
@@ -263,9 +264,6 @@ defmodule Glific.Bigquery do
         ],
         []
       )
-
     response
   end
-
-
 end
