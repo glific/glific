@@ -187,7 +187,7 @@
         {
           "attachments": [],
           "quick_replies": [],
-          "text": "You can ask for user's name.\n\nPlease also tell us your full name. ex-\nVikas Singh",
+          "text": "You can ask for user's name.\n\nPlease tell us your full name. ex-\nVikas Singh",
           "type": "send_msg",
           "uuid": "bbe57054-0d1c-4001-ba95-d947fe099f05"
         }

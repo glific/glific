@@ -610,21 +610,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   defp flow_labels(organization) do
     flow_labels = [
-      %{name: "Poetry"},
-      %{name: "Visual Arts"},
-      %{name: "Theatre"},
-      %{name: "Understood"},
-      %{name: "Not Understood"},
-      %{name: "Interesting"},
-      %{name: "Boring"},
       %{name: "Age Group less than 10"},
       %{name: "Age Group 11 to 14"},
       %{name: "Age Group 15 to 18"},
       %{name: "Age Group 19 or above"},
       %{name: "Hindi"},
-      %{name: "English"},
-      %{name: "Help"},
-      %{name: "New Activity"}
+      %{name: "English"}
     ]
 
     utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
