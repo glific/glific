@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [0.7.1 and prior] - 2020-11-16
+
+### Added
 - Core Glific DB Structure and functionality
 - Phoenix Schema and Context Structure
 - GraphQL API as main interface to the core platform
@@ -43,6 +45,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI system via GitHub Actions
 - CD system to Gigalixir
 - Community documentation (README, LICENSE, CHANGELOG, CODE_OF_CONDUCT)
-
-
-### Added
