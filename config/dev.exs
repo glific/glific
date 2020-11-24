@@ -73,9 +73,9 @@ config :glific, GlificWeb.Endpoint,
     ]
   ]
 
-# Do not include metadata nor timestamps in development logs
+# Do not include timestamps in development logs
 config :logger, :console,
-  format: "$time $metadata[$level] $message\n",
+  format: "$metadata[$level] $message\n",
   metadata: [:request_id, :user_id, :org_id]
 
 # Set a higher stacktrace during development. Avoid configuring such

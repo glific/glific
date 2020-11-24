@@ -38,8 +38,11 @@ defmodule Glific.Providers.Gupshup.Worker do
             {:ok, _} -> :ok # discard the message
             error -> error # return the error tuple
           end
+        else
+          # we are suppresssing sending this message, hence returning ok
+          _ -> :ok
         end
-        :ok
+
 
       _ ->
         # lets sleep real briefly, so that we are not firing off many
