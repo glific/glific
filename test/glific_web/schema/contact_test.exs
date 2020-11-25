@@ -377,7 +377,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, query_data} = result
 
-    contact = get_in(query_data, [:data, "optin_contact", "contact"])
+    contact = get_in(query_data, [:data, "optinContact", "contact"])
     assert contact["bspStatus"] == "HSM"
     assert contact["name"] == nil
 
@@ -389,7 +389,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, query_data} = result
 
-    contact = get_in(query_data, [:data, "optin_contact", "contact"])
+    contact = get_in(query_data, [:data, "optinContact", "contact"])
     assert contact["bspStatus"] == "HSM"
     assert contact["name"] == "contact name"
 
@@ -402,7 +402,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert {:ok, query_data} = result
 
     error_message =
-      get_in(query_data, [:data, "optin_contact", "errors", Access.at(0), "message"])
+      get_in(query_data, [:data, "optinContact", "errors", Access.at(0), "message"])
 
     assert error_message == "has already been taken"
   end
@@ -422,7 +422,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, query_data} = result
 
-    error = get_in(query_data, [:data, "optin_contact", "errors", Access.at(0)])
+    error = get_in(query_data, [:data, "optinContact", "errors", Access.at(0)])
     assert error["key"] == "gupshup"
     assert error["message"] == "couldn't connect"
   end

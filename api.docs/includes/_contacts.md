@@ -614,6 +614,58 @@ Type | Description
 --------- | ---- | ------- | -----------
 <a href="#location">Location</a> | A location object
 
+## Optin a Contact
+
+```graphql
+mutation optinContact($phone: String!, $name: String) {
+  optinContact(phone: $phone, name: $name) {
+    contact {
+      id
+      phone
+      name
+      lastMessageAt
+      optinTime
+      bspStatus
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "phone": "917834811119",
+  "name": "contact name"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "optinContact": {
+      "contact": {
+        "bspStatus": "HSM",
+        "id": "100",
+        "lastMessageAt": null,
+        "name": "contact name",
+        "optinTime": "2020-11-25T16:12:18Z",
+        "phone": "917834811119"
+      },
+      "errors": null
+    }
+  }
+}
+```
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#contactresult">ContactResult</a> | contact object
+
+
 ## Contact Objects
 
 ### Contact

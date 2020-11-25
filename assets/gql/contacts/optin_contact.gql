@@ -1,5 +1,5 @@
-mutation optin_contact($phone: String!, $name: String) {
-  optin_contact(phone: $phone, name: $name) {
+mutation optinContact($phone: String!, $name: String) {
+  optinContact(phone: $phone, name: $name) {
     contact {
       id
       name
