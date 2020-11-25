@@ -281,7 +281,7 @@ defmodule Glific.BigquerySchema do
         name: "updated_at",
         type: "DATETIME",
         mode: "REQUIRED"
-      }
+      },
       %{
         name: "keywords",
         type: "RECORD",
