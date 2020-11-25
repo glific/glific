@@ -10,7 +10,7 @@ defmodule Glific.Flows.MessageVarParser do
   def parse(nil, _binding), do: ""
 
   def parse(input, binding) do
-    binding = stringify_keys(binding)
+    binding = Glific.stringify_keys(binding)
 
     input
     |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
@@ -38,32 +38,6 @@ defmodule Glific.Flows.MessageVarParser do
   defp bound(substitution) when is_map(substitution), do: bound(substitution["value"])
 
   defp bound(substitution), do: substitution
-
-  # """
-  # Convert map atom keys to strings
-  # """
-
-  @spec stringify_keys(map()) :: map() | nil
-  defp stringify_keys(nil), do: nil
-
-  defp stringify_keys(map) when is_struct(map), do: Map.from_struct(map)
-
-  defp stringify_keys(map) when is_map(map) do
-    map
-    |> Enum.map(fn {k, v} ->
-      if is_atom(k), do: {Atom.to_string(k), stringify_keys(v)}, else: {k, stringify_keys(v)}
-    end)
-    |> Enum.into(%{})
-  end
-
-  # Walk the list and stringify the keys of
-  # of any map members
-  defp stringify_keys([head | rest] = list) when is_list(list) do
-    [stringify_keys(head) | stringify_keys(rest)]
-  end
-
-  defp stringify_keys(value),
-    do: value
 
   @doc """
   Interpolates the values from results into the message body. Might need to integrate
