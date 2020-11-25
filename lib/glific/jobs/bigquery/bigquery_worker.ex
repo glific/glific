@@ -170,7 +170,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.each(&make_job(&1, "contacts", organization_id))
   end
 
-  @spec queue_table_data(String.t(), non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
   defp queue_table_data("flows", organization_id, min_id, max_id) do
     query =
       FlowRevision
@@ -192,7 +191,6 @@ defmodule Glific.Jobs.BigQueryWorker do
             revision_number: row.revision_number,
             inserted_at: format_date(row.inserted_at, organization_id),
             updated_at: format_date(row.updated_at, organization_id),
-            status: row.status,
             keywords: Enum.map(row.flow.keywords, fn keyword ->
               %{
                 keyword: keyword
@@ -352,7 +350,6 @@ defmodule Glific.Jobs.BigQueryWorker do
         revision_number: flow["revision_number"],
         inserted_at: flow["inserted_at"],
         updated_at: flow["updated_at"],
-        status: flow["status"],
         keywords: flow["keywords"],
         flow_revision: flow["flow_revision"]
       }
@@ -380,7 +377,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     token = Partners.get_goth_token(organization_id, "bigquery")
     conn = Connection.new(token.token)
     # In case of error response error will be stored in the oban job
-    {:ok, response} =
+    {:ok, _} =
       Tabledata.bigquery_tabledata_insert_all(
         conn,
         project_id,
@@ -389,7 +386,6 @@ defmodule Glific.Jobs.BigQueryWorker do
         [body: %{rows: data}],
         []
       )
-      response
     :ok
   end
 end
