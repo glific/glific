@@ -179,6 +179,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:flow])
 
+    IO.inspect("debug001")
     Repo.all(query)
     |> Enum.reduce(
       [],
@@ -195,7 +196,13 @@ defmodule Glific.Jobs.BigQueryWorker do
               %{
                 keyword: keyword
               }
-            end)
+            end),
+            flow_revision: [
+              %{
+                status: row.status,
+                revision: format_json(row.definition)
+              }
+            ],
           }
           | acc
         ]
@@ -207,6 +214,11 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data(_, _, _, _), do: nil
+
+  defp format_json(definition) do
+    {:ok, data} = Jason.encode(definition)
+    data
+  end
 
   @spec make_job(list(), String.t(), non_neg_integer) :: :ok | nil
   defp make_job(data, "messages", organization_id) do
@@ -340,7 +352,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         inserted_at: flow["inserted_at"],
         updated_at: flow["updated_at"],
         status: flow["status"],
-        keywords: flow["keywords"]
+        keywords: flow["keywords"],
+        flow_revision: flow["flow_revision"]
       }
     }
   end
