@@ -174,12 +174,13 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp queue_table_data("flows", organization_id, min_id, max_id) do
     query =
       FlowRevision
-      |> where([m], m.organization_id == ^organization_id)
-      |> where([m], m.id > ^min_id and m.id <= ^max_id)
-      |> order_by([m], [m.inserted_at, m.id])
+      |> where([f], f.organization_id == ^organization_id)
+      |> where([f], f.id > ^min_id and f.id <= ^max_id)
+      |> where([f], f.id > ^min_id and f.id <= ^max_id)
+      |> where([f], f.status == "published" or f.status == "archived")
+      |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow])
 
-    IO.inspect("debug001")
     Repo.all(query)
     |> Enum.reduce(
       [],
