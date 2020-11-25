@@ -76,7 +76,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   end
 
   @doc """
-  Upload a contact phone as opted in
+    Upload a contact phone as opted in
   """
   @spec optin_contact(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
