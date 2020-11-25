@@ -28,16 +28,16 @@ defmodule Glific.Seeds.SeedsOptins do
     with {:ok, response} <-
            post(url, %{user: contact_phone}, headers: [{"apikey", api_key}]),
          true <- response.status == 202 do
-      insert_opted_in_contacts(organization, contact)
+      insert_opted_in_contact(organization, contact)
     end
   end
 
-  @spec insert_opted_in_contacts(map(), list()) :: :ok | any
-  defp insert_opted_in_contacts(organization, [contact_phone] = _contact) do
-    insert_opted_in_contacts(organization, [contact_phone, nil])
+  @spec insert_opted_in_contact(map(), list()) :: :ok | any
+  defp insert_opted_in_contact(organization, [contact_phone] = _contact) do
+    insert_opted_in_contact(organization, [contact_phone, nil])
   end
 
-  defp insert_opted_in_contacts(organization, [contact_phone, contact_name | _] = _contact) do
+  defp insert_opted_in_contact(organization, [contact_phone, contact_name | _] = _contact) do
     Contacts.upsert(%{
       name: contact_name,
       phone: contact_phone,

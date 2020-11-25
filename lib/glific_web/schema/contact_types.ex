@@ -164,5 +164,11 @@ defmodule GlificWeb.Schema.ContactTypes do
       middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.delete_contact/3)
     end
+
+    field :import_optin_contact, :contact_result do
+      arg(:phone, non_null(:string))
+      arg(:name, :string)
+      resolve(&Resolvers.Contacts.import_optin_contact/3)
+    end
   end
 end
