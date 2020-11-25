@@ -9,6 +9,7 @@ defmodule Glific.Flows.FlowContext do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query, warn: false
+  require Logger
 
   alias Glific.{
     Contacts.Contact,
@@ -131,6 +132,8 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec reset_context(FlowContext.t()) :: FlowContext.t() | nil
   def reset_context(context) do
+    Logger.info("Ending Flow: id: '#{context.flow_id}', contact_id: '#{context.contact_id}'")
+
     # we first update this entry with the completed at time
     {:ok, context} = FlowContext.update_flow_context(context, %{completed_at: DateTime.utc_now()})
 
@@ -139,6 +142,10 @@ defmodule Glific.Flows.FlowContext do
     if context.parent_id do
       # we load the parent context, and resume it with a message of "Completed"
       parent = active_context(context.contact_id, context.parent_id)
+
+      Logger.info(
+        "Resuming Parent Flow: id: '#{parent.flow_id}', contact_id: '#{context.contact_id}'"
+      )
 
       parent
       |> load_context(
@@ -283,6 +290,10 @@ defmodule Glific.Flows.FlowContext do
   def init_context(flow, contact, status, opts \\ []) do
     parent_id = Keyword.get(opts, :parent_id)
     current_delay = Keyword.get(opts, :delay, 0)
+
+    Logger.info(
+      "Starting flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
+    )
 
     # set all previous context to be completed if we are not starting a sub flow
     if is_nil(parent_id) do

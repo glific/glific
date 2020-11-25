@@ -2,6 +2,8 @@ defmodule GlificWeb.APIAuthPlug do
   @moduledoc false
   use Pow.Plug.Base
 
+  require Logger
+
   alias Plug.Conn
   alias Pow.{Config, Plug, Store.CredentialsCache}
   alias PowPersistentSession.Store.PersistentSessionCache
@@ -46,6 +48,8 @@ defmodule GlificWeb.APIAuthPlug do
   @impl true
   @spec create(Conn.t(), map(), Config.t()) :: {Conn.t(), map()}
   def create(conn, user, config) do
+    Logger.info("Creating tokens: user_id: '#{user.id}'")
+
     store_config = store_config(config)
 
     # 30 mins in seconds - this is the default, we wont change it
@@ -83,6 +87,8 @@ defmodule GlificWeb.APIAuthPlug do
   @impl true
   @spec delete(Conn.t(), Config.t()) :: Conn.t()
   def delete(conn, config) do
+    Logger.info("Deleting tokens: user_id: '#{conn.assigns[:current_user].id}'")
+
     store_config = store_config(config)
 
     with {:ok, signed_token} <- fetch_access_token(conn),
@@ -112,6 +118,8 @@ defmodule GlificWeb.APIAuthPlug do
   """
   @spec renew(Conn.t(), Config.t()) :: {Conn.t(), map() | nil}
   def renew(conn, config) do
+    Logger.info("Renewing tokens: user_id: '#{conn.assigns[:current_user].id}'")
+
     store_config = store_config(config)
 
     with {:ok, signed_token} <- fetch_access_token(conn),
