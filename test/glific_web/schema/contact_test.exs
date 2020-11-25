@@ -26,6 +26,7 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/contacts/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contacts/delete.gql")
   load_gql(:contact_location, GlificWeb.Schema, "assets/gql/contacts/contact_location.gql")
+  load_gql(:optin_contact, GlificWeb.Schema, "assets/gql/contacts/optin_contact.gql")
 
   test "contacts field returns list of contacts", %{staff: user} do
     result = auth_query_gql_by(:list, user)
@@ -362,5 +363,68 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "contacts"]) != []
+  end
+
+  test "optin contact and test possible scenarios and errors", %{manager: manager} do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 202
+        }
+    end)
+
+    result =
+      auth_query_gql_by(:optin_contact, manager,
+        variables: %{"phone" => "test phone"}
+      )
+
+    assert {:ok, query_data} = result
+
+    contact = get_in(query_data, [:data, "optin_contact", "contact"])
+    assert contact["bspStatus"] == "HSM"
+    assert contact["name"] == nil
+
+    # add name with phone
+    result =
+      auth_query_gql_by(:optin_contact, manager,
+        variables: %{"name" => "contact name", "phone" => "test phone 2"}
+      )
+
+    assert {:ok, query_data} = result
+
+    contact = get_in(query_data, [:data, "optin_contact", "contact"])
+    assert contact["bspStatus"] == "HSM"
+    assert contact["name"] == "contact name"
+
+    # trying to optin already existing phone gives error
+    result =
+      auth_query_gql_by(:optin_contact, manager,
+        variables: %{"name" => "contact name", "phone" => "test phone"}
+      )
+
+    assert {:ok, query_data} = result
+
+    error_message = get_in(query_data, [:data, "optin_contact", "errors", Access.at(0), "message"])
+    assert error_message == "has already been taken"
+  end
+
+  test "optin contact responds with error in case of gupshup api fails", %{manager: manager} do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 400
+        }
+    end)
+
+    result =
+      auth_query_gql_by(:optin_contact, manager,
+        variables: %{"name" => "contact name", "phone" => "test phone 3"}
+      )
+
+    assert {:ok, query_data} = result
+
+    error = get_in(query_data, [:data, "optin_contact", "errors", Access.at(0)])
+    assert error["key"] == "gupshup"
+    assert error["message"] == "couldn't connect"
   end
 end

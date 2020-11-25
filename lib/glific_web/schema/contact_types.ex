@@ -168,6 +168,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :optin_contact, :contact_result do
       arg(:phone, non_null(:string))
       arg(:name, :string)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.optin_contact/3)
     end
   end

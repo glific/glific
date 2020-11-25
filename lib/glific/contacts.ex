@@ -479,7 +479,9 @@ defmodule Glific.Contacts do
       %{
         name: attrs[:name],
         phone: attrs.phone,
-        organization_id: organization_id
+        organization_id: organization_id,
+        optin_time: DateTime.utc_now(),
+        bsp_status: :hsm
       }
       |> create_contact()
     else
