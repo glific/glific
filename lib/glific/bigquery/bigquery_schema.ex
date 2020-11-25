@@ -290,7 +290,7 @@ defmodule Glific.BigquerySchema do
       %{
         name: "keywords",
         type: "RECORD",
-        mode: "NULLABLE",
+        mode: "REPEATED",
         fields: [
           %{
             name: "keyword",
@@ -302,7 +302,7 @@ defmodule Glific.BigquerySchema do
       %{
         name: "flow_revision",
         type: "RECORD",
-        mode: "NULLABLE",
+        mode: "REPEATED",
         fields: [
           %{
             name: "status",

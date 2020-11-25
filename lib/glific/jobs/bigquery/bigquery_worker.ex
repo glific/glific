@@ -172,7 +172,6 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec queue_table_data(String.t(), non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
   defp queue_table_data("flows", organization_id, min_id, max_id) do
-    IO.inspect("queue_table_dataflows")
     query =
       FlowRevision
       |> where([m], m.organization_id == ^organization_id)
@@ -191,7 +190,12 @@ defmodule Glific.Jobs.BigQueryWorker do
             revision_number: row.revision_number,
             inserted_at: format_date(row.inserted_at, organization_id),
             updated_at: format_date(row.updated_at, organization_id),
-            status: row.status
+            status: row.status,
+            keywords: Enum.map(row.flow.keywords, fn keyword ->
+              %{
+                keyword: keyword
+              }
+            end)
           }
           | acc
         ]
@@ -336,6 +340,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         inserted_at: flow["inserted_at"],
         updated_at: flow["updated_at"],
         status: flow["status"],
+        keywords: flow["keywords"]
       }
     }
   end
@@ -360,7 +365,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     table_id = table
     token = Partners.get_goth_token(organization_id, "bigquery")
     conn = Connection.new(token.token)
-
     # In case of error response error will be stored in the oban job
     {:ok, response} =
       Tabledata.bigquery_tabledata_insert_all(
@@ -371,8 +375,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         [body: %{rows: data}],
         []
       )
-      IO.inspect("debug001-response")
-      IO.inspect(response)
+      response
     :ok
   end
 end
