@@ -39,7 +39,6 @@ defmodule Glific.Flows.MessageVarParser do
 
   defp bound(substitution), do: substitution
 
-
   @doc """
   Interpolates the values from results into the message body. Might need to integrate
   it with the substitution above

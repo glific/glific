@@ -139,11 +139,6 @@ defmodule Glific do
     do: value
 
   @doc """
-  Interpolates the values from results into the message body. Might need to integrate
-  it with the substitution above
-  """
-
-  @doc """
   easy way for glific developers to get a stacktrace when debugging
   """
   @spec stacktrace :: :ok
