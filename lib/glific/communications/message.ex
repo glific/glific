@@ -3,6 +3,7 @@ defmodule Glific.Communications.Message do
   The Message Communication Context, which encapsulates and manages tags and the related join tables.
   """
   import Ecto.Query
+  require Logger
 
   alias Glific.{
     Communications,
@@ -36,6 +37,12 @@ defmodule Glific.Communications.Message do
   def send_message(message) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
+    Logger.info(
+      "Sending message: type: '#{message.type}', contact_id: '#{message.receiver.id}', message_id: '#{
+        message.id
+      }'"
+    )
+
     if Contacts.can_send_message_to?(message.receiver, message.is_hsm) do
       {:ok, _} =
         apply(
@@ -46,8 +53,8 @@ defmodule Glific.Communications.Message do
 
       {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
     else
+      Logger.error("Could not send message: message_id: '#{message.id}'")
       {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
-
       {:error, "Cannot send the message to the contact."}
     end
   end
@@ -125,7 +132,11 @@ defmodule Glific.Communications.Message do
 
   @spec do_receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
   defp do_receive_message(%{organization_id: organization_id} = message_params, type) do
-    # get session uuid of contact's messages
+    Logger.info(
+      "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{
+        message_params.bsp_message_id
+      }'"
+    )
 
     {:ok, contact} =
       message_params.sender

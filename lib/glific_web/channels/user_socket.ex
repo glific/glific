@@ -2,6 +2,8 @@ defmodule GlificWeb.UserSocket do
   @moduledoc false
   use Phoenix.Socket
 
+  require Logger
+
   use Absinthe.Phoenix.Socket,
     schema: GlificWeb.Schema
 
@@ -30,6 +32,7 @@ defmodule GlificWeb.UserSocket do
         :error
 
       {user, metadata} ->
+        Logger.info("Verifying tokens: user_id: '#{user.id}'")
         fingerprint = Keyword.fetch!(metadata, :fingerprint)
 
         socket =

@@ -4,6 +4,7 @@ defmodule Glific.Flows do
   """
 
   import Ecto.Query, warn: false
+  require Logger
 
   alias Glific.{
     Caches,
@@ -343,6 +344,8 @@ defmodule Glific.Flows do
   """
   @spec publish_flow(Flow.t()) :: {:ok, Flow.t()}
   def publish_flow(%Flow{} = flow) do
+    Logger.info("Published Flow: flow_id: '#{flow.id}'")
+
     last_version = get_last_version_and_update_old_revisions(flow)
 
     with {:ok, latest_revision} <-
