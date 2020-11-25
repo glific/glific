@@ -250,4 +250,72 @@ defmodule Glific.BigquerySchema do
       }
     ]
   end
+
+  @doc """
+  Schema for contact table
+  """
+  @spec flow_schema :: list()
+  def flow_schema do
+    [
+      %{
+        name: "name",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "uuid",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "revision_number",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "status",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "keywords",
+        type: "RECORD",
+        mode: "NULLABLE",
+        fields: [
+          %{
+            name: "keyword",
+            type: "STRING",
+            mode: "NULLABLE"
+          }
+        ]
+      },
+      %{
+        name: "flow_revision",
+        type: "RECORD",
+        mode: "NULLABLE",
+        fields: [
+          %{
+            name: "status",
+            type: "STRING",
+            mode: "REQUIRED"
+          },
+          %{
+            name: "revision",
+            type: "STRING",
+            mode: "REQUIRED"
+          }
+        ]
+      }
+    ]
+  end
 end
