@@ -545,6 +545,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
+    @spec seed_flow_labels(Organization.t() | nil) :: nil
     def seed_flow_labels(organization \\ nil) do
       organization = get_organization(organization)
 
@@ -579,6 +580,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
+    @spec seed_flows(Organization.t() | nil) :: [any()]
     def seed_flows(organization \\ nil) do
       organization = get_organization(organization)
 
@@ -608,8 +610,6 @@ if Code.ensure_loaded?(Faker) do
       ]
 
       Enum.map(data, &flow(&1, organization, uuid_map, flow_labels_id_map))
-
-      nil
     end
 
     defp replace_uuids(json, uuid_map),
