@@ -300,8 +300,13 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "create and send a message to valid contact", %{staff: user} do
     contact = Fixtures.contact_fixture()
-    Contacts.contact_opted_in(contact.phone, contact.organization_id, DateTime.utc_now())
-    {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: DateTime.utc_now()})
+
+    {:ok, contact} =
+      Contacts.update_contact(contact, %{
+        last_message_at: DateTime.utc_now(),
+        bsp_status: :session_and_hsm,
+        optin_time: DateTime.utc_now()
+      })
 
     result =
       auth_query_gql_by(:create_and_send_message, user,
@@ -323,8 +328,13 @@ defmodule GlificWeb.Schema.MessageTest do
 
   test "create and send a message should parse the message body", %{staff: user} do
     contact = Fixtures.contact_fixture()
-    Contacts.contact_opted_in(contact.phone, contact.organization_id, DateTime.utc_now())
-    {:ok, contact} = Contacts.update_contact(contact, %{last_message_at: DateTime.utc_now()})
+
+    {:ok, contact} =
+      Contacts.update_contact(contact, %{
+        last_message_at: DateTime.utc_now(),
+        bsp_status: :session_and_hsm,
+        optin_time: DateTime.utc_now()
+      })
 
     result =
       auth_query_gql_by(:create_and_send_message, user,
