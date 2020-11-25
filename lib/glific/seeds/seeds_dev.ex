@@ -545,7 +545,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_flow_labels(Organization.t() | nil) :: nil
+    @spec seed_flow_labels(Organization.t() | nil) :: {integer(), nil}
     def seed_flow_labels(organization \\ nil) do
       organization = get_organization(organization)
 
