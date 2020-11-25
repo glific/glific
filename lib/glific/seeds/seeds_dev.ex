@@ -6,6 +6,7 @@ if Code.ensure_loaded?(Faker) do
     alias Glific.{
       Contacts,
       Contacts.Contact,
+      Flows,
       Flows.Flow,
       Flows.FlowLabel,
       Flows.FlowRevision,
@@ -640,15 +641,18 @@ if Code.ensure_loaded?(Faker) do
         )
 
     defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
-      f =
-        Repo.insert!(%Flow{
+      # Using create_flow so that it will clear the cache
+      # while creating outofoffice flow in periodic tests
+      {:ok, f} =
+        %{
           name: name,
           keywords: keywords,
           ignore_keywords: ignore_keywords,
           version_number: "13.1.0",
           uuid: uuid,
           organization_id: organization.id
-        })
+        }
+        |> Flows.create_flow()
 
       definition =
         File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
