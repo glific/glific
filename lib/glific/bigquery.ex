@@ -139,7 +139,7 @@ defmodule Glific.Bigquery do
       if is_atom(k) do
         {k, v}
       else
-        {String.to_atom(k), v}
+        {String.to_existing_atom(k), v}
       end
     end)
   end
