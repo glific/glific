@@ -172,6 +172,34 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec queue_table_data(String.t(), non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
   defp queue_table_data("flows", organization_id, min_id, max_id) do
+    IO.inspect("queue_table_dataflows")
+    query =
+      FlowRevision
+      |> where([m], m.organization_id == ^organization_id)
+      |> where([m], m.id > ^min_id and m.id <= ^max_id)
+      |> order_by([m], [m.inserted_at, m.id])
+      |> preload([:flow])
+
+    Repo.all(query)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            name: row.flow.name,
+            uuid: row.flow.uuid,
+            revision_number: row.revision_number,
+            inserted_at: format_date(row.inserted_at, organization_id),
+            updated_at: format_date(row.updated_at, organization_id),
+            status: row.status
+          }
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, "flows", organization_id))
+
   end
 
   defp queue_table_data(_, _, _, _), do: nil
@@ -186,6 +214,11 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp make_job(data, "contacts", organization_id) do
     __MODULE__.new(%{organization_id: organization_id, contacts: data})
+    |> Oban.insert()
+  end
+
+  defp make_job(data, "flows", organization_id) do
+    __MODULE__.new(%{organization_id: organization_id, flows: data})
     |> Oban.insert()
   end
 
@@ -242,6 +275,12 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> make_insert_query("contacts", organization_id)
   end
 
+  def perform(%Oban.Job{args: %{"flows" => flows, "organization_id" => organization_id}}) do
+    flows
+    |> Enum.map(fn msg -> format_data_for_bigquery("flows", msg) end)
+    |> make_insert_query("flows", organization_id)
+  end
+
   @spec format_data_for_bigquery(String.t(), map()) :: map()
   defp format_data_for_bigquery("messages", msg) do
     %{
@@ -288,6 +327,19 @@ defmodule Glific.Jobs.BigQueryWorker do
     }
   end
 
+  defp format_data_for_bigquery("flows", flow) do
+    %{
+      json: %{
+        name: flow["name"],
+        uuid: flow["uuid"],
+        revision_number: flow["revision_number"],
+        inserted_at: flow["inserted_at"],
+        updated_at: flow["updated_at"],
+        status: flow["status"],
+      }
+    }
+  end
+
   defp format_data_for_bigquery(_, _), do: %{}
 
   @spec make_insert_query(list(), String.t(), non_neg_integer) :: :ok
@@ -310,7 +362,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     conn = Connection.new(token.token)
 
     # In case of error response error will be stored in the oban job
-    {:ok, _} =
+    {:ok, response} =
       Tabledata.bigquery_tabledata_insert_all(
         conn,
         project_id,
@@ -319,7 +371,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         [body: %{rows: data}],
         []
       )
-
+      IO.inspect("debug001-response")
+      IO.inspect(response)
     :ok
   end
 end
