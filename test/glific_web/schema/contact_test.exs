@@ -373,10 +373,7 @@ defmodule GlificWeb.Schema.ContactTest do
         }
     end)
 
-    result =
-      auth_query_gql_by(:optin_contact, manager,
-        variables: %{"phone" => "test phone"}
-      )
+    result = auth_query_gql_by(:optin_contact, manager, variables: %{"phone" => "test phone"})
 
     assert {:ok, query_data} = result
 
@@ -404,7 +401,9 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, query_data} = result
 
-    error_message = get_in(query_data, [:data, "optin_contact", "errors", Access.at(0), "message"])
+    error_message =
+      get_in(query_data, [:data, "optin_contact", "errors", Access.at(0), "message"])
+
     assert error_message == "has already been taken"
   end
 
