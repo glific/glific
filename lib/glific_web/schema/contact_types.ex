@@ -165,10 +165,10 @@ defmodule GlificWeb.Schema.ContactTypes do
       resolve(&Resolvers.Contacts.delete_contact/3)
     end
 
-    field :import_optin_contact, :contact_result do
+    field :optin_contact, :contact_result do
       arg(:phone, non_null(:string))
       arg(:name, :string)
-      resolve(&Resolvers.Contacts.import_optin_contact/3)
+      resolve(&Resolvers.Contacts.optin_contact/3)
     end
   end
 end
