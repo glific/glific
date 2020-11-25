@@ -16,6 +16,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   alias Glific.{
     Contacts.Contact,
+    Flows.FlowRevision,
     Jobs,
     Messages.Message,
     Partners,
@@ -169,6 +170,10 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.each(&make_job(&1, "contacts", organization_id))
   end
 
+  @spec queue_table_data(String.t(), non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
+  defp queue_table_data("flows", organization_id, min_id, max_id) do
+  end
+
   defp queue_table_data(_, _, _, _), do: nil
 
   @spec make_job(list(), String.t(), non_neg_integer) :: :ok | nil
@@ -191,6 +196,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     case table do
       "messages" -> Message
       "contacts" -> Contact
+      "flows" -> FlowRevision
       _ -> ""
     end
   end
