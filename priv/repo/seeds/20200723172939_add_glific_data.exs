@@ -9,13 +9,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Contacts.ContactsField,
     Flows.Flow,
     Flows.FlowLabel,
-    Flows.FlowRevision,
     Jobs.BigqueryJob,
     Partners,
     Partners.Organization,
     Partners.Provider,
     Repo,
     Searches.SavedSearch,
+    Seeds.SeedsDev,
     Settings.Language,
     Tags.Tag,
     Templates.SessionTemplate,
@@ -661,34 +661,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Enum.map(data, &flow(&1, organization, uuid_map, flow_labels_id_map))
   end
 
-  defp replace_uuids(json, uuid_map),
-    do:
-      Enum.reduce(
-        uuid_map,
-        json,
-        fn {key, uuid}, acc ->
-          String.replace(
-            acc,
-            key |> Atom.to_string() |> String.upcase() |> Kernel.<>("_UUID"),
-            uuid
-          )
-        end
-      )
-
-  defp replace_label_uuids(json, flow_labels_id_map),
-    do:
-      Enum.reduce(
-        flow_labels_id_map,
-        json,
-        fn {key, id}, acc ->
-          String.replace(
-            acc,
-            key |> Kernel.<>(":ID"),
-            "#{id}"
-          )
-        end
-      )
-
   defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
     f =
       Repo.insert!(%Flow{
@@ -700,23 +672,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         organization_id: organization.id
       })
 
-    definition =
-      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
-      |> replace_uuids(uuid_map)
-      |> replace_label_uuids(id_map)
-      |> Jason.decode!()
-      |> Map.merge(%{
-        "name" => f.name,
-        "uuid" => f.uuid
-      })
-
-    Repo.insert(%FlowRevision{
-      definition: definition,
-      flow_id: f.id,
-      status: "published",
-      version: 1,
-      organization_id: organization.id
-    })
+    SeedsDev.flow_revision(f, organization, file, uuid_map, id_map)
   end
 
   def contacts_field(organization) do

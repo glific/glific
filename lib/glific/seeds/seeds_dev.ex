@@ -654,6 +654,12 @@ if Code.ensure_loaded?(Faker) do
         }
         |> Flows.create_flow()
 
+      flow_revision(f, organization, file, uuid_map, id_map)
+    end
+
+    @doc false
+    @spec flow_revision(Flow.t(), Organization.t(), String.t(), map(), map()) :: nil
+    def flow_revision(f, organization, file, uuid_map, id_map) do
       definition =
         File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
         |> replace_uuids(uuid_map)
