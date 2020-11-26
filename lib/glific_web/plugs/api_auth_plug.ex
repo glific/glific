@@ -118,7 +118,7 @@ defmodule GlificWeb.APIAuthPlug do
   """
   @spec renew(Conn.t(), Config.t()) :: {Conn.t(), map() | nil}
   def renew(conn, config) do
-    Logger.info("Renewing tokens: user_id: '#{conn.assigns[:current_user].id}'")
+    Logger.info("Renewing tokens")
 
     store_config = store_config(config)
 
