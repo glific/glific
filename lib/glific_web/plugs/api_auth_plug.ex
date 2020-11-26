@@ -38,6 +38,8 @@ defmodule GlificWeb.APIAuthPlug do
     end
   end
 
+  @ttl 1
+
   @doc """
   Creates an access and renewal token for the user.
 
@@ -50,10 +52,15 @@ defmodule GlificWeb.APIAuthPlug do
   def create(conn, user, config) do
     Logger.info("Creating tokens: user_id: '#{user.id}'")
 
-    store_config = store_config(config)
+    store_config =
+      config
+      |> store_config()
+      |> Keyword.put(:ttl, :timer.minutes(@ttl))
+
+    IO.inspect(store_config)
 
     # 30 mins in seconds - this is the default, we wont change it
-    token_expiry_time = DateTime.utc_now() |> DateTime.add(30 * 60, :second)
+    token_expiry_time = DateTime.utc_now() |> DateTime.add(@ttl * 60, :second)
     fingerprint = conn.private[:pow_api_session_fingerprint] || Pow.UUID.generate()
     access_token = Pow.UUID.generate()
     renewal_token = Pow.UUID.generate()
@@ -118,7 +125,8 @@ defmodule GlificWeb.APIAuthPlug do
   """
   @spec renew(Conn.t(), Config.t()) :: {Conn.t(), map() | nil}
   def renew(conn, config) do
-    Logger.info("Renewing tokens: user_id: '#{conn.assigns[:current_user].id}'")
+    IO.inspect(conn)
+    Logger.info("Renewing tokens")
 
     store_config = store_config(config)
 
