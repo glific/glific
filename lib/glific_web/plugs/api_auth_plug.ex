@@ -52,10 +52,7 @@ defmodule GlificWeb.APIAuthPlug do
   def create(conn, user, config) do
     Logger.info("Creating tokens: user_id: '#{user.id}'")
 
-
     store_config = store_config(config)
-      |> Keyword.put(:ttl, :timer.minutes(@ttl))
-
 
     # 30 mins in seconds - this is the default, we wont change it
     token_expiry_time = DateTime.utc_now() |> DateTime.add(@ttl * 60, :second)
@@ -69,11 +66,12 @@ defmodule GlificWeb.APIAuthPlug do
       |> Conn.put_private(:api_renewal_token, sign_token(conn, renewal_token, config))
       |> Conn.put_private(:api_token_expiry_time, token_expiry_time)
 
+    IO.inspect(conn)
     CredentialsCache.put(
       store_config |> Keyword.put(:ttl, :timer.minutes(@ttl)),
       access_token,
       {user, fingerprint: fingerprint, renewal_token: renewal_token}
-    )
+   )
 
     PersistentSessionCache.put(
       store_config,
@@ -127,6 +125,7 @@ defmodule GlificWeb.APIAuthPlug do
     Logger.info("Renewing tokens")
 
     store_config = store_config(config)
+    IO.inspect(fetch_access_token(conn))
 
     with {:ok, signed_token} <- fetch_access_token(conn),
          {:ok, token} <- verify_token(conn, signed_token, config),
