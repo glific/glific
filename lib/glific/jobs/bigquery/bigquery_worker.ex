@@ -186,6 +186,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       fn row, acc ->
         [
           %{
+            flow_id: row.flow.id,
             name: row.flow.name,
             uuid: row.flow.uuid,
             inserted_at: format_date(row.inserted_at, organization_id),
@@ -336,6 +337,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp format_data_for_bigquery("flows", flow) do
     %{
       json: %{
+        flow_id: flow["flow_id"],
         name: flow["name"],
         uuid: flow["uuid"],
         inserted_at: flow["inserted_at"],
