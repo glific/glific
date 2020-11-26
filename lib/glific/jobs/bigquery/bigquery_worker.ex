@@ -188,20 +188,11 @@ defmodule Glific.Jobs.BigQueryWorker do
           %{
             name: row.flow.name,
             uuid: row.flow.uuid,
-            revision_number: row.revision_number,
             inserted_at: format_date(row.inserted_at, organization_id),
             updated_at: format_date(row.updated_at, organization_id),
-            keywords: Enum.map(row.flow.keywords, fn keyword ->
-              %{
-                keyword: keyword
-              }
-            end),
-            flow_revision: [
-              %{
-                status: row.status,
-                revision: format_json(row.definition)
-              }
-            ],
+            keywords: format_json(row.flow.keywords),
+            status: row.status,
+            revision: format_json(row.definition)
           }
           | acc
         ]
@@ -347,11 +338,11 @@ defmodule Glific.Jobs.BigQueryWorker do
       json: %{
         name: flow["name"],
         uuid: flow["uuid"],
-        revision_number: flow["revision_number"],
         inserted_at: flow["inserted_at"],
         updated_at: flow["updated_at"],
         keywords: flow["keywords"],
-        flow_revision: flow["flow_revision"]
+        status: flow["status"],
+        revision: flow["revision"]
       }
     }
   end

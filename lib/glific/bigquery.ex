@@ -110,8 +110,8 @@ defmodule Glific.Bigquery do
 
         {:ok, response} =
           Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
-
-        response
+          IO.inspect("debug001-response")
+          IO.inspect(response)
     end
 
     :ok
@@ -120,10 +120,8 @@ defmodule Glific.Bigquery do
   defp format_field_values("fields", contact_fields, org_id) when is_map(contact_fields) do
     values =
       Enum.map(contact_fields, fn {_key, contact_field} ->
-        contact_field = atomize(contact_field)
-
-        "('#{contact_field.label}', '#{contact_field.value}', '#{contact_field.type}', '#{
-          format_date(contact_field.inserted_at, org_id)
+        "('#{contact_field["label"]}', '#{contact_field["value"]}', '#{contact_field["type"]}', '#{
+          format_date(contact_field["inserted_at"], org_id)
         }')"
       end)
 
@@ -133,18 +131,6 @@ defmodule Glific.Bigquery do
   end
 
   defp format_field_values(_key, field, _org_id), do: field
-
-  @spec atomize(map()) :: map()
-  defp atomize(map) do
-    map
-    |> Map.new(fn {k, v} ->
-      if is_atom(k) do
-        {k, v}
-      else
-        {String.to_existing_atom(k), v}
-      end
-    end)
-  end
 
   @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
   defp format_date(nil, _),

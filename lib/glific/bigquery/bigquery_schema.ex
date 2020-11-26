@@ -268,11 +268,6 @@ defmodule Glific.BigquerySchema do
         mode: "REQUIRED"
       },
       %{
-        name: "revision_number",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
         name: "inserted_at",
         type: "DATETIME",
         mode: "REQUIRED"
@@ -284,32 +279,18 @@ defmodule Glific.BigquerySchema do
       },
       %{
         name: "keywords",
-        type: "RECORD",
-        mode: "REPEATED",
-        fields: [
-          %{
-            name: "keyword",
-            type: "STRING",
-            mode: "NULLABLE"
-          }
-        ]
+        type: "STRING",
+        mode: "REQUIRED"
       },
       %{
-        name: "flow_revision",
-        type: "RECORD",
-        mode: "REPEATED",
-        fields: [
-          %{
-            name: "status",
-            type: "STRING",
-            mode: "REQUIRED"
-          },
-          %{
-            name: "revision",
-            type: "STRING",
-            mode: "REQUIRED"
-          }
-        ]
+        name: "status",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "revision",
+        type: "STRING",
+        mode: "REQUIRED"
       }
     ]
   end

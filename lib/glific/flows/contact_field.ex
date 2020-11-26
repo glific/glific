@@ -26,7 +26,7 @@ defmodule Glific.Flows.ContactField do
 
     fields =
       contact_fields
-      |> Map.put(field, %{value: value, label: label, type: type, inserted_at: DateTime.utc_now()})
+      |> Map.put(field, %{"value" => value, "label" => label, "type" => type, "inserted_at" => DateTime.utc_now()})
 
     {:ok, contact} =
       Contacts.update_contact(
