@@ -16,6 +16,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   alias Glific.{
     Contacts.Contact,
+    Flows.FlowRevision,
     Jobs,
     Messages.Message,
     Partners,
@@ -169,7 +170,45 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.each(&make_job(&1, "contacts", organization_id))
   end
 
+  defp queue_table_data("flows", organization_id, min_id, max_id) do
+    query =
+      FlowRevision
+      |> where([f], f.organization_id == ^organization_id)
+      |> where([f], f.id > ^min_id and f.id <= ^max_id)
+      |> where([f], f.id > ^min_id and f.id <= ^max_id)
+      |> where([f], f.status == "published" or f.status == "archived")
+      |> order_by([f], [f.inserted_at, f.id])
+      |> preload([:flow])
+
+    Repo.all(query)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.flow.id,
+            name: row.flow.name,
+            uuid: row.flow.uuid,
+            inserted_at: format_date(row.inserted_at, organization_id),
+            updated_at: format_date(row.updated_at, organization_id),
+            keywords: format_json(row.flow.keywords),
+            status: row.status,
+            revision: format_json(row.definition)
+          }
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, "flows", organization_id))
+  end
+
   defp queue_table_data(_, _, _, _), do: nil
+
+  defp format_json(definition) do
+    {:ok, data} = Jason.encode(definition)
+    data
+  end
 
   @spec make_job(list(), String.t(), non_neg_integer) :: :ok | nil
   defp make_job(data, "messages", organization_id) do
@@ -184,6 +223,11 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Oban.insert()
   end
 
+  defp make_job(data, "flows", organization_id) do
+    __MODULE__.new(%{organization_id: organization_id, flows: data})
+    |> Oban.insert()
+  end
+
   defp make_job(_, _, _), do: nil
 
   @spec get_table_struct(String.t()) :: any()
@@ -191,6 +235,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     case table do
       "messages" -> Message
       "contacts" -> Contact
+      "flows" -> FlowRevision
       _ -> ""
     end
   end
@@ -234,6 +279,12 @@ defmodule Glific.Jobs.BigQueryWorker do
     contacts
     |> Enum.map(fn msg -> format_data_for_bigquery("contacts", msg) end)
     |> make_insert_query("contacts", organization_id)
+  end
+
+  def perform(%Oban.Job{args: %{"flows" => flows, "organization_id" => organization_id}}) do
+    flows
+    |> Enum.map(fn msg -> format_data_for_bigquery("flows", msg) end)
+    |> make_insert_query("flows", organization_id)
   end
 
   @spec format_data_for_bigquery(String.t(), map()) :: map()
@@ -282,6 +333,21 @@ defmodule Glific.Jobs.BigQueryWorker do
     }
   end
 
+  defp format_data_for_bigquery("flows", flow) do
+    %{
+      json: %{
+        id: flow["id"],
+        name: flow["name"],
+        uuid: flow["uuid"],
+        inserted_at: flow["inserted_at"],
+        updated_at: flow["updated_at"],
+        keywords: flow["keywords"],
+        status: flow["status"],
+        revision: flow["revision"]
+      }
+    }
+  end
+
   defp format_data_for_bigquery(_, _), do: %{}
 
   @spec make_insert_query(list(), String.t(), non_neg_integer) :: :ok
@@ -302,7 +368,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     table_id = table
     token = Partners.get_goth_token(organization_id, "bigquery")
     conn = Connection.new(token.token)
-
     # In case of error response error will be stored in the oban job
     {:ok, _} =
       Tabledata.bigquery_tabledata_insert_all(
