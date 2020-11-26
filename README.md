@@ -12,10 +12,16 @@
 
 Install the following packages using your favorite package manager. Links are provided for some
 
-  * [Install Elixir](https://elixir-lang.org/install.html#distributions)
+  * [Install Elixir](https://elixir-lang.org/install.html#distributions) (check package versions below)
     1. For Ubuntu users you also need to install the `inotify-tools` package
   * [Install Postgres](https://www.postgresql.org/download/)
     1. For Postgres, for the development server, we default to using postgres/postgres as the username/password. This is configurable
+
+## Package Versions
+
+  * erlang : 23.0.2
+  * elixir : 1.10.4
+  * nodejs : 14.15.0
 
 ## Download code
 
@@ -23,6 +29,7 @@ Install the following packages using your favorite package manager. Links are pr
 
 ## Setup
   * Copy the file: `config/dev.secret.exs.txt` to `config/dev.secret.exs` and edit it with your credentials
+  * Start the postgres server
   * Run `mix setup`
   * Run `mix phx.server`
 
