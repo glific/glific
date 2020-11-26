@@ -56,7 +56,8 @@ config :tesla, adapter: Tesla.Adapter.Hackney
 config :glific, :pow,
   user: Glific.Users.User,
   repo: Glific.Repo,
-  users_context: Glific.Users
+  users_context: Glific.Users,
+  cache_store_backend: Pow.Store.Backend.MnesiaCache
 
 config :passwordless_auth,
   # seconds; optional (defaults to 30 if not provided)

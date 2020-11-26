@@ -89,7 +89,6 @@ defmodule Glific.Processor.ConsumerFlow do
     {status, body} =
       if is_beta do
         # lets complete all existing flows for this contact
-
         {String.replace_trailing(@beta_phrase, ":", ""),
          String.replace_leading(body, @beta_phrase, "")}
       else
