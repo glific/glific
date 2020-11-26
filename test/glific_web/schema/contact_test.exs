@@ -401,8 +401,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     assert {:ok, query_data} = result
 
-    error_message =
-      get_in(query_data, [:data, "optinContact", "errors", Access.at(0), "message"])
+    error_message = get_in(query_data, [:data, "optinContact", "errors", Access.at(0), "message"])
 
     assert error_message == "has already been taken"
   end
