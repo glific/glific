@@ -44,6 +44,17 @@ defmodule GlificWeb.Schema.GroupTest do
     assert get_in(group, ["label"]) == "Restricted Group"
   end
 
+  test "groups field doesn't return not mapped groups", %{staff: user} do
+    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "DESC"}})
+    assert {:ok, query_data} = result
+
+    groups = get_in(query_data, [:data, "groups"])
+    assert length(groups) > 0
+
+    [group | _] = groups
+    assert get_in(group, ["label"]) == "Restricted Group"
+  end
+
   test "groups field returns list of groups in various filters", %{staff: user} do
     result =
       auth_query_gql_by(:list, user, variables: %{"filter" => %{"label" => "Restricted Group"}})
