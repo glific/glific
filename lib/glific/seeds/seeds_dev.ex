@@ -438,7 +438,8 @@ if Code.ensure_loaded?(Faker) do
 
     @doc false
     @spec seed_session_templates(Organization.t() | nil) :: nil
-    def seed_session_templates(organization) do
+    def seed_session_templates(organization \\ nil) do
+      organization = get_organization(organization)
       [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
       Repo.insert!(%SessionTemplate{
