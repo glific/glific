@@ -40,15 +40,21 @@ defmodule Glific.Bigquery do
             table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
             contacts_messages_view(conn, dataset_id, project_id)
 
-          {:error, _} ->
-            # when organization re-activates the credentials, update with new schema
-            alter_bigquery_tables(dataset_id, organization_id)
-
-            nil
+          {:error, response} ->
+            {:ok, data} = Jason.decode(response.body)
+            create_schema(data, conn, dataset_id, project_id)
         end
     end
 
     :ok
+  end
+
+  defp create_schema(data, conn, dataset_id, project_id) do
+    error = data["error"]
+    if error["status"] == "ALREADY_EXISTS" do
+      table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
+    end
+    # alter_table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
   end
 
   @doc """

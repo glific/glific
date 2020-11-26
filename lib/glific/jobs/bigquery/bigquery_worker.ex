@@ -176,7 +176,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([f], f.organization_id == ^organization_id)
       |> where([f], f.id > ^min_id and f.id <= ^max_id)
       |> where([f], f.id > ^min_id and f.id <= ^max_id)
-      |> where([f], f.status == "published" or f.status == "archived")
+      |> where([f], f.status in ["published", "archived"])
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow])
 
