@@ -4,9 +4,6 @@ defmodule Glific.Contacts do
   """
   import Ecto.Query, warn: false
 
-  use Tesla
-  plug Tesla.Middleware.FormUrlencoded
-
   alias __MODULE__
 
   alias Glific.{
@@ -304,10 +301,10 @@ defmodule Glific.Contacts do
     upsert(%{
       phone: phone,
       optin_time: utc_time,
-      last_message_at: nil,
+      last_message_at: utc_time,
       optout_time: nil,
       status: :valid,
-      bsp_status: :hsm,
+      bsp_status: :session_and_hsm,
       organization_id: organization_id,
       updated_at: DateTime.utc_now()
     })
@@ -427,6 +424,10 @@ defmodule Glific.Contacts do
       else: update_contact(contact, %{bsp_status: :hsm})
   end
 
+  def set_session_status([], _) do
+    :ok
+  end
+
   def set_session_status(contact_ids, :none = _status) when is_list(contact_ids) do
     Contact
     |> where([c], is_nil(c.optin_time))
@@ -456,37 +457,6 @@ defmodule Glific.Contacts do
     |> case do
       {:ok, contact} -> contact.status == :blocked
       _ -> false
-    end
-  end
-
-  @doc """
-    Upload a contact phone as opted in
-  """
-  @spec optin_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def optin_contact(%{organization_id: organization_id} = attrs) do
-    organization = Partners.organization(organization_id)
-    bsp_credentials = organization.services["bsp"]
-
-    url =
-      bsp_credentials.keys["api_end_point"] <>
-        "/app/opt/in/" <> bsp_credentials.secrets["app_name"]
-
-    api_key = bsp_credentials.secrets["api_key"]
-
-    with {:ok, response} <-
-           post(url, %{user: attrs.phone}, headers: [{"apikey", api_key}]),
-         true <- response.status == 202 do
-      %{
-        name: attrs[:name],
-        phone: attrs.phone,
-        organization_id: organization_id,
-        optin_time: DateTime.utc_now(),
-        bsp_status: :hsm
-      }
-      |> create_contact()
-    else
-      _ ->
-        {:error, ["gupshup", "couldn't connect"]}
     end
   end
 end

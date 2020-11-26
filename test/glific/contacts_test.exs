@@ -456,6 +456,10 @@ defmodule Glific.ContactsTest do
       assert contact.optout_time != nil
     end
 
+    test "set_session_status/2 will return :ok if contact list is empty" do
+      assert :ok == Contacts.set_session_status([], :none)
+    end
+
     test "set_session_status/2 will set provider status of not opted in contact",
          %{organization_id: organization_id} do
       contact =
