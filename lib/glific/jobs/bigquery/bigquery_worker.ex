@@ -201,7 +201,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, "flows", organization_id))
-
   end
 
   defp queue_table_data(_, _, _, _), do: nil
@@ -379,6 +378,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         [body: %{rows: data}],
         []
       )
+
     :ok
   end
 end
