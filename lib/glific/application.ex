@@ -22,6 +22,7 @@ defmodule Glific.Application do
 
       # Start Mnesia to be used for pow cache store
       Pow.Store.Backend.MnesiaCache,
+
       # Add Oban to process jobs
       {Oban, oban_config()},
 
