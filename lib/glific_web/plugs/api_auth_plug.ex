@@ -70,7 +70,7 @@ defmodule GlificWeb.APIAuthPlug do
       store_config |> Keyword.put(:ttl, :timer.minutes(@ttl)),
       access_token,
       {user, fingerprint: fingerprint, renewal_token: renewal_token}
-   )
+    )
 
     PersistentSessionCache.put(
       store_config,
