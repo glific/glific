@@ -258,6 +258,11 @@ defmodule Glific.BigquerySchema do
   def flow_schema do
     [
       %{
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
         name: "name",
         type: "STRING",
         mode: "REQUIRED"
