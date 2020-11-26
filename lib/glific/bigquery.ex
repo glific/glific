@@ -120,6 +120,7 @@ defmodule Glific.Bigquery do
   defp format_field_values("fields", contact_fields, org_id) when is_map(contact_fields) do
     values =
       Enum.map(contact_fields, fn {_key, contact_field} ->
+        contact_field = Glific.atomize_keys(contact_field)
         "('#{contact_field["label"]}', '#{contact_field["value"]}', '#{contact_field["type"]}', '#{
           format_date(contact_field["inserted_at"], org_id)
         }')"
