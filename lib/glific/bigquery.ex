@@ -110,8 +110,8 @@ defmodule Glific.Bigquery do
 
         {:ok, response} =
           Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
-          IO.inspect("debug001-response")
-          IO.inspect(response)
+
+        response
     end
 
     :ok
