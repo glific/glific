@@ -109,7 +109,11 @@ defmodule Glific do
   def atomize_keys(map) when is_map(map),
     do:
       Enum.map(map, fn {k, v} ->
-        {String.to_existing_atom(k), atomize_keys(v)}
+        if is_atom(k) do
+          {atomize_keys(k), atomize_keys(v)}
+        else
+          {String.to_existing_atom(k), atomize_keys(v)}
+        end
       end)
       |> Enum.into(%{})
 

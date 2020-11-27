@@ -427,6 +427,10 @@ defmodule Glific.Contacts do
       else: update_contact(contact, %{bsp_status: :hsm})
   end
 
+  def set_session_status([], _) do
+    :ok
+  end
+
   def set_session_status(contact_ids, :none = _status) when is_list(contact_ids) do
     Contact
     |> where([c], is_nil(c.optin_time))

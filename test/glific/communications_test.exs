@@ -254,6 +254,19 @@ defmodule Glific.CommunicationsTest do
       assert message.bsp_message_id != nil
       assert message.bsp_status == :enqueued
       assert message.flow == :outbound
+
+      # sticker message
+      {:ok, message} =
+        Messages.update_message(message, %{type: :sticker, media_id: message_media.id})
+
+      Communications.Message.send_message(message)
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+      message = Messages.get_message!(message.id)
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
+      assert message.flow == :outbound
+      assert message.sent_at != nil
     end
 
     test "sending message to optout contact will return error", attrs do
