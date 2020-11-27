@@ -145,6 +145,8 @@ defmodule Glific.Flows.ContactActionTest do
     assert message.media_id != nil
     assert message.is_hsm == true
     assert message.media.url == attachments["image"]
-    assert message.media.caption == "Hi var_1,\n\nYour account image was updated on var_2 by var_3 with above"
+
+    assert message.media.caption ==
+             "Hi var_1,\n\nYour account image was updated on var_2 by var_3 with above"
   end
 end
