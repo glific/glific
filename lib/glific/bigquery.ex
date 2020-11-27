@@ -113,11 +113,7 @@ defmodule Glific.Bigquery do
 
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
-
-        {:ok, response} =
-          Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
-
-        response
+        Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
     end
 
     :ok
