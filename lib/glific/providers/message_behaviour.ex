@@ -18,6 +18,9 @@ defmodule Glific.Providers.MessageBehaviour do
   @callback send_document(message :: Glific.Messages.Message.t()) ::
               {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
 
+  @callback send_sticker(message :: Glific.Messages.Message.t()) ::
+              {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+
   @callback receive_text(payload :: map()) :: map()
 
   @callback receive_media(payload :: map()) :: map()
