@@ -9,13 +9,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Contacts.ContactsField,
     Flows.Flow,
     Flows.FlowLabel,
-    Flows.FlowRevision,
     Jobs.BigqueryJob,
     Partners,
     Partners.Organization,
     Partners.Provider,
     Repo,
     Searches.SavedSearch,
+    Seeds.SeedsDev,
     Settings.Language,
     Tags.Tag,
     Templates.SessionTemplate,
@@ -610,21 +610,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   defp flow_labels(organization) do
     flow_labels = [
-      %{name: "Poetry"},
-      %{name: "Visual Arts"},
-      %{name: "Theatre"},
-      %{name: "Understood"},
-      %{name: "Not Understood"},
-      %{name: "Interesting"},
-      %{name: "Boring"},
       %{name: "Age Group less than 10"},
       %{name: "Age Group 11 to 14"},
       %{name: "Age Group 15 to 18"},
       %{name: "Age Group 19 or above"},
       %{name: "Hindi"},
-      %{name: "English"},
-      %{name: "Help"},
-      %{name: "New Activity"}
+      %{name: "English"}
     ]
 
     utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -649,14 +640,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     uuid_map = %{
       help: generate_uuid(organization, "3fa22108-f464-41e5-81d9-d8a298854429"),
       language: generate_uuid(organization, "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"),
-      preference: generate_uuid(organization, "63397051-789d-418d-9388-2ef7eb1268bb"),
       newcontact: generate_uuid(organization, "6fe8fda9-2df6-4694-9fd6-45b9e724f545"),
-      registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
-      outofoffice: generate_uuid(organization, "af8a0aaa-dd10-4eee-b3b8-e59530e2f5f7"),
-      activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
-      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
-      optout: generate_uuid(organization, "bc1622f8-64f8-4b3d-b767-bb6bbfb65104"),
-      survey: generate_uuid(organization, "8333fce2-63d3-4849-bfd9-3543eb8b0430")
+      registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040")
     }
 
     flow_labels_id_map =
@@ -668,48 +653,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     data = [
       {"Help Workflow", ["help", "मदद"], uuid_map.help, true, "help.json"},
       {"Language Workflow", ["language", "भाषा"], uuid_map.language, true, "language.json"},
-      {"Preference Workflow", ["preference"], uuid_map.preference, false, "preference.json"},
       {"New Contact Workflow", ["newcontact"], uuid_map.newcontact, false, "new_contact.json"},
       {"Registration Workflow", ["registration"], uuid_map.registration, false,
-       "registration.json"},
-      {"Out of Office Workflow", ["outofoffice"], uuid_map.outofoffice, false,
-       "out_of_office.json"},
-      {"Activity", ["activity"], uuid_map.activity, false, "activity.json"},
-      {"Feedback", ["feedback"], uuid_map.feedback, false, "feedback.json"},
-      {"Optout Workflow", ["optout"], uuid_map.optout, false, "optout.json"},
-      {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"}
+       "registration.json"}
     ]
 
     Enum.map(data, &flow(&1, organization, uuid_map, flow_labels_id_map))
   end
-
-  defp replace_uuids(json, uuid_map),
-    do:
-      Enum.reduce(
-        uuid_map,
-        json,
-        fn {key, uuid}, acc ->
-          String.replace(
-            acc,
-            key |> Atom.to_string() |> String.upcase() |> Kernel.<>("_UUID"),
-            uuid
-          )
-        end
-      )
-
-  defp replace_label_uuids(json, flow_labels_id_map),
-    do:
-      Enum.reduce(
-        flow_labels_id_map,
-        json,
-        fn {key, id}, acc ->
-          String.replace(
-            acc,
-            key |> Kernel.<>(":ID"),
-            "#{id}"
-          )
-        end
-      )
 
   defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
     f =
@@ -722,23 +672,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         organization_id: organization.id
       })
 
-    definition =
-      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
-      |> replace_uuids(uuid_map)
-      |> replace_label_uuids(id_map)
-      |> Jason.decode!()
-      |> Map.merge(%{
-        "name" => f.name,
-        "uuid" => f.uuid
-      })
-
-    Repo.insert(%FlowRevision{
-      definition: definition,
-      flow_id: f.id,
-      status: "published",
-      version: 1,
-      organization_id: organization.id
-    })
+    SeedsDev.flow_revision(f, organization, file, uuid_map, id_map)
   end
 
   def contacts_field(organization) do

@@ -38,6 +38,8 @@ defmodule GlificWeb.APIAuthPlug do
     end
   end
 
+  @ttl 30
+
   @doc """
   Creates an access and renewal token for the user.
 
@@ -53,7 +55,7 @@ defmodule GlificWeb.APIAuthPlug do
     store_config = store_config(config)
 
     # 30 mins in seconds - this is the default, we wont change it
-    token_expiry_time = DateTime.utc_now() |> DateTime.add(30 * 60, :second)
+    token_expiry_time = DateTime.utc_now() |> DateTime.add(@ttl * 60, :second)
     fingerprint = conn.private[:pow_api_session_fingerprint] || Pow.UUID.generate()
     access_token = Pow.UUID.generate()
     renewal_token = Pow.UUID.generate()
@@ -65,7 +67,7 @@ defmodule GlificWeb.APIAuthPlug do
       |> Conn.put_private(:api_token_expiry_time, token_expiry_time)
 
     CredentialsCache.put(
-      store_config,
+      store_config |> Keyword.put(:ttl, :timer.minutes(@ttl)),
       access_token,
       {user, fingerprint: fingerprint, renewal_token: renewal_token}
     )
@@ -118,13 +120,13 @@ defmodule GlificWeb.APIAuthPlug do
   """
   @spec renew(Conn.t(), Config.t()) :: {Conn.t(), map() | nil}
   def renew(conn, config) do
-    Logger.info("Renewing tokens")
-
     store_config = store_config(config)
 
     with {:ok, signed_token} <- fetch_access_token(conn),
          {:ok, token} <- verify_token(conn, signed_token, config),
          {clauses, metadata} <- PersistentSessionCache.get(store_config, token) do
+      Logger.info("Renewing token succeeded")
+
       CredentialsCache.delete(store_config, metadata[:access_token])
       PersistentSessionCache.delete(store_config, token)
 
@@ -132,7 +134,9 @@ defmodule GlificWeb.APIAuthPlug do
       |> Conn.put_private(:pow_api_session_fingerprint, metadata[:fingerprint])
       |> load_and_create_session({clauses, metadata}, config)
     else
-      _any -> {conn, nil}
+      _any ->
+        Logger.error("Renewing token failed")
+        {conn, nil}
     end
   end
 

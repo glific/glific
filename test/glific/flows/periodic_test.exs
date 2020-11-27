@@ -3,10 +3,13 @@ defmodule Glific.Flows.PeriodicTest do
 
   alias Glific.{
     Fixtures,
-    Flows.Periodic
+    Flows.Periodic,
+    Seeds.SeedsDev
   }
 
-  def setup do
+  setup do
+    SeedsDev.seed_flow_labels()
+    SeedsDev.seed_flows()
     :ok
   end
 
