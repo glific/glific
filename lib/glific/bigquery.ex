@@ -114,10 +114,14 @@ defmodule Glific.Bigquery do
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
         Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
-    end
+          |> case do
+            {:ok, response} -> response
+            {:error, _} -> nil
+          end
+      end
 
     :ok
-  end
+end
 
   defp format_field_values("fields", contact_fields, org_id) when is_map(contact_fields) do
     values =
