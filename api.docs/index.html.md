@@ -52,7 +52,7 @@ You can view code examples in the dark area to the right.
 ## API Endpoint
 
 For NGOs who already have an account with Glific, your API endpoint is "api." concatenated with
-your current url. Thus if your endpoint is: https://ilp.tides.coloredcow.com/, your API endpoint will
+your current url. Thus if your Glific URL is: https://ilp.tides.coloredcow.com/, your API endpoint will
 be: https://api.ilp.tides.coloredcow.com/api
 
 Note that for authentication we use REST, and for the rest of the API we use [GraphQL](https://graphql.org).
