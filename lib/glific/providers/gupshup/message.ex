@@ -81,6 +81,19 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
+  @spec send_sticker(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_sticker(message) do
+    message_media = message.media
+
+    %{
+      type: :sticker,
+      url: message_media.url
+    }
+    |> send_message(message)
+  end
+
+  @doc false
+  @impl Glific.Providers.MessageBehaviour
   @spec receive_text(payload :: map()) :: map()
   def receive_text(params) do
     payload = params["payload"]
