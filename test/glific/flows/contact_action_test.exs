@@ -139,8 +139,12 @@ defmodule Glific.Flows.ContactActionTest do
       |> where([m], m.contact_id == ^contact.id)
       |> Ecto.Query.last()
       |> Repo.one()
+      |> Repo.preload(:media)
 
     # message media should be created
     assert message.media_id != nil
+    assert message.is_hsm == true
+    assert message.media.url == attachments["image"]
+    assert message.media.caption == "Hi var_1,\n\nYour account image was updated on var_2 by var_3 with above"
   end
 end
