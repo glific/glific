@@ -9,7 +9,7 @@ defmodule Glific.Repo.Migrations.AddTranslationToSessionTemplate do
   end
 
   def translation() do
-    alter table(:translations) do
+    alter table(:session_templates) do
       add :translation, :jsonb, default: "{}"
     end
   end
