@@ -35,28 +35,28 @@ defmodule Glific.Bigquery do
 
         case create_dataset(conn, project_id, dataset_id) do
           {:ok, _} ->
-            table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
-            table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
-            table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
+            create_tables(conn, dataset_id, project_id)
             contacts_messages_view(conn, dataset_id, project_id)
 
           {:error, response} ->
             {:ok, data} = Jason.decode(response.body)
-            update_tables(data, conn, dataset_id, project_id, organization_id)
+            handle_response(data, conn, dataset_id, project_id, organization_id)
         end
     end
 
     :ok
   end
 
-  defp update_tables(data, conn, dataset_id, project_id, organization_id) do
+  defp create_tables(conn, dataset_id, project_id) do
+    table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
+    table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
+    table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
+  end
+
+  defp handle_response(data, conn, dataset_id, project_id, organization_id) do
     error = data["error"]
     if error["status"] == "ALREADY_EXISTS" do
-      table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
-      |>case do
-        {:ok, _} -> nil
-        {:error, _} -> nil
-      end
+      create_tables(conn, dataset_id, project_id)
       alter_bigquery_tables(dataset_id, organization_id)
     end
   end
