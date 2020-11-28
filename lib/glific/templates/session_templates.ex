@@ -36,7 +36,7 @@ defmodule Glific.Templates.SessionTemplate do
           parent: SessionTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
-          translations:  [Translations.t()] | nil
+          translations: [map()] | [],
         }
 
   @required_fields [
@@ -56,9 +56,7 @@ defmodule Glific.Templates.SessionTemplate do
     :parent_id,
     :is_hsm,
     :uuid,
-    # commenting this out, since the tests were giving me an error
-    # about cast_embed etc
-    # :translations
+    :translations
   ]
 
   schema "session_templates" do
@@ -88,7 +86,7 @@ defmodule Glific.Templates.SessionTemplate do
       on_replace: :delete,
       join_keys: [template_id: :id, tag_id: :id]
 
-    embeds_many :translations, Translations
+    field :translations,  {:array, :map}, default: []
 
     timestamps(type: :utc_datetime)
   end
