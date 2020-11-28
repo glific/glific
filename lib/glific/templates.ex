@@ -99,6 +99,15 @@ defmodule Glific.Templates do
   @spec create_session_template(map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_session_template(attrs \\ %{}) do
+    translations = %{
+      "body" => attrs.body,
+      "language_id" => attrs.language_id,
+      "status" => "approved",
+      "channel" => %{uuid: "", name: "WhatsApp"}
+    }
+
+    attrs = Map.put(attrs, :translations, translations)
+
     %SessionTemplate{}
     |> SessionTemplate.changeset(attrs)
     |> Repo.insert()
@@ -119,6 +128,15 @@ defmodule Glific.Templates do
   @spec update_session_template(SessionTemplate.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def update_session_template(%SessionTemplate{} = session_template, attrs) do
+    translations = %{
+      "body" => attrs.body,
+      "language_id" => attrs.language_id,
+      "status" => "approved",
+      "channel" => %{uuid: "", name: "WhatsApp"}
+    }
+
+    attrs = Map.put(attrs, :translations, translations)
+
     session_template
     |> SessionTemplate.changeset(attrs)
     |> Repo.update()
