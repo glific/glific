@@ -74,11 +74,11 @@ defmodule Glific.Templates do
 
   ## Examples
 
-      iex> get_session_template!(123)
-      %SessionTemplate{}
+  iex> get_session_template!(123)
+  %SessionTemplate{}
 
-      iex> get_session_template!(456)
-      ** (Ecto.NoResultsError)
+  iex> get_session_template!(456)
+  ** (Ecto.NoResultsError)
 
   """
   @spec get_session_template!(integer) :: SessionTemplate.t()
@@ -99,13 +99,17 @@ defmodule Glific.Templates do
   @spec create_session_template(map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_session_template(attrs \\ %{}) do
-    translations = [%{
-      "body" => attrs.body,
-      "language_id" => attrs.language_id,
-      "status" => "approved",
-      "channel" => %{uuid: "", name: "WhatsApp"}
-    }]
+    translations = [
+      %{
+        body: attrs.body,
+        language_id: attrs.language_id,
+        status: "approved",
+        channel: %{uuid: "", name: "WhatsApp"}
+      }
+    ]
+
     attrs = Map.put(attrs, :translations, translations)
+
     %SessionTemplate{}
     |> SessionTemplate.changeset(attrs)
     |> Repo.insert()
@@ -126,14 +130,17 @@ defmodule Glific.Templates do
   @spec update_session_template(SessionTemplate.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def update_session_template(%SessionTemplate{} = session_template, attrs) do
-    translations = [%{
-      "body" => attrs.body,
-      "language_id" => attrs.language_id,
-      "status" => "approved",
-      "channel" => %{uuid: "", name: "WhatsApp"}
-    }]
+    translations = [
+      %{
+        body: attrs.body,
+        language_id: attrs.language_id,
+        status: "approved",
+        channel: %{uuid: "", name: "WhatsApp"}
+      }
+    ]
 
     attrs = Map.put(attrs, :translations, translations)
+
     session_template
     |> SessionTemplate.changeset(attrs)
     |> Repo.update()

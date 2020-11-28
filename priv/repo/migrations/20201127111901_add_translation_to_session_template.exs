@@ -10,7 +10,7 @@ defmodule Glific.Repo.Migrations.AddTranslationToSessionTemplate do
 
   def translations() do
     alter table(:session_templates) do
-      add :translations, {:array, :map}, default: []
+      add :translations, :jsonb, default: "[]"
     end
   end
 
