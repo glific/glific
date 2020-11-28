@@ -9,7 +9,8 @@ defmodule Glific.Templates.SessionTemplate do
     Messages.MessageMedia,
     Partners.Organization,
     Settings.Language,
-    Tags.Tag
+    Tags.Tag,
+    Templates.Translations
   }
 
   @type t() :: %__MODULE__{
@@ -35,7 +36,7 @@ defmodule Glific.Templates.SessionTemplate do
           parent: SessionTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
-          translations:  map() | nil
+          translations:  Translations.t() | nil
         }
 
   @required_fields [
@@ -71,7 +72,6 @@ defmodule Glific.Templates.SessionTemplate do
     field :is_source, :boolean, default: false
     field :is_active, :boolean, default: false
     field :is_reserved, :boolean, default: false
-    field :translations, :map, default: %{}
 
     belongs_to :language, Language
     belongs_to :organization, Organization
@@ -85,6 +85,8 @@ defmodule Glific.Templates.SessionTemplate do
       join_through: "templates_tags",
       on_replace: :delete,
       join_keys: [template_id: :id, tag_id: :id]
+
+    embeds_many :translations, Translations
 
     timestamps(type: :utc_datetime)
   end

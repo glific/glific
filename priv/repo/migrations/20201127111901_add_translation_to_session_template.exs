@@ -5,12 +5,12 @@ defmodule Glific.Repo.Migrations.AddTranslationToSessionTemplate do
   use Ecto.Migration
 
   def change do
-    translation()
+    translations()
   end
 
-  def translation() do
+  def translations() do
     alter table(:session_templates) do
-      add :translation, :jsonb, default: "{}"
+      add :translations, {:array, :map}, default: []
     end
   end
 
