@@ -9,8 +9,7 @@ defmodule Glific.Templates.SessionTemplate do
     Messages.MessageMedia,
     Partners.Organization,
     Settings.Language,
-    Tags.Tag,
-    Templates.Translations
+    Tags.Tag
   }
 
   @type t() :: %__MODULE__{

@@ -74,11 +74,11 @@ defmodule Glific.Templates do
 
   ## Examples
 
-  iex> get_session_template!(123)
-  %SessionTemplate{}
+      iex> get_session_template!(123)
+      %SessionTemplate{}
 
-  iex> get_session_template!(456)
-  ** (Ecto.NoResultsError)
+      iex> get_session_template!(456)
+      ** (Ecto.NoResultsError)
 
   """
   @spec get_session_template!(integer) :: SessionTemplate.t()
