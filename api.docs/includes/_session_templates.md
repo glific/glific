@@ -12,6 +12,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
     isHsm
     type
     isActive
+    translation
     isReserved
     isSource
     parent {
@@ -56,6 +57,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "isReserved": false,
         "isSource": false,
         "label": "Another Template Label",
+        "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template",
         "language": {
           "id": "2",
           "label": "English (United States)"
@@ -76,6 +78,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "isReserved": false,
         "isSource": false,
         "label": "Default Template Label",
+        "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Default Template",
         "language": {
           "id": "2",
           "label": "English (United States)"
@@ -113,6 +116,7 @@ query sessionTemplate($id: ID!) {
       body
       label
       shortcode
+      translation
       type
       language {
         id
@@ -142,6 +146,7 @@ query sessionTemplate($id: ID!) {
           "label": "English (United States)"
         },
         "shortcode": null,
+        "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Default Template",
         "type": "TEXT"
       }
     }
@@ -205,6 +210,7 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
       body
       label
       shortcode
+      translations
       type
     }
     errors{
@@ -236,6 +242,7 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
         "id": "34",
         "label": "Test label",
         "shortcode": null,
+        "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Test template",
         "type": "TEXT"
       }
     }
@@ -265,6 +272,7 @@ mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {
       label
       shortcode
       type
+      translations
     }
     errors {
       key
@@ -293,6 +301,7 @@ mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {
         "id": "1",
         "label": "Default Template Label",
         "shortcode": null,
+        "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Test template",
         "type": "TEXT"
       }
     }
@@ -445,6 +454,11 @@ Type | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>number_parameters</strong></td>
 <td valign="top"><a href="#int">Int</a></td>
 <td></td>
@@ -550,6 +564,15 @@ Match a language
 <tr>
 <td colspan="2" valign="top"><strong>languageId</strong></td>
 <td valign="top"><a href="#int">Int</a></td>
+<td>
+
+Match a translations
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
 <td>
 
 Match a language id
