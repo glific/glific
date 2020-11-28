@@ -13,7 +13,8 @@ defmodule Glific.Appsignal do
 
     if event == :exception && meta.attempt >= meta.max_attempts do
       context = inspect(Map.take(meta, [:id, :args, :queue, :worker]))
-      Transaction.set_error(transaction, meta.error, context, meta.stacktrace)
+      error = inspect(meta.error)
+      Transaction.set_error(transaction, error, context, meta.stacktrace)
     end
 
     Transaction.complete(transaction)
