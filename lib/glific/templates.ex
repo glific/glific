@@ -101,10 +101,9 @@ defmodule Glific.Templates do
   def create_session_template(attrs \\ %{}) do
     translations = [
       %{
-        body: attrs.body,
-        language_id: attrs.language_id,
-        status: "approved",
-        channel: %{uuid: "", name: "WhatsApp"}
+        "body" => attrs.body,
+        "status" => "approved",
+        "channel" => %{"uuid" => "", "name" => "WhatsApp"}
       }
     ]
 
@@ -132,10 +131,9 @@ defmodule Glific.Templates do
   def update_session_template(%SessionTemplate{} = session_template, attrs) do
     translations = [
       %{
-        body: attrs.body,
-        language_id: attrs.language_id,
-        status: "approved",
-        channel: %{uuid: "", name: "WhatsApp"}
+        "body"=> attrs.body,
+        "status"=> "approved",
+        "channel"=> %{"uuid"=> "", "name"=> "WhatsApp"}
       }
     ]
 
