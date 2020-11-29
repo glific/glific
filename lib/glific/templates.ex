@@ -99,6 +99,7 @@ defmodule Glific.Templates do
   @spec create_session_template(map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_session_template(attrs \\ %{}) do
+    attrs = attrs|>Map.put_new(:body, "default body")
     translations = [
       %{
         "body" => attrs.body,
@@ -129,6 +130,7 @@ defmodule Glific.Templates do
   @spec update_session_template(SessionTemplate.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def update_session_template(%SessionTemplate{} = session_template, attrs) do
+    attrs = attrs|>Map.put_new(:body, "default body")
     translations = [
       %{
         "body"=> attrs.body,
