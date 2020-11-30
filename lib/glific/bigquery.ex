@@ -55,6 +55,7 @@ defmodule Glific.Bigquery do
 
   defp handle_response(data, conn, dataset_id, project_id, organization_id) do
     error = data["error"]
+
     if error["status"] == "ALREADY_EXISTS" do
       create_tables(conn, dataset_id, project_id)
       alter_bigquery_tables(dataset_id, organization_id)
@@ -117,15 +118,16 @@ defmodule Glific.Bigquery do
 
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
+
         Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
-          |> case do
-            {:ok, response} -> response
-            {:error, _} -> nil
-          end
-      end
+        |> case do
+          {:ok, response} -> response
+          {:error, _} -> nil
+        end
+    end
 
     :ok
-end
+  end
 
   defp format_field_values("fields", contact_fields, org_id) when is_map(contact_fields) do
     values =
@@ -197,46 +199,46 @@ end
   end
 
   defp table(schema, conn, dataset_id, project_id, table_id) do
-      Tables.bigquery_tables_insert(
-        conn,
-        project_id,
-        dataset_id,
-        [
-          body: %{
-            tableReference: %{
-              datasetId: dataset_id,
-              projectId: project_id,
-              tableId: table_id
-            },
-            schema: %{
-              fields: schema
-            }
+    Tables.bigquery_tables_insert(
+      conn,
+      project_id,
+      dataset_id,
+      [
+        body: %{
+          tableReference: %{
+            datasetId: dataset_id,
+            projectId: project_id,
+            tableId: table_id
+          },
+          schema: %{
+            fields: schema
           }
-        ],
-        []
-      )
+        }
+      ],
+      []
+    )
   end
 
   defp alter_table(schema, conn, dataset_id, project_id, table_id) do
-      Tables.bigquery_tables_update(
-        conn,
-        project_id,
-        dataset_id,
-        table_id,
-        [
-          body: %{
-            tableReference: %{
-              datasetId: dataset_id,
-              projectId: project_id,
-              tableId: table_id
-            },
-            schema: %{
-              fields: schema
-            }
+    Tables.bigquery_tables_update(
+      conn,
+      project_id,
+      dataset_id,
+      table_id,
+      [
+        body: %{
+          tableReference: %{
+            datasetId: dataset_id,
+            projectId: project_id,
+            tableId: table_id
+          },
+          schema: %{
+            fields: schema
           }
-        ],
-        []
-      )
+        }
+      ],
+      []
+    )
   end
 
   defp contacts_messages_view(conn, dataset_id, project_id) do

@@ -123,7 +123,8 @@ defmodule Glific.Flows.ContactAction do
   # Our simple workaround of sending in a specific attachment for a specific
   # template that is being localized. Allows us to maintain the same flow, and have
   # language specific templates
-  @spec extract_attachment_from_text(String.t(), String.t(), String.t()) :: {String.t(), String.t(), String.t()}
+  @spec extract_attachment_from_text(String.t(), String.t(), String.t()) ::
+          {String.t(), String.t(), String.t()}
   defp extract_attachment_from_text(caption, type, url) do
     if String.contains?(caption, "attachment: ") do
       [caption, attachment] = String.split(caption, "attachment: ", parts: 2)
