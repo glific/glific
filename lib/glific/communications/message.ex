@@ -27,7 +27,8 @@ defmodule Glific.Communications.Message do
     image: :send_image,
     audio: :send_audio,
     video: :send_video,
-    document: :send_document
+    document: :send_document,
+    sticker: :send_sticker
   }
 
   @doc """
@@ -176,7 +177,7 @@ defmodule Glific.Communications.Message do
     {:ok}
   end
 
-  # handler for receiving the media (image|video|audio|document)  message
+  # handler for receiving the media (image|video|audio|document|sticker)  message
   @spec receive_media(map()) :: {:ok}
   defp receive_media(message_params) do
     {:ok, message_media} = Messages.create_message_media(message_params)

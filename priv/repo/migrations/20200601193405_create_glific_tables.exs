@@ -206,7 +206,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # The body of the message
       add :body, :text, null: false
 
-      # Options are: text, audio, video, image, contact, location, file
+      # Options are: text, audio, video, image, contact, location, file, sticker
       add :type, :message_type_enum
 
       # Is this a predefined system object?
@@ -341,7 +341,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # The body of the message
       add :body, :text
 
-      # Options are: text, audio, video, image, contact, location, file
+      # Options are: text, audio, video, image, contact, location, file, sticker
       add :type, :message_type_enum
 
       # Field to check hsm message type

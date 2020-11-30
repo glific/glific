@@ -293,12 +293,14 @@ defmodule Glific.Flows.Action do
 
   defp process_attachments(attachment_list) do
     attachment_list
-    |> Enum.map(fn attchement ->
-      case String.split(attchement, ":", parts: 2) do
-        [type, url] -> {type, url}
-        _ -> {nil, nil}
+    |> Enum.reduce(
+      %{},
+      fn attachment, acc ->
+        case String.split(attachment, ":", parts: 2) do
+          [type, url] -> Map.put(acc, type, url)
+          _ -> acc
+        end
       end
-    end)
-    |> Map.new()
+    )
   end
 end

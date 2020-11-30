@@ -53,6 +53,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   @spec video(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def video(conn, params), do: media(conn, params, :video)
 
+  @doc """
+  Callback for gupshup sticker image
+  """
+  @spec sticker(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def sticker(conn, params), do: media(conn, params, :sticker)
+
   @doc false
   # Handle Gupshup media message and convert them into Glific Message struct
   @spec media(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
