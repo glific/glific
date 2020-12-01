@@ -32,13 +32,14 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
 
 {
   "filter": {
-    "body": "template",
-    "term": "label"
+    "term": "label",
+    "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}]
   },
   "opts": {
     "order": "ASC",
     "limit": 10,
-    "offset": 0
+    "offset": 0,
+    
   }
 }
 ```
@@ -57,7 +58,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "isReserved": false,
         "isSource": false,
         "label": "Another Template Label",
-        "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template",
+        "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}],
         "language": {
           "id": "2",
           "label": "English (United States)"
