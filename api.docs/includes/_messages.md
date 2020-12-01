@@ -40,7 +40,7 @@ query messages($filter: MessageFilter, $opts: Opts) {
             "id": "2",
             "name": "Default Sender"
         }
-        
+
       },
       {
         "id": "15",
@@ -49,7 +49,7 @@ query messages($filter: MessageFilter, $opts: Opts) {
             "id": "13",
             "name": "Althea Hirthe"
         }
-        
+
       }
     ]
   }

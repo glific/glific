@@ -416,11 +416,11 @@ Type | Description
 ```graphql
 mutation startContactFlow($flowId: ID!, $contactId: ID!) {
   startContactFlow(flowId: $flowId, contactId: $contactId) {
-  	success
-  	errors {
-    	key
-  		message
-  	}
+    success
+    errors {
+        key
+        message
+    }
   }
 }
 
@@ -479,11 +479,11 @@ Type | Description
 ```graphql
 mutation startGroupFlow($flowId: ID!, $groupId: ID!) {
   startGroupFlow(flowId: $flowId, groupId: $groupId) {
-  	success
-  	errors {
-    	key
-  		message
-  	}
+    success
+    errors {
+        key
+        message
+    }
   }
 }
 
@@ -639,6 +639,16 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>ignoreKeywords</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>insertedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>updatedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
 </tr>
 </tbody>
