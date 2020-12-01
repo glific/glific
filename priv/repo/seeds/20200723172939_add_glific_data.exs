@@ -582,6 +582,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       shortcode: "user-registration",
       is_reserved: true,
       language_id: en_us.id,
+      translations: translations,
       organization_id: organization.id,
       number_parameters: 0,
       uuid: generate_uuid(organization, "fbf8d5a6-91ab-47ab-9691-35ef35443ad8")
