@@ -445,14 +445,18 @@ if Code.ensure_loaded?(Faker) do
       [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
       [hi | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
 
-       translations = [
-        %{
-          body:
-          "अब आप नीचे दिए विकल्पों में से एक का चयन करके {{1}} के साथ समाप्त होने वाले खाते के लिए अपना खाता शेष या मिनी स्टेटमेंट देख सकते हैं। | [अकाउंट बैलेंस देखें] | [देखें मिनी स्टेटमेंट]",
-          language_id: hi.id,
-          number_parameters: 1,
+      translations =
+      %{
+        hi.id => % {
+           body: """
+            मुझे खेद है कि मैं कल आपकी चिंताओं का जवाब देने में सक्षम नहीं था, लेकिन मैं अब आपकी सहायता करने में प्रसन्न हूं।
+              यदि आप इस चर्चा को जारी रखना चाहते हैं, तो कृपया 'हां' के साथ उत्तर दें।
+              """,
+            language_id: hi.id,
+            number_parameters: 0,
         }
-      ]
+      }
+
 
       Repo.insert!(%SessionTemplate{
         label: "Account Balance",

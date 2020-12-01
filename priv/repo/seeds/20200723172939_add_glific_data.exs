@@ -518,17 +518,18 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   def hsm_templates(organization, en_us, hi) do
 
-    translations = [
+    translations =
       %{
-
-        body: """
-        मुझे खेद है कि मैं कल आपकी चिंताओं का जवाब देने में सक्षम नहीं था, लेकिन मैं अब आपकी सहायता करने में प्रसन्न हूं।
-          यदि आप इस चर्चा को जारी रखना चाहते हैं, तो कृपया 'हां' के साथ उत्तर दें।
-          """,
-        language_id: hi.id,
-        number_parameters: 0,
+        hi.id => % {
+           body: """
+            मुझे खेद है कि मैं कल आपकी चिंताओं का जवाब देने में सक्षम नहीं था, लेकिन मैं अब आपकी सहायता करने में प्रसन्न हूं।
+              यदि आप इस चर्चा को जारी रखना चाहते हैं, तो कृपया 'हां' के साथ उत्तर दें।
+              """,
+            language_id: hi.id,
+            number_parameters: 0,
+        }
       }
-    ]
+
 
     Repo.insert!(%SessionTemplate{
       label: "Missed Message Apology",
