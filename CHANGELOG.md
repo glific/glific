@@ -48,8 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.8.0 and prior] - 2020-12-01
 ### Added
 - Attachment support from the chat window
-- Media HSM files
+- Send Media HSM templates from flow editor
 - Showing BSP balance on the dashboard 
+- Added flows information on the bigquery
+- Mask phone numbers in the profile page
 - Updated Documentation
 
 ### Fixed
