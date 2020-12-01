@@ -33,11 +33,11 @@ check_origin =
 # GLific endpoint configs
 config :glific, GlificWeb.Endpoint,
   server: true,
-  force_ssl: [hsts: true],
+  force_ssl: [rewrite_on: [:x_forwarded_proto], host: nil],
   http: [:inet6, port: http_port],
   check_origin: check_origin,
   secret_key_base: secret_key_base,
-  url: [host: System.get_env("BASE_URL")]
+  url: [host: System.get_env("BASE_URL"), scheme: "https", port: 443]
 
 # AppSignal configs
 config :appsignal, :config,
