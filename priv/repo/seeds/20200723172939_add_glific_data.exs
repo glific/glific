@@ -53,7 +53,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     users(admin, organization)
 
-    hsm_templates(organization, en_us)
+    hsm_templates(organization, en_us, hi)
 
     saved_searches(organization)
 
@@ -516,7 +516,20 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       else: Ecto.UUID.generate()
   end
 
-  def hsm_templates(organization, en_us) do
+  def hsm_templates(organization, en_us, hi) do
+
+    translations = [
+      %{
+
+        body: """
+        मुझे खेद है कि मैं कल आपकी चिंताओं का जवाब देने में सक्षम नहीं था, लेकिन मैं अब आपकी सहायता करने में प्रसन्न हूं।
+          यदि आप इस चर्चा को जारी रखना चाहते हैं, तो कृपया 'हां' के साथ उत्तर दें।
+          """,
+        language_id: hi.id,
+        number_parameters: 0,
+      }
+    ]
+
     Repo.insert!(%SessionTemplate{
       label: "Missed Message Apology",
       type: :text,
@@ -526,9 +539,10 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       language_id: en_us.id,
       organization_id: organization.id,
       body: """
-      I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
-      If you’d like to continue this discussion, please reply with ‘yes’
-      """,
+        I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
+        If you’d like to continue this discussion, please reply with ‘yes’
+        """,
+      translations: translations,
       uuid: generate_uuid(organization, "9381b1b9-1b9b-45a6-81f4-f91306959619")
     })
 

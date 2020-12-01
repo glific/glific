@@ -443,6 +443,16 @@ if Code.ensure_loaded?(Faker) do
     def seed_session_templates(organization \\ nil) do
       organization = get_organization(organization)
       [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+      [hi | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
+
+       translations = [
+        %{
+          body:
+          "अब आप नीचे दिए विकल्पों में से एक का चयन करके {{1}} के साथ समाप्त होने वाले खाते के लिए अपना खाता शेष या मिनी स्टेटमेंट देख सकते हैं। | [अकाउंट बैलेंस देखें] | [देखें मिनी स्टेटमेंट]",
+          language_id: hi.id,
+          number_parameters: 1,
+        }
+      ]
 
       Repo.insert!(%SessionTemplate{
         label: "Account Balance",
@@ -451,6 +461,7 @@ if Code.ensure_loaded?(Faker) do
         is_hsm: true,
         number_parameters: 1,
         language_id: en_us.id,
+        translations: translations,
         organization_id: organization.id,
         # spaces are important here, since gupshup pattern matches on it
         body:

@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.v0_8_1_AlterGlificTables do
+defmodule Glific.Repo.Migrations.V0_8_1_AlterGlificTables do
   use Ecto.Migration
 
   def up do
