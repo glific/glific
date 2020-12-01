@@ -50,6 +50,9 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :last_message_at, :datetime
     field :last_communication_at, :datetime
 
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+
     field :language, :language do
       resolve(dataloader(Repo))
     end

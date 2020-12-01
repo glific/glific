@@ -598,7 +598,7 @@ defmodule Glific.PartnersTest do
 
       valid_attrs = %{
         shortcode: provider.shortcode,
-        secrets: %{api_kye: "test_value"},
+        secrets: %{api_key: "test_value"},
         organization_id: organization_id
       }
 
@@ -609,7 +609,7 @@ defmodule Glific.PartnersTest do
       # credential with same provider shortcode for the organization should not be allowed
       valid_attrs = %{
         shortcode: provider.shortcode,
-        secrets: %{provider_kye: "test_value_2"},
+        secrets: %{provider_key: "test_value_2"},
         organization_id: organization_id
       }
 
@@ -622,7 +622,7 @@ defmodule Glific.PartnersTest do
 
       valid_attrs = %{
         shortcode: provider.shortcode,
-        secrets: %{api_kye: "test_value"},
+        secrets: %{api_key: "test_value"},
         organization_id: organization_id
       }
 
@@ -641,14 +641,14 @@ defmodule Glific.PartnersTest do
 
       valid_attrs = %{
         shortcode: provider.shortcode,
-        secrets: %{api_kye: "test_value"},
+        secrets: %{api_key: "test_value"},
         organization_id: organization_id
       }
 
       {:ok, credential} = Partners.create_credential(valid_attrs)
 
       valid_update_attrs = %{
-        secrets: %{api_kye: "updated_test_value"}
+        secrets: %{api_key: "updated_test_value"}
       }
 
       assert {:ok, %Credential{} = credential} =
@@ -666,7 +666,7 @@ defmodule Glific.PartnersTest do
 
       valid_attrs = %{
         shortcode: provider.shortcode,
-        secrets: %{api_kye: "test_value"},
+        secrets: %{api_key: "test_value"},
         organization_id: organization_id
       }
 
@@ -674,7 +674,7 @@ defmodule Glific.PartnersTest do
 
       valid_update_attrs = %{
         keys: %{"api_end_point" => "test_end_point"},
-        secrets: %{"api_kye" => "updated_test_value", "app_name" => "test_app_name"},
+        secrets: %{"api_key" => "updated_test_value", "app_name" => "test_app_name"},
         organization_id: organization_id
       }
 
