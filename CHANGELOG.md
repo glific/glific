@@ -47,10 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0 and prior] - 2020-12-01
 ### Added
-- Sticker support
+- Attachment support from the chat window
 - Media HSM files
-- Showing BSP balance 
-- Documentation
+- Showing BSP balance on the dashboard 
+- Updated Documentation
 
 ### Fixed
 - Fixed login timeout issue.
