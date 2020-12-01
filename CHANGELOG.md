@@ -53,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Documentation
 - Sticker Support in messages
 - Updating fields in Bigquery
-
+- Archiving Flows in Bigquery
 
 ### Fixed
 - Fixed login timeout issue.
