@@ -48,10 +48,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.8.0 and prior] - 2020-12-01
 ### Added
 - Attachment support from the chat window
-- Media HSM files
+- Support for HSM's media files
 - Showing BSP balance on the dashboard 
 - Updated Documentation
+- Sticker Support in messages
+- Updating fields in Bigquery
+
 
 ### Fixed
 - Fixed login timeout issue.
 - Update the readme file
+- Adding contact to group from automation
+
