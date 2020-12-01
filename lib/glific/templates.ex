@@ -40,6 +40,9 @@ defmodule Glific.Templates do
       {:is_hsm, is_hsm}, query ->
         from q in query, where: q.is_hsm == ^is_hsm
 
+      {:body, body}, query ->
+        from q in query, where: q.is_hsm == ^is_hsm
+
       {:term, term}, query ->
         query
         |> join(:left, [template], template_tag in TemplateTag,
