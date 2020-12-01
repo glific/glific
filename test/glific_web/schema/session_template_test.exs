@@ -170,14 +170,16 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     language_id = session_template.language_id
 
+    translations =  [ %{body: "Test Template", language_id: language_id, status: "approved", number_parameters: 2}]
+
     result =
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
             "label" => "Test Label",
-            "body" => "Test Template",
             "type" => "TEXT",
-            "languageId" => language_id
+            "languageId" => language_id,
+            "translations" => Jason.encode!(translations)
           }
         }
       )
@@ -192,9 +194,9 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
         variables: %{
           "input" => %{
             "label" => "Test Label 2",
-            "body" => "Test Template 2",
             "type" => "TEXT",
-            "languageId" => language_id
+            "languageId" => language_id,
+            "translations" => Jason.encode!(translations)
           }
         }
       )
@@ -204,9 +206,9 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
         variables: %{
           "input" => %{
             "label" => "Test Label 2",
-            "body" => "Test Template 2",
             "type" => "TEXT",
-            "languageId" => language_id
+            "languageId" => language_id,
+            "translations" => Jason.encode!(translations)
           }
         }
       )
@@ -255,7 +257,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   test "delete an session_template", %{staff: user} do
     {:ok, session_template} =
       Repo.fetch_by(SessionTemplate, %{
-        body: "Default Template",
+        label: "Account Update",
         organization_id: user.organization_id
       })
 
@@ -273,10 +275,9 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   end
 
   test "send session message", %{staff: user} do
-    body = "Default Template"
-
+    label = "Account Update"
     {:ok, session_template} =
-      Repo.fetch_by(SessionTemplate, %{body: body, organization_id: user.organization_id})
+      Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
 
     name = "Adelle Cavin"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})

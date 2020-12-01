@@ -17,16 +17,12 @@ defmodule Glific.Templates.SessionTemplate do
           id: non_neg_integer | nil,
           uuid: Ecto.UUID.t() | nil,
           label: String.t() | nil,
-          body: String.t() | nil,
           type: String.t() | nil,
           shortcode: String.t() | nil,
           is_hsm: boolean(),
-          number_parameters: non_neg_integer | nil,
           is_source: boolean(),
           is_active: boolean(),
           is_reserved: boolean(),
-          language_id: non_neg_integer | nil,
-          language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           message_media_id: non_neg_integer | nil,
@@ -40,14 +36,11 @@ defmodule Glific.Templates.SessionTemplate do
 
   @required_fields [
     :label,
-    :body,
     :type,
-    :language_id,
     :organization_id
   ]
   @optional_fields [
     :shortcode,
-    :number_parameters,
     :is_reserved,
     :is_active,
     :is_source,
@@ -131,4 +124,13 @@ defmodule Glific.Templates.SessionTemplate do
         changeset
     end
   end
+
+  @doc false
+  # if template type is not text then it should have media id
+  @spec changeset(Ecto.Changeset.t(), SessionTemplate.t()) :: Ecto.Changeset.t()
+  defp validate_translations(changeset, template) do
+    changeset
+  end
+
+
 end

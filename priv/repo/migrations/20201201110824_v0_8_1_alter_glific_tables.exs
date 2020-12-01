@@ -16,6 +16,9 @@ defmodule Glific.Repo.Migrations.V0_8_1_AlterGlificTables do
   defp add_translations_to_session_templates() do
     alter table(:session_templates) do
       add :translations, :jsonb, default: "[]"
+      remove :body
+      remove :language_id
+      remove :number_parameters
     end
   end
 end

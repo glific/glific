@@ -444,54 +444,78 @@ if Code.ensure_loaded?(Faker) do
       organization = get_organization(organization)
       [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
+      translations = [
+        %{
+          body:
+          "You can now view your Account Balance or Mini statement for Account ending with {{1}} simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
+          language_id: en_us.id,
+          number_parameters: 1,
+        }
+      ]
+
       Repo.insert!(%SessionTemplate{
         label: "Account Balance",
         type: :text,
         shortcode: "account_balance",
         is_hsm: true,
-        number_parameters: 1,
-        language_id: en_us.id,
         organization_id: organization.id,
+        translations: translations,
         # spaces are important here, since gupshup pattern matches on it
-        body:
-          "You can now view your Account Balance or Mini statement for Account ending with {{1}} simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
         uuid: Ecto.UUID.generate()
       })
+
+      translations = [
+        %{
+          body:
+          "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{2}}]",
+          language_id: en_us.id,
+          number_parameters: 2,
+        }
+      ]
 
       Repo.insert!(%SessionTemplate{
         label: "Movie Ticket",
         type: :text,
         shortcode: "movie_ticket",
         is_hsm: true,
-        number_parameters: 2,
-        language_id: en_us.id,
+        translations: translations,
         organization_id: organization.id,
-        body:
-          "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{2}}]",
         uuid: Ecto.UUID.generate()
       })
+
+      translations = [
+        %{
+          body: "Hi {{1}},\nPlease find the attached bill.",
+          language_id: en_us.id,
+          number_parameters: 1,
+        }
+      ]
 
       Repo.insert!(%SessionTemplate{
         label: "Personalized Bill",
         type: :text,
         shortcode: "personalized_bill",
         is_hsm: true,
-        number_parameters: 1,
-        language_id: en_us.id,
         organization_id: organization.id,
-        body: "Hi {{1}},\nPlease find the attached bill.",
+        translations: translations,
         uuid: Ecto.UUID.generate()
       })
+
+      translations = [
+        %{
+          body: "Hi {{1}},\n\nYour account image was updated on {{2}} by {{3}} with above",
+          language_id: en_us.id,
+          number_parameters: 3,
+        }
+      ]
 
       Repo.insert!(%SessionTemplate{
         label: "Account Update",
         type: :image,
         shortcode: "account_update",
         is_hsm: true,
-        number_parameters: 3,
-        language_id: en_us.id,
         organization_id: organization.id,
-        body: "Hi {{1}},\n\nYour account image was updated on {{2}} by {{3}} with above",
+        translations: translations,
         uuid: Ecto.UUID.generate()
       })
     end

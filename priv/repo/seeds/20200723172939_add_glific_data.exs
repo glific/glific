@@ -517,44 +517,64 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def hsm_templates(organization, en_us) do
+
+    translations = [
+      %{
+        body: """
+        I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
+        If you’d like to continue this discussion, please reply with ‘yes’
+        """,
+        language_id: en_us.id,
+        number_parameters: 0,
+      }
+    ]
+
     Repo.insert!(%SessionTemplate{
       label: "Missed Message Apology",
       type: :text,
       shortcode: "missed_message",
       is_hsm: true,
-      number_parameters: 0,
-      language_id: en_us.id,
       organization_id: organization.id,
-      body: """
-      I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
-      If you’d like to continue this discussion, please reply with ‘yes’
-      """,
+      translations: translations,
       uuid: generate_uuid(organization, "9381b1b9-1b9b-45a6-81f4-f91306959619")
     })
+
+    translations = [
+      %{
+        body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+        language_id: en_us.id,
+        number_parameters: 3,
+      }
+    ]
 
     Repo.insert!(%SessionTemplate{
       label: "OTP Message",
       type: :text,
       shortcode: "otp",
       is_hsm: true,
-      number_parameters: 3,
-      language_id: en_us.id,
       organization_id: organization.id,
-      body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+      translations: translations,
       uuid: generate_uuid(organization, "e55f2c10-541c-470b-a5ff-9249ae82bc95")
     })
 
+    translations = [
+      %{
+        body: """
+        Please click on the link to register with the phone number @contact.phone
+        @global.registration.url
+        """,
+        language_id: en_us.id,
+        number_parameters: 0,
+      }
+    ]
+
     Repo.insert!(%SessionTemplate{
       label: "User Registration",
-      body: """
-      Please click on the link to register with the phone number @contact.phone
-      @global.registration.url
-      """,
       type: :text,
       shortcode: "user-registration",
       is_reserved: true,
-      language_id: en_us.id,
       organization_id: organization.id,
+      translations: translations,
       uuid: generate_uuid(organization, "fbf8d5a6-91ab-47ab-9691-35ef35443ad8")
     })
   end
