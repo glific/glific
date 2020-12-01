@@ -6,7 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.7.3] - 2020-11-30
+## [0.8.2] - 2020-12-07
+### Added
+- Support for translations within session templates
+- Support for HSM variables when sending HSM templates
+- Allow sorting of flows based on last updated time
+
+
+## [0.8.0] - 2020-12-01
 ### Added
 - Logging high level actions
 - Attachment support to sending messages in frontend
@@ -50,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Attachment support from the chat window
 - Sticker Support in messages
 - Send Media HSM templates from flow editor
-- Showing BSP balance on the dashboard 
+- Showing BSP balance on the dashboard
 - Added flows information on the bigquery
 - Mask phone numbers in the profile page
 - Sync contact fields in Bigquery
@@ -60,4 +67,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed login timeout issue.
 - Update the readme file
 - Adding contact to group from automation
-

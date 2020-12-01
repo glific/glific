@@ -35,7 +35,8 @@ defmodule Glific.Repo.Migrations.Batch do
 
       # the offset in time when this should execute relative to the previous one
       # The first entry for a batch will always have offset 0
-      add :offset, :integer, null: false # the time difference in minutes
+      # the time difference in minutes
+      add :offset, :integer, null: false
 
       # the flow that should be triggered when this detail is executed
       add :flow_id, references(:flow, on_delete: :delete_all), null: false
@@ -61,7 +62,8 @@ defmodule Glific.Repo.Migrations.Batch do
       add :start_at, :utc_datetime, null: true, default: nil
       add :completed_at, :utc_datetime, null: true, default: nil
 
-      add :flow_batch_detail_id, references(:flow_batch_detail, on_delete: :delete_all), null: false
+      add :flow_batch_detail_id, references(:flow_batch_detail, on_delete: :delete_all),
+        null: false
 
       add :flow_batch_id, references(:flow_batches, on_delete: :delete_all), null: false
 
