@@ -99,17 +99,17 @@ defmodule Glific.Templates do
   @spec create_session_template(map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_session_template(attrs \\ %{}) do
-    attrs = attrs|>Map.put_new(:body, "default body")
-    translations = [
-      %{
-        "body" => attrs.body,
-        "status" => "approved",
-        "channel" => %{"uuid" => "", "name" => "WhatsApp"}
-      }
-    ]
+    if attrs |> Map.has_key?(:body) do
+      translations = [
+        %{
+          "body" => attrs.body,
+          "status" => "approved",
+          "channel" => %{"uuid" => "", "name" => "WhatsApp"}
+        }
+      ]
 
-    attrs = Map.put(attrs, :translations, translations)
-
+      attrs = Map.put(attrs, :translations, translations)
+    end
     %SessionTemplate{}
     |> SessionTemplate.changeset(attrs)
     |> Repo.insert()
@@ -130,17 +130,17 @@ defmodule Glific.Templates do
   @spec update_session_template(SessionTemplate.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def update_session_template(%SessionTemplate{} = session_template, attrs) do
-    attrs = attrs|>Map.put_new(:body, "default body")
-    translations = [
-      %{
-        "body"=> attrs.body,
-        "status"=> "approved",
-        "channel"=> %{"uuid"=> "", "name"=> "WhatsApp"}
-      }
-    ]
+    if attrs |> Map.has_key?(:body) do
+      translations = [
+        %{
+          "body" => attrs.body,
+          "status" => "approved",
+          "channel" => %{"uuid" => "", "name" => "WhatsApp"}
+        }
+      ]
 
-    attrs = Map.put(attrs, :translations, translations)
-
+      attrs = Map.put(attrs, :translations, translations)
+    end
     session_template
     |> SessionTemplate.changeset(attrs)
     |> Repo.update()
