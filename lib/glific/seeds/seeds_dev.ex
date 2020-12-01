@@ -447,9 +447,10 @@ if Code.ensure_loaded?(Faker) do
 
       translations = %{
         hi.id => %{
-          body: " अब आप नीचे दिए विकल्पों में से एक का चयन करके {{1}} के साथ समाप्त होने वाले खाते के लिए अपना खाता शेष या मिनी स्टेटमेंट देख सकते हैं। | [अकाउंट बैलेंस देखें] | [देखें मिनी स्टेटमेंट]",
+          body:
+            " अब आप नीचे दिए विकल्पों में से एक का चयन करके {{1}} के साथ समाप्त होने वाले खाते के लिए अपना खाता शेष या मिनी स्टेटमेंट देख सकते हैं। | [अकाउंट बैलेंस देखें] | [देखें मिनी स्टेटमेंट]",
           language_id: hi.id,
-          number_parameters: 1,
+          number_parameters: 1
         }
       }
 
@@ -470,9 +471,10 @@ if Code.ensure_loaded?(Faker) do
 
       translations = %{
         hi.id => %{
-          body: "नीचे दिए गए लिंक से अपना {{1}} टिकट डाउनलोड करें। | [वेबसाइट पर जाएं, https: //www.gupshup.io/developer/ {{2}}",
+          body:
+            "नीचे दिए गए लिंक से अपना {{1}} टिकट डाउनलोड करें। | [वेबसाइट पर जाएं, https: //www.gupshup.io/developer/ {{2}}",
           language_id: hi.id,
-          number_parameters: 2,
+          number_parameters: 2
         }
       }
 
@@ -494,9 +496,10 @@ if Code.ensure_loaded?(Faker) do
         hi.id => %{
           body: " हाय {{1}}, \n कृपया बिल संलग्न करें।",
           language_id: hi.id,
-          number_parameters: 1,
+          number_parameters: 1
         }
       }
+
       Repo.insert!(%SessionTemplate{
         label: "Personalized Bill",
         type: :text,
@@ -508,15 +511,16 @@ if Code.ensure_loaded?(Faker) do
         translations: translations,
         body: "Hi {{1}},\nPlease find the attached bill.",
         uuid: Ecto.UUID.generate()
-        })
+      })
 
       translations = %{
         hi.id => %{
           body: "हाय {{1}}, \ n \ n आपके खाते की छवि {{2}} पर {{3}} द्वारा अद्यतन की गई थी।",
           language_id: hi.id,
-          number_parameters: 3,
+          number_parameters: 3
         }
       }
+
       Repo.insert!(%SessionTemplate{
         label: "Account Update",
         type: :image,

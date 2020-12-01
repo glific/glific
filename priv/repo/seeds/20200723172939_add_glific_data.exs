@@ -517,17 +517,14 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def hsm_templates(organization, en_us, hi) do
-
-    translations =
-      %{
-        hi.id => %{
-          body: " मुझे खेद है कि मैं कल आपकी चिंताओं का जवाब देने में सक्षम नहीं था, लेकिन मैं अब आपकी सहायता करने में प्रसन्न हूं।
+    translations = %{
+      hi.id => %{
+        body: " मुझे खेद है कि मैं कल आपकी चिंताओं का जवाब देने में सक्षम नहीं था, लेकिन मैं अब आपकी सहायता करने में प्रसन्न हूं।
           यदि आप इस चर्चा को जारी रखना चाहते हैं, तो कृपया 'हां' के साथ उत्तर दें।",
-          language_id: hi.id,
-          number_parameters: 0,
-        }
+        language_id: hi.id,
+        number_parameters: 0
       }
-
+    }
 
     Repo.insert!(%SessionTemplate{
       label: "Missed Message Apology",
@@ -538,9 +535,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       language_id: en_us.id,
       organization_id: organization.id,
       body: """
-        I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
-        If you’d like to continue this discussion, please reply with ‘yes’
-        """,
+      I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
+      If you’d like to continue this discussion, please reply with ‘yes’
+      """,
       translations: translations,
       uuid: generate_uuid(organization, "9381b1b9-1b9b-45a6-81f4-f91306959619")
     })
@@ -549,9 +546,10 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       hi.id => %{
         body: "{{1}} के लिए आपका OTP {{2}} है। यह {{3}} के लिए मान्य है।",
         language_id: hi.id,
-        number_parameters: 3,
+        number_parameters: 3
       }
     }
+
     Repo.insert!(%SessionTemplate{
       label: "OTP Message",
       type: :text,
@@ -567,11 +565,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     translations = %{
       hi.id => %{
-        body: " कृपया फोन नंबर @ contact.phone के साथ पंजीकरण करने के लिए लिंक पर क्लिक करें @ global.registration.url",
+        body:
+          " कृपया फोन नंबर @ contact.phone के साथ पंजीकरण करने के लिए लिंक पर क्लिक करें @ global.registration.url",
         language_id: hi.id,
-        number_parameters: 0,
+        number_parameters: 0
       }
     }
+
     Repo.insert!(%SessionTemplate{
       label: "User Registration",
       body: """
