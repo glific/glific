@@ -168,6 +168,10 @@ The Message Types enum
 <td valign="top"><strong>VIDEO</strong></td>
 <td></td>
 </tr>
+<tr>
+<td valign="top"><strong>STICKER</strong></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 

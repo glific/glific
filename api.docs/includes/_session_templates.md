@@ -31,7 +31,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
 
 {
   "filter": {
-  	"body": "template",
+    "body": "template",
     "term": "label"
   },
   "opts": {
@@ -208,7 +208,7 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
       type
     }
     errors{
-			key
+            key
       message
     }
   }
@@ -447,6 +447,16 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>number_parameters</strong></td>
 <td valign="top"><a href="#int">Int</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>insertedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>updatedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
 </tr>
 </tbody>

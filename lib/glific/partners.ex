@@ -602,7 +602,7 @@ defmodule Glific.Partners do
     case Repo.fetch_by(Provider, %{shortcode: attrs[:shortcode]}) do
       {:ok, provider} ->
         # first delete the cached organization
-        organization = organization(attrs.organization_id)
+        organization = get_organization!(attrs.organization_id)
 
         Caches.remove(
           @global_organization_id,

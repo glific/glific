@@ -27,6 +27,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :is_active, :boolean
     field :is_source, :boolean
 
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+
     field :language, :language do
       resolve(dataloader(Repo))
     end

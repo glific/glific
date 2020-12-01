@@ -377,7 +377,7 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
       settings
       language{
         label
-      }      
+      }
     }
     errors {
       key
@@ -737,6 +737,16 @@ Type | Description
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>lastCommunicationAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>insertedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>updatedAt</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
 </tr>

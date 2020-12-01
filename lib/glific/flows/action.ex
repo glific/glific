@@ -276,7 +276,13 @@ defmodule Glific.Flows.Action do
         [],
         fn group, _acc ->
           {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
-          Groups.create_contact_group(%{contact_id: context.contact_id, group_id: group_id})
+
+          Groups.create_contact_group(%{
+            contact_id: context.contact_id,
+            group_id: group_id,
+            organization_id: context.organization_id
+          })
+
           {:ok, group_id}
         end
       )
@@ -293,12 +299,14 @@ defmodule Glific.Flows.Action do
 
   defp process_attachments(attachment_list) do
     attachment_list
-    |> Enum.map(fn attchement ->
-      case String.split(attchement, ":", parts: 2) do
-        [type, url] -> {type, url}
-        _ -> {nil, nil}
+    |> Enum.reduce(
+      %{},
+      fn attachment, acc ->
+        case String.split(attachment, ":", parts: 2) do
+          [type, url] -> Map.put(acc, type, url)
+          _ -> acc
+        end
       end
-    end)
-    |> Map.new()
+    )
   end
 end

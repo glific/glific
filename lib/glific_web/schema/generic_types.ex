@@ -14,9 +14,10 @@ defmodule GlificWeb.Schema.GenericTypes do
 
   @desc "Lets collapse sort order, limit and offset into its own little groups"
   input_object :opts do
-    field(:order, type: :sort_order, default_value: :asc)
-    field(:limit, :integer)
-    field(:offset, :integer, default_value: 0)
+    field :order, type: :sort_order, default_value: :asc
+    field :order_with, :string
+    field :limit, :integer
+    field :offset, :integer, default_value: 0
   end
 
   @desc """

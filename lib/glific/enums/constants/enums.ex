@@ -46,7 +46,17 @@ defmodule Glific.Enums.Constants do
       ]
 
       # the different possible types of message
-      @message_type_const [:audio, :contact, :document, :hsm, :image, :location, :text, :video]
+      @message_type_const [
+        :audio,
+        :contact,
+        :document,
+        :hsm,
+        :image,
+        :location,
+        :text,
+        :video,
+        :sticker
+      ]
 
       # the possible question type constants
       @question_type_const [:text, :numeric, :date]

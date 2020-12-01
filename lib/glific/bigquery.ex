@@ -35,20 +35,31 @@ defmodule Glific.Bigquery do
 
         case create_dataset(conn, project_id, dataset_id) do
           {:ok, _} ->
-            table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
-            table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
-            table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
+            create_tables(conn, dataset_id, project_id)
             contacts_messages_view(conn, dataset_id, project_id)
 
-          {:error, _} ->
-            # when organization re-activates the credentials, update with new schema
-            alter_bigquery_tables(dataset_id, organization_id)
-
-            nil
+          {:error, response} ->
+            {:ok, data} = Jason.decode(response.body)
+            handle_response(data, conn, dataset_id, project_id, organization_id)
         end
     end
 
     :ok
+  end
+
+  defp create_tables(conn, dataset_id, project_id) do
+    table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
+    table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
+    table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
+  end
+
+  defp handle_response(data, conn, dataset_id, project_id, organization_id) do
+    error = data["error"]
+
+    if error["status"] == "ALREADY_EXISTS" do
+      create_tables(conn, dataset_id, project_id)
+      alter_bigquery_tables(dataset_id, organization_id)
+    end
   end
 
   @doc """
@@ -108,10 +119,11 @@ defmodule Glific.Bigquery do
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
 
-        {:ok, response} =
-          Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
-
-        response
+        Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
+        |> case do
+          {:ok, response} -> response
+          {:error, _} -> nil
+        end
     end
 
     :ok
@@ -121,6 +133,7 @@ defmodule Glific.Bigquery do
     values =
       Enum.map(contact_fields, fn {_key, contact_field} ->
         contact_field = Glific.atomize_keys(contact_field)
+
         "('#{contact_field.label}', '#{contact_field.value}', '#{contact_field.type}', '#{
           format_date(contact_field.inserted_at, org_id)
         }')"
@@ -186,52 +199,46 @@ defmodule Glific.Bigquery do
   end
 
   defp table(schema, conn, dataset_id, project_id, table_id) do
-    {:ok, response} =
-      Tables.bigquery_tables_insert(
-        conn,
-        project_id,
-        dataset_id,
-        [
-          body: %{
-            tableReference: %{
-              datasetId: dataset_id,
-              projectId: project_id,
-              tableId: table_id
-            },
-            schema: %{
-              fields: schema
-            }
+    Tables.bigquery_tables_insert(
+      conn,
+      project_id,
+      dataset_id,
+      [
+        body: %{
+          tableReference: %{
+            datasetId: dataset_id,
+            projectId: project_id,
+            tableId: table_id
+          },
+          schema: %{
+            fields: schema
           }
-        ],
-        []
-      )
-
-    response
+        }
+      ],
+      []
+    )
   end
 
   defp alter_table(schema, conn, dataset_id, project_id, table_id) do
-    {:ok, response} =
-      Tables.bigquery_tables_update(
-        conn,
-        project_id,
-        dataset_id,
-        table_id,
-        [
-          body: %{
-            tableReference: %{
-              datasetId: dataset_id,
-              projectId: project_id,
-              tableId: table_id
-            },
-            schema: %{
-              fields: schema
-            }
+    Tables.bigquery_tables_update(
+      conn,
+      project_id,
+      dataset_id,
+      table_id,
+      [
+        body: %{
+          tableReference: %{
+            datasetId: dataset_id,
+            projectId: project_id,
+            tableId: table_id
+          },
+          schema: %{
+            fields: schema
           }
-        ],
-        []
-      )
-
-    response
+        }
+      ],
+      []
+    )
   end
 
   defp contacts_messages_view(conn, dataset_id, project_id) do
