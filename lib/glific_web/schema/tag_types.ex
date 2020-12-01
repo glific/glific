@@ -25,6 +25,9 @@ defmodule GlificWeb.Schema.TagTypes do
     field :is_reserved, :boolean
     field :keywords, list_of(:string)
 
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+
     field :parent, :tag do
       resolve(dataloader(Repo))
     end

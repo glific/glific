@@ -60,5 +60,10 @@ Lets collapse sort order, limit and offset into its own little groups
 <td valign="top"><a href="#sortorder">SortOrder</a></td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>order_with</strong></td>
+<td valign="top"><a href="#sortorder">String</a></td>
+<td>The field in the DB to sort the results with. Applies to simple objects only.</td>
+</tr>
 </tbody>
 </table>

@@ -162,16 +162,36 @@ defmodule Glific.Repo do
           Ecto.Queryable.t(),
           map(),
           :name | :body | :label
-        ) ::
-          Ecto.Queryable.t()
+        ) :: Ecto.Queryable.t()
   def opts_with_field(query, opts, field) do
-    Enum.reduce(opts, query, fn
-      {:order, order}, query ->
-        order_by(query, [o], {^order, fragment("lower(?)", field(o, ^field))})
+    sort =
+      Enum.reduce(
+        opts,
+        %{},
+        fn
+          {:order, order}, acc ->
+            acc
+            |> Map.put(:order, order)
+            |> Map.put_new(:with, field)
 
-      _, query ->
-        query
-    end)
+          {:order_with, field}, acc ->
+            Map.put(acc, :with, String.to_existing_atom(field))
+
+          _, acc ->
+            acc
+        end
+      )
+
+    if Map.has_key?(sort, :order) do
+      order = sort.order
+      real_field = sort.with
+
+      if field == real_field,
+        do: order_by(query, [o], {^order, fragment("lower(?)", field(o, ^real_field))}),
+        else: order_by(query, [o], {^order, field(o, ^real_field)})
+    else
+      query
+    end
   end
 
   @doc false

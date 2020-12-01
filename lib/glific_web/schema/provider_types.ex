@@ -26,6 +26,9 @@ defmodule GlificWeb.Schema.ProviderTypes do
     field :keys, :json
     field :secrets, :json
     field :is_required, :boolean
+
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
   end
 
   @desc "Filtering options for providers"

@@ -21,6 +21,9 @@ defmodule GlificWeb.Schema.CredentialTypes do
     field :secrets, :json
     field :is_active, :boolean
 
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+
     field :provider, :provider do
       resolve(dataloader(Repo))
     end

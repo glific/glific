@@ -31,6 +31,8 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :ignore_keywords, :boolean
     field :version_number, :string
     field :flow_type, :flow_type_enum
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
   end
 
   input_object :flow_input do
@@ -43,10 +45,13 @@ defmodule GlificWeb.Schema.FlowTypes do
   input_object :flow_filter do
     @desc "Match the name"
     field :name, :string
+
     @desc "Match the keyword"
     field :keyword, :string
+
     @desc "Match the uuid"
     field :uuid, :uuid4
+
     @desc "Match the status of flow revision"
     field :status, :string
   end

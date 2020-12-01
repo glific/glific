@@ -267,7 +267,7 @@ defmodule Glific.Flows.Flow do
       query
       |> status_clause(status)
       |> args_clause(args)
-      |> Repo.one()
+      |> Repo.one!()
       |> Map.put(:status, status)
 
     flow.definition
