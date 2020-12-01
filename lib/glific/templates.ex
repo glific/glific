@@ -109,10 +109,14 @@ defmodule Glific.Templates do
       ]
 
       attrs = Map.put(attrs, :translations, translations)
+      %SessionTemplate{}
+      |> SessionTemplate.changeset(attrs)
+      |> Repo.insert()
+    else
+      %SessionTemplate{}
+      |> SessionTemplate.changeset(attrs)
+      |> Repo.insert()
     end
-    %SessionTemplate{}
-    |> SessionTemplate.changeset(attrs)
-    |> Repo.insert()
   end
 
   @doc """
