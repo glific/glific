@@ -33,7 +33,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
 {
   "filter": {
     "term": "label",
-    "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}]
+    "translations": "{"2": {\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}}"
   },
   "opts": {
     "order": "ASC",
@@ -58,7 +58,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "isReserved": false,
         "isSource": false,
         "label": "Another Template Label",
-        "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}],
+        "translations": "{"2": {\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}},
         "language": {
           "id": "2",
           "label": "English (United States)"
@@ -79,7 +79,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "isReserved": false,
         "isSource": false,
         "label": "Default Template Label",
-        "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Default Template",
+        "translations": "{"2": {\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}}",
         "language": {
           "id": "2",
           "label": "English (United States)"
@@ -147,7 +147,7 @@ query sessionTemplate($id: ID!) {
           "label": "English (United States)"
         },
         "shortcode": null,
-        "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Default Template",
+        "translations": "{"2": {\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}}",
         "type": "TEXT"
       }
     }
@@ -243,7 +243,7 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
         "id": "34",
         "label": "Test label",
         "shortcode": null,
-        "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Test template",
+        "translations": "{"2": {\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}}",
         "type": "TEXT"
       }
     }
@@ -302,7 +302,7 @@ mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {
         "id": "1",
         "label": "Default Template Label",
         "shortcode": null,
-        "translations": "[{\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Test template",
+        "translations": "{"2": {\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}}",
         "type": "TEXT"
       }
     }
