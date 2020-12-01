@@ -124,7 +124,7 @@ defmodule Glific do
   """
   @spec stacktrace :: :ok
   def stacktrace do
-    inspect(Process.info(self(), :current_stacktrace))
+    IO.inspect(Process.info(self(), :current_stacktrace))
     :ok
   end
 

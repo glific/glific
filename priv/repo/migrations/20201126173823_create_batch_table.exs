@@ -39,7 +39,7 @@ defmodule Glific.Repo.Migrations.Batch do
       add :offset, :integer, null: false
 
       # the flow that should be triggered when this detail is executed
-      add :flow_id, references(:flow, on_delete: :delete_all), null: false
+      add :flow_id, references(:flows, on_delete: :delete_all), null: false
 
       add :flow_batch_id, references(:flow_batches, on_delete: :delete_all), null: false
 
