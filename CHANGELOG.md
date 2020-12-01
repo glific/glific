@@ -30,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Keywords for flows are now all lowercase
 
-
 ## [0.7.1 and prior] - 2020-11-16
 
 ### Added
@@ -45,3 +44,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI system via GitHub Actions
 - CD system to Gigalixir
 - Community documentation (README, LICENSE, CHANGELOG, CODE_OF_CONDUCT)
+
+## [0.8.0 and prior] - 2020-12-01
+### Added
+- Sticker support
+- Media HSM files
+- Showing BSP balance 
+- Documentation
+
+### Fixed
+- Fixed login timeout issue.
+- Update the readme file
