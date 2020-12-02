@@ -146,8 +146,8 @@ query sessionTemplate($id: ID!) {
           "label": "English (United States)"
         },
         "shortcode": null,
-        "type": "TEXT",
         "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
+        "type": "TEXT"
       }
     }
   }
@@ -224,8 +224,8 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
     "body": "Test template",
     "label": "Test label",
     "languageId": 1,
-    "type": "TEXT",
     "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}"
+    "type": "TEXT"
   }
 }
 ```
@@ -242,8 +242,8 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
         "id": "34",
         "label": "Test label",
         "shortcode": null,
-        "type": "TEXT",
         "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
+        "type": "TEXT"
       }
     }
   }
@@ -301,8 +301,8 @@ mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {
         "id": "1",
         "label": "Default Template Label",
         "shortcode": null,
-        "type": "TEXT",
-        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}"
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
+        "type": "TEXT"
       }
     }
   }
