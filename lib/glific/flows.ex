@@ -181,6 +181,8 @@ defmodule Glific.Flows do
       |> join(:left, [fr], f in Flow, as: :f, on: f.id == fr.flow_id)
       |> where([fr, f], f.uuid == ^flow_uuid)
       |> select([fr, f], %FlowRevision{id: fr.id, inserted_at: fr.inserted_at, status: fr.status, revision_number: fr.revision_number, flow_id: fr.flow_id})
+      |> order_by([fr], desc: fr.id)
+      |> limit(15)
       |> Repo.all()
 
     # We should fix this to get the logged in user
