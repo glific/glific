@@ -213,7 +213,6 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, %{results: results})
   end
 
-
   @spec get_template_translations(nil | map) :: list()
   defp get_template_translations(nil), do: []
 
