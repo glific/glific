@@ -753,5 +753,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       inserted_at: utc_now,
       updated_at: utc_now
     })
+
+    Repo.insert!(%BigqueryJob{
+      table: "flow_results",
+      table_id: 0,
+      organization_id: organization.id,
+      inserted_at: utc_now,
+      updated_at: utc_now
+    })
   end
 end
