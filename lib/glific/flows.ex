@@ -3,6 +3,7 @@ defmodule Glific.Flows do
   The Flows context.
   """
 
+
   import Ecto.Query, warn: false
   require Logger
 
@@ -175,14 +176,22 @@ defmodule Glific.Flows do
   """
   @spec get_flow_revision_list(String.t()) :: %{results: list()}
   def get_flow_revision_list(flow_uuid) do
-    flow = get_flow_with_revision(flow_uuid)
+    results =
+      FlowRevision
+      |> join(:left, [fr], f in Flow, as: :f, on: f.id == fr.flow_id)
+      |> where([fr, f], f.uuid == ^flow_uuid)
+      |> select([fr, f], %FlowRevision{id: fr.id, inserted_at: fr.inserted_at, status: fr.status, revision_number: fr.revision_number, flow_id: fr.flow_id})
+      |> order_by([fr], desc: fr.id)
+      |> limit(15)
+      |> Repo.all()
+
     # We should fix this to get the logged in user
     user = %{email: "user@glific.com", name: "Glific User"}
 
     # Instead of sorting this list we need to fetch the ordered items from the DB
     # We will optimize this more in the v0.4
     asset_list =
-      flow.revisions
+      results
       |> Enum.sort(fn fr1, fr2 -> fr1.id >= fr2.id end)
       |> Enum.reduce(
         [],
@@ -211,14 +220,6 @@ defmodule Glific.Flows do
   def get_flow_revision(_flow_uuid, revision_id) do
     revision = Repo.get!(FlowRevision, revision_id)
     %{definition: revision.definition, metadata: %{issues: []}}
-  end
-
-  # Preload revisions in a flow.
-  # We still need to do some refactoring on this approch
-  @spec get_flow_with_revision(String.t()) :: Flow.t()
-  defp get_flow_with_revision(flow_uuid) do
-    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
-    Repo.preload(flow, :revisions)
   end
 
   @doc """
