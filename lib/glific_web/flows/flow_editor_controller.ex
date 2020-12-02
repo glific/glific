@@ -10,7 +10,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Flows.ContactField,
     Flows.Flow,
     Flows.FlowCount,
-    Flows.FlowLabel
+    Flows.FlowLabel,
+    Settings
   }
 
   @doc false
@@ -191,21 +192,49 @@ defmodule GlificWeb.Flows.FlowEditorController do
             name: template.label,
             created_on: template.inserted_at,
             modified_on: template.updated_at,
-            translations: [
-              %{
-                language: language.locale,
-                content: template.body,
-                variable_count: template.number_parameters,
-                status: "approved",
-                channel: %{uuid: "", name: "WhatsApp"}
-              }
-            ]
+            translations:
+              Enum.concat(
+                [
+                  %{
+                    language: language.locale,
+                    content: template.body,
+                    variable_count: template.number_parameters,
+                    status: "approved",
+                    channel: %{uuid: "", name: "WhatsApp"}
+                  }
+                ],
+                get_template_translations(template.translations)
+              )
           }
           | acc
         ]
       end)
 
     json(conn, %{results: results})
+  end
+
+  @spec get_template_translations(nil | map) :: list()
+  defp get_template_translations(nil), do: []
+
+  defp get_template_translations(template_translations) do
+    language_map =
+      Map.new(Settings.locale_id_map(), fn {locale, language_id} ->
+        {to_string(language_id), locale}
+      end)
+
+    template_translations
+    |> Enum.reduce([], fn {language_id, translation}, acc ->
+      [
+        %{
+          content: translation["body"],
+          variable_count: translation["number_parameters"],
+          status: "approved",
+          language: language_map[language_id],
+          channel: %{uuid: "", name: "WhatsApp"}
+        }
+        | acc
+      ]
+    end)
   end
 
   @doc false

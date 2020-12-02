@@ -51,6 +51,7 @@ defmodule Glific.Bigquery do
     table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
     table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
     table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
+    table(BigquerySchema.flow_result_schema(), conn, dataset_id, project_id, "flow_results")
   end
 
   defp handle_response(data, conn, dataset_id, project_id, organization_id) do
@@ -81,6 +82,7 @@ defmodule Glific.Bigquery do
         alter_table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
         alter_table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
         alter_table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
+        alter_table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flow_results")
         alter_contacts_messages_view(conn, dataset_id, project_id)
 
       {:error, _} ->

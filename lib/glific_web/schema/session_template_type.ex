@@ -26,6 +26,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :is_reserved, :boolean
     field :is_active, :boolean
     field :is_source, :boolean
+    field :translations, :json
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -81,6 +82,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     @desc "Match the reserved flag"
     field :is_reserved, :boolean
+
+    @desc "Match the translations"
+    field :translations, :json
   end
 
   input_object :session_template_input do
@@ -93,6 +97,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :is_active, :boolean
     field :is_source, :boolean
     field :language_id, :id
+    field :translations, :json
   end
 
   input_object :message_to_template_input do

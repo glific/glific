@@ -48,10 +48,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.8.0 and prior] - 2020-12-01
 ### Added
 - Attachment support from the chat window
-- Media HSM files
+- Sticker Support in messages
+- Send Media HSM templates from flow editor
 - Showing BSP balance on the dashboard 
-- Updated Documentation
+- Added flows information on the bigquery
+- Mask phone numbers in the profile page
+- Sync contact fields in Bigquery
+- Archiving Flows in Bigquery
 
 ### Fixed
 - Fixed login timeout issue.
 - Update the readme file
+- Adding contact to group from automation
+
