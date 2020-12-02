@@ -224,7 +224,7 @@ defmodule Glific.Jobs.BigQueryWorker do
             inserted_at: format_date(row.inserted_at, organization_id),
             updated_at: format_date(row.updated_at, organization_id),
             results: format_json(row.results),
-            contact_phone: row.contact.phone,
+            contact_id: row.contact_id,
             flow_version: row.flow_version
           }
           | acc
@@ -401,7 +401,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         inserted_at: flow["inserted_at"],
         updated_at: flow["updated_at"],
         results: flow["results"],
-        contact_phone: flow["contact_phone"],
+        contact_id: flow["contact_id"],
         flow_version: flow["flow_version"]
       }
     }
