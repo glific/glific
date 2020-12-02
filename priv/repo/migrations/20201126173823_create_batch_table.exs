@@ -9,6 +9,14 @@ defmodule Glific.Repo.Migrations.Batch do
     flow_batches()
 
     flow_batch_details()
+
+    flow_batch_contexts()
+  end
+
+  def down do
+    drop table(:flow_batch_contexts)
+    drop table(:flow_batch_details)
+    drop table(:flow_batches)
   end
 
   def flow_batches() do
@@ -41,6 +49,7 @@ defmodule Glific.Repo.Migrations.Batch do
       # the flow that should be triggered when this detail is executed
       add :flow_id, references(:flows, on_delete: :delete_all), null: false
 
+      # the batch that his belongs to
       add :flow_batch_id, references(:flow_batches, on_delete: :delete_all), null: false
 
       # foreign key to organization restricting scope of this table to this organization only
@@ -72,11 +81,5 @@ defmodule Glific.Repo.Migrations.Batch do
 
       timestamps(type: :utc_datetime)
     end
-  end
-
-  def down do
-    drop table(:flow_batch_contexts)
-    drop table(:flow_batch_details)
-    drop table(:flow_batches)
   end
 end
