@@ -169,7 +169,13 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
 
     language_id = session_template.language_id
-    translations = "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"एक और टेम्पलेट\"}}"
+    translations = %{
+      2 => %{
+        number_parameters: 0,
+        language_id: 2,
+        body: "एक और टेम्पलेट"
+      }
+    }
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -178,7 +184,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
             "body" => "Test Template",
             "type" => "TEXT",
             "languageId" => language_id,
-            "translations" => translations
+            "translations" => Jason.encode!(translations)
           }
         }
       )
