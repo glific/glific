@@ -64,7 +64,7 @@ config :glific, :environment, :prod
 # Check `Plug.SSL` for all available options in `force_ssl`.
 
 config :glific, GlificWeb.Endpoint,
-  force_ssl: [hsts: true]
+  force_ssl: [rewrite_on: [:x_forwarded_proto]]
 
 config :appsignal, :config,
   active: true,
