@@ -16,6 +16,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   alias Glific.{
     Contacts.Contact,
+    Flows.FlowResult,
     Flows.FlowRevision,
     Jobs,
     Messages.Message,
@@ -201,6 +202,38 @@ defmodule Glific.Jobs.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, "flows", organization_id))
+  end
+  defp queue_table_data("flow_results", organization_id, min_id, max_id) do
+    query =
+      FlowResult
+      |> where([f], f.organization_id == ^organization_id)
+      |> where([f], f.id > ^min_id and f.id <= ^max_id)
+      |> where([f], f.id > ^min_id and f.id <= ^max_id)
+      |> order_by([f], [f.inserted_at, f.id])
+      |> preload([:flow])
+
+    IO.inspect("debug001-flow-results")
+    Repo.all(query)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.flow.id,
+            name: row.flow.name,
+            uuid: row.flow.uuid,
+            inserted_at: format_date(row.inserted_at, organization_id),
+            updated_at: format_date(row.updated_at, organization_id),
+            results: format_json(row.results),
+            contact_id: row.contact_id,
+            flow_version: row.flow_version
+          }
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)|>IO.inspect()
+    # |> Enum.each(&make_job(&1, "flow_results", organization_id))
   end
 
   defp queue_table_data(_, _, _, _), do: nil
