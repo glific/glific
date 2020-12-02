@@ -4,7 +4,7 @@ defmodule Glific.BigquerySchema do
   """
 
   @doc """
-  Schema for contact table
+  Schema for contacts table
   """
   @spec contact_schema :: list()
   def contact_schema do
@@ -148,7 +148,7 @@ defmodule Glific.BigquerySchema do
   end
 
   @doc """
-  Schema for contact table
+  Schema for messages table
   """
   @spec message_schema :: list()
   def message_schema do
@@ -252,7 +252,7 @@ defmodule Glific.BigquerySchema do
   end
 
   @doc """
-  Schema for contact table
+  Schema for flows table
   """
   @spec flow_schema :: list()
   def flow_schema do
@@ -297,6 +297,60 @@ defmodule Glific.BigquerySchema do
         type: "STRING",
         mode: "REQUIRED"
       }
+    ]
+  end
+
+    @doc """
+  Schema for flow results table
+  """
+  @spec flow_result_schema :: list()
+  def flow_result_schema do
+    [
+      %{
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "name",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "uuid",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "results",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "flow_version",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "contact_phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "contact_name",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
     ]
   end
 end
