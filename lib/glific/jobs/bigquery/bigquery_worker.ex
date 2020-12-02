@@ -203,6 +203,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, "flows", organization_id))
   end
+
   defp queue_table_data("flow_results", organization_id, min_id, max_id) do
     query =
       FlowResult
@@ -326,7 +327,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> make_insert_query("flows", organization_id)
   end
 
-  def perform(%Oban.Job{args: %{"flow_results" => flow_results, "organization_id" => organization_id}}) do
+  def perform(%Oban.Job{
+        args: %{"flow_results" => flow_results, "organization_id" => organization_id}
+      }) do
     flow_results
     |> Enum.map(fn msg -> format_data_for_bigquery("flow_results", msg) end)
     |> make_insert_query("flow_results", organization_id)

@@ -13,7 +13,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   }
 
   def up(_repo) do
-
     update_exisiting_providers()
 
     add_providers()
@@ -128,7 +127,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
         from c in Credential,
           where: c.organization_id == ^org_id and c.provider_id == ^gupshup.id
 
-      if !Repo.exists?(query) ,
+      if !Repo.exists?(query),
         do:
           Repo.insert!(%Credential{
             organization_id: org_id,
