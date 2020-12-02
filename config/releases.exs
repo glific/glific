@@ -47,6 +47,7 @@ config :appsignal, :config,
   revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: System.get_env("APPSIGNAL_PUSH_API_KEY")
 
+
 config :glific, Glific.Vault,
   ciphers: [
     default:
