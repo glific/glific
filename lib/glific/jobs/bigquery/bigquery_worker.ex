@@ -394,7 +394,6 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp format_data_for_bigquery("flow_results", flow) do
-    IO.inspect(flow)
     %{
       json: %{
         id: flow["id"],
