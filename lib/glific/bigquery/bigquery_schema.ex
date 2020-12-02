@@ -342,8 +342,13 @@ defmodule Glific.BigquerySchema do
         mode: "REQUIRED"
       },
       %{
-        name: "contact_id",
-        type: "INTEGER",
+        name: "contact_phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "contact_name",
+        type: "STRING",
         mode: "REQUIRED"
       },
     ]
