@@ -40,6 +40,7 @@ config :glific, GlificWeb.Endpoint,
 
 # AppSignal configs
 config :appsignal, :config,
+  otp_app: :glific,
   name: "Glific",
   # we need to make this dynamic at some point
   hostname: System.get_env("APPSIGNAL_HOSTNAME"),

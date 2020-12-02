@@ -8,7 +8,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "0.8.1",
+      version: "0.8.2",
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -122,7 +122,7 @@ defmodule Glific.MixProject do
       {:fun_with_flags, "~> 1.5"},
       {:fun_with_flags_ui, "~> 0.7"},
       {:passwordless_auth, "~> 0.3.0"},
-      {:appsignal, "~> 1.0"},
+      {:appsignal_phoenix, "~> 2.0"},
       {:poolboy, "~> 1.5"},
       {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"},
       {:cloak_ecto, "~> 1.1"},

@@ -46,14 +46,7 @@ defmodule Glific.Application do
         do: children,
         else: children ++ glific_children
 
-    # Add this :telemetry.attach/4 call:
-    :telemetry.attach(
-      "appsignal-ecto",
-      [:glific, :repo, :query],
-      &Appsignal.Ecto.handle_event/4,
-      nil
-    )
-
+    # Add this :telemetry.attach/4 for oban success/failure call:
     :telemetry.attach(
       "oban-failure",
       [:oban, :job, :exception],
