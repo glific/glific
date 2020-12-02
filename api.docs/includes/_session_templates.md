@@ -464,6 +464,11 @@ Type | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>updatedAt</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
@@ -598,6 +603,15 @@ Match the parent
 <td valign="top"><a href="#string">String</a></td>
 <td>
 
+Match the translations
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td>
+
 Match the shortcode of template
 
 </td>
@@ -652,6 +666,11 @@ Match the hsm template message
 <tr>
 <td colspan="2" valign="top"><strong>number_parameters</strong></td>
 <td valign="top"><a href="#int">Int</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
 <td></td>
 </tr>
 <tr>
