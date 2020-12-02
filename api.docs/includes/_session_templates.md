@@ -32,14 +32,13 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
 
 {
   "filter": {
-    "term": "label",
-    "translations": "{"2": {\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}}"
+    "body": "template",
+    "term": "label"
   },
   "opts": {
     "order": "ASC",
     "limit": 10,
-    "offset": 0,
-    
+    "offset": 0
   }
 }
 ```
@@ -58,7 +57,6 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "isReserved": false,
         "isSource": false,
         "label": "Another Template Label",
-        "translations": "{"2": {\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}},
         "language": {
           "id": "2",
           "label": "English (United States)"
@@ -69,6 +67,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
           "label": "Default Template Label"
         },
         "shortcode": null,
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"एक और टेम्पलेट\"}}",
         "type": "TEXT"
       },
       {
@@ -79,7 +78,6 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "isReserved": false,
         "isSource": false,
         "label": "Default Template Label",
-        "translations": "{"2": {\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}}",
         "language": {
           "id": "2",
           "label": "English (United States)"
@@ -87,6 +85,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "messageMedia": null,
         "parent": null,
         "shortcode": null,
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
         "type": "TEXT"
       }
     ]
@@ -147,8 +146,8 @@ query sessionTemplate($id: ID!) {
           "label": "English (United States)"
         },
         "shortcode": null,
-        "translations": "{"2": {\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}}",
-        "type": "TEXT"
+        "type": "TEXT",
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
       }
     }
   }
@@ -211,7 +210,6 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
       body
       label
       shortcode
-      translations
       type
     }
     errors{
@@ -226,7 +224,8 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
     "body": "Test template",
     "label": "Test label",
     "languageId": 1,
-    "type": "TEXT"
+    "type": "TEXT",
+    "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}"
   }
 }
 ```
@@ -243,8 +242,8 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
         "id": "34",
         "label": "Test label",
         "shortcode": null,
-        "translations": "{"2": {\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}}",
-        "type": "TEXT"
+        "type": "TEXT",
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
       }
     }
   }
@@ -272,8 +271,8 @@ mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {
       body
       label
       shortcode
+      translation
       type
-      translations
     }
     errors {
       key
@@ -302,8 +301,8 @@ mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {
         "id": "1",
         "label": "Default Template Label",
         "shortcode": null,
-        "translations": "{"2": {\"status\":\"approved\",\"language_id\":\"2\",\"channel\":{\"uuid\":\"\",\"name\":\"WhatsApp\"},\"body\":\"Another Template"}}",
-        "type": "TEXT"
+        "type": "TEXT",
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}"
       }
     }
   }
@@ -455,11 +454,6 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>translations</strong></td>
-<td valign="top"><a href="#json">Json</a></td>
-<td></td>
-</tr>
-<tr>
 <td colspan="2" valign="top"><strong>number_parameters</strong></td>
 <td valign="top"><a href="#int">Int</a></td>
 <td></td>
@@ -575,15 +569,6 @@ Match a language
 <tr>
 <td colspan="2" valign="top"><strong>languageId</strong></td>
 <td valign="top"><a href="#int">Int</a></td>
-<td>
-
-Match a translations
-
-</td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>translations</strong></td>
-<td valign="top"><a href="#json">Json</a></td>
 <td>
 
 Match a language id
