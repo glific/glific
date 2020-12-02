@@ -36,7 +36,7 @@ config :glific, GlificWeb.Endpoint,
   http: [:inet6, port: http_port],
   check_origin: check_origin,
   secret_key_base: secret_key_base,
-  url: [host: System.get_env("BASE_URL"), scheme: "https", port: 443]
+  url: [host: System.get_env("BASE_URL")]
 
 # AppSignal configs
 config :appsignal, :config,
@@ -46,7 +46,6 @@ config :appsignal, :config,
   active: true,
   revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: System.get_env("APPSIGNAL_PUSH_API_KEY")
-
 
 config :glific, Glific.Vault,
   ciphers: [
