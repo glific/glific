@@ -3,6 +3,7 @@ fragment SessionTemplateFields on SessionTemplateResult {
     id
     label
     body
+    translations
 
     language {
       id
