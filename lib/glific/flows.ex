@@ -310,6 +310,7 @@ defmodule Glific.Flows do
 
   def get_cached_flow(organization_id, {_atom, _value, status} = key, args) do
     with {:ok, false} <- Caches.get(organization_id, key) do
+      Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
       flow = Flow.get_loaded_flow(organization_id, status, args)
       Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
     end
