@@ -8,6 +8,7 @@ defmodule Glific.Partners do
   use Publicist
 
   import Ecto.Query, warn: false
+  require Logger
 
   alias Glific.{
     Bigquery,
@@ -362,13 +363,13 @@ defmodule Glific.Partners do
 
   @doc """
   Cache the entire organization structure.
-
-  In v0.4, we should cache it based on organization id, and that should be a parameter
   """
   @spec organization(non_neg_integer | String.t()) :: Organization.t() | nil
   def organization(cache_key) do
     case Caches.get(@global_organization_id, {:organization, cache_key}) do
       {:ok, value} when value in [nil, false] ->
+        Logger.info("Loading organization cache: #{cache_key}")
+
         if is_integer(cache_key) do
           get_organization!(cache_key) |> fill_cache()
         else

@@ -300,7 +300,7 @@ defmodule Glific.BigquerySchema do
     ]
   end
 
-    @doc """
+  @doc """
   Schema for flow results table
   """
   @spec flow_result_schema :: list()
@@ -350,7 +350,7 @@ defmodule Glific.BigquerySchema do
         name: "contact_name",
         type: "STRING",
         mode: "REQUIRED"
-      },
+      }
     ]
   end
 end

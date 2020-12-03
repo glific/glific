@@ -86,6 +86,7 @@ config :phoenix, :stacktrace_depth, 20
 config :phoenix, :plug_init_mode, :runtime
 
 config :appsignal, :config,
+  otp_app: :glific,
   active: false,
   env: :dev
 
