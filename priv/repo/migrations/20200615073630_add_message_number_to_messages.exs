@@ -33,9 +33,10 @@ defmodule Glific.Repo.Migrations.AddMessageNumberToMessages do
             UPDATE messages set session_uuid = (SELECT uuid_generate_v4()) where id = NEW.id;
           END IF;
 
+        UPDATE contacts set last_message_at = (CURRENT_TIMESTAMP at time zone 'utc') where id = NEW.contact_id;
         END IF;
 
-        UPDATE contacts set last_message_at = (CURRENT_TIMESTAMP at time zone 'utc') where id = NEW.contact_id;
+
         RETURN NEW;
       END IF;
       RETURN NULL;
