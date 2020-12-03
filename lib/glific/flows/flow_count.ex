@@ -106,9 +106,10 @@ defmodule Glific.Flows.FlowCount do
   end
 
   defp update_recent_messages(flow_count, _), do: flow_count
+
   defp trim_recent_messages(recent_messages) do
-    if recent_messages|>Enum.count() > 5 do
-      recent_messages|>Enum.take(4)
+    if recent_messages |> Enum.count() > 5 do
+      recent_messages |> Enum.take(4)
     else
       recent_messages
     end
