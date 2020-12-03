@@ -64,6 +64,7 @@ config :glific, :environment, :prod
 # Check `Plug.SSL` for all available options in `force_ssl`.
 
 config :appsignal, :config,
+  otp_app: :glific,
   active: true,
   env: :prod
 
