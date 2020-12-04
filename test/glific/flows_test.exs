@@ -117,7 +117,7 @@ defmodule Glific.FLowsTest do
                |> Map.merge(%{keywords: ["Test_Keyword", "TEST_KEYWORD_2"]})
                |> Flows.create_flow()
 
-      assert flow.keywords == ["test_keyword", "test_keyword_2"]
+      assert flow.keywords == ["testkeyword", "testkeyword2"]
     end
 
     test "create_flow/1 will have a default revision" do
