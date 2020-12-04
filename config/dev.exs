@@ -4,7 +4,7 @@ import Config
 config :glific, Glific.Repo,
   username: "postgres",
   password: "postgres",
-  database: "glific_ilp",
+  database: "glific_dev",
   hostname: "localhost",
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
@@ -34,9 +34,9 @@ config :glific, GlificWeb.Endpoint,
     ]
   ]
 
-config :absinthe, Absinthe.Logger,
-  pipeline: true,
-  level: :debug
+# config :absinthe, Absinthe.Logger,
+#   pipeline: true,
+#   level: :debug
 
 # ## SSL Support
 #
@@ -93,10 +93,10 @@ config :appsignal, :config,
 config :goth,
   disabled: true
 
-config :glific, Oban,
-  prefix: "global",
-  crontab: false,
-  queues: false,
-  plugins: false
+# config :glific, Oban,
+#   prefix: "global",
+#   crontab: false,
+#   queues: false,
+#   plugins: false
 
 import_config "dev.secret.exs"
