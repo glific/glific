@@ -96,7 +96,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :number_parameters, :integer
     field :is_active, :boolean
     field :is_source, :boolean
-    field :media_id, :id
+    field :message_media_id, :id
     field :language_id, :id
     field :translations, :json
   end
