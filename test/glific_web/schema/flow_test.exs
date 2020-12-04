@@ -62,7 +62,6 @@ defmodule GlificWeb.Schema.FlowTest do
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"status" => "draft"}})
     assert {:ok, query_data} = result
-IO.inspect(query_data)
     flows = get_in(query_data, [:data, "flows"])
     assert length(flows) == 1
   end
@@ -123,7 +122,7 @@ IO.inspect(query_data)
 
     assert "keywords" = get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "key"])
 
-    assert "keywords [test_keyword] are already taken" =
+    assert "keywords [testkeyword] are already taken" =
              get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
   end
 
