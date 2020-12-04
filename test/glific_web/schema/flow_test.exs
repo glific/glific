@@ -58,11 +58,10 @@ defmodule GlificWeb.Schema.FlowTest do
 
   test "flows field returns list of flows filtered by status", %{manager: user} do
     # Create a new flow
-    auth_query_gql_by(:create, user, variables: %{"input" => %{"name" => "New Flow"}})
+    auth_query_gql_by(:create, user, variables: %{"input" => %{"name" => "New Flow", "keywords" => "new"}})
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"status" => "draft"}})
     assert {:ok, query_data} = result
-
     flows = get_in(query_data, [:data, "flows"])
     assert length(flows) == 1
   end
@@ -123,7 +122,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert "keywords" = get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "key"])
 
-    assert "keywords [test_keyword] are already taken" =
+    assert "keywords [testkeyword] are already taken" =
              get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
   end
 

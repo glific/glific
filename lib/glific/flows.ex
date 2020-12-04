@@ -97,7 +97,11 @@ defmodule Glific.Flows do
   """
   @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def create_flow(attrs) do
-    attrs = Map.merge(attrs, %{uuid: Ecto.UUID.generate()})
+    attrs = Map.merge(attrs,
+    %{
+      uuid: Ecto.UUID.generate(),
+      keywords: sanitize_flow_keywords(attrs[:keywords])
+    })
 
     clean_cached_flow_keywords_map(attrs.organization_id)
 
@@ -133,6 +137,10 @@ defmodule Glific.Flows do
     # first delete the cached flow
     Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
     clean_cached_flow_keywords_map(flow.organization_id)
+
+    attrs =
+      attrs
+      |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords])})
 
     flow
     |> Flow.changeset(attrs)
@@ -175,14 +183,28 @@ defmodule Glific.Flows do
   """
   @spec get_flow_revision_list(String.t()) :: %{results: list()}
   def get_flow_revision_list(flow_uuid) do
-    flow = get_flow_with_revision(flow_uuid)
+    results =
+      FlowRevision
+      |> join(:left, [fr], f in Flow, as: :f, on: f.id == fr.flow_id)
+      |> where([fr, f], f.uuid == ^flow_uuid)
+      |> select([fr, f], %FlowRevision{
+        id: fr.id,
+        inserted_at: fr.inserted_at,
+        status: fr.status,
+        revision_number: fr.revision_number,
+        flow_id: fr.flow_id
+      })
+      |> order_by([fr], desc: fr.id)
+      |> limit(15)
+      |> Repo.all()
+
     # We should fix this to get the logged in user
     user = %{email: "user@glific.com", name: "Glific User"}
 
     # Instead of sorting this list we need to fetch the ordered items from the DB
     # We will optimize this more in the v0.4
     asset_list =
-      flow.revisions
+      results
       |> Enum.sort(fn fr1, fr2 -> fr1.id >= fr2.id end)
       |> Enum.reduce(
         [],
@@ -211,14 +233,6 @@ defmodule Glific.Flows do
   def get_flow_revision(_flow_uuid, revision_id) do
     revision = Repo.get!(FlowRevision, revision_id)
     %{definition: revision.definition, metadata: %{issues: []}}
-  end
-
-  # Preload revisions in a flow.
-  # We still need to do some refactoring on this approch
-  @spec get_flow_with_revision(String.t()) :: Flow.t()
-  defp get_flow_with_revision(flow_uuid) do
-    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
-    Repo.preload(flow, :revisions)
   end
 
   @doc """
@@ -304,6 +318,7 @@ defmodule Glific.Flows do
 
   def get_cached_flow(organization_id, {_atom, _value, status} = key, args) do
     with {:ok, false} <- Caches.get(organization_id, key) do
+      Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
       flow = Flow.get_loaded_flow(organization_id, status, args)
       Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
     end
@@ -546,4 +561,12 @@ defmodule Glific.Flows do
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
   defp clean_cached_flow_keywords_map(organization_id),
     do: Caches.remove(organization_id, ["flow_keywords_map"])
+
+  @spec sanitize_flow_keywords(list) :: list()
+  defp sanitize_flow_keywords(keywords) when is_list(keywords),
+  do: Enum.map(keywords, &Glific.string_clean(&1))
+
+
+  defp sanitize_flow_keywords(keywords), do: keywords
+
 end

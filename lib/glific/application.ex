@@ -46,22 +46,15 @@ defmodule Glific.Application do
         do: children,
         else: children ++ glific_children
 
-    # Add this :telemetry.attach/4 call:
-    :telemetry.attach(
-      "appsignal-ecto",
-      [:glific, :repo, :query],
-      &Appsignal.Ecto.handle_event/4,
-      nil
-    )
-
+    # Add this :telemetry.attach/4 for oban success/failure call:
     :telemetry.attach(
       "oban-failure",
       [:oban, :job, :exception],
       &Glific.Appsignal.handle_event/4,
-      nil
+      []
     )
 
-    :telemetry.attach("oban-success", [:oban, :job, :stop], &Glific.Appsignal.handle_event/4, nil)
+    :telemetry.attach("oban-success", [:oban, :job, :stop], &Glific.Appsignal.handle_event/4, [])
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

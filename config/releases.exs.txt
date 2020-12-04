@@ -29,6 +29,7 @@ config :glific, GlificWeb.Endpoint,
 
 # AppSignal configs
 config :appsignal, :config,
+  :otp_app: :glific,
   name: "Glific",
   hostname: System.get_env("APPSIGNAL_HOSTNAME"),
   revision: Application.spec(:glific, :vsn) |> to_string(),
