@@ -67,5 +67,3 @@ config :appsignal, :config,
   otp_app: :glific,
   active: true,
   env: :prod
-
-dev
