@@ -91,7 +91,7 @@ defmodule Glific.FLowsTest do
 
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
-      assert flow.keywords == @valid_attrs.keywords
+      assert flow.keywords == Enum.map(@valid_attrs.keywords, &Glific.string_clean(&1))
     end
 
     test "create_flow/1 with invalid data returns error changeset" do
