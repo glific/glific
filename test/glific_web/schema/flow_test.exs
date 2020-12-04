@@ -58,7 +58,9 @@ defmodule GlificWeb.Schema.FlowTest do
 
   test "flows field returns list of flows filtered by status", %{manager: user} do
     # Create a new flow
-    auth_query_gql_by(:create, user, variables: %{"input" => %{"name" => "New Flow", "keywords" => "new"}})
+    auth_query_gql_by(:create, user,
+      variables: %{"input" => %{"name" => "New Flow", "keywords" => "new"}}
+    )
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"status" => "draft"}})
     assert {:ok, query_data} = result

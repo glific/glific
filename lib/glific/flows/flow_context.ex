@@ -320,7 +320,6 @@ defmodule Glific.Flows.FlowContext do
 
     context
     |> load_context(flow)
-    |> Repo.preload(:contact)
     # lets do the first steps and start executing it till we need a message
     |> execute([])
   end

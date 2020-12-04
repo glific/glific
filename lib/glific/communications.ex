@@ -4,6 +4,7 @@ defmodule Glific.Communications do
   """
 
   alias Glific.Partners
+  require Logger
 
   @doc """
   Get the current provider handler based on the config
@@ -35,8 +36,8 @@ defmodule Glific.Communications do
   end
 
   def publish_data(data, topic, organization_id) do
-    # we will delete the default value setting, the minute we know what to do with tags
-    # and how to get the organization id
+    Logger.info("Publishing: #{data.__meta__}, #{topic}:#{organization_id}")
+
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
       data,

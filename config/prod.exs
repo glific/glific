@@ -68,7 +68,4 @@ config :appsignal, :config,
   active: true,
   env: :prod
 
-# Finally import the config/prod.secret.exs which loads secrets
-# NOTE: If you are using release.exs, the prod.secret.exs is not relevant anymore.
-# and configuration from environment variables.
-# import_config "prod.secret.exs"
+dev
