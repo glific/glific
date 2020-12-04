@@ -119,8 +119,11 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   defp get_balance(organization_id) do
-    {:ok, data} = Partners.get_bsp_balance(organization_id)
-    {:ok, %{key: "bsp_balance", value: %{balance: data["balance"]}}}
+    Partners.get_bsp_balance(organization_id)
+    |> case do
+      {:ok, data} -> {:ok, %{key: "bsp_balance", value: %{balance: data["balance"]}}}
+      _ -> {:error, "Error while fetching the balance"}
+    end
   end
 
   @doc """

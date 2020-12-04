@@ -4,6 +4,7 @@ defmodule Glific.Searches do
   """
 
   import Ecto.Query, warn: false
+  require Logger
 
   alias __MODULE__
 
@@ -207,6 +208,7 @@ defmodule Glific.Searches do
   @spec search(map(), boolean) :: [Conversation.t()] | integer
   def search(args, count \\ false) do
     # save the search if needed
+    Logger.info("Seaches.Search/2 with : args: #{inspect(args)}")
     do_save_search(args)
 
     args =
@@ -237,6 +239,7 @@ defmodule Glific.Searches do
   """
   @spec search_multi(String.t(), map()) :: Search.t()
   def search_multi(term, args) do
+    Logger.info("Search Multi: term: '#{term}'")
     contacts = get_filtered_contacts(term, args)
     messages = get_filtered_messages_with_term(term, args)
     tags = get_filtered_tagged_message(term, args)
