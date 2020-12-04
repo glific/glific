@@ -50,10 +50,10 @@ defmodule Glific.FLowsTest do
       f0 = flow_fixture(@valid_attrs)
       _f1 = flow_fixture(@valid_more_attrs)
 
-      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{keyword: "test_keyword"})})
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{keyword: "testkeyword"})})
       assert flows == [f0]
 
-      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{keyword: "wrong_keyword"})})
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{keyword: "wrongkeyword"})})
       assert flows == []
 
       flows = Flows.list_flows(%{filter: Map.merge(attrs, %{wrong_filter: "test"})})
@@ -91,7 +91,7 @@ defmodule Glific.FLowsTest do
 
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
-      assert flow.keywords == @valid_attrs.keywords
+      assert flow.keywords == Enum.map(@valid_attrs.keywords, &Glific.string_clean(&1))
     end
 
     test "create_flow/1 with invalid data returns error changeset" do
@@ -117,7 +117,7 @@ defmodule Glific.FLowsTest do
                |> Map.merge(%{keywords: ["Test_Keyword", "TEST_KEYWORD_2"]})
                |> Flows.create_flow()
 
-      assert flow.keywords == ["test_keyword", "test_keyword_2"]
+      assert flow.keywords == ["testkeyword", "testkeyword2"]
     end
 
     test "create_flow/1 will have a default revision" do

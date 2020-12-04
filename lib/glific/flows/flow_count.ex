@@ -97,8 +97,9 @@ defmodule Glific.Flows.FlowCount do
   @spec update_recent_messages(FlowCount.t(), map()) :: :error | FlowCount.t()
   defp update_recent_messages(flow_count, %{recent_message: recent_message})
        when recent_message != %{} do
-    recent_messages = [recent_message | flow_count.recent_messages]
-    recent_messages = trim_recent_messages(recent_messages)
+    recent_messages =
+      [recent_message | flow_count.recent_messages]
+      |> Enum.take(5)
 
     flow_count
     |> FlowCount.changeset(%{recent_messages: recent_messages})
@@ -106,12 +107,4 @@ defmodule Glific.Flows.FlowCount do
   end
 
   defp update_recent_messages(flow_count, _), do: flow_count
-
-  defp trim_recent_messages(recent_messages) do
-    if recent_messages |> Enum.count() > 5 do
-      recent_messages |> Enum.take(4)
-    else
-      recent_messages
-    end
-  end
 end
