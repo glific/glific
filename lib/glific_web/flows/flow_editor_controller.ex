@@ -108,11 +108,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc """
-    Store a lable (new tag) in the system. The return response should be a map of 3 keys.
-    [%{uuid: tag.uuid, name: params["name"], count}]
+  Store a label (new tag) in the system. The return response should be a map of 3 keys.
+  [%{uuid: tag.uuid, name: params["name"], count}]
 
-    We are not supporting them for now. We will come back to this in near future
-
+  We are not supporting them for now. We will come back to this in near future
   """
   @spec labels_post(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def labels_post(conn, params) do
@@ -126,8 +125,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc """
-    A list of all the communication channels. For Glific it's just WhatsApp.
-    We are not supporting them for now. We will come back to this in near future
+  A list of all the communication channels. For Glific it's just WhatsApp.
+  We are not supporting them for now. We will come back to this in near future
   """
   @spec channels(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def channels(conn, _params) do
@@ -147,8 +146,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc """
-    A list of all the communication channels. For Glific it's just WhatsApp.
-    We are not supporting them for now. We will come back to this in near future
+  A list of all the NLP classifiers. For Glific it's just WhatsApp.
+  We are not supporting them for now. We will come back to this in near future
   """
   @spec classifiers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def classifiers(conn, _params) do
@@ -157,8 +156,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc """
-    We are not sure how to use this but this endpoint is required for flow editor.
-    Will come back to this in future.
+  We are not sure how to use this but this endpoint is required for flow editor.
+  Will come back to this in future.
   """
   @spec ticketers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def ticketers(conn, _params) do
@@ -264,8 +263,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc """
-    instead of reading a file we can call it directly from Assests.
-    We will come back on that when we have more clearity of the use cases
+  instead of reading a file we can call it directly from Assets.
+  We will come back on that when we have more clearity of the use cases
   """
   @spec completion(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def completion(conn, _params) do
@@ -277,7 +276,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc """
-    This is used to checking if the connection between frontend and backend is established or not.
+  This is used to checking if the connection between frontend and backend is established or not.
   """
   @spec activity(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def activity(conn, params) do
@@ -319,7 +318,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc """
-    Let's get all the flows or a latest flow revision
+  Let's get all the flows or a latest flow revision
   """
   @spec flows(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def flows(conn, %{"vars" => vars}) do

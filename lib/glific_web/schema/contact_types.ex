@@ -4,7 +4,7 @@ defmodule GlificWeb.Schema.ContactTypes do
   """
 
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
+  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
 
   alias Glific.{
     Contacts.Contact,
@@ -54,15 +54,15 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :updated_at, :datetime
 
     field :language, :language do
-      resolve(dataloader(Repo))
+      resolve(dataloader(Repo, use_parent: true))
     end
 
     field :tags, list_of(:tag) do
-      resolve(dataloader(Repo))
+      resolve(dataloader(Repo, use_parent: true))
     end
 
     field :groups, list_of(:group) do
-      resolve(dataloader(Repo))
+      resolve(dataloader(Repo, use_parent: true))
     end
   end
 

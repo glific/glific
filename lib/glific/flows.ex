@@ -97,11 +97,14 @@ defmodule Glific.Flows do
   """
   @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def create_flow(attrs) do
-    attrs = Map.merge(attrs,
-    %{
-      uuid: Ecto.UUID.generate(),
-      keywords: sanitize_flow_keywords(attrs[:keywords])
-    })
+    attrs =
+      Map.merge(
+        attrs,
+        %{
+          uuid: Ecto.UUID.generate(),
+          keywords: sanitize_flow_keywords(attrs[:keywords])
+        }
+      )
 
     clean_cached_flow_keywords_map(attrs.organization_id)
 
@@ -564,9 +567,7 @@ defmodule Glific.Flows do
 
   @spec sanitize_flow_keywords(list) :: list()
   defp sanitize_flow_keywords(keywords) when is_list(keywords),
-  do: Enum.map(keywords, &Glific.string_clean(&1))
-
+    do: Enum.map(keywords, &Glific.string_clean(&1))
 
   defp sanitize_flow_keywords(keywords), do: keywords
-
 end

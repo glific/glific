@@ -7,8 +7,10 @@ defmodule Glific.Application do
 
   def start(_type, _args) do
     children = [
-      # Start the Ecto repository
+      # Start the vault server before ecto
       Glific.Vault,
+
+      # Start the Ecto repository
       Glific.Repo,
 
       # Start the Telemetry supervisor
