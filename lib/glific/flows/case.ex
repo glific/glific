@@ -114,9 +114,23 @@ defmodule Glific.Flows.Case do
       when type == "has_media",
       do: if(Enum.member?([:text, :location, nil], msg.type), do: false, else: true)
 
+  def execute(%{type: type} = c, _context, msg)
+      when type == "has_all_words",
+      do: is_has_all_the_words?(true, msg, c.arguments)
+
   def execute(c, _context, _msg),
     do:
       raise(UndefinedFunctionError,
         message: "Function not implemented for cases of type #{c.type}"
       )
+
+  defp is_has_all_the_words?(true, str, [head | tail]) do
+    String.contains?(str, head)
+    |> is_has_all_the_words?(str, tail)
+  end
+
+  defp is_has_all_the_words?(false, _, _), do: false
+
+  defp is_has_all_the_words?(_, _, []), do: true
+
 end
