@@ -36,7 +36,7 @@ defmodule Glific.Communications do
   end
 
   def publish_data(data, topic, organization_id) do
-    Logger.info("Publishing: #{data.__meta__}, #{topic}:#{organization_id}")
+    Logger.info("Publishing: #{Ecto.get_meta(data, :source)}, #{topic}:#{organization_id}")
 
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
