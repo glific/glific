@@ -169,13 +169,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
 
     language_id = session_template.language_id
-    translations = %{
-      2 => %{
-        number_parameters: 0,
-        language_id: 2,
-        body: "एक और टेम्पलेट"
-      }
-    }
+
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -183,17 +177,14 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
             "label" => "Test Label",
             "body" => "Test Template",
             "type" => "TEXT",
-            "languageId" => language_id,
-            "translations" => Jason.encode!(translations)
+            "languageId" => language_id
           }
         }
       )
 
     assert {:ok, query_data} = result
     label = get_in(query_data, [:data, "createSessionTemplate", "sessionTemplate", "label"])
-    translations = get_in(query_data, [:data, "createSessionTemplate", "sessionTemplate", "translations"])
     assert label == "Test Label"
-    assert translations == "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"एक और टेम्पलेट\"}}"
 
     # try creating the same session template of a language twice
     _ =
@@ -203,7 +194,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
             "label" => "Test Label 2",
             "body" => "Test Template 2",
             "type" => "TEXT",
-            "translations" => translations,
             "languageId" => language_id
           }
         }
@@ -216,7 +206,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
             "label" => "Test Label 2",
             "body" => "Test Template 2",
             "type" => "TEXT",
-            "translations" => translations,
             "languageId" => language_id
           }
         }
