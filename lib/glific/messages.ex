@@ -577,7 +577,6 @@ defmodule Glific.Messages do
   defp do_list_conversations(query, args, false = _count) do
     query
     |> preload([:contact, :sender, :receiver, :tags, :user, :media])
-    #    |> preload([:contact])
     |> Repo.all()
     |> make_conversations()
     |> add_empty_conversations(args)
