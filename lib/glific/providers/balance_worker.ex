@@ -16,8 +16,6 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     Partners.get_bsp_balance(organization_id)
     |> case do
       {:ok, data} ->
-        Partners.get_bsp_balance(organization_id)
-
         Communications.publish_data(
           %{key: "bsp_balance", value: %{balance: data["balance"]}},
           :periodic_info,
