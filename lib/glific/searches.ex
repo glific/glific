@@ -208,7 +208,7 @@ defmodule Glific.Searches do
   @spec search(map(), boolean) :: [Conversation.t()] | integer
   def search(args, count \\ false) do
     # save the search if needed
-    Logger.info("Seaches.Search/2 with : args: #{inspect args}")
+    Logger.info("Seaches.Search/2 with : args: #{inspect(args)}")
     do_save_search(args)
 
     args =

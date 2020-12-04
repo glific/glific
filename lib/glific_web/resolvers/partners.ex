@@ -124,7 +124,6 @@ defmodule GlificWeb.Resolvers.Partners do
       {:ok, data} -> {:ok, %{key: "bsp_balance", value: %{balance: data["balance"]}}}
       _ -> {:error, "Error while fetching the balance"}
     end
-
   end
 
   @doc """
