@@ -116,7 +116,7 @@ defmodule Glific.Flows.Case do
 
   def execute(%{type: type} = c, _context, msg)
       when type == "has_all_words",
-      do: is_has_all_the_words?(true, msg, c.arguments)
+      do: is_has_all_the_words?(true, strip(msg), c.arguments)
 
   def execute(c, _context, _msg),
     do:
