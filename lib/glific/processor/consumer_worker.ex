@@ -83,6 +83,7 @@ defmodule Glific.Processor.ConsumerWorker do
 
     state = reload(state, message.organization_id)
     message = process_message(message, state.organizations[message.organization_id])
+
     {message, state}
   end
 

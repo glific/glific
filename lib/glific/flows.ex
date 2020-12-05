@@ -97,7 +97,14 @@ defmodule Glific.Flows do
   """
   @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def create_flow(attrs) do
-    attrs = Map.merge(attrs, %{uuid: Ecto.UUID.generate()})
+    attrs =
+      Map.merge(
+        attrs,
+        %{
+          uuid: Ecto.UUID.generate(),
+          keywords: sanitize_flow_keywords(attrs[:keywords])
+        }
+      )
 
     clean_cached_flow_keywords_map(attrs.organization_id)
 
@@ -133,6 +140,10 @@ defmodule Glific.Flows do
     # first delete the cached flow
     Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
     clean_cached_flow_keywords_map(flow.organization_id)
+
+    attrs =
+      attrs
+      |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords])})
 
     flow
     |> Flow.changeset(attrs)
@@ -553,4 +564,10 @@ defmodule Glific.Flows do
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
   defp clean_cached_flow_keywords_map(organization_id),
     do: Caches.remove(organization_id, ["flow_keywords_map"])
+
+  @spec sanitize_flow_keywords(list) :: list()
+  defp sanitize_flow_keywords(keywords) when is_list(keywords),
+    do: Enum.map(keywords, &Glific.string_clean(&1))
+
+  defp sanitize_flow_keywords(keywords), do: keywords
 end

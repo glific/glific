@@ -405,7 +405,8 @@ defmodule Glific.Tags do
         where: m.organization_id == ^organization_id,
         where: t.shortcode in ^tag_shortcode_list
 
-    Repo.all(query)
+    query
+    |> Repo.all()
     |> publish_delete_message(organization_id)
 
     {_, deleted_rows} =

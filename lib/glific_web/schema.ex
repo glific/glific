@@ -127,11 +127,9 @@ defmodule GlificWeb.Schema do
     do: middleware
 
   @doc """
-  Used to set some values in the context that we may need in order to run. For now we are just using it
-  for Dataloader perspectives.
-
-  I think we will be storing authentication and current user in the context map in future releases. We have
-  already started storing current user info in the context map.
+  Used to set some values in the context that we may need in order to run.
+  We store the organization id and the current user in the context once the user has been
+  authenticated
   """
   @spec context(map()) :: map()
   def context(ctx) do

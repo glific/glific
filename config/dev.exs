@@ -35,8 +35,8 @@ config :glific, GlificWeb.Endpoint,
   ]
 
 # config :absinthe, Absinthe.Logger,
-#  pipeline: true,
-#  level: :debug
+#   pipeline: true,
+#   level: :debug
 
 # ## SSL Support
 #
@@ -92,5 +92,11 @@ config :appsignal, :config,
 
 config :goth,
   disabled: true
+
+# config :glific, Oban,
+#   prefix: "global",
+#   crontab: false,
+#   queues: false,
+#   plugins: false
 
 import_config "dev.secret.exs"

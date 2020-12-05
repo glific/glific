@@ -98,13 +98,8 @@ defmodule Glific.Flows.Case do
   def execute(%{type: type}, _context, msg) when type == "has_number",
     do: String.contains?(msg.clean_body, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
 
-  def execute(%{type: type} = c, _context, msg) when type in ["has_phrase", "has_any_word"] do
-    msg = strip(msg)
-
-    if msg == "",
-      do: false,
-      else: String.contains?(msg, strip(c.arguments))
-  end
+  def execute(%{type: type} = c, _context, msg) when type in ["has_phrase", "has_any_word"],
+    do: String.contains?(strip(msg), strip(c.arguments))
 
   def execute(%{type: type} = c, _context, msg)
       when type == "has_only_phrase" or type == "has_only_text",
@@ -114,9 +109,23 @@ defmodule Glific.Flows.Case do
       when type == "has_media",
       do: if(Enum.member?([:text, :location, nil], msg.type), do: false, else: true)
 
+  def execute(%{type: type} = c, _context, msg)
+      when type == "has_all_words",
+      do: is_has_all_the_words?(true, strip(msg), c.arguments)
+
   def execute(c, _context, _msg),
     do:
       raise(UndefinedFunctionError,
         message: "Function not implemented for cases of type #{c.type}"
       )
+
+  defp is_has_all_the_words?(true, str, [head | tail]) do
+    String.contains?(str, head)
+    |> is_has_all_the_words?(str, tail)
+  end
+
+  defp is_has_all_the_words?(false, _, _), do: false
+
+  defp is_has_all_the_words?(_, _, []), do: true
+
 end

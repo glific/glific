@@ -3,7 +3,7 @@ defmodule GlificWeb.Schema.MessageTypes do
   GraphQL Representation of Glific's Message DataType
   """
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
+  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
 
   alias Glific.Repo
 
@@ -48,27 +48,27 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :send_at, :datetime
 
     field :sender, :contact do
-      resolve(dataloader(Repo))
+      resolve(dataloader(Repo, use_parent: true))
     end
 
     field :receiver, :contact do
-      resolve(dataloader(Repo))
+      resolve(dataloader(Repo, use_parent: true))
     end
 
     field :contact, :contact do
-      resolve(dataloader(Repo))
+      resolve(dataloader(Repo, use_parent: true))
     end
 
     field :user, :user do
-      resolve(dataloader(Repo))
+      resolve(dataloader(Repo, use_parent: true))
     end
 
     field :media, :message_media do
-      resolve(dataloader(Repo))
+      resolve(dataloader(Repo, use_parent: true))
     end
 
     field :tags, list_of(:tag) do
-      resolve(dataloader(Repo))
+      resolve(dataloader(Repo, use_parent: true))
     end
   end
 

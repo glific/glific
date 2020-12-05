@@ -192,7 +192,7 @@ defmodule Glific.Communications.Message do
   end
 
   # handler for receiving the location message
-  @spec receive_location(map()) :: {:ok}
+  @spec receive_location(map()) :: :ok
   defp receive_location(message_params) do
     {:ok, message} = Messages.create_message(message_params)
 
@@ -205,9 +205,10 @@ defmodule Glific.Communications.Message do
     |> Communications.publish_data(:received_message, message.organization_id)
     |> process_message()
 
-    {:ok}
+    :ok
   end
 
+  @spec process_message(Message.t()) :: :ok
   defp process_message(message) do
     # lets transfer the organization id and current user to the poolboy worker
     process_state = {
