@@ -32,7 +32,7 @@ defmodule Glific.Caches do
     # also update the reload key for consumers to refresh caches
     keys = [{{organization_id, :cache_reload_key}, Ecto.UUID.generate()} | keys]
 
-    {:ok, true} = Cachex.put_many(@cache_bucket, keys, ttl: :timer.seconds(50))
+    {:ok, true} = Cachex.put_many(@cache_bucket, keys, ttl: :timer.hours(12))
     {:ok, value}
   end
 
@@ -43,7 +43,9 @@ defmodule Glific.Caches do
   @spec get(non_neg_integer, any()) :: {:ok, any()} | {:ok, false}
   def get(organization_id, key) do
     case Cachex.exists?(@cache_bucket, {organization_id, key}) do
-      {:ok, true} -> Cachex.get(@cache_bucket, {organization_id, key})
+      {:ok, true} ->
+        Cachex.refresh(@cache_bucket, {organization_id, key})
+        Cachex.get(@cache_bucket, {organization_id, key})
       _ -> {:ok, false}
     end
   end
