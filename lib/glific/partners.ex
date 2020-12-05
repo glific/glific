@@ -361,31 +361,43 @@ defmodule Glific.Partners do
     organization
   end
 
+  @spec load_cache(non_neg_integer | String.t()) :: {:ignore, Organization.t()}
+  def load_cache(cachex_key) do
+    cache_key = cachex_key |> elem(1) |> elem(1)
+    Logger.info("Loading organization cache: #{cache_key}")
+
+    organization =
+      if is_integer(cache_key) do
+        get_organization!(cache_key) |> fill_cache()
+      else
+        case Repo.fetch_by(Organization, %{shortcode: cache_key}, skip_organization_id: true) do
+          {:ok, organization} ->
+            organization |> fill_cache()
+
+          _ ->
+            raise(ArgumentError, message: "Could not find an organization with #{cache_key}")
+        end
+      end
+
+    # we are already storing this in the cache, so we can ask
+    # cachex to ignore the value. We need to do this since we are
+    # storing multiple keys for the same object
+    {:ignore, organization}
+  end
+
   @doc """
   Cache the entire organization structure.
   """
   @spec organization(non_neg_integer | String.t()) :: Organization.t() | nil
   def organization(cache_key) do
-    case Caches.get(@global_organization_id, {:organization, cache_key}) do
-      {:ok, value} when value in [nil, false] ->
-        Logger.info("Loading organization cache: #{cache_key}")
+    {status, organization} =
+      Caches.fetch(@global_organization_id, {:organization, cache_key}, &load_cache/1)
 
-        if is_integer(cache_key) do
-          get_organization!(cache_key) |> fill_cache()
-        else
-          case Repo.fetch_by(Organization, %{shortcode: cache_key}, skip_organization_id: true) do
-            {:ok, organization} ->
-              organization |> fill_cache()
+    if status == :error,
+      do: raise(ArgumentError, message: "Failed to retrieve organization from Cache, #{organization}")
 
-            _ ->
-              nil
-          end
-        end
-
-      {:ok, organization} ->
-        Glific.Repo.put_organization_id(organization.id)
-        organization
-    end
+    Glific.Repo.put_organization_id(organization.id)
+    organization
   end
 
   @doc """
