@@ -335,8 +335,12 @@ defmodule Glific.Partners do
     end
   end
 
+  @doc """
+  Given a minimal organization object, fill it up and store in cache. Making this
+  public so we can call from test harness and avoid SQL Sandbox issues
+  """
   @spec fill_cache(Organization.t()) :: Organization.t()
-  defp fill_cache(organization) do
+  def fill_cache(organization) do
     # For this process, lets set the organization id
     Glific.Repo.put_organization_id(organization.id)
 
@@ -356,7 +360,7 @@ defmodule Glific.Partners do
     )
 
     # also update the flags table with updated values
-    Flags.init(organization.id)
+    Flags.init(organization)
 
     organization
   end

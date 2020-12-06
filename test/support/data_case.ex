@@ -20,6 +20,7 @@ defmodule Glific.DataCase do
 
   alias Glific.{
     Fixtures,
+    Partners,
     Repo
   }
 
@@ -43,8 +44,10 @@ defmodule Glific.DataCase do
 
     Repo.put_organization_id(1)
     Repo.put_current_user(Fixtures.user_fixture(%{roles: ["manager"]}))
-    # %{organization_id: Fixtures.get_org_id()}
-    %{organization_id: 1, global_schema: Application.fetch_env!(:glific, :global_schema)}
+
+    organization_id = 1
+    organization_id |> Partners.get_organization!() |> Partners.fill_cache()
+    %{organization_id: organization_id, global_schema: Application.fetch_env!(:glific, :global_schema)}
   end
 
   @doc """
