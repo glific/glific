@@ -365,8 +365,13 @@ defmodule Glific.Partners do
     organization
   end
 
-  @spec load_cache(non_neg_integer | String.t()) :: {:ignore, Organization.t()}
+  @doc """
+  Follow the cachex protocol to load the cache from the DB
+  """
+  @spec load_cache(tuple()) :: {:ignore, Organization.t()}
   def load_cache(cachex_key) do
+    # this is of the form {:global_org_key, {:organization, value}}
+    # we want the value element
     cache_key = cachex_key |> elem(1) |> elem(1)
     Logger.info("Loading organization cache: #{cache_key}")
 
@@ -394,14 +399,16 @@ defmodule Glific.Partners do
   """
   @spec organization(non_neg_integer | String.t()) :: Organization.t() | nil
   def organization(cache_key) do
-    {status, organization} =
-      Caches.fetch(@global_organization_id, {:organization, cache_key}, &load_cache/1)
+    case Caches.fetch(@global_organization_id, {:organization, cache_key}, &load_cache/1) do
+      {:error, error} ->
+        raise(ArgumentError,
+          message: "Failed to retrieve organization, #{inspect(cache_key)}, #{error}"
+        )
 
-    if status == :error,
-      do: raise(ArgumentError, message: "Failed to retrieve organization from Cache, #{organization}")
-
-    Glific.Repo.put_organization_id(organization.id)
-    organization
+      {_, organization} ->
+        Glific.Repo.put_organization_id(organization.id)
+        organization
+    end
   end
 
   @doc """

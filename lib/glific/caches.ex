@@ -59,7 +59,7 @@ defmodule Glific.Caches do
   Get a cached value based on a key with fallback
   """
   @impl Glific.Caches.CacheBehaviour
-  @spec fetch(non_neg_integer, any(), (any() -> any())) :: {:ok, any()} | {:ok, false}
+  @spec fetch(non_neg_integer, any(), (any() -> any())) :: {:ok | :error | :commit | :ignore , any()}
   def fetch(organization_id, key, fallback_fn) do
     Cachex.fetch(@cache_bucket, {organization_id, key}, fallback_fn)
   end

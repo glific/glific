@@ -42,7 +42,7 @@ defmodule Glific.Fixtures do
       status: :valid,
       bsp_status: :session_and_hsm,
       organization_id: get_org_id(),
-      language_id: 1,
+      language_id: 1
     }
 
     {:ok, contact} =

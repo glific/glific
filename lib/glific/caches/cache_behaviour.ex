@@ -12,7 +12,7 @@ defmodule Glific.Caches.CacheBehaviour do
   @callback get(non_neg_integer, String.t() | atom()) :: {:ok, any()} | {:ok, false}
 
   @callback fetch(non_neg_integer, String.t() | atom(), (any() -> any())) ::
-              {:ok, any()} | {:ok, false}
+              {:ok | :error | :commit | :ignore, any()}
 
   @callback remove(non_neg_integer, list()) :: any()
 end

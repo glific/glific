@@ -520,27 +520,28 @@ defmodule Glific.Flows do
   """
   @spec flow_keywords_map(non_neg_integer) :: map()
   def flow_keywords_map(organization_id) do
-    case Caches.get(organization_id, "flow_keywords_map") do
-      {:ok, false} ->
-        Caches.set(
-          organization_id,
-          "flow_keywords_map",
-          load_flow_keywords_map_from_db(organization_id)
+    case Caches.fetch(organization_id, "flow_keywords_map", &load_flow_keywords_map/1) do
+      {:error, error} ->
+        raise(ArgumentError,
+          message: "Failed to retrieve flow_keywords_map, #{inspect(organization_id)}, #{error}"
         )
-        |> elem(1)
 
-      {:ok, value} ->
+      {_, value} ->
         value
     end
   end
 
-  @spec load_flow_keywords_map_from_db(non_neg_integer) :: map()
-  defp load_flow_keywords_map_from_db(organization_id) do
+  @spec load_flow_keywords_map(tuple()) :: tuple()
+  defp load_flow_keywords_map(cache_key) do
+    # this is of the form {organization_id, "flow_keywords_map}"
+    # we want the organization_id
+    organization_id = cache_key |> elem(0)
+
     value =
       Flow
       |> where([f], f.organization_id == ^organization_id)
       |> select([:keywords, :id])
-      |> Repo.all()
+      |> Repo.all(skip_organization_id: true)
       |> Enum.reduce(
         %{},
         fn flow, acc ->
@@ -554,10 +555,13 @@ defmodule Glific.Flows do
       )
 
     organization = Partners.organization(organization_id)
-    # also add outofoffice shortcode as set by the user
-    if organization.out_of_office.enabled and organization.out_of_office.flow_id,
-      do: Map.put(value, "outofoffice", organization.out_of_office.flow_id),
-      else: value
+
+    organization =
+      if organization.out_of_office.enabled and organization.out_of_office.flow_id,
+        do: Map.put(value, "outofoffice", organization.out_of_office.flow_id),
+        else: value
+
+    {:commit, organization}
   end
 
   @doc false

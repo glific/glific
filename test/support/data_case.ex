@@ -47,7 +47,11 @@ defmodule Glific.DataCase do
 
     organization_id = 1
     organization_id |> Partners.get_organization!() |> Partners.fill_cache()
-    %{organization_id: organization_id, global_schema: Application.fetch_env!(:glific, :global_schema)}
+
+    %{
+      organization_id: organization_id,
+      global_schema: Application.fetch_env!(:glific, :global_schema)
+    }
   end
 
   @doc """
