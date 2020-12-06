@@ -312,18 +312,43 @@ defmodule Glific.Flows do
       Enum.map(flow.keywords, fn keyword -> {:flow_keyword, keyword, status} end)
       |> Enum.concat([{:flow_uuid, flow.uuid, status}, {:flow_id, flow.id, status}])
 
+  @spec make_args(atom(), any()) :: map()
+  defp make_args(key, value) do
+    case key do
+      :flow_uuid -> %{uuid: value}
+      :flow_id -> %{id: value}
+      :flow_keyword -> %{keyword: value}
+      _ -> raise ArgumentError, message: "Unknown key/value pair: #{key}, #{value}"
+    end
+  end
+
+  @spec load_cache(tuple()) :: tuple()
+  defp load_cache(cache_key) do
+    {organization_id, {key, value, status}} = cache_key
+    Repo.put_organization_id(organization_id)
+    Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
+    args = make_args(key, value)
+    flow = Flow.get_loaded_flow(organization_id, status, args)
+    Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
+    {:ignore, flow}
+  end
+
   @doc """
   A helper function to interact with the Caching API and get the cached flow.
   It will also set the loaded flow to cache in case it does not exists.
   """
-  @spec get_cached_flow(non_neg_integer, any, any) :: {atom, any} | atom()
-  def get_cached_flow(nil, _key, _args), do: {:ok, nil}
+  @spec get_cached_flow(non_neg_integer, {atom(), any(), String.t()}) :: {atom, any} | atom()
+  def get_cached_flow(nil, _key), do: {:ok, nil}
 
-  def get_cached_flow(organization_id, {_atom, _value, status} = key, args) do
-    with {:ok, false} <- Caches.get(organization_id, key) do
-      Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
-      flow = Flow.get_loaded_flow(organization_id, status, args)
-      Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
+  def get_cached_flow(organization_id, key) do
+    case Caches.fetch(organization_id, key, &load_cache/1) do
+      {:error, error} ->
+        raise(ArgumentError,
+          message: "Failed to retrieve flow, #{inspect(key)}, #{error}"
+        )
+
+      {_, flow} ->
+        {:ok, flow}
     end
   end
 
@@ -334,7 +359,7 @@ defmodule Glific.Flows do
   @spec update_cached_flow(Flow.t(), String.t()) :: {atom, any}
   def update_cached_flow(flow, status) do
     Caches.remove(flow.organization_id, keys_to_cache_flow(flow, status))
-    get_cached_flow(flow.organization_id, {:flow_uuid, flow.uuid, status}, %{uuid: flow.uuid})
+    get_cached_flow(flow.organization_id, {:flow_uuid, flow.uuid, status})
   end
 
   @doc """
@@ -421,8 +446,7 @@ defmodule Glific.Flows do
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
     status = "published"
 
-    {:ok, flow} =
-      get_cached_flow(contact.organization_id, {:flow_id, flow.id, status}, %{id: flow.id})
+    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow.id, status})
 
     if Contacts.can_send_message_to?(contact),
       do: process_contact_flow([contact], flow, status),
@@ -436,8 +460,7 @@ defmodule Glific.Flows do
   def start_group_flow(%Flow{} = flow, %Group{} = group) do
     status = "published"
 
-    {:ok, flow} =
-      get_cached_flow(group.organization_id, {:flow_id, flow.id, status}, %{id: flow.id})
+    {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, status})
 
     group = group |> Repo.preload([:contacts])
     process_contact_flow(group.contacts, flow, status)
