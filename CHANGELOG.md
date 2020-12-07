@@ -55,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mask phone numbers in the profile page
 - Sync contact fields in Bigquery
 - Archiving Flows in Bigquery
+- Media HSM files
+- Showing BSP balance on the dashboard 
+- Updated Documentation
 
 ### Fixed
 - Fixed login timeout issue.
