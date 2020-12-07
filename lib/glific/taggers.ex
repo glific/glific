@@ -33,18 +33,21 @@ defmodule Glific.Taggers do
   """
   @spec get_tag_maps(non_neg_integer) :: map()
   def get_tag_maps(organization_id) do
-    case Caches.get(organization_id, @cache_tag_maps_key) do
-      {:ok, false} ->
-        Caches.set(organization_id, @cache_tag_maps_key, load_tags_map_form_db(organization_id))
-        |> elem(1)
+    case Caches.fetch(organization_id, @cache_tag_maps_key, &load_tags_map/1) do
+      {:error, error} ->
+        raise(ArgumentError,
+          message: "Failed to retrieve tag maps for #{organization_id}: #{error}"
+        )
 
-      {:ok, value} ->
-        value
+      {_, tag_maps} ->
+        tag_maps
     end
   end
 
-  @spec load_tags_map_form_db(non_neg_integer) :: map()
-  defp load_tags_map_form_db(organization_id) do
+  @spec load_tags_map(tuple()) :: {:commit, map()}
+  defp load_tags_map(cache_key) do
+    {organization_id, @cache_tag_maps_key} = cache_key
+
     attrs = %{shortcode: "numeric", organization_id: organization_id}
 
     case Repo.fetch_by(Tag, attrs) do
