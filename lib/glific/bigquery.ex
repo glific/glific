@@ -112,12 +112,10 @@ defmodule Glific.Bigquery do
           Enum.reduce(updated_fields, %{}, fn {key, field}, acc ->
             Map.put(acc, key, format_field_values(key, field, organization_id))
           end)
-
         sql =
           "UPDATE `#{dataset_id}.contacts` SET #{format_update_values(updated_values)} WHERE phone= '#{
             phone_no
           }'"
-
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
 
@@ -146,10 +144,8 @@ defmodule Glific.Bigquery do
   defp format_field_values(_key, field, _org_id), do: field
 
   defp validate_fields(contact_field, org_id) do
-    with true <- Map.has_key?(contact_field, :value),
-      true <- Map.has_key?(contact_field, :label),
-      true <- Map.has_key?(contact_field, :inserted_at),
-      true <- Map.has_key?(contact_field, :type)
+    with true <- [:value, :label, :inserted_at, :type]
+      |> Enum.all?(&(Map.has_key?(contact_field, &1)))
     do
       "('#{contact_field.label}', '#{contact_field.value}', '#{contact_field.type}', '#{
         format_date(contact_field.inserted_at, org_id)
