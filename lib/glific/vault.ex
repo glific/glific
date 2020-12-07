@@ -10,12 +10,18 @@ defmodule Glific.Vault do
       Keyword.put(config, :ciphers, [
         default:
         {Cloak.Ciphers.AES.GCM,
-         tag: "AES.GCM.V2", key: Base.decode64!("ojQBZB6XbSeJVkWXBOrg81p/snOaQ7JlGgSPSPK09KQ=")},
+         tag: "AES.GCM.V2", key: decode_env!("NEW_CIPHER_KEY")},
         retired:
           {Cloak.Ciphers.AES.GCM,
-          tag: "AES.GCM.V1", key: Base.decode64!("BliS4zyqMG065ZrRJ8BhhruZFXnpV+eYAQBRqzusnSY=")}
+          tag: "AES.GCM.V1", key: decode_env!("CIPHER_KEY")}
       ])
 
     {:ok, config}
+  end
+
+  defp decode_env!(var) do
+    var
+    |> System.get_env()
+    |> Base.decode64!()
   end
 end
