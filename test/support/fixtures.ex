@@ -10,7 +10,6 @@ defmodule Glific.Fixtures do
 
   alias Glific.{
     Contacts,
-    Flags,
     Flows,
     Groups,
     Messages,
@@ -42,7 +41,8 @@ defmodule Glific.Fixtures do
       phone: Phone.EnUs.phone(),
       status: :valid,
       bsp_status: :session_and_hsm,
-      organization_id: get_org_id()
+      organization_id: get_org_id(),
+      language_id: 1
     }
 
     {:ok, contact} =
@@ -168,11 +168,13 @@ defmodule Glific.Fixtures do
       is_active: true
     })
 
-    # load state into flag options
-    Flags.init(organization.id)
-
     # ensure we get the triggered values in this refresh
-    Partners.get_organization!(organization.id)
+    organization = Partners.get_organization!(organization.id)
+
+    # lets store the organization in the cache
+    Partners.fill_cache(organization)
+
+    organization
   end
 
   @doc false

@@ -9,14 +9,14 @@ defmodule Glific.Appsignal do
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
   def handle_event([:oban, :job, :exception], measurement, meta, _) do
-      span = record_event(measurement, meta)
-      error = inspect(meta.error)
-      @span.add_error(span, meta.kind, error, meta.stacktrace)
-      time = :os.system_time()
-      @tracer.close_span(span, end_time: time)
+    span = record_event(measurement, meta)
+    error = inspect(meta.error)
+    @span.add_error(span, meta.kind, error, meta.stacktrace)
+    time = :os.system_time()
+    @tracer.close_span(span, end_time: time)
   end
 
-  def handle_event(_, _, _, _),  do: nil
+  def handle_event(_, _, _, _), do: nil
 
   defp record_event(measurement, meta) do
     metadata = %{"id" => meta.id, "queue" => meta.queue, "attempt" => meta.attempt}

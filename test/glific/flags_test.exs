@@ -1,5 +1,5 @@
 defmodule Glific.FlagsTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase
 
   alias Glific.{
     Fixtures,
@@ -8,8 +8,6 @@ defmodule Glific.FlagsTest do
   }
 
   setup do
-    Flags.init()
-
     Tesla.Mock.mock(fn
       %{method: :get} ->
         %Tesla.Env{
@@ -32,8 +30,8 @@ defmodule Glific.FlagsTest do
   test "ensure init returns ok, and enabled out of office" do
     organization = Partners.organization(Fixtures.get_org_id())
 
-    status = Flags.init()
-    assert status == :ok
+    status = Flags.init(organization)
+    assert status == {:ok, false}
 
     assert FunWithFlags.enabled?(
              :enable_out_of_office,
@@ -109,7 +107,8 @@ defmodule Glific.FlagsTest do
 
     # when office hours includes whole day of seven days
     {:ok, _} = Partners.update_organization(organization, @organization_settings)
-    Flags.out_of_office_check(organization.id)
+    organization = Partners.organization(organization.id)
+    Flags.out_of_office_check(organization)
 
     assert FunWithFlags.enabled?(
              :out_of_office_active,
@@ -125,8 +124,9 @@ defmodule Glific.FlagsTest do
       put_in(@organization_settings, [:out_of_office, :end_time], @start_one)
 
     # when office hours includes just one microsecond of the day
-    {:ok, _} = Partners.update_organization(organization, organization_settings)
-    Flags.out_of_office_check(organization.id)
+    {:ok, organization} = Partners.update_organization(organization, organization_settings)
+    organization = Partners.organization(organization.id)
+    Flags.out_of_office_check(organization)
 
     assert FunWithFlags.enabled?(
              :out_of_office_active,
@@ -143,7 +143,8 @@ defmodule Glific.FlagsTest do
       put_in(@organization_settings, [:out_of_office, :end_time], @start_one)
 
     {:ok, organization} = Partners.update_organization(organization, new_organization_settings)
-    Flags.out_of_office_update(organization.id)
+    organization = Partners.organization(organization.id)
+    Flags.out_of_office_update(organization)
 
     assert FunWithFlags.enabled?(
              :out_of_office_active,
@@ -152,7 +153,7 @@ defmodule Glific.FlagsTest do
 
     # When flag is disabled
     FunWithFlags.disable(:enable_out_of_office, for_actor: %{organization_id: organization.id})
-    Flags.out_of_office_update(organization.id)
+    Flags.out_of_office_update(organization)
 
     assert FunWithFlags.enabled?(
              :out_of_office_active,
