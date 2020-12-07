@@ -61,3 +61,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update the readme file
 - Adding contact to group from automation
 
+## [0.8.2] - 2020-12-07
+### Added
+- Add caches expiration and refreshes support for keeping check that only frequently used data is cached.
+- Added logging for tracking various events
+- Added has all words option in automation for user responded messages.
+- Archiving Flow results in Bigquery
+
+
+### Fixed
+- High memory utilization problem
+- Flow keyword issue
+- Saving only recent 5 messages in flow recent messages
