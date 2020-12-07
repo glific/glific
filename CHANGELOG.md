@@ -6,14 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2020-12-08
+### Fixed
+- Tweak settings in AppSignal to ignore DB queries
+
 ## [0.8.2] - 2020-12-07
 ### Added
 - Add caches expiration and refreshes support for keeping check that only frequently used data is cached.
 - Added logging for tracking various events
 - Added has all words option in automation for user responded messages.
 - Archiving Flow results in Bigquery
-- Stickers have transparent background 
+- Stickers have transparent background
 - Placeholder in chat input
+- Upgrade to 2.0 version of AppSignal
 
 ### Fixed
 - High memory utilization problem
@@ -26,13 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Attachment support from the chat window
 - Sticker Support in messages
 - Send Media HSM templates from flow editor
-- Showing BSP balance on the dashboard 
+- Showing BSP balance on the dashboard
 - Added flows information on the bigquery
 - Mask phone numbers in the profile page
 - Sync contact fields in Bigquery
 - Archiving Flows in Bigquery
 - Media HSM files
-- Showing BSP balance on the dashboard 
+- Showing BSP balance on the dashboard
 - Updated Documentation
 
 ### Fixed
