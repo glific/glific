@@ -11,6 +11,10 @@ config :glific,
   ecto_repos: [Glific.Repo],
   global_schema: "global"
 
+config :glific,
+  cloak_repo: Glific.Repo,
+  cloak_schemas: [Glific.Partners.Credential, Glific.Partners.Organization]
+
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,
   url: [host: "glific.test"],
