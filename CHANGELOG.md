@@ -71,5 +71,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - High memory utilization problem
-- Flow keyword issue
-- Saving only recent 5 messages in flow recent messages
+- Flow keyword issue, saving clean strings
+- Saving only recent five messages in flow recent messages
