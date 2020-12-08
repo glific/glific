@@ -88,8 +88,7 @@ config :phoenix, :plug_init_mode, :runtime
 config :appsignal, :config,
   otp_app: :glific,
   active: false,
-  env: :dev,
-  ignore_actions: ["Query Glific.Repo"]
+  env: :dev
 
 config :goth,
   disabled: true
