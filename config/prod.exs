@@ -66,5 +66,4 @@ config :glific, :environment, :prod
 config :appsignal, :config,
   otp_app: :glific,
   active: true,
-  env: :prod,
-  ignore_actions: ["Query Glific.Repo"]
+  env: :prod
