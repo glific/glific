@@ -2,10 +2,8 @@ defmodule Glific.CloakMigration do
   @moduledoc """
   Glific Cloak migration management on changing encryption keys
   """
-  import Ecto.Changeset
 
   alias Glific.{
-    Partners,
     Partners.Credential,
     Partners.Organization,
     Repo
@@ -13,21 +11,29 @@ defmodule Glific.CloakMigration do
 
   @doc """
   migrate to new key for encryption
+  Glific.CloakMigration.cloak_migrate()
   """
   @spec cloak_migrate :: :ok
   def cloak_migrate do
-    Glific.Repo.all(Glific.Partners.Organization)
-    |> Enum.each(fn organization -> update_record(organization) end)
+    Repo.all(Organization)
+    |> Enum.each(fn organization -> update_organization(organization) end)
 
-    Glific.Repo.all(Glific.Partners.Credential)
-    |> Enum.each(fn credential -> update_record(credential) end)
+    Repo.all(Credential)
+    |> Enum.each(fn credential -> update_credential(credential) end)
 
     :ok
   end
 
+  defp update_credential(record) do
+    record
+    |> Credential.changeset(%{secrets: Glific.atomize_keys(record.secrets)})
+    |> Repo.update(force: true)
+  end
 
-  defp update_record(record),
-    do: record
-      |> Repo.update(record, [force: true])
+  defp update_organization(record) do
+    record
+    |> Organization.changeset(%{signature_phrase: record.signature_phrase})
+    |> Repo.update(force: true)
+  end
 
 end
