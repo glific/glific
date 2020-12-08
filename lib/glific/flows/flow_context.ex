@@ -320,7 +320,6 @@ defmodule Glific.Flows.FlowContext do
 
     context
     |> load_context(flow)
-    |> Repo.preload(:contact)
     # lets do the first steps and start executing it till we need a message
     |> execute([])
   end
@@ -404,8 +403,7 @@ defmodule Glific.Flows.FlowContext do
     {:ok, flow} =
       Flows.get_cached_flow(
         context.flow.organization_id,
-        {:flow_uuid, context.flow_uuid, context.status},
-        %{uuid: context.flow_uuid}
+        {:flow_uuid, context.flow_uuid, context.status}
       )
 
     {:ok, context} =

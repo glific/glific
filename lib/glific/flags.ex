@@ -6,28 +6,19 @@ defmodule Glific.Flags do
 
   use Publicist
 
-  alias Glific.Partners
+  alias Glific.Partners.Organization
 
   @doc false
-  @spec init(non_neg_integer) :: {:ok, boolean()}
-  def init(organization_id) do
+  @spec init(Organization.t()) :: {:ok, boolean()}
+  def init(organization) do
     FunWithFlags.enable(
       :enable_out_of_office,
-      for_actor: %{organization_id: organization_id}
+      for_actor: %{organization_id: organization.id}
     )
 
-    out_of_office_update(organization_id)
+    out_of_office_update(organization)
 
-    dialogflow(organization_id)
-  end
-
-  @doc false
-  @spec init :: :ok
-  def init do
-    Partners.active_organizations([])
-    |> Enum.each(fn {id, _name} ->
-      init(id)
-    end)
+    dialogflow(organization)
   end
 
   @spec business_day?(DateTime.t(), [integer]) :: boolean
@@ -70,10 +61,8 @@ defmodule Glific.Flags do
          )
   end
 
-  @spec out_of_office_check(non_neg_integer) :: nil
-  defp out_of_office_check(organization_id) do
-    organization = Partners.organization(organization_id)
-
+  @spec out_of_office_check(Organization.t()) :: nil
+  defp out_of_office_check(organization) do
     if organization.out_of_office.enabled do
       {:ok, now} = organization.timezone |> DateTime.now()
 
@@ -85,19 +74,19 @@ defmodule Glific.Flags do
 
       if open?,
         # we are operating now, so ensure out_of_office flag is disabled
-        do: disable_out_of_office(organization_id),
+        do: disable_out_of_office(organization.id),
         # we are closed now, enable out_of_office flow
-        else: enable_out_of_office(organization_id)
+        else: enable_out_of_office(organization.id)
     else
       # disable all out of office checks
       FunWithFlags.disable(
         :enable_out_of_office,
-        for_actor: %{organization_id: organization_id}
+        for_actor: %{organization_id: organization.id}
       )
 
       FunWithFlags.disable(
         :out_of_office_active,
-        for_actor: %{organization_id: organization_id}
+        for_actor: %{organization_id: organization.id}
       )
     end
   end
@@ -105,38 +94,38 @@ defmodule Glific.Flags do
   @doc """
   Update the out of office flag, so we know if we should actually do any work
   """
-  @spec out_of_office_update(non_neg_integer) :: nil
-  def out_of_office_update(organization_id),
+  @spec out_of_office_update(Organization.t()) :: nil
+  def out_of_office_update(organization),
     do:
       if(
         FunWithFlags.enabled?(
           :enable_out_of_office,
-          for: %{organization_id: organization_id}
+          for: %{organization_id: organization.id}
         ),
-        do: out_of_office_check(organization_id),
+        do: out_of_office_check(organization),
         # lets make sure that out_of_office_active is disabled
         # if we dont want this functionality
-        else: disable_out_of_office(organization_id)
+        else: disable_out_of_office(organization.id)
       )
 
   @doc """
   See if we have valid dialogflow credentials, if so, enable dialogflow
   else disable it
   """
-  @spec dialogflow(non_neg_integer) :: {:ok, boolean()}
-  def dialogflow(organization_id) do
-    Partners.organization(organization_id).services["dialogflow"]
+  @spec dialogflow(Organization.t()) :: {:ok, boolean()}
+  def dialogflow(organization) do
+    organization.services["dialogflow"]
     |> case do
       nil ->
         FunWithFlags.disable(
           :dialogflow,
-          for_actor: %{organization_id: organization_id}
+          for_actor: %{organization_id: organization.id}
         )
 
       _credential ->
         FunWithFlags.enable(
           :dialogflow,
-          for_actor: %{organization_id: organization_id}
+          for_actor: %{organization_id: organization.id}
         )
     end
   end

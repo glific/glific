@@ -12,6 +12,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
     isHsm
     type
     isActive
+    translation
     isReserved
     isSource
     parent {
@@ -66,6 +67,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
           "label": "Default Template Label"
         },
         "shortcode": null,
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"एक और टेम्पलेट\"}}",
         "type": "TEXT"
       },
       {
@@ -83,6 +85,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "messageMedia": null,
         "parent": null,
         "shortcode": null,
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
         "type": "TEXT"
       }
     ]
@@ -113,6 +116,7 @@ query sessionTemplate($id: ID!) {
       body
       label
       shortcode
+      translation
       type
       language {
         id
@@ -142,6 +146,7 @@ query sessionTemplate($id: ID!) {
           "label": "English (United States)"
         },
         "shortcode": null,
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
         "type": "TEXT"
       }
     }
@@ -219,6 +224,7 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
     "body": "Test template",
     "label": "Test label",
     "languageId": 1,
+    "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}"
     "type": "TEXT"
   }
 }
@@ -236,6 +242,7 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
         "id": "34",
         "label": "Test label",
         "shortcode": null,
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
         "type": "TEXT"
       }
     }
@@ -264,6 +271,7 @@ mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {
       body
       label
       shortcode
+      translation
       type
     }
     errors {
@@ -293,6 +301,7 @@ mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {
         "id": "1",
         "label": "Default Template Label",
         "shortcode": null,
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
         "type": "TEXT"
       }
     }
@@ -455,6 +464,11 @@ Type | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>updatedAt</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
@@ -589,6 +603,15 @@ Match the parent
 <td valign="top"><a href="#string">String</a></td>
 <td>
 
+Match the translations
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td>
+
 Match the shortcode of template
 
 </td>
@@ -643,6 +666,11 @@ Match the hsm template message
 <tr>
 <td colspan="2" valign="top"><strong>number_parameters</strong></td>
 <td valign="top"><a href="#int">Int</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
 <td></td>
 </tr>
 <tr>

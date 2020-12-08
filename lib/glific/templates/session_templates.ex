@@ -34,7 +34,8 @@ defmodule Glific.Templates.SessionTemplate do
           parent_id: non_neg_integer | nil,
           parent: SessionTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          translations: map() | nil
         }
 
   @required_fields [
@@ -53,7 +54,8 @@ defmodule Glific.Templates.SessionTemplate do
     :message_media_id,
     :parent_id,
     :is_hsm,
-    :uuid
+    :uuid,
+    :translations
   ]
 
   schema "session_templates" do
@@ -69,6 +71,7 @@ defmodule Glific.Templates.SessionTemplate do
     field :is_source, :boolean, default: false
     field :is_active, :boolean, default: false
     field :is_reserved, :boolean, default: false
+    field :translations, :map, default: %{}
 
     belongs_to :language, Language
     belongs_to :organization, Organization

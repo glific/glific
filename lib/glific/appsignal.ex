@@ -3,34 +3,30 @@ defmodule Glific.Appsignal do
   A simple interface that connect Oban job status to Appsignal
   """
 
-  alias Appsignal.Transaction
+  @tracer Appsignal.Tracer
+  @span Appsignal.Span
 
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
-  def handle_event([:oban, :job, event], measurement, meta, _)
-      when event in [:stop, :exception] do
-    transaction = record_event(measurement, meta)
-
-    if event == :exception && meta.attempt >= meta.max_attempts do
-      context = inspect(Map.take(meta, [:id, :args, :queue, :worker]))
-      error = inspect(meta.error)
-      Transaction.set_error(transaction, error, context, meta.stacktrace)
-    end
-
-    Transaction.complete(transaction)
+  def handle_event([:oban, :job, :exception], measurement, meta, _) do
+    span = record_event(measurement, meta)
+    error = inspect(meta.error)
+    @span.add_error(span, meta.kind, error, meta.stacktrace)
+    time = :os.system_time()
+    @tracer.close_span(span, end_time: time)
   end
+
+  def handle_event(_, _, _, _), do: nil
 
   defp record_event(measurement, meta) do
     metadata = %{"id" => meta.id, "queue" => meta.queue, "attempt" => meta.attempt}
-    transaction = Transaction.start(Transaction.generate_id(), :background_job)
+    time = :os.system_time()
 
-    transaction
-    |> Transaction.set_action("#{meta.worker}#perform")
-    |> Transaction.set_meta_data(metadata)
-    |> Transaction.set_sample_data("params", meta.args)
-    |> Transaction.record_event("worker.perform", "", "", measurement.duration, 0)
-    |> Transaction.finish()
-
-    transaction
+    "oban_job"
+    |> @tracer.create_span(@tracer.current_span(), start_time: time - measurement.duration)
+    |> @span.set_name("Oban #{meta.worker}#perform")
+    |> @span.set_attribute("appsignal:category", "oban.worker")
+    |> @span.set_sample_data("meta.data", metadata)
+    |> @span.set_sample_data("meta.args", meta.args)
   end
 end

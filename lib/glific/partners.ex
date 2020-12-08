@@ -8,6 +8,7 @@ defmodule Glific.Partners do
   use Publicist
 
   import Ecto.Query, warn: false
+  require Logger
 
   alias Glific.{
     Bigquery,
@@ -334,8 +335,12 @@ defmodule Glific.Partners do
     end
   end
 
+  @doc """
+  Given a minimal organization object, fill it up and store in cache. Making this
+  public so we can call from test harness and avoid SQL Sandbox issues
+  """
   @spec fill_cache(Organization.t()) :: Organization.t()
-  defp fill_cache(organization) do
+  def fill_cache(organization) do
     # For this process, lets set the organization id
     Glific.Repo.put_organization_id(organization.id)
 
@@ -356,33 +361,52 @@ defmodule Glific.Partners do
     )
 
     # also update the flags table with updated values
-    Flags.init(organization.id)
+    Flags.init(organization)
 
     organization
   end
 
   @doc """
-  Cache the entire organization structure.
+  Follow the cachex protocol to load the cache from the DB
+  """
+  @spec load_cache(tuple()) :: {:ignore, Organization.t()}
+  def load_cache(cachex_key) do
+    # this is of the form {:global_org_key, {:organization, value}}
+    # we want the value element
+    cache_key = cachex_key |> elem(1) |> elem(1)
+    Logger.info("Loading organization cache: #{cache_key}")
 
-  In v0.4, we should cache it based on organization id, and that should be a parameter
+    organization =
+      if is_integer(cache_key) do
+        get_organization!(cache_key) |> fill_cache()
+      else
+        case Repo.fetch_by(Organization, %{shortcode: cache_key}, skip_organization_id: true) do
+          {:ok, organization} ->
+            organization |> fill_cache()
+
+          _ ->
+            raise(ArgumentError, message: "Could not find an organization with #{cache_key}")
+        end
+      end
+
+    # we are already storing this in the cache, so we can ask
+    # cachex to ignore the value. We need to do this since we are
+    # storing multiple keys for the same object
+    {:ignore, organization}
+  end
+
+  @doc """
+  Cache the entire organization structure.
   """
   @spec organization(non_neg_integer | String.t()) :: Organization.t() | nil
   def organization(cache_key) do
-    case Caches.get(@global_organization_id, {:organization, cache_key}) do
-      {:ok, value} when value in [nil, false] ->
-        if is_integer(cache_key) do
-          get_organization!(cache_key) |> fill_cache()
-        else
-          case Repo.fetch_by(Organization, %{shortcode: cache_key}, skip_organization_id: true) do
-            {:ok, organization} ->
-              organization |> fill_cache()
+    case Caches.fetch(@global_organization_id, {:organization, cache_key}, &load_cache/1) do
+      {:error, error} ->
+        raise(ArgumentError,
+          message: "Failed to retrieve organization, #{inspect(cache_key)}, #{error}"
+        )
 
-            _ ->
-              nil
-          end
-        end
-
-      {:ok, organization} ->
+      {_, organization} ->
         Glific.Repo.put_organization_id(organization.id)
         organization
     end

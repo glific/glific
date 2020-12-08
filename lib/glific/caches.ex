@@ -6,6 +6,9 @@ defmodule Glific.Caches do
 
   @behaviour Glific.Caches.CacheBehaviour
 
+  # set timer limit
+  @ttl_limit 24
+
   @doc """
   Store all the in cachex :flows_cache. At some point, we will just use this dynamically
   """
@@ -32,7 +35,7 @@ defmodule Glific.Caches do
     # also update the reload key for consumers to refresh caches
     keys = [{{organization_id, :cache_reload_key}, Ecto.UUID.generate()} | keys]
 
-    {:ok, true} = Cachex.put_many(@cache_bucket, keys)
+    {:ok, true} = Cachex.put_many(@cache_bucket, keys, ttl: :timer.hours(@ttl_limit))
     {:ok, value}
   end
 
@@ -43,8 +46,12 @@ defmodule Glific.Caches do
   @spec get(non_neg_integer, any()) :: {:ok, any()} | {:ok, false}
   def get(organization_id, key) do
     case Cachex.exists?(@cache_bucket, {organization_id, key}) do
-      {:ok, true} -> Cachex.get(@cache_bucket, {organization_id, key})
-      _ -> {:ok, false}
+      {:ok, true} ->
+        Cachex.refresh(@cache_bucket, {organization_id, key})
+        Cachex.get(@cache_bucket, {organization_id, key})
+
+      _ ->
+        {:ok, false}
     end
   end
 
@@ -52,7 +59,8 @@ defmodule Glific.Caches do
   Get a cached value based on a key with fallback
   """
   @impl Glific.Caches.CacheBehaviour
-  @spec fetch(non_neg_integer, any(), (any() -> any())) :: {:ok, any()} | {:ok, false}
+  @spec fetch(non_neg_integer, any(), (any() -> any())) ::
+          {:ok | :error | :commit | :ignore, any()}
   def fetch(organization_id, key, fallback_fn) do
     Cachex.fetch(@cache_bucket, {organization_id, key}, fallback_fn)
   end

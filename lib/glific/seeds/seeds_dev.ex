@@ -443,6 +443,16 @@ if Code.ensure_loaded?(Faker) do
     def seed_session_templates(organization \\ nil) do
       organization = get_organization(organization)
       [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+      [hi | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
+
+      translations = %{
+        hi.id => %{
+          body:
+            " अब आप नीचे दिए विकल्पों में से एक का चयन करके {{1}} के साथ समाप्त होने वाले खाते के लिए अपना खाता शेष या मिनी स्टेटमेंट देख सकते हैं। | [अकाउंट बैलेंस देखें] | [देखें मिनी स्टेटमेंट]",
+          language_id: hi.id,
+          number_parameters: 1
+        }
+      }
 
       Repo.insert!(%SessionTemplate{
         label: "Account Balance",
@@ -451,12 +461,22 @@ if Code.ensure_loaded?(Faker) do
         is_hsm: true,
         number_parameters: 1,
         language_id: en_us.id,
+        translations: translations,
         organization_id: organization.id,
         # spaces are important here, since gupshup pattern matches on it
         body:
           "You can now view your Account Balance or Mini statement for Account ending with {{1}} simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
         uuid: Ecto.UUID.generate()
       })
+
+      translations = %{
+        hi.id => %{
+          body:
+            "नीचे दिए गए लिंक से अपना {{1}} टिकट डाउनलोड करें। | [वेबसाइट पर जाएं, https: //www.gupshup.io/developer/ {{2}}",
+          language_id: hi.id,
+          number_parameters: 2
+        }
+      }
 
       Repo.insert!(%SessionTemplate{
         label: "Movie Ticket",
@@ -466,10 +486,19 @@ if Code.ensure_loaded?(Faker) do
         number_parameters: 2,
         language_id: en_us.id,
         organization_id: organization.id,
+        translations: translations,
         body:
           "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{2}}]",
         uuid: Ecto.UUID.generate()
       })
+
+      translations = %{
+        hi.id => %{
+          body: " हाय {{1}}, \n कृपया बिल संलग्न करें।",
+          language_id: hi.id,
+          number_parameters: 1
+        }
+      }
 
       Repo.insert!(%SessionTemplate{
         label: "Personalized Bill",
@@ -479,9 +508,18 @@ if Code.ensure_loaded?(Faker) do
         number_parameters: 1,
         language_id: en_us.id,
         organization_id: organization.id,
+        translations: translations,
         body: "Hi {{1}},\nPlease find the attached bill.",
         uuid: Ecto.UUID.generate()
       })
+
+      translations = %{
+        hi.id => %{
+          body: "हाय {{1}}, \ n \ n आपके खाते की छवि {{2}} पर {{3}} द्वारा अद्यतन की गई थी।",
+          language_id: hi.id,
+          number_parameters: 3
+        }
+      }
 
       Repo.insert!(%SessionTemplate{
         label: "Account Update",
@@ -489,6 +527,7 @@ if Code.ensure_loaded?(Faker) do
         shortcode: "account_update",
         is_hsm: true,
         number_parameters: 3,
+        translations: translations,
         language_id: en_us.id,
         organization_id: organization.id,
         body: "Hi {{1}},\n\nYour account image was updated on {{2}} by {{3}} with above",

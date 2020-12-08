@@ -136,7 +136,7 @@ defmodule Glific do
     secret = Partners.organization(organization_id).signature_phrase
 
     signed_payload = "#{timestamp}.#{body}"
-    hmac = :crypto.mac(:hmac, :sha256, secret, signed_payload)
+    hmac = :crypto.hmac(:sha256, secret, signed_payload)
     Base.encode16(hmac, case: :lower)
   end
 end

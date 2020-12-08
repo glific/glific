@@ -57,6 +57,7 @@ config :glific,
   provider_key: "abcdefghigklmnop"
 
 config :appsignal, :config,
+  otp_app: :glific,
   active: false,
   env: :test
 

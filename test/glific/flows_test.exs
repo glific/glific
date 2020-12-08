@@ -50,10 +50,10 @@ defmodule Glific.FLowsTest do
       f0 = flow_fixture(@valid_attrs)
       _f1 = flow_fixture(@valid_more_attrs)
 
-      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{keyword: "test_keyword"})})
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{keyword: "testkeyword"})})
       assert flows == [f0]
 
-      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{keyword: "wrong_keyword"})})
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{keyword: "wrongkeyword"})})
       assert flows == []
 
       flows = Flows.list_flows(%{filter: Map.merge(attrs, %{wrong_filter: "test"})})
@@ -91,7 +91,7 @@ defmodule Glific.FLowsTest do
 
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
-      assert flow.keywords == @valid_attrs.keywords
+      assert flow.keywords == Enum.map(@valid_attrs.keywords, &Glific.string_clean(&1))
     end
 
     test "create_flow/1 with invalid data returns error changeset" do
@@ -117,7 +117,7 @@ defmodule Glific.FLowsTest do
                |> Map.merge(%{keywords: ["Test_Keyword", "TEST_KEYWORD_2"]})
                |> Flows.create_flow()
 
-      assert flow.keywords == ["test_keyword", "test_keyword_2"]
+      assert flow.keywords == ["testkeyword", "testkeyword2"]
     end
 
     test "create_flow/1 will have a default revision" do
@@ -215,9 +215,7 @@ defmodule Glific.FLowsTest do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
 
       {:ok, loaded_flow} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}, %{
-          uuid: flow.uuid
-        })
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
 
       assert loaded_flow.nodes != nil
 
@@ -225,9 +223,7 @@ defmodule Glific.FLowsTest do
       Flows.delete_flow(flow)
 
       {:ok, loaded_flow_2} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}, %{
-          uuid: flow.uuid
-        })
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
 
       assert loaded_flow_2 == loaded_flow
     end
@@ -237,17 +233,13 @@ defmodule Glific.FLowsTest do
       [flow | _tail] = Flows.list_flows(%{filter: %{organization_id: organization_id}})
 
       {:ok, loaded_flow} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}, %{
-          uuid: flow.uuid
-        })
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
 
       Flows.update_flow(flow, %{:keywords => ["flow_new"]})
       Flows.update_cached_flow(flow, "published")
 
       {:ok, loaded_flow_new} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}, %{
-          uuid: flow.uuid
-        })
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
 
       assert loaded_flow.keywords == flow.keywords
       assert loaded_flow_new.keywords != loaded_flow.keywords
@@ -269,9 +261,7 @@ defmodule Glific.FLowsTest do
       [revision] = flow.revisions
       # should update the cached flow definition
       {:ok, loaded_flow} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}, %{
-          uuid: flow.uuid
-        })
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
 
       assert loaded_flow.definition == revision.definition
 
@@ -290,9 +280,7 @@ defmodule Glific.FLowsTest do
 
       # should update the cached flow definition
       {:ok, loaded_flow} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}, %{
-          uuid: flow.uuid
-        })
+        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
 
       assert loaded_flow.definition == new_definition
     end

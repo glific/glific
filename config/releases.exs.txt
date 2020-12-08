@@ -3,7 +3,7 @@
 # This file will be used for production release only.
 import Config
 
-db_url = System.get_env("DATABASE_URL") || "ecto://postgres:postgres@localhost/glific_dev"
+db_url = System.get_env("DATABASE_URL") || "ecto://postgres:postgres@localhost/glific_ilp"
 ssl_port = System.get_env("SSL_PORT") || 443
 http_port = System.get_env("HTTP_PORT") || 4000
 
@@ -13,11 +13,11 @@ config :glific, Glific.Repo,
   show_sensitive_data_on_connection_error: true
 
 secret_key_base =
-  System.get_env("SECRET_KEY_BASE") || "IN3UOAXU/FC6yPcBcC/iHg85F52QYPvjSiDkRdoydEobrrL+aNhat5I5+WA4IW0e"
+  System.get_env("SECRET_KEY_BASE") ||
+    "IN3UOAXU/FC6yPcBcC/iHg85F52QYPvjSiDkRdoydEobrrL+aNhat5I5+WA4IW0e"
 
-check_origin =
-  [System.get_env("REQUEST_ORIGIN"), System.get_env("REQUEST_ORIGIN_WILDCARD")] ||
-  ["http://glific.test:3000", "*//glific.test:3000"]
+# [System.get_env("REQUEST_ORIGIN"), System.get_env("REQUEST_ORIGIN_WILDCARD")] ||
+check_origin = ["http://ilp.glific.test:3000", "//*.glific.test:3000"]
 
 # GLific endpoint configs
 config :glific, GlificWeb.Endpoint,
@@ -29,12 +29,16 @@ config :glific, GlificWeb.Endpoint,
 
 # AppSignal configs
 config :appsignal, :config,
+  otp_app: :glific,
   name: "Glific",
-  hostname: System.get_env("APPSIGNAL_HOSTNAME"),
+  hostname: "local-prod",
   revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: System.get_env("GLIFIC_PUSH_API_KEY")
 
+cipher_key = System.get_env("CIPHER_KEY") || "BliS4zyqMG065ZrRJ8BhhruZFXnpV+eYAQBRqzusnSY="
+
 config :glific, Glific.Vault,
   ciphers: [
-    default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: Base.decode64!(System.get_env("CIPHER_KEY"))}
-]
+    default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V2", key: Base.decode64!(cipher_key)},
+    old_key: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: Base.decode64!(old_cipher_key)}
+  ]

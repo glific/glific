@@ -40,6 +40,7 @@ config :glific, GlificWeb.Endpoint,
 
 # AppSignal configs
 config :appsignal, :config,
+  otp_app: :glific,
   name: "Glific",
   # we need to make this dynamic at some point
   hostname: System.get_env("APPSIGNAL_HOSTNAME"),
@@ -51,5 +52,8 @@ config :glific, Glific.Vault,
   ciphers: [
     default:
       {Cloak.Ciphers.AES.GCM,
-       tag: "AES.GCM.V1", key: Base.decode64!(System.get_env("CIPHER_KEY"))}
+       tag: "AES.GCM.V2", key: Base.decode64!(System.get_env("CIPHER_KEY"))},
+    old_key:
+      {Cloak.Ciphers.AES.GCM,
+       tag: "AES.GCM.V1", key: Base.decode64!(System.get_env("OLD_CIPHER_KEY"))}
   ]
