@@ -83,3 +83,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI system via GitHub Actions
 - CD system to Gigalixir
 - Community documentation (README, LICENSE, CHANGELOG, CODE_OF_CONDUCT)
+
+## [0.8.0 and prior] - 2020-12-01
+### Added
+- Attachment support from the chat window
+- Sticker Support in messages
+- Send Media HSM templates from flow editor
+- Showing BSP balance on the dashboard 
+- Added flows information on the bigquery
+- Mask phone numbers in the profile page
+- Sync contact fields in Bigquery
+- Archiving Flows in Bigquery
+- Media HSM files
+- Showing BSP balance on the dashboard 
+- Updated Documentation
+
+### Fixed
+- Fixed login timeout issue.
+- Update the readme file
+- Adding contact to group from automation

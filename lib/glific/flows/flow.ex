@@ -236,8 +236,7 @@ defmodule Glific.Flows.Flow do
   """
   @spec get_flow(non_neg_integer, Ecto.UUID.t(), String.t()) :: map()
   def get_flow(organization_id, uuid, status) do
-    {:ok, flow} =
-      Flows.get_cached_flow(organization_id, {:flow_uuid, uuid, status}, %{uuid: uuid})
+    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, uuid, status})
 
     flow
   end

@@ -39,5 +39,6 @@ cipher_key = System.get_env("CIPHER_KEY") || "BliS4zyqMG065ZrRJ8BhhruZFXnpV+eYAQ
 
 config :glific, Glific.Vault,
   ciphers: [
-    default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: Base.decode64!(cipher_key)}
+    default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V2", key: Base.decode64!(cipher_key)},
+    old_key: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: Base.decode64!(old_cipher_key)}
   ]

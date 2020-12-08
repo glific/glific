@@ -27,6 +27,7 @@ defmodule Glific.ContactsTest do
       phone: "some phone",
       status: :valid,
       bsp_status: :hsm,
+      language_id: 1,
       fields: %{}
     }
     @valid_attrs_1 %{
