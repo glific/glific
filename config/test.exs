@@ -66,7 +66,7 @@ config :glific, Glific.Vault,
   ciphers: [
     default:
     {Cloak.Ciphers.AES.GCM,
-     tag: "AES.GCM.V2", key: Base.decode64!("ojQBZB6XbSeJVkWXBOrg81p/snOaQ7JlGgSPSPK09KQ=")},
+     tag: "AES.GCM.V2", key: Base.decode64!("xLKnzgQ+9/OTO9D2WjadQTwf3/0xtcdHaE2loFWEebo=")},
     retired:
       {Cloak.Ciphers.AES.GCM,
       tag: "AES.GCM.V1", key: Base.decode64!("BliS4zyqMG065ZrRJ8BhhruZFXnpV+eYAQBRqzusnSY=")}

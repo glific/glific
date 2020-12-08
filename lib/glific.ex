@@ -129,24 +129,6 @@ defmodule Glific do
   end
 
   @doc """
-  encrypting secrets with new cipher key
-  """
-  # Glific.cipher_migrate(1)
-  # @spec signature(non_neg_integer) :: String.t()
-  def cipher_migrate(organization_id) do
-    org = Glific.Partners.organization(organization_id)
-    org.services
-      |> Enum.each(fn {_service, fields} -> encrypt(fields) end)
-    end
-    defp encrypt(fields) do
-      {:ok, secret} = fields.secrets|>Jason.encode()
-      secret
-      |> Glific.Vault.encrypt!(:retired)
-      |> Glific.Vault.decrypt!()
-      |> Glific.Vault.encrypt!(:default)
-      |> Glific.Vault.decrypt!()
-    end
-  @doc """
   Compute the signature at a specific time for the body
   """
   @spec signature(non_neg_integer, String.t(), non_neg_integer) :: String.t()
