@@ -35,5 +35,4 @@ defmodule Glific.CloakMigration do
     |> Organization.changeset(%{signature_phrase: record.signature_phrase})
     |> Repo.update(force: true)
   end
-
 end

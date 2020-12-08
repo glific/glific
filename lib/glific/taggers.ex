@@ -52,12 +52,12 @@ defmodule Glific.Taggers do
     attrs = %{shortcode: "numeric", organization_id: organization_id}
 
     tag_maps =
-    case Repo.fetch_by(Tag, attrs) do
-      {:ok, tag} -> %{:numeric_tag_id => tag.id}
-      _ -> %{}
-    end
-    |> Map.put(:keyword_map, Taggers.Keyword.get_keyword_map(attrs))
-    |> Map.put(:status_map, Status.get_status_map(attrs))
+      case Repo.fetch_by(Tag, attrs) do
+        {:ok, tag} -> %{:numeric_tag_id => tag.id}
+        _ -> %{}
+      end
+      |> Map.put(:keyword_map, Taggers.Keyword.get_keyword_map(attrs))
+      |> Map.put(:status_map, Status.get_status_map(attrs))
 
     {:commit, tag_maps}
   end
