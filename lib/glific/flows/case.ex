@@ -127,5 +127,4 @@ defmodule Glific.Flows.Case do
   defp is_has_all_the_words?(false, _, _), do: false
 
   defp is_has_all_the_words?(_, _, []), do: true
-
 end

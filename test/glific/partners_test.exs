@@ -1,6 +1,6 @@
 defmodule Glific.PartnersTest do
   alias Faker.{Person, Phone}
-  use Glific.DataCase, async: true
+  use Glific.DataCase
   import Mock
 
   alias Glific.{Fixtures, Partners}
@@ -491,8 +491,8 @@ defmodule Glific.PartnersTest do
       assert {:ok, %Partners.Organization{}} =
                Caches.get(global_organization_id, {:organization, organization.shortcode})
 
-      #  with wrong shortcode it returns nil
-      assert nil == Partners.organization("wrong_shortcode")
+      #  with wrong shortcode it raises an exceptin
+      assert_raise ArgumentError, fn -> Partners.organization("wrong_shortcode") end
     end
 
     test "organization/1 should return cached active languages" do

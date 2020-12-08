@@ -21,6 +21,7 @@ defmodule GlificWeb.ConnCase do
 
   alias Glific.{
     Fixtures,
+    Partners,
     Repo
   }
 
@@ -54,8 +55,9 @@ defmodule GlificWeb.ConnCase do
       Sandbox.mode(Repo, {:shared, self()})
     end
 
-    # organization_id = Fixtures.get_org_id()
     organization_id = 1
+    organization_id |> Partners.get_organization!() |> Partners.fill_cache()
+
     manager = Fixtures.user_fixture(%{roles: ["manager"]})
 
     Glific.Repo.put_organization_id(1)

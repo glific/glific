@@ -1,5 +1,5 @@
 defmodule GlificWeb.Schema.FlowTest do
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
   alias Glific.{

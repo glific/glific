@@ -46,8 +46,7 @@ defmodule Glific.Processor.ConsumerFlow do
          {:ok, flow} <-
            Flows.get_cached_flow(
              message.organization_id,
-             {:flow_uuid, context.flow_uuid, context.status},
-             %{uuid: context.flow_uuid}
+             {:flow_uuid, context.flow_uuid, context.status}
            ),
          true <- flow.ignore_keywords do
       check_contexts(context, message, body, state)
@@ -96,9 +95,10 @@ defmodule Glific.Processor.ConsumerFlow do
       end
 
     {:ok, flow} =
-      Flows.get_cached_flow(message.organization_id, {:flow_keyword, body, status}, %{
-        keyword: body
-      })
+      Flows.get_cached_flow(
+        message.organization_id,
+        {:flow_keyword, body, status}
+      )
 
     FlowContext.init_context(flow, message.contact, status)
     {message, state}
@@ -118,8 +118,7 @@ defmodule Glific.Processor.ConsumerFlow do
     {:ok, flow} =
       Flows.get_cached_flow(
         message.organization_id,
-        {:flow_uuid, context.flow_uuid, context.status},
-        %{uuid: context.flow_uuid}
+        {:flow_uuid, context.flow_uuid, context.status}
       )
 
     {:ok, message} =

@@ -24,30 +24,35 @@ defmodule Glific.Jobs.MinuteWorker do
 
   @spec get_organization_services :: map()
   defp get_organization_services do
-    case Caches.get(@global_organization_id, "organization_services") do
-      {:ok, false} ->
-        Caches.set(
-          @global_organization_id,
-          "organization_services",
-          load_organization_services()
+    case Caches.fetch(
+           @global_organization_id,
+           "organization_services",
+           &load_organization_services/1
+         ) do
+      {:error, error} ->
+        raise(ArgumentError,
+          message: "Failed to retrieve organization services: #{error}"
         )
-        |> elem(1)
 
-      {:ok, value} ->
-        value
+      {_, services} ->
+        services
     end
   end
 
-  @spec load_organization_services :: map()
-  defp load_organization_services do
-    Partners.active_organizations([])
-    |> Enum.reduce(
-      %{},
-      fn {id, _name}, acc ->
-        load_organization_service(id, acc)
-      end
-    )
-    |> combine_services()
+  # this is a global cache, so we kinda ignore the cache key
+  @spec load_organization_services(tuple()) :: {:commit, map()}
+  defp load_organization_services(_cache_key) do
+    services =
+      Partners.active_organizations([])
+      |> Enum.reduce(
+        %{},
+        fn {id, _name}, acc ->
+          load_organization_service(id, acc)
+        end
+      )
+      |> combine_services()
+
+    {:commit, services}
   end
 
   @spec load_organization_service(non_neg_integer, map()) :: map()
