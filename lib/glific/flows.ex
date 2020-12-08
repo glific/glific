@@ -212,9 +212,6 @@ defmodule Glific.Flows do
       |> limit(15)
       |> Repo.all()
 
-    # We should fix this to get the logged in user
-    user = %{email: "user@glific.com", name: "Glific User"}
-
     # Instead of sorting this list we need to fetch the ordered items from the DB
     # We will optimize this more in the v0.4
     asset_list =
@@ -225,7 +222,7 @@ defmodule Glific.Flows do
         fn revision, acc ->
           [
             %{
-              user: user,
+              user: get_user(),
               created_on: revision.inserted_at,
               id: revision.id,
               version: "13.0.0",
