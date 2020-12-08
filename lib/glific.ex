@@ -13,6 +13,9 @@ defmodule Glific do
   """
 
   alias Glific.Partners
+  alias Glific.Partners.Organization
+  alias Glific.Repo
+  alias Glific.Partners.Credential
 
   @doc """
   Wrapper to return :ok/:error when parsing strings to potential integers
@@ -126,6 +129,41 @@ defmodule Glific do
   def stacktrace do
     inspect(Process.info(self(), :current_stacktrace))
     :ok
+  end
+
+  @doc """
+  migrate to new key
+  """
+  # @spec stacktrace :: :ok
+  def cloak_migrate(org_id, shortcode) do
+    update_signature_phrase(org_id)
+    update_secrets(org_id, shortcode)
+  end
+
+  defp update_signature_phrase(org_id) do
+    org = Partners.get_organization!(org_id)
+
+    {:ok, updated} =
+      org
+      |> Organization.changeset(%{signature_phrase: "test signature"})
+      |> Repo.update(skip_organization_id: true)
+
+    updated
+    |> Organization.changeset(%{signature_phrase: org.signature_phrase})
+    |> Repo.update(skip_organization_id: true)
+  end
+
+  defp update_secrets(org_id, shortcode) do
+    {:ok, credentials} = Partners.get_credential(%{organization_id: org_id, shortcode: shortcode})
+
+    {:ok, updated} =
+      credentials
+      |> Credential.changeset(%{secrets: %{temp: "test secrets"}})
+      |> Repo.update(skip_organization_id: true)
+
+    updated
+    |> Credential.changeset(%{secrets: credentials.secrets})
+    |> Repo.update(skip_organization_id: true)
   end
 
   @doc """
