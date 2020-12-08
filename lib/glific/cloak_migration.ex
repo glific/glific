@@ -25,5 +25,9 @@ defmodule Glific.CloakMigration do
     :ok
   end
 
+
   defp update_record(record),
-    do: record |> Repo.update(force: true)
+    do: record
+      |> Repo.update(record, [force: true])
+
+end
