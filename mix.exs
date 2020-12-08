@@ -131,7 +131,6 @@ defmodule Glific.MixProject do
       {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
       {:waffle_ecto, "~> 0.0"},
       {:csv, "~> 2.4"},
-      {:download, "~> 0.0.4"},
       {:observer_cli, "~> 1.6"}
     ]
   end
