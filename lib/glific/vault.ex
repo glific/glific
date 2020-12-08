@@ -7,14 +7,10 @@ defmodule Glific.Vault do
   @impl GenServer
   def init(config) do
     config =
-      Keyword.put(config, :ciphers, [
-        default:
-        {Cloak.Ciphers.AES.GCM,
-         tag: "AES.GCM.V2", key: decode_env!("NEW_CIPHER_KEY")},
-        retired:
-          {Cloak.Ciphers.AES.GCM,
-          tag: "AES.GCM.V1", key: decode_env!("CIPHER_KEY")}
-      ])
+      Keyword.put(config, :ciphers,
+        default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V2", key: decode_env!("NEW_CIPHER_KEY")},
+        old_key: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: decode_env!("CIPHER_KEY")}
+      )
 
     {:ok, config}
   end
