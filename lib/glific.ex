@@ -135,14 +135,14 @@ defmodule Glific do
   migrate to new key
   """
   # @spec stacktrace :: :ok
-  def cloak_migrate(org_id, shortcode) do
-    update_signature_phrase(org_id)
-    update_secrets(org_id, shortcode)
+  def cloak_migrate do
+    Glific.Repo.all(Glific.Partners.Organization)
+      |>Enum.each( fn organization -> update_signature_phrase(organization) end)
+    Glific.Repo.all(Glific.Partners.Credential)
+      |>Enum.each( fn credential -> update_secrets(credential) end)
   end
 
-  defp update_signature_phrase(org_id) do
-    org = Partners.get_organization!(org_id)
-
+  defp update_signature_phrase(org) do
     {:ok, updated} =
       org
       |> Organization.changeset(%{signature_phrase: "test signature"})
@@ -153,17 +153,15 @@ defmodule Glific do
     |> Repo.update(skip_organization_id: true)
   end
 
-  defp update_secrets(org_id, shortcode) do
-    {:ok, credentials} = Partners.get_credential(%{organization_id: org_id, shortcode: shortcode})
-
+  defp update_secrets(credential) do
     {:ok, updated} =
-      credentials
+      credential
       |> Credential.changeset(%{secrets: %{temp: "test secrets"}})
       |> Repo.update(skip_organization_id: true)
 
     updated
-    |> Credential.changeset(%{secrets: credentials.secrets})
-    |> Repo.update(skip_organization_id: true)
+      |> Credential.changeset(%{secrets: credential.secrets})
+      |> Repo.update(skip_organization_id: true)
   end
 
   @doc """
