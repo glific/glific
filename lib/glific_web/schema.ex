@@ -31,6 +31,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.UserGroupTypes)
   import_types(__MODULE__.SearchTypes)
   import_types(__MODULE__.FlowTypes)
+  import_types(__MODULE__.TriggerTypes)
 
   query do
     import_fields(:contact_queries)
@@ -96,6 +97,8 @@ defmodule GlificWeb.Schema do
     import_fields(:search_mutations)
 
     import_fields(:flow_mutations)
+
+    import_fields(:trigger_mutations)
   end
 
   subscription do

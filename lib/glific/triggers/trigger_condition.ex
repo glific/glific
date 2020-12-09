@@ -29,7 +29,7 @@ defmodule Glific.Triggers.TriggerCondition do
     :name,
     :start_at,
     :ends_at,
-    :organiztion_id
+    :organization_id
   ]
   @optional_fields [
     :fire_at,
@@ -69,7 +69,8 @@ defmodule Glific.Triggers.TriggerCondition do
   end
 
   @doc false
-  @spec create_trigger_condition(map()) :: {:ok, TriggerCondition.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_trigger_condition(map()) ::
+          {:ok, TriggerCondition.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger_condition(attrs \\ %{}) do
     attrs =
       attrs
