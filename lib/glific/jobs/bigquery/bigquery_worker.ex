@@ -123,7 +123,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, "messages", organization_id))
+    |> Enum.each(&make_job(&1, "messages", organization_id, 1))
   end
 
   defp queue_table_data("contacts", organization_id, min_id, max_id) do
@@ -169,7 +169,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, "contacts", organization_id))
+    |> Enum.each(&make_job(&1, "contacts", organization_id, 1))
   end
 
   defp queue_table_data("flows", organization_id, min_id, max_id) do
@@ -202,7 +202,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, "flows", organization_id))
+    |> Enum.each(&make_job(&1, "flows", organization_id, 1))
   end
 
   defp queue_table_data("flow_results", organization_id, min_id, max_id) do
@@ -235,7 +235,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, "flow_results", organization_id))
+    |> Enum.each(&make_job(&1, "flow_results", organization_id, 1))
   end
 
   defp queue_table_data(_, _, _, _), do: nil
@@ -245,31 +245,30 @@ defmodule Glific.Jobs.BigQueryWorker do
     data
   end
 
-  defp make_job(_, _, _, schedule_in \\ DateTime.utc_now())
 
-  @spec make_job(list(), String.t(), non_neg_integer, DateTime.t()) :: :ok | nil
-  defp make_job(data, "messages", organization_id, scheduled_in) do
-    __MODULE__.new(%{organization_id: organization_id, messages: data}, schedule_in: scheduled_in)
+  @spec make_job(list(), String.t(), non_neg_integer, non_neg_integer) :: :ok | nil
+  defp make_job(data, "messages", organization_id, schedule_in) do
+    __MODULE__.new(%{organization_id: organization_id, messages: data}, schedule_in: schedule_in)
     |> Oban.insert()
 
     :ok
   end
 
-  defp make_job(data, "contacts", organization_id, scheduled_in) do
-    __MODULE__.new(%{organization_id: organization_id, contacts: data}, schedule_in: scheduled_in)
+  defp make_job(data, "contacts", organization_id, schedule_in) do
+    __MODULE__.new(%{organization_id: organization_id, contacts: data}, schedule_in: schedule_in)
     |> Oban.insert()
   end
 
-  defp make_job(data, "flows", organization_id, scheduled_in) do
+  defp make_job(data, "flows", organization_id, schedule_in) do
     __MODULE__.new(%{organization_id: organization_id, flow_results: data},
-      schedule_in: scheduled_in
+      schedule_in: schedule_in
     )
     |> Oban.insert()
   end
 
-  defp make_job(data, "flow_results", organization_id, scheduled_in) do
+  defp make_job(data, "flow_results", organization_id, schedule_in) do
     __MODULE__.new(%{organization_id: organization_id, flow_results: data},
-      schedule_in: scheduled_in
+      schedule_in: schedule_in
     )
     |> Oban.insert()
   end
