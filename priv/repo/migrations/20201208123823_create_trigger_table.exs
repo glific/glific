@@ -80,6 +80,9 @@ defmodule Glific.Repo.Migrations.Trigger do
       # if repeating trigger, we need an end date
       add :ends_at, :utc_datetime, null: false
 
+      # foreign key to organization restricting scope of this table to this organization only
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+
       timestamps(type: :utc_datetime)
     end
   end

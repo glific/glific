@@ -4,6 +4,11 @@ defmodule Glific.Triggers.TriggerCondition do
   import Ecto.Changeset
   alias __MODULE__
 
+  alias Glific.{
+    Partners.Organization,
+    Repo
+  }
+
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
@@ -14,6 +19,8 @@ defmodule Glific.Triggers.TriggerCondition do
           is_active: boolean(),
           is_repeating: boolean(),
           frequency: String.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -21,7 +28,8 @@ defmodule Glific.Triggers.TriggerCondition do
   @required_fields [
     :name,
     :start_at,
-    :ends_at
+    :ends_at,
+    :organiztion_id
   ]
   @optional_fields [
     :fire_at,
@@ -42,6 +50,8 @@ defmodule Glific.Triggers.TriggerCondition do
     field :is_active, :boolean, default: true
     field :is_repeating, :boolean, default: false
 
+    belongs_to :organization, Organization
+
     timestamps(type: :utc_datetime)
   end
 
@@ -56,5 +66,22 @@ defmodule Glific.Triggers.TriggerCondition do
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:group_id)
     |> foreign_key_constraint(:organization_id)
+  end
+
+  @doc false
+  @spec create_trigger_condition(map()) :: {:ok, TriggerCondition.t()} | {:error, Ecto.Changeset.t()}
+  def create_trigger_condition(attrs \\ %{}) do
+    %TriggerCondition{}
+    |> TriggerCondition.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc false
+  @spec update_trigger_condition(TriggerCondition.t(), map()) ::
+          {:ok, TriggerCondition.t()} | {:error, Ecto.Changeset.t()}
+  def update_trigger_condition(trigger_condition, attrs) do
+    trigger_condition
+    |> TriggerCondition.changeset(attrs)
+    |> Repo.update()
   end
 end

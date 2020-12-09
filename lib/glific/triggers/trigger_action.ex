@@ -7,7 +7,8 @@ defmodule Glific.Triggers.TriggerAction do
   alias Glific.{
     Flows.Flow,
     Groups.Group,
-    Partners.Organization
+    Partners.Organization,
+    Repo
   }
 
   @type t() :: %__MODULE__{
@@ -58,5 +59,13 @@ defmodule Glific.Triggers.TriggerAction do
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:group_id)
     |> foreign_key_constraint(:organization_id)
+  end
+
+  @doc false
+  @spec create_trigger_action(map()) :: {:ok, TriggerAction.t()} | {:error, Ecto.Changeset.t()}
+  def create_trigger_action(attrs \\ %{}) do
+    %TriggerAction{}
+    |> TriggerAction.changeset(attrs)
+    |> Repo.insert()
   end
 end

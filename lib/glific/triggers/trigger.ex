@@ -6,6 +6,7 @@ defmodule Glific.Triggers.Trigger do
 
   alias Glific.{
     Partners.Organization,
+    Repo,
     Triggers.TriggerAction,
     Triggers.TriggerCondition
   }
@@ -59,5 +60,13 @@ defmodule Glific.Triggers.Trigger do
     |> foreign_key_constraint(:trigger_condition_id)
     |> foreign_key_constraint(:organization_id)
     |> unique_constraint([:name, :organization_id])
+  end
+
+  @doc false
+  @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  def create_trigger(attrs \\ %{}) do
+    %Trigger{}
+    |> Trigger.changeset(attrs)
+    |> Repo.insert()
   end
 end
