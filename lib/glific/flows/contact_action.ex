@@ -56,7 +56,7 @@ defmodule Glific.Flows.ContactAction do
 
     # count the number of times we sent the same message in the recent list
     # in the past 6 hours
-    count = FlowContext.match_outbound(context, action.uuid)
+    count = FlowContext.match_outbound(context, body)
 
     cond do
       count >= 7 ->
