@@ -466,12 +466,15 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  @spec handle_insert_error(String.t(), String.t(), non_neg_integer, Oban.Job.t()) :: Oban.Job.t()
+  @spec handle_insert_error(String.t(), String.t(), non_neg_integer, map(), Oban.Job.t()) :: :ok
   defp handle_insert_error(table, dataset_id, organization_id, error, job) do
     error = error["error"]
+
     if error["status"] == "NOT_FOUND" do
       Bigquery.bigquery_dataset(dataset_id, organization_id)
-      make_job( job.args[table], table, organization_id, @reschedule_time)
+      make_job(job.args[table], table, organization_id, @reschedule_time)
     end
+
+    :ok
   end
 end
