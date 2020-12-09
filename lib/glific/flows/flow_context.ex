@@ -223,6 +223,7 @@ defmodule Glific.Flows.FlowContext do
   @spec match_outbound(FlowContext.t(), String.t(), integer) :: integer
   def match_outbound(context, body, go_back \\ 6) do
     since = Glific.go_back_time(go_back)
+
     Enum.filter(
       context.recent_outbound,
       fn item ->
