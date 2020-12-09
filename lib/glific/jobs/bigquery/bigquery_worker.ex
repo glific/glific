@@ -31,7 +31,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   }
 
   @simulater_phone "9876543210"
-  @reschedule_time 3600
+  @reschedule_time 120
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
   and queue them up for delivery to bigquery
@@ -245,31 +245,31 @@ defmodule Glific.Jobs.BigQueryWorker do
     data
   end
 
-  defp make_job(_, _, _, scheduled_at \\ DateTime.utc_now())
+  defp make_job(_, _, _, schedule_in \\ DateTime.utc_now())
 
   @spec make_job(list(), String.t(), non_neg_integer, DateTime.t()) :: :ok | nil
-  defp make_job(data, "messages", organization_id, scheduled_at) do
-    __MODULE__.new(%{organization_id: organization_id, messages: data}, scheduled_at: scheduled_at)
+  defp make_job(data, "messages", organization_id, scheduled_in) do
+    __MODULE__.new(%{organization_id: organization_id, messages: data}, schedule_in: scheduled_in)
     |> Oban.insert()
 
     :ok
   end
 
-  defp make_job(data, "contacts", organization_id, scheduled_at) do
-    __MODULE__.new(%{organization_id: organization_id, contacts: data}, scheduled_at: scheduled_at)
+  defp make_job(data, "contacts", organization_id, scheduled_in) do
+    __MODULE__.new(%{organization_id: organization_id, contacts: data}, schedule_in: scheduled_in)
     |> Oban.insert()
   end
 
-  defp make_job(data, "flows", organization_id, scheduled_at) do
+  defp make_job(data, "flows", organization_id, scheduled_in) do
     __MODULE__.new(%{organization_id: organization_id, flow_results: data},
-      scheduled_at: scheduled_at
+      schedule_in: scheduled_in
     )
     |> Oban.insert()
   end
 
-  defp make_job(data, "flow_results", organization_id, scheduled_at) do
+  defp make_job(data, "flow_results", organization_id, scheduled_in) do
     __MODULE__.new(%{organization_id: organization_id, flow_results: data},
-      scheduled_at: scheduled_at
+      schedule_in: scheduled_in
     )
     |> Oban.insert()
   end
@@ -469,16 +469,9 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec handle_insert_error(String.t(), String.t(), non_neg_integer, Oban.Job.t()) :: Oban.Job.t()
   defp handle_insert_error(table, dataset_id, organization_id, error, job) do
     error = error["error"]
-
     if error["status"] == "NOT_FOUND" do
       Bigquery.bigquery_dataset(dataset_id, organization_id)
-
-      make_job(
-        job.args[table],
-        table,
-        organization_id,
-        DateTime.add(job.scheduled_at, @reschedule_time, :second)
-      )
+      make_job( job.args[table], table, organization_id, @reschedule_time)
     end
   end
 end
