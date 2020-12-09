@@ -107,7 +107,7 @@ defmodule Glific.Templates.SessionTemplate do
 
   @doc false
   # if template type is not text then it should have media id
-  @spec changeset(Ecto.Changeset.t(), SessionTemplate.t()) :: Ecto.Changeset.t()
+  @spec validate_media(Ecto.Changeset.t(), SessionTemplate.t()) :: Ecto.Changeset.t()
   defp validate_media(changeset, template) do
     type = changeset.changes[:type]
     message_media_id = changeset.changes[:message_media_id] || template.message_media_id
