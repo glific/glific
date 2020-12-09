@@ -37,8 +37,7 @@ defmodule Glific.Triggers.TriggerLog do
   ]
 
   schema "trigger_logs" do
-    field :name, :string
-    field :event_type, :string, default: "scheduled"
+    field :status, :string
 
     belongs_to :trigger, Trigger
 

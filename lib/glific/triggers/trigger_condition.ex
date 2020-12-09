@@ -71,6 +71,12 @@ defmodule Glific.Triggers.TriggerCondition do
   @doc false
   @spec create_trigger_condition(map()) :: {:ok, TriggerCondition.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger_condition(attrs \\ %{}) do
+    attrs =
+      attrs
+      |> Map.merge(%{
+        fire_at: attrs.start_at
+      })
+
     %TriggerCondition{}
     |> TriggerCondition.changeset(attrs)
     |> Repo.insert()
