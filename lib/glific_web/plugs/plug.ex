@@ -37,7 +37,6 @@ if Code.ensure_loaded?(Plug) do
     """
     @spec put_organization(Conn.t(), any(), map()) :: Conn.t()
     def put_organization(conn, organization, config) do
-      IO.inspect(conn, label: organization)
       if conn.assigns[config.assign] do
         conn
       else
