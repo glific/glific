@@ -75,7 +75,7 @@ defmodule Glific.Triggers.TriggerCondition do
     attrs =
       attrs
       |> Map.merge(%{
-        fire_at: attrs.start_at
+        fire_at: attrs[:start_at]
       })
 
     %TriggerCondition{}

@@ -65,18 +65,6 @@ defmodule Glific.Triggers.Trigger do
   @doc false
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger(attrs) do
-    # here first we need to create trigger action and trigger condition
-
-    {:ok, trigger_action} = TriggerAction.create_trigger_action(attrs)
-    {:ok, trigger_condition} = TriggerCondition.create_trigger_condition(attrs)
-
-    attrs =
-      attrs
-      |> Map.merge(%{
-        trigger_action_id: trigger_action.id,
-        trigger_condition_id: trigger_condition.id
-      })
-
     %Trigger{}
     |> Trigger.changeset(attrs)
     |> Repo.insert()
