@@ -57,4 +57,18 @@ defmodule GlificWeb.Resolvers.Triggers do
       {:ok, %{trigger: trigger}}
     end
   end
+
+  @doc """
+  Update a trigger
+  """
+  @spec update_trigger(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_trigger(_, %{id: id, input: params}, _) do
+    with {:ok, trigger} <- Repo.fetch(Trigger, id) do
+          trigger = Repo.preload(trigger, [:trigger_action, :trigger_condition])
+          {:ok, _trigger_action} = TriggerAction.update_trigger_action(trigger.trigger_action, params)
+          {:ok, _trigger_condition} = TriggerCondition.update_trigger_condition(trigger.trigger_condition, params)
+          {:ok, %{trigger: trigger}}
+    end
+  end
 end

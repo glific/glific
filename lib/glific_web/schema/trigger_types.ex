@@ -63,6 +63,16 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :ends_at, :datetime
   end
 
+  input_object :trigger_update_input do
+    field :flow_id, :id
+    field :group_id, :id
+
+    field :is_repeating, :boolean
+    field :frequency, :string
+    field :start_at, :datetime
+    field :ends_at, :datetime
+  end
+
   object :trigger_queries do
     field :trigger, :trigger_result do
       arg(:id, non_null(:id))
@@ -89,6 +99,13 @@ defmodule GlificWeb.Schema.TriggerTypes do
       arg(:input, non_null(:trigger_input))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Triggers.create_trigger/3)
+    end
+
+    field :update_trigger, :trigger_result do
+      arg(:id, non_null(:id))
+      arg(:input, non_null(:trigger_update_input))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Triggers.update_trigger/3)
     end
   end
 end

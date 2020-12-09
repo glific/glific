@@ -68,4 +68,13 @@ defmodule Glific.Triggers.TriggerAction do
     |> TriggerAction.changeset(attrs)
     |> Repo.insert()
   end
+
+  @doc false
+  @spec update_trigger_action(TriggerAction.t(), map()) ::
+          {:ok, TriggerAction.t()} | {:error, Ecto.Changeset.t()}
+  def update_trigger_action(trigger_action, attrs) do
+    trigger_action
+    |> TriggerAction.changeset(attrs)
+    |> Repo.update()
+  end
 end
