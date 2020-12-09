@@ -220,8 +220,8 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Count the number of times we have sent the same message in the recent past
   """
-  @spec match_outbound(FlowContext.t(), Ecto.UUID.t(), integer) :: integer
-  def match_outbound(context, uuid, go_back \\ 6) do
+  @spec match_outbound(FlowContext.t(), String.t(), integer) :: integer
+  def match_outbound(context, body, go_back \\ 6) do
     since = Glific.go_back_time(go_back)
 
     Enum.filter(
@@ -238,7 +238,7 @@ defmodule Glific.Flows.FlowContext do
               ),
             else: item["date"]
 
-        item["message"] == uuid and DateTime.compare(date, since) in [:gt, :eq]
+        item["message"] == body and DateTime.compare(date, since) in [:gt, :eq]
       end
     )
     |> length()
