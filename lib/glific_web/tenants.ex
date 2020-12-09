@@ -66,6 +66,10 @@ defmodule GlificWeb.Tenants do
     default.id
   end
 
+  # lets keep api as the default edge case for our development environment
+  # and redirect users to glific
+  def organization_handler("api"), do: organization_handler()
+
   def organization_handler(shortcode) do
     organization = Partners.organization(shortcode)
 
