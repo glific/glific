@@ -24,6 +24,9 @@ defmodule Glific.Repo.Migrations.Trigger do
       # start flow
       add :action_type, :string, default: "start_flow"
 
+      # the flow that the action starts
+      add :flow_id, references(:flows, on_delete: :delete_all)
+
       # the contact(s) that are involved with this action
       # we store them in the join table below, to allow
       # multiple contacts to be associated with an action
@@ -71,7 +74,7 @@ defmodule Glific.Repo.Migrations.Trigger do
       add :is_repeating, :boolean, default: false
 
       # if repeating, what is the repeat frequency
-      # today | daily | weekly | weekday | weekend | mon | tue | ... | sat
+      # today | daily | weekly | monthly | weekday | weekend
       add :frequency, :string, default: "today"
 
       # if repeating trigger, we need an end date
@@ -108,7 +111,7 @@ defmodule Glific.Repo.Migrations.Trigger do
   end
 
   @doc """
-  The join table between contacts and triggers
+  The join table between contacts and trigger actions
   """
   def contacts_triggers do
     create table(:contacts_triggers) do
