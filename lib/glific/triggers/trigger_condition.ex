@@ -71,7 +71,7 @@ defmodule Glific.Triggers.TriggerCondition do
   @doc false
   @spec create_trigger_condition(map()) ::
           {:ok, TriggerCondition.t()} | {:error, Ecto.Changeset.t()}
-  def create_trigger_condition(attrs \\ %{}) do
+  def create_trigger_condition(attrs) do
     attrs =
       attrs
       |> Map.merge(%{

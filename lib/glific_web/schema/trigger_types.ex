@@ -53,8 +53,8 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
     field :is_repeating, :boolean
     field :frequency, :string
-    field :start_at, :datetime
-    field :ends_at, :datetime
+    field :start_at, non_null(:datetime)
+    field :ends_at, non_null(:datetime)
   end
 
   object :trigger_mutations do
