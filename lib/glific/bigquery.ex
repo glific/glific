@@ -117,7 +117,6 @@ defmodule Glific.Bigquery do
           "UPDATE `#{dataset_id}.contacts` SET #{format_update_values(updated_values)} WHERE phone= '#{
             phone_no
           }'"
-
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
 
@@ -132,10 +131,10 @@ defmodule Glific.Bigquery do
   end
 
   defp format_field_values("fields", contact_fields, org_id) when is_map(contact_fields) do
+    contact_fields = validate_fields(contact_fields)
     values =
-      Enum.map(contact_fields, fn {_key, contact_field} ->
+      Enum.map(contact_fields, fn contact_field ->
         contact_field = Glific.atomize_keys(contact_field)
-
         "('#{contact_field.label}', '#{contact_field.value}', '#{contact_field.type}', '#{
           format_date(contact_field.inserted_at, org_id)
         }')"
@@ -147,6 +146,16 @@ defmodule Glific.Bigquery do
   end
 
   defp format_field_values(_key, field, _org_id), do: field
+
+  @spec validate_fields(map()) :: list()
+  defp validate_fields(contact_fields) do
+    contact_fields
+    |> Map.values()
+    |> Enum.reject(fn field ->
+      [:value, :label, :inserted_at, :type]
+      |> Enum.all?(&Map.has_key?(Glific.atomize_keys(field), &1)) == false
+    end)
+  end
 
   @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
   defp format_date(nil, _),
