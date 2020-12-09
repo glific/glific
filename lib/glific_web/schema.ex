@@ -59,6 +59,8 @@ defmodule GlificWeb.Schema do
     import_fields(:search_queries)
 
     import_fields(:flow_queries)
+
+    import_fields(:trigger_queries)
   end
 
   mutation do

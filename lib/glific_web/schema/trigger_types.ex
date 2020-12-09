@@ -44,6 +44,12 @@ defmodule GlificWeb.Schema.TriggerTypes do
     end
   end
 
+  @desc "Filtering options for triggers"
+  input_object :trigger_filter do
+    @desc "Match the name"
+    field :name, :string
+  end
+
   input_object :trigger_input do
     field :name, :string
     field :event_type, :string
@@ -53,8 +59,29 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
     field :is_repeating, :boolean
     field :frequency, :string
-    field :start_at, non_null(:datetime)
-    field :ends_at, non_null(:datetime)
+    field :start_at, :datetime
+    field :ends_at, :datetime
+  end
+
+  object :trigger_queries do
+    field :trigger, :trigger_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Triggers.trigger/3)
+    end
+
+    field :triggers, list_of(:trigger) do
+      arg(:filter, :trigger_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Triggers.triggers/3)
+    end
+
+    field :count_triggers, :integer do
+      arg(:filter, :trigger_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Triggers.count_triggers/3)
+    end
   end
 
   object :trigger_mutations do

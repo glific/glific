@@ -69,4 +69,19 @@ defmodule Glific.Triggers.Trigger do
     |> Trigger.changeset(attrs)
     |> Repo.insert()
   end
+
+  @doc """
+  Returns the list of triggers filtered by args
+  """
+  @spec list_triggers(map()) :: [Trigger.t()]
+  def list_triggers(%{filter: %{organization_id: _organization_id}} = args) do
+    Repo.list_filter(args, Trigger, &Repo.opts_with_name/2, &Repo.filter_with/2)
+  end
+
+  @doc """
+  Return the count of triggers, using the same filter as list_triggers
+  """
+  @spec count_triggers(map()) :: integer
+  def count_triggers(%{filter: %{organization_id: _organization_id}} = args),
+    do: Repo.count_filter(args, Trigger, &Repo.filter_with/2)
 end
