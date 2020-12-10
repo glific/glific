@@ -84,7 +84,7 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  # @spec create_body(FlowContext.t()) :: {map(), String.t()}
+  @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()}
   defp create_body(context, action_body) do
     default_payload = %{
       contact: %{
