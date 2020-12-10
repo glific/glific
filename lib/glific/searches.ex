@@ -34,14 +34,14 @@ defmodule Glific.Searches do
 
   """
   @spec list_saved_searches(map()) :: [SavedSearch.t()]
-  def list_saved_searches(%{filter: %{organization_id: _organization_id}} = args),
+  def list_saved_searches(args),
     do: Repo.list_filter(args, SavedSearch, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
   Returns the count of searches, using the same filter as list_saved_searches
   """
   @spec count_saved_searches(map()) :: integer
-  def count_saved_searches(%{filter: %{organization_id: _organization_id}} = args),
+  def count_saved_searches(args),
     do: Repo.count_filter(args, SavedSearch, &Repo.filter_with/2)
 
   @doc """

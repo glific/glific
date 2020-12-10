@@ -12,8 +12,6 @@ defmodule GlificWeb.Resolvers.Flows do
     Repo
   }
 
-  alias GlificWeb.Resolvers.Helper
-
   @doc """
   Get a specific flow by id
   """
@@ -28,16 +26,16 @@ defmodule GlificWeb.Resolvers.Flows do
   Get the list of flows
   """
   @spec flows(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Flow]}
-  def flows(_, args, context) do
-    {:ok, Flows.list_flows(Helper.add_org_filter(args, context))}
+  def flows(_, args, _) do
+    {:ok, Flows.list_flows(args)}
   end
 
   @doc """
   Get the count of flows filtered by args
   """
   @spec count_flows(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_flows(_, args, context) do
-    {:ok, Flows.count_flows(Helper.add_org_filter(args, context))}
+  def count_flows(_, args, _) do
+    {:ok, Flows.count_flows(args)}
   end
 
   @doc false

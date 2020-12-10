@@ -61,7 +61,7 @@ defmodule Glific.Groups do
   Return the count of groups, using the same filter as list_groups
   """
   @spec count_groups(map()) :: integer
-  def count_groups(%{filter: %{organization_id: _organization_id}} = args) do
+  def count_groups(args) do
     args
     |> Repo.list_filter_query(Group, nil, &Repo.filter_with/2)
     |> Repo.add_permission(&Groups.add_permission/2)
