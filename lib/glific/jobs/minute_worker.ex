@@ -106,22 +106,12 @@ defmodule Glific.Jobs.MinuteWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
-  def perform(%Oban.Job{args: %{"job" => job}} = _args)
-      when job in ["delete_completed_flow_contexts", "delete_old_flow_contexts"] do
-    # lets put a dummy organization id
-    apply(FlowContext, String.to_existing_atom(job), [])
-    :ok
-  end
-
   # credo:disable-for-lines:50
   def perform(%Oban.Job{args: %{"job" => job}} = args) do
     services = get_organization_services()
 
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
-      "fun_with_flags" ->
-        Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
-
       "contact_status" ->
         Partners.perform_all(&Contacts.update_contact_status/2, args, [])
 
@@ -137,11 +127,14 @@ defmodule Glific.Jobs.MinuteWorker do
       "gcs" ->
         Partners.perform_all(&GcsWorker.perform_periodic/1, nil, services["google_cloud_storage"])
 
-      "bspbalance" ->
+      "hourly_tasks" ->
+        FlowContext.delete_completed_flow_contexts()
+        FlowContext.delete_old_flow_contexts()
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [])
 
-      "collectioncount" ->
+      "five_minute_tasks" ->
         Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [])
+        Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"
