@@ -84,9 +84,9 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @spec create_body(FlowContext.t()) :: {map(), String.t()}
-  defp create_body(context) do
-    map = %{
+  # @spec create_body(FlowContext.t()) :: {map(), String.t()}
+  defp create_body(context, action_body) do
+    default_payload = %{
       contact: %{
         name: context.contact.name,
         phone: context.contact.phone,
@@ -95,14 +95,27 @@ defmodule Glific.Flows.Webhook do
       results: context.results
     }
 
-    {:ok, body} = Jason.encode(map)
+    list =
+      action_body
+      |> String.replace("  ", "")
+      |> String.replace(",|{|}", "")
+      |> String.trim()
+      |> String.split("\n")
 
-    {map, body}
+    action_payload =
+      Enum.reduce(list, %{}, fn line, acc ->
+        [key, value] = String.split(line, ": ")
+        Map.put(acc, key, value)
+      end)
+    |>Map.merge(default_payload)
+
+    {:ok, body} = Jason.encode(action_payload)
+    {action_payload, body}
   end
 
   @spec post(Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
   defp post(action, context, headers) do
-    {map, body} = create_body(context)
+    {map, body} = create_body(context, action.body)
     headers = add_signature(headers, context.organization_id, body)
 
     webhook_log = create_log(action, map, headers, context)
@@ -158,7 +171,7 @@ defmodule Glific.Flows.Webhook do
   # organization. We dynamically compile and load this code
   @spec patch(Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
   defp patch(action, context, headers) do
-    {map, body} = create_body(context)
+    {map, body} = create_body(context, action.body)
     headers = add_signature(headers, context.organization_id, body)
 
     webhook_log = create_log(action, map, headers, context)
