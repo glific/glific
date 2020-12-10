@@ -17,14 +17,23 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
   object :trigger_action do
     field :id, :id
-    field :flow_id, :id
-    field :group_id, :id
+    field :action_type, :string
+
+    field :flow, :flow do
+      resolve(dataloader(Repo))
+    end
+
+    field :group, :group do
+      resolve(dataloader(Repo))
+    end
   end
 
   object :trigger_condition do
     field :id, :id
+    field :name, :string
     field :start_at, :datetime
     field :ends_at, :datetime
+    field :fire_at, :datetime
     field :is_active, :boolean
     field :is_repeating, :boolean
     field :frequency, :string
