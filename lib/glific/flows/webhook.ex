@@ -87,31 +87,29 @@ defmodule Glific.Flows.Webhook do
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()}
   defp create_body(context, action_body) do
     default_payload = %{
-      contact: %{
-        name: context.contact.name,
-        phone: context.contact.phone,
-        fields: context.contact.fields
+      "contact"=> %{
+        "name"=> context.contact.name,
+        "phone"=> context.contact.phone,
+        "fields"=> context.contact.fields
       },
-      results: context.results,
-      custom_key: ""
+      "results"=> context.results,
     }
 
-    action_list =
+    ## we need to convert the string to map.
+    ## Jason.decode is not working because flow editor
+    ## is not converting it to the valid Json
+    payload_list_items =
       action_body
-      |> String.replace("  ", "")
-      |> String.replace(",", "")
-      |> String.replace("{", "")
-      |> String.replace("}", "")
+      |>String.replace(~r/{|}|,|  /, "")
       |> String.trim()
       |> String.split("\n")
 
     action_payload =
-      Enum.reduce(action_list, %{}, fn word, acc ->
-        [key, value] = String.split(word, ": ")
-        Map.put(acc, String.to_existing_atom(key), value)
+      Enum.reduce(payload_list_items, %{}, fn list_item, acc ->
+        [key, value] = String.split(list_item, ": ")
+        Map.put(acc, key, value)
       end)
       |> Map.merge(default_payload)
-
     {:ok, body} = Jason.encode(action_payload)
     {action_payload, body}
   end
