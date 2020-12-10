@@ -92,22 +92,25 @@ defmodule Glific.Flows.Webhook do
         phone: context.contact.phone,
         fields: context.contact.fields
       },
-      results: context.results
+      results: context.results,
+      custom_key: ""
     }
 
-    list =
+    action_list =
       action_body
-      |> String.trim()
       |> String.replace("  ", "")
-      |> String.replace(",|{|}", "")
+      |> String.replace(",", "")
+      |> String.replace("{", "")
+      |> String.replace("}", "")
+      |> String.trim()
       |> String.split("\n")
 
     action_payload =
-      Enum.reduce(list, %{}, fn line, acc ->
-        [key, value] = String.split(line, ": ")
-        Map.put(acc, key, value)
+      Enum.reduce(action_list, %{}, fn word, acc ->
+        [key, value] = String.split(word, ": ")
+        Map.put(acc, String.to_existing_atom(key), value)
       end)
-    |>Map.merge(default_payload)
+      |> Map.merge(default_payload)
 
     {:ok, body} = Jason.encode(action_payload)
     {action_payload, body}
