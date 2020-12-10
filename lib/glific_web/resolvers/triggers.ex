@@ -5,7 +5,6 @@ defmodule GlificWeb.Resolvers.Triggers do
   """
 
   alias Glific.Repo
-  alias GlificWeb.Resolvers.Helper
 
   alias Glific.Triggers.{
     Trigger,
@@ -27,16 +26,16 @@ defmodule GlificWeb.Resolvers.Triggers do
   """
   @spec triggers(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [any]}
-  def triggers(_, args, context) do
-    {:ok, Trigger.list_triggers(Helper.add_org_filter(args, context))}
+  def triggers(_, args, _) do
+    {:ok, Trigger.list_triggers(args)}
   end
 
   @doc """
   Get the count of triggers filtered by args
   """
   @spec count_triggers(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_triggers(_, args, context) do
-    {:ok, Trigger.count_triggers(Helper.add_org_filter(args, context))}
+  def count_triggers(_, args, _) do
+    {:ok, Trigger.count_triggers(args)}
   end
 
   @doc false
