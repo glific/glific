@@ -97,9 +97,9 @@ defmodule Glific.Flows.Webhook do
 
     list =
       action_body
+      |> String.trim()
       |> String.replace("  ", "")
       |> String.replace(",|{|}", "")
-      |> String.trim()
       |> String.split("\n")
 
     action_payload =
