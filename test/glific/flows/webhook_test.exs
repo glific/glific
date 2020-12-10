@@ -52,11 +52,11 @@ defmodule Glific.Flows.WebhookTest do
       action = %Action{
         headers: %{"Accept" => "application/json"},
         method: "POST",
-        url: "some url"
+        url: "some url",
+        body: "value: 14"
       }
 
       result = Webhook.execute(action, context)
-
       assert @results = result
     end
 
@@ -83,7 +83,8 @@ defmodule Glific.Flows.WebhookTest do
       action = %Action{
         headers: %{"Accept" => "application/json"},
         method: "POST",
-        url: "wrong url"
+        url: "wrong url",
+        body: "value: 14"
       }
 
       assert Webhook.execute(action, context) == nil
