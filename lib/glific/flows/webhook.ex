@@ -88,11 +88,6 @@ defmodule Glific.Flows.Webhook do
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()}
   defp create_body(context, action_body) do
-    action_body =
-      action_body
-      |> MessageVarParser.parse(%{"contact" => Contacts.get_contact_field_map(context.contact_id)})
-      |> MessageVarParser.parse_results(context.results)
-
     default_payload = %{
       contact: %{
         name: context.contact.name,
@@ -101,14 +96,18 @@ defmodule Glific.Flows.Webhook do
       },
       results: context.results
     }
+    contact_fields =  %{"contact" => Contacts.get_contact_field_map(context.contact_id)}
 
     {:ok, default_contact} = Jason.encode(default_payload.contact)
-    action_body = action_body |> String.replace("@contact", default_contact)
     {:ok, default_results} = Jason.encode(default_payload.results)
-    action_body = action_body |> String.replace("@results", default_results)
-    ## we need to convert the string to map.
-    ## Jason.decode is not working because flow editor
-    ## is not converting it to the valid Json
+
+    action_body =
+      action_body
+      |> MessageVarParser.parse(contact_fields)
+      |> MessageVarParser.parse_results(context.results)
+      |> String.replace("@contact", default_contact)
+      |> String.replace("@results", default_results)
+
     {:ok, action_body_map} = Jason.decode(action_body)
     {action_body_map, action_body}
   end
