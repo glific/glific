@@ -153,6 +153,9 @@ defmodule Glific.Flows.FlowContext do
       )
       |> step_forward(Messages.create_temp_message(context.flow.organization_id, "completed"))
     end
+
+    # return the orginal context, which is now completed
+    context
   end
 
   @doc """
@@ -283,40 +286,48 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Seed the context and set the wakeup time as needed
+  """
+  @spec seed_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) :: {:ok, FlowContext.t() | :error, String.t()}
+  def seed_context(flow, contact, status, opts \\ []) do
+    parent_id = Keyword.get(opts, :parent_id)
+    current_delay = Keyword.get(opts, :delay, 0)
+    wakeup_at = Keyword.get(opts, :wakeup_at)
+
+    Logger.info(
+      "Seeding flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
+    )
+
+    create_flow_context(%{
+          contact_id: contact.id,
+          parent_id: parent_id,
+          node_uuid: node.uuid,
+          flow_uuid: flow.uuid,
+          status: status,
+          node: hd(flow.nodes),
+          results: %{},
+          flow_id: flow.id,
+          flow: flow,
+          organization_id: flow.organization_id,
+          uuid_map: flow.uuid_map,
+          delay: current_delay,
+          wakeup_at: wakeup_at
+                        })
+  end
+
+  @doc """
   Start a new context, if there is an existing context, blow it away
   """
   @spec init_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def init_context(flow, contact, status, opts \\ []) do
     parent_id = Keyword.get(opts, :parent_id)
-    current_delay = Keyword.get(opts, :delay, 0)
-
-    Logger.info(
-      "Starting flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
-    )
-
     # set all previous context to be completed if we are not starting a sub flow
     if is_nil(parent_id) do
       mark_flows_complete(contact.id)
     end
 
-    node = hd(flow.nodes)
-
-    {:ok, context} =
-      create_flow_context(%{
-        contact_id: contact.id,
-        parent_id: parent_id,
-        node_uuid: node.uuid,
-        flow_uuid: flow.uuid,
-        status: status,
-        node: node,
-        results: %{},
-        flow_id: flow.id,
-        flow: flow,
-        organization_id: flow.organization_id,
-        uuid_map: flow.uuid_map,
-        delay: current_delay
-      })
+    {:ok, context} = seed_context(flow, contact, status, opts)
 
     context
     |> load_context(flow)
@@ -405,6 +416,7 @@ defmodule Glific.Flows.FlowContext do
         context.flow.organization_id,
         {:flow_uuid, context.flow_uuid, context.status}
       )
+
 
     {:ok, context} =
       context
