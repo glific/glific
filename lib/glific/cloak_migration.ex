@@ -4,6 +4,7 @@ defmodule Glific.CloakMigration do
   """
 
   alias Glific.{
+    Partners,
     Partners.Credential,
     Partners.Organization,
     Repo
@@ -11,7 +12,6 @@ defmodule Glific.CloakMigration do
 
   @doc """
   migrate to new key for encryption
-  Glific.CloakMigration.cloak_migrate()
   """
   @spec cloak_migrate :: :ok
   def cloak_migrate do
@@ -24,25 +24,15 @@ defmodule Glific.CloakMigration do
     :ok
   end
 
+  @spec update_credential(Credential.t()) :: {:ok, Credential.t()}
   defp update_credential(record) do
-    {:ok, updated} =
-    record
-    |> Credential.changeset(%{secrets: %{temp: nil}})
-    |> Repo.update(force: true)
-
-    updated
-    |> Credential.changeset(%{secrets: record.secrets})
-    |> Repo.update(force: true)
+    Partners.update_credential(record, %{secrets: %{temp: nil}})
+    Partners.update_credential(record, %{secrets: record.secrets}})
   end
 
+  @spec update_credential(Organization.t()) :: {:ok, Organization.t()}
   defp update_organization(record) do
-    {:ok, updated} =
-    record
-    |> Organization.changeset(%{signature_phrase: nil})
-    |> Repo.update(force: true)
-
-    updated
-    |> Organization.changeset(%{signature_phrase: record.signature_phrase})
-    |> Repo.update(force: true)
+    Partners.update_organization(record, %{signature_phrase: nil})
+    Partners.update_organization(record, %{signature_phrase: record.signature_phrase})
   end
 end
