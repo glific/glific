@@ -11,8 +11,7 @@ defmodule Glific.Flows.ContactAction do
     Flows.Localization,
     Flows.MessageVarParser,
     Messages,
-    Messages.Message,
-    Repo
+    Messages.Message
   }
 
   @min_delay 2
