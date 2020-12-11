@@ -49,7 +49,7 @@ defmodule Glific.Contacts do
   Include contacts only if have list of tags
   """
   @spec list_contacts(map()) :: [Contact.t()]
-  def list_contacts(%{filter: %{organization_id: _organization_id}} = args) do
+  def list_contacts(args) do
     args
     |> Repo.list_filter_query(Contact, &Repo.opts_with_name/2, &filter_with/2)
     |> Repo.add_permission(&Contacts.add_permission/2)
@@ -60,7 +60,7 @@ defmodule Glific.Contacts do
   Return the count of contacts, using the same filter as list_contacts
   """
   @spec count_contacts(map()) :: integer
-  def count_contacts(%{filter: %{organization_id: _organization_id}} = args) do
+  def count_contacts(args) do
     args
     |> Repo.list_filter_query(Contact, nil, &filter_with/2)
     |> Repo.add_permission(&Contacts.add_permission/2)
@@ -492,5 +492,18 @@ defmodule Glific.Contacts do
       _ ->
         {:error, ["gupshup", "couldn't connect"]}
     end
+  end
+
+  @doc """
+    Convert contact field to map for variable substitution
+  """
+  @spec get_contact_field_map(integer) :: map()
+  def get_contact_field_map(contact_id) do
+    contact =
+      Contacts.get_contact!(contact_id)
+      |> Repo.preload(:language)
+      |> Map.from_struct()
+
+    put_in(contact, [:fields, :language], %{label: contact.language.label})
   end
 end

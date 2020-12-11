@@ -13,8 +13,6 @@ defmodule GlificWeb.Resolvers.Messages do
     Repo
   }
 
-  alias GlificWeb.Resolvers.Helper
-
   @doc """
   Get a specific message by id
   """
@@ -31,16 +29,16 @@ defmodule GlificWeb.Resolvers.Messages do
   """
   @spec messages(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def messages(_, args, context) do
-    {:ok, Messages.list_messages(Helper.add_org_filter(args, context))}
+  def messages(_, args, _) do
+    {:ok, Messages.list_messages(args)}
   end
 
   @doc """
   Get the count of messages filtered by args
   """
   @spec count_messages(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_messages(_, args, context) do
-    {:ok, Messages.count_messages(Helper.add_org_filter(args, context))}
+  def count_messages(_, args, _) do
+    {:ok, Messages.count_messages(args)}
   end
 
   @doc false

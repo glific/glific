@@ -28,7 +28,7 @@ defmodule Glific.Flows do
 
   """
   @spec list_flows(map()) :: [Flow.t()]
-  def list_flows(%{filter: %{organization_id: _organization_id}} = args),
+  def list_flows(args),
     do: Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -63,7 +63,7 @@ defmodule Glific.Flows do
   Return the count of tags, using the same filter as list_tags
   """
   @spec count_flows(map()) :: integer
-  def count_flows(%{filter: %{organization_id: _organization_id}} = args),
+  def count_flows(args),
     do: Repo.count_filter(args, Flow, &Repo.filter_with/2)
 
   @doc """

@@ -28,14 +28,14 @@ defmodule Glific.Tags do
 
   """
   @spec list_tags(map()) :: [Tag.t()]
-  def list_tags(%{filter: %{organization_id: _organization_id}} = args),
+  def list_tags(args),
     do: Repo.list_filter(args, Tag, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
   Return the count of tags, using the same filter as list_tags
   """
   @spec count_tags(map()) :: integer
-  def count_tags(%{filter: %{organization_id: _organization_id}} = args),
+  def count_tags(args),
     do: Repo.count_filter(args, Tag, &Repo.filter_with/2)
 
   @doc """

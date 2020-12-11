@@ -11,8 +11,7 @@ defmodule Glific.Flows.ContactAction do
     Flows.Localization,
     Flows.MessageVarParser,
     Messages,
-    Messages.Message,
-    Repo
+    Messages.Message
   }
 
   @min_delay 2
@@ -28,7 +27,7 @@ defmodule Glific.Flows.ContactAction do
     # Since we are saving the data after loading the flow
     # so we have to fetch the latest contact fields
     message_vars = %{
-      "contact" => get_contact_field_map(context.contact_id)
+      "contact" => Contacts.get_contact_field_map(context.contact_id)
     }
 
     body =
@@ -85,7 +84,7 @@ defmodule Glific.Flows.ContactAction do
         %Action{templating: templating, attachments: attachments},
         messages
       ) do
-    message_vars = %{"contact" => get_contact_field_map(context.contact_id)}
+    message_vars = %{"contact" => Contacts.get_contact_field_map(context.contact_id)}
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
     session_template = Messages.parse_template_vars(templating.template, vars)
 
@@ -176,15 +175,5 @@ defmodule Glific.Flows.ContactAction do
     )
 
     context
-  end
-
-  @spec get_contact_field_map(integer) :: map()
-  defp get_contact_field_map(contact_id) do
-    contact =
-      Contacts.get_contact!(contact_id)
-      |> Repo.preload(:language)
-      |> Map.from_struct()
-
-    put_in(contact, [:fields, :language], %{label: contact.language.label})
   end
 end

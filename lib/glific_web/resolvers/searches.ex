@@ -29,16 +29,16 @@ defmodule GlificWeb.Resolvers.Searches do
   Get the list of saved_searches
   """
   @spec saved_searches(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [SavedSearch]}
-  def saved_searches(_, args, context) do
-    {:ok, Searches.list_saved_searches(Helper.add_org_filter(args, context))}
+  def saved_searches(_, args, _) do
+    {:ok, Searches.list_saved_searches(args)}
   end
 
   @doc """
   Get the count of saved_searches
   """
   @spec count_saved_searches(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_saved_searches(_, args, context) do
-    {:ok, Searches.count_saved_searches(Helper.add_org_filter(args, context))}
+  def count_saved_searches(_, args, _) do
+    {:ok, Searches.count_saved_searches(args)}
   end
 
   @doc false

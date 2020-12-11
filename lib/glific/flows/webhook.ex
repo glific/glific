@@ -4,8 +4,9 @@ defmodule Glific.Flows.Webhook do
   a better handle on the breadth and depth of webhooks
   """
 
+  alias Glific.Contacts
   alias Glific.Extensions
-  alias Glific.Flows.{Action, FlowContext, WebhookLog}
+  alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
 
   @spec add_signature(Keyword.t(), non_neg_integer, String.t()) :: Keyword.t()
   defp add_signature(headers, organization_id, body) do
@@ -84,9 +85,9 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @spec create_body(FlowContext.t()) :: {map(), String.t()}
-  defp create_body(context) do
-    map = %{
+  @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()}
+  defp create_body(context, action_body) do
+    default_payload = %{
       contact: %{
         name: context.contact.name,
         phone: context.contact.phone,
@@ -95,14 +96,25 @@ defmodule Glific.Flows.Webhook do
       results: context.results
     }
 
-    {:ok, body} = Jason.encode(map)
+    contact_fields = %{"contact" => Contacts.get_contact_field_map(context.contact_id)}
 
-    {map, body}
+    {:ok, default_contact} = Jason.encode(default_payload.contact)
+    {:ok, default_results} = Jason.encode(default_payload.results)
+
+    action_body =
+      action_body
+      |> MessageVarParser.parse(contact_fields)
+      |> MessageVarParser.parse_results(context.results)
+      |> String.replace("\"@contact\"", default_contact)
+      |> String.replace("\"@results\"", default_results)
+
+    {:ok, action_body_map} = Jason.decode(action_body)
+    {action_body_map, action_body}
   end
 
   @spec post(Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
   defp post(action, context, headers) do
-    {map, body} = create_body(context)
+    {map, body} = create_body(context, action.body)
     headers = add_signature(headers, context.organization_id, body)
 
     webhook_log = create_log(action, map, headers, context)
@@ -158,7 +170,7 @@ defmodule Glific.Flows.Webhook do
   # organization. We dynamically compile and load this code
   @spec patch(Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
   defp patch(action, context, headers) do
-    {map, body} = create_body(context)
+    {map, body} = create_body(context, action.body)
     headers = add_signature(headers, context.organization_id, body)
 
     webhook_log = create_log(action, map, headers, context)

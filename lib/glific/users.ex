@@ -23,7 +23,7 @@ defmodule Glific.Users do
 
   """
   @spec list_users(map()) :: [User.t()]
-  def list_users(%{filter: %{organization_id: _organization_id}} = args) do
+  def list_users(args) do
     Repo.list_filter(args, User, &Repo.opts_with_name/2, &Repo.filter_with/2)
   end
 
@@ -31,7 +31,7 @@ defmodule Glific.Users do
   Return the count of users, using the same filter as list_users
   """
   @spec count_users(map()) :: integer
-  def count_users(%{filter: %{organization_id: _organization_id}} = args),
+  def count_users(args),
     do: Repo.count_filter(args, User, &Repo.filter_with/2)
 
   @doc """

@@ -6,7 +6,6 @@ defmodule GlificWeb.Resolvers.Users do
 
   alias Glific.Repo
   alias Glific.{Groups, Users, Users.User}
-  alias GlificWeb.Resolvers.Helper
 
   @doc false
   @spec user(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -19,16 +18,16 @@ defmodule GlificWeb.Resolvers.Users do
   @doc false
   @spec users(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [any]}
-  def users(_, args, context) do
-    {:ok, Users.list_users(Helper.add_org_filter(args, context))}
+  def users(_, args, _) do
+    {:ok, Users.list_users(args)}
   end
 
   @doc """
   Get the count of users filtered by args
   """
   @spec count_users(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_users(_, args, context) do
-    {:ok, Users.count_users(Helper.add_org_filter(args, context))}
+  def count_users(_, args, _) do
+    {:ok, Users.count_users(args)}
   end
 
   @doc false
