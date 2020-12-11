@@ -25,7 +25,11 @@ defmodule Glific.Flows.WebhookTest do
       "score" => "31",
       "status" => "5"
     }
-
+    @action_body %{
+      contact: "@contact",
+      results: "@results",
+      custom_key: "custom_value"
+    }
     test "execute a webhook for post method should return the response body with results",
          attrs do
       Tesla.Mock.mock(fn
@@ -52,11 +56,11 @@ defmodule Glific.Flows.WebhookTest do
       action = %Action{
         headers: %{"Accept" => "application/json"},
         method: "POST",
-        url: "some url"
+        url: "some url",
+        body: Jason.encode!(@action_body)
       }
 
       result = Webhook.execute(action, context)
-
       assert @results = result
     end
 
@@ -83,7 +87,8 @@ defmodule Glific.Flows.WebhookTest do
       action = %Action{
         headers: %{"Accept" => "application/json"},
         method: "POST",
-        url: "wrong url"
+        url: "wrong url",
+        body: Jason.encode!(@action_body)
       }
 
       assert Webhook.execute(action, context) == nil
