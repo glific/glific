@@ -6,7 +6,7 @@ defmodule Glific.Flows.Webhook do
 
   alias Glific.Contacts
   alias Glific.Extensions
-  alias Glific.Flows.{Action, FlowContext, WebhookLog, MessageVarParser}
+  alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
 
   @spec add_signature(Keyword.t(), non_neg_integer, String.t()) :: Keyword.t()
   defp add_signature(headers, organization_id, body) do
