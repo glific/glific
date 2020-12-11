@@ -39,16 +39,13 @@ config :glific, Oban,
   repo: Glific.Repo,
   queues: [default: 10, dialogflow: 10, gupshup: 10, webhook: 10, crontab: 10],
   crontab: [
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :fun_with_flags}},
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
     {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
     {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
     {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
-    {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_completed_flow_contexts}},
-    {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_old_flow_contexts}},
-    {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bspbalance}},
-    {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :collectioncount}}
+    {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
+    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}}
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
