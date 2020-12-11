@@ -32,7 +32,7 @@ defmodule Glific.Messages do
 
   """
   @spec list_messages(map()) :: [Message.t()]
-  def list_messages(%{filter: %{organization_id: _org_id}} = args),
+  def list_messages(args),
     do:
       Repo.list_filter(args, Message, &Repo.opts_with_body/2, &filter_with/2)
       |> Enum.map(&put_clean_body/1)
@@ -41,7 +41,7 @@ defmodule Glific.Messages do
   Return the count of messages, using the same filter as list_messages
   """
   @spec count_messages(map()) :: integer
-  def count_messages(%{filter: %{organization_id: _org_id}} = args),
+  def count_messages(args),
     do: Repo.count_filter(args, Message, &filter_with/2)
 
   # codebeat:disable[ABC, LOC]

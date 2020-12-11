@@ -6,7 +6,6 @@ defmodule GlificWeb.Resolvers.Groups do
 
   alias Glific.{Groups, Groups.Group, Repo}
   alias Glific.{Groups.ContactGroups, Groups.UserGroups}
-  alias GlificWeb.Resolvers.Helper
 
   @doc """
   Get a specific group by id
@@ -22,16 +21,16 @@ defmodule GlificWeb.Resolvers.Groups do
   Get the list of groups filtered by args
   """
   @spec groups(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Group]}
-  def groups(_, args, context) do
-    {:ok, Groups.list_groups(Helper.add_org_filter(args, context))}
+  def groups(_, args, _) do
+    {:ok, Groups.list_groups(args)}
   end
 
   @doc """
   Get the count of groups filtered by args
   """
   @spec count_groups(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_groups(_, args, context) do
-    {:ok, Groups.count_groups(Helper.add_org_filter(args, context))}
+  def count_groups(_, args, _) do
+    {:ok, Groups.count_groups(args)}
   end
 
   @doc """

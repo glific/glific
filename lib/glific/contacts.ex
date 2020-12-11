@@ -49,7 +49,7 @@ defmodule Glific.Contacts do
   Include contacts only if have list of tags
   """
   @spec list_contacts(map()) :: [Contact.t()]
-  def list_contacts(%{filter: %{organization_id: _organization_id}} = args) do
+  def list_contacts(args) do
     args
     |> Repo.list_filter_query(Contact, &Repo.opts_with_name/2, &filter_with/2)
     |> Repo.add_permission(&Contacts.add_permission/2)
@@ -60,7 +60,7 @@ defmodule Glific.Contacts do
   Return the count of contacts, using the same filter as list_contacts
   """
   @spec count_contacts(map()) :: integer
-  def count_contacts(%{filter: %{organization_id: _organization_id}} = args) do
+  def count_contacts(args) do
     args
     |> Repo.list_filter_query(Contact, nil, &filter_with/2)
     |> Repo.add_permission(&Contacts.add_permission/2)

@@ -21,14 +21,14 @@ defmodule Glific.Templates do
 
   """
   @spec list_session_templates(map()) :: [SessionTemplate.t()]
-  def list_session_templates(%{filter: %{organization_id: _organization_id}} = args),
+  def list_session_templates(args),
     do: Repo.list_filter(args, SessionTemplate, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
   Return the count of session_templates, using the same filter as list_session_templates
   """
   @spec count_session_templates(map()) :: integer
-  def count_session_templates(%{filter: %{organization_id: _organization_id}} = args),
+  def count_session_templates(args),
     do: Repo.count_filter(args, SessionTemplate, &filter_with/2)
 
   # codebeat:disable[ABC,LOC]

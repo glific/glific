@@ -28,9 +28,9 @@ defmodule GlificWeb.Schema.Middleware.AddOrganization do
     put_in(arguments, [:input, :organization_id], current_user.organization_id)
   end
 
-  defp put_organization_id(%{filter: _filter} = arguments, current_user) do
-    put_in(arguments, [:filter, :organization_id], current_user.organization_id)
-  end
+  # defp put_organization_id(%{filter: _filter} = arguments, current_user) do
+  #   put_in(arguments, [:filter, :organization_id], current_user.organization_id)
+  # end
 
   defp put_organization_id(arguments, current_user) do
     Map.put_new(arguments, :organization_id, current_user.organization_id)
