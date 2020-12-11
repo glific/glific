@@ -15,10 +15,10 @@ defmodule Glific.CloakMigration do
   """
   @spec cloak_migrate :: :ok
   def cloak_migrate do
-    Repo.all(Organization)
+    Repo.all(Organization, skip_organization_id: true)
     |> Enum.each(fn organization -> update_organization(organization) end)
 
-    Repo.all(Credential)
+    Repo.all(Credential, skip_organization_id: true)
     |> Enum.each(fn credential -> update_credential(credential) end)
 
     :ok
@@ -26,7 +26,7 @@ defmodule Glific.CloakMigration do
 
   defp update_credential(record) do
     record
-    |> Credential.changeset(%{secrets: Glific.atomize_keys(record.secrets)})
+    |> Credential.changeset(%{secrets: record.secrets})
     |> Repo.update(force: true)
   end
 
