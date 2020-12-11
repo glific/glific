@@ -25,13 +25,23 @@ defmodule Glific.CloakMigration do
   end
 
   defp update_credential(record) do
+    {:ok, updated} =
     record
+    |> Credential.changeset(%{secrets: %{temp: nil}})
+    |> Repo.update(force: true)
+
+    updated
     |> Credential.changeset(%{secrets: record.secrets})
     |> Repo.update(force: true)
   end
 
   defp update_organization(record) do
+    {:ok, updated} =
     record
+    |> Organization.changeset(%{signature_phrase: nil})
+    |> Repo.update(force: true)
+
+    updated
     |> Organization.changeset(%{signature_phrase: record.signature_phrase})
     |> Repo.update(force: true)
   end
