@@ -33,8 +33,10 @@ defmodule Glific.Flows.Localization do
     if is_nil(values["attachments"]) do
       map
     else
-      attachment = hd(values["attachments"])
-      Map.put(map, :attachments, {attachment.type, attachment.url})
+      case String.split(hd(values["attachments"]), ":", parts: 2) do
+        [type, url] -> Map.put(map, :attachments, {type, url})
+        _ -> map
+      end
     end
   end
 
@@ -101,12 +103,12 @@ defmodule Glific.Flows.Localization do
          else: %{}
 
     element =
-    if Map.has_key?(localization, language_id) and
-         Map.has_key?(Map.get(localization, language_id), action.uuid) do
-      Map.get(Map.get(localization, language_id), action.uuid)
-    else
-      action
-    end
+      if Map.has_key?(localization, language_id) and
+           Map.has_key?(Map.get(localization, language_id), action.uuid) do
+        Map.get(Map.get(localization, language_id), action.uuid)
+      else
+        action
+      end
 
     if type == :text,
       do: element.text,
