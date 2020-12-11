@@ -493,4 +493,17 @@ defmodule Glific.Contacts do
         {:error, ["gupshup", "couldn't connect"]}
     end
   end
+
+  @doc """
+    Convert contact field to map for variable substitution
+  """
+  @spec get_contact_field_map(integer) :: map()
+  def get_contact_field_map(contact_id) do
+    contact =
+      Contacts.get_contact!(contact_id)
+      |> Repo.preload(:language)
+      |> Map.from_struct()
+
+    put_in(contact, [:fields, :language], %{label: contact.language.label})
+  end
 end

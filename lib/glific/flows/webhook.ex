@@ -6,6 +6,8 @@ defmodule Glific.Flows.Webhook do
 
   alias Glific.Extensions
   alias Glific.Flows.{Action, FlowContext, WebhookLog}
+  alias Glific.Contacts
+  alias Glific.Flows.MessageVarParser
 
   @spec add_signature(Keyword.t(), non_neg_integer, String.t()) :: Keyword.t()
   defp add_signature(headers, organization_id, body) do
@@ -86,6 +88,10 @@ defmodule Glific.Flows.Webhook do
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()}
   defp create_body(context, action_body) do
+    action_body = action_body
+
+    |> MessageVarParser.parse(%{"contact" => Contacts.get_contact_field_map(context.contact_id)})
+    |> MessageVarParser.parse_results(context.results)
     default_payload = %{
       contact: %{
         name: context.contact.name,
@@ -94,44 +100,52 @@ defmodule Glific.Flows.Webhook do
       },
       results: context.results
     }
-    action_body = Regex.replace(~r/([a-z0-9_]+):/, action_body, "\"\\1\":")
     {:ok, default_contact} = Jason.encode(default_payload.contact)
     action_body = action_body |> String.replace("@contact", default_contact)
     {:ok, default_results} = Jason.encode(default_payload.results)
     action_body = action_body |> String.replace("@results", default_results)
+    IO.inspect("debug001-action_body")
+    # IO.inspect(action_body)
+    # {:ok, action_body} = Jason.decode(action_body)
+    # IO.inspect(Jason.decode(action_body))
+    IO.inspect(action_body)
+
+    IO.inspect({Jason.decode(action_body), action_body})
     ## we need to convert the string to map.
     ## Jason.decode is not working because flow editor
     ## is not converting it to the valid Json
-    {:ok, body} = Jason.encode(action_body)
-    {action_payload, body}
+    # {:ok, body} = Jason.encode(action_payload)
+    # IO.inspect(body)
+    {Jason.decode(action_body), action_body}
   end
 
   @spec post(Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
   defp post(action, context, headers) do
     {map, body} = create_body(context, action.body)
-    headers = add_signature(headers, context.organization_id, body)
+    # headers = add_signature(headers, context.organization_id, body)
 
-    webhook_log = create_log(action, map, headers, context)
+    # webhook_log = create_log(action, map, headers, context)
 
-    case Tesla.post(action.url, body, headers: headers) do
-      {:ok, %Tesla.Env{status: 200} = message} ->
-        update_log(message, webhook_log)
+    # case Tesla.post(action.url, body, headers: headers) do
+    #   {:ok, %Tesla.Env{status: 200} = message} ->
+    #     update_log(message, webhook_log)
 
-        message.body
-        |> Jason.decode!()
-        |> Map.get("results")
+    #     message.body
+    #     |> Jason.decode!()
+    #     |> Map.get("results")
 
-      {:ok, %Tesla.Env{} = message} ->
-        update_log(message, webhook_log)
-        nil
+    #   {:ok, %Tesla.Env{} = message} ->
+    #     update_log(message, webhook_log)
+    #     nil
 
-      {:error, error_message} ->
-        error_message
-        |> inspect()
-        |> update_log(webhook_log)
+    #   {:error, error_message} ->
+    #     error_message
+    #     |> inspect()
+    #     |> update_log(webhook_log)
 
-        nil
-    end
+    #     nil
+    # end
+    nil
   end
 
   # Send a get request, and if success, sned the json map back
