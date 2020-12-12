@@ -10,8 +10,6 @@ defmodule Glific.CloakMigration do
     Repo
   }
 
-  @global_organization_id 0
-
   @doc """
   migrate to new key for encryption
   """
