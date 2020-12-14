@@ -124,9 +124,9 @@ defmodule Glific.Flows.Webhook do
         case Jason.decode(message.body) do
           {:ok, results} ->
             update_log(message, webhook_log)
-            Map.get("results")
+            Map.get(results, "results")
 
-          {:error, error} ->
+          {:error, _error} ->
             update_log("Could not decode message body: "  <> message.body, webhook_log)
             nil
         end
