@@ -34,7 +34,7 @@ defmodule Glific.CloakMigration do
   defp update_credential(credential, organizations_list) do
     {:ok, updated} =
       credential
-      |> Credential.changeset(%{secrets: %{api_key: nil}})
+      |> Credential.changeset(%{secrets: %{}})
       |> Repo.update(force: true)
 
     updated
