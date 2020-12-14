@@ -20,6 +20,7 @@ defmodule Glific.Templates.SessionTemplate do
           body: String.t() | nil,
           type: String.t() | nil,
           shortcode: String.t() | nil,
+          status: String.t() | nil,
           is_hsm: boolean(),
           number_parameters: non_neg_integer | nil,
           is_source: boolean(),
@@ -55,7 +56,8 @@ defmodule Glific.Templates.SessionTemplate do
     :parent_id,
     :is_hsm,
     :uuid,
-    :translations
+    :translations,
+    :status
   ]
 
   schema "session_templates" do
@@ -64,6 +66,7 @@ defmodule Glific.Templates.SessionTemplate do
     field :body, :string
     field :type, MessageType
     field :shortcode, :string
+    field :status, :string
 
     field :is_hsm, :boolean, default: false
     field :number_parameters, :integer

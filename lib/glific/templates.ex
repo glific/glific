@@ -194,8 +194,6 @@ defmodule Glific.Templates do
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
       Enum.each(response_data["templates"], fn template ->
-        IO.inspect(template)
-
         attrs = %{
           uuid: template["id"],
           body: template["data"],
@@ -208,8 +206,9 @@ defmodule Glific.Templates do
           language_id: organization.default_language_id,
           organization_id: organization.id,
           is_hsm: true,
+          status: template["status"],
           is_active:
-            if(template["status"] == "approved" or template["status"] == "SANDBOX_REQUESTED",
+            if(template["status"] == "APPROVED" or template["status"] == "SANDBOX_REQUESTED",
               do: true,
               else: false
             )
@@ -217,7 +216,7 @@ defmodule Glific.Templates do
 
         Repo.insert!(
           change_session_template(%SessionTemplate{}, attrs),
-          on_conflict: [set: [is_active: attrs.is_active]],
+          on_conflict: [set: [is_active: attrs.is_active, status: attrs.status]],
           conflict_target: [:uuid]
         )
       end)
