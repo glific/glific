@@ -165,7 +165,7 @@ defmodule Glific.Templates do
   Body and type will be the message attributes
   """
   @spec create_template_from_message(%{message_id: integer, input: map}) ::
-          {:ok, SessionTemplate.t()} | {:error, String.t()}
+          :ok | {:error, String.t()}
   def create_template_from_message(%{message_id: message_id, input: input}) do
     message =
       Glific.Messages.get_message!(message_id)
@@ -199,6 +199,8 @@ defmodule Glific.Templates do
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
       Enum.each(response_data["templates"], fn template ->
+        number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
+
         attrs = %{
           uuid: template["id"],
           body: template["data"],
@@ -207,7 +209,8 @@ defmodule Glific.Templates do
           # type: String.to_existing_atom(String.downcase(template["templateType"])),
           # decide how to create temp media_id
           # message_media_id: 1
-          language_id: organization_languages[template["languageCode"]],
+          language_id:
+            organization_languages[template["languageCode"]] || organization.default_language_id,
           organization_id: organization.id,
           is_hsm: true,
           status: template["status"],
@@ -215,7 +218,8 @@ defmodule Glific.Templates do
             if(template["status"] == "APPROVED" or template["status"] == "SANDBOX_REQUESTED",
               do: true,
               else: false
-            )
+            ),
+          number_parameters: number_of_parameter
         }
 
         Repo.insert!(
