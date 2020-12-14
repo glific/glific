@@ -165,7 +165,7 @@ defmodule Glific.Templates do
   Body and type will be the message attributes
   """
   @spec create_template_from_message(%{message_id: integer, input: map}) ::
-          :ok | {:error, String.t()}
+          {:ok, SessionTemplate.t()} | {:error, String.t()}
   def create_template_from_message(%{message_id: message_id, input: input}) do
     message =
       Glific.Messages.get_message!(message_id)
@@ -178,7 +178,7 @@ defmodule Glific.Templates do
     |> create_session_template()
   end
 
-  @spec update_hsm(map()) :: {:ok, SessionTemplate.t()}
+  @spec update_hsm(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
   def update_hsm(%{organization_id: organization_id} = _attrs) do
     organization = Partners.organization(organization_id)
 
