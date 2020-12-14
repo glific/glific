@@ -50,6 +50,13 @@ defmodule Glific.Application do
 
     # Add this :telemetry.attach/4 for oban success/failure call:
     :telemetry.attach(
+      "oban-success",
+      [:oban, :job, :stop],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
+
+    :telemetry.attach(
       "oban-failure",
       [:oban, :job, :exception],
       &Glific.Appsignal.handle_event/4,
