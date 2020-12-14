@@ -181,6 +181,11 @@ defmodule Glific.Templates do
   @spec update_hsm(map()) :: {:ok, SessionTemplate.t()}
   def update_hsm(%{organization_id: organization_id} = _attrs) do
     organization = Partners.organization(organization_id)
+
+    organization_languages =
+      Enum.map(organization.languages, fn language -> {language.locale, language.id} end)
+      |> Map.new()
+
     bsp_credentials = organization.services["bsp"]
 
     url =
@@ -202,8 +207,7 @@ defmodule Glific.Templates do
           # type: String.to_existing_atom(String.downcase(template["templateType"])),
           # decide how to create temp media_id
           # message_media_id: 1
-          # get language id from cache
-          language_id: organization.default_language_id,
+          language_id: organization_languages[template["languageCode"]],
           organization_id: organization.id,
           is_hsm: true,
           status: template["status"],
