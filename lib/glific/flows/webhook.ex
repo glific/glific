@@ -121,21 +121,24 @@ defmodule Glific.Flows.Webhook do
 
     case Tesla.post(action.url, body, headers: headers) do
       {:ok, %Tesla.Env{status: 200} = message} ->
-        update_log(message, webhook_log)
+        case Jason.decode(message.body) do
+          {:ok, results} ->
+            update_log(message, webhook_log)
+            Map.get(results, "results")
 
-        message.body
-        |> Jason.decode!()
-        |> Map.get("results")
+          {:error, _error} ->
+            update_log("Could not decode message body: " <> message.body, webhook_log)
+            nil
+        end
 
       {:ok, %Tesla.Env{} = message} ->
-        update_log(message, webhook_log)
+        update_log("Did not return a 200 status code" <> message.body, webhook_log)
         nil
 
       {:error, error_message} ->
         error_message
         |> inspect()
         |> update_log(webhook_log)
-
         nil
     end
   end

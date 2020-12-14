@@ -77,16 +77,21 @@ defmodule Glific.Flows.ContactAction do
 
   @doc """
   Given a shortcode and a context, send the right session template message
-  to the contact
+  to the contact.
+
+  We need to handle translations for template messages, since whatsapp gives them unique
   """
   def send_message(
         context,
-        %Action{templating: templating, attachments: attachments},
+        %Action{templating: templating} = action,
         messages
       ) do
     message_vars = %{"contact" => Contacts.get_contact_field_map(context.contact_id)}
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
+
     session_template = Messages.parse_template_vars(templating.template, vars)
+
+    attachments = Localization.get_translation(context, action, :attachments)
 
     {type, media_id} =
       if is_nil(attachments) or attachments == %{},
