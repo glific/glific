@@ -112,6 +112,7 @@ defmodule Glific.Flows.Localization do
 
     if type == :text,
       do: element.text,
-      else: Map.get(element, :attachments, nil) # attachments is optional
+      # attachments is optional
+      else: Map.get(element, :attachments, nil)
   end
 end

@@ -16,7 +16,7 @@ defmodule Glific.Flows.LocalizationTest do
 
     localization = Localization.process(json)
 
-    assert get_in(localization.localizations, ["hi", "0ada0126-b6fc-4cc6-a17b-70cf5ba461d9"]) ==
+    assert get_in(localization.localizations, ["hi", "0ada0126-b6fc-4cc6-a17b-70cf5ba461d9", :text]) ==
              "अब आपकी भाषा @contact.language पर सेट है"
 
     json = %{
