@@ -34,7 +34,7 @@ defmodule Glific.Flows.Localization do
       map
     else
       case String.split(hd(values["attachments"]), ":", parts: 2) do
-        [type, url] -> Map.put(map, :attachments, {type, url})
+        [type, url] -> Map.put(map, :attachments, %{type => url})
         _ -> map
       end
     end
@@ -112,6 +112,6 @@ defmodule Glific.Flows.Localization do
 
     if type == :text,
       do: element.text,
-      else: element.attachments
+      else: Map.get(element, :attachments, nil) # attachments is optional
   end
 end
