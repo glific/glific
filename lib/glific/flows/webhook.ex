@@ -127,7 +127,7 @@ defmodule Glific.Flows.Webhook do
             Map.get(results, "results")
 
           {:error, _error} ->
-            update_log("Could not decode message body: "  <> message.body, webhook_log)
+            update_log("Could not decode message body: " <> message.body, webhook_log)
             nil
         end
 
@@ -139,7 +139,6 @@ defmodule Glific.Flows.Webhook do
         error_message
         |> inspect()
         |> update_log(webhook_log)
-
         nil
     end
   end

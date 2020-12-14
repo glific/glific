@@ -654,6 +654,7 @@ defmodule Glific.Partners do
     organization = organization(credential.organization_id)
 
     remove_organization_cache(organization.id, organization.shortcode)
+
     response =
       credential
       |> Credential.changeset(attrs)

@@ -92,7 +92,7 @@ defmodule Glific.Flows.Localization do
   Given a language id and an action uuid, return the translation if
   one exists, else return the original text
   """
-  @spec get_translation(FlowContext.t(), Action.t(), atom()) :: String.t()
+  @spec get_translation(FlowContext.t(), Action.t(), atom()) :: String.t() | nil | map()
   def get_translation(context, action, type \\ :text) do
     language_id = context.contact.language_id
 
@@ -111,8 +111,7 @@ defmodule Glific.Flows.Localization do
       end
 
     if type == :text,
-      do: element.text,
-      # attachments is optional
+      do: Map.get(element, :text, nil),
       else: Map.get(element, :attachments, nil)
   end
 end

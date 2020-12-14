@@ -110,6 +110,7 @@ defmodule Glific.Bigquery do
       credentials ->
         {:ok, secrets} = Jason.decode(credentials.secrets["service_account"])
         project_id = secrets.project_id
+
         updated_values =
           Enum.reduce(updated_fields, %{}, fn {key, field}, acc ->
             Map.put(acc, key, format_field_values(key, field, organization_id))
