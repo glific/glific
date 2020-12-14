@@ -5,6 +5,7 @@ defmodule Glific.Templates do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Partners,
     Repo,
     Tags.Tag,
     Tags.TemplateTag,
@@ -39,6 +40,9 @@ defmodule Glific.Templates do
     Enum.reduce(filter, query, fn
       {:is_hsm, is_hsm}, query ->
         from q in query, where: q.is_hsm == ^is_hsm
+
+      {:is_active, is_active}, query ->
+        from q in query, where: q.is_active == ^is_active
 
       {:term, term}, query ->
         query
@@ -172,5 +176,54 @@ defmodule Glific.Templates do
       input
     )
     |> create_session_template()
+  end
+
+  @spec update_hsm(map()) :: {:ok, SessionTemplate.t()}
+  def update_hsm(%{organization_id: organization_id} = _attrs) do
+    organization = Partners.organization(organization_id)
+    bsp_credentials = organization.services["bsp"]
+
+    url =
+      bsp_credentials.keys["api_end_point"] <>
+        "/template/list/" <> bsp_credentials.secrets["app_name"]
+
+    api_key = bsp_credentials.secrets["api_key"]
+
+    with {:ok, response} <-
+           Tesla.get(url, headers: [{"apikey", api_key}]),
+         {:ok, response_data} <- Jason.decode(response.body),
+         false <- is_nil(response_data["templates"]) do
+      Enum.each(response_data["templates"], fn template ->
+        IO.inspect(template)
+
+        attrs = %{
+          uuid: template["id"],
+          body: template["data"],
+          label: template["elementName"],
+          type: :text,
+          # type: String.to_existing_atom(String.downcase(template["templateType"])),
+          # decide how to create temp media_id
+          # message_media_id: 1
+          # get language id from cache
+          language_id: organization.default_language_id,
+          organization_id: organization.id,
+          is_hsm: true,
+          is_active:
+            if(template["status"] == "approved" or template["status"] == "SANDBOX_REQUESTED",
+              do: true,
+              else: false
+            )
+        }
+
+        Repo.insert!(
+          change_session_template(%SessionTemplate{}, attrs),
+          on_conflict: [set: [is_active: attrs.is_active]],
+          conflict_target: [:uuid]
+        )
+      end)
+    else
+      _ ->
+        {:error, ["gupshup", "couldn't connect"]}
+    end
   end
 end
