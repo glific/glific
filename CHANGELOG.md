@@ -7,8 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.8.3] - 2020-12-08
+### Added
+- Support for translations in templates
+- Attachment support for various translations in flow editor and templates
+- Cannot block simulator contact anymore.
+- UI/UX enhancements
+  - Added opt-in instructions on the registration page
+  - Timer display corrections
+  - Automations are renamed to "Flows"
+  
 ### Fixed
 - Tweak settings in AppSignal to ignore DB queries
+
 
 ## [0.8.2] - 2020-12-07
 ### Added
