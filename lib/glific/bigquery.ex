@@ -30,7 +30,7 @@ defmodule Glific.Bigquery do
 
       credentials ->
         {:ok, secrets} = Jason.decode(credentials.secrets["service_account"])
-        project_id = secrets.project_id
+        project_id = secrets.["project_id"]
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
 
@@ -75,7 +75,7 @@ defmodule Glific.Bigquery do
     credentials = organization.services["bigquery"]
 
     {:ok, secrets} = Jason.decode(credentials.secrets["service_account"])
-    project_id = secrets.project_id
+    project_id = secrets.["project_id"]
     token = Partners.get_goth_token(organization_id, "bigquery")
     conn = Connection.new(token.token)
 
@@ -109,7 +109,7 @@ defmodule Glific.Bigquery do
 
       credentials ->
         {:ok, secrets} = Jason.decode(credentials.secrets["service_account"])
-        project_id = secrets.project_id
+        project_id = secrets.["project_id"]
 
         updated_values =
           Enum.reduce(updated_fields, %{}, fn {key, field}, acc ->
