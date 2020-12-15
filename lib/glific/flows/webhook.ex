@@ -139,6 +139,7 @@ defmodule Glific.Flows.Webhook do
         error_message
         |> inspect()
         |> update_log(webhook_log)
+
         nil
     end
   end

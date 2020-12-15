@@ -37,9 +37,7 @@ defmodule Glific.Flows.WebhookTest do
           %Tesla.Env{
             status: 200,
             body:
-              Jason.encode!(%{
-                "results" => @results
-              })
+              Jason.encode!(@results)
           }
       end)
 
