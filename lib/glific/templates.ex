@@ -181,8 +181,8 @@ defmodule Glific.Templates do
   @doc """
   get and update list of hsm of an organization
   """
-  @spec upsert_hsm(non_neg_integer()) :: :ok | {:error, String.t()}
-  def upsert_hsm(organization_id) do
+  @spec upsert_hsms(non_neg_integer()) :: :ok | {:error, String.t()}
+  def upsert_hsms(organization_id) do
     organization = Partners.organization(organization_id)
 
     organization_languages =
@@ -209,6 +209,7 @@ defmodule Glific.Templates do
           attrs = %{
             uuid: template["id"],
             body: template["data"],
+            shortcode: template["elementName"],
             label: template["elementName"],
             type: :text,
             language_id:
