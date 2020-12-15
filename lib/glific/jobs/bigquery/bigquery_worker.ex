@@ -439,7 +439,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
 
     {:ok, secrets} = Jason.decode(credentials.secrets["service_account"])
-    project_id = secrets.["project_id"]
+    project_id = secrets["project_id"]
     dataset_id = organization.contact.phone
     table_id = table
     token = Partners.get_goth_token(organization_id, "bigquery")
