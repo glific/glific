@@ -278,10 +278,7 @@ defmodule Glific.Partners do
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def update_organization(%Organization{} = organization, attrs) do
     # first delete the cached organization
-    Caches.remove(
-      @global_organization_id,
-      [{:organization, organization.id}, {:organization, organization.shortcode}]
-    )
+    remove_organization_cache(organization.id, organization.shortcode)
 
     organization
     |> Organization.changeset(attrs)
@@ -627,11 +624,7 @@ defmodule Glific.Partners do
       {:ok, provider} ->
         # first delete the cached organization
         organization = get_organization!(attrs.organization_id)
-
-        Caches.remove(
-          @global_organization_id,
-          [{:organization, organization.id}, {:organization, organization.shortcode}]
-        )
+        remove_organization_cache(organization.id, organization.shortcode)
 
         attrs = Map.merge(attrs, %{provider_id: provider.id})
 
@@ -660,10 +653,7 @@ defmodule Glific.Partners do
     # delete the cached organization and associated credentials
     organization = organization(credential.organization_id)
 
-    Caches.remove(
-      @global_organization_id,
-      [{:organization, organization.id}, {:organization, organization.shortcode}]
-    )
+    remove_organization_cache(organization.id, organization.shortcode)
 
     response =
       credential
@@ -676,6 +666,17 @@ defmodule Glific.Partners do
     end
 
     response
+  end
+
+  @doc """
+    Removing organization cache
+  """
+  @spec remove_organization_cache(non_neg_integer, String.t()) :: any()
+  def remove_organization_cache(organization_id, shortcode) do
+    Caches.remove(
+      @global_organization_id,
+      [{:organization, organization_id}, {:organization, shortcode}]
+    )
   end
 
   # This is required for GCS

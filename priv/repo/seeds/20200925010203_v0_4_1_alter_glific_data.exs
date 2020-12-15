@@ -292,12 +292,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             }
           },
           secrets: %{
-            project_id: %{
-              type: :string,
-              label: "Project ID",
-              default: nil,
-              view_only: false
-            },
             service_account: %{
               type: :string,
               label: "Goth Credentials ",

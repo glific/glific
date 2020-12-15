@@ -500,10 +500,25 @@ defmodule Glific.Contacts do
   @spec get_contact_field_map(integer) :: map()
   def get_contact_field_map(contact_id) do
     contact =
-      Contacts.get_contact!(contact_id)
-      |> Repo.preload(:language)
+      contact_id
+      |> Contacts.get_contact!()
+      |> Repo.preload([:language, :groups])
       |> Map.from_struct()
 
-    put_in(contact, [:fields, :language], %{label: contact.language.label})
+    # we are splliting this up since we need to use contact within the various function
+    # calls and a lot cleaner this way
+    contact
+    |> put_in(
+      [:fields, :language],
+      %{label: contact.language.label}
+    )
+    |> Map.put(
+      :in_groups,
+      Enum.reduce(
+        contact.groups,
+        [],
+        fn g, list -> [g.label | list] end
+      )
+    )
   end
 end

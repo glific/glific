@@ -8,19 +8,23 @@ defmodule Glific.Appsignal do
 
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
-  def handle_event([:oban, :job, :exception], measurement, meta, _) do
-    span = record_event(measurement, meta)
-    error = inspect(meta.error)
-    @span.add_error(span, meta.kind, error, meta.stacktrace)
+  def handle_event([:oban, :job, event], measurement, meta, _)
+      when event in [:stop, :exception] do
     time = :os.system_time()
+    span = record_event(measurement, meta, time)
+
+    if event == :exception && meta.attempt >= meta.max_attempts do
+      error = inspect(meta.error)
+      @span.add_error(span, meta.kind, error, meta.stacktrace)
+    end
+
     @tracer.close_span(span, end_time: time)
   end
 
   def handle_event(_, _, _, _), do: nil
 
-  defp record_event(measurement, meta) do
+  defp record_event(measurement, meta, time) do
     metadata = %{"id" => meta.id, "queue" => meta.queue, "attempt" => meta.attempt}
-    time = :os.system_time()
 
     "oban_job"
     |> @tracer.create_span(@tracer.current_span(), start_time: time - measurement.duration)

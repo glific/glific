@@ -23,6 +23,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
 
     {:ok, chatbase} = Repo.fetch_by(Provider, %{shortcode: "chatbase"})
 
+    {:ok, bigquery} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
     {:ok, google_cloud_storage} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
 
     updated_gupshup_keys =
@@ -65,6 +67,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
     Repo.update!(
       Ecto.Changeset.change(dialogflow, %{
         description: "Setup connection with Dialogflow for advanced conversation flows"
+      })
+    )
+
+    Repo.update!(
+      Ecto.Changeset.change(bigquery, %{
+        description: "Setup connection with BigQuery for archiving data"
       })
     )
 
