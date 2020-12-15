@@ -212,7 +212,7 @@ defmodule Glific.Templates do
           body: template["data"],
           shortcode: template["elementName"],
           label: template["elementName"],
-          type: :text,
+          type: String.to_existing_atom(String.downcase(template["templateType"])),
           language_id:
             organization_languages[template["languageCode"]] || organization.default_language_id,
           organization_id: organization.id,

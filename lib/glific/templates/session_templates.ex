@@ -100,38 +100,11 @@ defmodule Glific.Templates.SessionTemplate do
     session_template
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_media(session_template)
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
     |> unique_constraint([:label, :language_id, :organization_id])
     |> unique_constraint([:shortcode, :language_id, :organization_id])
     |> unique_constraint([:uuid])
-  end
-
-  @doc false
-  # if template type is not text then it should have media id
-  @spec validate_media(Ecto.Changeset.t(), SessionTemplate.t()) :: Ecto.Changeset.t()
-  defp validate_media(changeset, template) do
-    type = changeset.changes[:type]
-    message_media_id = changeset.changes[:message_media_id] || template.message_media_id
-
-    cond do
-      type == nil ->
-        changeset
-
-      type == :text ->
-        changeset
-
-      message_media_id == nil ->
-        add_error(
-          changeset,
-          :type,
-          "#{Atom.to_string(type)} template type should have a message media id"
-        )
-
-      true ->
-        changeset
-    end
   end
 
   @doc """
@@ -143,6 +116,8 @@ defmodule Glific.Templates.SessionTemplate do
   end
 
   def validate_update_hsm(changeset, %{:is_hsm => true} = _template) do
+    # keeping body, shortcode and status of HSM non editabale by graphql API
+    # later on we can add if few other fields should be non editable
     body = changeset.changes[:body]
     shortcode = changeset.changes[:shortcode]
     status = changeset.changes[:status]
