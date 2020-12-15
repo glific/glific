@@ -122,9 +122,9 @@ defmodule Glific.Flows.Webhook do
     case Tesla.post(action.url, body, headers: headers) do
       {:ok, %Tesla.Env{status: 200} = message} ->
         case Jason.decode(message.body) do
-          {:ok, results} ->
+          {:ok, json_response} ->
             update_log(message, webhook_log)
-            Map.get(results, "results")
+            json_response
 
           {:error, _error} ->
             update_log("Could not decode message body: " <> message.body, webhook_log)
