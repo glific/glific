@@ -147,16 +147,14 @@ defmodule Glific.Templates.SessionTemplate do
     shortcode = changeset.changes[:shortcode]
     status = changeset.changes[:status]
 
-    cond do
-      is_nil(body) && is_nil(shortcode) && is_nil(status) ->
-        changeset
-
-      true ->
-        add_error(
-          changeset,
-          :hsm,
-          "body/shortcode/status of HSM can not be updated"
-        )
+    if is_nil(body) && is_nil(shortcode) && is_nil(status) do
+      changeset
+    else
+      add_error(
+        changeset,
+        :hsm,
+        "body/shortcode/status of HSM can not be updated"
+      )
     end
   end
 end
