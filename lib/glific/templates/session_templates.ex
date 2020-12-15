@@ -133,4 +133,30 @@ defmodule Glific.Templates.SessionTemplate do
         changeset
     end
   end
+
+  @doc """
+  Validation for update HSM session template
+  """
+  @spec validate_update_hsm(Ecto.Changeset.t(), SessionTemplate.t()) :: Ecto.Changeset.t()
+  def validate_update_hsm(changeset, %{:is_hsm => false} = _template) do
+    changeset
+  end
+
+  def validate_update_hsm(changeset, %{:is_hsm => true} = _template) do
+    body = changeset.changes[:body]
+    shortcode = changeset.changes[:shortcode]
+    status = changeset.changes[:status]
+
+    cond do
+      is_nil(body) && is_nil(shortcode) && is_nil(status) ->
+        changeset
+
+      true ->
+        add_error(
+          changeset,
+          :hsm,
+          "body/shortcode/status of HSM can not be updated"
+        )
+    end
+  end
 end

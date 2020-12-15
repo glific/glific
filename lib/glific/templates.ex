@@ -125,6 +125,7 @@ defmodule Glific.Templates do
   def update_session_template(%SessionTemplate{} = session_template, attrs) do
     session_template
     |> SessionTemplate.changeset(attrs)
+    |> SessionTemplate.validate_update_hsm(session_template)
     |> Repo.update()
   end
 
