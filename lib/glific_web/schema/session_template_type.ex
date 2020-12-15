@@ -22,6 +22,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :type, :message_type_enum
     field :shortcode, :string
     field :is_hsm, :boolean
+    field :status, :string
     field :number_parameters, :integer
     field :is_reserved, :boolean
     field :is_active, :boolean
@@ -76,6 +77,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     @desc "Match a language id"
     field :language_id, :integer
+
+    @desc "Match status of hsm"
+    field :status, :string
 
     @desc "Match the active flag"
     field :is_active, :boolean
