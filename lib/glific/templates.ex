@@ -202,35 +202,34 @@ defmodule Glific.Templates do
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
       Enum.each(response_data["templates"], fn template ->
-        # for now only inserting hsm of type text
-        if template["templateType"] == "TEXT" do
-          number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
+        # for pre-approved media HSMs we would need to create the media object first
+        # for now inserting media hsm with type text
+        number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
-          attrs = %{
-            uuid: template["id"],
-            body: template["data"],
-            shortcode: template["elementName"],
-            label: template["elementName"],
-            type: :text,
-            language_id:
-              organization_languages[template["languageCode"]] || organization.default_language_id,
-            organization_id: organization.id,
-            is_hsm: true,
-            status: template["status"],
-            is_active:
-              if(template["status"] == "APPROVED" or template["status"] == "SANDBOX_REQUESTED",
-                do: true,
-                else: false
-              ),
-            number_parameters: number_of_parameter
-          }
+        attrs = %{
+          uuid: template["id"],
+          body: template["data"],
+          shortcode: template["elementName"],
+          label: template["elementName"],
+          type: :text,
+          language_id:
+            organization_languages[template["languageCode"]] || organization.default_language_id,
+          organization_id: organization.id,
+          is_hsm: true,
+          status: template["status"],
+          is_active:
+            if(template["status"] == "APPROVED" or template["status"] == "SANDBOX_REQUESTED",
+              do: true,
+              else: false
+            ),
+          number_parameters: number_of_parameter
+        }
 
-          Repo.insert!(
-            change_session_template(%SessionTemplate{}, attrs),
-            on_conflict: [set: [is_active: attrs.is_active, status: attrs.status]],
-            conflict_target: [:uuid]
-          )
-        end
+        Repo.insert!(
+          change_session_template(%SessionTemplate{}, attrs),
+          on_conflict: [set: [is_active: attrs.is_active, status: attrs.status]],
+          conflict_target: [:uuid]
+        )
       end)
 
       :ok
