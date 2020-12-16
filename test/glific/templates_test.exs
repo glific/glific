@@ -232,21 +232,6 @@ defmodule Glific.TemplatesTest do
                Templates.create_session_template(Map.merge(attrs, @invalid_attrs))
     end
 
-    test "create session template with media type and without media id returns error changeset",
-         attrs do
-      language = language_fixture()
-
-      attrs =
-        attrs
-        |> Map.merge(@valid_attrs)
-        |> Map.merge(%{language_id: language.id})
-
-      assert {:error, %Ecto.Changeset{}} =
-               attrs
-               |> Map.merge(%{type: :image})
-               |> Templates.create_session_template()
-    end
-
     test "update_session_template/2 with valid data updates the session_template", attrs do
       session_template = session_template_fixture(attrs)
       language = language_fixture(@valid_language_attrs_1)
