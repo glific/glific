@@ -40,7 +40,7 @@ defmodule Glific.Clients.Stir do
 
     cond do
       is_nil(Map.get(answers, "n")) -> 3
-      Map.get(answers, "n")  == 1 -> 1
+      Map.get(answers, "n") == 1 -> 1
       Map.get(answers, "n") > 1 -> 2
       true -> 3
     end

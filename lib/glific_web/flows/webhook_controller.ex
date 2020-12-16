@@ -6,6 +6,7 @@ defmodule GlificWeb.Flows.WebhookController do
 
   use GlificWeb, :controller
   alias Glific.Clients.Stir
+
   @doc """
   Example implementation of survey computation for STiR
   """
@@ -13,7 +14,7 @@ defmodule GlificWeb.Flows.WebhookController do
   def stir_survey(conn, %{"results" => results} = _params) do
     json =
       Stir.compute_survey_score(results)
-      |> Map.merge(%{ art_result: Stir.compute_art_results(results)})
+      |> Map.merge(%{art_result: Stir.compute_art_results(results)})
 
     conn
     |> json(json)
