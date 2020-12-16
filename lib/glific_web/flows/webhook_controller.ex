@@ -12,9 +12,8 @@ defmodule GlificWeb.Flows.WebhookController do
   @spec stir_survey(Plug.Conn.t(), map) :: Plug.Conn.t()
   def stir_survey(conn, %{"results" => results} = _params) do
     json =
-      Map.merge(Stir.compute_survey_score(results), %{
-        art_result: Stir.compute_art_results(results)
-      })
+      Stir.compute_survey_score(results)
+      |> Map.merge(%{ art_result: Stir.compute_art_results(results)})
 
     conn
     |> json(json)
