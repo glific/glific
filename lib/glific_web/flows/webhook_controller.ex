@@ -15,6 +15,7 @@ defmodule GlificWeb.Flows.WebhookController do
     json =
       Stir.compute_survey_score(results)
       |> Map.merge(%{art_result: Stir.compute_art_results(results)})
+      |> Map.merge(%{art_content: Stir.compute_art_content(results)})
 
     conn
     |> json(json)
