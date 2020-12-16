@@ -137,8 +137,8 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [])
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
 
-      "upsert_hsms" ->
-        Partners.perform_all(&Templates.upsert_hsms/1, nil, [])
+      "update_hsms" ->
+        Partners.perform_all(&Templates.update_hsms/1, nil, [])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"

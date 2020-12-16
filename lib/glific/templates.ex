@@ -6,6 +6,7 @@ defmodule Glific.Templates do
 
   alias Glific.{
     Partners,
+    Partners.Organization,
     Repo,
     Tags.Tag,
     Tags.TemplateTag,
@@ -182,8 +183,8 @@ defmodule Glific.Templates do
   @doc """
   get and update list of hsm of an organization
   """
-  @spec upsert_hsms(non_neg_integer()) :: :ok | {:error, String.t()}
-  def upsert_hsms(organization_id) do
+  @spec update_hsms(non_neg_integer()) :: :ok | {:error, String.t()}
+  def update_hsms(organization_id) do
     organization = Partners.organization(organization_id)
 
     bsp_creds = organization.services["bsp"]
@@ -194,7 +195,7 @@ defmodule Glific.Templates do
            Tesla.get(url, headers: [{"apikey", api_key}]),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
-      do_upsert_hsms(response_data["templates"], organization)
+      do_update_hsms(response_data["templates"], organization)
 
       :ok
     else
@@ -203,7 +204,8 @@ defmodule Glific.Templates do
     end
   end
 
-  defp do_upsert_hsms(templates, organization) do
+  @spec do_update_hsms(map(), Organization.t()) :: :ok
+  defp do_update_hsms(templates, organization) do
     organization_languages =
       Enum.map(organization.languages, fn language -> {language.locale, language.id} end)
       |> Map.new()
@@ -217,6 +219,9 @@ defmodule Glific.Templates do
         !Map.has_key?(db_templates, template["id"]) ->
           insert_hsm(template, organization, organization_languages)
 
+        # this check is required,
+        # as is_active field can be updated by graphql API,
+        # and should not be reverted back
         template["modifiedOn"] >
             DateTime.to_unix(db_templates[template["id"]].updated_at, :millisecond) ->
           update_hsm(template, db_templates)
@@ -227,6 +232,7 @@ defmodule Glific.Templates do
     end)
   end
 
+  @spec insert_hsm(map(), Organization.t(), map()) :: {:ok, SessionTemplate.t()}
   defp insert_hsm(template, organization, organization_languages) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
@@ -264,6 +270,7 @@ defmodule Glific.Templates do
       |> Repo.insert()
   end
 
+  @spec update_hsm(map(), map()) :: {:ok, SessionTemplate.t()}
   defp update_hsm(template, db_templates) do
     update_attrs = %{
       status: template["status"],

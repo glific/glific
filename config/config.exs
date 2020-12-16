@@ -46,7 +46,7 @@ config :glific, Oban,
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
     {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
-    {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :upsert_hsms}}
+    {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
