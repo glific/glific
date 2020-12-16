@@ -28,6 +28,10 @@ defmodule Glific.Clients.Stir do
     end
   end
 
+  @doc """
+  Return integer depending on number of n as response in messages
+  """
+  @spec compute_art_results(map()) :: non_neg_integer()
   def compute_art_results(results) do
     answers =
       results
@@ -42,6 +46,10 @@ defmodule Glific.Clients.Stir do
     end
   end
 
+  @doc """
+  Return total score
+  """
+  @spec compute_survey_score(map()) :: map()
   def compute_survey_score(results) do
     results
     |> Enum.reduce(
