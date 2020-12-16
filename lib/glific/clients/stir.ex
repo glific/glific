@@ -1,6 +1,7 @@
 defmodule Glific.Clients.Stir do
   @moduledoc """
   Example implementation of survey computation for STiR
+  Glific.Clients.Stir.compute_art_content(res)
   """
 
   @doc false
@@ -28,6 +29,35 @@ defmodule Glific.Clients.Stir do
     end
   end
 
+  defp get_art_content(k, v) do
+    k = String.downcase(k)
+    input = String.downcase(v["input"])
+
+    if input == "n" do
+      case k do
+        "a1" -> "More reflective discussion on the teaching strategy \n"
+        "a2" -> "Space for practicing a classroom strategy \n"
+        "a3" -> "Teachers get improvement focused feedback \n"
+        "a4" -> "Teachers participation \n"
+        "a5" -> "Developing concrete action plans \n"
+        "a6" -> "Teachers asking question \n"
+        _ -> " "
+      end
+    else
+      " "
+    end
+  end
+
+  @doc """
+  Return art content
+  """
+  def compute_art_content(results) do
+    results
+    |>Enum.reduce(" ", fn {k, v}, acc ->
+      "#{acc} #{get_art_content(k, v)}"
+    end)
+  end
+
   @doc """
   Return integer depending on number of n as response in messages
   """
@@ -40,7 +70,7 @@ defmodule Glific.Clients.Stir do
 
     cond do
       is_nil(Map.get(answers, "n")) -> 3
-      Map.get(answers, "n") == 1 -> 1
+      Map.get(answers, "n")  == 1 -> 1
       Map.get(answers, "n") > 1 -> 2
       true -> 3
     end
