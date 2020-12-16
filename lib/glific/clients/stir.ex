@@ -28,7 +28,21 @@ defmodule Glific.Clients.Stir do
     end
   end
 
-  defp compute_survey_score(results) do
+  def compute_art_results(results) do
+    answers =
+      results
+      |> Enum.map(fn {_k, v} -> String.downcase(v["input"]) end)
+      |> Enum.reduce(%{}, fn x, acc -> Map.update(acc, x, 1, &(&1 + 1)) end)
+
+    cond do
+      is_nil(Map.get(answers, "n")) -> 3
+      Map.get(answers, "n")  == 1 -> 1
+      Map.get(answers, "n") > 1 -> 2
+      true -> 3
+    end
+  end
+
+  def compute_survey_score(results) do
     results
     |> Enum.reduce(
       0,
