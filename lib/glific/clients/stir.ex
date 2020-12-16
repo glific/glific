@@ -41,16 +41,17 @@ defmodule Glific.Clients.Stir do
         "a4" -> "Teachers participation \n"
         "a5" -> "Developing concrete action plans \n"
         "a6" -> "Teachers asking question \n"
-        _ -> " "
+        _ -> ""
       end
     else
-      " "
+      ""
     end
   end
 
   @doc """
   Return art content
   """
+  @spec compute_art_content(map()) :: String.t()
   def compute_art_content(results) do
     results
     |>Enum.reduce(" ", fn {k, v}, acc ->
