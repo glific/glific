@@ -28,7 +28,29 @@ defmodule Glific.Clients.Stir do
     end
   end
 
-  defp compute_survey_score(results) do
+  @doc """
+  Return integer depending on number of n as response in messages
+  """
+  @spec compute_art_results(map()) :: non_neg_integer()
+  def compute_art_results(results) do
+    answers =
+      results
+      |> Enum.map(fn {_k, v} -> String.downcase(v["input"]) end)
+      |> Enum.reduce(%{}, fn x, acc -> Map.update(acc, x, 1, &(&1 + 1)) end)
+
+    cond do
+      is_nil(Map.get(answers, "n")) -> 3
+      Map.get(answers, "n") == 1 -> 1
+      Map.get(answers, "n") > 1 -> 2
+      true -> 3
+    end
+  end
+
+  @doc """
+  Return total score
+  """
+  @spec compute_survey_score(map()) :: map()
+  def compute_survey_score(results) do
     results
     |> Enum.reduce(
       0,
