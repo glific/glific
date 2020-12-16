@@ -235,6 +235,7 @@ defmodule Glific.Templates do
       |> String.downcase()
       |> String.to_existing_atom()
 
+    # setting default language id if languageCode is not known
     language_id =
       organization_languages[template["languageCode"]] || organization.default_language_id
 
