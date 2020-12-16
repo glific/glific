@@ -186,57 +186,96 @@ defmodule Glific.Templates do
   def upsert_hsms(organization_id) do
     organization = Partners.organization(organization_id)
 
-    organization_languages =
-      Enum.map(organization.languages, fn language -> {language.locale, language.id} end)
-      |> Map.new()
-
-    bsp_credentials = organization.services["bsp"]
-
-    url =
-      bsp_credentials.keys["api_end_point"] <>
-        "/template/list/" <> bsp_credentials.secrets["app_name"]
-
-    api_key = bsp_credentials.secrets["api_key"]
+    bsp_creds = organization.services["bsp"]
+    api_key = bsp_creds.secrets["api_key"]
+    url = bsp_creds.keys["api_end_point"] <> "/template/list/" <> bsp_creds.secrets["app_name"]
 
     with {:ok, response} <-
            Tesla.get(url, headers: [{"apikey", api_key}]),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
-      Enum.each(response_data["templates"], fn template ->
-        # for pre-approved media HSMs we would need to create the media object first
-        # for now inserting media hsm with type text
-        number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
-
-        attrs = %{
-          uuid: template["id"],
-          body: template["data"],
-          shortcode: template["elementName"],
-          label: template["elementName"],
-          type: String.to_existing_atom(String.downcase(template["templateType"])),
-          language_id:
-            organization_languages[template["languageCode"]] || organization.default_language_id,
-          organization_id: organization.id,
-          is_hsm: true,
-          status: template["status"],
-          is_active:
-            if(template["status"] == "APPROVED" or template["status"] == "SANDBOX_REQUESTED",
-              do: true,
-              else: false
-            ),
-          number_parameters: number_of_parameter
-        }
-
-        Repo.insert!(
-          change_session_template(%SessionTemplate{}, attrs),
-          on_conflict: [set: [is_active: attrs.is_active, status: attrs.status]],
-          conflict_target: [:uuid]
-        )
-      end)
+      do_upsert_hsms(response_data["templates"], organization)
 
       :ok
     else
       _ ->
         {:error, ["gupshup", "couldn't connect"]}
     end
+  end
+
+  defp do_upsert_hsms(templates, organization) do
+    organization_languages =
+      Enum.map(organization.languages, fn language -> {language.locale, language.id} end)
+      |> Map.new()
+
+    db_templates =
+      list_session_templates(%{filter: %{is_hsm: true}})
+      |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
+
+    Enum.each(templates, fn template ->
+      cond do
+        !Map.has_key?(db_templates, template["id"]) ->
+          insert_hsm(template, organization, organization_languages)
+
+        template["modifiedOn"] >
+            DateTime.to_unix(db_templates[template["id"]].updated_at, :millisecond) ->
+          update_hsm(template, db_templates)
+
+        true ->
+          true
+      end
+    end)
+  end
+
+  defp insert_hsm(template, organization, organization_languages) do
+    number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
+
+    type =
+      template["templateType"]
+      |> String.downcase()
+      |> String.to_existing_atom()
+
+    language_id =
+      organization_languages[template["languageCode"]] || organization.default_language_id
+
+    is_active =
+      if template["status"] == "APPROVED" or template["status"] == "SANDBOX_REQUESTED",
+        do: true,
+        else: false
+
+    attrs = %{
+      uuid: template["id"],
+      body: template["data"],
+      shortcode: template["elementName"],
+      label: template["elementName"],
+      type: type,
+      language_id: language_id,
+      organization_id: organization.id,
+      is_hsm: true,
+      status: template["status"],
+      is_active: is_active,
+      number_parameters: number_of_parameter
+    }
+
+    {:ok, _} =
+      %SessionTemplate{}
+      |> SessionTemplate.changeset(attrs)
+      |> Repo.insert()
+  end
+
+  defp update_hsm(template, db_templates) do
+    update_attrs = %{
+      status: template["status"],
+      is_active:
+        if(template["status"] == "APPROVED" or template["status"] == "SANDBOX_REQUESTED",
+          do: true,
+          else: false
+        )
+    }
+
+    {:ok, _} =
+      db_templates[template["id"]]
+      |> SessionTemplate.changeset(update_attrs)
+      |> Repo.update()
   end
 end
