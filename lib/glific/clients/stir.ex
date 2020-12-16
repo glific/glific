@@ -54,7 +54,7 @@ defmodule Glific.Clients.Stir do
   @spec compute_art_content(map()) :: String.t()
   def compute_art_content(results) do
     results
-    |>Enum.reduce(" ", fn {k, v}, acc ->
+    |> Enum.reduce(" ", fn {k, v}, acc ->
       "#{acc} #{get_art_content(k, v)}"
     end)
   end
@@ -71,7 +71,7 @@ defmodule Glific.Clients.Stir do
 
     cond do
       is_nil(Map.get(answers, "n")) -> 3
-      Map.get(answers, "n")  == 1 -> 1
+      Map.get(answers, "n") == 1 -> 1
       Map.get(answers, "n") > 1 -> 2
       true -> 3
     end
