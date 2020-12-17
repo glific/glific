@@ -101,7 +101,6 @@ defmodule Glific.Processor.ConsumerFlow do
       )
 
     FlowContext.init_context(flow, message.contact, status)
-    IO.inspect("Hello context")
     {message, state}
   end
 
