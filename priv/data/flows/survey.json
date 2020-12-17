@@ -828,7 +828,7 @@
       "actions" : [
         {
           "method" : "POST",
-          "body" : "@(json(object(\n  \"contact\", object(\n    \"uuid\", contact.uuid, \n    \"name\", contact.name, \n    \"urn\", contact.urn\n  ),\n  \"flow\", object(\n    \"uuid\", run.flow.uuid, \n    \"name\", run.flow.name\n  ),\n  \"results\", foreach_value(results, extract_object, \"input\", \"category\")\n)))",
+          "body" : "{\n  \"contact\": \"@contact\",\n  \"results\": \"@results\",\n  \"custom_key\": \"custom_value\"\n}",
           "type" : "call_webhook",
           "url" : "http:\/\/api.glific.test:4000\/webhook\/stir\/survey",
           "uuid" : "b686d45a-bfe0-43b3-9ac0-f30f6e22b532",
