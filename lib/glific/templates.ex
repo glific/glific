@@ -4,6 +4,9 @@ defmodule Glific.Templates do
   """
   import Ecto.Query, warn: false
 
+  use Tesla
+  plug Tesla.Middleware.FormUrlencoded
+
   alias Glific.{
     Partners,
     Partners.Organization,
@@ -103,10 +106,48 @@ defmodule Glific.Templates do
   """
   @spec create_session_template(map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  def create_session_template(attrs \\ %{}) do
+  def create_session_template(%{is_hsm: true} = attrs) do
+    submit_for_approval(attrs)
+  end
+
+  def create_session_template(attrs) do
+    do_create_session_template(attrs)
+  end
+
+  @spec do_create_session_template(map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  defp do_create_session_template(attrs) do
     %SessionTemplate{}
     |> SessionTemplate.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
+  defp submit_for_approval(attrs) do
+    organization = Partners.organization(attrs.organization_id)
+
+    bsp_creds = organization.services["bsp"]
+    api_key = bsp_creds.secrets["api_key"]
+    url = bsp_creds.keys["api_end_point"] <> "/template/add/" <> bsp_creds.secrets["app_name"]
+
+    body = %{
+      elementName: "update_template",
+      languageCode: "en_US",
+      content: "Your verification code is {{1}}",
+      category: "AUTO_REPLY",
+      vertical: "Verification code template",
+      templateType: "TEXT",
+      example: " Your verification code is [223]"
+    }
+
+    with {:ok, response} <-
+           post(url, body, headers: [{"apikey", api_key}]),
+         true <- response.status == 202 do
+      do_create_session_template(attrs)
+    else
+      _ ->
+        {:error, ["gupshup", "couldn't submit for approval"]}
+    end
   end
 
   @doc """
