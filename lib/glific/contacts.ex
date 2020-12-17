@@ -283,8 +283,16 @@ defmodule Glific.Contacts do
   @spec maybe_create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_contact(sender) do
     case Repo.get_by(Contact, %{phone: sender.phone}) do
-      nil -> create_contact(sender)
-      contact -> {:ok, contact}
+      nil ->
+        create_contact(sender)
+
+      contact ->
+        if contact.name != sender.name do
+          # the contact name has changed, so we need to update it
+          update_contact(contact, %{name: sender.name})
+        else
+          {:ok, contact}
+        end
     end
   end
 
