@@ -130,13 +130,18 @@ defmodule Glific.Templates do
     api_key = bsp_creds.secrets["api_key"]
     url = bsp_creds.keys["api_end_point"] <> "/template/add/" <> bsp_creds.secrets["app_name"]
 
+    language =
+      Enum.find(organization.languages, fn language ->
+        to_string(language.id) == attrs.language_id
+      end)
+
     body = %{
-      elementName: "update_template",
-      languageCode: "en_US",
-      content: "Your verification code is {{1}}",
+      elementName: attrs[:shortcode],
+      languageCode: language.locale,
+      content: attrs.body,
       category: "AUTO_REPLY",
-      vertical: "Verification code template",
-      templateType: "TEXT",
+      vertical: attrs.label,
+      templateType: String.upcase(Atom.to_string(attrs.type)),
       example: " Your verification code is [223]"
     }
 
@@ -147,10 +152,10 @@ defmodule Glific.Templates do
     else
       {false, response} ->
         {:ok, response_body} = Jason.decode(response.body)
-        {:error, ["gupshup", response_body["message"]]}
+        {:error, ["bsp", response_body["message"] || to_string(response.status)]}
 
       _ ->
-        {:error, ["gupshup", "couldn't submit for approval"]}
+        {:error, ["bsp", "couldn't submit for approval"]}
     end
   end
 
@@ -245,7 +250,7 @@ defmodule Glific.Templates do
       :ok
     else
       _ ->
-        {:error, ["gupshup", "couldn't connect"]}
+        {:error, ["bsp", "couldn't connect"]}
     end
   end
 
