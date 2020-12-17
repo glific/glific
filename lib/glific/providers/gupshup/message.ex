@@ -21,7 +21,17 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   def send_hsm(hsm_template, attrs) do
-    # TODO: send hsm templates
+    body =
+
+      headers = [
+        {"apikey", "4f5805f55ffa4032c0d82c1a0fa877e4"},
+        {"Content-Type", "application/x-www-form-urlencoded"}
+      ]
+      case Tesla.post(@template_url, body, headers: headers) do
+      {:ok, %Tesla.Env{status: 200} = message} ->
+        {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
+      {:error, _error} -> "error"
+      end
   end
 
   @doc false
