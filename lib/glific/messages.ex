@@ -214,8 +214,12 @@ defmodule Glific.Messages do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
 
-    Contacts.can_send_message_to?(contact, attrs[:is_hsm])
-    |> create_and_send_message(attrs)
+    attrs[:is_hsm]
+    |> case do
+      true -> send_hsm(attrs)
+      _ ->  Contacts.can_send_message_to?(contact, attrs[:is_hsm])
+          |> create_and_send_message(attrs)
+    end
   end
 
   @doc false
@@ -810,5 +814,13 @@ defmodule Glific.Messages do
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
 
     {:ok}
+  end
+
+  @spec send_hsm(map) :: {:ok}
+  def send_hsm(attrs) do
+    hsm_data = attrs[:hsm]
+    {:ok, session_template } = Repo.fetch_by(SessionTemplate, %{uuid: hsm_data.uuid})
+    Communications.Message.send_hsm(session_template, hsm_data)
+    :ok
   end
 end

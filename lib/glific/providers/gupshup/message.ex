@@ -20,8 +20,11 @@ defmodule Glific.Providers.Gupshup.Message do
     |> send_message(message)
   end
 
-  @doc false
+  def send_hsm(hsm_template, attrs) do
+    # TODO: send hsm templates
+  end
 
+  @doc false
   @impl Glific.Providers.MessageBehaviour
   @spec send_image(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_image(message) do
