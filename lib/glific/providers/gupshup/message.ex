@@ -11,7 +11,7 @@ defmodule Glific.Providers.Gupshup.Message do
     Communications,
     Messages.Message,
     Partners,
-    Providers.Gupshup.ApiClient
+    Templates.SessionTemplate
   }
 
   @doc false
@@ -24,20 +24,22 @@ defmodule Glific.Providers.Gupshup.Message do
 
   def send_hsm(hsm_template, params, attrs) do
     organization = Partners.organization(attrs.organization_id)
-    credentials = organization.services["bsp"]
-    api_key = credentials.secrets["api_key"]
-    app_name = credentials.secrets["app_name"]
+    app_name = organization.services["bsp"].secrets["app_name"]
     source = Contacts.get_contact!(attrs.sender_id)
-      body = %{
-        "source"=> String.to_integer(source.phone),
-        "destination"=> String.to_integer(attrs.receiver.phone),
-        "template"=> %{"id"=> hsm_template.uuid,"params"=> params},
-        "src.name" => app_name
-      }
-      headers = [
-        {"apikey", api_key},
-      ]
-    ApiClient.post(@template_url, body, headers: headers)
+
+    body = %{
+      "source" => source.phone,
+      "destination" => attrs.receiver.phone,
+      "template" => %{"id" => hsm_template.uuid, "params" => params},
+      "src.name" => app_name
+    }
+
+    hsm_template  = SessionTemplate.to_minimal_map(hsm_template)
+    worker_module = Communications.provider_worker(attrs.organization_id)
+    worker_args = %{hsm_template: hsm_template, payload: Jason.encode!(body)}
+
+    apply(worker_module, :new, [worker_args, [schedule_in: 5]])
+    |> Oban.insert()
   end
 
   @doc false
