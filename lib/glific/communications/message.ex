@@ -61,11 +61,11 @@ defmodule Glific.Communications.Message do
     end
   end
 
-  def send_hsm(session_template, params, attrs) do
+  def send_hsm(session_template, attrs) do
     apply(
-      Communications.provider_handler(attrs.organization_id),
+      Communications.provider_handler(session_template.organization_id),
       @type_to_token[:send_hsm],
-      [session_template, params, attrs]
+      [session_template, attrs]
     )
   end
 

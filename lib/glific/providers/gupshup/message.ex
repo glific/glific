@@ -5,7 +5,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @channel "whatsapp"
   @behaviour Glific.Providers.MessageBehaviour
-  @template_url "http://api.gupshup.io/sm/api/v1/template/msg"
+
   alias Glific.{
     Contacts,
     Communications,
@@ -22,27 +22,7 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   def send_hsm(hsm_template, params, attrs) do
-    organization = Partners.organization(attrs.organization_id)
-    credentials = organization.services["bsp"]
-    api_key = credentials.secrets["api_key"]
-    app_name = credentials.secrets["app_name"]
-    source = Contacts.get_contact!(attrs.sender_id)
-      body = %{
-        "source"=> String.to_integer(source.phone),
-        "destination"=> String.to_integer(attrs.receiver.phone),
-        "template"=> %{"id"=> hsm_template.uuid,"params"=> params},
-        "src.name" => app_name
-      }
-      headers = [
-        {"apikey", api_key},
-        {"Content-Type", "application/x-www-form-urlencoded"}
-      ]
-      {:ok, body} = Jason.encode(body)
-      case Tesla.post(@template_url, body, headers: headers) do
-      {:ok, %Tesla.Env{status: 200} = message} ->
-        {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
-      {:error, _error} -> "error"
-      end
+    # TODO: send hsm templates
   end
 
   @doc false
