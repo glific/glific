@@ -136,27 +136,49 @@ defmodule Glific.Templates do
       end)
 
     body = %{
+      # need to check if shortcode is compulsory input
       elementName: attrs[:shortcode],
       languageCode: language.locale,
       content: attrs.body,
-      category: "AUTO_REPLY",
+      category: attrs.category,
       vertical: attrs.label,
       templateType: String.upcase(Atom.to_string(attrs.type)),
-      example: " Your verification code is [223]"
+      example: attrs.example
     }
 
     with {:ok, response} <-
            post(url, body, headers: [{"apikey", api_key}]),
          {true, _} <- {response.status == 202, response} do
-      do_create_session_template(attrs)
+      attrs
+      |> Map.merge(%{number_parameters: length(Regex.split(~r/{{.}}/, attrs.body)) - 1})
+      |> do_create_session_template()
     else
       {false, response} ->
-        {:ok, response_body} = Jason.decode(response.body)
-        {:error, ["bsp", response_body["message"] || to_string(response.status)]}
+        {:error, ["BSP response status: #{to_string(response.status)}", response.body]}
 
       _ ->
-        {:error, ["bsp", "couldn't submit for approval"]}
+        {:error, ["BSP", "couldn't submit for approval"]}
     end
+  end
+
+  @doc """
+  List of available categories provided by whatsapp
+  """
+  @spec list_whatsapp_hsm_categories() :: [String.t()]
+  def list_whatsapp_hsm_categories() do
+    [
+      "ACCOUNT_UPDATE",
+      "PAYMENT_UPDATE",
+      "PERSONAL_FINANCE_UPDATE",
+      "SHIPPING_UPDATE",
+      "RESERVATION_UPDATE",
+      "ISSUE_RESOLUTION",
+      "APPOINTMENT_UPDATE",
+      "TRANSPORTATION_UPDATE",
+      "TICKET_UPDATE",
+      "ALERT_UPDATE",
+      "AUTO_REPLY"
+    ]
   end
 
   @doc """
@@ -250,7 +272,7 @@ defmodule Glific.Templates do
       :ok
     else
       _ ->
-        {:error, ["bsp", "couldn't connect"]}
+        {:error, ["BSP", "couldn't connect"]}
     end
   end
 

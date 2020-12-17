@@ -23,6 +23,8 @@ defmodule Glific.Templates.SessionTemplate do
           status: String.t() | nil,
           is_hsm: boolean(),
           number_parameters: non_neg_integer | nil,
+          category: String.t() | nil,
+          example: String.t() | nil,
           is_source: boolean(),
           is_active: boolean(),
           is_reserved: boolean(),
@@ -57,7 +59,9 @@ defmodule Glific.Templates.SessionTemplate do
     :is_hsm,
     :uuid,
     :translations,
-    :status
+    :status,
+    :category,
+    :example
   ]
 
   schema "session_templates" do
@@ -70,6 +74,8 @@ defmodule Glific.Templates.SessionTemplate do
     field :status, :string
     field :is_hsm, :boolean, default: false
     field :number_parameters, :integer
+    field :category, :string
+    field :example, :string
 
     field :is_source, :boolean, default: false
     field :is_active, :boolean, default: false
