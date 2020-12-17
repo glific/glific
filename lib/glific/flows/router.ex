@@ -125,7 +125,9 @@ defmodule Glific.Flows.Router do
         # this is the split by result flow
         content =
           router.operand
-          |> MessageVarParser.parse(%{"contact" => Contacts.get_contact_field_map(context.contact_id)})
+          |> MessageVarParser.parse(%{
+            "contact" => Contacts.get_contact_field_map(context.contact_id)
+          })
           |> MessageVarParser.parse_results(context.results)
           # Once we have the content, we send it over to EEx to execute
           |> EEx.eval_string()
