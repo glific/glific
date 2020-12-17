@@ -11,7 +11,6 @@ defmodule Glific.Flows.MessageVarParser do
 
   def parse(input, binding) do
     binding = stringify_keys(binding)
-
     input
     |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
     |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, binding))
@@ -24,6 +23,11 @@ defmodule Glific.Flows.MessageVarParser do
   defp bound("@contact.language", binding) do
     language = get_in(binding, ["contact", "fields", "language"])
     language["label"]
+  end
+
+  # since this is a list we need to convert that into a string.
+  defp bound("@contact.in_groups", binding) do
+    "#{inspect get_in(binding, ["contact", "in_groups"])}"
   end
 
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
