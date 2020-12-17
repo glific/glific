@@ -10,7 +10,8 @@ defmodule Glific.Providers.Gupshup.Message do
     Contacts,
     Communications,
     Messages.Message,
-    Partners
+    Partners,
+    Templates.SessionTemplate
   }
 
   @doc false
@@ -23,26 +24,22 @@ defmodule Glific.Providers.Gupshup.Message do
 
   def send_hsm(hsm_template, params, attrs) do
     organization = Partners.organization(attrs.organization_id)
-    credentials = organization.services["bsp"]
-    api_key = credentials.secrets["api_key"]
-    app_name = credentials.secrets["app_name"]
+    app_name = organization.services["bsp"].secrets["app_name"]
     source = Contacts.get_contact!(attrs.sender_id)
-      body = %{
-        "source"=> String.to_integer(source.phone),
-        "destination"=> String.to_integer(attrs.receiver.phone),
-        "template"=> %{"id"=> hsm_template.uuid,"params"=> params},
-        "src.name" => app_name
-      }
-      headers = [
-        {"apikey", api_key},
-        {"Content-Type", "application/x-www-form-urlencoded"}
-      ]
-      {:ok, body} = Jason.encode(body)
-      case Tesla.post(@template_url, body, headers: headers) do
-      {:ok, %Tesla.Env{status: 200} = message} ->
-        {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
-      {:error, _error} -> "error"
-      end
+
+    body = %{
+      "source" => source.phone,
+      "destination" => attrs.receiver.phone,
+      "template" => %{"id" => hsm_template.uuid, "params" => params},
+      "src.name" => app_name
+    }
+
+    hsm_template  = SessionTemplate.to_minimal_map(hsm_template)
+    worker_module = Communications.provider_worker(attrs.organization_id)
+    worker_args = %{hsm_template: hsm_template, payload: Jason.encode!(body)}
+
+    apply(worker_module, :new, [worker_args, [schedule_in: 5]])
+    |> Oban.insert()
   end
 
   @doc false
