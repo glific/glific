@@ -318,7 +318,7 @@ defmodule Glific.Templates do
       organization_languages[template["languageCode"]] || organization.default_language_id
 
     is_active =
-      if template["status"] == "APPROVED" or template["status"] == "SANDBOX_REQUESTED",
+      if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
         do: true,
         else: false
 
@@ -347,7 +347,7 @@ defmodule Glific.Templates do
     update_attrs = %{
       status: template["status"],
       is_active:
-        if(template["status"] == "APPROVED" or template["status"] == "SANDBOX_REQUESTED",
+        if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
           do: true,
           else: false
         )
