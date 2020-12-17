@@ -5,7 +5,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @channel "whatsapp"
   @behaviour Glific.Providers.MessageBehaviour
-  @template_url "http://api.gupshup.io/sm/api/v1/template/msg"
+
   alias Glific.{
     Contacts,
     Communications,

@@ -56,8 +56,7 @@ defmodule Glific.Providers.Gupshup.Worker do
   end
 
   def perform(%Oban.Job{args: %{"hsm_template" => hsm_template, "payload" => payload}}) do
-    IO.inspect("sessiontemplate")
-    IO.inspect(hsm_template)
+    #todo fetch hsm_template
   end
 
   defp is_simulater(destination, message) when destination == @simulater_phone do
