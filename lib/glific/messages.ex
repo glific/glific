@@ -821,6 +821,7 @@ defmodule Glific.Messages do
 
   @spec send_hsm(map) :: {:ok}
   def send_hsm(attrs) do
+    #todo build msg
     {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{id: attrs.template_id})
     Communications.Message.send_hsm(session_template, attrs.params)
     :ok
