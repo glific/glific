@@ -21,6 +21,7 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   def send_hsm(hsm_template, attrs) do
+    IO.inspect("debug001-sesnd")
     body =
 
       headers = [
