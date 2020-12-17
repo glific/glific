@@ -65,7 +65,7 @@ defmodule Glific.Communications.Message do
     apply(
       Communications.provider_handler(attrs.organization_id),
       @type_to_token[:send_hsm],
-      [session_template, params]
+      [session_template, params, attrs]
     )
   end
 
