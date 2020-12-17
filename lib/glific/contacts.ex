@@ -275,9 +275,30 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  This function is called by the messaging framework for all incoming messages, hence
+  might be a good candidate to maintain a contact level cache at some point
+
+  We use a fetch followed by create, to avoid the explosion in the id namespace
+  """
+  @spec maybe_create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  def maybe_create_contact(sender) do
+    case Repo.get_by(Contact, %{phone: sender.phone}) do
+      nil ->
+        create_contact(sender)
+
+      contact ->
+        if contact.name != sender.name do
+          # the contact name has changed, so we need to update it
+          update_contact(contact, %{name: sender.name})
+        else
+          {:ok, contact}
+        end
+    end
+  end
+
+  @doc """
   Check if this contact id is a new conatct
   """
-
   @spec is_new_contact(integer()) :: boolean()
   def is_new_contact(contact_id) do
     case Glific.Messages.Message
