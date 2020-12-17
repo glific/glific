@@ -10,7 +10,8 @@ defmodule Glific.Providers.Gupshup.Message do
     Contacts,
     Communications,
     Messages.Message,
-    Partners
+    Partners,
+    Templates.SessionTemplate
   }
 
   @doc false

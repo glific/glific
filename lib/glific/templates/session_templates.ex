@@ -121,6 +121,14 @@ defmodule Glific.Templates.SessionTemplate do
     changeset
   end
 
+  @doc """
+  Convert SessionTemplate structure to map
+  """
+  @spec to_minimal_map(SessionTemplate.t()) :: map()
+  def to_minimal_map(sessiontemplate) do
+    Map.take(sessiontemplate, [:id | @required_fields ++ @optional_fields])
+  end
+
   def validate_update_hsm(changeset, %{:is_hsm => true} = _template) do
     # keeping body, shortcode and status of HSM non editabale by graphql API
     # later on we can add if few other fields should be non editable
