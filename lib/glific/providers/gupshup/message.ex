@@ -34,9 +34,9 @@ defmodule Glific.Providers.Gupshup.Message do
       "src.name" => app_name
     }
 
-    hsm_template  = SessionTemplate.to_minimal_map(hsm_template)
+    hsm_template = SessionTemplate.to_minimal_map(hsm_template)
     worker_module = Communications.provider_worker(attrs.organization_id)
-    worker_args = %{hsm_template: hsm_template, payload: Jason.encode!(body)}
+    worker_args = %{hsm_template: hsm_template, payload: body}
 
     apply(worker_module, :new, [worker_args, [schedule_in: 5]])
     |> Oban.insert()
