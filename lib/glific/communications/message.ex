@@ -31,7 +31,6 @@ defmodule Glific.Communications.Message do
     sticker: :send_sticker,
     send_hsm: :send_hsm
   }
-
   @doc """
   Send message to receiver using define provider.
   """
@@ -61,9 +60,11 @@ defmodule Glific.Communications.Message do
     end
   end
 
-  def send_hsm(session_template, attrs) do
+  def send_hsm(session_template, params) do
     apply(
-     Communications.provider_handler(session_template.organization_id), @type_to_token[:send_hsm],[session_template, attrs]
+      Communications.provider_handler(message.organization_id),
+      @type_to_token[:send_hsm],
+      [session_template, params]
     )
   end
 
