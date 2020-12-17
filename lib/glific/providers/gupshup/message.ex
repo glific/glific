@@ -10,7 +10,8 @@ defmodule Glific.Providers.Gupshup.Message do
     Contacts,
     Communications,
     Messages.Message,
-    Partners
+    Partners,
+    Providers.Gupshup.ApiClient
   }
 
   @doc false
@@ -35,14 +36,8 @@ defmodule Glific.Providers.Gupshup.Message do
       }
       headers = [
         {"apikey", api_key},
-        {"Content-Type", "application/x-www-form-urlencoded"}
       ]
-      {:ok, body} = Jason.encode(body)
-      case Tesla.post(@template_url, body, headers: headers) do
-      {:ok, %Tesla.Env{status: 200} = message} ->
-        {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
-      {:error, _error} -> "error"
-      end
+    ApiClient.post(@template_url, body, headers: headers)
   end
 
   @doc false
