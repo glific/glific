@@ -123,7 +123,7 @@ defmodule Glific.Templates do
   end
 
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
-  defp submit_for_approval(attrs) do
+  defp submit_for_approval(%{shortcode: _, category: _, example: _} = attrs) do
     organization = Partners.organization(attrs.organization_id)
 
     bsp_creds = organization.services["bsp"]
@@ -136,8 +136,7 @@ defmodule Glific.Templates do
       end)
 
     body = %{
-      # need to check if shortcode is compulsory input
-      elementName: attrs[:shortcode],
+      elementName: attrs.shortcode,
       languageCode: language.locale,
       content: attrs.body,
       category: attrs.category,
@@ -146,19 +145,29 @@ defmodule Glific.Templates do
       example: attrs.example
     }
 
-    with {:ok, response} <-
-           post(url, body, headers: [{"apikey", api_key}]),
-         {true, _} <- {response.status == 202, response} do
+    with {:ok, response} <- post(url, body, headers: [{"apikey", api_key}]),
+         {200, _response} <- {response.status, response} do
+      {:ok, response_data} = Jason.decode(response.body)
+
       attrs
-      |> Map.merge(%{number_parameters: length(Regex.split(~r/{{.}}/, attrs.body)) - 1})
+      |> Map.merge(%{
+        number_parameters: length(Regex.split(~r/{{.}}/, attrs.body)) - 1,
+        status: response_data["template"]["status"]
+      })
       |> do_create_session_template()
     else
-      {false, response} ->
-        {:error, ["BSP response status: #{to_string(response.status)}", response.body]}
+      {status, response} ->
+        # structure of response body can be different for different errors
+        {:error, ["BSP response status: #{to_string(status)}", response.body]}
 
       _ ->
         {:error, ["BSP", "couldn't submit for approval"]}
     end
+  end
+
+  defp submit_for_approval(_) do
+    {:error,
+     ["HSM approval", "for HSM approval shortcode, category and example fields are required"]}
   end
 
   @doc """
@@ -347,7 +356,7 @@ defmodule Glific.Templates do
     update_attrs = %{
       status: template["status"],
       is_active:
-        if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
+        if(template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
           do: true,
           else: false
         )
