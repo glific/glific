@@ -142,9 +142,13 @@ defmodule Glific.Templates do
 
     with {:ok, response} <-
            post(url, body, headers: [{"apikey", api_key}]),
-         true <- response.status == 202 do
+         {true, _} <- {response.status == 202, response} do
       do_create_session_template(attrs)
     else
+      {false, response} ->
+        {:ok, response_body} = Jason.decode(response.body)
+        {:error, ["gupshup", response_body["message"]]}
+
       _ ->
         {:error, ["gupshup", "couldn't submit for approval"]}
     end
