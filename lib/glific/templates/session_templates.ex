@@ -107,13 +107,6 @@ defmodule Glific.Templates.SessionTemplate do
     |> unique_constraint([:uuid])
   end
 
-  @doc """
-  Validation for update HSM session template
-  """
-  @spec validate_update_hsm(Ecto.Changeset.t(), SessionTemplate.t()) :: Ecto.Changeset.t()
-  def validate_update_hsm(changeset, %{:is_hsm => false} = _template) do
-    changeset
-  end
 
   @doc """
   Convert SessionTemplate structure to map
@@ -121,6 +114,14 @@ defmodule Glific.Templates.SessionTemplate do
   @spec to_minimal_map(SessionTemplate.t()) :: map()
   def to_minimal_map(sessiontemplate) do
     Map.take(sessiontemplate, [:id | @required_fields ++ @optional_fields])
+  end
+
+  @doc """
+  Validation for update HSM session template
+  """
+  @spec validate_update_hsm(Ecto.Changeset.t(), SessionTemplate.t()) :: Ecto.Changeset.t()
+  def validate_update_hsm(changeset, %{:is_hsm => false} = _template) do
+    changeset
   end
 
   def validate_update_hsm(changeset, %{:is_hsm => true} = _template) do

@@ -57,15 +57,12 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   def perform(%Oban.Job{args: %{"hsm_template" => hsm_template, "payload" => payload}}) do
     organization = Partners.organization(hsm_template["organization_id"])
-    credential = org.services["bsp"]
-    template_url = credential.keys["api_end_point"]<> "/template/msg",
-    {:ok, template} = Jason.decode(payload)
+    credential = organization.services["bsp"]
     ApiClient.post(
-      template_url,
-      template,
+      credential.keys["api_end_point"]<> "/template/msg",
+      payload,
       headers: [{"apikey", credential.secrets["api_key"]}]
     )
-    |> handle_response(message)
   end
 
   defp is_simulater(destination, message) when destination == @simulater_phone do
