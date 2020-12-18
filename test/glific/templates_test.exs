@@ -128,6 +128,13 @@ defmodule Glific.TemplatesTest do
         })
 
       assert session_template_list == [session_template1]
+
+      session_template_list =
+        Templates.list_session_templates(%{
+          filter: Map.merge(attrs, %{is_active: session_template1.is_active})
+        })
+
+      assert session_template1 in session_template_list
     end
 
     test "list_session_templates/1 with term filter on session_templates", attrs do
@@ -232,6 +239,113 @@ defmodule Glific.TemplatesTest do
                Templates.create_session_template(Map.merge(attrs, @invalid_attrs))
     end
 
+    test "create_session_template/1 for HSM with incomplete data should return error", attrs do
+      # shortcode, category and example are required fields
+      attrs_2 = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label 2",
+        language_id: language_fixture().id,
+        type: :text,
+        is_hsm: true,
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:error,
+              [
+                "HSM approval",
+                "for HSM approval shortcode, category and example fields are required"
+              ]} = Templates.create_session_template(attrs_2)
+    end
+
+    test "create_session_template/1 for HSM data should submit it for approval", attrs do
+      whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "category" => "ACCOUNT_UPDATE",
+                  "createdOn" => 1_595_904_220_495,
+                  "data" => "Your train ticket no. {{1}}",
+                  "elementName" => "ticket_update_status",
+                  "id" => whatspp_hsm_uuid,
+                  "languageCode" => "en_US",
+                  "languagePolicy" => "deterministic",
+                  "master" => true,
+                  "meta" => "{\"example\" =>\"Your train ticket no. [1234]",
+                  "modifiedOn" => 1_595_904_220_495,
+                  "status" => "PENDING",
+                  "templateType" => "TEXT",
+                  "vertical" => "ACTION_BUTTON"
+                }
+              })
+          }
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.shortcode == "ticket_update_status"
+      assert session_template.is_hsm == true
+      assert session_template.status == "PENDING"
+      assert session_template.uuid == whatspp_hsm_uuid
+      assert session_template.language_id == language.id
+    end
+
+    test "create_session_template/1 for HSM data wrong data should return BSP status and error message",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 400,
+            body:
+              Jason.encode!(%{
+                "status" => "error",
+                "message" => "Template Not Supported On Gupshup Platform"
+              })
+          }
+      end)
+
+      # extra space in example would return error response
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language_fixture().id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]  ",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:error,
+              [
+                "BSP response status: 400",
+                "{\"message\":\"Template Not Supported On Gupshup Platform\",\"status\":\"error\"}"
+              ]} = Templates.create_session_template(attrs)
+    end
+
     test "update_session_template/2 with valid data updates the session_template", attrs do
       session_template = session_template_fixture(attrs)
       language = language_fixture(@valid_language_attrs_1)
@@ -252,6 +366,113 @@ defmodule Glific.TemplatesTest do
                Templates.update_session_template(session_template, @invalid_attrs)
 
       assert session_template == Templates.get_session_template!(session_template.id)
+    end
+
+    test "update_session_template/2 for HSM template should not update the Pending HSM",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "category" => "ACCOUNT_UPDATE",
+                  "createdOn" => 1_595_904_220_495,
+                  "data" => "Your train ticket no. {{1}}",
+                  "elementName" => "ticket_update_status",
+                  "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
+                  "languageCode" => "en_US",
+                  "languagePolicy" => "deterministic",
+                  "master" => true,
+                  "meta" => "{\"example\" =>\"Your train ticket no. [1234]",
+                  "modifiedOn" => 1_595_904_220_495,
+                  "status" => "PENDING",
+                  "templateType" => "TEXT",
+                  "vertical" => "ACTION_BUTTON"
+                }
+              })
+          }
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, session_template} = Templates.create_session_template(attrs)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Templates.update_session_template(session_template, %{
+                 is_active: true,
+                 body: "updated body"
+               })
+
+      assert session_template == Templates.get_session_template!(session_template.id)
+    end
+
+    test "update_session_template/2 for HSM template should update only the editable fields",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "category" => "ACCOUNT_UPDATE",
+                  "createdOn" => 1_595_904_220_495,
+                  "data" => "Your train ticket no. {{1}}",
+                  "elementName" => "ticket_update_status",
+                  "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
+                  "languageCode" => "en_US",
+                  "languagePolicy" => "deterministic",
+                  "master" => true,
+                  "meta" => "{\"example\" =>\"Your train ticket no. [1234]",
+                  "modifiedOn" => 1_595_904_220_495,
+                  "status" => "APPROVED",
+                  "templateType" => "TEXT",
+                  "vertical" => "ACTION_BUTTON"
+                }
+              })
+          }
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, session_template} = Templates.create_session_template(attrs)
+
+      assert {:ok, %SessionTemplate{} = updated_template} =
+               Templates.update_session_template(session_template, %{
+                 is_active: true,
+                 body: "updated body"
+               })
+
+      assert updated_template.is_active == true
+      assert updated_template.body == "Your train ticket no. {{1}}"
     end
 
     test "delete_session_template/1 deletes the session_template", attrs do
@@ -283,15 +504,15 @@ defmodule Glific.TemplatesTest do
                 "templates" => [
                   %{
                     "category" => "TICKET_UPDATE",
-                    "createdOn" => 1_595_904_220_495,
+                    "createdOn" => 1_595_904_220_466,
                     "data" => "Your train ticket no. {{1}}",
                     "elementName" => "ticket_update_status",
                     "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
                     "languageCode" => "en_US",
                     "languagePolicy" => "deterministic",
                     "master" => false,
-                    "meta" => "{\"example\" =>\"Your train ticket no. P1234",
-                    "modifiedOn" => 1_595_904_220_495,
+                    "meta" => "{\"example\" =>\"Your train ticket no. [1234]",
+                    "modifiedOn" => 1_595_904_220_466,
                     "status" => "SANDBOX_REQUESTED",
                     "templateType" => "TEXT",
                     "vertical" => "ACTION_BUTTON"
