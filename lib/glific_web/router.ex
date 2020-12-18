@@ -5,6 +5,7 @@ defmodule GlificWeb.Router do
   use GlificWeb, :router
   @dialyzer {:nowarn_function, __checks__: 0}
   use Plug.ErrorHandler
+  use Appsignal.Plug
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -24,6 +25,7 @@ defmodule GlificWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug GlificWeb.Plugs.AppsignalAbsinthePlug
     plug GlificWeb.APIAuthPlug, otp_app: :glific
     # plug :debug_response
   end

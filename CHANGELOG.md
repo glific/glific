@@ -5,12 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.8.5] - 2020-12-22
+### Added
+- Support for retrieving HSM messages from gupshup
+- Switched to new API to send HSM messages
+
 ## [0.8.4] - 2020-12-15
 ### Added
 - Rescheduling oban jobs in case of failure for ensuring data archival
 - Added Check for bigquery tables and dataset in case of Bigquery Jobs failure
 - Clearing cache on encrypting data with new key
-- Adding custom data as JSON in Webhook 
+- Adding custom data as JSON in Webhook
 
 ### Fixed
 - Webhook fixes
@@ -26,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added opt-in instructions on the registration page
   - Timer display corrections
   - Automations are renamed to "Flows"
-  
+
 ### Fixed
 - Tweak settings in AppSignal to ignore DB queries
 
@@ -110,13 +116,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Attachment support from the chat window
 - Sticker Support in messages
 - Send Media HSM templates from flow editor
-- Showing BSP balance on the dashboard 
+- Showing BSP balance on the dashboard
 - Added flows information on the bigquery
 - Mask phone numbers in the profile page
 - Sync contact fields in Bigquery
 - Archiving Flows in Bigquery
 - Media HSM files
-- Showing BSP balance on the dashboard 
+- Showing BSP balance on the dashboard
 - Updated Documentation
 
 ### Fixed

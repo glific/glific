@@ -151,7 +151,7 @@ defmodule Glific.Communications.Message do
     {:ok, contact} =
       message_params.sender
       |> Map.put(:organization_id, organization_id)
-      |> Contacts.upsert()
+      |> Contacts.maybe_create_contact()
 
     {:ok, contact} = Contacts.set_session_status(contact, :session)
 
