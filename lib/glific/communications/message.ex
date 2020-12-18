@@ -49,7 +49,7 @@ defmodule Glific.Communications.Message do
         apply(
           Communications.provider_handler(message.organization_id),
           @type_to_token[message.type],
-          [message]
+          [message, attrs]
         )
       {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
     else

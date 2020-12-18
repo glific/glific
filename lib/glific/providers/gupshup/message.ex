@@ -15,10 +15,10 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_text(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_text(message) do
+  @spec send_text(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_text(message, attrs) do
     %{type: :text, text: message.body, isHSM: message.is_hsm}
-    |> send_message(message)
+    |> send_message(message, attrs)
   end
 
   @doc false
@@ -158,6 +158,20 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
+  @spec send_message(map(), Message.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  defp send_message(payload, message, attrs) do
+    request_body =
+      %{"channel" => @channel}
+      |> Map.merge(format_sender(message))
+      |> Map.put(:destination, message.receiver.phone)
+      |> Map.put("message", Jason.encode!(payload))
+      |> Map.merge(attrs)
+
+    create_oban_job(message, request_body)
+  end
+
+  @doc false
   @spec send_message(map(), Message.t()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp send_message(payload, message) do
@@ -167,6 +181,10 @@ defmodule Glific.Providers.Gupshup.Message do
       |> Map.put(:destination, message.receiver.phone)
       |> Map.put("message", Jason.encode!(payload))
 
+    create_oban_job(message, request_body)
+  end
+
+  defp create_oban_job(message, request_body) do
     worker_module = Communications.provider_worker(message.organization_id)
     worker_args = %{message: Message.to_minimal_map(message), payload: request_body}
 
