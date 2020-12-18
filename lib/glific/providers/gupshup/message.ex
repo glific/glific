@@ -10,8 +10,7 @@ defmodule Glific.Providers.Gupshup.Message do
     Contacts,
     Communications,
     Messages.Message,
-    Partners,
-    Templates.SessionTemplate
+    Partners
   }
 
   @doc false
@@ -25,21 +24,14 @@ defmodule Glific.Providers.Gupshup.Message do
   def send_hsm(hsm_template, params, attrs) do
     organization = Partners.organization(attrs.organization_id)
     app_name = organization.services["bsp"].secrets["app_name"]
-    source = Contacts.get_contact!(attrs.sender_id)
-
-    body = %{
-      "source" => source.phone,
+    sender = Contacts.get_contact!(attrs.sender_id)
+    %{
+      "source" => sender.phone,
       "destination" => attrs.receiver.phone,
       "template" => %{"id" => hsm_template.uuid, "params" => params},
       "src.name" => app_name
     }
-
-    hsm_template = SessionTemplate.to_minimal_map(hsm_template)
-    worker_module = Communications.provider_worker(attrs.organization_id)
-    worker_args = %{hsm_template: hsm_template, payload: body}
-
-    apply(worker_module, :new, [worker_args, [schedule_in: 5]])
-    |> Oban.insert()
+    # |> send_message(message)
   end
 
   @doc false

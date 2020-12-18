@@ -36,7 +36,7 @@ defmodule Glific.Communications.Message do
   Send message to receiver using define provider.
   """
   @spec send_message(Message.t()) :: {:ok, Message.t()} | {:error, String.t()}
-  def send_message(message) do
+  def send_message(message, attrs \\ %{}) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
     Logger.info(
@@ -44,15 +44,13 @@ defmodule Glific.Communications.Message do
         message.id
       }'"
     )
-
     if Contacts.can_send_message_to?(message.receiver, message.is_hsm) do
       {:ok, _} =
         apply(
           Communications.provider_handler(message.organization_id),
           @type_to_token[message.type],
-          [message]
+          [message, attrs]
         )
-
       {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
     else
       Logger.error("Could not send message: message_id: '#{message.id}'")
@@ -61,12 +59,21 @@ defmodule Glific.Communications.Message do
     end
   end
 
+  @doc """
+  Send hsm templateto receiver using define provider.
+  """
+  # @spec send_hsm(SessionTemplate.t()), list(), map() :: {:ok, Message.t()} | {:error, String.t()}
   def send_hsm(session_template, params, attrs) do
     apply(
       Communications.provider_handler(attrs.organization_id),
       @type_to_token[:send_hsm],
       [session_template, params, attrs]
     )
+
+    template = Glific.Messages.parse_template_vars(session_template, params)
+    {:ok,
+     Communications.publish_data(template, :sent_message, attrs.organization_id)}
+    {:ok, "template sent"}
   end
 
   @doc """

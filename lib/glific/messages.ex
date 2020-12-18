@@ -217,7 +217,7 @@ defmodule Glific.Messages do
     attrs[:is_hsm]
     |> case do
       true ->
-        send_hsm(attrs)
+        create_and_send_hsm_message(attrs.template_id, attrs.receiver_id, attrs.params)
 
       _ ->
         Contacts.can_send_message_to?(contact, attrs[:is_hsm])
@@ -240,9 +240,9 @@ defmodule Glific.Messages do
         flow: :outbound
       })
       |> update_message_attrs()
-      |> create_message()
+      |> create_message()|>IO.inspect()
 
-    Communications.Message.send_message(message)
+    Communications.Message.send_message(message, attrs)
   end
 
   @doc false
@@ -336,6 +336,7 @@ defmodule Glific.Messages do
   @spec create_and_send_hsm_message(integer, integer, [String.t()]) ::
           {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_hsm_message(template_id, receiver_id, parameters) do
+    contact = Glific.Contacts.get_contact!(receiver_id)
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 
     if session_template.number_parameters == length(parameters) do
@@ -347,10 +348,12 @@ defmodule Glific.Messages do
         is_hsm: updated_template.is_hsm,
         organization_id: session_template.organization_id,
         sender_id: Partners.organization_contact_id(session_template.organization_id),
-        receiver_id: receiver_id
+        receiver_id: receiver_id,
+        template_id: template_id,
+        params: parameters
       }
-
-      create_and_send_message(message_params)
+      Contacts.can_send_message_to?(contact, true)
+      |> create_and_send_message(message_params)
     else
       {:error, "You need to provide correct number of parameters for hsm template"}
     end
@@ -823,6 +826,7 @@ defmodule Glific.Messages do
   def send_hsm(attrs) do
     {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{id: attrs.template_id})
     Communications.Message.send_hsm(session_template, attrs.params, attrs)
-    :ok
+
+    {:ok}
   end
 end
