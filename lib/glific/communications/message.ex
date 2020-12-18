@@ -74,22 +74,6 @@ defmodule Glific.Communications.Message do
   end
 
   @doc """
-  Send hsm templateto receiver using define provider.
-  """
-  # @spec send_hsm(SessionTemplate.t()), list(), map() :: {:ok, Message.t()} | {:error, String.t()}
-  def send_hsm(session_template, params, attrs) do
-    apply(
-      Communications.provider_handler(attrs.organization_id),
-      @type_to_token[:send_hsm],
-      [session_template, params, attrs]
-    )
-
-    template = Glific.Messages.parse_template_vars(session_template, params)
-    {:ok, Communications.publish_data(template, :sent_message, attrs.organization_id)}
-    {:ok, "template sent"}
-  end
-
-  @doc """
   Callback when message send succsully
   """
   @spec handle_success_response(Tesla.Env.t(), Message.t()) :: {:ok, Message.t()}
