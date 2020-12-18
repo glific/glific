@@ -137,7 +137,12 @@ defmodule Glific.Templates do
       attrs
       |> Map.merge(%{
         uuid: response_data["template"]["id"],
-        status: response_data["template"]["status"]
+        status: response_data["template"]["status"],
+        is_active:
+          if(response_data["template"]["status"] == "APPROVED",
+            do: true,
+            else: false
+          )
       })
       |> do_create_session_template()
     else
