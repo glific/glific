@@ -122,19 +122,21 @@ defmodule Glific.Templates.SessionTemplate do
   end
 
   def validate_update_hsm(changeset, %{:is_hsm => true} = _template) do
-    # keeping body, shortcode and status of HSM non editabale by graphql API
+    # keeping body, number_parameters, shortcode and status of HSM non editabale by graphql API
     # later on we can add if few other fields should be non editable
+    # other fields like category, example should not be updated. We are only storing them for reference
     body = changeset.changes[:body]
+    number_parameters = changeset.changes[:number_parameters]
     shortcode = changeset.changes[:shortcode]
     status = changeset.changes[:status]
 
-    if is_nil(body) && is_nil(shortcode) && is_nil(status) do
+    if is_nil(body) && is_nil(number_parameters) && is_nil(shortcode) && is_nil(status) do
       changeset
     else
       add_error(
         changeset,
         :hsm,
-        "body/shortcode/status of HSM can not be updated"
+        "body/number_parameters/shortcode/status of HSM can not be updated"
       )
     end
   end
