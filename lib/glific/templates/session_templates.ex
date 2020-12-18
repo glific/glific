@@ -116,29 +116,24 @@ defmodule Glific.Templates.SessionTemplate do
   @doc """
   Validation for update HSM session template
   """
-  @spec validate_update_hsm(Ecto.Changeset.t(), SessionTemplate.t()) :: Ecto.Changeset.t()
-  def validate_update_hsm(changeset, %{:is_hsm => false} = _template) do
-    changeset
+  @spec update_changeset(SessionTemplate.t(), map()) :: Ecto.Changeset.t()
+  def update_changeset(%{is_hsm: false} = session_template, attrs) do
+    session_template
+    |> changeset(attrs)
   end
 
-  def validate_update_hsm(changeset, %{:is_hsm => true} = _template) do
-    # keeping body, number_parameters, shortcode and status of HSM non editabale by graphql API
-    # later on we can add if few other fields should be non editable
-    # other fields like category, example should not be updated. We are only storing them for reference
-    body = changeset.changes[:body]
-    number_parameters = changeset.changes[:number_parameters]
-    shortcode = changeset.changes[:shortcode]
-    status = changeset.changes[:status]
+  def update_changeset(%{is_hsm: true, status: "APPROVED"} = session_template, attrs) do
+    session_template
+    |> cast(attrs, [:is_active, :label])
+  end
 
-    if is_nil(body) && is_nil(number_parameters) && is_nil(shortcode) && is_nil(status) do
-      changeset
-    else
-      add_error(
-        changeset,
+  def update_changeset(%{is_hsm: true} = session_template, attrs) do
+    session_template
+    |> cast(attrs, [:is_active, :label])
+    |> add_error(
         :hsm,
-        "body/number_parameters/shortcode/status of HSM can not be updated"
+        "HSM is not approved yet, it can't be modified"
       )
-    end
   end
 
   @doc """

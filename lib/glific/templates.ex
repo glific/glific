@@ -189,8 +189,7 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def update_session_template(%SessionTemplate{} = session_template, attrs) do
     session_template
-    |> SessionTemplate.changeset(attrs)
-    |> SessionTemplate.validate_update_hsm(session_template)
+    |> SessionTemplate.update_changeset(attrs)
     |> Repo.update()
   end
 
