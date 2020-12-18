@@ -352,6 +352,7 @@ defmodule Glific.Messages do
         template_id: template_id,
         params: parameters
       }
+
       Contacts.can_send_message_to?(contact, true)
       |> create_and_send_message(message_params)
     else
@@ -818,14 +819,6 @@ defmodule Glific.Messages do
     |> Repo.delete_all()
 
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
-
-    {:ok}
-  end
-
-  @spec send_hsm(map) :: {:ok}
-  def send_hsm(attrs) do
-    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{id: attrs.template_id})
-    Communications.Message.send_hsm(session_template, attrs.params, attrs)
 
     {:ok}
   end
