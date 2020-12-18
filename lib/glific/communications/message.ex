@@ -28,8 +28,7 @@ defmodule Glific.Communications.Message do
     audio: :send_audio,
     video: :send_video,
     document: :send_document,
-    sticker: :send_sticker,
-    send_hsm: :send_hsm
+    sticker: :send_sticker
   }
 
   @doc """
@@ -59,14 +58,6 @@ defmodule Glific.Communications.Message do
       {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
       {:error, "Cannot send the message to the contact."}
     end
-  end
-
-  def send_hsm(session_template, attrs) do
-    apply(
-      Communications.provider_handler(session_template.organization_id),
-      @type_to_token[:send_hsm],
-      [session_template, attrs]
-    )
   end
 
   @doc """
@@ -151,7 +142,7 @@ defmodule Glific.Communications.Message do
     {:ok, contact} =
       message_params.sender
       |> Map.put(:organization_id, organization_id)
-      |> Contacts.upsert()
+      |> Contacts.maybe_create_contact()
 
     {:ok, contact} = Contacts.set_session_status(contact, :session)
 
