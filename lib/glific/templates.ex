@@ -130,28 +130,13 @@ defmodule Glific.Templates do
     api_key = bsp_creds.secrets["api_key"]
     url = bsp_creds.keys["api_end_point"] <> "/template/add/" <> bsp_creds.secrets["app_name"]
 
-    language =
-      Enum.find(organization.languages, fn language ->
-        to_string(language.id) == attrs.language_id
-      end)
-
-    body = %{
-      elementName: attrs.shortcode,
-      languageCode: language.locale,
-      content: attrs.body,
-      category: attrs.category,
-      vertical: attrs.label,
-      templateType: String.upcase(Atom.to_string(attrs.type)),
-      example: attrs.example
-    }
-
-    with {:ok, response} <- post(url, body, headers: [{"apikey", api_key}]),
+    with {:ok, response} <- post(url, body(attrs, organization), headers: [{"apikey", api_key}]),
          {200, _response} <- {response.status, response} do
       {:ok, response_data} = Jason.decode(response.body)
 
       attrs
       |> Map.merge(%{
-        number_parameters: length(Regex.split(~r/{{.}}/, attrs.body)) - 1,
+        uuid: response_data["template"]["id"],
         status: response_data["template"]["status"]
       })
       |> do_create_session_template()
@@ -170,24 +155,22 @@ defmodule Glific.Templates do
      ["HSM approval", "for HSM approval shortcode, category and example fields are required"]}
   end
 
-  @doc """
-  List of available categories provided by whatsapp
-  """
-  @spec list_whatsapp_hsm_categories() :: [String.t()]
-  def list_whatsapp_hsm_categories() do
-    [
-      "ACCOUNT_UPDATE",
-      "PAYMENT_UPDATE",
-      "PERSONAL_FINANCE_UPDATE",
-      "SHIPPING_UPDATE",
-      "RESERVATION_UPDATE",
-      "ISSUE_RESOLUTION",
-      "APPOINTMENT_UPDATE",
-      "TRANSPORTATION_UPDATE",
-      "TICKET_UPDATE",
-      "ALERT_UPDATE",
-      "AUTO_REPLY"
-    ]
+  @spec body(map(), Organization.t()) :: map()
+  defp body(attrs, organization) do
+    language =
+      Enum.find(organization.languages, fn language ->
+        to_string(language.id) == attrs.language_id
+      end)
+
+    %{
+      elementName: attrs.shortcode,
+      languageCode: language.locale,
+      content: attrs.body,
+      category: attrs.category,
+      vertical: attrs.label,
+      templateType: String.upcase(Atom.to_string(attrs.type)),
+      example: attrs.example
+    }
   end
 
   @doc """

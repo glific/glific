@@ -121,14 +121,6 @@ defmodule Glific.Templates.SessionTemplate do
     changeset
   end
 
-  @doc """
-  Convert SessionTemplate structure to map
-  """
-  @spec to_minimal_map(SessionTemplate.t()) :: map()
-  def to_minimal_map(sessiontemplate) do
-    Map.take(sessiontemplate, [:id | @required_fields ++ @optional_fields])
-  end
-
   def validate_update_hsm(changeset, %{:is_hsm => true} = _template) do
     # keeping body, shortcode and status of HSM non editabale by graphql API
     # later on we can add if few other fields should be non editable
@@ -145,5 +137,33 @@ defmodule Glific.Templates.SessionTemplate do
         "body/shortcode/status of HSM can not be updated"
       )
     end
+  end
+
+  @doc """
+  Convert SessionTemplate structure to map
+  """
+  @spec to_minimal_map(SessionTemplate.t()) :: map()
+  def to_minimal_map(sessiontemplate) do
+    Map.take(sessiontemplate, [:id | @required_fields ++ @optional_fields])
+  end
+
+  @doc """
+  List of available categories provided by whatsapp
+  """
+  @spec list_whatsapp_hsm_categories() :: [String.t()]
+  def list_whatsapp_hsm_categories() do
+    [
+      "ACCOUNT_UPDATE",
+      "PAYMENT_UPDATE",
+      "PERSONAL_FINANCE_UPDATE",
+      "SHIPPING_UPDATE",
+      "RESERVATION_UPDATE",
+      "ISSUE_RESOLUTION",
+      "APPOINTMENT_UPDATE",
+      "TRANSPORTATION_UPDATE",
+      "TICKET_UPDATE",
+      "ALERT_UPDATE",
+      "AUTO_REPLY"
+    ]
   end
 end

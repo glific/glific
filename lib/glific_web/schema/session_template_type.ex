@@ -7,7 +7,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias Glific.Repo
-  alias Glific.Templates
+  alias Glific.Templates.SessionTemplate
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -100,6 +100,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :type, :message_type_enum
     field :shortcode, :string
     field :is_hsm, :boolean
+    field :number_parameters, :integer
     field :category, :string
     field :example, :string
     field :is_active, :boolean
@@ -120,7 +121,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       middleware(Authorize, :manager)
 
       resolve(fn _, _, _ ->
-        {:ok, Templates.list_whatsapp_hsm_categories()}
+        {:ok, SessionTemplate.list_whatsapp_hsm_categories()}
       end)
     end
 

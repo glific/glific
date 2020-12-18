@@ -725,6 +725,11 @@ Match the whatsapp status of hsm template message
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>number_parameters</strong></td>
+<td valign="top"><a href="#int">Int</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>category</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
