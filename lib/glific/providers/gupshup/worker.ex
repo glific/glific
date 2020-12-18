@@ -72,6 +72,29 @@ defmodule Glific.Providers.Gupshup.Worker do
   defp is_simulater(_, _), do: false
 
   defp process_to_gupshup(credential, payload, message) do
+    if Map.has_key?(payload, "template_id") do
+      send_as_template(credential, payload)
+    else
+      send_as_message(credential, payload, message)
+    end
+  end
+
+  defp send_as_template(credential, payload) do
+    template_payload = %{
+      "source" => payload["source"],
+      "destination" => payload["destination"],
+      "template" => %{"id" => payload["template_id"], "params" => payload["params"]},
+      "src.name" => payload["src.name"]
+    }
+
+    ApiClient.post(
+      credential.keys["api_end_point"] <> "/template/msg",
+      template_payload,
+      headers: [{"apikey", credential.secrets["api_key"]}]
+    )
+  end
+
+  defp send_as_message(credential, payload, message) do
     ApiClient.post(
       credential.keys["api_end_point"] <> "/msg",
       payload,

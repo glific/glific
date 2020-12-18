@@ -16,7 +16,7 @@ defmodule Glific.Providers.Gupshup.Message do
   @doc false
   @impl Glific.Providers.MessageBehaviour
   @spec send_text(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_text(message, attrs) do
+  def send_text(message, attrs \\ %{}) do
     %{type: :text, text: message.body, isHSM: message.is_hsm}
     |> send_message(message, attrs)
   end
@@ -164,9 +164,9 @@ defmodule Glific.Providers.Gupshup.Message do
     request_body =
       %{"channel" => @channel}
       |> Map.merge(format_sender(message))
+      |> Map.merge(attrs)
       |> Map.put(:destination, message.receiver.phone)
       |> Map.put("message", Jason.encode!(payload))
-      |> Map.merge(attrs)
 
     create_oban_job(message, request_body)
   end

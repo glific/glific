@@ -44,6 +44,7 @@ defmodule Glific.Communications.Message do
         message.id
       }'"
     )
+
     if Contacts.can_send_message_to?(message.receiver, message.is_hsm) do
       {:ok, _} =
         apply(
@@ -51,6 +52,7 @@ defmodule Glific.Communications.Message do
           @type_to_token[message.type],
           [message, attrs]
         )
+
       {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
     else
       Logger.error("Could not send message: message_id: '#{message.id}'")
@@ -71,8 +73,7 @@ defmodule Glific.Communications.Message do
     )
 
     template = Glific.Messages.parse_template_vars(session_template, params)
-    {:ok,
-     Communications.publish_data(template, :sent_message, attrs.organization_id)}
+    {:ok, Communications.publish_data(template, :sent_message, attrs.organization_id)}
     {:ok, "template sent"}
   end
 
