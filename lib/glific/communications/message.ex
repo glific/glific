@@ -49,12 +49,7 @@ defmodule Glific.Communications.Message do
       attrs[:is_hsm]
       |> case do
         true ->
-          {:ok, _} =
-            apply(
-              Communications.provider_handler(message.organization_id),
-              @type_to_token[:send_hsm],
-              [attrs]
-            )
+          process_hsm_template?(attrs, message)
 
         _ ->
           {:ok, _} =
@@ -70,6 +65,26 @@ defmodule Glific.Communications.Message do
       Logger.error("Could not send message: message_id: '#{message.id}'")
       {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
       {:error, "Cannot send the message to the contact."}
+    end
+  end
+
+  def process_hsm_template?(attrs, message) do
+    with true <- Map.has_key?(attrs, :params),
+         true <- Map.has_key?(attrs, :template_id) do
+      {:ok, _} =
+        apply(
+          Communications.provider_handler(message.organization_id),
+          @type_to_token[:send_hsm],
+          [attrs]
+        )
+    else
+      _ ->
+        {:ok, _} =
+          apply(
+            Communications.provider_handler(message.organization_id),
+            @type_to_token[message.type],
+            [message]
+          )
     end
   end
 
