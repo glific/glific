@@ -21,19 +21,6 @@ defmodule Glific.Providers.Gupshup.Message do
     |> send_message(message)
   end
 
-  def send_hsm(hsm_template, params, attrs) do
-    organization = Partners.organization(attrs.organization_id)
-    app_name = organization.services["bsp"].secrets["app_name"]
-    sender = Contacts.get_contact!(attrs.sender_id)
-    %{
-      "source" => sender.phone,
-      "destination" => attrs.receiver.phone,
-      "template" => %{"id" => hsm_template.uuid, "params" => params},
-      "src.name" => app_name
-    }
-    # |> send_message(message)
-  end
-
   @doc false
   @impl Glific.Providers.MessageBehaviour
   @spec send_image(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}

@@ -55,16 +55,6 @@ defmodule Glific.Providers.Gupshup.Worker do
     end
   end
 
-  def perform(%Oban.Job{args: %{"hsm_template" => hsm_template, "payload" => payload}}) do
-    organization = Partners.organization(hsm_template["organization_id"])
-    credential = organization.services["bsp"]
-    ApiClient.post(
-      credential.keys["api_end_point"]<> "/template/msg",
-      payload,
-      headers: [{"apikey", credential.secrets["api_key"]}]
-    )
-  end
-
   defp is_simulater(destination, message) when destination == @simulater_phone do
     message_id = Faker.String.base64(36)
 

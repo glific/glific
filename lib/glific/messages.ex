@@ -240,7 +240,7 @@ defmodule Glific.Messages do
         flow: :outbound
       })
       |> update_message_attrs()
-      |> create_message()|>IO.inspect()
+      |> create_message()
 
     Communications.Message.send_message(message, attrs)
   end
