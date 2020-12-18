@@ -271,5 +271,110 @@ defmodule Glific.TemplatesTest do
     test "ensure that creating session template with out language and/or org_id give an error" do
       assert {:error, %Ecto.Changeset{}} = Templates.create_session_template(@valid_attrs)
     end
+
+    test "update_hsms/1 should insert newly received HSM", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "category" => "TICKET_UPDATE",
+                    "createdOn" => 1595904220495,
+                    "data" => "Your train ticket no. {{1}}",
+                    "elementName" => "ticket_update_status",
+                    "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
+                    "languageCode" => "en_US",
+                    "languagePolicy" => "deterministic",
+                    "master" => false,
+                    "meta" => "{\"example\" =>\"Your train ticket no. P1234",
+                    "modifiedOn" => 1595904220495,
+                    "status" => "SANDBOX_REQUESTED",
+                    "templateType" => "TEXT",
+                    "vertical" => "ACTION_BUTTON"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{uuid: "16e84186-97fa-454e-ac3b-8c9b94e53b4b"})
+    end
+
+    test "update_hsms/1 should return error in case of error response", attrs do
+      # in case of error from BSP API
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 400,
+            body:
+              Jason.encode!(%{
+                "status" => "error",
+                "message" => "error message"
+              })
+          }
+      end)
+
+      assert {:error, _message} = Templates.update_hsms(attrs.organization_id)
+    end
+
+    test "update_hsms/1 should update status of already existing HSM", attrs do
+      [hsm | _] = Templates.list_session_templates(%{filter: %{organization_id: attrs.organization_id, is_hsm: true}})
+
+      # shouldn't update BSP hasn't updated it since last update in the db
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "id" => hsm.uuid,
+                    "modifiedOn" => DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
+                    "status" => "APPROVED"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = updated_hsm} = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
+      assert updated_hsm.status == hsm.status
+      assert updated_hsm.is_active == hsm.is_active
+
+      # should update the existing hsm if it is modified by BSP since last update in the db
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "id" => hsm.uuid,
+                    "modifiedOn" => DateTime.to_unix(Timex.shift(hsm.updated_at, hours: 1), :millisecond),
+                    "status" => "APPROVED"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
+      assert hsm.status == "APPROVED"
+      assert hsm.is_active == true
+    end
   end
 end
