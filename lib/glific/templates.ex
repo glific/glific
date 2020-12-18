@@ -159,7 +159,7 @@ defmodule Glific.Templates do
   defp body(attrs, organization) do
     language =
       Enum.find(organization.languages, fn language ->
-        to_string(language.id) == attrs.language_id
+        to_string(language.id) == to_string(attrs.language_id)
       end)
 
     %{
@@ -317,7 +317,7 @@ defmodule Glific.Templates do
       uuid: template["id"],
       body: template["data"],
       shortcode: template["elementName"],
-      label: template["elementName"],
+      label: template["vertical"],
       type: type,
       language_id: language_id,
       organization_id: organization.id,

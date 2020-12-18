@@ -131,9 +131,9 @@ defmodule Glific.Templates.SessionTemplate do
     session_template
     |> cast(attrs, [:is_active, :label])
     |> add_error(
-        :hsm,
-        "HSM is not approved yet, it can't be modified"
-      )
+      :hsm,
+      "HSM is not approved yet, it can't be modified"
+    )
   end
 
   @doc """

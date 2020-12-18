@@ -234,7 +234,7 @@ This returns list of whatsapp HSM categories
 ### Return Parameters
 Type | Description
 | ---- | -----------
-[<a href="#string">Role</a>] | List of categories
+[<a href="#string">String</a>] | List of categories
 
 ## Create a Session Template
 
