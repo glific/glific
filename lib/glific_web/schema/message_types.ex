@@ -39,9 +39,6 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :is_hsm, :boolean
 
-    field :template_id, :integer
-    field :params, list_of(:string)
-
     field :bsp_status, :message_status_enum
 
     # expose the date we processed this message since external clients need it
@@ -111,10 +108,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :receiver_id, :id
     field :media_id, :id
 
-    field :is_hsm, :boolean
     field :send_at, :datetime
-    field :template_id, :integer
-    field :params, list_of(:string)
   end
 
   object :message_queries do

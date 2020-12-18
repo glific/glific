@@ -5,13 +5,11 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @channel "whatsapp"
   @behaviour Glific.Providers.MessageBehaviour
-  @template_url "http://api.gupshup.io/sm/api/v1/template/msg"
+
   alias Glific.{
-    Contacts,
     Communications,
     Messages.Message,
-    Partners,
-    Templates.SessionTemplate
+    Partners
   }
 
   @doc false
@@ -22,27 +20,8 @@ defmodule Glific.Providers.Gupshup.Message do
     |> send_message(message)
   end
 
-  def send_hsm(hsm_template, params, attrs) do
-    organization = Partners.organization(attrs.organization_id)
-    app_name = organization.services["bsp"].secrets["app_name"]
-    source = Contacts.get_contact!(attrs.sender_id)
-
-    body = %{
-      "source" => source.phone,
-      "destination" => attrs.receiver.phone,
-      "template" => %{"id" => hsm_template.uuid, "params" => params},
-      "src.name" => app_name
-    }
-
-    hsm_template  = SessionTemplate.to_minimal_map(hsm_template)
-    worker_module = Communications.provider_worker(attrs.organization_id)
-    worker_args = %{hsm_template: hsm_template, payload: Jason.encode!(body)}
-
-    apply(worker_module, :new, [worker_args, [schedule_in: 5]])
-    |> Oban.insert()
-  end
-
   @doc false
+
   @impl Glific.Providers.MessageBehaviour
   @spec send_image(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_image(message) do
