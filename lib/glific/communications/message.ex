@@ -46,20 +46,7 @@ defmodule Glific.Communications.Message do
     )
 
     if Contacts.can_send_message_to?(message.receiver, message.is_hsm) do
-      attrs[:is_hsm]
-      |> case do
-        true ->
-          process_hsm_template?(attrs, message)
-
-        _ ->
-          {:ok, _} =
-            apply(
-              Communications.provider_handler(message.organization_id),
-              @type_to_token[message.type],
-              [message]
-            )
-      end
-
+      process_all_message(attrs, message)
       {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
     else
       Logger.error("Could not send message: message_id: '#{message.id}'")
@@ -68,9 +55,10 @@ defmodule Glific.Communications.Message do
     end
   end
 
-  def process_hsm_template?(attrs, message) do
+  def process_all_message(attrs, message) do
     with true <- Map.has_key?(attrs, :params),
-         true <- Map.has_key?(attrs, :template_id) do
+         true <- Map.has_key?(attrs, :template_id),
+         true <- Map.get(attrs, :is_hsm) do
       {:ok, _} =
         apply(
           Communications.provider_handler(message.organization_id),
