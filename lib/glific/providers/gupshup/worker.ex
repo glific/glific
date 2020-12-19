@@ -71,11 +71,11 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   defp is_simulater(_, _), do: false
 
-  defp process_to_gupshup(credential, payload, message, %{is_hsm: true} = attrs) do
+  defp process_to_gupshup(credential, payload, message, %{"is_hsm" => true} = attrs) do
     template_payload = %{
       "source" => payload["source"],
       "destination" => payload["destination"],
-      "template" => %{"id" => payload["template_id"], "params" => payload["params"]},
+      "template" => %{"id" => attrs["template_uuid"], "params" => attrs["params"]},
       "src.name" => payload["src.name"]
     }
     ApiClient.post(
@@ -86,7 +86,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     |> handle_response(message)
   end
 
-  defp process_to_gupshup(credential, payload, message, attrs) do
+  defp process_to_gupshup(credential, payload, message, _attrs) do
     ApiClient.post(
       credential.keys["api_end_point"] <> "/msg",
       payload,

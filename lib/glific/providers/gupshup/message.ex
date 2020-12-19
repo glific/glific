@@ -8,7 +8,6 @@ defmodule Glific.Providers.Gupshup.Message do
 
   alias Glific.{
     Communications,
-    Contacts,
     Messages.Message,
     Partners
   }
