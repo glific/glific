@@ -20,7 +20,7 @@ defmodule Glific.Providers.Gupshup.Worker do
   """
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:snooze, pos_integer()}
-  def perform(%Oban.Job{args: %{"message" => message, "payload" => payload}}) do
+  def perform(%Oban.Job{args: %{"message" => message, "payload" => payload, "attrs" => attrs}}) do
     organization = Partners.organization(message["organization_id"])
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
     # Refactring because of credo warning
@@ -34,7 +34,7 @@ defmodule Glific.Providers.Gupshup.Worker do
         with credential <- organization.services["bsp"],
              false <- is_nil(credential),
              false <- is_simulater(payload["destination"], message) do
-          case process_to_gupshup(credential, payload, message) do
+          case process_to_gupshup(credential, payload, message, attrs) do
             # discard the message
             {:ok, _} -> :ok
             # return the error tuple
@@ -71,15 +71,7 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   defp is_simulater(_, _), do: false
 
-  defp process_to_gupshup(credential, payload, message) do
-    if Map.has_key?(payload, "template_id") do
-      send_as_template(credential, payload, message)
-    else
-      send_as_message(credential, payload, message)
-    end
-  end
-
-  defp send_as_template(credential, payload, message) do
+  defp process_to_gupshup(credential, payload, message, %{is_hsm: true} = attrs) do
     template_payload = %{
       "source" => payload["source"],
       "destination" => payload["destination"],
@@ -94,7 +86,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     |> handle_response(message)
   end
 
-  defp send_as_message(credential, payload, message) do
+  defp process_to_gupshup(credential, payload, message, attrs) do
     ApiClient.post(
       credential.keys["api_end_point"] <> "/msg",
       payload,

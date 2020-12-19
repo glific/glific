@@ -341,7 +341,7 @@ defmodule Glific.Messages do
 
     if session_template.number_parameters == length(parameters) do
       updated_template = parse_template_vars(session_template, parameters)
-
+    # Passing uuid to save db call when sending template via provider
       message_params = %{
         body: updated_template.body,
         type: updated_template.type,
@@ -349,7 +349,8 @@ defmodule Glific.Messages do
         organization_id: session_template.organization_id,
         sender_id: Partners.organization_contact_id(session_template.organization_id),
         receiver_id: receiver_id,
-        template_id: session_template.uuid,
+        template_uuid: session_template.uuid,
+        template_id: template_id,
         params: parameters
       }
       Contacts.can_send_message_to?(contact, true)

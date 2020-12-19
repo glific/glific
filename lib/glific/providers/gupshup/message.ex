@@ -23,8 +23,8 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_image(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_image(message) do
+  @spec send_image(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_image(message, attrs \\ %{}) do
     message_media = message.media
 
     %{
@@ -33,27 +33,27 @@ defmodule Glific.Providers.Gupshup.Message do
       previewUrl: message_media.url,
       caption: message_media.caption
     }
-    |> send_message(message)
+    |> send_message(message, attrs)
   end
 
   @doc false
 
   @impl Glific.Providers.MessageBehaviour
-  @spec send_audio(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_audio(message) do
+  @spec send_audio(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_audio(message, attrs \\ %{}) do
     message_media = message.media
 
     %{
       type: :audio,
       url: message_media.source_url
     }
-    |> send_message(message)
+    |> send_message(message, attrs)
   end
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_video(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_video(message) do
+  @spec send_video(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_video(message, attrs \\ %{}) do
     message_media = message.media
 
     %{
@@ -61,14 +61,14 @@ defmodule Glific.Providers.Gupshup.Message do
       url: message_media.source_url,
       caption: message_media.caption
     }
-    |> send_message(message)
+    |> send_message(message, attrs)
   end
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_document(Message.t()) ::
+  @spec send_document(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_document(message) do
+  def send_document(message, attrs \\ %{}) do
     message_media = message.media
 
     %{
@@ -76,20 +76,20 @@ defmodule Glific.Providers.Gupshup.Message do
       url: message_media.source_url,
       filename: message_media.caption
     }
-    |> send_message(message)
+    |> send_message(message, attrs)
   end
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_sticker(Message.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_sticker(message) do
+  @spec send_sticker(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_sticker(message, attrs \\ %{}) do
     message_media = message.media
 
     %{
       type: :sticker,
       url: message_media.url
     }
-    |> send_message(message)
+    |> send_message(message, attrs)
   end
 
   @doc false
@@ -161,42 +161,18 @@ defmodule Glific.Providers.Gupshup.Message do
   @spec send_message(map(), Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp send_message(payload, message, attrs) do
-    attrs[:is_hsm]
-    |> case do
-      true ->
-        request_body =
-          %{"channel" => @channel}
-          |> Map.merge(format_sender(message))
-          |> Map.merge(attrs)
-          |> Map.put(:destination, message.receiver.phone)
-          |> Map.put("message", Jason.encode!(payload))
-        create_oban_job(message, request_body)
-      _ ->
-        request_body =
-          %{"channel" => @channel}
-          |> Map.merge(format_sender(message))
-          |> Map.put(:destination, message.receiver.phone)
-          |> Map.put("message", Jason.encode!(payload))
-        create_oban_job(message, request_body)
-    end
-  end
-
-  @doc false
-  @spec send_message(map(), Message.t()) ::
-          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  defp send_message(payload, message) do
     request_body =
       %{"channel" => @channel}
       |> Map.merge(format_sender(message))
       |> Map.put(:destination, message.receiver.phone)
       |> Map.put("message", Jason.encode!(payload))
 
-    create_oban_job(message, request_body)
+    create_oban_job(message, request_body, attrs)
   end
 
-  defp create_oban_job(message, request_body) do
+  defp create_oban_job(message, request_body, attrs) do
     worker_module = Communications.provider_worker(message.organization_id)
-    worker_args = %{message: Message.to_minimal_map(message), payload: request_body}
+    worker_args = %{message: Message.to_minimal_map(message), payload: request_body, attrs: attrs}
 
     apply(worker_module, :new, [worker_args, [scheduled_at: message.send_at]])
     |> Oban.insert()
