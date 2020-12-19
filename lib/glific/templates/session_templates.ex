@@ -107,7 +107,6 @@ defmodule Glific.Templates.SessionTemplate do
     |> unique_constraint([:uuid])
   end
 
-
   @doc """
   Convert SessionTemplate structure to map
   """

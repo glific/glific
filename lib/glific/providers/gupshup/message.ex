@@ -7,8 +7,8 @@ defmodule Glific.Providers.Gupshup.Message do
   @behaviour Glific.Providers.MessageBehaviour
 
   alias Glific.{
-    Contacts,
     Communications,
+    Contacts,
     Messages.Message,
     Partners
   }

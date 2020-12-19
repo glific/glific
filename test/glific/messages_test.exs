@@ -481,42 +481,67 @@ defmodule Glific.MessagesTest do
     end
 
     test "send hsm message incorrect parameters",
-         %{organization_id: organization_id, global_schema: global_schema} = attrs do
-      contact = Fixtures.contact_fixture(attrs)
+         {:ok, sender} =
+           @sender_attrs
+           |> Map.merge(attrs)
+           |> Map.merge(%{phone: Phone.EnUs.phone()})
+           |> Contacts.create_contact()
 
-      shortcode = "otp"
+    {:ok, receiver} =
+      @receiver_attrs
+      |> Map.merge(attrs)
+      |> Map.merge(%{phone: Phone.EnUs.phone()})
+      |> Contacts.create_contact()
 
-      {:ok, hsm_template} =
-        Repo.fetch_by(
-          SessionTemplate,
-          %{shortcode: shortcode, organization_id: organization_id}
-        )
+    %{organization_id: organization_id, global_schema: global_schema} =
+      attrs do
+        contact = Fixtures.contact_fixture(attrs)
 
-      # Incorrect number of parameters should give an error
-      parameters = ["param1"]
+        shortcode = "otp"
 
-      {:error, error_message} =
-        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+        {:ok, hsm_template} =
+          Repo.fetch_by(
+            SessionTemplate,
+            %{shortcode: shortcode, organization_id: organization_id}
+          )
 
-      assert error_message == "You need to provide correct number of parameters for hsm template"
+        # Incorrect number of parameters should give an error
+        parameters = ["param1"]
 
-      # Correct number of parameters should create and send hsm message
-      parameters = ["param1", "param2", "param3"]
+        attrs = %{
+          body: "Test message",
+          flow: :outbound,
+          is_hsm: true,
+          organization_id: organization_id,
+          params: parameters,
+          receiver_id: receiver.id,
+          sender_id: sender.id,
+          template_id: hsm_template.id,
+          type: :text,
+          user_id: sender.id
+        }
 
-      {:ok, message} =
-        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+        {:error, error_message} = Messages.create_and_send_message(attrs)
 
-      assert_enqueued(worker: Worker, prefix: global_schema)
-      Oban.drain_queue(queue: :gupshup)
+        assert error_message ==
+                 "You need to provide correct number of parameters for hsm template"
 
-      message = Messages.get_message!(message.id)
+        # Correct number of parameters should create and send hsm message
+        parameters = ["param1", "param2", "param3"]
 
-      assert message.is_hsm == true
-      assert message.flow == :outbound
-      assert message.bsp_message_id != nil
-      assert message.bsp_status == :enqueued
-      assert message.sent_at != nil
-    end
+        {:ok, message} = Messages.create_and_send_message(attrs)
+
+        assert_enqueued(worker: Worker, prefix: global_schema)
+        Oban.drain_queue(queue: :gupshup)
+
+        message = Messages.get_message!(message.id)
+
+        assert message.is_hsm == true
+        assert message.flow == :outbound
+        assert message.bsp_message_id != nil
+        assert message.bsp_status == :enqueued
+        assert message.sent_at != nil
+      end
 
     test "prepare hsm template",
          %{organization_id: organization_id} do

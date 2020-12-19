@@ -349,7 +349,7 @@ defmodule Glific.Messages do
         organization_id: session_template.organization_id,
         sender_id: Partners.organization_contact_id(session_template.organization_id),
         receiver_id: receiver_id,
-        template_id: template_id,
+        template_id: session_template.uuid,
         params: parameters
       }
       Contacts.can_send_message_to?(contact, true)
