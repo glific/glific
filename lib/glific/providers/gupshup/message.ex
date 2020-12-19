@@ -161,14 +161,24 @@ defmodule Glific.Providers.Gupshup.Message do
   @spec send_message(map(), Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp send_message(payload, message, attrs) do
-    request_body =
-      %{"channel" => @channel}
-      |> Map.merge(format_sender(message))
-      |> Map.merge(attrs)
-      |> Map.put(:destination, message.receiver.phone)
-      |> Map.put("message", Jason.encode!(payload))
-
-    create_oban_job(message, request_body)
+    attrs[:is_hsm]
+    |> case do
+      true ->
+        request_body =
+          %{"channel" => @channel}
+          |> Map.merge(format_sender(message))
+          |> Map.merge(attrs)
+          |> Map.put(:destination, message.receiver.phone)
+          |> Map.put("message", Jason.encode!(payload))
+        create_oban_job(message, request_body)
+      _ ->
+        request_body =
+          %{"channel" => @channel}
+          |> Map.merge(format_sender(message))
+          |> Map.put(:destination, message.receiver.phone)
+          |> Map.put("message", Jason.encode!(payload))
+        create_oban_job(message, request_body)
+    end
   end
 
   @doc false
