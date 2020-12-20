@@ -28,8 +28,7 @@ defmodule Glific.Communications.Message do
     audio: :send_audio,
     video: :send_video,
     document: :send_document,
-    sticker: :send_sticker,
-    send_hsm: :send_hsm
+    sticker: :send_sticker
   }
 
   @doc """
@@ -59,22 +58,6 @@ defmodule Glific.Communications.Message do
       {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
       {:error, "Cannot send the message to the contact."}
     end
-  end
-
-  @doc """
-  Send hsm templateto receiver using define provider.
-  """
-  # @spec send_hsm(SessionTemplate.t()), list(), map() :: {:ok, Message.t()} | {:error, String.t()}
-  def send_hsm(session_template, params, attrs) do
-    apply(
-      Communications.provider_handler(attrs.organization_id),
-      @type_to_token[:send_hsm],
-      [session_template, params, attrs]
-    )
-
-    template = Glific.Messages.parse_template_vars(session_template, params)
-    {:ok, Communications.publish_data(template, :sent_message, attrs.organization_id)}
-    {:ok, "template sent"}
   end
 
   @doc """

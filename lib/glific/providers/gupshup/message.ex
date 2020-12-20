@@ -169,9 +169,7 @@ defmodule Glific.Providers.Gupshup.Message do
     create_oban_job(message, request_body, attrs)
   end
 
-  @doc """
-  Convert attrs  to map
-  """
+  @doc false
   @spec to_minimal_map(map()) :: map()
   defp to_minimal_map(attrs) do
     Map.take(attrs, [:params, :template_id, :template_uuid, :is_hsm])

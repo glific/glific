@@ -216,7 +216,9 @@ defmodule Glific.Messages do
     check_for_hsm_message(attrs, contact)
   end
 
-  def check_for_hsm_message(attrs, contact) do
+  @doc false
+  @spec check_for_hsm_message(map(), Contact.t()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp check_for_hsm_message(attrs, contact) do
     with true <- Map.has_key?(attrs, :params),
          true <- Map.has_key?(attrs, :template_id),
          true <- Map.get(attrs, :is_hsm) do
@@ -822,14 +824,6 @@ defmodule Glific.Messages do
     |> Repo.delete_all()
 
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
-
-    {:ok}
-  end
-
-  @spec send_hsm(map) :: {:ok}
-  def send_hsm(attrs) do
-    {:ok, session_template} = Repo.fetch_by(SessionTemplate, %{id: attrs.template_id})
-    Communications.Message.send_hsm(session_template, attrs.params, attrs)
 
     {:ok}
   end
