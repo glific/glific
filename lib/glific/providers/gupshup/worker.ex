@@ -77,7 +77,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     template_payload = %{
       "source" => payload["source"],
       "destination" => payload["destination"],
-      "template" => %{"id" => template_uuid, "params" => params},
+      "template" => Jason.encode!(%{"id" => template_uuid, "params" => params}),
       "src.name" => payload["src.name"]
     }
     ApiClient.post(
