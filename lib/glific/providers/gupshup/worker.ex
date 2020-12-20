@@ -20,7 +20,7 @@ defmodule Glific.Providers.Gupshup.Worker do
   """
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:snooze, pos_integer()}
-  def perform(%Oban.Job{args: %{"message" => message, "payload" => payload}}) do
+  def perform(%Oban.Job{args: %{"message" => message, "payload" => payload, "attrs" => attrs}}) do
     organization = Partners.organization(message["organization_id"])
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
     # Refactring because of credo warning
@@ -34,7 +34,7 @@ defmodule Glific.Providers.Gupshup.Worker do
         with credential <- organization.services["bsp"],
              false <- is_nil(credential),
              false <- is_simulater(payload["destination"], message) do
-          case process_to_gupshup(credential, payload, message) do
+          case process_to_gupshup(credential, payload, message, attrs) do
             # discard the message
             {:ok, _} -> :ok
             # return the error tuple
@@ -71,7 +71,24 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   defp is_simulater(_, _), do: false
 
-  defp process_to_gupshup(credential, payload, message) do
+  @spec process_to_gupshup(Glific.Partners.Credential.t(), map(), Glific.Messages.Message.t(), map()) ::
+          {:ok, Glific.Messages.Message.t()} | {:error, String.t()}
+  defp process_to_gupshup(credential, payload, message, %{"is_hsm" => _is_hsm, "params" => params, "template_uuid" => template_uuid} = _attrs) do
+    template_payload = %{
+      "source" => payload["source"],
+      "destination" => payload["destination"],
+      "template" => Jason.encode!(%{"id" => template_uuid, "params" => params}),
+      "src.name" => payload["src.name"]
+    }
+    ApiClient.post(
+      credential.keys["api_end_point"] <> "/template/msg",
+      template_payload,
+      headers: [{"apikey", credential.secrets["api_key"]}]
+    )
+    |> handle_response(message)
+  end
+
+  defp process_to_gupshup(credential, payload, message, _attrs) do
     ApiClient.post(
       credential.keys["api_end_point"] <> "/msg",
       payload,

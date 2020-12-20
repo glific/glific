@@ -213,9 +213,21 @@ defmodule Glific.Messages do
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
+    check_for_hsm_message(attrs, contact)
+  end
 
-    Contacts.can_send_message_to?(contact, attrs[:is_hsm])
-    |> create_and_send_message(attrs)
+  @doc false
+  @spec check_for_hsm_message(map(), Contact.t()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp check_for_hsm_message(attrs, contact) do
+    with true <- Map.has_key?(attrs, :params),
+         true <- Map.has_key?(attrs, :template_id),
+         true <- Map.get(attrs, :is_hsm) do
+      create_and_send_hsm_message(attrs.template_id, attrs.receiver_id, attrs.params)
+    else
+      _ ->
+        Contacts.can_send_message_to?(contact, attrs[:is_hsm])
+        |> create_and_send_message(attrs)
+    end
   end
 
   @doc false
@@ -235,7 +247,7 @@ defmodule Glific.Messages do
       |> update_message_attrs()
       |> create_message()
 
-    Communications.Message.send_message(message)
+    Communications.Message.send_message(message, attrs)
   end
 
   @doc false
@@ -329,21 +341,25 @@ defmodule Glific.Messages do
   @spec create_and_send_hsm_message(integer, integer, [String.t()]) ::
           {:ok, Message.t()} | {:error, String.t()}
   def create_and_send_hsm_message(template_id, receiver_id, parameters) do
+    contact = Glific.Contacts.get_contact!(receiver_id)
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 
     if session_template.number_parameters == length(parameters) do
       updated_template = parse_template_vars(session_template, parameters)
-
+    # Passing uuid to save db call when sending template via provider
       message_params = %{
         body: updated_template.body,
         type: updated_template.type,
         is_hsm: updated_template.is_hsm,
         organization_id: session_template.organization_id,
         sender_id: Partners.organization_contact_id(session_template.organization_id),
-        receiver_id: receiver_id
+        receiver_id: receiver_id,
+        template_uuid: session_template.uuid,
+        template_id: template_id,
+        params: parameters
       }
-
-      create_and_send_message(message_params)
+      Contacts.can_send_message_to?(contact, true)
+      |> create_and_send_message(message_params)
     else
       {:error, "You need to provide correct number of parameters for hsm template"}
     end
