@@ -71,9 +71,9 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   defp is_simulater(_, _), do: false
 
-  @spec process_to_gupshup(Credential.t(), map(), Glific.Messages.Message.t(), map()) ::
+  @spec process_to_gupshup(Glific.Partners.Credential.t(), map(), Glific.Messages.Message.t(), map()) ::
           {:ok, Glific.Messages.Message.t()} | {:error, String.t()}
-  defp process_to_gupshup(credential, payload, message, %{"is_hsm" => is_hsm, "params" => params, "template_uuid" => template_uuid} = _attrs) do
+  defp process_to_gupshup(credential, payload, message, %{"is_hsm" => _is_hsm, "params" => params, "template_uuid" => template_uuid} = _attrs) do
     template_payload = %{
       "source" => payload["source"],
       "destination" => payload["destination"],
