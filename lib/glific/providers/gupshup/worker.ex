@@ -21,7 +21,6 @@ defmodule Glific.Providers.Gupshup.Worker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"message" => message, "payload" => payload, "attrs" => attrs}}) do
-    {:ok, attrs}= Jason.decode(attrs)
     organization = Partners.organization(message["organization_id"])
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
     # Refactring because of credo warning

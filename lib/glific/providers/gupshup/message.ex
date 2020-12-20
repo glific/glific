@@ -166,10 +166,19 @@ defmodule Glific.Providers.Gupshup.Message do
       |> Map.put(:destination, message.receiver.phone)
       |> Map.put("message", Jason.encode!(payload))
 
-    create_oban_job(message, request_body, Jason.encode!(attrs))
+    create_oban_job(message, request_body, attrs)
+  end
+
+  @doc """
+  Convert attrs  to map
+  """
+  @spec to_minimal_map(map()) :: map()
+  defp to_minimal_map(attrs) do
+    Map.take(attrs, [:params, :template_id, :template_uuid, :is_hsm])
   end
 
   defp create_oban_job(message, request_body, attrs) do
+    attrs = to_minimal_map(attrs)
     worker_module = Communications.provider_worker(message.organization_id)
     worker_args = %{message: Message.to_minimal_map(message), payload: request_body, attrs: attrs}
 
