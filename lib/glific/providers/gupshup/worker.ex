@@ -18,7 +18,7 @@ defmodule Glific.Providers.Gupshup.Worker do
   @doc """
   Standard perform method to use Oban worker
   """
-  @impl Oban.Worker
+  @impl Oban.Workerp
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"message" => message, "payload" => payload, "attrs" => attrs}}) do
     organization = Partners.organization(message["organization_id"])
@@ -71,7 +71,7 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   defp is_simulater(_, _), do: false
 
-  defp process_to_gupshup(credential, payload, message, %{"params" => params, "template_uuid" => template_uuid} = attrs) do
+  defp process_to_gupshup(credential, payload, message, %{"params" => params, "template_uuid" => template_uuid} = _attrs) do
     template_payload = %{
       "source" => payload["source"],
       "destination" => payload["destination"],
