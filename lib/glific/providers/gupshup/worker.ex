@@ -21,6 +21,7 @@ defmodule Glific.Providers.Gupshup.Worker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"message" => message, "payload" => payload, "attrs" => attrs}}) do
+    {:ok, attrs}= Jason.decode(attrs)
     organization = Partners.organization(message["organization_id"])
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
     # Refactring because of credo warning
@@ -71,11 +72,11 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   defp is_simulater(_, _), do: false
 
-  defp process_to_gupshup(credential, payload, message, %{"is_hsm" => true} = attrs) do
+  defp process_to_gupshup(credential, payload, message, %{"params" => params, "template_uuid" => template_uuid} = attrs) do
     template_payload = %{
       "source" => payload["source"],
       "destination" => payload["destination"],
-      "template" => %{"id" => attrs["template_uuid"], "params" => attrs["params"]},
+      "template" => %{"id" => template_uuid, "params" => params},
       "src.name" => payload["src.name"]
     }
     ApiClient.post(

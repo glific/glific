@@ -166,7 +166,7 @@ defmodule Glific.Providers.Gupshup.Message do
       |> Map.put(:destination, message.receiver.phone)
       |> Map.put("message", Jason.encode!(payload))
 
-    create_oban_job(message, request_body, attrs)
+    create_oban_job(message, request_body, Jason.encode!(attrs))
   end
 
   defp create_oban_job(message, request_body, attrs) do

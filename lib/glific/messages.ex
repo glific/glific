@@ -213,12 +213,15 @@ defmodule Glific.Messages do
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
+    check_for_hsm_message(attrs, contact)
+  end
 
-    attrs[:is_hsm]
-    |> case do
-      true ->
-        create_and_send_hsm_message(attrs.template_id, attrs.receiver_id, attrs.params)
-
+  def check_for_hsm_message(attrs, contact) do
+    with true <- Map.has_key?(attrs, :params),
+         true <- Map.has_key?(attrs, :template_id),
+         true <- Map.get(attrs, :is_hsm) do
+      create_and_send_hsm_message(attrs.template_id, attrs.receiver_id, attrs.params)
+    else
       _ ->
         Contacts.can_send_message_to?(contact, attrs[:is_hsm])
         |> create_and_send_message(attrs)
