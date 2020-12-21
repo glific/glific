@@ -200,6 +200,42 @@ Type | Description
 | ---- | -----------
 <a href="#int">Int</a> | Count of filtered session templates
 
+## Get List of Whatsapp HSM categories
+```graphql
+query {
+  whatsappHsmCategories
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+
+{
+  "data": {
+    "whatsappHsmCategories": [
+      "ACCOUNT_UPDATE",
+      "PAYMENT_UPDATE",
+      "PERSONAL_FINANCE_UPDATE",
+      "SHIPPING_UPDATE",
+      "RESERVATION_UPDATE",
+      "ISSUE_RESOLUTION",
+      "APPOINTMENT_UPDATE",
+      "TRANSPORTATION_UPDATE",
+      "TICKET_UPDATE",
+      "ALERT_UPDATE",
+      "AUTO_REPLY"
+    ]
+  }
+}
+```
+This returns list of whatsapp HSM categories
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+[<a href="#string">String</a>] | List of categories
+
 ## Create a Session Template
 
 ```graphql
@@ -454,8 +490,23 @@ Type | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>status</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>number_parameters</strong></td>
 <td valign="top"><a href="#int">Int</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>category</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>example</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>
@@ -629,6 +680,16 @@ Match the hsm template message
 </td>
 </tr>
 
+<tr>
+<td colspan="2" valign="top"><strong>status</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+
+Match the whatsapp status of hsm template message
+
+</td>
+</tr>
+
 </tbody>
 </table>
 
@@ -664,8 +725,13 @@ Match the hsm template message
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>number_parameters</strong></td>
-<td valign="top"><a href="#int">Int</a></td>
+<td colspan="2" valign="top"><strong>category</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>example</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>
