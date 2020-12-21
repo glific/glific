@@ -107,11 +107,31 @@ defmodule Glific.Templates do
   @spec create_session_template(map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_session_template(%{is_hsm: true} = attrs) do
-    submit_for_approval(attrs)
+    # validate HSM before calling the BSP's API
+    with :ok <- validate_hsm(attrs) do
+      submit_for_approval(attrs)
+    else
+      error ->
+        error
+    end
   end
 
   def create_session_template(attrs) do
     do_create_session_template(attrs)
+  end
+
+  @spec validate_hsm(map()) :: :ok | {:error, [String.t()]}
+  defp validate_hsm(%{shortcode: shortcode, category: _, example: _} = _attrs) do
+    if String.match?(shortcode, ~r/^[a-z0-9_]*$/) do
+      :ok
+    else
+      {:error, ["shortcode", "only '_' and alphanumeric characters are allowed"]}
+    end
+  end
+
+  defp validate_hsm(_) do
+    {:error,
+     ["HSM approval", "for HSM approval shortcode, category and example fields are required"]}
   end
 
   @spec do_create_session_template(map()) ::
@@ -123,7 +143,7 @@ defmodule Glific.Templates do
   end
 
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
-  defp submit_for_approval(%{shortcode: _, category: _, example: _} = attrs) do
+  defp submit_for_approval(attrs) do
     organization = Partners.organization(attrs.organization_id)
 
     bsp_creds = organization.services["bsp"]
@@ -156,11 +176,6 @@ defmodule Glific.Templates do
     end
   end
 
-  defp submit_for_approval(_) do
-    {:error,
-     ["HSM approval", "for HSM approval shortcode, category and example fields are required"]}
-  end
-
   @spec body(map(), Organization.t()) :: map()
   defp body(attrs, organization) do
     language =
@@ -173,7 +188,7 @@ defmodule Glific.Templates do
       languageCode: language.locale,
       content: attrs.body,
       category: attrs.category,
-      vertical: attrs.label,
+      vertical: attrs.shortcode,
       templateType: String.upcase(Atom.to_string(attrs.type)),
       example: attrs.example
     }
@@ -323,7 +338,9 @@ defmodule Glific.Templates do
       uuid: template["id"],
       body: template["data"],
       shortcode: template["elementName"],
-      label: template["vertical"],
+      label: template["elementName"],
+      category: template["category"],
+      example: template["example"],
       type: type,
       language_id: language_id,
       organization_id: organization.id,

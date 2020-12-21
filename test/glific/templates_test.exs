@@ -551,7 +551,7 @@ defmodule Glific.TemplatesTest do
           filter: %{organization_id: attrs.organization_id, is_hsm: true}
         })
 
-      # shouldn't update BSP hasn't updated it since last update in the db
+      # shouldn't update if BSP hasn't updated it since last update in the db
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
