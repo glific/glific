@@ -35,12 +35,12 @@ defmodule Glific.Clients.Stir do
 
     if input == "n" do
       case k do
-        "a1" -> "1. More reflective discussion on the teaching strategy \n"
-        "a2" -> "2. Space for practicing a classroom strategy \n"
-        "a3" -> "3. Teachers get improvement focused feedback \n"
-        "a4" -> "4. Teachers participation \n"
-        "a5" -> "5. Developing concrete action plans \n"
-        "a6" -> "6. Teachers asking question \n"
+        "a1" -> " *1*. More reflective discussion on the teaching strategy \n"
+        "a2" -> " *2*. Space for practicing a classroom strategy \n"
+        "a3" -> " *3*. Teachers get improvement focused feedback \n"
+        "a4" -> " *4*. Teachers participation \n"
+        "a5" -> " *5*. Developing concrete action plans \n"
+        "a6" -> " *6*. Teachers asking question \n"
         _ -> ""
       end
     else

@@ -33,6 +33,7 @@ defmodule Glific.Flows.ContactAction do
     body =
       text
       |> MessageVarParser.parse(message_vars)
+      |> MessageVarParser.parse_results(context.results)
 
     organization_id = context.organization_id
     {type, media_id} = get_media_from_attachment(attachments, text, organization_id)

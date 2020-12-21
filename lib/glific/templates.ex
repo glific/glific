@@ -4,7 +4,12 @@ defmodule Glific.Templates do
   """
   import Ecto.Query, warn: false
 
+  use Tesla
+  plug Tesla.Middleware.FormUrlencoded
+
   alias Glific.{
+    Partners,
+    Partners.Organization,
     Repo,
     Tags.Tag,
     Tags.TemplateTag,
@@ -39,6 +44,9 @@ defmodule Glific.Templates do
     Enum.reduce(filter, query, fn
       {:is_hsm, is_hsm}, query ->
         from q in query, where: q.is_hsm == ^is_hsm
+
+      {:is_active, is_active}, query ->
+        from q in query, where: q.is_active == ^is_active
 
       {:term, term}, query ->
         query
@@ -98,10 +106,93 @@ defmodule Glific.Templates do
   """
   @spec create_session_template(map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  def create_session_template(attrs \\ %{}) do
+  def create_session_template(%{is_hsm: true} = attrs) do
+    # validate HSM before calling the BSP's API
+    validation_result = validate_hsm(attrs)
+
+    if validation_result == :ok do
+      submit_for_approval(attrs)
+    else
+      validation_result
+    end
+  end
+
+  def create_session_template(attrs) do
+    do_create_session_template(attrs)
+  end
+
+  @spec validate_hsm(map()) :: :ok | {:error, [String.t()]}
+  defp validate_hsm(%{shortcode: shortcode, category: _, example: _} = _attrs) do
+    if String.match?(shortcode, ~r/^[a-z0-9_]*$/) do
+      :ok
+    else
+      {:error, ["shortcode", "only '_' and alphanumeric characters are allowed"]}
+    end
+  end
+
+  defp validate_hsm(_) do
+    {:error,
+     ["HSM approval", "for HSM approval shortcode, category and example fields are required"]}
+  end
+
+  @spec do_create_session_template(map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  defp do_create_session_template(attrs) do
     %SessionTemplate{}
     |> SessionTemplate.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
+  defp submit_for_approval(attrs) do
+    organization = Partners.organization(attrs.organization_id)
+
+    bsp_creds = organization.services["bsp"]
+    api_key = bsp_creds.secrets["api_key"]
+    url = bsp_creds.keys["api_end_point"] <> "/template/add/" <> bsp_creds.secrets["app_name"]
+
+    with {:ok, response} <- post(url, body(attrs, organization), headers: [{"apikey", api_key}]),
+         {200, _response} <- {response.status, response} do
+      {:ok, response_data} = Jason.decode(response.body)
+
+      attrs
+      |> Map.merge(%{
+        number_parameter: length(Regex.split(~r/{{.}}/, attrs.body)) - 1,
+        uuid: response_data["template"]["id"],
+        status: response_data["template"]["status"],
+        is_active:
+          if(response_data["template"]["status"] == "APPROVED",
+            do: true,
+            else: false
+          )
+      })
+      |> do_create_session_template()
+    else
+      {status, response} ->
+        # structure of response body can be different for different errors
+        {:error, ["BSP response status: #{to_string(status)}", response.body]}
+
+      _ ->
+        {:error, ["BSP", "couldn't submit for approval"]}
+    end
+  end
+
+  @spec body(map(), Organization.t()) :: map()
+  defp body(attrs, organization) do
+    language =
+      Enum.find(organization.languages, fn language ->
+        to_string(language.id) == to_string(attrs.language_id)
+      end)
+
+    %{
+      elementName: attrs.shortcode,
+      languageCode: language.locale,
+      content: attrs.body,
+      category: attrs.category,
+      vertical: attrs.shortcode,
+      templateType: String.upcase(Atom.to_string(attrs.type)),
+      example: attrs.example
+    }
   end
 
   @doc """
@@ -120,7 +211,7 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def update_session_template(%SessionTemplate{} = session_template, attrs) do
     session_template
-    |> SessionTemplate.changeset(attrs)
+    |> SessionTemplate.update_changeset(attrs)
     |> Repo.update()
   end
 
@@ -172,5 +263,114 @@ defmodule Glific.Templates do
       input
     )
     |> create_session_template()
+  end
+
+  @doc """
+  get and update list of hsm of an organization
+  """
+  @spec update_hsms(non_neg_integer()) :: :ok | {:error, String.t()}
+  def update_hsms(organization_id) do
+    organization = Partners.organization(organization_id)
+
+    bsp_creds = organization.services["bsp"]
+    api_key = bsp_creds.secrets["api_key"]
+    url = bsp_creds.keys["api_end_point"] <> "/template/list/" <> bsp_creds.secrets["app_name"]
+
+    with {:ok, response} <-
+           Tesla.get(url, headers: [{"apikey", api_key}]),
+         {:ok, response_data} <- Jason.decode(response.body),
+         false <- is_nil(response_data["templates"]) do
+      do_update_hsms(response_data["templates"], organization)
+
+      :ok
+    else
+      _ ->
+        {:error, ["BSP", "couldn't connect"]}
+    end
+  end
+
+  @spec do_update_hsms(map(), Organization.t()) :: :ok
+  defp do_update_hsms(templates, organization) do
+    organization_languages =
+      Enum.map(organization.languages, fn language -> {language.locale, language.id} end)
+      |> Map.new()
+
+    db_templates =
+      list_session_templates(%{filter: %{is_hsm: true}})
+      |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
+
+    Enum.each(templates, fn template ->
+      cond do
+        !Map.has_key?(db_templates, template["id"]) ->
+          insert_hsm(template, organization, organization_languages)
+
+        # this check is required,
+        # as is_active field can be updated by graphql API,
+        # and should not be reverted back
+        template["modifiedOn"] >
+            DateTime.to_unix(db_templates[template["id"]].updated_at, :millisecond) ->
+          update_hsm(template, db_templates)
+
+        true ->
+          true
+      end
+    end)
+  end
+
+  @spec insert_hsm(map(), Organization.t(), map()) :: {:ok, SessionTemplate.t()}
+  defp insert_hsm(template, organization, organization_languages) do
+    number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
+
+    type =
+      template["templateType"]
+      |> String.downcase()
+      |> String.to_existing_atom()
+
+    # setting default language id if languageCode is not known
+    language_id =
+      organization_languages[template["languageCode"]] || organization.default_language_id
+
+    is_active =
+      if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
+        do: true,
+        else: false
+
+    attrs = %{
+      uuid: template["id"],
+      body: template["data"],
+      shortcode: template["elementName"],
+      label: template["elementName"],
+      category: template["category"],
+      example: template["example"],
+      type: type,
+      language_id: language_id,
+      organization_id: organization.id,
+      is_hsm: true,
+      status: template["status"],
+      is_active: is_active,
+      number_parameters: number_of_parameter
+    }
+
+    {:ok, _} =
+      %SessionTemplate{}
+      |> SessionTemplate.changeset(attrs)
+      |> Repo.insert()
+  end
+
+  @spec update_hsm(map(), map()) :: {:ok, SessionTemplate.t()}
+  defp update_hsm(template, db_templates) do
+    update_attrs = %{
+      status: template["status"],
+      is_active:
+        if(template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
+          do: true,
+          else: false
+        )
+    }
+
+    {:ok, _} =
+      db_templates[template["id"]]
+      |> SessionTemplate.changeset(update_attrs)
+      |> Repo.update()
   end
 end
