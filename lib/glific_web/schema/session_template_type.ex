@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias Glific.Repo
+  alias Glific.Templates.SessionTemplate
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -22,7 +23,10 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :type, :message_type_enum
     field :shortcode, :string
     field :is_hsm, :boolean
+    field :status, :string
     field :number_parameters, :integer
+    field :category, :string
+    field :example, :string
     field :is_reserved, :boolean
     field :is_active, :boolean
     field :is_source, :boolean
@@ -77,6 +81,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     @desc "Match a language id"
     field :language_id, :integer
 
+    @desc "Match status of hsm"
+    field :status, :string
+
     @desc "Match the active flag"
     field :is_active, :boolean
 
@@ -93,7 +100,8 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :type, :message_type_enum
     field :shortcode, :string
     field :is_hsm, :boolean
-    field :number_parameters, :integer
+    field :category, :string
+    field :example, :string
     field :is_active, :boolean
     field :is_source, :boolean
     field :message_media_id, :id
@@ -108,6 +116,14 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
   end
 
   object :session_template_queries do
+    field :whatsapp_hsm_categories, list_of(:string) do
+      middleware(Authorize, :manager)
+
+      resolve(fn _, _, _ ->
+        {:ok, SessionTemplate.list_whatsapp_hsm_categories()}
+      end)
+    end
+
     @desc "get the details of one session_template"
     field :session_template, :session_template_result do
       arg(:id, non_null(:id))
