@@ -72,6 +72,8 @@ defmodule Glific.Processor.ConsumerFlow do
   @final_phrase "published"
 
   @spec is_beta_keyword?(map(), String.t()) :: boolean()
+  defp is_beta_keyword?(state, nil), do: false
+
   defp is_beta_keyword?(state, body) do
     if String.starts_with?(body, @beta_phrase) and
          Map.has_key?(state.flow_keywords, String.replace_leading(body, @beta_phrase, "")),
