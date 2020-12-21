@@ -96,14 +96,14 @@ defmodule Glific.Flows.Webhook do
       results: context.results
     }
 
-    contact_fields = %{"contact" => Contacts.get_contact_field_map(context.contact_id)}
+    fields = %{"contact" => Contacts.get_contact_field_map(context.contact_id), "results" => context}
 
     {:ok, default_contact} = Jason.encode(default_payload.contact)
     {:ok, default_results} = Jason.encode(default_payload.results)
 
     action_body =
       action_body
-      |> MessageVarParser.parse(contact_fields)
+      |> MessageVarParser.parse(fields)
       |> MessageVarParser.parse_results(context.results)
       |> String.replace("\"@contact\"", default_contact)
       |> String.replace("\"@results\"", default_results)
