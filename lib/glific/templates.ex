@@ -136,6 +136,7 @@ defmodule Glific.Templates do
 
       attrs
       |> Map.merge(%{
+        number_parameter: length(Regex.split(~r/{{.}}/, template["data"])) - 1,
         uuid: response_data["template"]["id"],
         status: response_data["template"]["status"],
         is_active:

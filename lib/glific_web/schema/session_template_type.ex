@@ -100,7 +100,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :type, :message_type_enum
     field :shortcode, :string
     field :is_hsm, :boolean
-    field :number_parameters, :integer
     field :category, :string
     field :example, :string
     field :is_active, :boolean
