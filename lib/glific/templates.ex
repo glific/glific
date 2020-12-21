@@ -108,11 +108,11 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_session_template(%{is_hsm: true} = attrs) do
     # validate HSM before calling the BSP's API
-    with :ok <- validate_hsm(attrs) do
+    validation_result = validate_hsm(attrs)
+    if validation_result == :ok do
       submit_for_approval(attrs)
     else
-      error ->
-        error
+      validation_result
     end
   end
 

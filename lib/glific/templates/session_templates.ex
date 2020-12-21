@@ -148,7 +148,7 @@ defmodule Glific.Templates.SessionTemplate do
   List of available categories provided by whatsapp
   """
   @spec list_whatsapp_hsm_categories() :: [String.t()]
-  def list_whatsapp_hsm_categories() do
+  def list_whatsapp_hsm_categories do
     [
       "ACCOUNT_UPDATE",
       "PAYMENT_UPDATE",
