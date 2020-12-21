@@ -241,7 +241,7 @@ defmodule Glific.TemplatesTest do
 
     test "create_session_template/1 for HSM with incomplete data should return error", attrs do
       # shortcode, category and example are required fields
-      attrs_2 = %{
+      attrs = %{
         body: "Your train ticket no. {{1}}",
         label: "New Label 2",
         language_id: language_fixture().id,
@@ -256,7 +256,23 @@ defmodule Glific.TemplatesTest do
               [
                 "HSM approval",
                 "for HSM approval shortcode, category and example fields are required"
-              ]} = Templates.create_session_template(attrs_2)
+              ]} = Templates.create_session_template(attrs)
+
+      # wrong shortcode
+      attrs_2 = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label 2",
+        language_id: language_fixture().id,
+        type: :text,
+        is_hsm: true,
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        shortcode: "Wrong Shortcode"
+      }
+
+      assert {:error, ["shortcode", "only '_' and alphanumeric characters are allowed"]} =
+               Templates.create_session_template(attrs_2)
     end
 
     test "create_session_template/1 for HSM data should submit it for approval", attrs do

@@ -109,6 +109,7 @@ defmodule Glific.Templates do
   def create_session_template(%{is_hsm: true} = attrs) do
     # validate HSM before calling the BSP's API
     validation_result = validate_hsm(attrs)
+
     if validation_result == :ok do
       submit_for_approval(attrs)
     else
