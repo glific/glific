@@ -450,6 +450,7 @@ defmodule Glific.Fixtures do
     user
   end
 
+  @doc false
   @spec otp_hsm_fixture() :: Templates.SessionTemplate.t()
   def otp_hsm_fixture do
     Tesla.Mock.mock(fn
