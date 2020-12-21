@@ -13,6 +13,7 @@ defmodule Glific.Partners do
   alias Glific.{
     Bigquery,
     Caches,
+    Contacts,
     Flags,
     Partners.Credential,
     Partners.Organization,
@@ -576,7 +577,7 @@ defmodule Glific.Partners do
 
         phone = user["countryCode"] <> user["phoneCode"]
 
-        Glific.Contacts.upsert(%{
+        Contacts.upsert(%{
           phone: phone,
           last_message_at: last_message_at,
           optin_time: optin_time |> DateTime.truncate(:second),

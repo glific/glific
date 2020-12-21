@@ -2,14 +2,7 @@
   ignore_modules: [
     Glific.Media,
     Glific.Media.Type,
-    Glific.Processor.ConsumerAutomation,
-    Glific.Processor.ConsumerHelp,
-    Glific.Processor.ConsumerLanguage,
-    Glific.Processor.ConsumerNewContact,
-    Glific.Processor.ConsumerNumeric,
-    Glific.Processor.ConsumerOptout,
-    Glific.Processor.ConsumerTagger,
-    Glific.Processor.Producer
+    GlificWeb.Plugs.AppsignalAbsinthePlug
   ],
   ignore_paths: [
     ~r(lib/glific_web/views/.*),

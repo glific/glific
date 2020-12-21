@@ -26,6 +26,11 @@ defmodule Glific.Flows.MessageVarParser do
     language["label"]
   end
 
+  # since this is a list we need to convert that into a string.
+  defp bound("@contact.in_groups", binding) do
+    "#{inspect(get_in(binding, ["contact", "in_groups"]))}"
+  end
+
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
     substitution =
       get_in(binding, String.split(var, "."))
