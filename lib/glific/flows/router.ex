@@ -140,6 +140,7 @@ defmodule Glific.Flows.Router do
         {msg, rest}
       end
 
+    body = if is_nil(msg.media_id), do: msg.body, else: msg.media.url
     context = FlowContext.update_recent(context, msg.body, :recent_inbound)
 
     category_uuid = find_category(router, context, msg)
@@ -151,7 +152,7 @@ defmodule Glific.Flows.Router do
       if is_nil(router.result_name),
         # if there is a result name, store it in the context table along with the category name first
         do: context,
-        else: FlowContext.update_results(context, router.result_name, msg.body, category.name)
+        else: FlowContext.update_results(context, router.result_name, body, category.name)
 
     Category.execute(category, context, rest)
   end

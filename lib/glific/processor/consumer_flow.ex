@@ -137,7 +137,9 @@ defmodule Glific.Processor.ConsumerFlow do
         message.organization_id,
         message.body,
         type: message.type,
-        id: message.id
+        id: message.id,
+        media: message.media,
+        media_id: message.media_id
       )
     )
 
@@ -149,7 +151,7 @@ defmodule Glific.Processor.ConsumerFlow do
   # they opted in again and skip the flow
   @spec should_skip_flow?(Message.t()) :: boolean()
   defp should_skip_flow?(message) do
-    message = Glific.Repo.preload(message, [:tags])
+    message = Glific.Repo.preload(message, [:tags, :media])
 
     is_new_contact =
       message.tags
