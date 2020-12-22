@@ -690,9 +690,6 @@ defmodule Glific.TemplatesTest do
 
     test "update_hsms/1 should update the hsm as approved if no other translation is approved yet",
          attrs do
-      {:ok, organization} = Repo.fetch(Partners.Organization, attrs.organization_id)
-      Partners.update_organization(organization, %{active_language_ids: [1, 2]})
-
       otp_hsm_1 = otp_hsm_fixture(1, "PENDING")
       _otp_hsm_2 = otp_hsm_fixture(2, "PENDING")
 
@@ -727,9 +724,6 @@ defmodule Glific.TemplatesTest do
     end
 
     test "update_hsms/1 should update the translation of already approved HSM", attrs do
-      {:ok, organization} = Repo.fetch(Partners.Organization, attrs.organization_id)
-      Partners.update_organization(organization, %{active_language_ids: [1, 2]})
-
       otp_hsm_1 = otp_hsm_fixture(1, "PENDING")
       otp_hsm_2 = otp_hsm_fixture(2, "APPROVED")
 
@@ -772,10 +766,7 @@ defmodule Glific.TemplatesTest do
     end
 
     test "update_hsms/1 should update multiple translations of already approved HSM", attrs do
-      {:ok, organization} = Repo.fetch(Partners.Organization, attrs.organization_id)
-
       [l1, l2, l3 | _] = Glific.Settings.list_languages()
-      Partners.update_organization(organization, %{active_language_ids: [l1.id, l2.id, l3.id]})
 
       otp_hsm_1 = otp_hsm_fixture(l1.id, "APPROVED")
       otp_hsm_2 = otp_hsm_fixture(l2.id, "PENDING")

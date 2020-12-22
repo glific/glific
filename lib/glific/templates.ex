@@ -11,6 +11,7 @@ defmodule Glific.Templates do
     Partners,
     Partners.Organization,
     Repo,
+    Settings,
     Tags.Tag,
     Tags.TemplateTag,
     Templates.SessionTemplate
@@ -151,7 +152,7 @@ defmodule Glific.Templates do
     api_key = bsp_creds.secrets["api_key"]
     url = bsp_creds.keys["api_end_point"] <> "/template/add/" <> bsp_creds.secrets["app_name"]
 
-    with {:ok, response} <- post(url, body(attrs, organization), headers: [{"apikey", api_key}]),
+    with {:ok, response} <- post(url, body(attrs), headers: [{"apikey", api_key}]),
          {200, _response} <- {response.status, response} do
       {:ok, response_data} = Jason.decode(response.body)
 
@@ -177,10 +178,10 @@ defmodule Glific.Templates do
     end
   end
 
-  @spec body(map(), Organization.t()) :: map()
-  defp body(attrs, organization) do
+  @spec body(map()) :: map()
+  defp body(attrs) do
     language =
-      Enum.find(organization.languages, fn language ->
+      Enum.find(Settings.list_languages(), fn language ->
         to_string(language.id) == to_string(attrs.language_id)
       end)
 
@@ -292,7 +293,8 @@ defmodule Glific.Templates do
   @spec do_update_hsms(map(), Organization.t()) :: :ok
   defp do_update_hsms(templates, organization) do
     organization_languages =
-      Enum.map(organization.languages, fn language -> {language.locale, language.id} end)
+      Settings.list_languages()
+      |> Enum.map(fn language -> {language.locale, language.id} end)
       |> Map.new()
 
     db_templates =
