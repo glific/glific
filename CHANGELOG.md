@@ -4,9 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.8.6] - 2020-12-22
+### Added
+- Stir usecase, computing score based on answers of survey
+- Stir usecase, returning list of wrongly answered
+- Added support for message variable parser
+- Added support for fetching hsm templates from gupshup periodically
 
-## [0.8.5] - 2020-12-22
+### Fixed
+- fixed message variable parsing in webhook, route and contact field
+- Using dot syntax in webhook results
+
+## [0.8.5] - 2020-12-17
 ### Added
 - Support for retrieving HSM messages from gupshup
 - Switched to new API to send HSM messages
