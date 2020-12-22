@@ -770,5 +770,60 @@ defmodule Glific.TemplatesTest do
       # should delete old entry
       assert {:error, _} = Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
     end
+
+    test "update_hsms/1 should update multiple translations of already approved HSM", attrs do
+      {:ok, organization} = Repo.fetch(Partners.Organization, attrs.organization_id)
+
+      [l1, l2, l3 | _] = Glific.Settings.list_languages()
+      Partners.update_organization(organization, %{active_language_ids: [l1.id, l2.id, l3.id]})
+
+      otp_hsm_1 = otp_hsm_fixture(l1.id, "APPROVED")
+      otp_hsm_2 = otp_hsm_fixture(l2.id, "PENDING")
+      otp_hsm_3 = otp_hsm_fixture(l3.id, "PENDING")
+
+      # should update tranlations of already approved HSM
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "id" => otp_hsm_2.uuid,
+                    "elementName" => otp_hsm_2.shortcode,
+                    "data" => otp_hsm_2.body,
+                    "templateType" => "TEXT",
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(otp_hsm_2.updated_at, hours: 1), :millisecond),
+                    "status" => "APPROVED",
+                    "meta" => Jason.encode!(%{example: otp_hsm_2.example}),
+                    "languageCode" => l2.locale
+                  },
+                  %{
+                    "id" => otp_hsm_3.uuid,
+                    "elementName" => otp_hsm_3.shortcode,
+                    "data" => otp_hsm_3.body,
+                    "templateType" => "TEXT",
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(otp_hsm_3.updated_at, hours: 1), :millisecond),
+                    "status" => "APPROVED",
+                    "meta" => Jason.encode!(%{example: otp_hsm_3.example}),
+                    "languageCode" => l3.locale
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
+
+      assert hsm.translations["#{otp_hsm_2.language_id}"] != nil
+      assert hsm.translations["#{otp_hsm_3.language_id}"] != nil
+    end
   end
 end

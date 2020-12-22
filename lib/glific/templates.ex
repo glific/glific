@@ -309,6 +309,11 @@ defmodule Glific.Templates do
         # and should not be reverted back
         template["modifiedOn"] >
             DateTime.to_unix(db_templates[template["id"]].updated_at, :millisecond) ->
+          # get updated db templates to handle multiple approved translations
+          db_templates =
+            list_session_templates(%{filter: %{is_hsm: true}})
+            |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
+
           update_hsm(template, db_templates, organization, organization_languages)
 
         true ->
