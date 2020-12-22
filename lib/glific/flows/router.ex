@@ -151,7 +151,7 @@ defmodule Glific.Flows.Router do
       if is_nil(router.result_name),
         # if there is a result name, store it in the context table along with the category name first
         do: context,
-        else: FlowContext.update_results(context, router.result_name, msg.body, category.name)
+        else: update_context_results(context, router.result_name, msg, category)
 
     Category.execute(category, context, rest)
   end
@@ -182,5 +182,28 @@ defmodule Glific.Flows.Router do
     if is_nil(c),
       do: router.default_category_uuid,
       else: c.category_uuid
+  end
+
+  @spec update_context_results(FlowContext.t(), String.t(), Message.t(), Category.t() ) :: FlowContext.t()
+  defp update_context_results(context, key, msg, category) do
+    cond do
+      is_nil(msg[:type])
+      -> FlowContext.update_results(context, key, msg.body, category.name)
+
+      msg[:type] in [:image, :video, :audio]
+        ->
+          json =
+            Map.take(msg.media, [:id, :source_url, :url, :caption])
+            |> Map.put(:category, "media")
+
+          FlowContext.update_results(context, key, json)
+
+      msg.type in [:location]
+        -> FlowContext.update_results(context, key, %{category: "location"} )
+
+      true
+        -> FlowContext.update_results(context, key, msg.body, category.name)
+    end
+
   end
 end
