@@ -182,16 +182,18 @@ defmodule Glific.Flows.FlowContext do
   def update_results(context, key, input, category),
     do: update_results(context, key, %{"input" => input, "category" => category})
 
-
   @doc """
   Update the contact results with each element of the json map
   """
+  @spec update_results(FlowContext.t(), String.t(), map() | String.t()) ::
+          FlowContext.t()
   def update_results(context, key, json) do
     results =
       if is_nil(context.results),
         do: %{},
-        else: context.results
-      |> Map.put(key, json)
+        else:
+          context.results
+          |> Map.put(key, json)
 
     {:ok, context} = update_flow_context(context, %{results: results})
 

@@ -105,11 +105,13 @@ defmodule Glific.Flows.Case do
       when type == "has_only_phrase" or type == "has_only_text",
       do: strip(c.arguments) == strip(msg)
 
-   def execute(%{type: type}, _context, msg)
-    when type == "has_location", do: msg.type == :location
+  def execute(%{type: type}, _context, msg)
+      when type == "has_location",
+      do: msg.type == :location
 
   def execute(%{type: type}, _context, msg)
-      when type == "has_media", do: msg.type in [:audio, :video, :image]
+      when type == "has_media",
+      do: msg.type in [:audio, :video, :image]
 
   def execute(%{type: type} = c, _context, msg)
       when type == "has_all_words",
