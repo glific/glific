@@ -243,6 +243,7 @@ defmodule Glific.Flows.Action do
          | messages
        ]}
     else
+      json = Map.merge(json, %{"category" => "webhook"})
       {
         :ok,
         FlowContext.update_results(context, action.result_name, json),

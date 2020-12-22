@@ -179,13 +179,20 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec update_results(FlowContext.t(), String.t(), String.t() | map(), String.t()) ::
           FlowContext.t()
-  def update_results(context, key, input, category) do
+  def update_results(context, key, input, category),
+    do: update_results(context, key, %{"input" => input, "category" => category})
+
+
+  @doc """
+  Update the contact results with each element of the json map
+  """
+  def update_results(context, key, json) do
     results =
       if is_nil(context.results),
         do: %{},
         else: context.results
+      |> Map.put(key, json)
 
-    results = Map.put(results, key, %{"input" => input, "category" => category})
     {:ok, context} = update_flow_context(context, %{results: results})
 
     {:ok, _flow_result} =
@@ -195,26 +202,10 @@ defmodule Glific.Flows.FlowContext do
         flow_id: context.flow_id,
         flow_version: context.flow.version,
         flow_uuid: context.flow_uuid,
-        organization_id: context.contact.organization_id
+        organization_id: context.organization_id
       })
 
     context
-  end
-
-  @doc """
-  Update the contact results with each element of the json map
-  """
-  @spec update_results(FlowContext.t(), String.t(), map()) :: FlowContext.t()
-  def update_results(context, key, json) do
-    json
-    |> Enum.reduce(
-      context,
-      fn {k, v}, context ->
-        update_results(context, key <> "." <> k, v, key)
-      end
-    )
-    # also add the entire json object in case folks want to access that
-    |> update_results(key, json, key)
   end
 
   @doc """
