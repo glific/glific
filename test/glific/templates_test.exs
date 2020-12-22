@@ -3,7 +3,6 @@ defmodule Glific.TemplatesTest do
 
   alias Glific.{
     Fixtures,
-    Partners,
     Settings,
     Templates,
     Templates.SessionTemplate
