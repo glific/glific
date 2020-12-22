@@ -83,5 +83,4 @@ defmodule Glific.Migrations do
   end
 end
 
-:application.get_key(:your_app, :modules)
 Glific.Migrations.execute()
