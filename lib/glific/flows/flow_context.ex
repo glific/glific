@@ -210,7 +210,7 @@ defmodule Glific.Flows.FlowContext do
     |> Enum.reduce(
       context,
       fn {k, v}, context ->
-        update_results(context, key <> "_" <> k, v, key)
+        update_results(context, key <> "." <> k, v, key)
       end
     )
     # also add the entire json object in case folks want to access that

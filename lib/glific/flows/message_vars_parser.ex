@@ -71,8 +71,9 @@ defmodule Glific.Flows.MessageVarParser do
     do: value
 
   @doc """
-  Interpolates the values from results into the message body. Might need to integrate
-  it with the substitution above
+  Interpolates the values from results into the message body.
+  Might need to integrate it with the substitution above.
+  It will just treat @results.variable to @results.variable.input
   """
   @spec parse_results(String.t(), map()) :: String.t()
   def parse_results(body, results) do

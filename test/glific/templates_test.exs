@@ -128,6 +128,13 @@ defmodule Glific.TemplatesTest do
         })
 
       assert session_template_list == [session_template1]
+
+      session_template_list =
+        Templates.list_session_templates(%{
+          filter: Map.merge(attrs, %{is_active: session_template1.is_active})
+        })
+
+      assert session_template1 in session_template_list
     end
 
     test "list_session_templates/1 with term filter on session_templates", attrs do
@@ -232,19 +239,127 @@ defmodule Glific.TemplatesTest do
                Templates.create_session_template(Map.merge(attrs, @invalid_attrs))
     end
 
-    test "create session template with media type and without media id returns error changeset",
-         attrs do
+    test "create_session_template/1 for HSM with incomplete data should return error", attrs do
+      # shortcode, category and example are required fields
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label 2",
+        language_id: language_fixture().id,
+        type: :text,
+        is_hsm: true,
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:error,
+              [
+                "HSM approval",
+                "for HSM approval shortcode, category and example fields are required"
+              ]} = Templates.create_session_template(attrs)
+
+      # wrong shortcode
+      attrs_2 = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label 2",
+        language_id: language_fixture().id,
+        type: :text,
+        is_hsm: true,
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        shortcode: "Wrong Shortcode"
+      }
+
+      assert {:error, ["shortcode", "only '_' and alphanumeric characters are allowed"]} =
+               Templates.create_session_template(attrs_2)
+    end
+
+    test "create_session_template/1 for HSM data should submit it for approval", attrs do
+      whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "category" => "ACCOUNT_UPDATE",
+                  "createdOn" => 1_595_904_220_495,
+                  "data" => "Your train ticket no. {{1}}",
+                  "elementName" => "ticket_update_status",
+                  "id" => whatspp_hsm_uuid,
+                  "languageCode" => "en_US",
+                  "languagePolicy" => "deterministic",
+                  "master" => true,
+                  "meta" => "{\"example\" =>\"Your train ticket no. [1234]\"}",
+                  "modifiedOn" => 1_595_904_220_495,
+                  "status" => "PENDING",
+                  "templateType" => "TEXT",
+                  "vertical" => "ACTION_BUTTON"
+                }
+              })
+          }
+      end)
+
       language = language_fixture()
 
-      attrs =
-        attrs
-        |> Map.merge(@valid_attrs)
-        |> Map.merge(%{language_id: language.id})
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
 
-      assert {:error, %Ecto.Changeset{}} =
-               attrs
-               |> Map.merge(%{type: :image})
-               |> Templates.create_session_template()
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.shortcode == "ticket_update_status"
+      assert session_template.is_hsm == true
+      assert session_template.status == "PENDING"
+      assert session_template.uuid == whatspp_hsm_uuid
+      assert session_template.language_id == language.id
+    end
+
+    test "create_session_template/1 for HSM data wrong data should return BSP status and error message",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 400,
+            body:
+              Jason.encode!(%{
+                "status" => "error",
+                "message" => "Template Not Supported On Gupshup Platform"
+              })
+          }
+      end)
+
+      # extra space in example would return error response
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language_fixture().id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]  ",
+        organization_id: attrs.organization_id
+      }
+
+      assert {:error,
+              [
+                "BSP response status: 400",
+                "{\"message\":\"Template Not Supported On Gupshup Platform\",\"status\":\"error\"}"
+              ]} = Templates.create_session_template(attrs)
     end
 
     test "update_session_template/2 with valid data updates the session_template", attrs do
@@ -269,6 +384,113 @@ defmodule Glific.TemplatesTest do
       assert session_template == Templates.get_session_template!(session_template.id)
     end
 
+    test "update_session_template/2 for HSM template should not update the Pending HSM",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "category" => "ACCOUNT_UPDATE",
+                  "createdOn" => 1_595_904_220_495,
+                  "data" => "Your train ticket no. {{1}}",
+                  "elementName" => "ticket_update_status",
+                  "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
+                  "languageCode" => "en_US",
+                  "languagePolicy" => "deterministic",
+                  "master" => true,
+                  "meta" => "{\"example\" =>\"Your train ticket no. [1234]\"}",
+                  "modifiedOn" => 1_595_904_220_495,
+                  "status" => "PENDING",
+                  "templateType" => "TEXT",
+                  "vertical" => "ACTION_BUTTON"
+                }
+              })
+          }
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, session_template} = Templates.create_session_template(attrs)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Templates.update_session_template(session_template, %{
+                 is_active: true,
+                 body: "updated body"
+               })
+
+      assert session_template == Templates.get_session_template!(session_template.id)
+    end
+
+    test "update_session_template/2 for HSM template should update only the editable fields",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "category" => "ACCOUNT_UPDATE",
+                  "createdOn" => 1_595_904_220_495,
+                  "data" => "Your train ticket no. {{1}}",
+                  "elementName" => "ticket_update_status",
+                  "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
+                  "languageCode" => "en_US",
+                  "languagePolicy" => "deterministic",
+                  "master" => true,
+                  "meta" => "{\"example\" =>\"Your train ticket no. [1234]\"}",
+                  "modifiedOn" => 1_595_904_220_495,
+                  "status" => "APPROVED",
+                  "templateType" => "TEXT",
+                  "vertical" => "ACTION_BUTTON"
+                }
+              })
+          }
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, session_template} = Templates.create_session_template(attrs)
+
+      assert {:ok, %SessionTemplate{} = updated_template} =
+               Templates.update_session_template(session_template, %{
+                 is_active: true,
+                 body: "updated body"
+               })
+
+      assert updated_template.is_active == true
+      assert updated_template.body == "Your train ticket no. {{1}}"
+    end
+
     test "delete_session_template/1 deletes the session_template", attrs do
       session_template = session_template_fixture(attrs)
       assert {:ok, %SessionTemplate{}} = Templates.delete_session_template(session_template)
@@ -285,6 +507,119 @@ defmodule Glific.TemplatesTest do
 
     test "ensure that creating session template with out language and/or org_id give an error" do
       assert {:error, %Ecto.Changeset{}} = Templates.create_session_template(@valid_attrs)
+    end
+
+    test "update_hsms/1 should insert newly received HSM", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "category" => "TICKET_UPDATE",
+                    "createdOn" => 1_595_904_220_466,
+                    "data" => "Your train ticket no. {{1}}",
+                    "elementName" => "ticket_update_status",
+                    "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
+                    "languageCode" => "en_US",
+                    "languagePolicy" => "deterministic",
+                    "master" => false,
+                    "meta" => "{\"example\" =>\"Your train ticket no. [1234]\"}",
+                    "modifiedOn" => 1_595_904_220_466,
+                    "status" => "SANDBOX_REQUESTED",
+                    "templateType" => "TEXT",
+                    "vertical" => "ACTION_BUTTON"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: "16e84186-97fa-454e-ac3b-8c9b94e53b4b"})
+    end
+
+    test "update_hsms/1 should return error in case of error response", attrs do
+      # in case of error from BSP API
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 400,
+            body:
+              Jason.encode!(%{
+                "status" => "error",
+                "message" => "error message"
+              })
+          }
+      end)
+
+      assert {:error, _message} = Templates.update_hsms(attrs.organization_id)
+    end
+
+    test "update_hsms/1 should update status of already existing HSM", attrs do
+      [hsm | _] =
+        Templates.list_session_templates(%{
+          filter: %{organization_id: attrs.organization_id, is_hsm: true}
+        })
+
+      # shouldn't update if BSP hasn't updated it since last update in the db
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "id" => hsm.uuid,
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
+                    "status" => "APPROVED"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = updated_hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
+
+      assert updated_hsm.status == hsm.status
+      assert updated_hsm.is_active == hsm.is_active
+
+      # should update the existing hsm if it is modified by BSP since last update in the db
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "id" => hsm.uuid,
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(hsm.updated_at, hours: 1), :millisecond),
+                    "status" => "APPROVED"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
+      assert hsm.status == "APPROVED"
+      assert hsm.is_active == true
     end
   end
 end

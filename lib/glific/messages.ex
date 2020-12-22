@@ -285,7 +285,7 @@ defmodule Glific.Messages do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
       Repo.fetch_by(SessionTemplate, %{
-        shortcode: "otp",
+        shortcode: "common_otp",
         is_hsm: true,
         organization_id: organization_id
       })
