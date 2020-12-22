@@ -83,4 +83,8 @@ defmodule Glific.Migrations do
   end
 end
 
-Glific.Migrations.execute()
+if Mix.env() in [:dev, :test] do
+  Glific.Migrations.execute()
+else
+  IO.inspect "Can't run the script in production"
+end
