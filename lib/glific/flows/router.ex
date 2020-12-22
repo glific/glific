@@ -192,9 +192,11 @@ defmodule Glific.Flows.Router do
 
       msg[:type] in [:image, :video, :audio]
         ->
+          media = msg.media
           json =
-            Map.take(msg.media, [:id, :source_url, :url, :caption])
+            Map.take(media, [:id, :source_url, :url, :caption])
             |> Map.put(:category, "media")
+            |> Map.put(:input, media.url)
 
           FlowContext.update_results(context, key, json)
 
