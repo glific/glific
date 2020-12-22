@@ -329,8 +329,7 @@ defmodule Glific.Templates do
       |> String.to_existing_atom()
 
     # setting default language id if languageCode is not known
-    language_id =
-      languages[template["languageCode"]] || organization.default_language_id
+    language_id = languages[template["languageCode"]] || organization.default_language_id
 
     is_active =
       if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
@@ -377,13 +376,14 @@ defmodule Glific.Templates do
 
     db_template_translations =
       db_templates
-      |> Enum.filter(fn {_key, db_template} ->
+      |> Map.values()
+      |> Enum.filter(fn db_template ->
         db_template.shortcode == template["elementName"]
       end)
 
     approved_db_templates =
       db_template_translations
-      |> Enum.filter(fn {_key, db_template} -> db_template.status == "APPROVED" end)
+      |> Enum.filter(fn db_template -> db_template.status == "APPROVED" end)
 
     with true <- template["status"] == "APPROVED",
          true <- length(db_template_translations) > 1,
@@ -403,6 +403,7 @@ defmodule Glific.Templates do
     end
   end
 
+  @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()}
   defp do_update_hsm(template, db_templates) do
     update_attrs = %{
       status: template["status"],
@@ -419,10 +420,12 @@ defmodule Glific.Templates do
       |> Repo.update()
   end
 
+  @spec update_hsm_translation(map(), map(), SessionTemplate.t(), Organization.t(), map()) ::
+          {:ok, SessionTemplate.t()}
   defp update_hsm_translation(
          template,
          db_templates,
-         {_, approved_db_template},
+         approved_db_template,
          organization,
          languages
        ) do
@@ -434,8 +437,7 @@ defmodule Glific.Templates do
       |> String.to_existing_atom()
 
     # setting default language id if languageCode is not known
-    language_id =
-      languages[template["languageCode"]] || organization.default_language_id
+    language_id = languages[template["languageCode"]] || organization.default_language_id
 
     is_active =
       if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
