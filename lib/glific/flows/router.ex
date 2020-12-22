@@ -184,28 +184,28 @@ defmodule Glific.Flows.Router do
       else: c.category_uuid
   end
 
-  @spec update_context_results(FlowContext.t(), String.t(), Message.t(), Category.t() ) :: FlowContext.t()
+  @spec update_context_results(FlowContext.t(), String.t(), Message.t(), Category.t()) ::
+          FlowContext.t()
   defp update_context_results(context, key, msg, category) do
     cond do
-      is_nil(msg[:type])
-      -> FlowContext.update_results(context, key, msg.body, category.name)
+      is_nil(msg.media_id) ->
+        FlowContext.update_results(context, key, msg.body, category.name)
 
-      msg[:type] in [:image, :video, :audio]
-        ->
-          media = msg.media
-          json =
-            Map.take(media, [:id, :source_url, :url, :caption])
-            |> Map.put(:category, "media")
-            |> Map.put(:input, media.url)
+      msg.type in [:image, :video, :audio] ->
+        media = msg.media
 
-          FlowContext.update_results(context, key, json)
+        json =
+          Map.take(media, [:id, :source_url, :url, :caption])
+          |> Map.put(:category, "media")
+          |> Map.put(:input, media.url)
 
-      msg.type in [:location]
-        -> FlowContext.update_results(context, key, %{category: "location"} )
+        FlowContext.update_results(context, key, json)
 
-      true
-        -> FlowContext.update_results(context, key, msg.body, category.name)
+      msg.type in [:location] ->
+        FlowContext.update_results(context, key, %{category: "location"})
+
+      true ->
+        FlowContext.update_results(context, key, msg.body, category.name)
     end
-
   end
 end
