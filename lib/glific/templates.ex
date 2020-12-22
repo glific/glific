@@ -309,7 +309,7 @@ defmodule Glific.Templates do
         # and should not be reverted back
         template["modifiedOn"] >
             DateTime.to_unix(db_templates[template["id"]].updated_at, :millisecond) ->
-          update_hsm(template, db_templates)
+          update_hsm(template, db_templates, organization, organization_languages)
 
         true ->
           true
@@ -335,13 +335,22 @@ defmodule Glific.Templates do
         do: true,
         else: false
 
+    example =
+      case Jason.decode(template["meta"]) do
+        {:ok, meta} ->
+          meta["example"]
+
+        _ ->
+          nil
+      end
+
     attrs = %{
       uuid: template["id"],
       body: template["data"],
       shortcode: template["elementName"],
       label: template["elementName"],
       category: template["category"],
-      example: template["example"],
+      example: example,
       type: type,
       language_id: language_id,
       organization_id: organization.id,
@@ -357,8 +366,37 @@ defmodule Glific.Templates do
       |> Repo.insert()
   end
 
-  @spec update_hsm(map(), map()) :: {:ok, SessionTemplate.t()}
-  defp update_hsm(template, db_templates) do
+  @spec update_hsm(map(), map(), Organization.t(), map()) :: {:ok, SessionTemplate.t()}
+  defp update_hsm(template, db_templates, organization, organization_languages) do
+    db_template_translations =
+      db_templates
+      |> Enum.filter(fn {_key, db_template} ->
+        db_template.shortcode == template["elementName"]
+      end)
+
+    approved_db_templates =
+      db_template_translations
+      |> Enum.filter(fn {_key, db_template} -> db_template.status == "APPROVED" end)
+
+    with true <- template["status"] == "APPROVED",
+         true <- length(db_template_translations) > 1,
+         true <- length(approved_db_templates) >= 1 do
+      [approved_db_template] = approved_db_templates
+
+      update_hsm_translation(
+        template,
+        db_templates,
+        approved_db_template,
+        organization,
+        organization_languages
+      )
+    else
+      _ ->
+        do_update_hsm(template, db_templates)
+    end
+  end
+
+  defp do_update_hsm(template, db_templates) do
     update_attrs = %{
       status: template["status"],
       is_active:
@@ -372,5 +410,70 @@ defmodule Glific.Templates do
       db_templates[template["id"]]
       |> SessionTemplate.changeset(update_attrs)
       |> Repo.update()
+  end
+
+  defp update_hsm_translation(
+         template,
+         db_templates,
+         {_, approved_db_template},
+         organization,
+         organization_languages
+       ) do
+    number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
+
+    type =
+      template["templateType"]
+      |> String.downcase()
+      |> String.to_existing_atom()
+
+    # setting default language id if languageCode is not known
+    language_id =
+      organization_languages[template["languageCode"]] || organization.default_language_id
+
+    is_active =
+      if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
+        do: true,
+        else: false
+
+    example =
+      case Jason.decode(template["meta"]) do
+        {:ok, meta} ->
+          meta["example"]
+
+        _ ->
+          nil
+      end
+
+    translations =
+      %{
+        "#{language_id}" => %{
+          uuid: template["id"],
+          body: template["data"],
+          language_id: language_id,
+          status: template["status"],
+          type: type,
+          is_active: is_active,
+          number_parameters: number_of_parameter,
+          example: example,
+          category: template["category"],
+          label: template["elementName"]
+        }
+      }
+      |> Map.merge(approved_db_template.translations)
+
+    update_attrs = %{
+      translations: translations
+    }
+
+    {:ok, updated_translation} =
+      approved_db_template
+      |> SessionTemplate.changeset(update_attrs)
+      |> Repo.update()
+
+    # delete old entry
+    db_templates[template["id"]]
+    |> Repo.delete()
+
+    {:ok, updated_translation}
   end
 end
