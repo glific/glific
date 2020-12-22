@@ -292,7 +292,7 @@ defmodule Glific.Templates do
 
   @spec do_update_hsms(map(), Organization.t()) :: :ok
   defp do_update_hsms(templates, organization) do
-    organization_languages =
+    languages =
       Settings.list_languages()
       |> Enum.map(fn language -> {language.locale, language.id} end)
       |> Map.new()
@@ -304,7 +304,7 @@ defmodule Glific.Templates do
     Enum.each(templates, fn template ->
       cond do
         !Map.has_key?(db_templates, template["id"]) ->
-          insert_hsm(template, organization, organization_languages)
+          insert_hsm(template, organization, languages)
 
         # this check is required,
         # as is_active field can be updated by graphql API,
@@ -316,7 +316,7 @@ defmodule Glific.Templates do
             list_session_templates(%{filter: %{is_hsm: true}})
             |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
 
-          update_hsm(template, db_templates, organization, organization_languages)
+          update_hsm(template, db_templates, organization, languages)
 
         true ->
           true
@@ -325,7 +325,7 @@ defmodule Glific.Templates do
   end
 
   @spec insert_hsm(map(), Organization.t(), map()) :: {:ok, SessionTemplate.t()}
-  defp insert_hsm(template, organization, organization_languages) do
+  defp insert_hsm(template, organization, languages) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
     type =
@@ -335,7 +335,7 @@ defmodule Glific.Templates do
 
     # setting default language id if languageCode is not known
     language_id =
-      organization_languages[template["languageCode"]] || organization.default_language_id
+      languages[template["languageCode"]] || organization.default_language_id
 
     is_active =
       if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
@@ -374,7 +374,7 @@ defmodule Glific.Templates do
   end
 
   @spec update_hsm(map(), map(), Organization.t(), map()) :: {:ok, SessionTemplate.t()}
-  defp update_hsm(template, db_templates, organization, organization_languages) do
+  defp update_hsm(template, db_templates, organization, languages) do
     db_template_translations =
       db_templates
       |> Enum.filter(fn {_key, db_template} ->
@@ -395,7 +395,7 @@ defmodule Glific.Templates do
         db_templates,
         approved_db_template,
         organization,
-        organization_languages
+        languages
       )
     else
       _ ->
@@ -424,7 +424,7 @@ defmodule Glific.Templates do
          db_templates,
          {_, approved_db_template},
          organization,
-         organization_languages
+         languages
        ) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
@@ -435,7 +435,7 @@ defmodule Glific.Templates do
 
     # setting default language id if languageCode is not known
     language_id =
-      organization_languages[template["languageCode"]] || organization.default_language_id
+      languages[template["languageCode"]] || organization.default_language_id
 
     is_active =
       if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
