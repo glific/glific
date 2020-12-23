@@ -113,8 +113,8 @@ defmodule Glific.Groups do
   @doc """
   Fetches all group ids in an organization
   """
-  @spec get_group_ids() :: list()
-  def get_group_ids() do
+  @spec get_group_ids :: list()
+  def get_group_ids do
     Repo.all(Group)
     |> Enum.map(fn group -> group.id end)
   end
