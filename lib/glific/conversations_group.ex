@@ -94,6 +94,6 @@ defmodule Glific.ConversationsGroup do
         c = Map.get(conversations, group.id)
         Conversation.new(nil, c.group, c.messages)
       end
-    )
+    ) |> IO.inspect()
   end
 end

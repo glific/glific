@@ -210,10 +210,12 @@ defmodule Glific.Searches do
   @spec search(map(), boolean) :: [Conversation.t()] | integer
   def search(args, count \\ false)
 
-  def search(%{filter: %{search_group: true, include_groups: group_ids}} = args, _count) do
+  def search(%{filter: %{search_group: true}} = args, _count) do
     Logger.info("Searches.Search/2 with : args: #{inspect(args)}")
 
-    ConversationsGroup.list_conversations(group_ids, args)
+    ConversationsGroup.list_conversations(
+      Map.get(args, :include_groups),
+      args)
   end
 
   def search(args, count) do

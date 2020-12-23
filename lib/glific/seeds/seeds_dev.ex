@@ -477,6 +477,7 @@ if Code.ensure_loaded?(Faker) do
           sender_id: sender.id,
           receiver_id: contact.id,
           contact_id: contact.id,
+          group_id: g1.id,
           organization_id: organization.id
         })
       end)
@@ -498,6 +499,7 @@ if Code.ensure_loaded?(Faker) do
           sender_id: sender.id,
           receiver_id: contact.id,
           contact_id: contact.id,
+          group_id: g2.id,
           organization_id: organization.id
         })
       end)

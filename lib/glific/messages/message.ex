@@ -114,11 +114,8 @@ defmodule Glific.Messages.Message do
     belongs_to :media, MessageMedia
     belongs_to :organization, Organization
 
-<<<<<<< HEAD
     belongs_to :group, Group
-=======
     has_one :location, Location
->>>>>>> master
 
     many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
 
