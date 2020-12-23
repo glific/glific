@@ -37,7 +37,8 @@ defmodule Glific.Conversations do
         where:
           m.contact_id in ^ids and
             m.message_number >= ^message_offset and
-            m.message_number < ^(message_limit + message_offset),
+            m.message_number < ^(message_limit + message_offset) and
+            is_nil(m.group_id),
         select: m.id
 
     Repo.all(query)

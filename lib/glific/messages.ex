@@ -417,8 +417,8 @@ defmodule Glific.Messages do
       |> update_message_attrs()
       |> create_message()
 
-    Groups.get_group!(group.id)
-    |> Groups.update_group(%{last_communication_at: DateTime.utc_now()})
+    # also update the last message sent time for conversations
+    Groups.update_group(group, %{last_communication_at: DateTime.utc_now()})
 
     create_and_send_message_to_contacts(message_params, contact_ids)
   end
