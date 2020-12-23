@@ -27,9 +27,9 @@ defmodule Glific.Flows.ContactAction do
     # Since we are saving the data after loading the flow
     # so we have to fetch the latest contact fields
     message_vars = %{
-      "contact" => Contacts.get_contact_field_map(context.contact_id)
+      "contact" => Contacts.get_contact_field_map(context.contact_id),
+      "results" => context.results
     }
-
     body =
       text
       |> MessageVarParser.parse(message_vars)

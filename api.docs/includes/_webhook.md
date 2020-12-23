@@ -14,28 +14,41 @@ You need to host and maintain a public URL that is the destination of your webho
 
 ## Webhook parameters
 
-Glific sends a standard json object with the following fields as the POST body. In a future version
-of Glific, the value that will be sent will be configurable
+Glific sends a standard json object with contact and results fields as default fields in the POST body. In addition to that Glific supports sending additional data in form of JSON fields.
 
 ```json
 {
   "contact": {
-    "id": "ID of contact in Glific Database",
     "name": "Name of Contact",
     "phone": "Phone of Contact",
     "fields": {
-      "field 1 key": "field 1 value",
-      "field 2 key": "field 2 value",
+      "field 1 key": {
+        "type": "type of field",
+        "label": "label of field",
+        "value": "value of field",
+        "inserted_at": "inserted time of field"
+      },
       ...
-      "field n key": "field n value"
+      "field n key": {
+          "type": "type of field",
+          "label": "label of field",
+          "value": "value of field",
+          "inserted_at": "inserted time of field"
+      }
     }
   },
   "results": {
-    "result 1 key": "result 1 value",
-    "result 2 key": "result 2 value",
+    "result 1 key": {
+      "input": "input of result",
+      "category": "category of result"
+    },
     ...
-    "result n key": "result n value"
-  }
+    "result n key": {
+      "input": "input of result",
+      "category": "category of result"
+    },
+  },
+  "custom_key": "custom_value"
 }
 ```
 
@@ -52,14 +65,15 @@ On successful completion of the webhook, return a status code of 200 along with 
 be composed of {key, value} pairs. Each of these key value pairs is then stored in the flow "results" map, with the key
 being appended to the variable indicated in the "Call a Webhook" node.
 
-Thus is your 'survey' webhook, returns two values: 'score', 'message', Glific will add:
+Thus if your 'survey' webhook, returns three values: 'score', 'message', 'content',  Glific will add:
 
 ```json
 {
   "results": {
     ... (results in flow currently)
-    "survey_score": "Score you set in webhook",
-    "survey_message": "Message you want to send next to the user"
+    "survey.score": "Score you set in webhook",
+    "survey.message": "Message you want to send next to the user",
+    "survey.content": "Content you want to send next to the user"
   }
 }
 ```
