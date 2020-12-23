@@ -215,7 +215,8 @@ defmodule Glific.Searches do
 
     ConversationsGroup.list_conversations(
       Map.get(args, :include_groups),
-      args)
+      args
+    )
   end
 
   def search(args, count) do
