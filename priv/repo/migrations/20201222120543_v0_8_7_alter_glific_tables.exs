@@ -3,12 +3,21 @@ defmodule Glific.Repo.Migrations.V0_8_7_AlterGlificTables do
 
   def change do
     add_group_id_to_messages()
+
+    add_last_communication_at_to_groups()
   end
 
   defp add_group_id_to_messages() do
     alter table(:messages) do
       # add group_id to record messages sent to a group
       add :group_id, references(:groups, on_delete: :delete_all), null: true
+    end
+  end
+
+  defp add_last_communication_at_to_groups() do
+    alter table(:groups) do
+      # field can be used to sort group conversations
+      add :last_communication_at, :utc_datetime
     end
   end
 end

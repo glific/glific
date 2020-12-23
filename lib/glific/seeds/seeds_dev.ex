@@ -442,6 +442,12 @@ if Code.ensure_loaded?(Faker) do
         group_id: g2.id,
         organization_id: organization.id
       })
+
+      Repo.insert!(%Groups.ContactGroup{
+        contact_id: c3.id,
+        group_id: g2.id,
+        organization_id: organization.id
+      })
     end
 
     @doc false
@@ -455,14 +461,15 @@ if Code.ensure_loaded?(Faker) do
           %{name: "Glific Admin", organization_id: organization.id}
         )
 
-      [g1, _] = Glific.Groups.list_groups(%{filter: %{organization_id: organization.id}})
+      [g1, g2 | _] = Glific.Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
       g1 = g1 |> Repo.preload(:contacts)
+      g2 = g2 |> Repo.preload(:contacts)
 
       g1.contacts
       |> Enum.each(fn contact ->
         Repo.insert!(%Message{
-          body: "Group message body",
+          body: "#{g1.label} message body",
           flow: :outbound,
           type: :text,
           bsp_message_id: Faker.String.base64(10),
@@ -473,6 +480,34 @@ if Code.ensure_loaded?(Faker) do
           organization_id: organization.id
         })
       end)
+
+      Repo.update!(
+        Ecto.Changeset.change(g1, %{
+          last_communication_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+      )
+
+      g2.contacts
+      |> Enum.each(fn contact ->
+        Repo.insert!(%Message{
+          body: "#{g2.label} message body",
+          flow: :outbound,
+          type: :text,
+          bsp_message_id: Faker.String.base64(10),
+          bsp_status: :enqueued,
+          sender_id: sender.id,
+          receiver_id: contact.id,
+          contact_id: contact.id,
+          organization_id: organization.id
+        })
+      end)
+
+      Repo.update!(
+        Ecto.Changeset.change(g1, %{
+          last_communication_at:
+            Timex.shift(DateTime.utc_now(), seconds: 2) |> DateTime.truncate(:second)
+        })
+      )
     end
 
     @doc false

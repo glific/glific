@@ -14,7 +14,7 @@ defmodule Glific.Groups.Group do
   }
 
   @required_fields [:label]
-  @optional_fields [:is_restricted, :description, :organization_id]
+  @optional_fields [:is_restricted, :description, :organization_id, :last_communication_at]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -22,6 +22,7 @@ defmodule Glific.Groups.Group do
           label: String.t() | nil,
           description: String.t() | nil,
           is_restricted: boolean(),
+          last_communication_at: :utc_datetime | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -32,6 +33,8 @@ defmodule Glific.Groups.Group do
     field :label, :string
     field :description, :string
     field :is_restricted, :boolean, default: false
+
+    field :last_communication_at, :utc_datetime
 
     belongs_to :organization, Organization
 
