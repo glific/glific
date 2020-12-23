@@ -137,7 +137,10 @@ defmodule Glific.Processor.ConsumerFlow do
         message.organization_id,
         message.body,
         type: message.type,
-        id: message.id
+        id: message.id,
+        media: message.media,
+        media_id: message.media_id,
+        location: message.location
       )
     )
 
