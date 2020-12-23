@@ -308,14 +308,14 @@ defmodule Glific.Flows.Action do
       Groups.delete_contact_groups_by_ids(context.contact_id, groups_ids)
       {:ok, context, messages}
     else
-      Enum.each(
+      groups_ids = Enum.map(
         action.groups,
         fn group ->
           {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
-          Groups.delete_group_contacts_by_ids(group_id, [context.contact_id])
+          group_id
         end
       )
-
+      Groups.delete_group_contacts_by_ids(context.contact_id, groups_ids)
       {:ok, context, messages}
     end
   end
