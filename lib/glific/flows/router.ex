@@ -202,10 +202,10 @@ defmodule Glific.Flows.Router do
         FlowContext.update_results(context, key, json)
 
       Enum.member?([:location], msg.type) ->
-        media = msg.location
+        location = msg.location
 
         json =
-          Map.take(media, [:id, :longitude, :latitude])
+          Map.take(location, [:id, :longitude, :latitude])
           |> Map.put(:category, "location")
 
         FlowContext.update_results(context, key, json)
