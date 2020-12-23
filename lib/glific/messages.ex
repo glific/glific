@@ -718,7 +718,7 @@ defmodule Glific.Messages do
   # add an empty conversation for a specific contact if ONLY if it exists
   @spec add_conversation([Conversation.t()], Contact.t()) :: [Conversation.t()]
   defp add_conversation(results, contact) do
-    [Conversation.new(contact, []) | results]
+    [Conversation.new(contact, nil, []) | results]
   end
 
   # restrict the conversations query based on the filters in the input args

@@ -28,7 +28,7 @@ defmodule Glific.ConversationsGroup do
     |> get_conversations(args.message_opts)
   end
 
-  defp get_groups_query() do
+  defp get_groups_query do
     Group
     |> Ecto.Queryable.to_query()
     |> Repo.add_permission(&Groups.add_permission/2)
@@ -76,15 +76,19 @@ defmodule Glific.ConversationsGroup do
       Enum.reduce(
         messages,
         conversations,
-        fn m, acc -> Map.update!(acc, m.group_id, fn l -> [m | l] end) end
+        fn m, acc ->
+          Map.update!(acc, m.group_id, fn l -> %{group: l.group, messages: [m | l.messages]} end)
+        end
       )
       |> Enum.map(fn {group_id, c} -> {group_id, Map.update!(c, :messages, &Enum.reverse/1)} end)
+      |> Enum.into(%{})
 
     Enum.map(
       groups,
       fn group ->
         c = Map.get(conversations, group.id)
         Conversation.new(nil, c.group, c.messages)
-      end)
+      end
+    )
   end
 end

@@ -11,8 +11,8 @@ defmodule Glific.Searches do
   alias Glific.{
     Contacts.Contact,
     Conversations,
-    ConversationsGroup,
     Conversations.Conversation,
+    ConversationsGroup,
     Groups.ContactGroup,
     Groups.UserGroup,
     Messages.Message,

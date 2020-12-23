@@ -30,7 +30,7 @@ defmodule Glific.Conversations.Conversation do
   Create a new conversation. A contact or a group is required for the conversation.
   Messages can be added later on
   """
-  @spec new(Contact.t(), Group.t(), [Message.t()]) :: Conversation.t()
+  @spec new(Contact.t() | nil, Group.t() | nil, [Message.t()]) :: Conversation.t()
   def new(contact, group, messages \\ []) do
     %Conversation{contact: contact, group: group, messages: messages}
   end

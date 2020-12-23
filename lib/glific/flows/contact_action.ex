@@ -30,6 +30,7 @@ defmodule Glific.Flows.ContactAction do
       "contact" => Contacts.get_contact_field_map(context.contact_id),
       "results" => context.results
     }
+
     body =
       text
       |> MessageVarParser.parse(message_vars)
