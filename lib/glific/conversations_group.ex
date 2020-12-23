@@ -28,24 +28,26 @@ defmodule Glific.ConversationsGroup do
     |> get_conversations(args.message_opts)
   end
 
-  defp get_groups_query do
+  defp get_groups_query(%{limit: limit, offset: offset}) do
     Group
     |> Ecto.Queryable.to_query()
     |> Repo.add_permission(&Groups.add_permission/2)
+    |> order_by([g], desc: g.last_communication_at)
+    |> limit(^limit)
+    |> offset(^offset)
   end
 
   # we need to process the options here at some stage
   # and the get the offset/limit number of groups based
   # on the most recent message sent by the group
-  defp get_groups(nil, _contact_opts) do
-    get_groups_query()
+  defp get_groups(nil, opts) do
+    get_groups_query(opts)
     |> Repo.all()
   end
 
-  defp get_groups(gids, _contact_opts) when is_list(gids) do
-    get_groups_query()
+  defp get_groups(gids, opts) when is_list(gids) do
+    get_groups_query(opts)
     |> where([g], g.id in ^gids)
-    |> order_by([g], desc: g.last_communication_at)
     |> Repo.all()
   end
 
@@ -56,11 +58,11 @@ defmodule Glific.ConversationsGroup do
     |> make_conversations(groups)
   end
 
-  defp get_messages(ids, %{limit: message_limit, offset: message_offset}) do
+  defp get_messages(ids, %{limit: limit, offset: offset}) do
     Message
     |> where([m], m.group_id in ^ids)
-    |> where([m], m.message_number >= ^message_offset)
-    |> where([m], m.message_number < ^(message_limit + message_offset))
+    |> where([m], m.message_number >= ^offset)
+    |> where([m], m.message_number < ^(limit + offset))
     |> order_by([m], desc: m.inserted_at)
     |> Repo.all()
   end
