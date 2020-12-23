@@ -10,6 +10,8 @@ defmodule Glific.Searches do
 
   alias Glific.{
     Contacts.Contact,
+    Conversations,
+    ConversationsGroup,
     Conversations.Conversation,
     Groups.ContactGroup,
     Groups.UserGroup,
@@ -206,7 +208,15 @@ defmodule Glific.Searches do
   Full text search interface via Postgres
   """
   @spec search(map(), boolean) :: [Conversation.t()] | integer
-  def search(args, count \\ false) do
+  def search(args, count \\ false)
+
+  def search(%{search_group: true, include_groups: group_ids} = args, _count) do
+    Logger.info("Searches.Search/2 with : args: #{inspect(args)}")
+
+    ConversationsGroup.list_conversations(group_ids, args)
+  end
+
+  def search(args, count) do
     # save the search if needed
     Logger.info("Searches.Search/2 with : args: #{inspect(args)}")
     do_save_search(args)
@@ -229,7 +239,7 @@ defmodule Glific.Searches do
       |> Repo.all()
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
-    |> Glific.Conversations.list_conversations(count)
+    |> Conversations.list_conversations(count)
   end
 
   @doc """

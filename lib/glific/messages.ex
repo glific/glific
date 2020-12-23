@@ -400,6 +400,22 @@ defmodule Glific.Messages do
       group.contacts
       |> Enum.map(fn contact -> contact.id end)
 
+    # We first need to just create a meta level group message
+    organization_id = Repo.get_organization_id()
+    sender_id = Partners.organization_contact_id(organization_id)
+
+    {:ok, _group_message} =
+      message_params
+      |> Map.merge(%{
+        sender_id: sender_id,
+        receiver_id: sender_id,
+        contact_id: sender_id,
+        group_id: group.id,
+        flow: :outbound
+      })
+      |> update_message_attrs()
+      |> create_message()
+
     create_and_send_message_to_contacts(message_params, contact_ids)
   end
 
@@ -648,7 +664,7 @@ defmodule Glific.Messages do
       contact_order,
       [],
       fn contact, acc ->
-        [Conversation.new(contact, Enum.reverse(contact_messages[contact])) | acc]
+        [Conversation.new(contact, nil, Enum.reverse(contact_messages[contact])) | acc]
       end
     )
   end
