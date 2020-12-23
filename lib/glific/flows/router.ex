@@ -188,10 +188,10 @@ defmodule Glific.Flows.Router do
           FlowContext.t()
   defp update_context_results(context, key, msg, category) do
     cond do
-      is_nil(msg.media_id) ->
+      Enum.member?([:text], msg.type) ->
         FlowContext.update_results(context, key, msg.body, category.name)
 
-      msg.type in [:image, :video, :audio] ->
+      Enum.member?([:image, :video, :audio], msg.type) ->
         media = msg.media
 
         json =
@@ -201,9 +201,9 @@ defmodule Glific.Flows.Router do
 
         FlowContext.update_results(context, key, json)
 
-      msg.type in [:location] ->
+      Enum.member?([:location], msg.type) ->
         FlowContext.update_results(context, key, %{category: "location"})
-
+    end
       true ->
         FlowContext.update_results(context, key, msg.body, category.name)
     end
