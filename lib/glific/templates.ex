@@ -319,7 +319,7 @@ defmodule Glific.Templates do
     end)
   end
 
-  @spec insert_hsm(map(), Organization.t(), map()) :: {:ok, SessionTemplate.t()}
+  @spec insert_hsm(map(), Organization.t(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp insert_hsm(template, organization, languages) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
@@ -367,7 +367,8 @@ defmodule Glific.Templates do
       |> Repo.insert()
   end
 
-  @spec update_hsm(map(), Organization.t(), map()) :: {:ok, SessionTemplate.t()}
+  @spec update_hsm(map(), Organization.t(), map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp update_hsm(template, organization, languages) do
     # get updated db templates to handle multiple approved translations
     db_templates =
@@ -390,20 +391,22 @@ defmodule Glific.Templates do
          true <- length(approved_db_templates) >= 1 do
       [approved_db_template] = approved_db_templates
 
-      update_hsm_translation(
-        template,
-        db_templates,
-        approved_db_template,
-        organization,
-        languages
-      )
+      case update_hsm_translation(template, approved_db_template, organization, languages) do
+        {:ok, _} ->
+          # delete old entry
+          db_templates[template["id"]]
+          |> Repo.delete()
+
+        {:error, error} ->
+          {:error, error}
+      end
     else
       _ ->
         do_update_hsm(template, db_templates)
     end
   end
 
-  @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()}
+  @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_hsm(template, db_templates) do
     update_attrs = %{
       status: template["status"],
@@ -420,15 +423,9 @@ defmodule Glific.Templates do
       |> Repo.update()
   end
 
-  @spec update_hsm_translation(map(), map(), SessionTemplate.t(), Organization.t(), map()) ::
-          {:ok, SessionTemplate.t()}
-  defp update_hsm_translation(
-         template,
-         db_templates,
-         approved_db_template,
-         organization,
-         languages
-       ) do
+  @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  defp update_hsm_translation(template, approved_db_template, organization, languages) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
     type =
@@ -474,15 +471,8 @@ defmodule Glific.Templates do
       translations: translations
     }
 
-    {:ok, updated_translation} =
-      approved_db_template
-      |> SessionTemplate.changeset(update_attrs)
-      |> Repo.update()
-
-    # delete old entry
-    db_templates[template["id"]]
-    |> Repo.delete()
-
-    {:ok, updated_translation}
+    approved_db_template
+    |> SessionTemplate.changeset(update_attrs)
+    |> Repo.update()
   end
 end
