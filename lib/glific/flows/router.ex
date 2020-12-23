@@ -203,7 +203,7 @@ defmodule Glific.Flows.Router do
 
       Enum.member?([:location], msg.type) ->
         FlowContext.update_results(context, key, %{category: "location"})
-    end
+
       true ->
         FlowContext.update_results(context, key, msg.body, category.name)
     end
