@@ -45,6 +45,7 @@ defmodule Glific.ConversationsGroup do
   defp get_groups(gids, _contact_opts) when is_list(gids) do
     get_groups_query()
     |> where([g], g.id in ^gids)
+    |> order_by([g], desc: g.last_communication_at)
     |> Repo.all()
   end
 

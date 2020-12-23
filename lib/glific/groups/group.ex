@@ -9,6 +9,7 @@ defmodule Glific.Groups.Group do
   alias Glific.{
     Contacts.Contact,
     Groups.Group,
+    Messages.Message,
     Partners.Organization,
     Users.User
   }
@@ -40,6 +41,8 @@ defmodule Glific.Groups.Group do
 
     many_to_many :contacts, Contact, join_through: "contacts_groups", on_replace: :delete
     many_to_many :users, User, join_through: "users_groups", on_replace: :delete
+
+    has_many :messages, Message
 
     timestamps(type: :utc_datetime)
   end
