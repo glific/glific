@@ -28,6 +28,7 @@ defmodule Glific.ConversationsGroup do
     |> get_conversations(args.message_opts)
   end
 
+  @spec get_groups_query(map()) :: Ecto.Queryable.t()
   defp get_groups_query(%{limit: limit, offset: offset}) do
     Group
     |> Ecto.Queryable.to_query()
@@ -37,9 +38,7 @@ defmodule Glific.ConversationsGroup do
     |> offset(^offset)
   end
 
-  # we need to process the options here at some stage
-  # and the get the offset/limit number of groups based
-  # on the most recent message sent by the group
+  @spec get_groups(list() | nil, map()) :: [Group.t()]
   defp get_groups(nil, opts) do
     get_groups_query(opts)
     |> Repo.all()
@@ -51,6 +50,7 @@ defmodule Glific.ConversationsGroup do
     |> Repo.all()
   end
 
+  @spec get_conversations([Group.t()], map()) :: [Conversation.t()]
   defp get_conversations(groups, message_opts) do
     groups
     |> Enum.map(fn g -> g.id end)
@@ -58,6 +58,7 @@ defmodule Glific.ConversationsGroup do
     |> make_conversations(groups)
   end
 
+  @spec get_messages(list(), map()) :: [Message.t()]
   defp get_messages(ids, %{limit: limit, offset: offset}) do
     Message
     |> where([m], m.group_id in ^ids)
@@ -67,6 +68,7 @@ defmodule Glific.ConversationsGroup do
     |> Repo.all()
   end
 
+  @spec make_conversations([Message.t()], [Group.t()]) :: [Conversation.t()]
   defp make_conversations(messages, groups) do
     conversations =
       groups
