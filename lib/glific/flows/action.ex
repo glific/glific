@@ -306,6 +306,7 @@ defmodule Glific.Flows.Action do
     if action.groups == ["all_groups"] do
       groups_ids = Groups.get_group_ids()
       Groups.delete_contact_groups_by_ids(context.contact_id, groups_ids)
+      {:ok, context, messages}
     else
       Enum.reduce(
         action.groups,
