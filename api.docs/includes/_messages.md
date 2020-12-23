@@ -432,6 +432,65 @@ mutation createAndSendMessage($input: MessageInput!) {
 }
 ```
 
+```	```
+## Create and send SessionTemplate
+
+```graphql
+mutation createAndSendMessage($input: MessageInput!) {
+  createAndSendMessage(input: $input) {
+    message {
+      id
+      body
+      receiver {
+        id
+        name
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+{
+  "input": {
+    "flow": "OUTBOUND",
+    "type": "TEXT",
+    "senderId": 1,
+    "receiverId": 11,
+    "isHsm": true,
+    "params": ["Fifty", "Next Week"],
+    "templateId": 32
+    
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+```json
+{
+  "data": {
+    "createAndSendMessage": {
+      "__typename": "MessageResult",
+      "errors": null,
+      "message": {
+        "__typename": "Message",
+        "body": "Your Fifty points will expire on Next Week.",
+        "id": "241",
+        "isHsm": true,
+        "params": null,
+        "receiver": {
+          "__typename": "Contact",
+          "id": "11",
+          "name": "Test"
+        },
+        "templateId": null
+      }
+    }
+  }
+}
+```
+
 ## Create and send Scheduled Message
 
 ```graphql

@@ -449,4 +449,34 @@ defmodule Glific.Fixtures do
 
     user
   end
+
+  @doc false
+  @spec otp_hsm_fixture() :: Templates.SessionTemplate.t()
+  def otp_hsm_fixture do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "success",
+              "template" => %{
+                "elementName" => "common_otp",
+                "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
+                "languageCode" => "en_US",
+                "status" => "APPROVED"
+              }
+            })
+        }
+    end)
+
+    session_template_fixture(%{
+      body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+      shortcode: "common_otp",
+      is_hsm: true,
+      category: "ALERT_UPDATE",
+      example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
+      language_id: organization_fixture().default_language_id
+    })
+  end
 end
