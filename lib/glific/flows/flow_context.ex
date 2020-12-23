@@ -13,7 +13,6 @@ defmodule Glific.Flows.FlowContext do
 
   alias Glific.{
     Contacts.Contact,
-    Contacts.Location,
     Flows,
     Flows.Flow,
     Flows.FlowResult,
@@ -209,22 +208,6 @@ defmodule Glific.Flows.FlowContext do
       })
 
     context
-  end
-
-  @doc """
-  Update the location results with json map
-  """
-  @spec update_location_results(FlowContext.t(), String.t(), map(), map()) ::
-          FlowContext.t()
-  def update_location_results(context, key, input, category) do
-    {:ok, location} =
-      Repo.fetch_by(Location, %{
-        message_id: input.id,
-        organization_id: input.organization_id
-      })
-
-    json = Map.take(location, [:latitude, :longitude]) |> Map.merge(category)
-    update_results(context, key, json)
   end
 
   @doc """

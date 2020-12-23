@@ -92,7 +92,7 @@ defmodule Glific.Processor.ConsumerWorker do
     body = Glific.string_clean(message.body)
 
     # Since conatct and language are the required fiels in many places, lets preload them
-    message = Repo.preload(message, [:media, contact: [:language]])
+    message = Repo.preload(message, [:location, :media, contact: [:language]])
 
     {message, state}
     |> ConsumerTagger.process_message(body)
