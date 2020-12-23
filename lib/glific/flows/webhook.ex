@@ -98,7 +98,7 @@ defmodule Glific.Flows.Webhook do
 
     fields = %{
       "contact" => Contacts.get_contact_field_map(context.contact_id),
-      "results" => context
+      "results" => context.results
     }
 
     {:ok, default_contact} = Jason.encode(default_payload.contact)
