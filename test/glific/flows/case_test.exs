@@ -88,7 +88,7 @@ defmodule Glific.Flows.CaseTest do
 
   test "test the execute function for has_media" do
     c = %Case{type: "has_media", arguments: []}
-    assert wrap_execute(c, nil, nil, [{:type, :location}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :location}]) == true
     assert wrap_execute(c, nil, nil, [{:type, :text}]) == false
     assert wrap_execute(c, nil, nil, [{:type, nil}]) == false
     assert wrap_execute(c, nil, nil, [{:type, :image}]) == true

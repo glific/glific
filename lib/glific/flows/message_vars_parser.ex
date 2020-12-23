@@ -55,6 +55,8 @@ defmodule Glific.Flows.MessageVarParser do
 
   defp stringify_keys(int) when is_integer(int), do: Integer.to_string(int)
 
+  defp stringify_keys(float) when is_float(float), do: Float.to_string(float)
+
   defp stringify_keys(map) when is_map(map) do
     map
     |> Enum.map(fn {k, v} ->
