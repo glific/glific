@@ -164,6 +164,16 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, %{groups: json["groups"]})
   end
 
+  def process(%{"type" => "remove_contact_groups"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_group)
+
+    if json["all_groups"] do
+      process(json, uuid_map, node, %{groups: ["all_groups"]})
+    else
+      process(json, uuid_map, node, %{groups: json["groups"]})
+    end
+  end
+
   def process(json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields)
 
@@ -290,6 +300,25 @@ defmodule Glific.Flows.Action do
       )
 
     {:ok, context, messages}
+  end
+
+  def execute(%{type: "remove_contact_groups"} = action, context, messages) do
+
+    if action.groups == ["all_groups"] do
+
+    else
+      Enum.reduce(
+        action.groups,
+        [],
+        fn group, _acc ->
+          {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
+          Groups.delete_group_contacts_by_ids(group_id, [context.contact_id])
+          {:ok, group_id}
+        end
+      )
+
+      {:ok, context, messages}
+    end
   end
 
   def execute(action, _context, _messages),
