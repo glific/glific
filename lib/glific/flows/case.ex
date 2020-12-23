@@ -106,12 +106,12 @@ defmodule Glific.Flows.Case do
       do: strip(c.arguments) == strip(msg)
 
   def execute(%{type: type}, _context, msg)
-      when type == "has_media",
-      do: if(Enum.member?([:text, nil], msg.type), do: false, else: true)
+      when type == "has_location",
+      do: msg.type == :location
 
   def execute(%{type: type}, _context, msg)
-      when type == "has_location",
-      do: if(Enum.member?([:location], msg.type), do: true, else: false)
+      when type == "has_media",
+      do: msg.type in [:audio, :video, :image]
 
   def execute(%{type: type} = c, _context, msg)
       when type == "has_all_words",
