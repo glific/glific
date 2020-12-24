@@ -12,7 +12,6 @@ defmodule Glific.Fixtures do
     Flows,
     Groups,
     Messages,
-    Messages.Message,
     Partners,
     Partners.Organization,
     Repo,
@@ -453,8 +452,7 @@ defmodule Glific.Fixtures do
   @doc false
   @spec group_messages_fixture(map()) :: nil
   def group_messages_fixture(attrs) do
-    organization_id = attrs.organization_id
-    [cg1, cg2, cg3] = group_contacts_fixture(attrs)
+    [cg1, _cg2, cg3] = group_contacts_fixture(attrs)
 
     {:ok, group_1} =
       Repo.fetch_by(Groups.Group, %{id: cg1.group_id, organization_id: attrs.organization_id})
@@ -471,7 +469,12 @@ defmodule Glific.Fixtures do
       organization_id: attrs.organization_id
     }
 
-    Messages.create_and_send_message_to_group(valid_attrs, group_1)
+    valid_attrs
+    |> Map.merge(%{receiver_id: cg1.contact_id})
+    |> Messages.create_and_send_message_to_group(group_1)
+
+    valid_attrs
+    |> Map.merge(%{receiver_id: cg3.contact_id})
     Messages.create_and_send_message_to_group(valid_attrs, group_2)
   end
 end
