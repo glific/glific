@@ -233,8 +233,6 @@ defmodule GlificWeb.Schema.SearchTest do
       body: "#{group.label} message",
       flow: :outbound,
       type: :text,
-      sender_id: 1,
-      receiver_id: cg1.contact_id,
       organization_id: attrs.organization_id
     }
 
