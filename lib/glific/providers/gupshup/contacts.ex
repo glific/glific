@@ -5,7 +5,8 @@ defmodule Glific.Providers.GupshupContacts do
 
   alias Glific.{
     Contacts,
-    Partners
+    Partners,
+    Providers.Gupshup.ApiClient
   }
 
   @doc """
@@ -23,7 +24,7 @@ defmodule Glific.Providers.GupshupContacts do
     api_key = bsp_credentials.secrets["api_key"]
 
     with {:ok, response} <-
-           post(url, %{user: attrs.phone}, headers: [{"apikey", api_key}]),
+           ApiClient.post(url, %{user: attrs.phone}, headers: [{"apikey", api_key}]),
          true <- response.status == 202 do
       %{
         name: attrs[:name],
