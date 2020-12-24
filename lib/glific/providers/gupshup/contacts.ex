@@ -5,6 +5,7 @@ defmodule Glific.Providers.GupshupContacts do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Partners,
     Providers.Gupshup.ApiClient
   }
