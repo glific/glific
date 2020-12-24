@@ -214,7 +214,7 @@ defmodule Glific.Searches do
     Logger.info("Searches.Search/2 with : args: #{inspect(args)}")
 
     ConversationsGroup.list_conversations(
-      Map.get(args, :include_groups),
+      get_in(args, [:filter, :include_groups]),
       args
     )
   end
