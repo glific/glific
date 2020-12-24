@@ -3,15 +3,15 @@ defmodule Glific.Repo.Migrations.CreateWebhookLogs do
 
   def change do
     create table(:webhook_logs) do
-      add :url, :string, null: false
-      add :method, :string, null: false
+      add :url, :text, null: false
+      add :method, :text, null: false
       add :request_headers, :jsonb, default: "[]"
       add :request_json, :jsonb, default: "{}"
 
       add :response_json, :jsonb, default: "{}"
       add :status_code, :integer, null: true
 
-      add :error, :string, null: true
+      add :error, :text, null: true
 
       add :flow_id, references(:flows, on_delete: :delete_all), null: false
       add :contact_id, references(:contacts, on_delete: :delete_all), null: false
