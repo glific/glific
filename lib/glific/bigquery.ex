@@ -5,6 +5,7 @@ defmodule Glific.Bigquery do
 
   alias Glific.{
     BigquerySchema,
+    Contacts,
     Partners,
     Repo
   }
@@ -92,6 +93,35 @@ defmodule Glific.Bigquery do
     end
 
     :ok
+  end
+
+  @doc """
+  Updating existing results in a flow_results table
+  """
+  @spec update_flow_results(map()) :: :ok
+  def update_flow_results(attrs) do
+    organization = Partners.organization(attrs.organization_id) |> Repo.preload(:contact)
+    dataset_id = organization.contact.phone
+    contact = Contacts.get_contact!(attrs.contact_id)
+    Partners.get_credential(%{organization_id: attrs.organization_id, shortcode: "bigquery"})
+    |> case do
+      {:error, _} ->
+        nil
+      {:ok, credential} ->
+        {:ok, secrets} = Jason.decode(credential.secrets["service_account"])
+        project_id = secrets["project_id"]
+        {:ok, results} = Jason.encode(attrs.results)
+        sql =
+          "UPDATE `#{dataset_id}.flow_results` SET results = '#{results}' WHERE contact_phone= '#{
+            contact.phone}' AND id = #{attrs.flow_id}"
+        token = Partners.get_goth_token(attrs.organization_id, "bigquery")
+        conn = Connection.new(token.token)
+        Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
+        |> case do
+          {:ok, response} -> response
+          {:error, _} -> nil
+        end
+    end
   end
 
   @doc """

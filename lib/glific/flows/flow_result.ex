@@ -8,6 +8,7 @@ defmodule Glific.Flows.FlowResult do
   alias __MODULE__
 
   alias Glific.{
+    Bigquery,
     Contacts.Contact,
     Flows.Flow,
     Partners.Organization,
@@ -60,6 +61,7 @@ defmodule Glific.Flows.FlowResult do
   @doc false
   @spec upsert_flow_result(map()) :: {:ok, FlowResult.t()} | {:error, Ecto.Changeset.t()}
   def upsert_flow_result(attrs) do
+    Bigquery.update_flow_results(attrs)
     Repo.insert(
       changeset(%FlowResult{}, attrs),
       returning: true,
