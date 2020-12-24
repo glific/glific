@@ -3,7 +3,6 @@ defmodule Glific.Fixtures do
   A module for defining fixtures that can be used in tests.
   """
   alias Faker.{
-    DateTime,
     Person,
     Phone
   }
@@ -13,6 +12,7 @@ defmodule Glific.Fixtures do
     Flows,
     Groups,
     Messages,
+    Messages.Message,
     Partners,
     Partners.Organization,
     Repo,
@@ -36,8 +36,8 @@ defmodule Glific.Fixtures do
   def contact_fixture(attrs \\ %{}) do
     valid_attrs = %{
       name: Person.name(),
-      optin_time: DateTime.backward(1),
-      last_message_at: DateTime.backward(0),
+      optin_time: Faker.DateTime.backward(1),
+      last_message_at: Faker.DateTime.backward(0),
       phone: Phone.EnUs.phone(),
       status: :valid,
       bsp_status: :session_and_hsm,
@@ -448,5 +448,58 @@ defmodule Glific.Fixtures do
       |> Users.create_user()
 
     user
+  end
+
+  @doc false
+  @spec group_messages_fixture(map()) :: nil
+  def group_messages_fixture(attrs) do
+    organization_id = attrs.organization_id
+    group_contacts_fixture(attrs)
+
+    [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization_id}})
+
+    create_group_messages(g1, organization_id, 0)
+    create_group_messages(g2, organization_id, 2)
+  end
+
+  defp create_group_messages(group, organization_id, time_shift) do
+    {:ok, sender} =
+      Repo.fetch_by(
+        Contacts.Contact,
+        %{name: "Glific Admin", organization_id: organization_id}
+      )
+
+    group = group |> Repo.preload(:contacts)
+
+    group.contacts
+    |> Enum.each(fn contact ->
+      message_obj(group, sender, contact, organization_id)
+      |> Repo.insert!()
+    end)
+
+    message_obj(group, sender, sender, organization_id)
+    |> Map.merge(%{group_id: group.id})
+    |> Repo.insert!()
+
+    Repo.update!(
+      Ecto.Changeset.change(group, %{
+        last_communication_at:
+          Timex.shift(DateTime.utc_now(), seconds: time_shift) |> DateTime.truncate(:second)
+      })
+    )
+  end
+
+  defp message_obj(group, sender, receiver, organization_id) do
+    %Message{
+      body: "#{group.label} message body",
+      flow: :outbound,
+      type: :text,
+      bsp_message_id: Faker.String.base64(10),
+      bsp_status: :enqueued,
+      sender_id: sender.id,
+      receiver_id: receiver.id,
+      contact_id: receiver.id,
+      organization_id: organization_id
+    }
   end
 end
