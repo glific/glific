@@ -477,10 +477,22 @@ if Code.ensure_loaded?(Faker) do
           sender_id: sender.id,
           receiver_id: contact.id,
           contact_id: contact.id,
-          group_id: g1.id,
           organization_id: organization.id
         })
       end)
+
+      Repo.insert!(%Message{
+        body: "#{g1.label} message body",
+        flow: :outbound,
+        type: :text,
+        bsp_message_id: Faker.String.base64(10),
+        bsp_status: :enqueued,
+        sender_id: sender.id,
+        receiver_id: sender.id,
+        contact_id: sender.id,
+        group_id: g1.id,
+        organization_id: organization.id
+      })
 
       Repo.update!(
         Ecto.Changeset.change(g1, %{
@@ -499,13 +511,25 @@ if Code.ensure_loaded?(Faker) do
           sender_id: sender.id,
           receiver_id: contact.id,
           contact_id: contact.id,
-          group_id: g2.id,
           organization_id: organization.id
         })
       end)
 
+      Repo.insert!(%Message{
+        body: "#{g2.label} message body",
+        flow: :outbound,
+        type: :text,
+        bsp_message_id: Faker.String.base64(10),
+        bsp_status: :enqueued,
+        sender_id: sender.id,
+        receiver_id: sender.id,
+        contact_id: sender.id,
+        group_id: g2.id,
+        organization_id: organization.id
+      })
+
       Repo.update!(
-        Ecto.Changeset.change(g1, %{
+        Ecto.Changeset.change(g2, %{
           last_communication_at:
             Timex.shift(DateTime.utc_now(), seconds: 2) |> DateTime.truncate(:second)
         })
