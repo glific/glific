@@ -7,6 +7,7 @@ defmodule Glific.Messages.Message do
 
   alias Glific.{
     Contacts.Contact,
+    Contacts.Location,
     Flows.Flow,
     Messages.MessageMedia,
     Partners.Organization,
@@ -40,6 +41,7 @@ defmodule Glific.Messages.Message do
           flow_object: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           media_id: non_neg_integer | nil,
           media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
+          location: Location.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           body: String.t() | nil,
@@ -107,6 +109,8 @@ defmodule Glific.Messages.Message do
     belongs_to :flow_object, Flow, foreign_key: :flow_id
     belongs_to :media, MessageMedia
     belongs_to :organization, Organization
+
+    has_one :location, Location
 
     many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
 
