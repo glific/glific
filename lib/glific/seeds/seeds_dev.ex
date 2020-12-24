@@ -455,85 +455,51 @@ if Code.ensure_loaded?(Faker) do
     def seed_group_messages(organization \\ nil) do
       organization = get_organization(organization)
 
+      [g1, g2 | _] = Glific.Groups.list_groups(%{filter: %{organization_id: organization.id}})
+
+      do_seed_group_messages(g1, organization, 0)
+      do_seed_group_messages(g2, organization, 2)
+    end
+
+    defp do_seed_group_messages(group, organization, time_shift) do
       {:ok, sender} =
         Repo.fetch_by(
           Contact,
           %{name: "Glific Admin", organization_id: organization.id}
         )
 
-      [g1, g2 | _] = Glific.Groups.list_groups(%{filter: %{organization_id: organization.id}})
+      group = group |> Repo.preload(:contacts)
 
-      g1 = g1 |> Repo.preload(:contacts)
-      g2 = g2 |> Repo.preload(:contacts)
-
-      g1.contacts
+      group.contacts
       |> Enum.each(fn contact ->
-        Repo.insert!(%Message{
-          body: "#{g1.label} message body",
-          flow: :outbound,
-          type: :text,
-          bsp_message_id: Faker.String.base64(10),
-          bsp_status: :enqueued,
-          sender_id: sender.id,
-          receiver_id: contact.id,
-          contact_id: contact.id,
-          organization_id: organization.id
-        })
+        message_obj(group, sender, contact, organization)
+        |> Repo.insert!()
       end)
 
-      Repo.insert!(%Message{
-        body: "#{g1.label} message body",
-        flow: :outbound,
-        type: :text,
-        bsp_message_id: Faker.String.base64(10),
-        bsp_status: :enqueued,
-        sender_id: sender.id,
-        receiver_id: sender.id,
-        contact_id: sender.id,
-        group_id: g1.id,
-        organization_id: organization.id
-      })
+      message_obj(group, sender, sender, organization)
+      |> Map.merge(%{group_id: group.id})
+      |> Repo.insert!()
 
       Repo.update!(
-        Ecto.Changeset.change(g1, %{
-          last_communication_at: DateTime.utc_now() |> DateTime.truncate(:second)
-        })
-      )
-
-      g2.contacts
-      |> Enum.each(fn contact ->
-        Repo.insert!(%Message{
-          body: "#{g2.label} message body",
-          flow: :outbound,
-          type: :text,
-          bsp_message_id: Faker.String.base64(10),
-          bsp_status: :enqueued,
-          sender_id: sender.id,
-          receiver_id: contact.id,
-          contact_id: contact.id,
-          organization_id: organization.id
-        })
-      end)
-
-      Repo.insert!(%Message{
-        body: "#{g2.label} message body",
-        flow: :outbound,
-        type: :text,
-        bsp_message_id: Faker.String.base64(10),
-        bsp_status: :enqueued,
-        sender_id: sender.id,
-        receiver_id: sender.id,
-        contact_id: sender.id,
-        group_id: g2.id,
-        organization_id: organization.id
-      })
-
-      Repo.update!(
-        Ecto.Changeset.change(g2, %{
+        Ecto.Changeset.change(group, %{
           last_communication_at:
-            Timex.shift(DateTime.utc_now(), seconds: 2) |> DateTime.truncate(:second)
+            Timex.shift(DateTime.utc_now(), seconds: time_shift) |> DateTime.truncate(:second)
         })
       )
+    end
+
+    defp message_obj(group, sender, receiver, organization) do
+      %Message{
+        body: "#{group.label} message body",
+        flow: :outbound,
+        type: :text,
+        bsp_message_id: Faker.String.base64(10),
+        bsp_status: :enqueued,
+        sender_id: sender.id,
+        receiver_id: receiver.id,
+        contact_id: receiver.id,
+        organization_id: organization.id
+      }
     end
 
     @doc false

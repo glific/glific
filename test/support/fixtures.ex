@@ -454,52 +454,24 @@ defmodule Glific.Fixtures do
   @spec group_messages_fixture(map()) :: nil
   def group_messages_fixture(attrs) do
     organization_id = attrs.organization_id
-    group_contacts_fixture(attrs)
+    [cg1, cg2, cg3] = group_contacts_fixture(attrs)
 
-    [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization_id}})
+    {:ok, group_1} =
+      Repo.fetch_by(Groups.Group, %{id: cg1.group_id, organization_id: attrs.organization_id})
 
-    create_group_messages(g1, organization_id, 0)
-    create_group_messages(g2, organization_id, 2)
-  end
+    {:ok, group_2} =
+      Repo.fetch_by(Groups.Group, %{id: cg3.group_id, organization_id: attrs.organization_id})
 
-  defp create_group_messages(group, organization_id, time_shift) do
-    {:ok, sender} =
-      Repo.fetch_by(
-        Contacts.Contact,
-        %{name: "Glific Admin", organization_id: organization_id}
-      )
-
-    group = group |> Repo.preload(:contacts)
-
-    group.contacts
-    |> Enum.each(fn contact ->
-      message_obj(group, sender, contact, organization_id)
-      |> Repo.insert!()
-    end)
-
-    message_obj(group, sender, sender, organization_id)
-    |> Map.merge(%{group_id: group.id})
-    |> Repo.insert!()
-
-    Repo.update!(
-      Ecto.Changeset.change(group, %{
-        last_communication_at:
-          Timex.shift(DateTime.utc_now(), seconds: time_shift) |> DateTime.truncate(:second)
-      })
-    )
-  end
-
-  defp message_obj(group, sender, receiver, organization_id) do
-    %Message{
-      body: "#{group.label} message body",
+    valid_attrs = %{
+      body: "group message",
       flow: :outbound,
       type: :text,
-      bsp_message_id: Faker.String.base64(10),
-      bsp_status: :enqueued,
-      sender_id: sender.id,
-      receiver_id: receiver.id,
-      contact_id: receiver.id,
-      organization_id: organization_id
+      sender_id: 1,
+      receiver_id: cg1.contact_id,
+      organization_id: attrs.organization_id
     }
+
+    Messages.create_and_send_message_to_group(valid_attrs, group_1)
+    Messages.create_and_send_message_to_group(valid_attrs, group_2)
   end
 end
