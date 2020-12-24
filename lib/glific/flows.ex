@@ -512,7 +512,7 @@ defmodule Glific.Flows do
     organization = Partners.organization(flow.organization_id)
     # lets do 90% of organization bsp limit to allow replies to come in and be processed
     org_limit = organization.services["bsp"].keys["bsp_limit"]
-    org_limit = if is_nil(org_limit), do: 1, else:  org_limit
+    org_limit = if is_nil(org_limit), do: 30, else:  org_limit
     limit = div(org_limit * 90, 100)
 
     _ignore =
