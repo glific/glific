@@ -4,8 +4,8 @@ defmodule Glific.ConversationsGroupTest do
 
   alias Glific.{
     ConversationsGroup,
-    Groups,
     Fixtures,
+    Groups,
     Seeds.SeedsDev
   }
 
