@@ -491,7 +491,6 @@ defmodule Glific.Contacts do
   @spec optin_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
     organization = Partners.organization(organization_id)
-    credentials = organization.services["bsp"]
 
     case organization.bsp.shortcode do
       "gupshup" -> GupshupContacts.optin_contact(attrs)
