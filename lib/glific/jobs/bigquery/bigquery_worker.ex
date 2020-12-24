@@ -444,7 +444,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     dataset_id = organization.contact.phone
     table_id = table
     token = Partners.get_goth_token(organization_id, "bigquery")
-    data|>IO.inspect()
     conn = Connection.new(token.token)
     # In case of error response error will be stored in the oban job
     Tabledata.bigquery_tabledata_insert_all(

@@ -122,6 +122,7 @@ defmodule Glific.Bigquery do
           {:error, _} -> nil
         end
     end
+    :ok
   end
 
   @doc """
