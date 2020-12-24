@@ -3,7 +3,6 @@ defmodule Glific.Providers.ContactBehaviour do
   The contact behaviour which all the providers needs to implement for communication
   """
 
-  @callback optin_contact(message :: Glific.Messages.Message.t()) ::
-              {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @callback optin_contact(attrs :: map()) ::{:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
 
 end
