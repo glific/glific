@@ -465,16 +465,10 @@ defmodule Glific.Fixtures do
       body: "group message",
       flow: :outbound,
       type: :text,
-      sender_id: 1,
       organization_id: attrs.organization_id
     }
 
-    valid_attrs
-    |> Map.merge(%{receiver_id: cg1.contact_id})
-    |> Messages.create_and_send_message_to_group(group_1)
-
-    valid_attrs
-    |> Map.merge(%{receiver_id: cg3.contact_id})
-    |> Messages.create_and_send_message_to_group(valid_attrs, group_2)
+    Messages.create_and_send_message_to_group(valid_attrs, group_1)
+    Messages.create_and_send_message_to_group(valid_attrs, group_2)
   end
 end
