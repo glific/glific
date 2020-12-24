@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Store messages sent to group in messages table
 - Add API to retrieve group conversations
+- Add flow_context id to flow results table so we store each run through the flow
 
 ## [0.8.6] - 2020-12-22
 ### Added
