@@ -110,11 +110,10 @@ defmodule Glific.Templates do
     # validate HSM before calling the BSP's API
     validation_result = validate_hsm(attrs)
 
-    if validation_result == :ok do
-      submit_for_approval(attrs)
-    else
-      validation_result
-    end
+    if validation_result == :ok,
+      do: submit_for_approval(attrs),
+      else: validation_result
+
   end
 
   def create_session_template(attrs) do
@@ -135,9 +134,10 @@ defmodule Glific.Templates do
      ["HSM approval", "for HSM approval shortcode, category and example fields are required"]}
   end
 
+  @doc false
   @spec do_create_session_template(map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp do_create_session_template(attrs) do
+  def do_create_session_template(attrs) do
     %SessionTemplate{}
     |> SessionTemplate.changeset(attrs)
     |> Repo.insert()
@@ -146,34 +146,10 @@ defmodule Glific.Templates do
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
   defp submit_for_approval(attrs) do
     organization = Partners.organization(attrs.organization_id)
-
-    bsp_creds = organization.services["bsp"]
-    api_key = bsp_creds.secrets["api_key"]
-    url = bsp_creds.keys["api_end_point"] <> "/template/add/" <> bsp_creds.secrets["app_name"]
-
-    with {:ok, response} <- post(url, body(attrs, organization), headers: [{"apikey", api_key}]),
-         {200, _response} <- {response.status, response} do
-      {:ok, response_data} = Jason.decode(response.body)
-
-      attrs
-      |> Map.merge(%{
-        number_parameter: length(Regex.split(~r/{{.}}/, attrs.body)) - 1,
-        uuid: response_data["template"]["id"],
-        status: response_data["template"]["status"],
-        is_active:
-          if(response_data["template"]["status"] == "APPROVED",
-            do: true,
-            else: false
-          )
-      })
-      |> do_create_session_template()
-    else
-      {status, response} ->
-        # structure of response body can be different for different errors
-        {:error, ["BSP response status: #{to_string(status)}", response.body]}
-
-      _ ->
-        {:error, ["BSP", "couldn't submit for approval"]}
+    organization.bsp.shortcode
+    |> case do
+      "gupshup" -> Glific.Providers.Gupshup.Template.submit_for_approval(attrs)
+        _ -> {:error, "Invalid provider"}
     end
   end
 
@@ -271,26 +247,16 @@ defmodule Glific.Templates do
   @spec update_hsms(non_neg_integer()) :: :ok | {:error, String.t()}
   def update_hsms(organization_id) do
     organization = Partners.organization(organization_id)
-
-    bsp_creds = organization.services["bsp"]
-    api_key = bsp_creds.secrets["api_key"]
-    url = bsp_creds.keys["api_end_point"] <> "/template/list/" <> bsp_creds.secrets["app_name"]
-
-    with {:ok, response} <-
-           Tesla.get(url, headers: [{"apikey", api_key}]),
-         {:ok, response_data} <- Jason.decode(response.body),
-         false <- is_nil(response_data["templates"]) do
-      do_update_hsms(response_data["templates"], organization)
-
-      :ok
-    else
-      _ ->
-        {:error, ["BSP", "couldn't connect"]}
+    organization.bsp.shortcode
+    |> case do
+      "gupshup" -> Glific.Providers.Gupshup.Template.update_hsm_templates(organization_id)
+        _ -> {:error, "Invalid provider"}
     end
   end
 
+  @doc false
   @spec do_update_hsms(map(), Organization.t()) :: :ok
-  defp do_update_hsms(templates, organization) do
+  def do_update_hsms(templates, organization) do
     organization_languages =
       Enum.map(organization.languages, fn language -> {language.locale, language.id} end)
       |> Map.new()
@@ -373,4 +339,5 @@ defmodule Glific.Templates do
       |> SessionTemplate.changeset(update_attrs)
       |> Repo.update()
   end
+
 end
