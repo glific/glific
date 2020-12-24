@@ -5,6 +5,8 @@ defmodule Glific.Repo.Migrations.V0_8_7_AlterGlificTables do
     add_group_id_to_messages()
 
     add_last_communication_at_to_groups()
+
+    add_flow_context_to_results()
   end
 
   defp add_group_id_to_messages() do
@@ -18,6 +20,13 @@ defmodule Glific.Repo.Migrations.V0_8_7_AlterGlificTables do
     alter table(:groups) do
       # field can be used to sort group conversations
       add :last_communication_at, :utc_datetime
+    end
+  end
+
+  defp add_flow_context_to_results() do
+    alter table(:flow_results) do
+      # this is not a foreign key
+      add :flow_context_id, :bigint
     end
   end
 end

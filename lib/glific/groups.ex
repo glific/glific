@@ -111,6 +111,15 @@ defmodule Glific.Groups do
   end
 
   @doc """
+  Fetches all group ids in an organization
+  """
+  @spec get_group_ids :: list()
+  def get_group_ids do
+    Repo.all(Group)
+    |> Enum.map(fn group -> group.id end)
+  end
+
+  @doc """
   Creates a group.
 
   ## Examples
@@ -207,6 +216,7 @@ defmodule Glific.Groups do
 
   @doc """
   Delete group contacts
+
   """
   @spec delete_group_contacts_by_ids(integer, []) :: {integer(), nil | [term()]}
   def delete_group_contacts_by_ids(group_id, contact_ids) do
