@@ -3,6 +3,7 @@ defmodule Glific.Fixtures do
   A module for defining fixtures that can be used in tests.
   """
   alias Faker.{
+    DateTime,
     Person,
     Phone
   }
@@ -35,8 +36,8 @@ defmodule Glific.Fixtures do
   def contact_fixture(attrs \\ %{}) do
     valid_attrs = %{
       name: Person.name(),
-      optin_time: Faker.DateTime.backward(1),
-      last_message_at: Faker.DateTime.backward(0),
+      optin_time: DateTime.backward(1),
+      last_message_at: DateTime.backward(0),
       phone: Phone.EnUs.phone(),
       status: :valid,
       bsp_status: :session_and_hsm,
@@ -465,7 +466,6 @@ defmodule Glific.Fixtures do
       flow: :outbound,
       type: :text,
       sender_id: 1,
-      receiver_id: cg1.contact_id,
       organization_id: attrs.organization_id
     }
 
@@ -475,6 +475,6 @@ defmodule Glific.Fixtures do
 
     valid_attrs
     |> Map.merge(%{receiver_id: cg3.contact_id})
-    Messages.create_and_send_message_to_group(valid_attrs, group_2)
+    |> Messages.create_and_send_message_to_group(valid_attrs, group_2)
   end
 end
