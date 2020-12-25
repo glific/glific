@@ -74,7 +74,6 @@ defmodule Glific.Flows.FlowResult do
   def upsert_flow_result(attrs) do
     case Repo.get_by(FlowResult, %{flow_context_id: attrs.flow_context_id}) do
       nil -> %FlowResult{} |> changeset(attrs) |> Repo.insert()
-
       flow_result -> flow_result |> changeset(attrs) |> Repo.update()
     end
   end
