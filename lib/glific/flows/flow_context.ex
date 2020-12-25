@@ -203,6 +203,7 @@ defmodule Glific.Flows.FlowContext do
         contact_id: context.contact_id,
         flow_id: context.flow_id,
         flow_version: context.flow.version,
+        flow_context_id: context.id,
         flow_uuid: context.flow_uuid,
         organization_id: context.organization_id
       })

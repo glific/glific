@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.SearchTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
+    Groups.Group,
     Messages,
     Messages.Message,
     Repo,
@@ -222,6 +223,33 @@ defmodule GlificWeb.Schema.SearchTest do
     # search excludes the org contact id since that is the sender of all messages
     assert length(get_in(query_data, [:data, "search"])) ==
              get_contacts_count(user.organization_id) - 1
+  end
+
+  test "search for conversations group", %{staff: user} = attrs do
+    [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
+    {:ok, group} = Repo.fetch_by(Group, %{id: cg1.group_id})
+
+    valid_attrs = %{
+      body: "#{group.label} message",
+      flow: :outbound,
+      type: :text,
+      organization_id: attrs.organization_id
+    }
+
+    Messages.create_and_send_message_to_group(valid_attrs, group)
+
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{"term" => "", "searchGroup" => true, "include_groups" => ["#{group.id}"]},
+          "contactOpts" => %{"limit" => 10},
+          "messageOpts" => %{"limit" => 10}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert [conversation] = get_in(query_data, [:data, "search"])
+    assert %{"body" => "#{group.label} message"} in conversation["group"]["messages"]
   end
 
   test "save search will save the arguments", %{staff: user} do

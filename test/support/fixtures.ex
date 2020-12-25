@@ -449,4 +449,27 @@ defmodule Glific.Fixtures do
 
     user
   end
+
+  @doc false
+  @spec group_messages_fixture(map()) :: nil
+  def group_messages_fixture(attrs) do
+    [cg1, _cg2, cg3] = group_contacts_fixture(attrs)
+
+    {:ok, group_1} =
+      Repo.fetch_by(Groups.Group, %{id: cg1.group_id, organization_id: attrs.organization_id})
+
+    {:ok, group_2} =
+      Repo.fetch_by(Groups.Group, %{id: cg3.group_id, organization_id: attrs.organization_id})
+
+    valid_attrs = %{
+      body: "group message",
+      flow: :outbound,
+      type: :text,
+      organization_id: attrs.organization_id
+    }
+
+    Messages.create_and_send_message_to_group(valid_attrs, group_1)
+    Messages.create_and_send_message_to_group(valid_attrs, group_2)
+    nil
+  end
 end

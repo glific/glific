@@ -14,7 +14,14 @@ defmodule Glific.Flows.FlowResult do
     Repo
   }
 
-  @required_fields [:contact_id, :flow_id, :flow_uuid, :flow_version, :organization_id]
+  @required_fields [
+    :contact_id,
+    :flow_context_id,
+    :flow_id,
+    :flow_uuid,
+    :flow_version,
+    :organization_id
+  ]
   @optional_fields [:results]
 
   @type t() :: %__MODULE__{
@@ -23,6 +30,7 @@ defmodule Glific.Flows.FlowResult do
           results: map() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          flow_context_id: non_neg_integer | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           flow_uuid: Ecto.UUID.t() | nil,
@@ -35,6 +43,10 @@ defmodule Glific.Flows.FlowResult do
 
   schema "flow_results" do
     field :results, :map, default: %{}
+
+    # Note that this is not a foreign key since contexts are cleaned up from the DB on a
+    # periodic basis
+    field :flow_context_id, :integer
 
     field :flow_version, :integer
 
@@ -60,11 +72,9 @@ defmodule Glific.Flows.FlowResult do
   @doc false
   @spec upsert_flow_result(map()) :: {:ok, FlowResult.t()} | {:error, Ecto.Changeset.t()}
   def upsert_flow_result(attrs) do
-    Repo.insert(
-      changeset(%FlowResult{}, attrs),
-      returning: true,
-      conflict_target: [:contact_id, :flow_id, :flow_version],
-      on_conflict: [set: [results: attrs.results]]
-    )
+    case Repo.get_by(FlowResult, %{flow_context_id: attrs.flow_context_id}) do
+      nil -> %FlowResult{} |> changeset(attrs) |> Repo.insert()
+      flow_result -> flow_result |> changeset(attrs) |> Repo.update()
+    end
   end
 end

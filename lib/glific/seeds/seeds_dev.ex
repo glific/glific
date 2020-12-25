@@ -414,16 +414,10 @@ if Code.ensure_loaded?(Faker) do
     def seed_group_contacts(organization \\ nil) do
       organization = get_organization(organization)
 
-      [_glific_admin, c1, c2 | _] =
+      [_glific_admin, c1, c2, c3 | _] =
         Contacts.list_contacts(%{filter: %{organization_id: organization.id}})
 
       [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c2.id,
-        group_id: g1.id,
-        organization_id: organization.id
-      })
 
       Repo.insert!(%Groups.ContactGroup{
         contact_id: c1.id,
@@ -433,9 +427,79 @@ if Code.ensure_loaded?(Faker) do
 
       Repo.insert!(%Groups.ContactGroup{
         contact_id: c2.id,
+        group_id: g1.id,
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%Groups.ContactGroup{
+        contact_id: c3.id,
+        group_id: g1.id,
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%Groups.ContactGroup{
+        contact_id: c2.id,
         group_id: g2.id,
         organization_id: organization.id
       })
+
+      Repo.insert!(%Groups.ContactGroup{
+        contact_id: c3.id,
+        group_id: g2.id,
+        organization_id: organization.id
+      })
+    end
+
+    @doc false
+    @spec seed_group_messages(Organization.t() | nil) :: nil
+    def seed_group_messages(organization \\ nil) do
+      organization = get_organization(organization)
+
+      [g1, g2 | _] = Glific.Groups.list_groups(%{filter: %{organization_id: organization.id}})
+
+      do_seed_group_messages(g1, organization, 0)
+      do_seed_group_messages(g2, organization, 2)
+    end
+
+    defp do_seed_group_messages(group, organization, time_shift) do
+      {:ok, sender} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Glific Admin", organization_id: organization.id}
+        )
+
+      group = group |> Repo.preload(:contacts)
+
+      group.contacts
+      |> Enum.each(fn contact ->
+        message_obj(group, sender, contact, organization)
+        |> Repo.insert!()
+      end)
+
+      message_obj(group, sender, sender, organization)
+      |> Map.merge(%{group_id: group.id})
+      |> Repo.insert!()
+
+      Repo.update!(
+        Ecto.Changeset.change(group, %{
+          last_communication_at:
+            Timex.shift(DateTime.utc_now(), seconds: time_shift) |> DateTime.truncate(:second)
+        })
+      )
+    end
+
+    defp message_obj(group, sender, receiver, organization) do
+      %Message{
+        body: "#{group.label} message body",
+        flow: :outbound,
+        type: :text,
+        bsp_message_id: Faker.String.base64(10),
+        bsp_status: :enqueued,
+        sender_id: sender.id,
+        receiver_id: receiver.id,
+        contact_id: receiver.id,
+        organization_id: organization.id
+      }
     end
 
     @doc false
@@ -759,6 +823,8 @@ if Code.ensure_loaded?(Faker) do
       seed_group_contacts(organization)
 
       seed_group_users(organization)
+
+      seed_group_messages(organization)
     end
   end
 end

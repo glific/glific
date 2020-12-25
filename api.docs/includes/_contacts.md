@@ -660,6 +660,12 @@ mutation optinContact($phone: String!, $name: String) {
 }
 ```
 
+### Query Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+phone | <a href="#string">String</a>! | required ||
+name | <a href="#string">String</a> |||
+
 ### Return Parameters
 Type | Description
 | ---- | -----------
