@@ -154,23 +154,23 @@ defmodule Glific.Templates do
     end
   end
 
-  @spec body(map()) :: map()
-  defp body(attrs) do
-    language =
-      Enum.find(Settings.list_languages(), fn language ->
-        to_string(language.id) == to_string(attrs.language_id)
-      end)
+  # @spec body(map()) :: map()
+  # defp body(attrs) do
+  #   language =
+  #     Enum.find(Settings.list_languages(), fn language ->
+  #       to_string(language.id) == to_string(attrs.language_id)
+  #     end)
 
-    %{
-      elementName: attrs.shortcode,
-      languageCode: language.locale,
-      content: attrs.body,
-      category: attrs.category,
-      vertical: attrs.shortcode,
-      templateType: String.upcase(Atom.to_string(attrs.type)),
-      example: attrs.example
-    }
-  end
+  #   %{
+  #     elementName: attrs.shortcode,
+  #     languageCode: language.locale,
+  #     content: attrs.body,
+  #     category: attrs.category,
+  #     vertical: attrs.shortcode,
+  #     templateType: String.upcase(Atom.to_string(attrs.type)),
+  #     example: attrs.example
+  #   }
+  # end
 
   @doc """
   Updates a session_template.
@@ -257,7 +257,7 @@ defmodule Glific.Templates do
 
   @doc false
   @spec do_update_hsms(map(), Organization.t()) :: :ok
-  defp do_update_hsms(templates, organization) do
+  def do_update_hsms(templates, organization) do
     languages =
       Settings.list_languages()
       |> Enum.map(fn language -> {language.locale, language.id} end)

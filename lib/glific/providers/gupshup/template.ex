@@ -41,7 +41,7 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
-  @spec update_hsms(non_neg_integer()) :: :ok | {:error, String.t()}
+  @spec update_hsm_templates(non_neg_integer()) :: :ok | {:error, String.t()}
   def update_hsm_templates(organization_id) do
     organization = Partners.organization(organization_id)
     bsp_creds = organization.services["bsp"]
