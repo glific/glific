@@ -470,5 +470,6 @@ defmodule Glific.Fixtures do
 
     Messages.create_and_send_message_to_group(valid_attrs, group_1)
     Messages.create_and_send_message_to_group(valid_attrs, group_2)
+    nil
   end
 end
