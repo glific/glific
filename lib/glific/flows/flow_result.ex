@@ -72,11 +72,10 @@ defmodule Glific.Flows.FlowResult do
   @doc false
   @spec upsert_flow_result(map()) :: {:ok, FlowResult.t()} | {:error, Ecto.Changeset.t()}
   def upsert_flow_result(attrs) do
-    Repo.insert(
-      changeset(%FlowResult{}, attrs),
-      returning: true,
-      conflict_target: [:contact_id, :flow_context_id, :flow_id, :flow_version],
-      on_conflict: [set: [results: attrs.results]]
-    )
+    case Repo.get_by(FlowResult, %{flow_context_id: attrs.flow_context_id}) do
+      nil -> %FlowResult{} |> changeset(attrs) |> Repo.insert()
+
+      flow_result -> flow_result |> changeset(attrs) |> Repo.update()
+    end
   end
 end

@@ -14,6 +14,7 @@ defmodule Glific.Repo.Migrations.V0_8_7_AlterGlificTables do
       # add group_id to record messages sent to a group
       add :group_id, references(:groups, on_delete: :delete_all), null: true
     end
+
   end
 
   defp add_last_communication_at_to_groups() do
@@ -28,5 +29,8 @@ defmodule Glific.Repo.Migrations.V0_8_7_AlterGlificTables do
       # this is not a foreign key
       add :flow_context_id, :bigint
     end
+
+    drop index(:flow_results, [:contact_id, :flow_id, :flow_version])
+    create unique_index(:flow_results, :flow_context_id)
   end
 end

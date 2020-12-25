@@ -10,7 +10,6 @@ defmodule Glific.Messages do
     Contacts.Contact,
     Conversations.Conversation,
     Flows.MessageVarParser,
-    Groups,
     Groups.Group,
     Jobs.BigQueryWorker,
     Messages.Message,
