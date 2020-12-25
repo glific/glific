@@ -20,11 +20,17 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :description, :string
     field :is_restricted, :boolean
 
+    field :last_communication_at, :datetime
+
     field :contacts, list_of(:contact) do
       resolve(dataloader(Repo))
     end
 
     field :users, list_of(:user) do
+      resolve(dataloader(Repo))
+    end
+
+    field :messages, list_of(:message) do
       resolve(dataloader(Repo))
     end
 

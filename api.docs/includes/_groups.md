@@ -317,12 +317,22 @@ Type | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>messages</strong></td>
+<td valign="top">[<a href="#message">Message</a>]</td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>contactsCount</strong></td>
 <td valign="top"><a href="#integer">Integer</a></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>usersCount</strong></td>
 <td valign="top"><a href="#integer">Integer</a></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>lastCommunicationAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
 </tr>
 </tbody>
 </table>

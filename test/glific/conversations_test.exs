@@ -21,7 +21,7 @@ defmodule Glific.ConversationsTest do
     test "new/2 will create a conversation object with contact and messages", attrs do
       [contact | _] = Contacts.list_contacts(%{filter: attrs})
       messages = Messages.list_messages(%{filter: attrs})
-      conversation = Conversation.new(contact, messages)
+      conversation = Conversation.new(contact, nil, messages)
       assert conversation.id == nil
       assert conversation.contact == contact
       assert conversation.messages == messages
