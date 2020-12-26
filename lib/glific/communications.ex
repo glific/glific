@@ -37,7 +37,7 @@ defmodule Glific.Communications do
 
   def publish_data(data, topic, organization_id) do
     if is_struct(data) do
-      Logger.info("Publishing: #{Ecto.get_meta(data, :source)}, #{topic}:#{organization_id}"),
+      Logger.info("Publishing: #{Ecto.get_meta(data, :source)}, #{topic}:#{organization_id}")
     else
       Logger.info("Publishing: #{data.key}, #{topic}:#{organization_id}")
     end
