@@ -217,10 +217,10 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec check_for_hsm_message(map(), Contact.t()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
+  @spec check_for_hsm_message(map(), Contact.t()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
   defp check_for_hsm_message(attrs, contact) do
-    with true <- Map.has_key?(attrs, :params),
-         true <- Map.has_key?(attrs, :template_id),
+    with true <- Map.has_key?(attrs, :template_id),
          true <- Map.get(attrs, :is_hsm) do
       create_and_send_hsm_message(attrs.template_id, attrs.receiver_id, attrs.params)
     else
@@ -346,7 +346,7 @@ defmodule Glific.Messages do
 
     if session_template.number_parameters == length(parameters) do
       updated_template = parse_template_vars(session_template, parameters)
-    # Passing uuid to save db call when sending template via provider
+      # Passing uuid to save db call when sending template via provider
       message_params = %{
         body: updated_template.body,
         type: updated_template.type,
@@ -358,6 +358,7 @@ defmodule Glific.Messages do
         template_id: template_id,
         params: parameters
       }
+
       Contacts.can_send_message_to?(contact, true)
       |> create_and_send_message(message_params)
     else

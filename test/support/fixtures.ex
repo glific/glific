@@ -19,6 +19,7 @@ defmodule Glific.Fixtures do
     Settings,
     Tags,
     Templates,
+    Templates.SessionTemplate,
     Users
   }
 
@@ -98,7 +99,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec organization_fixture(map()) :: Partners.Organization.t()
+  @spec organization_fixture(map()) :: Organization.t()
   def organization_fixture(attrs \\ %{}) do
     contact =
       if Map.get(attrs, :contact_id),
@@ -236,7 +237,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec session_template_fixture(map()) :: Templates.SessionTemplate.t()
+  @spec session_template_fixture(map()) :: SessionTemplate.t()
   def session_template_fixture(attrs \\ %{}) do
     language = language_fixture()
 
@@ -451,7 +452,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec otp_hsm_fixture() :: Templates.SessionTemplate.t()
+  @spec otp_hsm_fixture() :: SessionTemplate.t()
   def otp_hsm_fixture do
     Tesla.Mock.mock(fn
       %{method: :post} ->
@@ -478,6 +479,9 @@ defmodule Glific.Fixtures do
       example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
       language_id: organization_fixture().default_language_id
     })
+  end
+
+  @doc false
   @spec group_messages_fixture(map()) :: nil
   def group_messages_fixture(attrs) do
     [cg1, _cg2, cg3] = group_contacts_fixture(attrs)
@@ -498,6 +502,5 @@ defmodule Glific.Fixtures do
     Messages.create_and_send_message_to_group(valid_attrs, group_1)
     Messages.create_and_send_message_to_group(valid_attrs, group_2)
     nil
->>>>>>> master
   end
 end

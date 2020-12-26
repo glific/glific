@@ -10,6 +10,7 @@ defmodule Glific.Templates do
   alias Glific.{
     Partners,
     Partners.Organization,
+    Providers.Gupshup.Template,
     Repo,
     Settings,
     Tags.Tag,
@@ -149,28 +150,10 @@ defmodule Glific.Templates do
     organization = Partners.organization(attrs.organization_id)
     organization.bsp.shortcode
     |> case do
-      "gupshup" -> Glific.Providers.Gupshup.Template.submit_for_approval(attrs)
+      "gupshup" -> Template.submit_for_approval(attrs)
         _ -> {:error, "Invalid provider"}
     end
   end
-
-  # @spec body(map()) :: map()
-  # defp body(attrs) do
-  #   language =
-  #     Enum.find(Settings.list_languages(), fn language ->
-  #       to_string(language.id) == to_string(attrs.language_id)
-  #     end)
-
-  #   %{
-  #     elementName: attrs.shortcode,
-  #     languageCode: language.locale,
-  #     content: attrs.body,
-  #     category: attrs.category,
-  #     vertical: attrs.shortcode,
-  #     templateType: String.upcase(Atom.to_string(attrs.type)),
-  #     example: attrs.example
-  #   }
-  # end
 
   @doc """
   Updates a session_template.
@@ -250,7 +233,7 @@ defmodule Glific.Templates do
     organization = Partners.organization(organization_id)
     organization.bsp.shortcode
     |> case do
-      "gupshup" -> Glific.Providers.Gupshup.Template.update_hsm_templates(organization_id)
+      "gupshup" -> Template.update_hsm_templates(organization_id)
         _ -> {:error, "Invalid provider"}
     end
   end
@@ -389,7 +372,6 @@ defmodule Glific.Templates do
       |> SessionTemplate.changeset(update_attrs)
       |> Repo.update()
   end
-
 
   @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}

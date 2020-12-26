@@ -5,19 +5,27 @@ defmodule Glific.Providers.Gupshup.Template do
 
   alias Glific.{
     Partners,
-    Providers.Gupshup.ApiClient
+    Partners.Organization,
+    Providers.Gupshup.ApiClient,
+    Templates.SessionTemplate
   }
 
+  @doc """
+  Submitting HSM template for approval
+  """
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
   def submit_for_approval(attrs) do
     organization = Partners.organization(attrs.organization_id)
     bsp_creds = organization.services["bsp"]
     api_key = bsp_creds.secrets["api_key"]
-    template_url = bsp_creds.keys["api_end_point"] <> "/template/add/" <> bsp_creds.secrets["app_name"]
 
-    with {:ok, response} <- ApiClient.post(template_url, body(attrs, organization), headers: [{"apikey", api_key}]),
+    template_url =
+      bsp_creds.keys["api_end_point"] <> "/template/add/" <> bsp_creds.secrets["app_name"]
+
+    with {:ok, response} <-
+           ApiClient.post(template_url, body(attrs, organization), headers: [{"apikey", api_key}]),
          {200, _response} <- {response.status, response} do
-        {:ok, response_data} = Jason.decode(response.body)
+      {:ok, response_data} = Jason.decode(response.body)
 
       attrs
       |> Map.merge(%{
@@ -41,18 +49,23 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
+  @doc """
+  Updating HSM templates for an organization
+  """
   @spec update_hsm_templates(non_neg_integer()) :: :ok | {:error, String.t()}
   def update_hsm_templates(organization_id) do
     organization = Partners.organization(organization_id)
     bsp_creds = organization.services["bsp"]
     api_key = bsp_creds.secrets["api_key"]
-    template_url = bsp_creds.keys["api_end_point"] <> "/template/list/" <> bsp_creds.secrets["app_name"]
+
+    template_url =
+      bsp_creds.keys["api_end_point"] <> "/template/list/" <> bsp_creds.secrets["app_name"]
 
     with {:ok, response} <-
-        ApiClient.get(template_url, headers: [{"apikey", api_key}]),
-        {:ok, response_data} <- Jason.decode(response.body),
-        false <- is_nil(response_data["templates"]) do
-        Glific.Templates.do_update_hsms(response_data["templates"], organization)
+           ApiClient.get(template_url, headers: [{"apikey", api_key}]),
+         {:ok, response_data} <- Jason.decode(response.body),
+         false <- is_nil(response_data["templates"]) do
+      Glific.Templates.do_update_hsms(response_data["templates"], organization)
       :ok
     else
       _ ->
@@ -77,6 +90,4 @@ defmodule Glific.Providers.Gupshup.Template do
       example: attrs.example
     }
   end
-
-
 end
