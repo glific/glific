@@ -36,10 +36,11 @@ defmodule Glific.Communications do
   end
 
   def publish_data(data, topic, organization_id) do
-    if is_struct(data),
-      do: Logger.info("Publishing: #{Ecto.get_meta(data, :source)}, #{topic}:#{organization_id}"),
-      else: Logger.info("Publishing: #{data.key}, #{topic}:#{organization_id}")
-
+    if is_struct(data) do
+      Logger.info("Publishing: #{Ecto.get_meta(data, :source)}, #{topic}:#{organization_id}"),
+    else
+      Logger.info("Publishing: #{data.key}, #{topic}:#{organization_id}")
+    end
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
       data,
