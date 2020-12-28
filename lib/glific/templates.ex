@@ -115,7 +115,6 @@ defmodule Glific.Templates do
     if validation_result == :ok,
       do: submit_for_approval(attrs),
       else: validation_result
-
   end
 
   def create_session_template(attrs) do
@@ -148,10 +147,11 @@ defmodule Glific.Templates do
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
   defp submit_for_approval(attrs) do
     organization = Partners.organization(attrs.organization_id)
+
     organization.bsp.shortcode
     |> case do
       "gupshup" -> Template.submit_for_approval(attrs)
-        _ -> {:error, "Invalid provider"}
+      _ -> {:error, "Invalid provider"}
     end
   end
 
@@ -231,10 +231,11 @@ defmodule Glific.Templates do
   @spec update_hsms(non_neg_integer()) :: :ok | {:error, String.t()}
   def update_hsms(organization_id) do
     organization = Partners.organization(organization_id)
+
     organization.bsp.shortcode
     |> case do
       "gupshup" -> Template.update_hsm_templates(organization_id)
-        _ -> {:error, "Invalid provider"}
+      _ -> {:error, "Invalid provider"}
     end
   end
 
