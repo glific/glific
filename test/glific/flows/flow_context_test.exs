@@ -159,9 +159,11 @@ defmodule Glific.Flows.FlowContextTest do
 
     # now results value will always return the input if there is a map.
     assert FlowContext.get_result_value(flow_context, "@results.test_key") == "test_input"
-    assert FlowContext.get_result_value(flow_context, "@results.test_key.category") == "Default Category"
-    assert FlowContext.get_result_value(flow_context, "@results.test_key.input") == "test_input"
 
+    assert FlowContext.get_result_value(flow_context, "@results.test_key.category") ==
+             "Default Category"
+
+    assert FlowContext.get_result_value(flow_context, "@results.test_key.input") == "test_input"
   end
 
   test "delete_completed_flow_contexts will delete all contexts completed before two days" do

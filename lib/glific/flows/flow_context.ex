@@ -416,9 +416,8 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec get_result_value(FlowContext.t(), String.t()) :: String.t() | nil
   def get_result_value(context, value) when binary_part(value, 0, 9) == "@results." do
-    MessageVarParser.parse(value, %{"results" => context.results })
+    MessageVarParser.parse(value, %{"results" => context.results})
     |> MessageVarParser.parse_results(context.results)
-
   end
 
   def get_result_value(_context, value), do: value
