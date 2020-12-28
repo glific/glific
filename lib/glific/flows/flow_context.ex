@@ -16,6 +16,7 @@ defmodule Glific.Flows.FlowContext do
     Flows,
     Flows.Flow,
     Flows.FlowResult,
+    Flows.MessageVarParser,
     Flows.Node,
     Messages,
     Messages.Message,
@@ -415,8 +416,9 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec get_result_value(FlowContext.t(), String.t()) :: String.t() | nil
   def get_result_value(context, value) when binary_part(value, 0, 9) == "@results." do
-    parts = String.slice(value, 8..-1) |> String.split(".", trim: true)
-    get_in(context.results, parts)
+    MessageVarParser.parse(value, %{"results" => context.results })
+    |> MessageVarParser.parse_results(context.results)
+
   end
 
   def get_result_value(_context, value), do: value

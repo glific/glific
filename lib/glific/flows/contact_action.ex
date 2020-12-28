@@ -87,7 +87,11 @@ defmodule Glific.Flows.ContactAction do
         %Action{templating: templating} = action,
         messages
       ) do
-    message_vars = %{"contact" => Contacts.get_contact_field_map(context.contact_id)}
+    message_vars = %{
+      "contact" => Contacts.get_contact_field_map(context.contact_id),
+      "results" => context.results
+    }
+
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
 
     session_template = Messages.parse_template_vars(templating.template, vars)
