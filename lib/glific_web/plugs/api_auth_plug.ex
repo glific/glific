@@ -153,7 +153,7 @@ defmodule GlificWeb.APIAuthPlug do
       PersistentSessionCache.delete(store_config, metadata[:renewal_token])
       CredentialsCache.delete(store_config, token)
 
-      Endpoint.broadcast("users_socket:" <> metadata[:fingerprint], "disconnect", %{})
+      Endpoint.broadcast("users_socket:" <> metadata[:renewal_token], "disconnect", %{})
     end)
   end
 
