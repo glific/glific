@@ -77,9 +77,7 @@ defmodule Glific.Flows.ContactAction do
             {:ok, %{context | delay: context.delay + @min_delay}, messages}
 
           {:error, message} ->
-            Logger.info(
-              "Error sending message: #{message}"
-            )
+            Logger.info("Error sending message: #{message}")
         end
     end
   end
