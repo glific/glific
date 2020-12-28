@@ -101,9 +101,7 @@ This returns a list of conversations that match the term and filters <a href="#c
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 filter | <a href="#searchfilter">SearchFilter</a> | nil | filter the list
-
 saveSearchInput | <a href="#savesearchinput">SaveSearchInput</a> | nil | filter the list. The label and other parameter should be available.
-
 messageOpts | <a href="#opts">Opts</a> | nil | limit / offset message options
 contactOpts | <a href="#opts">Opts</a> | nil | limit / offset contact options
 
@@ -351,6 +349,12 @@ term | <a href="#string">String</a> | nil | optional keyword to add to saved sea
 <td colspan="2" valign="top"><strong>IncludeGroups</strong></td>
 <td valign="top">[<a href="#gid">Gid</a>]</td>
 <td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>SearchGroup</strong></td>
+<td valign="top">[<a href="#boolean">Boolean</a>]</td>
+<td>When enabled, we retrieve messages sent to a group. IncludeGroups is the only filter used in this case.</td>
 </tr>
 
 <tr>

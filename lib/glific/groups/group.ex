@@ -9,12 +9,13 @@ defmodule Glific.Groups.Group do
   alias Glific.{
     Contacts.Contact,
     Groups.Group,
+    Messages.Message,
     Partners.Organization,
     Users.User
   }
 
   @required_fields [:label]
-  @optional_fields [:is_restricted, :description, :organization_id]
+  @optional_fields [:is_restricted, :description, :organization_id, :last_communication_at]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -22,6 +23,7 @@ defmodule Glific.Groups.Group do
           label: String.t() | nil,
           description: String.t() | nil,
           is_restricted: boolean(),
+          last_communication_at: :utc_datetime | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -33,10 +35,14 @@ defmodule Glific.Groups.Group do
     field :description, :string
     field :is_restricted, :boolean, default: false
 
+    field :last_communication_at, :utc_datetime
+
     belongs_to :organization, Organization
 
     many_to_many :contacts, Contact, join_through: "contacts_groups", on_replace: :delete
     many_to_many :users, User, join_through: "users_groups", on_replace: :delete
+
+    has_many :messages, Message
 
     timestamps(type: :utc_datetime)
   end

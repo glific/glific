@@ -34,6 +34,7 @@ defmodule GlificWeb.Schema.SearchTypes do
 
   object :conversation do
     field :contact, :contact
+    field :group, :group
     field :messages, list_of(:message)
   end
 
@@ -74,6 +75,9 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "Match multiple contact ids"
     field :ids, list_of(:gid)
+
+    @desc "Should we return group conversations? If so we only examine include_groups"
+    field :search_group, :boolean
 
     @desc "Include conversations with these tags"
     field :include_tags, list_of(:gid)

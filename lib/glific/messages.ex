@@ -217,10 +217,10 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec check_for_hsm_message(map(), Contact.t()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
+  @spec check_for_hsm_message(map(), Contact.t()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
   defp check_for_hsm_message(attrs, contact) do
-    with true <- Map.has_key?(attrs, :params),
-         true <- Map.has_key?(attrs, :template_id),
+    with true <- Map.has_key?(attrs, :template_id),
          true <- Map.get(attrs, :is_hsm) do
       create_and_send_hsm_message(attrs.template_id, attrs.receiver_id, attrs.params)
     else
@@ -346,7 +346,7 @@ defmodule Glific.Messages do
 
     if session_template.number_parameters == length(parameters) do
       updated_template = parse_template_vars(session_template, parameters)
-    # Passing uuid to save db call when sending template via provider
+      # Passing uuid to save db call when sending template via provider
       message_params = %{
         body: updated_template.body,
         type: updated_template.type,
@@ -358,6 +358,7 @@ defmodule Glific.Messages do
         template_id: template_id,
         params: parameters
       }
+
       Contacts.can_send_message_to?(contact, true)
       |> create_and_send_message(message_params)
     else
@@ -415,6 +416,22 @@ defmodule Glific.Messages do
     contact_ids =
       group.contacts
       |> Enum.map(fn contact -> contact.id end)
+
+    # We first need to just create a meta level group message
+    organization_id = Repo.get_organization_id()
+    sender_id = Partners.organization_contact_id(organization_id)
+
+    {:ok, _group_message} =
+      message_params
+      |> Map.merge(%{
+        sender_id: sender_id,
+        receiver_id: sender_id,
+        contact_id: sender_id,
+        group_id: group.id,
+        flow: :outbound
+      })
+      |> update_message_attrs()
+      |> create_message()
 
     create_and_send_message_to_contacts(message_params, contact_ids)
   end
@@ -664,7 +681,7 @@ defmodule Glific.Messages do
       contact_order,
       [],
       fn contact, acc ->
-        [Conversation.new(contact, Enum.reverse(contact_messages[contact])) | acc]
+        [Conversation.new(contact, nil, Enum.reverse(contact_messages[contact])) | acc]
       end
     )
   end
@@ -718,7 +735,7 @@ defmodule Glific.Messages do
   # add an empty conversation for a specific contact if ONLY if it exists
   @spec add_conversation([Conversation.t()], Contact.t()) :: [Conversation.t()]
   defp add_conversation(results, contact) do
-    [Conversation.new(contact, []) | results]
+    [Conversation.new(contact, nil, []) | results]
   end
 
   # restrict the conversations query based on the filters in the input args

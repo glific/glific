@@ -15,6 +15,7 @@ defmodule Glific.Contacts do
     Groups.ContactGroup,
     Groups.UserGroup,
     Partners,
+    Providers.GupshupContacts,
     Repo,
     Tags.ContactTag,
     Users.User
@@ -490,28 +491,10 @@ defmodule Glific.Contacts do
   @spec optin_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
     organization = Partners.organization(organization_id)
-    bsp_credentials = organization.services["bsp"]
 
-    url =
-      bsp_credentials.keys["api_end_point"] <>
-        "/app/opt/in/" <> bsp_credentials.secrets["app_name"]
-
-    api_key = bsp_credentials.secrets["api_key"]
-
-    with {:ok, response} <-
-           post(url, %{user: attrs.phone}, headers: [{"apikey", api_key}]),
-         true <- response.status == 202 do
-      %{
-        name: attrs[:name],
-        phone: attrs.phone,
-        organization_id: organization_id,
-        optin_time: DateTime.utc_now(),
-        bsp_status: :hsm
-      }
-      |> create_contact()
-    else
-      _ ->
-        {:error, ["gupshup", "couldn't connect"]}
+    case organization.bsp.shortcode do
+      "gupshup" -> GupshupContacts.optin_contact(attrs)
+      _ -> {:error, "Invalid provider"}
     end
   end
 

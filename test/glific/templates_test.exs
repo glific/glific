@@ -769,7 +769,6 @@ defmodule Glific.TemplatesTest do
 
       otp_hsm_1 = otp_hsm_fixture(l1.id, "APPROVED")
       otp_hsm_2 = otp_hsm_fixture(l2.id, "PENDING")
-      otp_hsm_3 = otp_hsm_fixture(l3.id, "PENDING")
 
       # should update tranlations of already approved HSM
       Tesla.Mock.mock(fn
@@ -790,17 +789,6 @@ defmodule Glific.TemplatesTest do
                     "status" => "APPROVED",
                     "meta" => Jason.encode!(%{example: otp_hsm_2.example}),
                     "languageCode" => l2.locale
-                  },
-                  %{
-                    "id" => otp_hsm_3.uuid,
-                    "elementName" => otp_hsm_3.shortcode,
-                    "data" => otp_hsm_3.body,
-                    "templateType" => "TEXT",
-                    "modifiedOn" =>
-                      DateTime.to_unix(Timex.shift(otp_hsm_3.updated_at, hours: 1), :millisecond),
-                    "status" => "APPROVED",
-                    "meta" => Jason.encode!(%{example: otp_hsm_3.example}),
-                    "languageCode" => l3.locale
                   }
                 ]
               })
@@ -813,7 +801,6 @@ defmodule Glific.TemplatesTest do
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
 
       assert hsm.translations["#{otp_hsm_2.language_id}"] != nil
-      assert hsm.translations["#{otp_hsm_3.language_id}"] != nil
     end
   end
 end

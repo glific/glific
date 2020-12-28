@@ -478,6 +478,16 @@ defmodule Glific.MessagesTest do
 
       # message should be sent only to the contacts of the group
       assert [contact1_id, contact2_id] -- contact_ids == []
+
+      # a message should be created with group_id
+      assert {:ok, _message} =
+               Repo.fetch_by(Message, %{body: valid_attrs.body, group_id: group.id})
+
+      # group should be updated with last communication at
+      {:ok, updated_group} =
+        Repo.fetch_by(Group, %{id: cg1.group_id, organization_id: organization_id})
+
+      assert updated_group.last_communication_at >= group.last_communication_at
     end
 
     test "send hsm message incorrect parameters",
