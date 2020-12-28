@@ -14,6 +14,7 @@ defmodule Glific.Flows.ContactAction do
     Messages.Message
   }
 
+  require Logger
   @min_delay 2
 
   @doc """
@@ -72,8 +73,13 @@ defmodule Glific.Flows.ContactAction do
       true ->
         Messages.create_and_send_message(attrs)
         |> case do
-          {:ok, _message} ->{:ok, %{context | delay: context.delay + @min_delay}, messages}
-          {:error, _} -> {:ok, context, messages}
+          {:ok, _message} ->
+            {:ok, %{context | delay: context.delay + @min_delay}, messages}
+
+          {:error, message} ->
+            Logger.info(
+              "Error sending message: #{message}"
+            )
         end
     end
   end
