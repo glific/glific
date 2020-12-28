@@ -143,6 +143,7 @@ defmodule GlificWeb.Schema.UserTest do
 
   test "update current user password for different scenarios", %{staff: user} do
     user = user |> Repo.preload(:contact)
+    Fixtures.otp_hsm_fixture()
 
     {:ok, otp} =
       RegistrationController.create_and_send_verification_code(

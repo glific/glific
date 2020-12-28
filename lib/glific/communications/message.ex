@@ -34,8 +34,8 @@ defmodule Glific.Communications.Message do
   @doc """
   Send message to receiver using define provider.
   """
-  @spec send_message(Message.t()) :: {:ok, Message.t()} | {:error, String.t()}
-  def send_message(message) do
+  @spec send_message(Message.t(), map()) :: {:ok, Message.t()} | {:error, String.t()}
+  def send_message(message, attrs \\ %{}) do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
     Logger.info(
@@ -49,7 +49,7 @@ defmodule Glific.Communications.Message do
         apply(
           Communications.provider_handler(message.organization_id),
           @type_to_token[message.type],
-          [message]
+          [message, attrs]
         )
 
       {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}

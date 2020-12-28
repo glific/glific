@@ -294,7 +294,7 @@ defmodule Glific.TemplatesTest do
                   "languageCode" => "en_US",
                   "languagePolicy" => "deterministic",
                   "master" => true,
-                  "meta" => "{\"example\" =>\"Your train ticket no. [1234]",
+                  "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
                   "modifiedOn" => 1_595_904_220_495,
                   "status" => "PENDING",
                   "templateType" => "TEXT",
@@ -402,7 +402,7 @@ defmodule Glific.TemplatesTest do
                   "languageCode" => "en_US",
                   "languagePolicy" => "deterministic",
                   "master" => true,
-                  "meta" => "{\"example\" =>\"Your train ticket no. [1234]",
+                  "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
                   "modifiedOn" => 1_595_904_220_495,
                   "status" => "PENDING",
                   "templateType" => "TEXT",
@@ -455,7 +455,7 @@ defmodule Glific.TemplatesTest do
                   "languageCode" => "en_US",
                   "languagePolicy" => "deterministic",
                   "master" => true,
-                  "meta" => "{\"example\" =>\"Your train ticket no. [1234]",
+                  "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
                   "modifiedOn" => 1_595_904_220_495,
                   "status" => "APPROVED",
                   "templateType" => "TEXT",
@@ -527,7 +527,7 @@ defmodule Glific.TemplatesTest do
                     "languageCode" => "en_US",
                     "languagePolicy" => "deterministic",
                     "master" => false,
-                    "meta" => "{\"example\" =>\"Your train ticket no. [1234]",
+                    "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
                     "modifiedOn" => 1_595_904_220_466,
                     "status" => "SANDBOX_REQUESTED",
                     "templateType" => "TEXT",
@@ -542,6 +542,8 @@ defmodule Glific.TemplatesTest do
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: "16e84186-97fa-454e-ac3b-8c9b94e53b4b"})
+
+      assert hsm.example != nil
     end
 
     test "update_hsms/1 should return error in case of error response", attrs do
@@ -620,6 +622,185 @@ defmodule Glific.TemplatesTest do
       assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
       assert hsm.status == "APPROVED"
       assert hsm.is_active == true
+    end
+
+    test "update_hsms/1 should update the existing hsm if new status is other than APPROVED",
+         attrs do
+      [hsm | _] =
+        Templates.list_session_templates(%{
+          filter: %{organization_id: attrs.organization_id, is_hsm: true}
+        })
+
+      # should update the existing hsm if new status is other than APPROVED
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "id" => hsm.uuid,
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(hsm.updated_at, hours: 1), :millisecond),
+                    "status" => "REJECTED"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
+      assert hsm.status == "REJECTED"
+      assert hsm.is_active == false
+    end
+
+    def otp_hsm_fixture(language_id, status) do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "elementName" => "common_otp",
+                  "id" => Ecto.UUID.generate(),
+                  "languageCode" => "en_US",
+                  "status" => status
+                }
+              })
+          }
+      end)
+
+      Fixtures.session_template_fixture(%{
+        body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+        shortcode: "common_otp",
+        is_hsm: true,
+        category: "ALERT_UPDATE",
+        example:
+          "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
+        language_id: language_id
+      })
+    end
+
+    test "update_hsms/1 should update the hsm as approved if no other translation is approved yet",
+         attrs do
+      otp_hsm_1 = otp_hsm_fixture(1, "PENDING")
+      _otp_hsm_2 = otp_hsm_fixture(2, "PENDING")
+
+      # should update the hsm as approved if no other translation is approved yet
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "id" => otp_hsm_1.uuid,
+                    "elementName" => otp_hsm_1.shortcode,
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(otp_hsm_1.updated_at, hours: 1), :millisecond),
+                    "status" => "APPROVED"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
+
+      assert hsm.status == "APPROVED"
+      assert hsm.is_active == true
+    end
+
+    test "update_hsms/1 should update the translation of already approved HSM", attrs do
+      otp_hsm_1 = otp_hsm_fixture(1, "PENDING")
+      otp_hsm_2 = otp_hsm_fixture(2, "APPROVED")
+
+      # should update tranlations of already approved HSM
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "id" => otp_hsm_1.uuid,
+                    "elementName" => otp_hsm_1.shortcode,
+                    "data" => otp_hsm_1.body,
+                    "templateType" => "TEXT",
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(otp_hsm_1.updated_at, hours: 1), :millisecond),
+                    "status" => "APPROVED",
+                    "meta" => Jason.encode!(%{example: otp_hsm_1.example})
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_2.uuid})
+
+      assert hsm.status == "APPROVED"
+      assert hsm.is_active == true
+      assert hsm.translations["#{otp_hsm_1.language_id}"] != nil
+      assert hsm.translations["#{otp_hsm_1.language_id}"]["uuid"] == otp_hsm_1.uuid
+
+      # should delete old entry
+      assert {:error, _} = Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
+    end
+
+    test "update_hsms/1 should update multiple translations of already approved HSM", attrs do
+      [l1, l2, l3 | _] = Glific.Settings.list_languages()
+
+      otp_hsm_1 = otp_hsm_fixture(l1.id, "APPROVED")
+      otp_hsm_2 = otp_hsm_fixture(l2.id, "PENDING")
+
+      # should update tranlations of already approved HSM
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "id" => otp_hsm_2.uuid,
+                    "elementName" => otp_hsm_2.shortcode,
+                    "data" => otp_hsm_2.body,
+                    "templateType" => "TEXT",
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(otp_hsm_2.updated_at, hours: 1), :millisecond),
+                    "status" => "APPROVED",
+                    "meta" => Jason.encode!(%{example: otp_hsm_2.example}),
+                    "languageCode" => l2.locale
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
+
+      assert hsm.translations["#{otp_hsm_2.language_id}"] != nil
     end
   end
 end

@@ -19,6 +19,7 @@ defmodule Glific.Fixtures do
     Settings,
     Tags,
     Templates,
+    Templates.SessionTemplate,
     Users
   }
 
@@ -98,7 +99,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec organization_fixture(map()) :: Partners.Organization.t()
+  @spec organization_fixture(map()) :: Organization.t()
   def organization_fixture(attrs \\ %{}) do
     contact =
       if Map.get(attrs, :contact_id),
@@ -236,7 +237,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec session_template_fixture(map()) :: Templates.SessionTemplate.t()
+  @spec session_template_fixture(map()) :: SessionTemplate.t()
   def session_template_fixture(attrs \\ %{}) do
     language = language_fixture()
 
@@ -448,6 +449,36 @@ defmodule Glific.Fixtures do
       |> Users.create_user()
 
     user
+  end
+
+  @doc false
+  @spec otp_hsm_fixture() :: SessionTemplate.t()
+  def otp_hsm_fixture do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "success",
+              "template" => %{
+                "elementName" => "common_otp",
+                "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
+                "languageCode" => "en_US",
+                "status" => "APPROVED"
+              }
+            })
+        }
+    end)
+
+    session_template_fixture(%{
+      body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+      shortcode: "common_otp",
+      is_hsm: true,
+      category: "ALERT_UPDATE",
+      example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
+      language_id: organization_fixture().default_language_id
+    })
   end
 
   @doc false
