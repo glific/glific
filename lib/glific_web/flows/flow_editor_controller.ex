@@ -81,11 +81,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
         shortcode: Glific.string_clean(params["label"]),
         organization_id: conn.assigns[:organization_id]
       })
-
     conn
     |> json(%{
       key: contact_field.shortcode,
-      name: contact_field.name,
+      label: contact_field.name,
       value_type: contact_field.value_type
     })
   end
