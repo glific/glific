@@ -6,8 +6,8 @@
   ## list of tools (see `mix check` docs for defaults)
   tools: [
     ## curated tools may be disabled (e.g. the check for compilation warnings)
-    # {:sobelow, false},
     # {:compiler, false}
+    {:sobelow, false},
     {:npm_test, false},
     {:formatter, false},
 
@@ -26,8 +26,8 @@
     {:mix_format, "mix format"},
     {:mix_doctor, command: "mix doctor", env: %{"MIX_ENV" => "test"}},
     {:dialyzer, "mix dialyzer --no-check --quiet", detect: [{:package, :dialyxir}]},
-    {:sobelow, "mix sobelow --skip --exit",
-     umbrella: [recursive: true], detect: [{:package, :sobelow}]},
+    # We will enable it later
+    # {:sobelow, "mix sobelow --skip --exit", umbrella: [recursive: true], detect: [{:package, :sobelow}]},
     {:mix_coveralls, "mix coveralls", [{:deps, [:ex_unit]}, {:env, %{"MIX_ENV" => "test"}}]}
   ]
 ]
