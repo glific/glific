@@ -84,6 +84,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     conn
     |> json(%{
       key: contact_field.shortcode,
+      name: contact_field.name,
       label: contact_field.name,
       value_type: contact_field.value_type
     })
