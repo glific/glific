@@ -135,11 +135,16 @@ defmodule Glific.Flows.Router do
         # Once we have the content, we send it over to EEx to execute
         content =
           try do
-            EEx.eval_string(content)
+            if Glific.suspicious_code(content) do
+              Logger.error("EEx suspicious code: #{content}")
+              "Invalid Code"
+            else
+              EEx.eval_string(content)
+            end
           rescue
             EEx.SyntaxError ->
               Logger.error("EEx threw a SyntaxError: #{content}")
-              "Syntax Error"
+              "Invalid Code"
           end
 
         msg = Messages.create_temp_message(context.contact.organization_id, content)

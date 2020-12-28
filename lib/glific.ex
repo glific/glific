@@ -128,6 +128,21 @@ defmodule Glific do
     :ok
   end
 
+  @not_allowed ["Repo", "IO", "File", "Code"]
+
+  @doc """
+  Really simple function to ensure folks do not add Repo and/or IO calls
+  to an EEx snippet. This is an extremely short term fix to avoid shooting
+  ourselves in the foot, but we should move to lua for flows scripting in the
+  near future
+
+  Note that folks can potentially find other ways to access the same modules, so
+  this by no means should be considered remotely secure
+  """
+  @spec suspicious_code(String.t()) :: boolean()
+  def suspicious_code(code),
+    do: String.contains?(code, @not_allowed)
+
   @doc """
   Compute the signature at a specific time for the body
   """
