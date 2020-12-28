@@ -14,6 +14,7 @@ defmodule Glific.Flows.ContactAction do
     Messages.Message
   }
 
+  require Logger
   @min_delay 2
 
   @doc """
@@ -70,9 +71,16 @@ defmodule Glific.Flows.ContactAction do
         {:ok, context, [Messages.create_temp_message(organization_id, "Exit Loop") | messages]}
 
       true ->
-        {:ok, _message} = Messages.create_and_send_message(attrs)
-        # increment the delay
-        {:ok, %{context | delay: context.delay + @min_delay}, messages}
+        Messages.create_and_send_message(attrs)
+        |> case do
+          {:ok, _message} ->
+            {:ok, %{context | delay: context.delay + @min_delay}, messages}
+
+          {:error, error} ->
+            Logger.info("Error sending message: #{error}")
+            # returning for now, since flows are not really handling errors very nicely
+            {:ok, context, messages}
+        end
     end
   end
 
