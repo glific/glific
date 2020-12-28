@@ -152,7 +152,7 @@ defmodule Glific.Bigquery do
 
   defp format_field_values(_key, field, _org_id), do: field
 
-  defp format_value(value) when is_map(value), do: value.input
+  defp format_value(value) when is_map(value), do: Map.get(value, :input, "Unknown format")
 
   defp format_value(value), do: value
 
