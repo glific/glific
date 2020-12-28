@@ -5,6 +5,7 @@ defmodule Glific.Flows.Router do
   alias __MODULE__
 
   use Ecto.Schema
+  require Logger
 
   alias Glific.{
     Contacts,
@@ -130,8 +131,16 @@ defmodule Glific.Flows.Router do
             "results" => context.results
           })
           |> MessageVarParser.parse_results(context.results)
-          # Once we have the content, we send it over to EEx to execute
-          |> EEx.eval_string()
+
+        # Once we have the content, we send it over to EEx to execute
+        content =
+          try do
+            EEx.eval_string(content)
+          rescue
+            EEx.SyntaxError ->
+              Logger.error("EEx threw a SyntaxError: #{content}")
+              "Syntax Error"
+          end
 
         msg = Messages.create_temp_message(context.contact.organization_id, content)
         {msg, []}
