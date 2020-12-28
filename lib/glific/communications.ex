@@ -41,6 +41,7 @@ defmodule Glific.Communications do
     else
       Logger.info("Publishing: #{data.key}, #{topic}:#{organization_id}")
     end
+
     Absinthe.Subscription.publish(
       GlificWeb.Endpoint,
       data,
