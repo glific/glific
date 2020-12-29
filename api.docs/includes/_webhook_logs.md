@@ -128,6 +128,26 @@ filter | <a href="#webhooklogfilter">WebhookLogFilter</a> | nil | filter the lis
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>requestHeaders</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>statusCode</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>requestJson</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>responseJson</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>flow</strong></td>
 <td valign="top"><a href="#flow">Flow</a></td>
 <td></td>
@@ -168,7 +188,7 @@ filter | <a href="#webhooklogfilter">WebhookLogFilter</a> | nil | filter the lis
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>webhook_log</strong></td>
+<td colspan="2" valign="top"><strong>webhookLog</strong></td>
 <td valign="top"><a href="#webhooklog">WebhookLog</a></td>
 <td></td>
 </tr>
@@ -197,7 +217,7 @@ Filtering options for webhook_logs
 <td>Match the url</td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>status_code</strong></td>
+<td colspan="2" valign="top"><strong>statusCode</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td>Match the status code</td>
 </tr>

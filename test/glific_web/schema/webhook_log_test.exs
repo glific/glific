@@ -4,10 +4,6 @@ defmodule GlificWeb.Schema.WebhookLogTest do
 
   alias Glific.Fixtures
 
-  setup do
-    :ok
-  end
-
   load_gql(:count, GlificWeb.Schema, "assets/gql/webhook_logs/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/webhook_logs/list.gql")
 
@@ -68,7 +64,7 @@ defmodule GlificWeb.Schema.WebhookLogTest do
 
     result =
       auth_query_gql_by(:list, user,
-        variables: %{"opts" => %{"limit" => 1, "offset" => 0, "orderWith" => "updated_at"}}
+        variables: %{"opts" => %{"limit" => 1, "offset" => 0}}
       )
 
     assert {:ok, query_data} = result
@@ -76,7 +72,7 @@ defmodule GlificWeb.Schema.WebhookLogTest do
 
     result =
       auth_query_gql_by(:list, user,
-        variables: %{"opts" => %{"limit" => 1, "offset" => 1, "orderWith" => "updated_at"}}
+        variables: %{"opts" => %{"limit" => 1, "offset" => 1}}
       )
 
     assert {:ok, query_data} = result
