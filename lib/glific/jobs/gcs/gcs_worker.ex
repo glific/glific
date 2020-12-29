@@ -72,19 +72,20 @@ defmodule Glific.Jobs.GcsWorker do
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m, msg], msg.organization_id == ^organization_id)
-      |> select([m, msg], [m.id, m.url, msg.type])
+      |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id])
       |> order_by([m], [m.inserted_at, m.id])
 
     Repo.all(query)
     |> Enum.reduce(
       [],
       fn row, _acc ->
-        [id, url, type] = row
+        [id, url, type, contact_id] = row
 
         %{
           url: url,
           id: id,
-          type: type
+          type: type,
+          contact_id: contact_id
         }
         |> make_job(organization_id)
       end
@@ -104,9 +105,8 @@ defmodule Glific.Jobs.GcsWorker do
   def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
-    file_name = "#{Ecto.UUID.generate()}.#{extension}"
+    file_name = "#{Ecto.UUID.generate()}_#{media["contact_id"]}.#{extension}"
     path = "#{System.tmp_dir!()}/#{file_name}"
-
     download_file_to_temp(media["url"], path)
     |> case do
       {:ok, _} ->
