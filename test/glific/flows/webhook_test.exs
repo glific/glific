@@ -146,6 +146,7 @@ defmodule Glific.Flows.WebhookTest do
 
     test "list_webhook_logs/2 returns filtered logs", attrs do
       webhook_log_1 = Fixtures.webhook_log_fixture(attrs)
+      :timer.sleep(1000)
 
       valid_attrs_2 = Map.merge(attrs, %{url: "test_url_2", status_code: 500})
       webhook_log_2 = Fixtures.webhook_log_fixture(valid_attrs_2)
@@ -159,6 +160,7 @@ defmodule Glific.Flows.WebhookTest do
       assert [webhook_log_1] ==
                WebhookLog.list_webhook_logs(%{filter: Map.merge(%{url: @valid_attrs.url}, attrs)})
 
+      #  order by inserted at
       assert [webhook_log_2, webhook_log_1] ==
                WebhookLog.list_webhook_logs(%{opts: %{order: :desc}, filter: attrs})
     end

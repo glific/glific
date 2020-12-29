@@ -4,5 +4,6 @@ query webhookLogs($filter: WebhookLogFilter, $opts: Opts) {
     url
     method
     statusCode
+    insertedAt
   }
 }

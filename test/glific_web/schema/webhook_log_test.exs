@@ -2,10 +2,7 @@ defmodule GlificWeb.Schema.WebhookLogTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.{
-    Fixtures,
-    Flows.WebhookLog
-  }
+  alias Glific.Fixtures
 
   setup do
     :ok
@@ -25,6 +22,20 @@ defmodule GlificWeb.Schema.WebhookLogTest do
     assert webhook_log["url"] == wl.url
   end
 
+  test "webhook_logs field returns list of webhook_logs in desc order", %{staff: user} = attrs do
+    _wl_1 = Fixtures.webhook_log_fixture(attrs)
+    :timer.sleep(1000)
+    valid_attrs_2 = Map.merge(attrs, %{url: "test_url_2", status_code: 500})
+    wl_2 = Fixtures.webhook_log_fixture(valid_attrs_2)
+
+    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "DESC"}})
+    assert {:ok, query_data} = result
+    webhook_logs = get_in(query_data, [:data, "webhookLogs"])
+    assert length(webhook_logs) > 0
+    [webhook_log | _] = webhook_logs
+    assert webhook_log["url"] == wl_2.url
+  end
+
   test "webhook_logs field returns list of webhook_logs in various filters",
        %{staff: user} = attrs do
     wl_1 = Fixtures.webhook_log_fixture(attrs)
@@ -39,7 +50,9 @@ defmodule GlificWeb.Schema.WebhookLogTest do
     assert get_in(webhook_log, ["url"]) == wl_1.url
 
     result =
-      auth_query_gql_by(:list, user, variables: %{"filter" => %{"status_code" => wl_1.status_code}})
+      auth_query_gql_by(:list, user,
+        variables: %{"filter" => %{"status_code" => wl_1.status_code}}
+      )
 
     assert {:ok, query_data} = result
     webhook_logs = get_in(query_data, [:data, "webhookLogs"])
@@ -54,13 +67,17 @@ defmodule GlificWeb.Schema.WebhookLogTest do
     _wl_2 = Fixtures.webhook_log_fixture(valid_attrs_2)
 
     result =
-      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0, "orderWith" => "updated_at"}})
+      auth_query_gql_by(:list, user,
+        variables: %{"opts" => %{"limit" => 1, "offset" => 0, "orderWith" => "updated_at"}}
+      )
 
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "webhookLogs"])) == 1
 
     result =
-      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 1, "orderWith" => "updated_at"}})
+      auth_query_gql_by(:list, user,
+        variables: %{"opts" => %{"limit" => 1, "offset" => 1, "orderWith" => "updated_at"}}
+      )
 
     assert {:ok, query_data} = result
 
