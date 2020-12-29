@@ -87,4 +87,39 @@ defmodule Glific.Flows.WebhookLog do
     |> WebhookLog.changeset(attrs)
     |> Repo.update()
   end
+
+  @doc """
+  Returns the list of webhook_logs.
+  """
+  @spec list_webhook_logs(map()) :: [WebhookLog.t()]
+  def list_webhook_logs(args),
+    do: IO.inspect Repo.list_filter(args, WebhookLog, &opts_with_status_code/2, &filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:url, url}, query ->
+        from q in query, where: q.url == ^url
+
+      {:status_code, status_code}, query ->
+        from q in query, where: q.status_code == ^status_code
+
+      _, query ->
+        query
+    end)
+  end
+
+  defp opts_with_status_code(query, opts) do
+    query
+    |> order_by([q], {^opts.order, q.status_code})
+  end
+
+  @doc """
+  Return the count of webhook_logs, using the same filter as list_webhook_logs
+  """
+  @spec count_webhook_logs(map()) :: integer
+  def count_webhook_logs(args),
+    do: Repo.count_filter(args, WebhookLog, &Repo.filter_with/2)
 end
