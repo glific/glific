@@ -11,6 +11,7 @@ defmodule Glific.Fixtures do
   alias Glific.{
     Contacts,
     Flows,
+    Flows.WebhookLog,
     Groups,
     Messages,
     Partners,
@@ -502,5 +503,35 @@ defmodule Glific.Fixtures do
     Messages.create_and_send_message_to_group(valid_attrs, group_1)
     Messages.create_and_send_message_to_group(valid_attrs, group_2)
     nil
+  end
+
+  @doc false
+  @spec webhook_log_fixture(map()) :: WebhookLog.t()
+  def webhook_log_fixture(attrs) do
+    valid_attrs = %{
+      url: "some url",
+      method: "GET",
+      request_headers: %{
+        "Accept" => "application/json",
+        "X-Glific-Signature" => "random signature"
+      },
+      request_json: %{},
+      response_json: %{},
+      status_code: 200
+    }
+
+    contact = contact_fixture(attrs)
+    flow = flow_fixture(attrs)
+
+    valid_attrs =
+      attrs
+      |> Map.merge(valid_attrs)
+      |> Map.put(:contact_id, contact.id)
+      |> Map.put(:flow_id, flow.id)
+      |> Map.put(:organization_id, flow.organization_id)
+
+    {:ok, webhook_log} = WebhookLog.create_webhook_log(valid_attrs)
+
+    webhook_log
   end
 end

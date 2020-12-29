@@ -97,8 +97,8 @@ defmodule Glific.Flows.WebhookTest do
       url: "some url",
       method: "GET",
       request_headers: %{
-        :Accept => "application/json",
-        :"X-Glific-Signature" => "random signature"
+        "Accept" => "application/json",
+        "X-Glific-Signature" => "random signature"
       },
       request_json: %{}
     }
@@ -137,6 +137,47 @@ defmodule Glific.Flows.WebhookTest do
                WebhookLog.update_webhook_log(webhook_log, @update_attrs)
 
       assert webhook_log.status_code == 200
+    end
+
+    test "list_webhook_logs/2", attrs do
+      webhook_log = Fixtures.webhook_log_fixture(attrs)
+      assert [webhook_log] == WebhookLog.list_webhook_logs(%{filter: attrs})
+    end
+
+    test "list_webhook_logs/2 returns filtered logs", attrs do
+      webhook_log_1 = Fixtures.webhook_log_fixture(attrs)
+
+      valid_attrs =
+        @valid_attrs
+        |> Map.merge(%{
+          contact_id: webhook_log_1.contact_id,
+          flow_id: webhook_log_1.flow_id,
+          organization_id: attrs.organization_id,
+          url: "test_url_2",
+          status_code: 500
+        })
+
+      {:ok, webhook_log_2} = WebhookLog.create_webhook_log(valid_attrs)
+
+      assert [webhook_log_2] ==
+               WebhookLog.list_webhook_logs(%{filter: Map.merge(%{status_code: 500}, attrs)})
+
+      assert [webhook_log_1] ==
+               WebhookLog.list_webhook_logs(%{filter: Map.merge(%{status_code: 200}, attrs)})
+
+      assert [webhook_log_1] ==
+               WebhookLog.list_webhook_logs(%{filter: Map.merge(%{url: @valid_attrs.url}, attrs)})
+
+      assert [webhook_log_2, webhook_log_1] ==
+               WebhookLog.list_webhook_logs(%{opts: %{order: :desc}, filter: attrs})
+    end
+
+    test "count_webhook_logs/0 returns count of all webhook logs", attrs do
+      logs_count = WebhookLog.count_webhook_logs(%{filter: attrs})
+
+      Fixtures.webhook_log_fixture(attrs)
+
+      assert WebhookLog.count_webhook_logs(%{filter: attrs}) == logs_count + 1
     end
   end
 end

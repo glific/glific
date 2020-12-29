@@ -93,7 +93,7 @@ defmodule Glific.Flows.WebhookLog do
   """
   @spec list_webhook_logs(map()) :: [WebhookLog.t()]
   def list_webhook_logs(args),
-    do: IO.inspect Repo.list_filter(args, WebhookLog, &opts_with_status_code/2, &filter_with/2)
+    do: Repo.list_filter(args, WebhookLog, &Repo.opts_with_status_code/2, &filter_with/2)
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
@@ -109,11 +109,6 @@ defmodule Glific.Flows.WebhookLog do
       _, query ->
         query
     end)
-  end
-
-  defp opts_with_status_code(query, opts) do
-    query
-    |> order_by([q], {^opts.order, q.status_code})
   end
 
   @doc """

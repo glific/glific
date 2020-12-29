@@ -161,7 +161,7 @@ defmodule Glific.Repo do
   @spec opts_with_field(
           Ecto.Queryable.t(),
           map(),
-          :name | :body | :label
+          :name | :body | :label | :status_code
         ) :: Ecto.Queryable.t()
   def opts_with_field(query, opts, field) do
     sort =
@@ -205,6 +205,10 @@ defmodule Glific.Repo do
   @doc false
   @spec opts_with_name(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   def opts_with_name(query, opts), do: opts_with_field(query, opts, :name)
+
+  @doc false
+  @spec opts_with_status_code(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_status_code(query, opts), do: opts_with_field(query, opts, :status_code)
 
   # codebeat:disable[ABC, LOC]
   @doc """
