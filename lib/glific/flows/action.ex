@@ -212,7 +212,7 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "set_contact_field"} = action, context, messages) do
-    key = String.downcase(action.field.key)
+    key = String.downcase(action.field.name)|> String.replace(" ", "_")
     value = FlowContext.get_result_value(context, action.value)
 
     context =
