@@ -12,8 +12,8 @@ defmodule Glific.Bigquery do
   alias GoogleApi.BigQuery.V2.{
     Api.Datasets,
     Api.Jobs,
-    Api.Tables,
     Api.Routines,
+    Api.Tables,
     Connection
   }
 
