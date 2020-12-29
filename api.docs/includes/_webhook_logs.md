@@ -7,11 +7,12 @@ query webhookLogs($filter: WebhookLogFilter, $opts: Opts) {
   webhookLogs(filter: $filter, opts: $opts) {
     id
     url
-    statusCode
-    requestJson
-    responseJson
-    requestHeaders
     method
+    requestHeaders
+    requestJson
+    statusCode
+    responseJson
+    error
     insertedAt
     updatedAt
   }
@@ -38,6 +39,7 @@ query webhookLogs($filter: WebhookLogFilter, $opts: Opts) {
   "data": {
     "webhookLogs": [
       {
+        "error": null,
         "id": "1",
         "insertedAt": "2020-12-29T06:30:14Z",
         "method": "POST",

@@ -116,5 +116,5 @@ defmodule Glific.Flows.WebhookLog do
   """
   @spec count_webhook_logs(map()) :: integer
   def count_webhook_logs(args),
-    do: Repo.count_filter(args, WebhookLog, &Repo.filter_with/2)
+    do: Repo.count_filter(args, WebhookLog, &filter_with/2)
 end

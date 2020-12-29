@@ -147,17 +147,8 @@ defmodule Glific.Flows.WebhookTest do
     test "list_webhook_logs/2 returns filtered logs", attrs do
       webhook_log_1 = Fixtures.webhook_log_fixture(attrs)
 
-      valid_attrs =
-        @valid_attrs
-        |> Map.merge(%{
-          contact_id: webhook_log_1.contact_id,
-          flow_id: webhook_log_1.flow_id,
-          organization_id: attrs.organization_id,
-          url: "test_url_2",
-          status_code: 500
-        })
-
-      {:ok, webhook_log_2} = WebhookLog.create_webhook_log(valid_attrs)
+      valid_attrs_2 = Map.merge(attrs, %{url: "test_url_2", status_code: 500})
+      webhook_log_2 = Fixtures.webhook_log_fixture(valid_attrs_2)
 
       assert [webhook_log_2] ==
                WebhookLog.list_webhook_logs(%{filter: Map.merge(%{status_code: 500}, attrs)})

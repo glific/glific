@@ -521,11 +521,11 @@ defmodule Glific.Fixtures do
     }
 
     contact = contact_fixture(attrs)
-    flow = flow_fixture(attrs)
+    flow = flow_fixture(Map.merge(attrs, %{keywords: [], name: Person.name()}))
 
     valid_attrs =
-      attrs
-      |> Map.merge(valid_attrs)
+      valid_attrs
+      |> Map.merge(attrs)
       |> Map.put(:contact_id, contact.id)
       |> Map.put(:flow_id, flow.id)
       |> Map.put(:organization_id, flow.organization_id)
