@@ -14,6 +14,7 @@ defmodule Glific.Fixtures do
     Flows.WebhookLog,
     Groups,
     Messages,
+    Messages.MessageMedia,
     Partners,
     Partners.Organization,
     Repo,
