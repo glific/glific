@@ -35,10 +35,5 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_7_0 do
       {:ok, provider} -> Repo.delete(provider)
       {:error, _} -> nil
     end
-    Repo.fetch_by(Provider, %{shortcode: "goth"})
-    |> case do
-      {:ok, provider} -> Repo.delete(provider)
-      {:error, _} -> nil
-    end
   end
 end
