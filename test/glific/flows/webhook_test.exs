@@ -97,8 +97,8 @@ defmodule Glific.Flows.WebhookTest do
       url: "some url",
       method: "GET",
       request_headers: %{
-        :Accept => "application/json",
-        :"X-Glific-Signature" => "random signature"
+        "Accept" => "application/json",
+        "X-Glific-Signature" => "random signature"
       },
       request_json: %{}
     }
@@ -137,6 +137,40 @@ defmodule Glific.Flows.WebhookTest do
                WebhookLog.update_webhook_log(webhook_log, @update_attrs)
 
       assert webhook_log.status_code == 200
+    end
+
+    test "list_webhook_logs/2", attrs do
+      webhook_log = Fixtures.webhook_log_fixture(attrs)
+      assert [webhook_log] == WebhookLog.list_webhook_logs(%{filter: attrs})
+    end
+
+    test "list_webhook_logs/2 returns filtered logs", attrs do
+      webhook_log_1 = Fixtures.webhook_log_fixture(attrs)
+      :timer.sleep(1000)
+
+      valid_attrs_2 = Map.merge(attrs, %{url: "test_url_2", status_code: 500})
+      webhook_log_2 = Fixtures.webhook_log_fixture(valid_attrs_2)
+
+      assert [webhook_log_2] ==
+               WebhookLog.list_webhook_logs(%{filter: Map.merge(%{status_code: 500}, attrs)})
+
+      assert [webhook_log_1] ==
+               WebhookLog.list_webhook_logs(%{filter: Map.merge(%{status_code: 200}, attrs)})
+
+      assert [webhook_log_1] ==
+               WebhookLog.list_webhook_logs(%{filter: Map.merge(%{url: @valid_attrs.url}, attrs)})
+
+      #  order by inserted at
+      assert [webhook_log_2, webhook_log_1] ==
+               WebhookLog.list_webhook_logs(%{opts: %{order: :desc}, filter: attrs})
+    end
+
+    test "count_webhook_logs/0 returns count of all webhook logs", attrs do
+      logs_count = WebhookLog.count_webhook_logs(%{filter: attrs})
+
+      Fixtures.webhook_log_fixture(attrs)
+
+      assert WebhookLog.count_webhook_logs(%{filter: attrs}) == logs_count + 1
     end
   end
 end
