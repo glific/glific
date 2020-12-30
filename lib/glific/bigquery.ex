@@ -54,7 +54,6 @@ defmodule Glific.Bigquery do
   @spec flat_fields_procedure(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp flat_fields_procedure(conn, dataset_id, project_id) do
-    {:ok, response} =
       Routines.bigquery_routines_insert(
         conn,
         project_id,
@@ -87,8 +86,6 @@ defmodule Glific.Bigquery do
         ],
         []
       )
-
-    response
   end
 
   @spec create_tables(Tesla.Client.t(), String.t(), String.t()) ::
