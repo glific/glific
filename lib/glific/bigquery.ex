@@ -260,6 +260,10 @@ defmodule Glific.Bigquery do
     )
   end
 
+  @doc """
+  Creating a view with unnested fields from contacts 
+  """
+  @spec flat_fields_procedure(String.t(), non_neg_integer) :: :ok
   defp flat_fields_procedure(conn, dataset_id, project_id) do 
     {:ok, response} = 
       Routines.bigquery_routines_insert(
