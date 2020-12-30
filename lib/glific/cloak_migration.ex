@@ -15,7 +15,7 @@ defmodule Glific.CloakMigration do
   """
   @spec cloak_migrate :: :ok
   def cloak_migrate do
-    organizations = Glific.Repo.all(Glific.Partners.Organization, skip_organization_id: true)
+    organizations = Repo.all(Organization, skip_organization_id: true)
 
     organizations |> Enum.each(fn organization -> update_organization(organization) end)
 
