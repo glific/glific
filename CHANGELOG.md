@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Store messages sent to group in messages table
 - Add API to retrieve group conversations
 - Add flow_context id to flow results table so we store each run through the flow
+- Added has location action in the flow editor. 
+- Now you can get the media url and locations vars in the flows
+- Fixed contact field bug on flow editors
+- Now contact field label will be shown on the bigquery
 
 ## [0.8.6] - 2020-12-22
 ### Added
@@ -111,7 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Keywords for flows are now all lowercase
 
-## [0.7.1 and prior] - 2020-11-16
+## [0.7.1] - 2020-11-16
 
 ### Added
 - Core Glific DB Structure and functionality
@@ -126,7 +130,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CD system to Gigalixir
 - Community documentation (README, LICENSE, CHANGELOG, CODE_OF_CONDUCT)
 
-## [0.8.0 and prior] - 2020-12-01
+## [0.7.0] - 2020-12-01
 ### Added
 - Attachment support from the chat window
 - Sticker Support in messages
