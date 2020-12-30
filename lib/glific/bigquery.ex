@@ -48,7 +48,7 @@ defmodule Glific.Bigquery do
     :ok
   end
 
-  @spec create_tables(String.t(), String.t(), String.t()) ::
+  @spec create_tables(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp create_tables(conn, dataset_id, project_id) do
     table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
@@ -57,7 +57,7 @@ defmodule Glific.Bigquery do
     table(BigquerySchema.flow_result_schema(), conn, dataset_id, project_id, "flow_results")
   end
 
-  @spec handle_response(map(), String.t(), String.t(), String.t(), integer()) :: :ok
+  @spec handle_response(map(), Tesla.Client.t(), String.t(), String.t(), integer()) :: :ok
   defp handle_response(data, conn, dataset_id, project_id, organization_id) do
     error = data["error"]
 
@@ -211,7 +211,7 @@ defmodule Glific.Bigquery do
   defp get_key(value) when is_binary(value), do: "'#{value}'"
   defp get_key(value), do: value
 
-  @spec create_dataset(String.t(), String.t(), String.t()) ::
+  @spec create_dataset(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Dataset.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp create_dataset(conn, project_id, dataset_id) do
     Datasets.bigquery_datasets_insert(
@@ -229,7 +229,7 @@ defmodule Glific.Bigquery do
     )
   end
 
-  @spec table(map(), String.t(), String.t(), String.t(), String.t()) ::
+  @spec table(list(), Tesla.Client.t(), binary(), binary(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp table(schema, conn, dataset_id, project_id, table_id) do
     Tables.bigquery_tables_insert(
@@ -252,7 +252,7 @@ defmodule Glific.Bigquery do
     )
   end
 
-  @spec alter_table(map(), String.t(), String.t(), String.t(), String.t()) ::
+  @spec alter_table(list(), Tesla.Client.t(), binary(), binary(), String.t()) ::
   {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp alter_table(schema, conn, dataset_id, project_id, table_id) do
     Tables.bigquery_tables_update(
@@ -276,7 +276,7 @@ defmodule Glific.Bigquery do
     )
   end
 
-  @spec contacts_messages_view(String.t(), String.t(), String.t()) ::
+  @spec contacts_messages_view(Tesla.Client.t(), String.t(), String.t()) ::
           GoogleApi.BigQuery.V2.Model.Table.t() | Tesla.Env.t() | String.t()
   defp contacts_messages_view(conn, dataset_id, project_id) do
     Tables.bigquery_tables_insert(
@@ -308,7 +308,7 @@ defmodule Glific.Bigquery do
     end
   end
 
-  @spec alter_contacts_messages_view(String.t(), String.t(), String.t()) ::
+  @spec alter_contacts_messages_view(Tesla.Client.t(), String.t(), String.t()) ::
   GoogleApi.BigQuery.V2.Model.Table.t() | Tesla.Env.t() | String.t()
   defp alter_contacts_messages_view(conn, dataset_id, project_id) do
       Tables.bigquery_tables_update(
