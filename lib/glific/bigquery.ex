@@ -48,6 +48,8 @@ defmodule Glific.Bigquery do
     :ok
   end
 
+  @spec create_tables(String.t(), String.t(), String.t()) ::
+          {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp create_tables(conn, dataset_id, project_id) do
     table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
     table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
@@ -55,6 +57,7 @@ defmodule Glific.Bigquery do
     table(BigquerySchema.flow_result_schema(), conn, dataset_id, project_id, "flow_results")
   end
 
+  @spec handle_response(map(), String.t(), String.t(), String.t(), integer()) :: :ok
   defp handle_response(data, conn, dataset_id, project_id, organization_id) do
     error = data["error"]
 
@@ -134,6 +137,7 @@ defmodule Glific.Bigquery do
     :ok
   end
 
+  @spec format_field_values(String.t(), map()| any(), integer()) :: any()
   defp format_field_values("fields", contact_fields, org_id) when is_map(contact_fields) do
     contact_fields = validate_fields(contact_fields)
 
@@ -154,6 +158,7 @@ defmodule Glific.Bigquery do
 
   defp format_field_values(_key, field, _org_id), do: field
 
+  @spec format_value(map()| any()) :: any()
   defp format_value(value) when is_map(value), do: Map.get(value, :input, "Unknown format")
 
   defp format_value(value), do: value
@@ -189,6 +194,7 @@ defmodule Glific.Bigquery do
     |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
   end
 
+  @spec format_update_values(map()) :: String.t()
   defp format_update_values(values) do
     Map.keys(values)
     |> Enum.map(fn key ->
@@ -201,9 +207,12 @@ defmodule Glific.Bigquery do
     |> Enum.join(",")
   end
 
+  @spec get_key(any() | String.t()) :: any()
   defp get_key(value) when is_binary(value), do: "'#{value}'"
   defp get_key(value), do: value
 
+  @spec create_dataset(String.t(), String.t(), String.t()) ::
+          {:ok, GoogleApi.BigQuery.V2.Model.Dataset.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp create_dataset(conn, project_id, dataset_id) do
     Datasets.bigquery_datasets_insert(
       conn,
@@ -220,6 +229,8 @@ defmodule Glific.Bigquery do
     )
   end
 
+  @spec table(map(), String.t(), String.t(), String.t(), String.t()) ::
+          {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp table(schema, conn, dataset_id, project_id, table_id) do
     Tables.bigquery_tables_insert(
       conn,
@@ -241,6 +252,8 @@ defmodule Glific.Bigquery do
     )
   end
 
+  @spec alter_table(map(), String.t(), String.t(), String.t(), String.t()) ::
+  {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp alter_table(schema, conn, dataset_id, project_id, table_id) do
     Tables.bigquery_tables_update(
       conn,
@@ -263,37 +276,41 @@ defmodule Glific.Bigquery do
     )
   end
 
+  @spec contacts_messages_view(String.t(), String.t(), String.t()) ::
+          GoogleApi.BigQuery.V2.Model.Table.t() | Tesla.Env.t() | String.t()
   defp contacts_messages_view(conn, dataset_id, project_id) do
-    {:ok, response} =
-      Tables.bigquery_tables_insert(
-        conn,
-        project_id,
-        dataset_id,
-        [
-          body: %{
-            tableReference: %{
-              datasetId: dataset_id,
-              projectId: project_id,
-              tableId: "contacts_messages"
-            },
-            view: %{
-              query:
-                "SELECT messages.id, contact_phone, phone, name, optin_time, language, flow_label, messages.tags_label, messages.inserted_at, media_url
+    Tables.bigquery_tables_insert(
+      conn,
+      project_id,
+      dataset_id,
+      [
+        body: %{
+          tableReference: %{
+            datasetId: dataset_id,
+            projectId: project_id,
+            tableId: "contacts_messages"
+          },
+          view: %{
+            query:
+              "SELECT messages.id, contact_phone, phone, name, optin_time, language, flow_label, messages.tags_label, messages.inserted_at, media_url
               FROM `#{project_id}.#{dataset_id}.messages` as messages
               JOIN `#{project_id}.#{dataset_id}.contacts` as contacts
               ON messages.contact_phone = contacts.phone",
-              useLegacySql: false
-            }
+            useLegacySql: false
           }
-        ],
-        []
-      )
-
-    response
+        }
+      ],
+      []
+    )
+    |> case do
+      {:ok, response} -> response
+      {:error, _} -> "Error creating a view"
+    end
   end
 
+  @spec alter_contacts_messages_view(String.t(), String.t(), String.t()) ::
+  GoogleApi.BigQuery.V2.Model.Table.t() | Tesla.Env.t() | String.t()
   defp alter_contacts_messages_view(conn, dataset_id, project_id) do
-    {:ok, response} =
       Tables.bigquery_tables_update(
         conn,
         project_id,
@@ -318,7 +335,9 @@ defmodule Glific.Bigquery do
         ],
         []
       )
-
-    response
+      |> case do
+        {:ok, response} -> response
+        {:error, _} -> "Error creating a view"
+      end
   end
 end
