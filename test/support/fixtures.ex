@@ -483,6 +483,23 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
+  @spec message_media_fixture(map()) :: MessageMedia.t()
+  def message_media_fixture(attrs) do
+    {:ok, message_media} =
+      %{
+        url: Faker.Avatar.image_url(),
+        source_url: Faker.Avatar.image_url(),
+        thumbnail: Faker.Avatar.image_url(),
+        caption: Faker.String.base64(10),
+        provider_media_id: Faker.String.base64(10),
+        organization_id: attrs.organization_id
+      }
+      |> Messages.create_message_media()
+
+    message_media
+  end
+
+  @doc false
   @spec group_messages_fixture(map()) :: nil
   def group_messages_fixture(attrs) do
     [cg1, _cg2, cg3] = group_contacts_fixture(attrs)

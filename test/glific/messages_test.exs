@@ -549,7 +549,7 @@ defmodule Glific.MessagesTest do
 
       assert error_message == "You need to provide media for media hsm template"
 
-      media = SeedsDev.seed_messages_media()
+      media = Fixtures.message_media_fixture(attrs)
 
       {:ok, message} =
         Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters, media.id)
