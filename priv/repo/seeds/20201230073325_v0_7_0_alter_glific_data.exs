@@ -1,10 +1,10 @@
 defmodule Glific.Repo.Seeds.AddGlificData_v0_7_0 do
   use Glific.Seeds.Seed
 
-  envs([:dev])
+  envs([:dev, :test, :prod])
 
   alias Glific.{
-    Partners,
+    Partners.Provider,
     Partners.Credential,
     Repo
   }
@@ -19,7 +19,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_7_0 do
 
     credentials
     |> Enum.each(fn credential ->
-      if Enum.member?([3, 5, 8], credential.provider_id) do
+      if Enum.member?([3, 5], credential.provider_id) do
         update_status(credential)
       end
     end)
@@ -30,6 +30,10 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_7_0 do
   end
 
   defp delete_provider() do
-    Repo.delete(Partners.get_provider!(8))
+    Repo.fetch_by(Provider, %{shortcode: "shortcode"})
+    |> case do
+      {:ok, provider} -> Repo.delete(provider)
+      {:error, _} -> nil
+    end
   end
 end
