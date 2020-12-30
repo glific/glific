@@ -38,8 +38,12 @@ defmodule Glific.Partners do
 
   """
   @spec list_providers(map()) :: [%Provider{}, ...]
-  def list_providers(args \\ %{}),
-    do: Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
+  def list_providers(args \\ %{}) do
+    Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
+    |> Enum.reject(fn provider ->
+      Enum.member?(["dialogflow", "goth", "shortcode"], provider.shortcode)
+    end)
+  end
 
   @doc """
   Return the count of providers, using the same filter as list_providers

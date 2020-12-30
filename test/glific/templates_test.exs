@@ -765,7 +765,7 @@ defmodule Glific.TemplatesTest do
     end
 
     test "update_hsms/1 should update multiple translations of already approved HSM", attrs do
-      [l1, l2, l3 | _] = Glific.Settings.list_languages()
+      [l1, l2 | _] = Glific.Settings.list_languages()
 
       otp_hsm_1 = otp_hsm_fixture(l1.id, "APPROVED")
       otp_hsm_2 = otp_hsm_fixture(l2.id, "PENDING")
