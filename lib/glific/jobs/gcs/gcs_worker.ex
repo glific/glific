@@ -107,6 +107,7 @@ defmodule Glific.Jobs.GcsWorker do
     extension = get_media_extension(media["type"])
     file_name = "#{Ecto.UUID.generate()}_#{media["contact_id"]}.#{extension}"
     path = "#{System.tmp_dir!()}/#{file_name}"
+
     download_file_to_temp(media["url"], path)
     |> case do
       {:ok, _} ->

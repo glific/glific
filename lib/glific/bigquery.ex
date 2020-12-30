@@ -137,7 +137,7 @@ defmodule Glific.Bigquery do
     :ok
   end
 
-  @spec format_field_values(String.t(), map()| any(), integer()) :: any()
+  @spec format_field_values(String.t(), map() | any(), integer()) :: any()
   defp format_field_values("fields", contact_fields, org_id) when is_map(contact_fields) do
     contact_fields = validate_fields(contact_fields)
 
@@ -158,7 +158,7 @@ defmodule Glific.Bigquery do
 
   defp format_field_values(_key, field, _org_id), do: field
 
-  @spec format_value(map()| any()) :: any()
+  @spec format_value(map() | any()) :: any()
   defp format_value(value) when is_map(value), do: Map.get(value, :input, "Unknown format")
 
   defp format_value(value), do: value
@@ -253,7 +253,7 @@ defmodule Glific.Bigquery do
   end
 
   @spec alter_table(list(), Tesla.Client.t(), binary(), binary(), String.t()) ::
-  {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
+          {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp alter_table(schema, conn, dataset_id, project_id, table_id) do
     Tables.bigquery_tables_update(
       conn,
@@ -309,35 +309,35 @@ defmodule Glific.Bigquery do
   end
 
   @spec alter_contacts_messages_view(Tesla.Client.t(), String.t(), String.t()) ::
-  GoogleApi.BigQuery.V2.Model.Table.t() | Tesla.Env.t() | String.t()
+          GoogleApi.BigQuery.V2.Model.Table.t() | Tesla.Env.t() | String.t()
   defp alter_contacts_messages_view(conn, dataset_id, project_id) do
-      Tables.bigquery_tables_update(
-        conn,
-        project_id,
-        dataset_id,
-        "contacts_messages",
-        [
-          body: %{
-            tableReference: %{
-              datasetId: dataset_id,
-              projectId: project_id,
-              tableId: "contacts_messages"
-            },
-            view: %{
-              query:
-                "SELECT messages.id, uuid, contact_phone, phone, name, optin_time, language, flow_label, messages.tags_label, messages.inserted_at, media_url
+    Tables.bigquery_tables_update(
+      conn,
+      project_id,
+      dataset_id,
+      "contacts_messages",
+      [
+        body: %{
+          tableReference: %{
+            datasetId: dataset_id,
+            projectId: project_id,
+            tableId: "contacts_messages"
+          },
+          view: %{
+            query:
+              "SELECT messages.id, uuid, contact_phone, phone, name, optin_time, language, flow_label, messages.tags_label, messages.inserted_at, media_url
               FROM `#{project_id}.#{dataset_id}.messages` as messages
               JOIN `#{project_id}.#{dataset_id}.contacts` as contacts
               ON messages.contact_phone = contacts.phone",
-              useLegacySql: false
-            }
+            useLegacySql: false
           }
-        ],
-        []
-      )
-      |> case do
-        {:ok, response} -> response
-        {:error, _} -> "Error creating a view"
-      end
+        }
+      ],
+      []
+    )
+    |> case do
+      {:ok, response} -> response
+      {:error, _} -> "Error creating a view"
+    end
   end
 end
