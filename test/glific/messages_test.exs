@@ -528,6 +528,44 @@ defmodule Glific.MessagesTest do
       assert message.sent_at != nil
     end
 
+    test "send media hsm message",
+         %{organization_id: organization_id, global_schema: global_schema} = attrs do
+      SeedsDev.seed_session_templates()
+      contact = Fixtures.contact_fixture(attrs)
+
+      shortcode = "account_update"
+
+      {:ok, hsm_template} =
+        Repo.fetch_by(
+          SessionTemplate,
+          %{shortcode: shortcode, organization_id: organization_id}
+        )
+
+      parameters = ["param1", "param2", "param3"]
+
+      # send media hsm without media should return error
+      {:error, error_message} =
+        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+
+      assert error_message == "You need to provide media for media hsm template"
+
+      media = Fixtures.message_media_fixture(attrs)
+
+      {:ok, message} =
+        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters, media.id)
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+
+      assert message.is_hsm == true
+      assert message.flow == :outbound
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
+      assert message.sent_at != nil
+    end
+
     test "prepare hsm template",
          %{organization_id: organization_id} do
       shortcode = "otp"
