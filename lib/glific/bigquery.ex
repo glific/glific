@@ -260,10 +260,10 @@ defmodule Glific.Bigquery do
     )
   end
 
-  ## Creating a view with unnested fields from contacts 
-  
-  defp flat_fields_procedure(conn, dataset_id, project_id) do 
-    {:ok, response} = 
+  ## Creating a view with unnested fields from contacts
+
+  defp flat_fields_procedure(conn, dataset_id, project_id) do
+    {:ok, response} =
       Routines.bigquery_routines_insert(
         conn,
         project_id,
@@ -276,27 +276,27 @@ defmodule Glific.Bigquery do
               projectId: project_id
             },
             routineType: "PROCEDURE",
-            definitionBody: 
-              """
+            definitionBody: """
               BEGIN
-            EXECUTE IMMEDIATE 
+            EXECUTE IMMEDIATE
             '''
             CREATE OR REPLACE VIEW `#{project_id}.#{dataset_id}.flat_fields` AS SELECT id, (SELECT label from UNNEST(`groups`)) AS group_category,
-            ''' 
+            '''
             || (
               SELECT STRING_AGG(DISTINCT "(SELECT value FROM UNNEST(fields) WHERE label = '" || label || "') AS " || REPLACE(label, ' ', '_')
               )
-              FROM `#{project_id}.#{dataset_id}.contacts`, unnest(fields)  
+              FROM `#{project_id}.#{dataset_id}.contacts`, unnest(fields)
             ) || '''
             ,(SELECT MIN(inserted_at) FROM UNNEST(fields)) AS inserted_at,
             (SELECT MAX(inserted_at) FROM UNNEST(fields)) AS last_updated_at
             FROM `#{project_id}.#{dataset_id}.contacts`''';
             END;
-            """, 
+            """
           }
         ],
         []
       )
+
     response
   end
 
