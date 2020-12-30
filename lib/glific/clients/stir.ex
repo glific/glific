@@ -11,6 +11,7 @@ defmodule Glific.Clients.Stir do
 
   def webhook(_), do: %{}
 
+  @spec get_value(String.t(), map()) :: integer()
   defp get_value(k, v) do
     k = String.downcase(k)
     input = String.downcase(v["input"])
@@ -29,6 +30,7 @@ defmodule Glific.Clients.Stir do
     end
   end
 
+  @spec get_art_content(String.t(), map()) :: String.t()
   defp get_art_content(k, v) do
     k = String.downcase(k)
     input = String.downcase(v["input"])
@@ -90,6 +92,7 @@ defmodule Glific.Clients.Stir do
     |> get_content()
   end
 
+  @spec get_content(integer()) :: map()
   defp get_content(score) do
     {status, content} =
       cond do
