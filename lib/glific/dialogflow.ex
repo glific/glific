@@ -34,6 +34,7 @@ defmodule Glific.Dialogflow do
     end
   end
 
+  @spec do_request(atom(), String.t(), String.t(), list()) :: Tesla.Env.result()
   defp do_request(:post, url, body, header), do: Tesla.post(url, body, headers: header)
   defp do_request(_, url, _, _), do: Tesla.get(url)
 
