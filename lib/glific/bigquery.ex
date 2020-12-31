@@ -67,7 +67,7 @@ defmodule Glific.Bigquery do
           },
           routineType: "PROCEDURE",
           definitionBody: """
-            BEGIN
+          BEGIN
           EXECUTE IMMEDIATE
           '''
           CREATE OR REPLACE VIEW `#{project_id}.#{dataset_id}.flat_fields` AS SELECT id, (SELECT label from UNNEST(`groups`)) AS group_category,
