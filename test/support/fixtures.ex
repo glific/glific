@@ -14,6 +14,7 @@ defmodule Glific.Fixtures do
     Flows.WebhookLog,
     Groups,
     Messages,
+    Messages.MessageMedia,
     Partners,
     Partners.Organization,
     Repo,
@@ -480,6 +481,23 @@ defmodule Glific.Fixtures do
       example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
       language_id: organization_fixture().default_language_id
     })
+  end
+
+  @doc false
+  @spec message_media_fixture(map()) :: MessageMedia.t()
+  def message_media_fixture(attrs) do
+    {:ok, message_media} =
+      %{
+        url: Faker.Avatar.image_url(),
+        source_url: Faker.Avatar.image_url(),
+        thumbnail: Faker.Avatar.image_url(),
+        caption: Faker.String.base64(10),
+        provider_media_id: Faker.String.base64(10),
+        organization_id: attrs.organization_id
+      }
+      |> Messages.create_message_media()
+
+    message_media
   end
 
   @doc false

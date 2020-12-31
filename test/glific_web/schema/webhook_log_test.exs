@@ -63,17 +63,13 @@ defmodule GlificWeb.Schema.WebhookLogTest do
     _wl_2 = Fixtures.webhook_log_fixture(valid_attrs_2)
 
     result =
-      auth_query_gql_by(:list, user,
-        variables: %{"opts" => %{"limit" => 1, "offset" => 0}}
-      )
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
 
     assert {:ok, query_data} = result
     assert length(get_in(query_data, [:data, "webhookLogs"])) == 1
 
     result =
-      auth_query_gql_by(:list, user,
-        variables: %{"opts" => %{"limit" => 1, "offset" => 1}}
-      )
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 1}})
 
     assert {:ok, query_data} = result
 
