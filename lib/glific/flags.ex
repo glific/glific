@@ -6,7 +6,10 @@ defmodule Glific.Flags do
 
   use Publicist
 
-  alias Glific.Partners.Organization
+  alias Glific.{
+    Partners,
+    Partners.Organization
+  }
 
   @doc false
   @spec init(Organization.t()) :: {:ok, boolean()}
@@ -94,19 +97,23 @@ defmodule Glific.Flags do
   @doc """
   Update the out of office flag, so we know if we should actually do any work
   """
-  @spec out_of_office_update(Organization.t()) :: nil
-  def out_of_office_update(organization),
-    do:
-      if(
-        FunWithFlags.enabled?(
-          :enable_out_of_office,
-          for: %{organization_id: organization.id}
-        ),
-        do: out_of_office_check(organization),
-        # lets make sure that out_of_office_active is disabled
-        # if we dont want this functionality
-        else: disable_out_of_office(organization.id)
-      )
+  @spec out_of_office_update(Organization.t() | non_neg_integer) :: nil
+  def out_of_office_update(organization) when is_integer(organization) do
+    out_of_office_update(Partners.organization(organization))
+  end
+
+  def out_of_office_update(organization) do
+    if(
+      FunWithFlags.enabled?(
+        :enable_out_of_office,
+        for: %{organization_id: organization.id}
+      ),
+      do: out_of_office_check(organization),
+      # lets make sure that out_of_office_active is disabled
+      # if we dont want this functionality
+      else: disable_out_of_office(organization.id)
+    )
+  end
 
   @doc """
   See if we have valid dialogflow credentials, if so, enable dialogflow
