@@ -311,6 +311,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, activity)
   end
 
+  @spec get_recent_message(FlowCount.t()) :: list()
   defp get_recent_message(flow_count) do
     # flow editor shows only last 3 messages. We are just tacking 5 for the safe side.
     flow_count.recent_messages
