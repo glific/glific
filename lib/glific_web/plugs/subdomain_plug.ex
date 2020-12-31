@@ -40,11 +40,13 @@ if Code.ensure_loaded?(Plug) do
       root_host = endpoint.config(:url)[:host]
 
       cond do
-        host in [root_host, "127.0.0.1", "0.0.0.0", "www.example.com"] -> nil
+        host in ["0.0.0.0", "www.example.com"] ->
+          nil
 
         # this is just a temporary fix for now to get CI up and running
         # we need a better long term solution soon
-        host == "localhost" -> "glific"
+        host in ["localhost", root_host, "127.0.0.1"] ->
+          "glific"
 
         true ->
           host

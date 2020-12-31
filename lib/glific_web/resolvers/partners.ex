@@ -118,6 +118,7 @@ defmodule GlificWeb.Resolvers.Partners do
     end
   end
 
+  @spec get_balance(non_neg_integer) :: {:ok, map()} | {:error, String.t()}
   defp get_balance(organization_id) do
     Partners.get_bsp_balance(organization_id)
     |> case do

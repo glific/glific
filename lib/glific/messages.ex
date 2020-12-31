@@ -222,7 +222,12 @@ defmodule Glific.Messages do
   defp check_for_hsm_message(attrs, contact) do
     with true <- Map.has_key?(attrs, :template_id),
          true <- Map.get(attrs, :is_hsm) do
-      create_and_send_hsm_message(attrs.template_id, attrs.receiver_id, attrs.params)
+      create_and_send_hsm_message(
+        attrs.template_id,
+        attrs.receiver_id,
+        attrs.params,
+        attrs.media_id
+      )
     else
       _ ->
         Contacts.can_send_message_to?(contact, attrs[:is_hsm])
@@ -338,13 +343,14 @@ defmodule Glific.Messages do
   @doc """
   Send a hsm template message to the specific contact.
   """
-  @spec create_and_send_hsm_message(integer, integer, [String.t()]) ::
+  @spec create_and_send_hsm_message(integer, integer, [String.t()], integer | nil) ::
           {:ok, Message.t()} | {:error, String.t()}
-  def create_and_send_hsm_message(template_id, receiver_id, parameters) do
+  def create_and_send_hsm_message(template_id, receiver_id, parameters, media_id \\ nil) do
     contact = Glific.Contacts.get_contact!(receiver_id)
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 
-    if session_template.number_parameters == length(parameters) do
+    with true <- session_template.number_parameters == length(parameters),
+         {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
       updated_template = parse_template_vars(session_template, parameters)
       # Passing uuid to save db call when sending template via provider
       message_params = %{
@@ -356,13 +362,18 @@ defmodule Glific.Messages do
         receiver_id: receiver_id,
         template_uuid: session_template.uuid,
         template_id: template_id,
-        params: parameters
+        params: parameters,
+        media_id: media_id
       }
 
       Contacts.can_send_message_to?(contact, true)
       |> create_and_send_message(message_params)
     else
-      {:error, "You need to provide correct number of parameters for hsm template"}
+      false ->
+        {:error, "You need to provide correct number of parameters for hsm template"}
+
+      {"type", false} ->
+        {:error, "You need to provide media for media hsm template"}
     end
   end
 

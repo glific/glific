@@ -284,6 +284,8 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp queue_table_data(_, _, _, _), do: nil
 
+
+  @spec format_json(map()) :: iodata
   defp format_json(definition) do
     {:ok, data} = Jason.encode(definition)
     data
