@@ -62,16 +62,15 @@ defmodule Glific.Jobs.BigQueryWorker do
     credential = organization.services["bigquery"]
 
     if credential,
-    do: update_flow_results(organization_id),
-    else: :ok
-
+      do: update_flow_results(organization_id),
+      else: :ok
   end
 
   defp update_flow_results(organization_id) do
     query =
       FlowResult
       |> where([fr], fr.organization_id == ^organization_id)
-      |> where([fr], fr.updated_at <= ^(Timex.shift(Timex.now, minutes: @update_minutes)))
+      |> where([fr], fr.updated_at <= ^Timex.shift(Timex.now(), minutes: @update_minutes))
       |> preload([:flow, :contact])
 
     Repo.all(query)
@@ -286,7 +285,6 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp queue_table_data(_, _, _, _), do: nil
 
-
   @spec format_json(map()) :: iodata
   defp format_json(definition) do
     {:ok, data} = Jason.encode(definition)
@@ -404,7 +402,10 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   def perform(
         %Oban.Job{
-          args: %{"update_flow_results" => update_flow_results, "organization_id" => organization_id}
+          args: %{
+            "update_flow_results" => update_flow_results,
+            "organization_id" => organization_id
+          }
         } = job
       ) do
     update_flow_results
@@ -493,7 +494,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     %{
       id: flow["id"],
       results: flow["results"],
-      contact_phone: flow["contact_phone"],
+      contact_phone: flow["contact_phone"]
     }
   end
 
@@ -551,16 +552,23 @@ defmodule Glific.Jobs.BigQueryWorker do
         nil -> %{url: nil, id: nil, email: nil}
         credentials -> credentials
       end
+
     {:ok, secrets} = Jason.decode(credentials.secrets["service_account"])
     project_id = secrets["project_id"]
     dataset_id = organization.contact.phone
     token = Partners.get_goth_token(organization_id, "bigquery")
     conn = Connection.new(token.token)
-    data|> Enum.each(fn flow_result ->
+
+    data
+    |> Enum.each(fn flow_result ->
       sql =
         "UPDATE `#{dataset_id}.flow_results` SET results = '#{flow_result.results}' WHERE contact_phone= '#{
-          flow_result.contact_phone}' AND id = #{flow_result.id}"
-      GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
+          flow_result.contact_phone
+        }' AND id = #{flow_result.id}"
+
+      GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
+        body: %{query: sql, useLegacySql: false}
+      )
       |> case do
         {:ok, response} -> response
         {:error, _} -> nil
@@ -571,6 +579,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec handle_insert_error(String.t(), String.t(), non_neg_integer, map(), Oban.Job.t()) :: :ok
   defp handle_insert_error(table, dataset_id, organization_id, error, job) do
     error = error["error"]
+
     if error["status"] == "NOT_FOUND" do
       Bigquery.bigquery_dataset(dataset_id, organization_id)
       make_job(job.args[table], table, organization_id, @reschedule_time)
