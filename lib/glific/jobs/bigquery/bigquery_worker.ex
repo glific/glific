@@ -84,7 +84,8 @@ defmodule Glific.Jobs.BigQueryWorker do
             updated_at: format_date(row.updated_at, organization_id),
             results: format_json(row.results),
             contact_phone: row.contact.phone,
-            flow_version: row.flow_version
+            flow_version: row.flow_version,
+            flow_context_id: row.flow_context_id
           }
           | acc
         ]
@@ -485,7 +486,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         results: flow["results"],
         contact_phone: flow["contact_phone"],
         contact_name: flow["contact_name"],
-        flow_version: flow["flow_version"]
+        flow_version: flow["flow_version"],
+        flow_context_id: flow["flow_context_id"],
       }
     }
   end
@@ -494,7 +496,8 @@ defmodule Glific.Jobs.BigQueryWorker do
     %{
       id: flow["id"],
       results: flow["results"],
-      contact_phone: flow["contact_phone"]
+      contact_phone: flow["contact_phone"],
+      flow_context_id: flow["flow_context_id"],
     }
   end
 
@@ -564,7 +567,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       sql =
         "UPDATE `#{dataset_id}.flow_results` SET results = '#{flow_result.results}' WHERE contact_phone= '#{
           flow_result.contact_phone
-        }' AND id = #{flow_result.id}"
+        }' AND id = #{flow_result.id} AND flow_context_id =  #{flow_result.flow_context_id} "
 
       GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
         body: %{query: sql, useLegacySql: false}
