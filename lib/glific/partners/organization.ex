@@ -149,7 +149,8 @@ defmodule Glific.Partners.Organization do
     check_valid_language(changeset, default_language_id, active_language_ids)
   end
 
-  @spec check_valid_language(Ecto.Changeset.t(), non_neg_integer(), [non_neg_integer()]) :: Ecto.Changeset.t()
+  @spec check_valid_language(Ecto.Changeset.t(), non_neg_integer(), [non_neg_integer()]) ::
+          Ecto.Changeset.t()
   defp check_valid_language(changeset, nil, _), do: changeset
   defp check_valid_language(changeset, _, nil), do: changeset
 
@@ -164,7 +165,7 @@ defmodule Glific.Partners.Organization do
         )
   end
 
-  @spec validate_default_language(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  @spec add_out_of_office_if_missing(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp add_out_of_office_if_missing(
          %Ecto.Changeset{data: %Organization{out_of_office: nil}} = changeset
        ) do
