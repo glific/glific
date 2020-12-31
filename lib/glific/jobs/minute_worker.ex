@@ -140,7 +140,7 @@ defmodule Glific.Jobs.MinuteWorker do
       "update_hsms" ->
         Partners.perform_all(&Templates.update_hsms/1, nil, [])
 
-      "update_fields" ->
+      "sync_glific_db_with_cloud" ->
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"])
 
       _ ->

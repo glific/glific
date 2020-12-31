@@ -32,6 +32,8 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @simulater_phone "9876543210"
   @reschedule_time 120
+  @update_minutes 30
+
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
   and queue them up for delivery to bigquery
@@ -59,17 +61,17 @@ defmodule Glific.Jobs.BigQueryWorker do
     organization = Partners.organization(organization_id)
     credential = organization.services["bigquery"]
 
-    if credential do
-      update_flow_results(organization_id)
-    else
-      :ok
-    end
+    if credential,
+    do: update_flow_results(organization_id),
+    else: :ok
+
   end
 
   defp update_flow_results(organization_id) do
     query =
       FlowResult
-      |> where([f], f.organization_id == ^organization_id)
+      |> where([fr], fr.organization_id == ^organization_id)
+      |> where([fr], fr.updated_at <= ^(Timex.shift(Timex.now, minutes: @update_minutes)))
       |> preload([:flow, :contact])
 
     Repo.all(query)
@@ -406,7 +408,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         } = job
       ) do
     update_flow_results
-    |> Enum.map(fn msg -> format_data_for_bigquery("update_flow_results", msg) end)
+    |> Enum.map(fn fr -> format_data_for_bigquery("update_flow_results", fr) end)
     |> make_update_query(organization_id, job)
   end
 
@@ -560,7 +562,7 @@ defmodule Glific.Jobs.BigQueryWorker do
           flow_result.contact_phone}' AND id = #{flow_result.id}"
       GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
       |> case do
-        {:ok, response} -> _response
+        {:ok, response} -> response
         {:error, _} -> nil
       end
     end)
@@ -569,7 +571,6 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec handle_insert_error(String.t(), String.t(), non_neg_integer, map(), Oban.Job.t()) :: :ok
   defp handle_insert_error(table, dataset_id, organization_id, error, job) do
     error = error["error"]
-
     if error["status"] == "NOT_FOUND" do
       Bigquery.bigquery_dataset(dataset_id, organization_id)
       make_job(job.args[table], table, organization_id, @reschedule_time)
