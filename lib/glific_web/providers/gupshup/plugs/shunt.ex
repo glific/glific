@@ -29,28 +29,12 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
           },
           Plug.opts()
         ) :: Plug.Conn.t()
-  def call(%Conn{params: %{"app" => app_name, "type" => type, "payload" => %{"type" => payload_type}}} = conn, opts) do
-    organization = Partners.organization(conn.assigns[:organization_id])
-    if organization.services["bsp"].secrets["app_name"] == app_name do
-      build_context(conn)
-      conn
-      |> change_path_info(["gupshup", type, payload_type])
-      |> Router.call(opts)
-    else
-      call(conn, opts)
-    end
-  end
+  def call(%Conn{params: %{"type" => type, "payload" => %{"type" => payload_type}}} = conn, opts) do
+    build_context(conn)
 
-  def call(%Conn{params: %{"type" => type, "payload" => %{"type" => payload_type, "sender" => sender}}} = conn, opts) do
-    if sender["name"] == "Simulator" && sender["phone"] == "9876543210" do
-      build_context(conn)
-
-      conn
-      |> change_path_info(["gupshup", type, payload_type])
-      |> Router.call(opts)
-    else
-      call(conn, opts)
-    end
+    conn
+    |> change_path_info(["gupshup", type, payload_type])
+    |> Router.call(opts)
   end
 
   @doc false
