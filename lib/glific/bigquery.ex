@@ -12,6 +12,7 @@ defmodule Glific.Bigquery do
   alias GoogleApi.BigQuery.V2.{
     Api.Datasets,
     Api.Jobs,
+    Api.Routines,
     Api.Tables,
     Connection
   }
@@ -38,6 +39,7 @@ defmodule Glific.Bigquery do
           {:ok, _} ->
             create_tables(conn, dataset_id, project_id)
             contacts_messages_view(conn, dataset_id, project_id)
+            flat_fields_procedure(conn, dataset_id, project_id)
 
           {:error, response} ->
             {:ok, data} = Jason.decode(response.body)
@@ -46,6 +48,44 @@ defmodule Glific.Bigquery do
     end
 
     :ok
+  end
+
+  ## Creating a view with unnested fields from contacts
+  @spec flat_fields_procedure(Tesla.Client.t(), String.t(), String.t()) ::
+          {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
+  defp flat_fields_procedure(conn, dataset_id, project_id) do
+      Routines.bigquery_routines_insert(
+        conn,
+        project_id,
+        dataset_id,
+        [
+          body: %{
+            routineReference: %{
+              routineId: "flat_fields",
+              datasetId: dataset_id,
+              projectId: project_id
+            },
+            routineType: "PROCEDURE",
+            definitionBody: """
+              BEGIN
+            EXECUTE IMMEDIATE
+            '''
+            CREATE OR REPLACE VIEW `#{project_id}.#{dataset_id}.flat_fields` AS SELECT id, (SELECT label from UNNEST(`groups`)) AS group_category,
+            '''
+            || (
+              SELECT STRING_AGG(DISTINCT "(SELECT value FROM UNNEST(fields) WHERE label = '" || label || "') AS " || REPLACE(label, ' ', '_')
+              )
+              FROM `#{project_id}.#{dataset_id}.contacts`, unnest(fields)
+            ) || '''
+            ,(SELECT MIN(inserted_at) FROM UNNEST(fields)) AS inserted_at,
+            (SELECT MAX(inserted_at) FROM UNNEST(fields)) AS last_updated_at
+            FROM `#{project_id}.#{dataset_id}.contacts`''';
+            END;
+            """
+          }
+        ],
+        []
+      )
   end
 
   @spec create_tables(Tesla.Client.t(), String.t(), String.t()) ::
