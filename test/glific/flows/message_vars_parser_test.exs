@@ -66,5 +66,9 @@ defmodule Glific.Flows.MessageVarParserTest do
       )
 
     assert parsed_test == "hello Glific Contact, your age is 20 years."
+
+    ## for contact groups
+    conatct_fields = Contacts.get_contact_field_map(contact.id)
+    assert MessageVarParser.parse("@contact.in_groups", %{"contact" => conatct_fields}) == "[]"
   end
 end

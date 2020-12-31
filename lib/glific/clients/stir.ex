@@ -1,6 +1,7 @@
 defmodule Glific.Clients.Stir do
   @moduledoc """
   Example implementation of survey computation for STiR
+  Glific.Clients.Stir.compute_art_content(res)
   """
 
   @doc false
@@ -10,6 +11,7 @@ defmodule Glific.Clients.Stir do
 
   def webhook(_), do: %{}
 
+  @spec get_value(String.t(), map()) :: integer()
   defp get_value(k, v) do
     k = String.downcase(k)
     input = String.downcase(v["input"])
@@ -28,7 +30,60 @@ defmodule Glific.Clients.Stir do
     end
   end
 
-  defp compute_survey_score(results) do
+  @spec get_art_content(String.t(), map()) :: String.t()
+  defp get_art_content(k, v) do
+    k = String.downcase(k)
+    input = String.downcase(v["input"])
+
+    if input == "n" do
+      case k do
+        "a1" -> " *1*. More reflective discussion on the teaching strategy \n"
+        "a2" -> " *2*. Space for practicing a classroom strategy \n"
+        "a3" -> " *3*. Teachers get improvement focused feedback \n"
+        "a4" -> " *4*. Teachers participation \n"
+        "a5" -> " *5*. Developing concrete action plans \n"
+        "a6" -> " *6*. Teachers asking question \n"
+        _ -> ""
+      end
+    else
+      ""
+    end
+  end
+
+  @doc """
+  Return art content
+  """
+  @spec compute_art_content(map()) :: String.t()
+  def compute_art_content(results) do
+    results
+    |> Enum.reduce(" ", fn {k, v}, acc ->
+      "#{acc} #{get_art_content(k, v)}"
+    end)
+  end
+
+  @doc """
+  Return integer depending on number of n as response in messages
+  """
+  @spec compute_art_results(map()) :: non_neg_integer()
+  def compute_art_results(results) do
+    answers =
+      results
+      |> Enum.map(fn {_k, v} -> String.downcase(v["input"]) end)
+      |> Enum.reduce(%{}, fn x, acc -> Map.update(acc, x, 1, &(&1 + 1)) end)
+
+    cond do
+      is_nil(Map.get(answers, "n")) -> 3
+      Map.get(answers, "n") == 1 -> 1
+      Map.get(answers, "n") > 1 -> 2
+      true -> 3
+    end
+  end
+
+  @doc """
+  Return total score
+  """
+  @spec compute_survey_score(map()) :: map()
+  def compute_survey_score(results) do
     results
     |> Enum.reduce(
       0,
@@ -37,6 +92,7 @@ defmodule Glific.Clients.Stir do
     |> get_content()
   end
 
+  @spec get_content(integer()) :: map()
   defp get_content(score) do
     {status, content} =
       cond do

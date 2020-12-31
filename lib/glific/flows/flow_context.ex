@@ -16,6 +16,7 @@ defmodule Glific.Flows.FlowContext do
     Flows,
     Flows.Flow,
     Flows.FlowResult,
+    Flows.MessageVarParser,
     Flows.Node,
     Messages,
     Messages.Message,
@@ -182,13 +183,22 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec update_results(FlowContext.t(), String.t(), String.t() | map(), String.t()) ::
           FlowContext.t()
-  def update_results(context, key, input, category) do
+  def update_results(context, key, input, category),
+    do: update_results(context, key, %{"input" => input, "category" => category})
+
+  @doc """
+  Update the contact results with each element of the json map
+  """
+  @spec update_results(FlowContext.t(), String.t(), map() | String.t()) ::
+          FlowContext.t()
+  def update_results(context, key, json) do
     results =
       if is_nil(context.results),
         do: %{},
-        else: context.results
+        else:
+          context.results
+          |> Map.put(key, json)
 
-    results = Map.put(results, key, %{"input" => input, "category" => category})
     {:ok, context} = update_flow_context(context, %{results: results})
 
     {:ok, _flow_result} =
@@ -197,27 +207,12 @@ defmodule Glific.Flows.FlowContext do
         contact_id: context.contact_id,
         flow_id: context.flow_id,
         flow_version: context.flow.version,
+        flow_context_id: context.id,
         flow_uuid: context.flow_uuid,
-        organization_id: context.contact.organization_id
+        organization_id: context.organization_id
       })
 
     context
-  end
-
-  @doc """
-  Update the contact results with each element of the json map
-  """
-  @spec update_results(FlowContext.t(), String.t(), map()) :: FlowContext.t()
-  def update_results(context, key, json) do
-    json
-    |> Enum.reduce(
-      context,
-      fn {k, v}, context ->
-        update_results(context, key <> "_" <> k, v, key)
-      end
-    )
-    # also add the entire json object in case folks want to access that
-    |> update_results(key, json, key)
   end
 
   @doc """
@@ -288,7 +283,8 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Seed the context and set the wakeup time as needed
   """
-  @spec seed_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) :: {:ok, FlowContext.t() | :error, String.t()}
+  @spec seed_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
+          {:ok, FlowContext.t() | :error, String.t()}
   def seed_context(flow, contact, status, opts \\ []) do
     parent_id = Keyword.get(opts, :parent_id)
     current_delay = Keyword.get(opts, :delay, 0)
@@ -298,21 +294,23 @@ defmodule Glific.Flows.FlowContext do
       "Seeding flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
     )
 
+    node = hd(flow.nodes)
+
     create_flow_context(%{
-          contact_id: contact.id,
-          parent_id: parent_id,
-          node_uuid: node.uuid,
-          flow_uuid: flow.uuid,
-          status: status,
-          node: hd(flow.nodes),
-          results: %{},
-          flow_id: flow.id,
-          flow: flow,
-          organization_id: flow.organization_id,
-          uuid_map: flow.uuid_map,
-          delay: current_delay,
-          wakeup_at: wakeup_at
-                        })
+      contact_id: contact.id,
+      parent_id: parent_id,
+      node_uuid: node.uuid,
+      flow_uuid: flow.uuid,
+      status: status,
+      node: node,
+      results: %{},
+      flow_id: flow.id,
+      flow: flow,
+      organization_id: flow.organization_id,
+      uuid_map: flow.uuid_map,
+      delay: current_delay,
+      wakeup_at: wakeup_at
+    })
   end
 
   @doc """
@@ -417,7 +415,6 @@ defmodule Glific.Flows.FlowContext do
         {:flow_uuid, context.flow_uuid, context.status}
       )
 
-
     {:ok, context} =
       context
       |> FlowContext.load_context(flow)
@@ -433,8 +430,8 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec get_result_value(FlowContext.t(), String.t()) :: String.t() | nil
   def get_result_value(context, value) when binary_part(value, 0, 9) == "@results." do
-    parts = String.slice(value, 8..-1) |> String.split(".", trim: true)
-    get_in(context.results, parts)
+    MessageVarParser.parse(value, %{"results" => context.results})
+    |> MessageVarParser.parse_results(context.results)
   end
 
   def get_result_value(_context, value), do: value

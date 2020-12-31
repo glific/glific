@@ -164,6 +164,16 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, %{groups: json["groups"]})
   end
 
+  def process(%{"type" => "remove_contact_groups"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_group)
+
+    if json["all_groups"] do
+      process(json, uuid_map, node, %{groups: ["all_groups"]})
+    else
+      process(json, uuid_map, node, %{groups: json["groups"]})
+    end
+  end
+
   def process(json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields)
 
@@ -202,7 +212,7 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "set_contact_field"} = action, context, messages) do
-    key = String.downcase(action.field.key)
+    key = String.downcase(action.field.name) |> String.replace(" ", "_")
     value = FlowContext.get_result_value(context, action.value)
 
     context =
@@ -243,6 +253,8 @@ defmodule Glific.Flows.Action do
          | messages
        ]}
     else
+      json = Map.merge(json, %{"category" => "webhook"})
+
       {
         :ok,
         FlowContext.update_results(context, action.result_name, json),
@@ -288,6 +300,26 @@ defmodule Glific.Flows.Action do
       )
 
     {:ok, context, messages}
+  end
+
+  def execute(%{type: "remove_contact_groups"} = action, context, messages) do
+    if action.groups == ["all_groups"] do
+      groups_ids = Groups.get_group_ids()
+      Groups.delete_contact_groups_by_ids(context.contact_id, groups_ids)
+      {:ok, context, messages}
+    else
+      groups_ids =
+        Enum.map(
+          action.groups,
+          fn group ->
+            {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
+            group_id
+          end
+        )
+
+      Groups.delete_group_contacts_by_ids(context.contact_id, groups_ids)
+      {:ok, context, messages}
+    end
   end
 
   def execute(action, _context, _messages),

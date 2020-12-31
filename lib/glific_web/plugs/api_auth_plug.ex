@@ -89,13 +89,13 @@ defmodule GlificWeb.APIAuthPlug do
   @impl true
   @spec delete(Conn.t(), Config.t()) :: Conn.t()
   def delete(conn, config) do
-    Logger.info("Deleting tokens: user_id: '#{conn.assigns[:current_user].id}'")
-
     store_config = store_config(config)
 
     with {:ok, signed_token} <- fetch_access_token(conn),
          {:ok, token} <- verify_token(conn, signed_token, config),
-         {_user, metadata} <- CredentialsCache.get(store_config, token) do
+         {user, metadata} <- CredentialsCache.get(store_config, token) do
+      Logger.info("Deleting tokens: user_id: '#{user.id}'")
+
       PersistentSessionCache.delete(store_config, metadata[:renewal_token])
       CredentialsCache.delete(store_config, token)
 
@@ -153,7 +153,7 @@ defmodule GlificWeb.APIAuthPlug do
       PersistentSessionCache.delete(store_config, metadata[:renewal_token])
       CredentialsCache.delete(store_config, token)
 
-      Endpoint.broadcast("users_socket:" <> metadata[:fingerprint], "disconnect", %{})
+      Endpoint.broadcast("users_socket:" <> metadata[:renewal_token], "disconnect", %{})
     end)
   end
 

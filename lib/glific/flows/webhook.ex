@@ -96,14 +96,17 @@ defmodule Glific.Flows.Webhook do
       results: context.results
     }
 
-    contact_fields = %{"contact" => Contacts.get_contact_field_map(context.contact_id)}
+    fields = %{
+      "contact" => Contacts.get_contact_field_map(context.contact_id),
+      "results" => context.results
+    }
 
     {:ok, default_contact} = Jason.encode(default_payload.contact)
     {:ok, default_results} = Jason.encode(default_payload.results)
 
     action_body =
       action_body
-      |> MessageVarParser.parse(contact_fields)
+      |> MessageVarParser.parse(fields)
       |> MessageVarParser.parse_results(context.results)
       |> String.replace("\"@contact\"", default_contact)
       |> String.replace("\"@results\"", default_results)
@@ -121,14 +124,18 @@ defmodule Glific.Flows.Webhook do
 
     case Tesla.post(action.url, body, headers: headers) do
       {:ok, %Tesla.Env{status: 200} = message} ->
-        update_log(message, webhook_log)
+        case Jason.decode(message.body) do
+          {:ok, json_response} ->
+            update_log(message, webhook_log)
+            json_response
 
-        message.body
-        |> Jason.decode!()
-        |> Map.get("results")
+          {:error, _error} ->
+            update_log("Could not decode message body: " <> message.body, webhook_log)
+            nil
+        end
 
       {:ok, %Tesla.Env{} = message} ->
-        update_log(message, webhook_log)
+        update_log("Did not return a 200 status code" <> message.body, webhook_log)
         nil
 
       {:error, error_message} ->

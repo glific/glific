@@ -136,7 +136,7 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
     messages =
       Message
       |> where([m], not is_nil(m.media_id))
-      |> preload(:media)
+      |> select([m], [m.id, m.media_id, m.organization_id])
       |> Repo.all(skip_organization_id: true)
 
     messages

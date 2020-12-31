@@ -161,7 +161,7 @@ defmodule Glific.Repo do
   @spec opts_with_field(
           Ecto.Queryable.t(),
           map(),
-          :name | :body | :label
+          :name | :body | :label | :inserted_at
         ) :: Ecto.Queryable.t()
   def opts_with_field(query, opts, field) do
     sort =
@@ -186,9 +186,16 @@ defmodule Glific.Repo do
       order = sort.order
       real_field = sort.with
 
-      if field == real_field,
-        do: order_by(query, [o], {^order, fragment("lower(?)", field(o, ^real_field))}),
-        else: order_by(query, [o], {^order, field(o, ^real_field)})
+      cond do
+        field == :inserted_at ->
+          order_by(query, [o], {^order, field(o, ^real_field)})
+
+        field == real_field ->
+          order_by(query, [o], {^order, fragment("lower(?)", field(o, ^real_field))})
+
+        field != real_field ->
+          order_by(query, [o], {^order, field(o, ^real_field)})
+      end
     else
       query
     end
@@ -205,6 +212,10 @@ defmodule Glific.Repo do
   @doc false
   @spec opts_with_name(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   def opts_with_name(query, opts), do: opts_with_field(query, opts, :name)
+
+  @doc false
+  @spec opts_with_inserted_at(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_inserted_at(query, opts), do: opts_with_field(query, opts, :inserted_at)
 
   # codebeat:disable[ABC, LOC]
   @doc """

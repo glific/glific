@@ -20,6 +20,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
+    Fixtures.otp_hsm_fixture()
     :ok
   end
 

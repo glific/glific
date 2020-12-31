@@ -26,6 +26,11 @@ defmodule Glific.Flows.MessageVarParser do
     language["label"]
   end
 
+  # since this is a list we need to convert that into a string.
+  defp bound("@contact.in_groups", binding) do
+    "#{inspect(get_in(binding, ["contact", "in_groups"]))}"
+  end
+
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
     substitution =
       get_in(binding, String.split(var, "."))
@@ -48,6 +53,10 @@ defmodule Glific.Flows.MessageVarParser do
 
   defp stringify_keys(map) when is_struct(map), do: Map.from_struct(map)
 
+  defp stringify_keys(int) when is_integer(int), do: Integer.to_string(int)
+
+  defp stringify_keys(float) when is_float(float), do: Float.to_string(float)
+
   defp stringify_keys(map) when is_map(map) do
     map
     |> Enum.map(fn {k, v} ->
@@ -66,8 +75,9 @@ defmodule Glific.Flows.MessageVarParser do
     do: value
 
   @doc """
-  Interpolates the values from results into the message body. Might need to integrate
-  it with the substitution above
+  Interpolates the values from results into the message body.
+  Might need to integrate it with the substitution above.
+  It will just treat @results.variable to @results.variable.input
   """
   @spec parse_results(String.t(), map()) :: String.t()
   def parse_results(body, results) do

@@ -53,7 +53,8 @@ defmodule Glific.Processor.ConsumerFlow do
     else
       _ ->
         cond do
-          Map.get(state, :newcontact, false) == true ->
+          Map.get(state, :newcontact, false) == true &&
+              Map.has_key?(state.flow_keywords, "newcontact") ->
             check_flows(message, "newcontact", state, false)
 
           Map.has_key?(state.flow_keywords, body) ->
@@ -72,6 +73,8 @@ defmodule Glific.Processor.ConsumerFlow do
   @final_phrase "published"
 
   @spec is_beta_keyword?(map(), String.t()) :: boolean()
+  defp is_beta_keyword?(_state, nil), do: false
+
   defp is_beta_keyword?(state, body) do
     if String.starts_with?(body, @beta_phrase) and
          Map.has_key?(state.flow_keywords, String.replace_leading(body, @beta_phrase, "")),
@@ -135,7 +138,10 @@ defmodule Glific.Processor.ConsumerFlow do
         message.organization_id,
         message.body,
         type: message.type,
-        id: message.id
+        id: message.id,
+        media: message.media,
+        media_id: message.media_id,
+        location: message.location
       )
     )
 

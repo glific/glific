@@ -33,6 +33,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert json_response(conn, 200) == %{
                "key" => "somefieldname",
                "name" => "Some Field name",
+               "label" => "Some Field name",
                "value_type" => "text"
              }
     end

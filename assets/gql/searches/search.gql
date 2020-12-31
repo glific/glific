@@ -23,5 +23,12 @@ query search(
           id
         }
       }
+      group {
+        id
+        label
+        messages {
+          body
+        }
+      }
     }
 }

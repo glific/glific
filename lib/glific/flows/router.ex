@@ -5,8 +5,10 @@ defmodule Glific.Flows.Router do
   alias __MODULE__
 
   use Ecto.Schema
+  require Logger
 
   alias Glific.{
+    Contacts,
     Flows,
     Messages,
     Messages.Message
@@ -124,9 +126,26 @@ defmodule Glific.Flows.Router do
         # this is the split by result flow
         content =
           router.operand
+          |> MessageVarParser.parse(%{
+            "contact" => Contacts.get_contact_field_map(context.contact_id),
+            "results" => context.results
+          })
           |> MessageVarParser.parse_results(context.results)
-          # Once we have the content, we send it over to EEx to execute
-          |> EEx.eval_string()
+
+        # Once we have the content, we send it over to EEx to execute
+        content =
+          try do
+            if Glific.suspicious_code(content) do
+              Logger.error("EEx suspicious code: #{content}")
+              "Invalid Code"
+            else
+              EEx.eval_string(content)
+            end
+          rescue
+            EEx.SyntaxError ->
+              Logger.error("EEx threw a SyntaxError: #{content}")
+              "Invalid Code"
+          end
 
         msg = Messages.create_temp_message(context.contact.organization_id, content)
         {msg, []}
@@ -146,7 +165,7 @@ defmodule Glific.Flows.Router do
       if is_nil(router.result_name),
         # if there is a result name, store it in the context table along with the category name first
         do: context,
-        else: FlowContext.update_results(context, router.result_name, msg.body, category.name)
+        else: update_context_results(context, router.result_name, msg, category)
 
     Category.execute(category, context, rest)
   end
@@ -177,5 +196,36 @@ defmodule Glific.Flows.Router do
     if is_nil(c),
       do: router.default_category_uuid,
       else: c.category_uuid
+  end
+
+  @spec update_context_results(FlowContext.t(), String.t(), Message.t(), Category.t()) ::
+          FlowContext.t()
+  defp update_context_results(context, key, msg, category) do
+    cond do
+      Enum.member?([:text], msg.type) ->
+        FlowContext.update_results(context, key, msg.body, category.name)
+
+      Enum.member?([:image, :video, :audio], msg.type) ->
+        media = msg.media
+
+        json =
+          Map.take(media, [:id, :source_url, :url, :caption])
+          |> Map.put(:category, "media")
+          |> Map.put(:input, media.url)
+
+        FlowContext.update_results(context, key, json)
+
+      Enum.member?([:location], msg.type) ->
+        location = msg.location
+
+        json =
+          Map.take(location, [:id, :longitude, :latitude])
+          |> Map.put(:category, "location")
+
+        FlowContext.update_results(context, key, json)
+
+      true ->
+        FlowContext.update_results(context, key, msg.body, category.name)
+    end
   end
 end

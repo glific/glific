@@ -13,6 +13,7 @@ defmodule Glific.Partners do
   alias Glific.{
     Bigquery,
     Caches,
+    Contacts,
     Flags,
     Partners.Credential,
     Partners.Organization,
@@ -37,8 +38,12 @@ defmodule Glific.Partners do
 
   """
   @spec list_providers(map()) :: [%Provider{}, ...]
-  def list_providers(args \\ %{}),
-    do: Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
+  def list_providers(args \\ %{}) do
+    Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
+    |> Enum.reject(fn provider ->
+      Enum.member?(["dialogflow", "goth", "shortcode"], provider.shortcode)
+    end)
+  end
 
   @doc """
   Return the count of providers, using the same filter as list_providers
@@ -278,10 +283,7 @@ defmodule Glific.Partners do
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def update_organization(%Organization{} = organization, attrs) do
     # first delete the cached organization
-    Caches.remove(
-      @global_organization_id,
-      [{:organization, organization.id}, {:organization, organization.shortcode}]
-    )
+    remove_organization_cache(organization.id, organization.shortcode)
 
     organization
     |> Organization.changeset(attrs)
@@ -580,7 +582,7 @@ defmodule Glific.Partners do
 
         phone = user["countryCode"] <> user["phoneCode"]
 
-        Glific.Contacts.upsert(%{
+        Contacts.upsert(%{
           phone: phone,
           last_message_at: last_message_at,
           optin_time: optin_time |> DateTime.truncate(:second),
@@ -628,11 +630,7 @@ defmodule Glific.Partners do
       {:ok, provider} ->
         # first delete the cached organization
         organization = get_organization!(attrs.organization_id)
-
-        Caches.remove(
-          @global_organization_id,
-          [{:organization, organization.id}, {:organization, organization.shortcode}]
-        )
+        remove_organization_cache(organization.id, organization.shortcode)
 
         attrs = Map.merge(attrs, %{provider_id: provider.id})
 
@@ -661,10 +659,7 @@ defmodule Glific.Partners do
     # delete the cached organization and associated credentials
     organization = organization(credential.organization_id)
 
-    Caches.remove(
-      @global_organization_id,
-      [{:organization, organization.id}, {:organization, organization.shortcode}]
-    )
+    remove_organization_cache(organization.id, organization.shortcode)
 
     response =
       credential
@@ -677,6 +672,17 @@ defmodule Glific.Partners do
     end
 
     response
+  end
+
+  @doc """
+    Removing organization cache
+  """
+  @spec remove_organization_cache(non_neg_integer, String.t()) :: any()
+  def remove_organization_cache(organization_id, shortcode) do
+    Caches.remove(
+      @global_organization_id,
+      [{:organization, organization_id}, {:organization, shortcode}]
+    )
   end
 
   # This is required for GCS

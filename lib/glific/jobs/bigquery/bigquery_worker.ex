@@ -240,6 +240,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp queue_table_data(_, _, _, _), do: nil
 
+  @spec format_json(map()) :: iodata
   defp format_json(definition) do
     {:ok, data} = Jason.encode(definition)
     data
@@ -427,8 +428,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec make_insert_query(list(), String.t(), non_neg_integer, Oban.Job.t()) :: :ok
   defp make_insert_query(data, table, organization_id, job) do
-    organization =
-      Partners.organization(organization_id)
+    organization = Partners.organization(organization_id)
 
     credentials =
       organization.services["bigquery"]
@@ -437,7 +437,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         credentials -> credentials
       end
 
-    project_id = credentials.secrets["project_id"]
+    {:ok, secrets} = Jason.decode(credentials.secrets["service_account"])
+    project_id = secrets["project_id"]
     dataset_id = organization.contact.phone
     table_id = table
     token = Partners.get_goth_token(organization_id, "bigquery")

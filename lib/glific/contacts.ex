@@ -15,6 +15,7 @@ defmodule Glific.Contacts do
     Groups.ContactGroup,
     Groups.UserGroup,
     Partners,
+    Providers.GupshupContacts,
     Repo,
     Tags.ContactTag,
     Users.User
@@ -275,9 +276,30 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  This function is called by the messaging framework for all incoming messages, hence
+  might be a good candidate to maintain a contact level cache at some point
+
+  We use a fetch followed by create, to avoid the explosion in the id namespace
+  """
+  @spec maybe_create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  def maybe_create_contact(sender) do
+    case Repo.get_by(Contact, %{phone: sender.phone}) do
+      nil ->
+        create_contact(sender)
+
+      contact ->
+        if contact.name != sender.name do
+          # the contact name has changed, so we need to update it
+          update_contact(contact, %{name: sender.name})
+        else
+          {:ok, contact}
+        end
+    end
+  end
+
+  @doc """
   Check if this contact id is a new conatct
   """
-
   @spec is_new_contact(integer()) :: boolean()
   def is_new_contact(contact_id) do
     case Glific.Messages.Message
@@ -469,28 +491,10 @@ defmodule Glific.Contacts do
   @spec optin_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
     organization = Partners.organization(organization_id)
-    bsp_credentials = organization.services["bsp"]
 
-    url =
-      bsp_credentials.keys["api_end_point"] <>
-        "/app/opt/in/" <> bsp_credentials.secrets["app_name"]
-
-    api_key = bsp_credentials.secrets["api_key"]
-
-    with {:ok, response} <-
-           post(url, %{user: attrs.phone}, headers: [{"apikey", api_key}]),
-         true <- response.status == 202 do
-      %{
-        name: attrs[:name],
-        phone: attrs.phone,
-        organization_id: organization_id,
-        optin_time: DateTime.utc_now(),
-        bsp_status: :hsm
-      }
-      |> create_contact()
-    else
-      _ ->
-        {:error, ["gupshup", "couldn't connect"]}
+    case organization.bsp.shortcode do
+      "gupshup" -> GupshupContacts.optin_contact(attrs)
+      _ -> {:error, "Invalid provider"}
     end
   end
 
@@ -500,10 +504,25 @@ defmodule Glific.Contacts do
   @spec get_contact_field_map(integer) :: map()
   def get_contact_field_map(contact_id) do
     contact =
-      Contacts.get_contact!(contact_id)
-      |> Repo.preload(:language)
+      contact_id
+      |> Contacts.get_contact!()
+      |> Repo.preload([:language, :groups])
       |> Map.from_struct()
 
-    put_in(contact, [:fields, :language], %{label: contact.language.label})
+    # we are splliting this up since we need to use contact within the various function
+    # calls and a lot cleaner this way
+    contact
+    |> put_in(
+      [:fields, :language],
+      %{label: contact.language.label}
+    )
+    |> Map.put(
+      :in_groups,
+      Enum.reduce(
+        contact.groups,
+        [],
+        fn g, list -> [g.label | list] end
+      )
+    )
   end
 end

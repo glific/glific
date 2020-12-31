@@ -478,6 +478,16 @@ defmodule Glific.MessagesTest do
 
       # message should be sent only to the contacts of the group
       assert [contact1_id, contact2_id] -- contact_ids == []
+
+      # a message should be created with group_id
+      assert {:ok, _message} =
+               Repo.fetch_by(Message, %{body: valid_attrs.body, group_id: group.id})
+
+      # group should be updated with last communication at
+      {:ok, updated_group} =
+        Repo.fetch_by(Group, %{id: cg1.group_id, organization_id: organization_id})
+
+      assert updated_group.last_communication_at >= group.last_communication_at
     end
 
     test "send hsm message incorrect parameters",
@@ -505,6 +515,44 @@ defmodule Glific.MessagesTest do
 
       {:ok, message} =
         Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+
+      assert message.is_hsm == true
+      assert message.flow == :outbound
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
+      assert message.sent_at != nil
+    end
+
+    test "send media hsm message",
+         %{organization_id: organization_id, global_schema: global_schema} = attrs do
+      SeedsDev.seed_session_templates()
+      contact = Fixtures.contact_fixture(attrs)
+
+      shortcode = "account_update"
+
+      {:ok, hsm_template} =
+        Repo.fetch_by(
+          SessionTemplate,
+          %{shortcode: shortcode, organization_id: organization_id}
+        )
+
+      parameters = ["param1", "param2", "param3"]
+
+      # send media hsm without media should return error
+      {:error, error_message} =
+        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+
+      assert error_message == "You need to provide media for media hsm template"
+
+      media = Fixtures.message_media_fixture(attrs)
+
+      {:ok, message} =
+        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters, media.id)
 
       assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)

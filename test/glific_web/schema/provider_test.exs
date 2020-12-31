@@ -30,9 +30,9 @@ defmodule GlificWeb.Schema.ProviderTest do
     res =
       providers
       |> get_in([Access.all(), "name"])
-      |> Enum.find(fn x -> x == "Default Provider" end)
+      |> Enum.find(fn x -> x == "Glifproxy" end)
 
-    assert res == "Default Provider"
+    assert res == "Glifproxy"
   end
 
   # @tag :pending

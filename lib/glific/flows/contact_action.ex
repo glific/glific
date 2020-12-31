@@ -14,6 +14,7 @@ defmodule Glific.Flows.ContactAction do
     Messages.Message
   }
 
+  require Logger
   @min_delay 2
 
   @doc """
@@ -22,12 +23,13 @@ defmodule Glific.Flows.ContactAction do
   @spec send_message(FlowContext.t(), Action.t(), [Message.t()]) :: {:ok, map(), any()}
   def send_message(context, %Action{templating: nil} = action, messages) do
     # get the test translation if needed
-    text = Localization.get_translation(context, action)
-
+    text = Localization.get_translation(context, action, :text)
+    attachments = Localization.get_translation(context, action, :attachments)
     # Since we are saving the data after loading the flow
     # so we have to fetch the latest contact fields
     message_vars = %{
-      "contact" => Contacts.get_contact_field_map(context.contact_id)
+      "contact" => Contacts.get_contact_field_map(context.contact_id),
+      "results" => context.results
     }
 
     body =
@@ -36,7 +38,7 @@ defmodule Glific.Flows.ContactAction do
       |> MessageVarParser.parse_results(context.results)
 
     organization_id = context.organization_id
-    {type, media_id} = get_media_from_attachment(action.attachments, text, organization_id)
+    {type, media_id} = get_media_from_attachment(attachments, text, organization_id)
 
     attrs = %{
       uuid: action.uuid,
@@ -69,24 +71,40 @@ defmodule Glific.Flows.ContactAction do
         {:ok, context, [Messages.create_temp_message(organization_id, "Exit Loop") | messages]}
 
       true ->
-        {:ok, _message} = Messages.create_and_send_message(attrs)
-        # increment the delay
-        {:ok, %{context | delay: context.delay + @min_delay}, messages}
+        Messages.create_and_send_message(attrs)
+        |> case do
+          {:ok, _message} ->
+            {:ok, %{context | delay: context.delay + @min_delay}, messages}
+
+          {:error, error} ->
+            Logger.info("Error sending message: #{inspect(error)}, #{inspect(attrs)}")
+            # returning for now, since flows are not really handling errors very nicely
+            {:ok, context, messages}
+        end
     end
   end
 
   @doc """
   Given a shortcode and a context, send the right session template message
-  to the contact
+  to the contact.
+
+  We need to handle translations for template messages, since whatsapp gives them unique
   """
   def send_message(
         context,
-        %Action{templating: templating, attachments: attachments},
+        %Action{templating: templating} = action,
         messages
       ) do
-    message_vars = %{"contact" => Contacts.get_contact_field_map(context.contact_id)}
+    message_vars = %{
+      "contact" => Contacts.get_contact_field_map(context.contact_id),
+      "results" => context.results
+    }
+
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
+
     session_template = Messages.parse_template_vars(templating.template, vars)
+
+    attachments = Localization.get_translation(context, action, :attachments)
 
     {type, media_id} =
       if is_nil(attachments) or attachments == %{},
@@ -119,21 +137,6 @@ defmodule Glific.Flows.ContactAction do
     {:ok, %{context | delay: context.delay + @min_delay}, messages}
   end
 
-  # Our simple workaround of sending in a specific attachment for a specific
-  # template that is being localized. Allows us to maintain the same flow, and have
-  # language specific templates
-  @spec extract_attachment_from_text(String.t(), String.t(), String.t()) ::
-          {String.t(), String.t(), String.t()}
-  defp extract_attachment_from_text(caption, type, url) do
-    if String.contains?(caption, "attachment: ") do
-      [caption, attachment] = String.split(caption, "attachment: ", parts: 2)
-      [type, url] = String.split(attachment, ":", parts: 2)
-      {String.trim_trailing(caption), String.trim(type), String.trim(url)}
-    else
-      {caption, type, url}
-    end
-  end
-
   @spec get_media_from_attachment(any(), any(), non_neg_integer()) :: any()
   defp get_media_from_attachment(attachment, _, _) when attachment == %{} or is_nil(attachment),
     do: {:text, nil}
@@ -145,7 +148,6 @@ defmodule Glific.Flows.ContactAction do
       attachment[type]
       |> String.trim()
 
-    {caption, type, url} = extract_attachment_from_text(caption, type, url)
     type = String.to_existing_atom(type)
 
     {:ok, message_media} =

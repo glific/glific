@@ -4,6 +4,7 @@ defmodule Glific.CloakMigration do
   """
 
   alias Glific.{
+    Partners,
     Partners.Credential,
     Partners.Organization,
     Repo
@@ -11,28 +12,45 @@ defmodule Glific.CloakMigration do
 
   @doc """
   migrate to new key for encryption
-  Glific.CloakMigration.cloak_migrate()
   """
   @spec cloak_migrate :: :ok
   def cloak_migrate do
-    Repo.all(Organization, skip_organization_id: true)
-    |> Enum.each(fn organization -> update_organization(organization) end)
+    organizations = Repo.all(Organization, skip_organization_id: true)
+
+    organizations |> Enum.each(fn organization -> update_organization(organization) end)
+
+    organizations_list =
+      Enum.reduce(organizations, %{}, fn organization, acc ->
+        Map.put(acc, organization.id, organization.shortcode)
+      end)
 
     Repo.all(Credential, skip_organization_id: true)
-    |> Enum.each(fn credential -> update_credential(credential) end)
+    |> Enum.each(fn credential -> update_credential(credential, organizations_list) end)
 
     :ok
   end
 
-  defp update_credential(record) do
-    record
-    |> Credential.changeset(%{secrets: record.secrets})
+  @spec update_credential(Credential.t(), map()) :: any()
+  defp update_credential(credential, organizations_list) do
+    {:ok, updated} =
+      credential
+      |> Credential.changeset(%{secrets: %{}})
+      |> Repo.update(force: true)
+
+    updated
+    |> Credential.changeset(%{secrets: credential.secrets})
     |> Repo.update(force: true)
+
+    Partners.remove_organization_cache(
+      credential.organization_id,
+      Map.get(organizations_list, credential.organization_id)
+    )
   end
 
-  defp update_organization(record) do
-    record
-    |> Organization.changeset(%{signature_phrase: record.signature_phrase})
-    |> Repo.update(force: true)
+  @spec update_organization(Organization.t()) ::
+          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
+  defp update_organization(organization) do
+    Partners.update_organization(organization, %{signature_phrase: nil})
+    Partners.update_organization(organization, %{signature_phrase: organization.signature_phrase})
   end
 end

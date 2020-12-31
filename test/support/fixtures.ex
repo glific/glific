@@ -11,14 +11,17 @@ defmodule Glific.Fixtures do
   alias Glific.{
     Contacts,
     Flows,
+    Flows.WebhookLog,
     Groups,
     Messages,
+    Messages.MessageMedia,
     Partners,
     Partners.Organization,
     Repo,
     Settings,
     Tags,
     Templates,
+    Templates.SessionTemplate,
     Users
   }
 
@@ -98,7 +101,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec organization_fixture(map()) :: Partners.Organization.t()
+  @spec organization_fixture(map()) :: Organization.t()
   def organization_fixture(attrs \\ %{}) do
     contact =
       if Map.get(attrs, :contact_id),
@@ -236,7 +239,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec session_template_fixture(map()) :: Templates.SessionTemplate.t()
+  @spec session_template_fixture(map()) :: SessionTemplate.t()
   def session_template_fixture(attrs \\ %{}) do
     language = language_fixture()
 
@@ -448,5 +451,105 @@ defmodule Glific.Fixtures do
       |> Users.create_user()
 
     user
+  end
+
+  @doc false
+  @spec otp_hsm_fixture() :: SessionTemplate.t()
+  def otp_hsm_fixture do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "success",
+              "template" => %{
+                "elementName" => "common_otp",
+                "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
+                "languageCode" => "en_US",
+                "status" => "APPROVED"
+              }
+            })
+        }
+    end)
+
+    session_template_fixture(%{
+      body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+      shortcode: "common_otp",
+      is_hsm: true,
+      category: "ALERT_UPDATE",
+      example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
+      language_id: organization_fixture().default_language_id
+    })
+  end
+
+  @doc false
+  @spec message_media_fixture(map()) :: MessageMedia.t()
+  def message_media_fixture(attrs) do
+    {:ok, message_media} =
+      %{
+        url: Faker.Avatar.image_url(),
+        source_url: Faker.Avatar.image_url(),
+        thumbnail: Faker.Avatar.image_url(),
+        caption: Faker.String.base64(10),
+        provider_media_id: Faker.String.base64(10),
+        organization_id: attrs.organization_id
+      }
+      |> Messages.create_message_media()
+
+    message_media
+  end
+
+  @doc false
+  @spec group_messages_fixture(map()) :: nil
+  def group_messages_fixture(attrs) do
+    [cg1, _cg2, cg3] = group_contacts_fixture(attrs)
+
+    {:ok, group_1} =
+      Repo.fetch_by(Groups.Group, %{id: cg1.group_id, organization_id: attrs.organization_id})
+
+    {:ok, group_2} =
+      Repo.fetch_by(Groups.Group, %{id: cg3.group_id, organization_id: attrs.organization_id})
+
+    valid_attrs = %{
+      body: "group message",
+      flow: :outbound,
+      type: :text,
+      organization_id: attrs.organization_id
+    }
+
+    Messages.create_and_send_message_to_group(valid_attrs, group_1)
+    Messages.create_and_send_message_to_group(valid_attrs, group_2)
+    nil
+  end
+
+  @doc false
+  @spec webhook_log_fixture(map()) :: WebhookLog.t()
+  def webhook_log_fixture(attrs) do
+    valid_attrs = %{
+      url: "some url",
+      method: "GET",
+      request_headers: %{
+        "Accept" => "application/json",
+        "X-Glific-Signature" => "random signature"
+      },
+      request_json: %{},
+      response_json: %{},
+      status_code: 200
+    }
+
+    contact = contact_fixture(attrs)
+    flow = flow_fixture(Map.merge(attrs, %{keywords: [], name: Person.name()}))
+
+    valid_attrs =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Map.put(:contact_id, contact.id)
+      |> Map.put(:flow_id, flow.id)
+      |> Map.put(:organization_id, flow.organization_id)
+
+    {:ok, webhook_log} = WebhookLog.create_webhook_log(valid_attrs)
+
+    webhook_log
   end
 end

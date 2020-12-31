@@ -4,11 +4,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.8.7] - 2020-12-28
+### Added
+- Store messages sent to group in messages table
+- Add API to retrieve group conversations
+- Add flow_context id to flow results table so we store each run through the flow
+
+## [0.8.6] - 2020-12-22
+### Added
+- Stir usecase, computing score based on answers of survey
+- Stir usecase, returning list of wrongly answered
+- Added support for message variable parser
+- Added support for fetching hsm templates from gupshup periodically
+
+### Fixed
+- fixed message variable parsing in webhook, route and contact field
+- Using dot syntax in webhook results
+
+## [0.8.5] - 2020-12-17
+### Added
+- Support for retrieving HSM messages from gupshup
+- Switched to new API to send HSM messages
+
+## [0.8.4] - 2020-12-15
+### Added
+- Rescheduling oban jobs in case of failure for ensuring data archival
+- Added Check for bigquery tables and dataset in case of Bigquery Jobs failure
+- Clearing cache on encrypting data with new key
+- Adding custom data as JSON in Webhook
+
+### Fixed
+- Webhook fixes
+- Fetching all details for bigquery integration from single JSON
+- Cloak Key migration fixes
 
 ## [0.8.3] - 2020-12-08
+### Added
+- Support for translations in templates
+- Attachment support for various translations in flow editor and templates
+- Cannot block simulator contact anymore.
+- UI/UX enhancements
+  - Added opt-in instructions on the registration page
+  - Timer display corrections
+  - Automations are renamed to "Flows"
+
 ### Fixed
 - Tweak settings in AppSignal to ignore DB queries
+
 
 ## [0.8.2] - 2020-12-07
 ### Added

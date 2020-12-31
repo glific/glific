@@ -7,7 +7,9 @@ defmodule Glific.Messages.Message do
 
   alias Glific.{
     Contacts.Contact,
+    Contacts.Location,
     Flows.Flow,
+    Groups.Group,
     Messages.MessageMedia,
     Partners.Organization,
     Tags.Tag,
@@ -36,10 +38,13 @@ defmodule Glific.Messages.Message do
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           user_id: non_neg_integer | nil,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
+          group_id: non_neg_integer | nil,
+          group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
           flow_id: non_neg_integer | nil,
           flow_object: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           media_id: non_neg_integer | nil,
           media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
+          location: Location.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           body: String.t() | nil,
@@ -71,6 +76,7 @@ defmodule Glific.Messages.Message do
     :bsp_message_id,
     :errors,
     :media_id,
+    :group_id,
     :send_at,
     :sent_at,
     :user_id,
@@ -107,6 +113,9 @@ defmodule Glific.Messages.Message do
     belongs_to :flow_object, Flow, foreign_key: :flow_id
     belongs_to :media, MessageMedia
     belongs_to :organization, Organization
+
+    belongs_to :group, Group
+    has_one :location, Location
 
     many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
 

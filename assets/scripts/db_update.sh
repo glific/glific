@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# for production data run <GLIFIC_PATH>/db_update.sh prod <DB_ENDPOINT>
-# for seed data run <GLIFIC_PATH>/db_update.sh
+# for production data run <GLIFIC_PATH>/assets/scripts/db_update.sh prod <DB_ENDPOINT>
+# for seed data run <GLIFIC_PATH>/assets/scripts/db_update.sh
+# for filtering production data of one organization run <GLIFIC_PATH>/assets/scripts/db_update.sh prod <DB_ENDPOINT> <ORGANIZATION_SHORTCODE>
 
 if [[ $1 == prod ]]
 then
@@ -19,10 +20,16 @@ then
   mix phil_columns.seed --tenant glific
 
   # encrypt db
-  mix run db_encrypt.exs
+  mix run ./assets/scripts/db_encrypt.exs
 
   # remove production db file
   rm glific.sql
+
+  # filter one organization's data
+  if [ $# == 3 ]
+  then
+    mix run ./assets/scripts/db_filter_org.exs $3
+  fi
 
 else 
 

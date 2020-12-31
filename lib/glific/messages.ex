@@ -213,9 +213,26 @@ defmodule Glific.Messages do
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
+    check_for_hsm_message(attrs, contact)
+  end
 
-    Contacts.can_send_message_to?(contact, attrs[:is_hsm])
-    |> create_and_send_message(attrs)
+  @doc false
+  @spec check_for_hsm_message(map(), Contact.t()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp check_for_hsm_message(attrs, contact) do
+    with true <- Map.has_key?(attrs, :template_id),
+         true <- Map.get(attrs, :is_hsm) do
+      create_and_send_hsm_message(
+        attrs.template_id,
+        attrs.receiver_id,
+        attrs.params,
+        attrs.media_id
+      )
+    else
+      _ ->
+        Contacts.can_send_message_to?(contact, attrs[:is_hsm])
+        |> create_and_send_message(attrs)
+    end
   end
 
   @doc false
@@ -235,7 +252,7 @@ defmodule Glific.Messages do
       |> update_message_attrs()
       |> create_message()
 
-    Communications.Message.send_message(message)
+    Communications.Message.send_message(message, attrs)
   end
 
   @doc false
@@ -273,7 +290,7 @@ defmodule Glific.Messages do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
       Repo.fetch_by(SessionTemplate, %{
-        shortcode: "otp",
+        shortcode: "common_otp",
         is_hsm: true,
         organization_id: organization_id
       })
@@ -326,26 +343,37 @@ defmodule Glific.Messages do
   @doc """
   Send a hsm template message to the specific contact.
   """
-  @spec create_and_send_hsm_message(integer, integer, [String.t()]) ::
+  @spec create_and_send_hsm_message(integer, integer, [String.t()], integer | nil) ::
           {:ok, Message.t()} | {:error, String.t()}
-  def create_and_send_hsm_message(template_id, receiver_id, parameters) do
+  def create_and_send_hsm_message(template_id, receiver_id, parameters, media_id \\ nil) do
+    contact = Glific.Contacts.get_contact!(receiver_id)
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 
-    if session_template.number_parameters == length(parameters) do
+    with true <- session_template.number_parameters == length(parameters),
+         {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
       updated_template = parse_template_vars(session_template, parameters)
-
+      # Passing uuid to save db call when sending template via provider
       message_params = %{
         body: updated_template.body,
         type: updated_template.type,
         is_hsm: updated_template.is_hsm,
         organization_id: session_template.organization_id,
         sender_id: Partners.organization_contact_id(session_template.organization_id),
-        receiver_id: receiver_id
+        receiver_id: receiver_id,
+        template_uuid: session_template.uuid,
+        template_id: template_id,
+        params: parameters,
+        media_id: media_id
       }
 
-      create_and_send_message(message_params)
+      Contacts.can_send_message_to?(contact, true)
+      |> create_and_send_message(message_params)
     else
-      {:error, "You need to provide correct number of parameters for hsm template"}
+      false ->
+        {:error, "You need to provide correct number of parameters for hsm template"}
+
+      {"type", false} ->
+        {:error, "You need to provide media for media hsm template"}
     end
   end
 
@@ -399,6 +427,22 @@ defmodule Glific.Messages do
     contact_ids =
       group.contacts
       |> Enum.map(fn contact -> contact.id end)
+
+    # We first need to just create a meta level group message
+    organization_id = Repo.get_organization_id()
+    sender_id = Partners.organization_contact_id(organization_id)
+
+    {:ok, _group_message} =
+      message_params
+      |> Map.merge(%{
+        sender_id: sender_id,
+        receiver_id: sender_id,
+        contact_id: sender_id,
+        group_id: group.id,
+        flow: :outbound
+      })
+      |> update_message_attrs()
+      |> create_message()
 
     create_and_send_message_to_contacts(message_params, contact_ids)
   end
@@ -648,7 +692,7 @@ defmodule Glific.Messages do
       contact_order,
       [],
       fn contact, acc ->
-        [Conversation.new(contact, Enum.reverse(contact_messages[contact])) | acc]
+        [Conversation.new(contact, nil, Enum.reverse(contact_messages[contact])) | acc]
       end
     )
   end
@@ -702,7 +746,7 @@ defmodule Glific.Messages do
   # add an empty conversation for a specific contact if ONLY if it exists
   @spec add_conversation([Conversation.t()], Contact.t()) :: [Conversation.t()]
   defp add_conversation(results, contact) do
-    [Conversation.new(contact, []) | results]
+    [Conversation.new(contact, nil, []) | results]
   end
 
   # restrict the conversations query based on the filters in the input args
