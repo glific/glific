@@ -3,17 +3,10 @@ defmodule GlificWeb.EndpointAuth do
   Validating if the request comes from the gupshup or the simulator.
   """
 
-  defmodule IncompleteRequestError do
-    @moduledoc """
-    Error raised when a request comes from invalid source.
-    """
-
-    defexception message: ""
-  end
-
   alias Plug.Conn
 
   alias Glific.Partners
+  require Logger
 
   @behaviour Plug
 
@@ -28,19 +21,11 @@ defmodule GlificWeb.EndpointAuth do
     if organization.services["bsp"].secrets["app_name"] == app_name do
       conn
     else
-      raise(IncompleteRequestError)
-    end
-  end
-
-  def call(%Conn{params: %{"payload" => %{"sender" => sender}}} = conn, _opts) do
-    if sender["name"] == "Simulator" && sender["phone"] == "9876543210" do
-      conn
-    else
-      raise(IncompleteRequestError)
+    Logger.info("Invalid request: App name is incorrect: '#{app_name}'")
     end
   end
 
   def call(_conn, _opts) do
-    raise(IncompleteRequestError)
+    Logger.info("Invalid request: Request is from unauthenticated source")
   end
 end
