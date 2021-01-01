@@ -140,6 +140,9 @@ defmodule Glific.Jobs.MinuteWorker do
       "update_hsms" ->
         Partners.perform_all(&Templates.update_hsms/1, nil, [])
 
+      "sync_glific_db_with_cloud" ->
+        Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"])
+
       _ ->
         raise ArgumentError, message: "This job is not handled"
     end
