@@ -35,7 +35,7 @@ defmodule GlificWeb.Router do
     plug GlificWeb.Context
   end
 
-  pipeline :gupshup do
+  pipeline :endpoint_auth do
     plug GlificWeb.EndpointAuth
   end
 
@@ -67,7 +67,7 @@ defmodule GlificWeb.Router do
   end
 
   scope "/", GlificWeb do
-    pipe_through :gupshup
+    pipe_through :endpoint_auth
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
   end
 
