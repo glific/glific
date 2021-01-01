@@ -23,7 +23,7 @@ defmodule GlificWeb.EndpointAuth do
 
   @doc false
   @spec call(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
-  def call(%Conn{params: %{"app" => app_name} = conn, _opts) do
+  def call(%Conn{params: %{"app" => app_name}} = conn, _opts) do
     organization = Partners.organization(conn.assigns[:organization_id])
     if organization.services["bsp"].secrets["app_name"] == app_name do
       conn
@@ -40,7 +40,7 @@ defmodule GlificWeb.EndpointAuth do
     end
   end
 
-  def call(conn, _opts) do
+  def call(_conn, _opts) do
     raise(IncompleteRequestError)
   end
 end
