@@ -31,7 +31,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   defp get_params(conn, default_params) do
     organization = Partners.organization(conn.assigns[:organization_id])
     app_name = organization.services["bsp"].secrets["app_name"]
-    params = Map.merge(default_params, %{"app" => app_name})
+    Map.merge(default_params, %{"app" => app_name})
   end
 
   setup do

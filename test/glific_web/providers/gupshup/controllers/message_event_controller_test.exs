@@ -3,6 +3,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
 
   alias Glific.{
     Messages,
+    Partners,
     Seeds.SeedsDev
   }
 
@@ -21,6 +22,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
     "version" => 2
   }
 
+  defp get_params(conn, default_params) do
+    organization = Partners.organization(conn.assigns[:organization_id])
+    app_name = organization.services["bsp"].secrets["app_name"]
+    Map.merge(default_params, %{"app" => app_name})
+  end
+
   setup do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
@@ -31,7 +38,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
 
   describe "handler" do
     test "handler should return nil data", %{conn: conn} do
-      conn = post(conn, "/gupshup", @message_event_request_params)
+      params = get_params(conn, @message_event_request_params)
+      conn = post(conn, "/gupshup", params)
       assert json_response(conn, 200) == nil
     end
   end
@@ -55,15 +63,17 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
     end
 
     test "enqueued status should update the message status", setup_config = %{conn: conn} do
+      params = get_params(conn, setup_config.message_params)
       # when message enqueued
-      success_conn = post(conn, "/gupshup", setup_config.message_params)
+      success_conn = post(conn, "/gupshup", params)
       json_response(success_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
       assert message.bsp_status == :enqueued
 
       # when message failed
       message_params = put_in(setup_config.message_params, ["payload", "type"], "failed")
-      failed_conn = post(conn, "/gupshup", message_params)
+      params = get_params(conn, message_params)
+      failed_conn = post(conn, "/gupshup", params)
       json_response(failed_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
       assert message.bsp_status == :error
@@ -72,21 +82,24 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
 
       # when message sent
       message_params = put_in(setup_config.message_params, ["payload", "type"], "sent")
-      sent_conn = post(conn, "/gupshup", message_params)
+      params = get_params(conn, message_params)
+      sent_conn = post(conn, "/gupshup", params)
       json_response(sent_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
       assert message.bsp_status == :sent
 
       # when message read
       message_params = put_in(setup_config.message_params, ["payload", "type"], "read")
-      read_conn = post(conn, "/gupshup", message_params)
+      params = get_params(conn, message_params)
+      read_conn = post(conn, "/gupshup", params)
       json_response(read_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
       assert message.bsp_status == :read
 
       # when message delivered
       message_params = put_in(setup_config.message_params, ["payload", "type"], "delivered")
-      delivered_conn = post(conn, "/gupshup", message_params)
+      params = get_params(conn, message_params)
+      delivered_conn = post(conn, "/gupshup", params)
       json_response(delivered_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
       assert message.bsp_status == :delivered
