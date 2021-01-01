@@ -4,12 +4,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   alias Glific.{
     Contacts.Location,
     Messages.Message,
+    Partners,
     Repo,
     Seeds.SeedsDev
   }
 
   @message_request_params %{
-    "app" => "GlifMock App",
     "timestamp" => 1_580_227_766_370,
     "version" => 2,
     "type" => "message",
@@ -28,6 +28,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     }
   }
 
+  defp get_params(conn, default_params) do
+    organization = Partners.organization(conn.assigns[:organization_id])
+    app_name = organization.services["bsp"].secrets["app_name"]
+    params = Map.merge(default_params, %{"app" => app_name})
+  end
+
   setup do
     default_provider = SeedsDev.seed_providers()
     organization = SeedsDev.seed_organizations(default_provider)
@@ -39,7 +45,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
   describe "handler" do
     test "handler should return nil data", %{conn: conn} do
-      conn = post(conn, "/gupshup", @message_request_params)
+      params = get_params(conn, @message_request_params)
+      conn = post(conn, "/gupshup", params)
       assert json_response(conn, 200) == nil
     end
   end
@@ -61,7 +68,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
     test "Incoming text message should be stored in the database",
          %{conn: conn, message_params: message_params} do
-      conn = post(conn, "/gupshup", message_params)
+      params = get_params(conn, message_params)
+      conn = post(conn, "/gupshup", params)
       json_response(conn, 200)
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
@@ -108,7 +116,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
     test "Incoming image message should be stored in the database",
          setup_config = %{conn: conn} do
-      conn = post(conn, "/gupshup", setup_config.message_params)
+      params = get_params(conn, setup_config.message_params)
+      conn = post(conn, "/gupshup", params)
       json_response(conn, 200)
 
       bsp_message_id = get_in(setup_config.message_params, ["payload", "id"])
@@ -146,8 +155,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         setup_config.message_params
         |> put_in(["payload", "type"], "audio")
         |> put_in(["payload", "payload", "caption"], nil)
-
-      conn = post(conn, "/gupshup", message_params)
+      params = get_params(conn, message_params)
+      conn = post(conn, "/gupshup", params)
       json_response(conn, 200)
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
@@ -176,8 +185,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       message_params =
         setup_config.message_params
         |> put_in(["payload", "type"], "video")
-
-      conn = post(conn, "/gupshup", message_params)
+      params = get_params(conn, message_params)
+      conn = post(conn, "/gupshup", params)
       json_response(conn, 200)
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
@@ -205,8 +214,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       message_params =
         setup_config.message_params
         |> put_in(["payload", "type"], "file")
-
-      conn = post(conn, "/gupshup", message_params)
+      params = get_params(conn, message_params)
+      conn = post(conn, "/gupshup", params)
       json_response(conn, 200)
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
@@ -235,8 +244,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       message_params =
         setup_config.message_params
         |> put_in(["payload", "type"], "sticker")
-
-      conn = post(conn, "/gupshup", message_params)
+      params = get_params(conn, message_params)
+      conn = post(conn, "/gupshup", params)
       json_response(conn, 200)
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
@@ -280,8 +289,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     test "Incoming location message and contact's location should be stored in the database",
          setup_config = %{conn: conn} do
       message_params = setup_config.message_params
-
-      conn = post(conn, "/gupshup", message_params)
+      params = get_params(conn, message_params)
+      conn = post(conn, "/gupshup", params)
       json_response(conn, 200)
       bsp_message_id = get_in(message_params, ["payload", "id"])
 

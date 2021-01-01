@@ -5,12 +5,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
 
   alias Glific.{
     Contacts.Contact,
+    Partners,
     Repo,
     Seeds.SeedsDev
   }
 
   @user_event_request_params %{
-    "app" => "TidesTestApi",
     "payload" => %{
       "phone" => Phone.EnUs.phone(),
       "type" => "opted-in"
@@ -19,6 +19,12 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
     "type" => "user-event",
     "version" => 2
   }
+
+  defp get_params(conn, default_params) do
+    organization = Partners.organization(conn.assigns[:organization_id])
+    app_name = organization.services["bsp"].secrets["app_name"]
+    params = Map.merge(default_params, %{"app" => app_name})
+  end
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -30,7 +36,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
 
   describe "handler" do
     test "handler should return nil data", %{conn: conn} do
-      params = put_in(@user_event_request_params, ["payload", "type"], "not defined")
+      updated_params = get_params(conn, @user_event_request_params)
+      params = put_in(updated_params, ["payload", "type"], "not defined")
       conn = post(conn, "/gupshup", params)
       assert json_response(conn, 200) == nil
     end
@@ -52,7 +59,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
 
     test "optin_time and status should be updated", setup_config = %{conn: conn} do
       phone = get_in(setup_config.message_params, ["payload", "phone"])
-      conn = post(conn, "/gupshup", setup_config.message_params)
+      params = get_params(conn, setup_config.message_params)
+      conn = post(conn, "/gupshup", params)
       json_response(conn, 200)
 
       {:ok, contact} =
@@ -78,8 +86,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
     end
 
     test "optout_time and status should be updated", setup_config = %{conn: conn} do
+      params = get_params(conn, setup_config.message_params)
       phone = get_in(setup_config.message_params, ["payload", "phone"])
-      conn = post(conn, "/gupshup", setup_config.message_params)
+      conn = post(conn, "/gupshup", params)
       json_response(conn, 200)
 
       {:ok, contact} =
