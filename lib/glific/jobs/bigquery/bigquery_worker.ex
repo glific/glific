@@ -91,7 +91,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         ]
       end
     )
-    # |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
+    |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
     |> Enum.chunk_every(5)
     |> Enum.each(&make_job(&1, "update_flow_results", organization_id, 1))
   end
