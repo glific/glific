@@ -340,6 +340,7 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "wait_for_time"} = action, context, messages) do
+    IO.inspect("WT #{action.wait_time}")
     if action.wait_time <= 0  do
       {:ok, context, messages}
     else
