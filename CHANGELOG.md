@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2021-01-04
+### Added
+- Added specs
+- Added support for delay node
+- Updating Flow results that were updated in last 90 mins
+- Added support for sending media HSMs
+- Added support for showing webhook logs
+
+### Fixed
+- fixed message variable parsing in webhook, route and contact field
+- Using dot syntax in webhook results
 ## [0.8.7] - 2020-12-28
 ### Added
 - Store messages sent to group in messages table
