@@ -23,6 +23,7 @@ defmodule Glific.Appsignal do
 
   def handle_event(_, _, _, _), do: nil
 
+  @spec record_event(any(), any(), integer()) :: any()
   defp record_event(measurement, meta, time) do
     metadata = %{"id" => meta.id, "queue" => meta.queue, "attempt" => meta.attempt}
 
