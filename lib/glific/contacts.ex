@@ -275,6 +275,12 @@ defmodule Glific.Contacts do
     {:ok, contact}
   end
 
+  @spec phone_error?(Ecto.Changeset.t()) :: boolean()
+  defp phone_error?(changeset) do
+    map = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+    Map.get(map, :phone) == ["has already been taken"]
+  end
+
   @doc """
   This function is called by the messaging framework for all incoming messages, hence
   might be a good candidate to maintain a contact level cache at some point
@@ -285,7 +291,19 @@ defmodule Glific.Contacts do
   def maybe_create_contact(sender) do
     case Repo.get_by(Contact, %{phone: sender.phone}) do
       nil ->
-        create_contact(sender)
+        case create_contact(sender) do
+          {:ok, contact} -> {:ok, contact}
+
+          # there is a small chance that due to the opt-in and first message
+          # arriving at the same time, we fire this twice, which results in an error
+          # Issue #850
+          {:error, changeset} ->
+            # lets try and fetch it again if the error
+            # is phone is already taken
+          if phone_error?(changeset),
+            do: Repo.fetch_by(Contact, %{phone: sender.phone}),
+          else: {:error, changeset}
+        end
 
       contact ->
         if contact.name != sender.name do
