@@ -117,10 +117,12 @@ defmodule Glific.Users do
   end
 
   @impl true
+  @spec authenticate(map()) :: User.t() | nil
   def authenticate(params) do
     authenticate_user_organization(params["organization_id"], params)
   end
 
+  @spec authenticate_user_organization(non_neg_integer | nil, map()) :: User.t() | nil
   defp authenticate_user_organization(nil, _params), do: nil
 
   defp authenticate_user_organization(organization_id, params) do
