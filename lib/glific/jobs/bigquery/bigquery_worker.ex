@@ -32,7 +32,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @simulater_phone "9876543210"
   @reschedule_time 120
-  @update_minutes 30
+  @update_minutes 90
 
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
@@ -91,7 +91,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         ]
       end
     )
-    # |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
+    |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
     |> Enum.chunk_every(5)
     |> Enum.each(&make_job(&1, "update_flow_results", organization_id, 1))
   end
