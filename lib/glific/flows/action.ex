@@ -212,7 +212,7 @@ defmodule Glific.Flows.Action do
   Consume the message stream as processing occurs
   """
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
-          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, messages) do
     ContactAction.send_message(context, action, messages)
   end
@@ -339,9 +339,16 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  def execute(%{type: "wait_for_time"} = action, context, messages) do
+  def execute(%{type: "wait_for_time"} = _action, context, [msg]) do
+    if msg.body != "No Response",
+      do: raise(ArgumentError, "Unexpected message #{msg.body} received")
+
+    {:ok, context, []}
+  end
+
+  def execute(%{type: "wait_for_time"} = action, context, []) do
     if action.wait_time <= 0 do
-      {:ok, context, messages}
+      {:ok, context, []}
     else
       {:ok, context} =
         FlowContext.update_flow_context(
@@ -349,7 +356,7 @@ defmodule Glific.Flows.Action do
           %{wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time)}
         )
 
-      {:ok, context, []}
+      {:wait, context, []}
     end
   end
 
