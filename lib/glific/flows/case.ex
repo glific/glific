@@ -123,6 +123,7 @@ defmodule Glific.Flows.Case do
         message: "Function not implemented for cases of type #{c.type}"
       )
 
+  @spec is_has_all_the_words?(boolean, String.t(), list()) :: boolean
   defp is_has_all_the_words?(true, str, [head | tail]) do
     String.contains?(str, head)
     |> is_has_all_the_words?(str, tail)

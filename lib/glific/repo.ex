@@ -334,6 +334,7 @@ defmodule Glific.Repo do
   end
 
   # lets ignore all subqueries
+  @spec is_sub_query?(Ecto.Query.t()) :: boolean()
   defp is_sub_query?(%{from: %{source: %Ecto.SubQuery{}}} = _query), do: true
   defp is_sub_query?(_query), do: false
 

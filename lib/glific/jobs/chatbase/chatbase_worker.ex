@@ -80,9 +80,12 @@ defmodule Glific.Jobs.ChatbaseWorker do
     |> Enum.each(&make_job(&1, organization_id))
   end
 
+  @spec make_job(list(), non_neg_integer) :: :ok | nil
   defp make_job(messages, organization_id) do
     __MODULE__.new(%{organization_id: organization_id, messages: messages})
     |> Oban.insert()
+
+    :ok
   end
 
   @chatbase_url "https://chatbase.com/api/messages"
