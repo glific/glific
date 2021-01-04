@@ -351,12 +351,11 @@ defmodule Glific.BigquerySchema do
         type: "STRING",
         mode: "REQUIRED"
       },
-
       %{
         name: "flow_context_id",
         type: "INTEGER",
         mode: "NULLABLE"
-      },
+      }
     ]
   end
 end

@@ -487,7 +487,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         contact_phone: flow["contact_phone"],
         contact_name: flow["contact_name"],
         flow_version: flow["flow_version"],
-        flow_context_id: flow["flow_context_id"],
+        flow_context_id: flow["flow_context_id"]
       }
     }
   end
@@ -497,7 +497,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       id: flow["id"],
       results: flow["results"],
       contact_phone: flow["contact_phone"],
-      flow_context_id: flow["flow_context_id"],
+      flow_context_id: flow["flow_context_id"]
     }
   end
 

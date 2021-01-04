@@ -181,7 +181,14 @@ defmodule Glific.Flows.Action do
   def process(%{"type" => "wait_for_time"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_waittime)
 
-    process(json, uuid_map, node, %{wait_time: json["delay"]})
+    wait_time =
+    if is_nil(json["delay"]) || String.trim(json["delay"]) == "" do
+      0
+    else
+      String.to_integer(json["delay"])
+    end
+
+    process(json, uuid_map, node, %{wait_time: wait_time})
   end
 
   def process(json, uuid_map, node) do
@@ -329,6 +336,19 @@ defmodule Glific.Flows.Action do
 
       Groups.delete_group_contacts_by_ids(context.contact_id, groups_ids)
       {:ok, context, messages}
+    end
+  end
+
+  def execute(%{type: "wait_for_time"} = action, context, messages) do
+    if action.wait_time <= 0  do
+      {:ok, context, messages}
+    else
+      {:ok, context} =
+        FlowContext.update_flow_context(
+          context,
+          %{wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time)}
+        )
+      {:ok, context, []}
     end
   end
 
