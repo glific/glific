@@ -257,8 +257,7 @@ defmodule Glific.Flows.FlowContext do
     do: {:error, "We have finished the flow"}
 
   def execute(context, messages) do
-    IO.inspect(context, label: "CONT")
-    case Node.execute(context.node, context, messages) |> IO.inspect(label: "NODE") do
+    case Node.execute(context.node, context, messages) do
       {:ok, context, []} -> {:ok, context, []}
       {:ok, context, messages} -> Node.execute(context.node, context, messages)
       others -> others

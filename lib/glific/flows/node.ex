@@ -116,7 +116,7 @@ defmodule Glific.Flows.Node do
 
       !Enum.empty?(node.actions) ->
         # we need to execute all the actions (nodes can have multiple actions)
-        {:ok, context, messages} =
+        {status, context, messages} =
           Enum.reduce(
             node.actions,
             {:ok, context, messages},
@@ -126,7 +126,11 @@ defmodule Glific.Flows.Node do
             end
           )
 
-        Exit.execute(hd(node.exits), context, messages)
+        case status do
+          :ok -> Exit.execute(hd(node.exits), context, messages)
+
+          :suspend -> {:ok, context, messages}
+        end
 
       !is_nil(node.router) ->
         Router.execute(node.router, context, messages)
