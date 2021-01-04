@@ -33,10 +33,11 @@ defmodule Glific.Flows.Action do
   @required_fields_language [:language | @required_field_common]
   @required_fields_set_contact_field [:value, :field | @required_field_common]
   @required_fields_set_contact_name [:name | @required_field_common]
-  @required_fields_webook [:url, :headers, :method, :result_name | @required_field_common]
+  @required_fields_webhook [:url, :headers, :method, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
   @required_fields_group [:groups | @required_field_common]
+  @required_fields_waittime [:delay]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -58,7 +59,8 @@ defmodule Glific.Flows.Action do
           enter_flow: Flow.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
-          templating: Templating.t() | nil
+          templating: Templating.t() | nil,
+          wait_time: integer() | nil
         }
 
   embedded_schema do
@@ -86,6 +88,8 @@ defmodule Glific.Flows.Action do
 
     field :labels, :map
     field :groups, :map
+
+    field :wait_time, :integer
 
     field :node_uuid, Ecto.UUID
     embeds_one :node, Node
@@ -143,7 +147,7 @@ defmodule Glific.Flows.Action do
   end
 
   def process(%{"type" => "call_webhook"} = json, uuid_map, node) do
-    Flows.check_required_fields(json, @required_fields_webook)
+    Flows.check_required_fields(json, @required_fields_webhook)
 
     process(json, uuid_map, node, %{
       url: json["url"],
@@ -172,6 +176,12 @@ defmodule Glific.Flows.Action do
     else
       process(json, uuid_map, node, %{groups: json["groups"]})
     end
+  end
+
+  def process(%{"type" => "wait_for_time"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_waittime)
+
+    process(json, uuid_map, node, %{wait_time: json["delay"]})
   end
 
   def process(json, uuid_map, node) do
