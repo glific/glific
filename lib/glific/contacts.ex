@@ -275,10 +275,14 @@ defmodule Glific.Contacts do
     {:ok, contact}
   end
 
-  @spec phone_error?(Ecto.Changeset.t()) :: boolean()
-  defp phone_error?(changeset) do
+  @spec handle_phone_error(map(), Ecto.Changeset.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp handle_phone_error(sender, changeset) do
     map = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-    Map.get(map, :phone) == ["has already been taken"]
+    if Map.get(map, :phone) == ["has already been taken"] do
+      Repo.fetch_by(Contact, %{phone: sender.phone})
+    else
+      {:error, changeset}
+    end
   end
 
   @doc """
@@ -297,12 +301,7 @@ defmodule Glific.Contacts do
           # there is a small chance that due to the opt-in and first message
           # arriving at the same time, we fire this twice, which results in an error
           # Issue #850
-          {:error, changeset} ->
-            # lets try and fetch it again if the error
-            # is phone is already taken
-          if phone_error?(changeset),
-            do: Repo.fetch_by(Contact, %{phone: sender.phone}),
-          else: {:error, changeset}
+          {:error, changeset} -> handle_phone_error(sender, changeset)
         end
 
       contact ->

@@ -212,7 +212,7 @@ defmodule Glific.Flows.Action do
   Consume the message stream as processing occurs
   """
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
-  {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, messages) do
     ContactAction.send_message(context, action, messages)
   end
@@ -229,7 +229,7 @@ defmodule Glific.Flows.Action do
   end
 
   # Fake the valid key so we can have the same function signature and simplify the code base
-  def execute(%{type: "set_contact_field", valid: true} = action, context, messages) do
+  def execute(%{type: "set_contact_field_valid"} = action, context, messages) do
     name = action.field.name
     key = String.downcase(name) |> String.replace(" ", "_")
     value = FlowContext.get_result_value(context, action.value)
@@ -258,7 +258,7 @@ defmodule Glific.Flows.Action do
     if Map.get(action.field, :name) in ["", nil] do
       {:ok, context, messages}
     else
-      execute(Map.put(action, :valid, true), context, messages)
+      execute(Map.put(action, :type, "set_contact_field_valid"), context, messages)
     end
   end
 
