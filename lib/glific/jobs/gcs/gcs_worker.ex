@@ -41,7 +41,6 @@ defmodule Glific.Jobs.GcsWorker do
     end
   end
 
-  @spec jobs(non_neg_integer) :: :ok
   defp jobs(organization_id) do
     gcs_job = Jobs.get_gcs_job(organization_id)
 
@@ -93,12 +92,9 @@ defmodule Glific.Jobs.GcsWorker do
     )
   end
 
-  @spec make_job(list(), non_neg_integer) :: :ok
   defp make_job(media, organization_id) do
     __MODULE__.new(%{organization_id: organization_id, media: media})
     |> Oban.insert()
-
-    :ok
   end
 
   @doc """
@@ -158,7 +154,6 @@ defmodule Glific.Jobs.GcsWorker do
     |> Map.get(String.to_existing_atom(type), "png")
   end
 
-  @spec download_file_to_temp(String.t(), String.t()) :: {:ok, String.t()}
   defp download_file_to_temp(url, path) do
     %HTTPoison.Response{body: data} = HTTPoison.get!(url)
     File.write!(path, data)
