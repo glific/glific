@@ -182,11 +182,11 @@ defmodule Glific.Flows.Action do
     Flows.check_required_fields(json, @required_fields_waittime)
 
     wait_time =
-    if is_nil(json["delay"]) || String.trim(json["delay"]) == "" do
-      0
-    else
-      String.to_integer(json["delay"])
-    end
+      if is_nil(json["delay"]) || String.trim(json["delay"]) == "" do
+        0
+      else
+        String.to_integer(json["delay"])
+      end
 
     process(json, uuid_map, node, %{wait_time: wait_time})
   end
@@ -340,7 +340,7 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "wait_for_time"} = action, context, messages) do
-    if action.wait_time <= 0  do
+    if action.wait_time <= 0 do
       {:ok, context, messages}
     else
       {:ok, context} =
@@ -348,6 +348,7 @@ defmodule Glific.Flows.Action do
           context,
           %{wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time)}
         )
+
       {:ok, context, []}
     end
   end
