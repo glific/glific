@@ -139,8 +139,8 @@ defmodule Glific.Flows.Action do
 
     name =
       if is_nil(json["field"]["name"]),
-      do: json["field"]["key"],
-      else: json["field"]["name"]
+        do: json["field"]["key"],
+        else: json["field"]["name"]
 
     process(json, uuid_map, node, %{
       value: json["value"],
@@ -232,7 +232,6 @@ defmodule Glific.Flows.Action do
     context = ContactSetting.set_contact_name(context, value)
     {:ok, context, messages}
   end
-
 
   # Fake the valid key so we can have the same function signature and simplify the code base
   def execute(%{type: "set_contact_field_valid"} = action, context, messages) do
