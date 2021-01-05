@@ -17,6 +17,7 @@ defmodule Glific.Templates do
     Tags.TemplateTag,
     Templates.SessionTemplate
   }
+  require Logger
 
   @doc """
   Returns the list of session_templates.
@@ -312,11 +313,14 @@ defmodule Glific.Templates do
       number_parameters: number_of_parameter
     }
 
-    {:ok, _} =
       %SessionTemplate{}
       |> SessionTemplate.changeset(attrs)
       |> Repo.insert()
-  end
+      |> case do
+        {:ok, template} -> Logger.info("New Session Template Added with label: #{template.label}")
+        {:error, error} -> Logger.info("Error adding new Session Template: #{error}")
+      end
+    end
 
   @spec update_hsm(map(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
