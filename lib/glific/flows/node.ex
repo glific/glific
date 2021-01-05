@@ -105,34 +105,49 @@ defmodule Glific.Flows.Node do
     cond do
       # if both are non-empty, it means that we have either a
       #    * sub-flow option
-      #    # calling a web hook
+      #    * calling a web hook
       !Enum.empty?(node.actions) && !is_nil(node.router) ->
-        # need a better way to figure out if we should handle router or action
-        # this is a hack for now
-        if messages != [] and
-             hd(messages).clean_body in ["completed", "expired", "success", "failure"],
-           do: Router.execute(node.router, context, messages),
-           else: Action.execute(hd(node.actions), context, messages)
+        execute_node_router(node, context, messages)
 
       !Enum.empty?(node.actions) ->
-        # we need to execute all the actions (nodes can have multiple actions)
-        {:ok, context, messages} =
-          Enum.reduce(
-            node.actions,
-            {:ok, context, messages},
-            fn action, acc ->
-              {:ok, context, messages} = acc
-              Action.execute(action, context, messages)
-            end
-          )
-
-        Exit.execute(hd(node.exits), context, messages)
+        execute_node_actions(node, context, messages)
 
       !is_nil(node.router) ->
         Router.execute(node.router, context, messages)
 
       true ->
         {:error, "Unsupported node type"}
+    end
+  end
+
+  @spec execute_node_router(Node.t(), FlowContext.t(), [Message.t()]) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  defp execute_node_router(node, context, messages) do
+    # need a better way to figure out if we should handle router or action
+    # this is a hack for now
+    if messages != [] and
+         hd(messages).clean_body in ["completed", "expired", "success", "failure"],
+       do: Router.execute(node.router, context, messages),
+       else: Action.execute(hd(node.actions), context, messages)
+  end
+
+  @spec execute_node_actions(Node.t(), FlowContext.t(), [Message.t()]) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  defp execute_node_actions(node, context, messages) do
+    # we need to execute all the actions (nodes can have multiple actions)
+    {status, context, messages} =
+      Enum.reduce(
+        node.actions,
+        {:ok, context, messages},
+        fn action, acc ->
+          {:ok, context, messages} = acc
+          Action.execute(action, context, messages)
+        end
+      )
+
+    case status do
+      :ok -> Exit.execute(hd(node.exits), context, messages)
+      :wait -> {:ok, context, messages}
     end
   end
 end
