@@ -560,6 +560,15 @@ defmodule Glific.Flows do
     end
   end
 
+  defp add_flow_keyword_map(map, status, keyword, flow_id) do
+    map
+    |> Map.update(
+      status,
+      %{keyword => flow_id},
+      fn m -> Map.put(m, keyword, flow_id) end
+    )
+  end
+
   @spec load_flow_keywords_map(tuple()) :: tuple()
   defp load_flow_keywords_map(cache_key) do
     # this is of the form {organization_id, "flow_keywords_map}"
@@ -571,17 +580,19 @@ defmodule Glific.Flows do
       |> where([f], f.organization_id == ^organization_id)
       |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
       |> select([f, fr], %{keywords: f.keywords, id: f.id, status: fr.status})
+      |> where([f, fr], fr.status == "published" or fr.revision_number == 0)
       |> Repo.all(skip_organization_id: true)
       |> Enum.reduce(
         %{},
         fn flow, acc ->
           Enum.reduce(flow.keywords, acc, fn keyword, acc ->
             keyword = Glific.string_clean(keyword)
-            Map.update(
-              acc,
-              flow.status,
-              %{keyword => flow.id},
-              fn m -> Map.put(m, keyword, flow.id) end)
+            acc = add_flow_keyword_map(acc, flow.status, keyword, flow.id)
+
+            # always add to draft status if published
+            if flow.status == "published",
+              do: add_flow_keyword_map(acc, "draft", keyword, flow.id),
+              else: acc
           end)
         end
       )
