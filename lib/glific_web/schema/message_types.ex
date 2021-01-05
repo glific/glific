@@ -30,8 +30,8 @@ defmodule GlificWeb.Schema.MessageTypes do
   end
 
   object :message_status do
-    field :id, :id
-    field :status, :string
+    field :key, :string
+    field :value, :json
   end
 
   object :message do
@@ -222,7 +222,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
   object :message_status_subscriptions do
     field :message_status, :message_status do
-      arg(:id, non_null(:id))
+      arg(:organization_id, non_null(:id))
 
       config(&Schema.config_fun/2)
 

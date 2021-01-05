@@ -79,6 +79,12 @@ defmodule Glific.Communications.Message do
         sent_at: DateTime.truncate(DateTime.utc_now(), :second)
       })
 
+     Communications.publish_data(
+      %{key: "message_status", value: %{message_id: message.id, status: message.status}},
+       :message_status,
+       message.organization_id
+     )
+
     Tags.remove_tag_from_all_message(
       message.contact_id,
       ["notreplied", "unread"],
