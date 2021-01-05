@@ -58,7 +58,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
         filter: %{organization_id: conn.assigns[:organization_id]}
       })
       |> Enum.reduce([], fn cf, acc ->
-        [%{key: cf.shortcode, name: cf.name,label: cf.name, value_type: cf.value_type} | acc]
+        [%{key: cf.shortcode, name: cf.name, label: cf.name, value_type: cf.value_type} | acc]
       end)
 
     json(conn, %{results: fields})
