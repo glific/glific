@@ -31,7 +31,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       conn = post(conn, "/flow-editor/fields", %{"label" => "Some Field name"})
 
       assert json_response(conn, 200) == %{
-               "key" => "somefieldname",
+               "key" => "some_field_name",
                "name" => "Some Field name",
                "label" => "Some Field name",
                "value_type" => "text"
