@@ -196,4 +196,14 @@ defmodule GlificWeb.Resolvers.Messages do
       message -> {:ok, message}
     end
   end
+
+  @doc false
+  @spec publish_status(map(), any(), any()) ::
+          {:ok, Message.t()} | {:error, any}
+  def publish_status(args, _, _) do
+    case args do
+      %{message: message} -> {:ok, message}
+      message -> {:ok, message}
+    end
+  end
 end
