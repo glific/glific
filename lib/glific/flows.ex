@@ -560,12 +560,30 @@ defmodule Glific.Flows do
     end
   end
 
-  defp add_flow_keyword_map(map, status, keyword, flow_id) do
+  @spec update_flow_keyword_map(map(), String.t(), String.t(), non_neg_integer) :: map()
+  defp update_flow_keyword_map(map, status, keyword, flow_id) do
     map
     |> Map.update(
       status,
       %{keyword => flow_id},
       fn m -> Map.put(m, keyword, flow_id) end
+    )
+  end
+
+  @spec add_flow_keyword_map(map(), map()) :: map()
+  defp add_flow_keyword_map(flow, acc) do
+    Enum.reduce(
+      flow.keywords,
+      acc,
+      fn keyword, acc ->
+        keyword = Glific.string_clean(keyword)
+        acc = update_flow_keyword_map(acc, flow.status, keyword, flow.id)
+
+        # always add to draft status if published
+        if flow.status == "published",
+          do: update_flow_keyword_map(acc, "draft", keyword, flow.id),
+          else: acc
+      end
     )
   end
 
@@ -584,17 +602,7 @@ defmodule Glific.Flows do
       |> Repo.all(skip_organization_id: true)
       |> Enum.reduce(
         %{},
-        fn flow, acc ->
-          Enum.reduce(flow.keywords, acc, fn keyword, acc ->
-            keyword = Glific.string_clean(keyword)
-            acc = add_flow_keyword_map(acc, flow.status, keyword, flow.id)
-
-            # always add to draft status if published
-            if flow.status == "published",
-              do: add_flow_keyword_map(acc, "draft", keyword, flow.id),
-              else: acc
-          end)
-        end
+        fn flow, acc -> add_flow_keyword_map(flow, acc) end
       )
 
     organization = Partners.organization(organization_id)

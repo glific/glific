@@ -356,9 +356,9 @@ defmodule Glific.FLowsTest do
       keyword_map = Flows.flow_keywords_map(attrs.organization_id)
 
       assert nil ==
-        Enum.find(keyword_map[flow.status], fn {keyword, _flow_id} ->
-          keyword != Glific.string_clean(keyword)
-        end)
+               Enum.find(keyword_map[flow.status], fn {keyword, _flow_id} ->
+                 keyword != Glific.string_clean(keyword)
+               end)
     end
   end
 end

@@ -57,7 +57,7 @@ defmodule Glific.Processor.ConsumerFlow do
               Map.has_key?(state.flow_keywords["published"], "newcontact") ->
             check_flows(message, "newcontact", state, false)
 
-        Map.has_key?(state.flow_keywords["published"], body) ->
+          Map.has_key?(state.flow_keywords["published"], body) ->
             check_flows(message, body, state, false)
 
           is_beta ->
@@ -77,7 +77,10 @@ defmodule Glific.Processor.ConsumerFlow do
 
   defp is_beta_keyword?(state, body) do
     if String.starts_with?(body, @beta_phrase) and
-         Map.has_key?(state.flow_keywords["draft"], String.replace_leading(body, @beta_phrase, "")),
+         Map.has_key?(
+           state.flow_keywords["draft"],
+           String.replace_leading(body, @beta_phrase, "")
+         ),
        do: true,
        else: false
   end

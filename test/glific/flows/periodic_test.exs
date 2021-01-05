@@ -41,7 +41,7 @@ defmodule Glific.Flows.PeriodicTest do
     filled_map = Periodic.map_flow_ids(%{organization_id: Fixtures.get_org_id()})
 
     # we know that outofoffice is a default seeded flow
-    assert !is_nil(get_in(filled_map, [:flows, "outofoffice"]))
+    assert !is_nil(get_in(filled_map, [:flows, "published", "outofoffice"]))
   end
 
   # @tag :pending
@@ -54,7 +54,7 @@ defmodule Glific.Flows.PeriodicTest do
 
     {:ok, %Postgrex.Result{rows: rows}} =
       Repo.query(
-        "select id, flow_id from flow_contexts where flow_id = #{state.flows["outofoffice"]}"
+        "select id, flow_id from flow_contexts where flow_id = #{state.flows["published"]["outofoffice"]}"
       )
 
     # assert that we have one row which is th outofoffice flow
