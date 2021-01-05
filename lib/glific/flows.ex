@@ -571,15 +571,20 @@ defmodule Glific.Flows do
       |> Enum.reduce(
         %{},
         fn flow, acc ->
-          Enum.reduce(flow.keywords, acc, fn keyword, acc ->
-            ## Keyword matching for the flow is case insenstive.
-            ## So let's clean the keywords before generating the map.
-            keyword = Glific.string_clean(keyword)
-            Map.put(acc, keyword, flow.id)
-          end)
+          if flow.status == "published", do:
+            Enum.reduce(flow.keywords, acc, fn keyword, acc ->
+              keyword = Glific.string_clean(keyword)
+              Map.put(acc, "published", %{keyword: keyword, id: flow.id})
+            end)
+          if flow.status == "draft", do:
+            Enum.reduce(flow.keywords, acc, fn keyword, acc ->
+              keyword = Glific.string_clean(keyword)
+              Map.put(acc, "draft", %{keyword: keyword, id: flow.id})
+            end)
         end
       )
-    organization = Partners.organization(organization_id)
+
+      organization = Partners.organization(organization_id)
 
     organization =
       if organization.out_of_office.enabled and organization.out_of_office.flow_id,
@@ -591,7 +596,7 @@ defmodule Glific.Flows do
 
   @doc false
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
-  def clean_cached_flow_keywords_map(organization_id),
+  defp clean_cached_flow_keywords_map(organization_id),
     do: Caches.remove(organization_id, ["flow_keywords_map"])
 
   @spec sanitize_flow_keywords(list) :: list()
