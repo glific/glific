@@ -66,6 +66,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       else: :ok
   end
 
+  @spec update_flow_results(non_neg_integer) :: :ok
   defp update_flow_results(organization_id) do
     query =
       FlowResult

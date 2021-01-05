@@ -13,8 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added support for showing webhook logs
 
 ### Fixed
-- fixed message variable parsing in webhook, route and contact field
-- Using dot syntax in webhook results
+- Fixed contact field with name containing underscore
+- Fixed issue of contact field being saved to Bigquery with label as nil
+- Fixed appsignal errors
+
 ## [0.8.7] - 2020-12-28
 ### Added
 - Store messages sent to group in messages table
