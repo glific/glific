@@ -343,9 +343,8 @@ defmodule Glific.Flows do
   def get_cached_flow(organization_id, key) do
     case Caches.fetch(organization_id, key, &load_cache/1) do
       {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve flow, #{inspect(key)}, #{error}"
-        )
+        Logger.info("Failed to retrieve flow, #{inspect(key)}, #{error}")
+        {:error, error}
 
       {_, flow} ->
         {:ok, flow}
