@@ -565,7 +565,8 @@ defmodule Glific.Flows do
     value =
       Flow
       |> where([f], f.organization_id == ^organization_id)
-      |> select([:keywords, :id])
+      |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
+      |> select([f, fr], %{keywords: f.keywords, id: f.id, status: fr.status})
       |> Repo.all(skip_organization_id: true)
       |> Enum.reduce(
         %{},
@@ -578,7 +579,6 @@ defmodule Glific.Flows do
           end)
         end
       )
-
     organization = Partners.organization(organization_id)
 
     organization =
