@@ -217,7 +217,7 @@ defmodule Glific.Flows.Action do
   Consume the message stream as processing occurs
   """
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
-          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, messages) do
     ContactAction.send_message(context, action, messages)
   end
@@ -233,8 +233,11 @@ defmodule Glific.Flows.Action do
     {:ok, context, messages}
   end
 
-  def execute(%{type: "set_contact_field"} = action, context, messages) do
-    key = if is_nil(action.field.name), do: "", else: String.downcase(action.field.name) |> String.replace(" ", "_")
+
+  # Fake the valid key so we can have the same function signature and simplify the code base
+  def execute(%{type: "set_contact_field_valid"} = action, context, messages) do
+    name = action.field.name
+    key = String.downcase(name) |> String.replace(" ", "_")
     value = FlowContext.get_result_value(context, action.value)
 
     context =
@@ -246,10 +249,23 @@ defmodule Glific.Flows.Action do
           ContactSetting.set_contact_preference(context, value)
 
         true ->
-          ContactField.add_contact_field(context, key, action.field[:name], value, "string")
+          ContactField.add_contact_field(context, key, name, value, "string")
       end
 
     {:ok, context, messages}
+  end
+
+  def execute(%{type: "set_contact_field"} = action, context, messages) do
+    # sometimes action.field.name does not exist based on what the user
+    # has entered in the flow. We should have a validation for this, but
+    # lets prevent the error from happening
+    # if we dont recognize it, we just ignore it, and avoid an error being thrown
+    # Issue #858
+    if Map.get(action.field, :name) in ["", nil] do
+      {:ok, context, messages}
+    else
+      execute(Map.put(action, :type, "set_contact_field_valid"), context, messages)
+    end
   end
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do
@@ -344,9 +360,16 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  def execute(%{type: "wait_for_time"} = action, context, messages) do
+  def execute(%{type: "wait_for_time"} = _action, context, [msg]) do
+    if msg.body != "No Response",
+      do: raise(ArgumentError, "Unexpected message #{msg.body} received")
+
+    {:ok, context, []}
+  end
+
+  def execute(%{type: "wait_for_time"} = action, context, []) do
     if action.wait_time <= 0 do
-      {:ok, context, messages}
+      {:ok, context, []}
     else
       {:ok, context} =
         FlowContext.update_flow_context(
@@ -354,7 +377,7 @@ defmodule Glific.Flows.Action do
           %{wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time)}
         )
 
-      {:ok, context, []}
+      {:wait, context, []}
     end
   end
 
