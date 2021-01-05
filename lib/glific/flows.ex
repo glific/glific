@@ -591,7 +591,7 @@ defmodule Glific.Flows do
 
   @doc false
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
-  defp clean_cached_flow_keywords_map(organization_id),
+  def clean_cached_flow_keywords_map(organization_id),
     do: Caches.remove(organization_id, ["flow_keywords_map"])
 
   @spec sanitize_flow_keywords(list) :: list()
