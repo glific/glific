@@ -137,10 +137,15 @@ defmodule Glific.Flows.Action do
   def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_set_contact_field)
 
+    name =
+      if is_nil(json["field"]["name"]),
+        do: json["field"]["key"],
+        else: json["field"]["name"]
+
     process(json, uuid_map, node, %{
       value: json["value"],
       field: %{
-        name: json["field"]["name"],
+        name: name,
         key: json["field"]["key"]
       }
     })
