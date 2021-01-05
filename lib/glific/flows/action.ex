@@ -137,10 +137,22 @@ defmodule Glific.Flows.Action do
   def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_set_contact_field)
 
+    name =
+      if is_nil(json["field"]["name"])
+      do
+          Repo.fetch_by(ContactField, %{shortcode: json["field"]["key"]})
+          |> case do
+            {:ok, contact_field} -> contact_field.name
+            _ -> json["field"]["name"]
+          end
+      else
+        json["field"]["name"]
+      end
+
     process(json, uuid_map, node, %{
       value: json["value"],
       field: %{
-        name: json["field"]["name"],
+        name: name,
         key: json["field"]["key"]
       }
     })
