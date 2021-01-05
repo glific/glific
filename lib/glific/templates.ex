@@ -270,8 +270,7 @@ defmodule Glific.Templates do
     end)
   end
 
-  @spec insert_hsm(map(), Organization.t(), map()) ::
-          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  @spec insert_hsm(map(), Organization.t(), map()) ::  {:ok}
   defp insert_hsm(template, organization, languages) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
@@ -320,6 +319,7 @@ defmodule Glific.Templates do
         {:ok, template} -> Logger.info("New Session Template Added with label: #{template.label}")
         {:error, error} -> Logger.info("Error adding new Session Template: #{error}")
       end
+      {:ok}
     end
 
   @spec update_hsm(map(), Organization.t(), map()) ::
