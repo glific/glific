@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support in flow engine for "wait for time" node
 - Upgrade elixir packages to latest version
 
+### Fixed
+- Fixed contact field with name containing underscore
 ## [0.9.0] - 2021-01-04
 ### Added
 - Support for "wait for time" node
@@ -17,9 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for showing webhook logs
 
 ### Fixed
-- fixed message variable parsing in webhook, route and contact field
-- Using dot syntax in webhook results
-
+- Fixed issue of contact field being saved to Bigquery with label as nil
+- Fixed appsignal errors
 ## [0.8.7] - 2020-12-28
 ### Added
 - Store messages sent to group in messages table

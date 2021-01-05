@@ -87,6 +87,7 @@ defmodule Glific.Tags.Tag do
     |> Glific.validate_shortcode()
   end
 
+  @spec lowercase_keywords(Ecto.Changeset.t(), list()) :: Ecto.Changeset.t()
   defp lowercase_keywords(changeset, keywords) do
     case keywords do
       nil -> changeset
