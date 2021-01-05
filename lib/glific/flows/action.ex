@@ -137,10 +137,15 @@ defmodule Glific.Flows.Action do
   def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_set_contact_field)
 
+    name =
+      if is_nil(json["field"]["name"]),
+        do: json["field"]["key"],
+        else: json["field"]["name"]
+
     process(json, uuid_map, node, %{
       value: json["value"],
       field: %{
-        name: json["field"]["name"],
+        name: name,
         key: json["field"]["key"]
       }
     })
@@ -228,8 +233,10 @@ defmodule Glific.Flows.Action do
     {:ok, context, messages}
   end
 
-  def execute(%{type: "set_contact_field"} = action, context, messages) do
-    key = String.downcase(action.field.name) |> String.replace(" ", "_")
+  # Fake the valid key so we can have the same function signature and simplify the code base
+  def execute(%{type: "set_contact_field_valid"} = action, context, messages) do
+    name = action.field.name
+    key = String.downcase(name) |> String.replace(" ", "_")
     value = FlowContext.get_result_value(context, action.value)
 
     context =
@@ -241,10 +248,23 @@ defmodule Glific.Flows.Action do
           ContactSetting.set_contact_preference(context, value)
 
         true ->
-          ContactField.add_contact_field(context, key, action.field[:name], value, "string")
+          ContactField.add_contact_field(context, key, name, value, "string")
       end
 
     {:ok, context, messages}
+  end
+
+  def execute(%{type: "set_contact_field"} = action, context, messages) do
+    # sometimes action.field.name does not exist based on what the user
+    # has entered in the flow. We should have a validation for this, but
+    # lets prevent the error from happening
+    # if we dont recognize it, we just ignore it, and avoid an error being thrown
+    # Issue #858
+    if Map.get(action.field, :name) in ["", nil] do
+      {:ok, context, messages}
+    else
+      execute(Map.put(action, :type, "set_contact_field_valid"), context, messages)
+    end
   end
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do

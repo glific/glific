@@ -97,13 +97,14 @@ defmodule Glific.Processor.ConsumerFlow do
         {@final_phrase, body}
       end
 
-    {:ok, flow} =
       Flows.get_cached_flow(
         message.organization_id,
         {:flow_keyword, body, status}
       )
-
-    FlowContext.init_context(flow, message.contact, status)
+      |> case do
+        {:ok, flow} -> FlowContext.init_context(flow, message.contact, status)
+        {:error, _} -> nil
+      end
     {message, state}
   end
 
