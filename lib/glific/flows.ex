@@ -598,6 +598,8 @@ defmodule Glific.Flows do
       |> where([f], f.organization_id == ^organization_id)
       |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
       |> select([f, fr], %{keywords: f.keywords, id: f.id, status: fr.status})
+      # the revisions table is potentially large, so we really want just a few rows from
+      # it, hence this where clause
       |> where([f, fr], fr.status == "published" or fr.revision_number == 0)
       |> Repo.all(skip_organization_id: true)
       |> Enum.reduce(
