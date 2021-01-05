@@ -54,10 +54,10 @@ defmodule Glific.Processor.ConsumerFlow do
       _ ->
         cond do
           Map.get(state, :newcontact, false) == true &&
-              Map.has_key?(state.flow_keywords, "newcontact") ->
+              Map.has_key?(state.flow_keywords["published"], "newcontact") ->
             check_flows(message, "newcontact", state, false)
 
-          Map.has_key?(state.flow_keywords, body) ->
+        Map.has_key?(state.flow_keywords["published"], body) ->
             check_flows(message, body, state, false)
 
           is_beta ->

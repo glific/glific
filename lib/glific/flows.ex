@@ -330,6 +330,10 @@ defmodule Glific.Flows do
     args = make_args(key, value)
     flow = Flow.get_loaded_flow(organization_id, status, args)
     Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
+
+    # We are setting the cache in the above statement with multiple keys
+    # hence we are asking cachex to just ignore this aspect. All the other
+    # requests will get the cache value sent above
     {:ignore, flow}
   end
 
@@ -571,27 +575,25 @@ defmodule Glific.Flows do
       |> Enum.reduce(
         %{},
         fn flow, acc ->
-          if flow.status == "published", do:
-            Enum.reduce(flow.keywords, acc, fn keyword, acc ->
-              keyword = Glific.string_clean(keyword)
-              Map.put(acc, "published", %{keyword: keyword, id: flow.id})
-            end)
-          if flow.status == "draft", do:
-            Enum.reduce(flow.keywords, acc, fn keyword, acc ->
-              keyword = Glific.string_clean(keyword)
-              Map.put(acc, "draft", %{keyword: keyword, id: flow.id})
-            end)
+          Enum.reduce(flow.keywords, acc, fn keyword, acc ->
+            keyword = Glific.string_clean(keyword)
+            Map.update(
+              acc,
+              flow.status,
+              %{keyword => flow.id},
+              fn m -> Map.put(m, keyword, flow.id) end)
+          end)
         end
       )
 
-      organization = Partners.organization(organization_id)
+    organization = Partners.organization(organization_id)
 
-    organization =
+    value =
       if organization.out_of_office.enabled and organization.out_of_office.flow_id,
         do: Map.put(value, "outofoffice", organization.out_of_office.flow_id),
         else: value
 
-    {:commit, organization}
+    {:commit, value}
   end
 
   @doc false

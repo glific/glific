@@ -89,7 +89,7 @@ defmodule Glific.Flows.Periodic do
 
   @spec common_flow(map(), String.t(), Message.t(), DateTime.t()) :: {map(), boolean}
   defp common_flow(state, period, message, since) do
-    flow_id = get_in(state, [:flows, period])
+    flow_id = get_in(state, [:flows, "published", period])
 
     if !is_nil(flow_id) and
          !Flows.flow_activated(flow_id, message.contact_id, since) do

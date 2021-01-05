@@ -390,8 +390,8 @@ defmodule Glific.Partners do
         end
       end
 
-    # we are already storing this in the cache, so we can ask
-    # cachex to ignore the value. We need to do this since we are
+    # we are already storing this in the cache (in the function fill_cache),
+    # so we can ask cachex to ignore the value. We need to do this since we are
     # storing multiple keys for the same object
     {:ignore, organization}
   end
