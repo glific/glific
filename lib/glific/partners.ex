@@ -556,11 +556,16 @@ defmodule Glific.Partners do
   @spec check_if_active_organization(nil | list()) :: list()
   defp check_if_active_organization(nil), do: nil
 
+  defp check_if_active_organization([]) do
+    list = active_organizations([])
+    check_if_active_organization(Map.keys(list))
+  end
+
   defp check_if_active_organization(list) do
     Enum.reject(list, fn organization_id ->
       organization = organization(organization_id)
       last_communicated_at = organization.last_communication_at
-      Timex.diff(DateTime.utc_now(), last_communicated_at, :hours) > @active_hours
+      if Timex.diff(DateTime.utc_now(), last_communicated_at, :hours) < @active_hours, do: true, else: false
     end)
   end
 
