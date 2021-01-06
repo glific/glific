@@ -553,16 +553,17 @@ defmodule Glific.Partners do
     :ok
   end
 
-  @spec check_if_active_organization(nil, list()) ::list()
-  defp check_if_active_organization(list), do: nil
+  @spec check_if_active_organization(nil | list()) :: list()
+  defp check_if_active_organization(nil), do: nil
 
   defp check_if_active_organization(list) do
     Enum.reject(list, fn organization_id ->
-      organization = Partners.organization(organization_id)
+      organization = organization(organization_id)
       last_communicated_at = organization.last_communication_at
       Timex.diff(DateTime.utc_now(), last_communicated_at, :hours) > @active_hours
     end)
   end
+
   @doc """
   Fetch opted in contacts data from providers server
   """
