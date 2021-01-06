@@ -539,12 +539,11 @@ defmodule Glific.PartnersTest do
       contact =
         Fixtures.contact_fixture(%{
           bsp_status: :session_and_hsm,
-          optin_time: Timex.shift(DateTime.utc_now(), hours: -25),
-          last_message_at: Timex.shift(DateTime.utc_now(), hours: -24),
+          optin_time: Timex.shift(DateTime.utc_now(), hours: -26),
+          last_message_at: Timex.shift(DateTime.utc_now(), hours: -25),
           organization_id: organization.id
         })
 
-      Partners.active_organizations([])
       Partners.perform_all(&Contacts.update_contact_status/2, %{}, [])
 
       updated_contact = Contacts.get_contact!(contact.id)

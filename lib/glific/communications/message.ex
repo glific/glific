@@ -172,7 +172,9 @@ defmodule Glific.Communications.Message do
         status: :received,
         organization_id: contact.organization_id
       })
-      update_last_communication_at(message_params.organization_id)
+
+    update_last_communication_at(message_params.organization_id)
+
     cond do
       type == :text -> receive_text(message_params)
       type == :location -> receive_location(message_params)

@@ -6,8 +6,13 @@ defmodule Glific.Flows.MessageVarParserTest do
 
   test "parse/2 will parse the string with variable", attrs do
     # binding with 1 dots will replace the variable
-    assert "hello Glific" == MessageVarParser.parse("hello @contact.name", %{"contact" => %{"name" => "Glific"}})
-    assert "hello Glific" == MessageVarParser.parse("hello @organization.name", %{"organization" => %{"name" => "Glific"}})
+    assert "hello Glific" ==
+             MessageVarParser.parse("hello @contact.name", %{"contact" => %{"name" => "Glific"}})
+
+    assert "hello Glific" ==
+             MessageVarParser.parse("hello @organization.name", %{
+               "organization" => %{"name" => "Glific"}
+             })
 
     # binding with 2 dots will replace the variable
     parsed_test =

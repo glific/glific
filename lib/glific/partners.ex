@@ -175,17 +175,17 @@ defmodule Glific.Partners do
   def active_organizations(orgs) do
     Organization
     |> where([q], q.is_active == true)
-    |> select([q], [q.id, q.name])
+    |> select([q], [q.id, q.name, q.last_communication_at])
     |> restrict_orgs(orgs)
     |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(%{}, fn row, acc ->
-      [id, value] = row
-      Map.put(acc, id, value)
+      [id, value, time] = row
+      Map.put(acc, id, %{name: value, last_communication_at: time})
     end)
   end
 
   @spec restrict_orgs(Ecto.Query.t(), list()) :: Ecto.Query.t()
-  defp restrict_orgs(query, list) when list == [], do: query
+  defp restrict_orgs(query, []), do: query
 
   defp restrict_orgs(query, org_list),
     do: query |> where([q], q.id in ^org_list)
@@ -537,8 +537,10 @@ defmodule Glific.Partners do
   def perform_all(handler, handler_args, list) do
     list = check_if_active_organization(list)
     # We need to do this for all the active organizations
-    active_organizations(list)
-    |> Enum.each(fn {id, name} ->
+    list
+    |> active_organizations()
+    |> check_if_active_organization()
+    |> Enum.each(fn {id, %{name: name}} ->
       Repo.put_process_state(id)
 
       if is_nil(handler_args),
@@ -553,19 +555,14 @@ defmodule Glific.Partners do
     :ok
   end
 
-  @spec check_if_active_organization(nil | list()) :: list()
-  defp check_if_active_organization(nil), do: nil
-
-  defp check_if_active_organization([]) do
-    list = active_organizations([])
-    check_if_active_organization(Map.keys(list))
-  end
+  @spec check_if_active_organization(list()) :: list()
+  defp check_if_active_organization([]), do: []
 
   defp check_if_active_organization(list) do
-    Enum.reject(list, fn organization_id ->
-      organization = organization(organization_id)
-      last_communicated_at = organization.last_communication_at
-      if Timex.diff(DateTime.utc_now(), last_communicated_at, :hours) < @active_hours, do: false, else: true
+    Enum.reject(list, fn {_id, %{last_communication_at: last_communication_at}} ->
+      if Timex.diff(DateTime.utc_now(), last_communication_at, :hours) < @active_hours,
+        do: false,
+        else: true
     end)
   end
 
@@ -655,7 +652,7 @@ defmodule Glific.Partners do
         |> Repo.insert()
 
       _ ->
-        {:error, ["shortcode", "Invalid provider shortcode."]}
+        {:error, ["shortcode", "Invalid provider shortcode: #{attrs[:shortcode]}."]}
     end
   end
 
