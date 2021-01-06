@@ -9,6 +9,8 @@ defmodule Glific.Flows.MessageVarParser do
   @spec parse(String.t(), map()) :: String.t() | nil
   def parse(nil, _binding), do: ""
 
+  def parse(input, binding) when binding in [nil, %{}] , do: input
+
   def parse(input, binding) do
     binding = stringify_keys(binding)
 
