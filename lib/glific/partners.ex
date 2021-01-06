@@ -328,11 +328,13 @@ defmodule Glific.Partners do
   @spec get_bsp_balance(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
   def get_bsp_balance(organization_id) do
     organization = Glific.Partners.organization(organization_id)
+
     if is_nil(organization.services["bsp"]) do
       {:error, "No active BSP available"}
     else
       credentials = organization.services["bsp"]
       api_key = credentials.secrets["api_key"]
+
       case organization.bsp.shortcode do
         "gupshup" -> GupshupWallet.balance(api_key)
         _ -> {:error, "Invalid provider"}
@@ -534,15 +536,16 @@ defmodule Glific.Partners do
   list == [] (empty list) - the action should be performed for all organizations
   list == [ values ] - the actions should be performed only for organizations in the values list
   """
-  @spec perform_all((... -> nil), map() | nil, list()) :: :ok
-  def perform_all(_handler, _handler_args, nil = _list), do: :ok
+  @spec perform_all((... -> nil), map() | nil, list() | [] | nil, boolean) :: :ok
+  def perform_all(handler, handler_args, list, only_recent \\ false)
 
-  def perform_all(handler, handler_args, list) do
-    list = check_if_active_organization(list)
+  def perform_all(_handler, _handler_args, nil, _only_recent), do: :ok
+
+  def perform_all(handler, handler_args, list, only_recent) do
     # We need to do this for all the active organizations
     list
     |> active_organizations()
-    |> check_if_active_organization()
+    |> recent_organizations(only_recent)
     |> Enum.each(fn {id, %{name: name}} ->
       Repo.put_process_state(id)
 
@@ -558,11 +561,11 @@ defmodule Glific.Partners do
     :ok
   end
 
-  @spec check_if_active_organization(list()) :: list()
-  defp check_if_active_organization([]), do: []
+  @spec recent_organizations(map(), boolean) :: map()
+  defp recent_organizations(map, false), do: map
 
-  defp check_if_active_organization(list) do
-    Enum.reject(list, fn {_id, %{last_communication_at: last_communication_at}} ->
+  defp recent_organizations(map, true) do
+    Enum.reject(map, fn {_id, %{last_communication_at: last_communication_at}} ->
       if Timex.diff(DateTime.utc_now(), last_communication_at, :hours) < @active_hours,
         do: false,
         else: true
