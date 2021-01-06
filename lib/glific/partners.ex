@@ -565,7 +565,7 @@ defmodule Glific.Partners do
     Enum.reject(list, fn organization_id ->
       organization = organization(organization_id)
       last_communicated_at = organization.last_communication_at
-      if Timex.diff(DateTime.utc_now(), last_communicated_at, :hours) < @active_hours, do: true, else: false
+      if Timex.diff(DateTime.utc_now(), last_communicated_at, :hours) < @active_hours, do: false, else: true
     end)
   end
 
