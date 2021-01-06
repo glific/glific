@@ -89,19 +89,30 @@ defmodule Glific.Communications.Message do
     {:ok, message}
   end
 
+  @spec build_error(any()) :: map()
+  defp build_error(body) do
+    cond do
+      is_binary(body) -> %{message: body}
+      is_map(body) -> body
+      true -> %{message: inspect(body)}
+    end
+  end
+
   @doc """
   Callback in case of any error while sending the message
   """
   @spec handle_error_response(Tesla.Env.t(), Message.t()) :: {:error, String.t()}
   def handle_error_response(response, message) do
-    message
-    |> Poison.encode!()
-    |> Poison.decode!(as: %Message{})
-    |> Messages.update_message(%{
-      bsp_status: :error,
-      status: :sent,
-      flow: :outbound
-    })
+    {:ok, _} =
+      message
+      |> Poison.encode!()
+      |> Poison.decode!(as: %Message{})
+      |> Messages.update_message(%{
+        bsp_status: :error,
+        status: :sent,
+        flow: :outbound,
+        errors: build_error(response.body)
+      })
 
     {:error, response.body}
   end
