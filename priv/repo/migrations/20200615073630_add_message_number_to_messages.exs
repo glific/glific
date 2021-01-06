@@ -16,6 +16,7 @@ defmodule Glific.Repo.Migrations.AddMessageNumberToMessages do
         UPDATE messages set message_number = message_number + 1 where contact_id = NEW.contact_id and id < NEW.id;
         UPDATE messages  set message_number = 0 where id = NEW.id;
         UPDATE contacts set last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc') where id = NEW.contact_id;
+        UPDATE organizations set last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc') where id = NEW.organization_id;
 
         IF (NEW.flow = 'inbound') THEN
           sessionlimit := (SELECT session_limit * 60 FROM organizations WHERE id = NEW.organization_id LIMIT 1);
