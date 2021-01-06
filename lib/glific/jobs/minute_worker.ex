@@ -126,7 +126,12 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"], true)
 
       "gcs" ->
-        Partners.perform_all(&GcsWorker.perform_periodic/1, nil, services["google_cloud_storage"], true)
+        Partners.perform_all(
+          &GcsWorker.perform_periodic/1,
+          nil,
+          services["google_cloud_storage"],
+          true
+        )
 
       "hourly_tasks" ->
         FlowContext.delete_completed_flow_contexts()
