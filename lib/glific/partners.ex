@@ -328,12 +328,15 @@ defmodule Glific.Partners do
   @spec get_bsp_balance(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
   def get_bsp_balance(organization_id) do
     organization = Glific.Partners.organization(organization_id)
-    credentials = organization.services["bsp"]
-    api_key = credentials.secrets["api_key"]
-
-    case organization.bsp.shortcode do
-      "gupshup" -> GupshupWallet.balance(api_key)
-      _ -> {:error, "Invalid provider"}
+    if is_nil(organization.services["bsp"]) do
+      {:error, "No active BSP available"}
+    else
+      credentials = organization.services["bsp"]
+      api_key = credentials.secrets["api_key"]
+      case organization.bsp.shortcode do
+        "gupshup" -> GupshupWallet.balance(api_key)
+        _ -> {:error, "Invalid provider"}
+      end
     end
   end
 
@@ -390,8 +393,8 @@ defmodule Glific.Partners do
         end
       end
 
-    # we are already storing this in the cache, so we can ask
-    # cachex to ignore the value. We need to do this since we are
+    # we are already storing this in the cache (in the function fill_cache),
+    # so we can ask cachex to ignore the value. We need to do this since we are
     # storing multiple keys for the same object
     {:ignore, organization}
   end
