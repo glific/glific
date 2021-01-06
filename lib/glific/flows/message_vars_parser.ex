@@ -44,9 +44,9 @@ defmodule Glific.Flows.MessageVarParser do
   rescue
     FunctionClauseError ->
       error = "get_in threw an exception, var: #{var}, binding: #{binding}"
-    Logger.error(error)
-    Appsignal.send_error(FunctionClauseError, error, __STACKTRACE__)
-    "@#{var}"
+      Logger.error(error)
+      Appsignal.send_error(FunctionClauseError, error, __STACKTRACE__)
+      "@#{var}"
   end
 
   # this is for the otherfileds like @contact.fields.name which is a map of (value)
