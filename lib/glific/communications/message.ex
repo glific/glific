@@ -110,6 +110,12 @@ defmodule Glific.Communications.Message do
       flow: :outbound
     })
 
+    Communications.publish_data(
+      %{key: "message_status", value: %{message_id: message.id, status: message.status}},
+       :message_status,
+       message.organization_id
+     )
+
     {:error, response.body}
   end
 
