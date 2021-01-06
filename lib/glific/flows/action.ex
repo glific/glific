@@ -233,10 +233,15 @@ defmodule Glific.Flows.Action do
     {:ok, context, messages}
   end
 
+<<<<<<< HEAD
   # Fake the valid key so we can have the same function signature and simplify the code base
   def execute(%{type: "set_contact_field_valid"} = action, context, messages) do
     name = action.field.name
     key = String.downcase(name) |> String.replace(" ", "_")
+=======
+  def execute(%{type: "set_contact_field"} = action, context, messages) do
+    key = if is_nil(action.field.name), do: "", else: String.downcase(action.field.name) |> String.replace(" ", "_")
+>>>>>>> 85a221ee1b180ec25d23a3e37b5416b33c3ab322
     value = FlowContext.get_result_value(context, action.value)
 
     context =
