@@ -128,6 +128,12 @@ defmodule Glific.Providers.Gupshup.Worker do
   defp handle_response({:ok, response}, message) do
     case response do
       %Tesla.Env{status: 200} -> Communications.Message.handle_success_response(response, message)
+
+      # Not authorized, Job succeeded, we should return an ok, so we dont retry
+      %Tesla.Env{status: 401} ->
+          Communications.Message.handle_error_response(response, message)
+          {:ok, message}
+
       _ -> Communications.Message.handle_error_response(response, message)
     end
   end
