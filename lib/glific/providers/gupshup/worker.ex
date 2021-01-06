@@ -11,6 +11,7 @@ defmodule Glific.Providers.Gupshup.Worker do
   alias Glific.{
     Communications,
     Partners,
+    Partners.Organization,
     Providers.Gupshup.ApiClient
   }
 
@@ -20,10 +21,23 @@ defmodule Glific.Providers.Gupshup.Worker do
   """
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:snooze, pos_integer()}
-  def perform(%Oban.Job{args: %{"message" => message, "payload" => payload, "attrs" => attrs}}) do
+  def perform(%Oban.Job{args: %{"message" => message}} = job) do
     organization = Partners.organization(message["organization_id"])
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
-    # Refactring because of credo warning
+    # Refactoring because of credo warning
+    if is_nil(organization.services["bsp"]) do
+      :ok
+    else
+      perform(job, organization)
+    end
+  end
+
+  @spec perform(Oban.Job.t(), Organization.t()) ::
+          :ok | {:error, String.t()} | {:snooze, pos_integer()}
+  defp perform(
+         %Oban.Job{args: %{"message" => message, "payload" => payload, "attrs" => attrs}},
+         organization
+       ) do
     case ExRated.check_rate(
            organization.shortcode,
            # the bsp limit is per organization per shortcode
@@ -49,7 +63,7 @@ defmodule Glific.Providers.Gupshup.Worker do
         # lets sleep real briefly, so that we are not firing off many
         # jobs to the BSP after exceeding the rate limit for this second
         # so we are artifically slowing down the send rate
-        Process.sleep(250)
+        Process.sleep(50)
         # we also want this job scheduled as soon as possible
         {:snooze, 1}
     end
