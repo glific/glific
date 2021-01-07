@@ -156,6 +156,7 @@ defmodule Glific.Communications.Message do
         status: :received,
         organization_id: contact.organization_id
       })
+
     cond do
       type == :text -> receive_text(message_params)
       type == :location -> receive_location(message_params)
