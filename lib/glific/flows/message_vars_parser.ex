@@ -43,7 +43,7 @@ defmodule Glific.Flows.MessageVarParser do
     if substitution == nil, do: "@#{var}", else: substitution
   rescue
     FunctionClauseError ->
-      error = "get_in threw an exception, var: #{var}, binding: #{binding}"
+      error = "get_in threw an exception, var: #{inspect(var)}, binding: #{inspect(binding)}"
       Logger.error(error)
       Appsignal.send_error(FunctionClauseError, error, __STACKTRACE__)
       "@#{var}"
