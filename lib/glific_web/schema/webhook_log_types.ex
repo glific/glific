@@ -23,6 +23,7 @@ defmodule GlificWeb.Schema.WebhookLogTypes do
 
     field :response_json, :json
     field :status_code, :integer
+    field :status, :string
 
     field :error, :string
 

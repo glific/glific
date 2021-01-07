@@ -131,7 +131,8 @@ defmodule Glific.MixProject do
       {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
       {:waffle_ecto, "~> 0.0"},
       {:csv, "~> 2.4"},
-      {:observer_cli, "~> 1.6"}
+      {:observer_cli, "~> 1.6"},
+      {:apiac_filter_ip_whitelist, "~> 1.0"}
     ]
   end
 
