@@ -286,7 +286,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
         variables: %{"id" => session_template.id, "receiver_id" => contact.id}
       )
 
-    assert {:ok, query_data} = result |> IO.inspect()
+    assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "sendSessionMessage", "errors"]) == [nil]
   end
 
