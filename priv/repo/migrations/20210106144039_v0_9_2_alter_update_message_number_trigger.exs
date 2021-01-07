@@ -20,9 +20,11 @@ defmodule Glific.Repo.Migrations.V0_9_2_AlterUpdateMesaageNumberTrigger do
         IF(NEW.group_id > 0) THEN
           UPDATE messages set message_number = message_number + 1 where group_id = NEW.group_id and id < NEW.id;
           UPDATE groups set last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc') where id = NEW.group_id;
+          UPDATE organizations set last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc') where id = NEW.organization_id;
         ELSE
           UPDATE messages set message_number = message_number + 1 where contact_id = NEW.contact_id and id < NEW.id;
           UPDATE contacts set last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc') where id = NEW.contact_id;
+          UPDATE organizations set last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc') where id = NEW.organization_id;
 
           IF (NEW.flow = 'inbound') THEN
             session_lim := (SELECT session_limit * 60 FROM organizations WHERE id = NEW.organization_id LIMIT 1);
