@@ -120,21 +120,26 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&FlowContext.wakeup_flows/1, nil, [])
 
       "chatbase" ->
-        Partners.perform_all(&ChatbaseWorker.perform_periodic/1, nil, services["chatbase"])
+        Partners.perform_all(&ChatbaseWorker.perform_periodic/1, nil, services["chatbase"], true)
 
       "bigquery" ->
-        Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"])
+        Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"], true)
 
       "gcs" ->
-        Partners.perform_all(&GcsWorker.perform_periodic/1, nil, services["google_cloud_storage"])
+        Partners.perform_all(
+          &GcsWorker.perform_periodic/1,
+          nil,
+          services["google_cloud_storage"],
+          true
+        )
 
       "hourly_tasks" ->
         FlowContext.delete_completed_flow_contexts()
         FlowContext.delete_old_flow_contexts()
-        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [])
+        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
 
       "five_minute_tasks" ->
-        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [])
+        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
 
       "update_hsms" ->

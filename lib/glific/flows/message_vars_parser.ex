@@ -1,4 +1,6 @@
 defmodule Glific.Flows.MessageVarParser do
+  require Logger
+
   @moduledoc """
   substitute the contact fileds and result sets in the messages
   """
@@ -9,7 +11,7 @@ defmodule Glific.Flows.MessageVarParser do
   @spec parse(String.t(), map()) :: String.t() | nil
   def parse(nil, _binding), do: ""
 
-  def parse(input, binding) when binding in [nil, %{}] , do: input
+  def parse(input, binding) when binding in [nil, %{}], do: input
 
   def parse(input, binding) do
     binding = stringify_keys(binding)
@@ -39,6 +41,12 @@ defmodule Glific.Flows.MessageVarParser do
       |> bound()
 
     if substitution == nil, do: "@#{var}", else: substitution
+  rescue
+    FunctionClauseError ->
+      error = "get_in threw an exception, var: #{var}, binding: #{binding}"
+      Logger.error(error)
+      Appsignal.send_error(FunctionClauseError, error, __STACKTRACE__)
+      "@#{var}"
   end
 
   # this is for the otherfileds like @contact.fields.name which is a map of (value)
@@ -53,28 +61,22 @@ defmodule Glific.Flows.MessageVarParser do
   @spec stringify_keys(map()) :: map() | nil
   defp stringify_keys(nil), do: nil
 
+  defp stringify_keys(atom) when is_atom(atom), do: Atom.to_string(atom)
   defp stringify_keys(map) when is_struct(map), do: Map.from_struct(map)
-
   defp stringify_keys(int) when is_integer(int), do: Integer.to_string(int)
-
   defp stringify_keys(float) when is_float(float), do: Float.to_string(float)
 
   defp stringify_keys(map) when is_map(map) do
     map
-    |> Enum.map(fn {k, v} ->
-      if is_atom(k), do: {Atom.to_string(k), stringify_keys(v)}, else: {k, stringify_keys(v)}
-    end)
+    |> Enum.map(fn {k, v} -> {stringify_keys(k), stringify_keys(v)} end)
     |> Enum.into(%{})
   end
 
   # Walk the list and stringify the keys of
   # of any map members
-  defp stringify_keys([head | rest] = list) when is_list(list) do
-    [stringify_keys(head) | stringify_keys(rest)]
-  end
+  defp stringify_keys(list) when is_list(list), do: Enum.map(list, &stringify_keys(&1))
 
-  defp stringify_keys(value),
-    do: value
+  defp stringify_keys(value), do: value
 
   @doc """
   Interpolates the values from results into the message body.

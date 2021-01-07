@@ -112,6 +112,7 @@ defmodule Glific.Fixtures do
       name: "Fixture Organization",
       shortcode: "fixture_org_shortcode",
       email: "replace@idk.org",
+      last_communication_at: DateTime.backward(0),
       # lets just hope its there :)
       bsp_id: 1,
       # lets just hope its there :)
