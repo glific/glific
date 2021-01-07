@@ -11,7 +11,6 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Partners,
-    Partners.Organization,
     Repo,
     Taggers,
     Tags
@@ -87,20 +86,7 @@ defmodule Glific.Communications.Message do
     )
 
     Taggers.TaggerHelper.tag_outbound_message(message)
-    update_last_communication_at(message.organization_id)
     {:ok, message}
-  end
-
-  @doc """
-  Callback in case of any error while sending the message
-  """
-  @spec update_last_communication_at(non_neg_integer()) :: {:error, String.t()}
-  def update_last_communication_at(organization_id) do
-    Partners.organization(organization_id)
-    |> Organization.changeset(%{
-      last_communication_at: DateTime.truncate(DateTime.utc_now(), :second)
-    })
-    |> Repo.update()
   end
 
   @doc """
@@ -116,8 +102,6 @@ defmodule Glific.Communications.Message do
       status: :sent,
       flow: :outbound
     })
-
-    update_last_communication_at(message.organization_id)
 
     {:error, response.body}
   end
@@ -172,7 +156,6 @@ defmodule Glific.Communications.Message do
         status: :received,
         organization_id: contact.organization_id
       })
-      update_last_communication_at(message_params.organization_id)
     cond do
       type == :text -> receive_text(message_params)
       type == :location -> receive_location(message_params)
