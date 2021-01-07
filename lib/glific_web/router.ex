@@ -62,7 +62,25 @@ defmodule GlificWeb.Router do
       socket: GlificWeb.UserSocket
   end
 
+  pipeline :gupshup do
+    plug APIacFilterIPWhitelist, whitelist: [
+      #Whitelisting IP of localhost
+      "127.0.0.0/8",
+      #Whitelisting IP of Gigalixir
+      "35.226.132.161/32",
+      #Whitelisting IP of Gupshup
+      "34.202.224.208/28",
+      "34.202.224.208/29",
+      "34.202.224.208/30",
+      "34.202.224.208/31",
+      "34.202.224.208/32",
+      "52.66.99.126/31",
+      "52.66.99.126/32"
+    ]
+  end
+
   scope "/", GlificWeb do
+    pipe_through :gupshup
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
   end
 
