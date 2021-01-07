@@ -535,7 +535,8 @@ defmodule Glific.Fixtures do
       },
       request_json: %{},
       response_json: %{},
-      status_code: 200
+      status_code: 200,
+      status: "Success"
     }
 
     contact = contact_fixture(attrs)
