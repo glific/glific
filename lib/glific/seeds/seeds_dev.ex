@@ -605,6 +605,30 @@ if Code.ensure_loaded?(Faker) do
         body: "Hi {{1}},\n\nYour account image was updated on {{2}} by {{3}} with above",
         uuid: Ecto.UUID.generate()
       })
+
+      translations = %{
+        hi.id => %{
+          body: " हाय {{1}}, \n कृपया बिल संलग्न करें।",
+          language_id: hi.id,
+          number_parameters: 1
+        }
+      }
+
+      Repo.insert!(%SessionTemplate{
+        label: "Bill",
+        type: :text,
+        shortcode: "bill",
+        is_hsm: true,
+        number_parameters: 1,
+        language_id: en_us.id,
+        organization_id: organization.id,
+        translations: translations,
+        status: "PENDING",
+        category: "ALERT_UPDATE",
+        body: "Hi {{1}},\nPlease find the attached bill.",
+        uuid: Ecto.UUID.generate()
+      })
+
     end
 
     @doc false
