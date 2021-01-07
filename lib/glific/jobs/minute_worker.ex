@@ -101,9 +101,8 @@ defmodule Glific.Jobs.MinuteWorker do
     Map.merge(services, combined)
   end
 
-  @spec check_if_active_organization :: list()
-  defp check_if_active_organization do
-    list = Partners.active_organizations([])|>Map.keys()
+  @spec check_if_active_organization(list()) :: list()
+  defp check_if_active_organization(list) do
     Enum.reject(list, fn organization_id ->
       organization = Partners.organization(organization_id)
       last_communicated_at = organization.last_communication_at
@@ -121,7 +120,7 @@ defmodule Glific.Jobs.MinuteWorker do
   # credo:disable-for-lines:50
   def perform(%Oban.Job{args: %{"job" => job}} = args) do
     services = get_organization_services()
-    active_organizations = check_if_active_organization()
+    active_organizations = check_if_active_organization(Partners.active_organizations([])|>Map.keys())
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "contact_status" ->
