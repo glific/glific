@@ -4,6 +4,7 @@ defmodule Glific.Partners do
   and Provider information.
   """
   @behaviour Waffle.Storage.Google.Token.Fetcher
+
   use Publicist
 
   import Ecto.Query, warn: false
