@@ -116,7 +116,7 @@ defmodule Glific.Jobs.MinuteWorker do
   @spec perform(Oban.Job.t(), map()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   defp perform(%Oban.Job{args: %{"job" => job}} = args, services)
-      when job in ["contact_status", "wakeup_flows", "chatbase", "bigquery", "gcs"] do
+       when job in ["contact_status", "wakeup_flows", "chatbase", "bigquery", "gcs"] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "contact_status" ->
@@ -144,12 +144,12 @@ defmodule Glific.Jobs.MinuteWorker do
   end
 
   defp perform(%Oban.Job{args: %{"job" => job}} = _args, services)
-      when job in [
-             "hourly_tasks",
-             "five_minute_tasks",
-             "update_hsms",
-             "sync_glific_db_with_cloud"
-           ] do
+       when job in [
+              "hourly_tasks",
+              "five_minute_tasks",
+              "update_hsms",
+              "sync_glific_db_with_cloud"
+            ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "hourly_tasks" ->

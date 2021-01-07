@@ -399,7 +399,7 @@ defmodule Glific.Contacts do
   """
   def can_send_message_to?(contact, _is_hsm) do
     if contact.status == :valid &&
-         contact.bsp_status in [:session_and_hsm, :hsm] &&
+         contact.bsp_status in [:session_and_hsm, :session] &&
          Glific.in_past_time(contact.last_message_at, :hours, 24),
        do: true,
        else: false
