@@ -1,5 +1,5 @@
 if Code.ensure_loaded?(Faker) do
-  defmodule Glific.Seeds.SeedsUpdates do
+  defmodule Glific.Seeds.SeedsTemplates do
     @moduledoc """
     Script for populating the database. We can call this from tests and/or /priv/repo
     """
