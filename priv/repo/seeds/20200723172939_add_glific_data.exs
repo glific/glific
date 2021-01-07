@@ -539,6 +539,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       If you’d like to continue this discussion, please reply with ‘yes’
       """,
       translations: translations,
+      status: "PENDING",
+      category: "ALERT_UPDATE",
       uuid: generate_uuid(organization, "9381b1b9-1b9b-45a6-81f4-f91306959619")
     })
 
@@ -559,6 +561,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       language_id: en_us.id,
       organization_id: organization.id,
       translations: translations,
+      status: "APPROVED",
+      category: "ALERT_UPDATE",
       body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
       uuid: generate_uuid(organization, "e55f2c10-541c-470b-a5ff-9249ae82bc95")
     })
@@ -583,6 +587,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       is_reserved: true,
       language_id: en_us.id,
       translations: translations,
+      status: "REJECTED",
+      category: "ALERT_UPDATE",
       organization_id: organization.id,
       number_parameters: 0,
       uuid: generate_uuid(organization, "fbf8d5a6-91ab-47ab-9691-35ef35443ad8")

@@ -527,6 +527,8 @@ if Code.ensure_loaded?(Faker) do
         language_id: en_us.id,
         translations: translations,
         organization_id: organization.id,
+        status: "REJECTED",
+        category: "ACCOUNT_UPDATE",
         # spaces are important here, since gupshup pattern matches on it
         body:
           "You can now view your Account Balance or Mini statement for Account ending with {{1}} simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
@@ -551,6 +553,8 @@ if Code.ensure_loaded?(Faker) do
         language_id: en_us.id,
         organization_id: organization.id,
         translations: translations,
+        status: "APPROVED",
+        category: "TICKET_UPDATE",
         body:
           "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{2}}]",
         uuid: Ecto.UUID.generate()
@@ -573,6 +577,8 @@ if Code.ensure_loaded?(Faker) do
         language_id: en_us.id,
         organization_id: organization.id,
         translations: translations,
+        status: "PENDING",
+        category: "ALERT_UPDATE",
         body: "Hi {{1}},\nPlease find the attached bill.",
         uuid: Ecto.UUID.generate()
       })
