@@ -600,6 +600,8 @@ if Code.ensure_loaded?(Faker) do
         translations: translations,
         language_id: en_us.id,
         organization_id: organization.id,
+        status: "PENDING",
+        category: "ALERT_UPDATE",
         body: "Hi {{1}},\n\nYour account image was updated on {{2}} by {{3}} with above",
         uuid: Ecto.UUID.generate()
       })
