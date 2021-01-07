@@ -86,6 +86,7 @@ defmodule Glific.Communications.Message do
     )
 
     Taggers.TaggerHelper.tag_outbound_message(message)
+
     {:ok, message}
   end
 

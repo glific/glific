@@ -4,7 +4,6 @@ defmodule Glific.Partners do
   and Provider information.
   """
   @behaviour Waffle.Storage.Google.Token.Fetcher
-  @active_hours 1
   use Publicist
 
   import Ecto.Query, warn: false
@@ -535,7 +534,6 @@ defmodule Glific.Partners do
   def perform_all(_handler, _handler_args, nil = _list), do: :ok
 
   def perform_all(handler, handler_args, list) do
-    list = check_if_active_organization(list)
     # We need to do this for all the active organizations
     active_organizations(list)
     |> Enum.each(fn {id, name} ->
@@ -551,22 +549,6 @@ defmodule Glific.Partners do
     end)
 
     :ok
-  end
-
-  @spec check_if_active_organization(nil | list()) :: list()
-  defp check_if_active_organization(nil), do: nil
-
-  defp check_if_active_organization([]) do
-    list = active_organizations([])
-    check_if_active_organization(Map.keys(list))
-  end
-
-  defp check_if_active_organization(list) do
-    Enum.reject(list, fn organization_id ->
-      organization = organization(organization_id)
-      last_communicated_at = organization.last_communication_at
-      if Timex.diff(DateTime.utc_now(), last_communicated_at, :hours) < @active_hours, do: false, else: true
-    end)
   end
 
   @doc """

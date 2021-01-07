@@ -2,6 +2,7 @@ defmodule Glific.Jobs.MinuteWorker do
   @moduledoc """
   Processes the tasks that need to be handled on a minute schedule
   """
+  @active_hours 1
 
   use Oban.Worker,
     queue: :crontab,
@@ -100,6 +101,16 @@ defmodule Glific.Jobs.MinuteWorker do
     Map.merge(services, combined)
   end
 
+  @spec check_if_active_organization :: list()
+  defp check_if_active_organization do
+    list = Partners.active_organizations([])|>Map.keys()
+    Enum.reject(list, fn organization_id ->
+      organization = Partners.organization(organization_id)
+      last_communicated_at = organization.last_communication_at
+      if Timex.diff(DateTime.utc_now(), last_communicated_at, :hours) < @active_hours, do: false, else: true
+    end)
+  end
+
   @doc """
   Worker to implement cron job functionality as implemented by Oban. This
   is a work in progress and subject to change
@@ -110,7 +121,7 @@ defmodule Glific.Jobs.MinuteWorker do
   # credo:disable-for-lines:50
   def perform(%Oban.Job{args: %{"job" => job}} = args) do
     services = get_organization_services()
-
+    active_organizations = check_if_active_organization()
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "contact_status" ->
@@ -131,10 +142,10 @@ defmodule Glific.Jobs.MinuteWorker do
       "hourly_tasks" ->
         FlowContext.delete_completed_flow_contexts()
         FlowContext.delete_old_flow_contexts()
-        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [])
+        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, active_organizations)
 
       "five_minute_tasks" ->
-        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [])
+        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, active_organizations)
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
 
       "update_hsms" ->
