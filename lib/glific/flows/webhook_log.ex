@@ -90,6 +90,8 @@ defmodule Glific.Flows.WebhookLog do
 
   @doc """
   Returns the list of webhook_logs.
+  Since this is very basic and only listing funcatinality we added the status filter like this. 
+  In future we will put the status as virtual filed in the webhook logs itself.
   """
   @spec list_webhook_logs(map()) :: [WebhookLog.t()]
   def list_webhook_logs(args) do
