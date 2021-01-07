@@ -190,9 +190,12 @@ defmodule Glific.Contacts do
         attrs[:last_communication_at] || DateTime.utc_now()
       )
 
-    %Contact{}
-    |> Contact.changeset(attrs)
-    |> Repo.insert()
+    {:ok, contact} =
+      %Contact{}
+      |> Contact.changeset(attrs)
+      |> Repo.insert()
+
+    contact
   end
 
   @doc """

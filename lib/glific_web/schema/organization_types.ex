@@ -63,6 +63,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :session_limit, :integer
 
+    field :last_communication_at, :datetime
+
     field :active_languages, list_of(:language) do
       resolve(fn organization, _, _ ->
         languages =
@@ -135,6 +137,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :active_language_ids, list_of(:id)
 
     field :signature_phrase, :string
+
+    field :last_communication_at, :datetime
   end
 
   object :organization_queries do
