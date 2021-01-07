@@ -13,6 +13,9 @@ defmodule Glific.Providers.Gupshup.GupshupWallet do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         Jason.decode(body)
 
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
+        {:error, body}
+
       _ ->
         {:error, "Invalid key"}
     end
