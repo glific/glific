@@ -4,14 +4,17 @@ defmodule GlificWeb.Resolvers.WebhookLogs do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.Flows.WebhookLog
+  alias Glific.{
+    Flows.WebhookLog,
+    Repo
+  }
 
   @doc """
   Get the list of webhook_logs filtered by args
   """
   @spec webhook_logs(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [WebhookLog]}
   def webhook_logs(_, args, _) do
-    {:ok, WebhookLog.list_webhook_logs(args)}
+    {:ok, Repo.list_filter(args, WebhookLog, &Repo.opts_with_label/2, &Repo.filter_with/2)}
   end
 
   @doc """
