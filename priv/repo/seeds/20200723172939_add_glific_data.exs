@@ -561,9 +561,10 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       language_id: en_us.id,
       organization_id: organization.id,
       translations: translations,
-      status: "APPROVED",
+      status: "REJECTED",
       category: "ALERT_UPDATE",
       body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+      example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
       uuid: generate_uuid(organization, "e55f2c10-541c-470b-a5ff-9249ae82bc95")
     })
 
