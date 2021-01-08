@@ -310,9 +310,16 @@ defmodule Glific.Flows.Action do
       |> Enum.map(fn label -> label["name"] end)
       |> Enum.join(", ")
 
-    Repo.get(Message, context.last_message.id)
-    |> Message.changeset(%{flow_label: flow_label})
-    |> Repo.update()
+    # there is a chance that:
+    # when we send a fake temp message (like No Response)
+    # or when a flow is resumed, there is no last_message
+    # hence check for the existence of one
+    if context.last_message != nil do
+      {:ok, _} =
+        Repo.get(Message, context.last_message.id)
+        |> Message.changeset(%{flow_label: flow_label})
+        |> Repo.update()
+    end
 
     {:ok, context, messages}
   end
