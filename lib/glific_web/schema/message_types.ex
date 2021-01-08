@@ -70,6 +70,10 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(dataloader(Repo, use_parent: true))
     end
 
+    field :locations, :locations do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
     field :tags, list_of(:tag) do
       resolve(dataloader(Repo, use_parent: true))
     end
