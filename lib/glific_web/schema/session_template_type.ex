@@ -167,13 +167,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       resolve(&Resolvers.Templates.delete_session_template/3)
     end
 
-    field :send_session_message, :session_template_result do
-      arg(:id, non_null(:id))
-      arg(:receiver_id, non_null(:id))
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Templates.send_session_message/3)
-    end
-
     field :create_template_form_message, :session_template_result do
       arg(:message_id, non_null(:id))
       arg(:input, :message_to_template_input)

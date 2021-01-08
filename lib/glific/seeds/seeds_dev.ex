@@ -527,6 +527,9 @@ if Code.ensure_loaded?(Faker) do
         language_id: en_us.id,
         translations: translations,
         organization_id: organization.id,
+        status: "REJECTED",
+        category: "ACCOUNT_UPDATE",
+        example: "You can now view your Account Balance or Mini statement for Account ending with [003] simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
         # spaces are important here, since gupshup pattern matches on it
         body:
           "You can now view your Account Balance or Mini statement for Account ending with {{1}} simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
@@ -547,10 +550,15 @@ if Code.ensure_loaded?(Faker) do
         type: :text,
         shortcode: "movie_ticket",
         is_hsm: true,
+        is_active: true,
         number_parameters: 2,
         language_id: en_us.id,
         organization_id: organization.id,
         translations: translations,
+        status: "APPROVED",
+        category: "TICKET_UPDATE",
+        example:
+          "Download your [message] ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/[message]]",
         body:
           "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{2}}]",
         uuid: Ecto.UUID.generate()
@@ -573,8 +581,13 @@ if Code.ensure_loaded?(Faker) do
         language_id: en_us.id,
         organization_id: organization.id,
         translations: translations,
+        status: "APPROVED",
+        is_active: true,
+        category: "ALERT_UPDATE",
+        example: "Hi [Anil],\nPlease find the attached bill.",
         body: "Hi {{1}},\nPlease find the attached bill.",
         uuid: Ecto.UUID.generate()
+
       })
 
       translations = %{
@@ -594,9 +607,37 @@ if Code.ensure_loaded?(Faker) do
         translations: translations,
         language_id: en_us.id,
         organization_id: organization.id,
+        status: "PENDING",
+        category: "ALERT_UPDATE",
         body: "Hi {{1}},\n\nYour account image was updated on {{2}} by {{3}} with above",
+        example: "Hi [Anil],\n\nYour account image was updated on [19th December] by [Saurav] with above",
         uuid: Ecto.UUID.generate()
       })
+
+      translations = %{
+        hi.id => %{
+          body: " हाय {{1}}, \n कृपया बिल संलग्न करें।",
+          language_id: hi.id,
+          number_parameters: 1
+        }
+      }
+
+      Repo.insert!(%SessionTemplate{
+        label: "Bill",
+        type: :text,
+        shortcode: "bill",
+        is_hsm: true,
+        number_parameters: 1,
+        language_id: en_us.id,
+        organization_id: organization.id,
+        translations: translations,
+        status: "PENDING",
+        category: "ALERT_UPDATE",
+        body: "Hi {{1}},\nPlease find the attached bill.",
+        example: "Hi [Anil],\nPlease find the attached bill.",
+        uuid: Ecto.UUID.generate()
+      })
+
     end
 
     @doc false

@@ -539,6 +539,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       If you’d like to continue this discussion, please reply with ‘yes’
       """,
       translations: translations,
+      status: "PENDING",
+      category: "ALERT_UPDATE",
       uuid: generate_uuid(organization, "9381b1b9-1b9b-45a6-81f4-f91306959619")
     })
 
@@ -559,7 +561,10 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       language_id: en_us.id,
       organization_id: organization.id,
       translations: translations,
+      status: "REJECTED",
+      category: "ALERT_UPDATE",
       body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+      example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
       uuid: generate_uuid(organization, "e55f2c10-541c-470b-a5ff-9249ae82bc95")
     })
 
@@ -578,11 +583,17 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       Please click on the link to register with the phone number @contact.phone
       @global.registration.url
       """,
+      example: """
+      Please click on the link to register with the phone number @contact.phone
+      [https://www.gupshup.io/developer/register]
+      """,
       type: :text,
       shortcode: "user-registration",
       is_reserved: true,
       language_id: en_us.id,
       translations: translations,
+      status: "REJECTED",
+      category: "ALERT_UPDATE",
       organization_id: organization.id,
       number_parameters: 0,
       uuid: generate_uuid(organization, "fbf8d5a6-91ab-47ab-9691-35ef35443ad8")

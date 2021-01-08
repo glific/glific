@@ -1,6 +1,7 @@
 defmodule GlificWeb.Schema.MessageTest do
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Fixtures,
     Messages.Message,
     Partners,
@@ -18,6 +19,7 @@ defmodule GlificWeb.Schema.MessageTest do
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
+    Fixtures.session_template_fixture()
     :ok
   end
 
@@ -37,6 +39,12 @@ defmodule GlificWeb.Schema.MessageTest do
     :send_hsm_message,
     GlificWeb.Schema,
     "assets/gql/messages/send_hsm_message.gql"
+  )
+
+  load_gql(
+    :send_session_message,
+    GlificWeb.Schema,
+    "assets/gql/messages/send_session_message.gql"
   )
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/messages/count.gql")
@@ -384,5 +392,23 @@ defmodule GlificWeb.Schema.MessageTest do
 
     message = get_in(query_data, [:errors, Access.at(0)])[:message]
     assert message == "Cannot send the message to the contact."
+  end
+
+  test "send session message", %{staff: user} do
+    body = "Default Template"
+
+    {:ok, session_template} =
+      Repo.fetch_by(SessionTemplate, %{body: body, organization_id: user.organization_id})
+
+    name = "Adelle Cavin"
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
+
+    result =
+      auth_query_gql_by(:send_session_message, user,
+        variables: %{"id" => session_template.id, "receiver_id" => contact.id}
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "sendSessionMessage", "errors"]) == nil
   end
 end

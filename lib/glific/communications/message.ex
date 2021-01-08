@@ -92,8 +92,16 @@ defmodule Glific.Communications.Message do
     )
 
     Taggers.TaggerHelper.tag_outbound_message(message)
-
     {:ok, message}
+  end
+
+  @spec build_error(any()) :: map()
+  defp build_error(body) do
+    cond do
+      is_binary(body) -> %{message: body}
+      is_map(body) -> body
+      true -> %{message: inspect(body)}
+    end
   end
 
   @doc """
@@ -101,14 +109,16 @@ defmodule Glific.Communications.Message do
   """
   @spec handle_error_response(Tesla.Env.t(), Message.t()) :: {:error, String.t()}
   def handle_error_response(response, message) do
-    message
-    |> Poison.encode!()
-    |> Poison.decode!(as: %Message{})
-    |> Messages.update_message(%{
-      bsp_status: :error,
-      status: :sent,
-      flow: :outbound
-    })
+    {:ok, _} =
+      message
+      |> Poison.encode!()
+      |> Poison.decode!(as: %Message{})
+      |> Messages.update_message(%{
+        bsp_status: :error,
+        status: :sent,
+        flow: :outbound,
+        errors: build_error(response.body)
+      })
 
     Communications.publish_data(
       %{key: "message_status", value: %{message_id: message.id, status: message.status}},

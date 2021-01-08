@@ -117,8 +117,18 @@ defmodule GlificWeb.Resolvers.Messages do
   @spec send_hsm_message(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def send_hsm_message(_, %{template_id: id, receiver_id: receiver_id, parameters: parameters}, _) do
-    with {:ok, message} <- Messages.create_and_send_hsm_message(id, receiver_id, parameters),
-         do: {:ok, %{message: message}}
+    {:ok, message} = Messages.create_and_send_hsm_message(id, receiver_id, parameters)
+    {:ok, %{message: message}}
+  end
+
+  @doc false
+  @spec send_session_message(Absinthe.Resolution.t(), %{id: integer, receiver_id: integer}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def send_session_message(_, %{id: id, receiver_id: receiver_id}, _) do
+    {:ok, message} = Messages.create_and_send_session_template(id, receiver_id)
+    {:ok, %{message: message}}
   end
 
   # Message Media Resolver which sits between the GraphQL schema and Glific

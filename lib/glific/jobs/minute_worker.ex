@@ -107,10 +107,16 @@ defmodule Glific.Jobs.MinuteWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
-  # credo:disable-for-lines:50
-  def perform(%Oban.Job{args: %{"job" => job}} = args) do
+  def perform(%Oban.Job{args: %{"job" => _job}} = args) do
     services = get_organization_services()
 
+    perform(args, services)
+  end
+
+  @spec perform(Oban.Job.t(), map()) ::
+          :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
+  defp perform(%Oban.Job{args: %{"job" => job}} = args, services)
+       when job in ["contact_status", "wakeup_flows", "chatbase", "bigquery", "gcs"] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "contact_status" ->
@@ -120,21 +126,39 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&FlowContext.wakeup_flows/1, nil, [])
 
       "chatbase" ->
-        Partners.perform_all(&ChatbaseWorker.perform_periodic/1, nil, services["chatbase"])
+        Partners.perform_all(&ChatbaseWorker.perform_periodic/1, nil, services["chatbase"], true)
 
       "bigquery" ->
-        Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"])
+        Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"], true)
 
       "gcs" ->
-        Partners.perform_all(&GcsWorker.perform_periodic/1, nil, services["google_cloud_storage"])
+        Partners.perform_all(
+          &GcsWorker.perform_periodic/1,
+          nil,
+          services["google_cloud_storage"],
+          true
+        )
+    end
 
+    :ok
+  end
+
+  defp perform(%Oban.Job{args: %{"job" => job}} = _args, services)
+       when job in [
+              "hourly_tasks",
+              "five_minute_tasks",
+              "update_hsms",
+              "sync_glific_db_with_cloud"
+            ] do
+    # This is a bit simpler and shorter than multiple function calls with pattern matching
+    case job do
       "hourly_tasks" ->
         FlowContext.delete_completed_flow_contexts()
         FlowContext.delete_old_flow_contexts()
-        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [])
+        Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
 
       "five_minute_tasks" ->
-        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [])
+        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
 
       "update_hsms" ->
