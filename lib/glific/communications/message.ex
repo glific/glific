@@ -79,11 +79,7 @@ defmodule Glific.Communications.Message do
         sent_at: DateTime.truncate(DateTime.utc_now(), :second)
       })
 
-     Communications.publish_data(
-      %{key: "message_status", value: %{message_id: message.id, status: message.status}},
-       :message_status,
-       message.organization_id
-     )
+    publish_message_status(message)
 
     Tags.remove_tag_from_all_message(
       message.contact_id,
@@ -104,6 +100,15 @@ defmodule Glific.Communications.Message do
     end
   end
 
+  @spec publish_message_status(Message.t()) :: any()
+  defp publish_message_status(message) do
+    Communications.publish_data(
+      %{key: "message_status", value: %{message_id: message.id, status: message.status}},
+      :message_status,
+      message.organization_id
+    )
+  end
+
   @doc """
   Callback in case of any error while sending the message
   """
@@ -120,11 +125,7 @@ defmodule Glific.Communications.Message do
         errors: build_error(response.body)
       })
 
-    Communications.publish_data(
-      %{key: "message_status", value: %{message_id: message.id, status: message.status}},
-       :message_status,
-       message.organization_id
-     )
+    publish_message_status(message)
 
     {:error, response.body}
   end
