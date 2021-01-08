@@ -557,9 +557,9 @@ if Code.ensure_loaded?(Faker) do
         translations: translations,
         status: "APPROVED",
         category: "TICKET_UPDATE",
-        body:
-          "Download your [message] ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/[message]]",
         example:
+          "Download your [message] ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/[message]]",
+        body:
           "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{2}}]",
         uuid: Ecto.UUID.generate()
       })

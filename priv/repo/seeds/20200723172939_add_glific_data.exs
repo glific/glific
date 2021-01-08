@@ -583,6 +583,10 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       Please click on the link to register with the phone number @contact.phone
       @global.registration.url
       """,
+      example: """
+      Please click on the link to register with the phone number @contact.phone
+      [https://www.gupshup.io/developer/register]
+      """,
       type: :text,
       shortcode: "user-registration",
       is_reserved: true,
