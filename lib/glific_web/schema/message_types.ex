@@ -169,6 +169,13 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.send_hsm_message/3)
     end
 
+    field :send_session_message, :message_result do
+      arg(:id, non_null(:id))
+      arg(:receiver_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Messages.send_session_message/3)
+    end
+
     field :update_message, :message_result do
       arg(:id, non_null(:id))
       arg(:input, :message_input)
