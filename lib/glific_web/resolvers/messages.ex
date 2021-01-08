@@ -212,9 +212,5 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, map()} | {:error, any}
   def publish_status(status, _, _) do
     {:ok, status}
-    # case args do
-    #   %{status: status} -> {:ok, status}
-    #   status -> {:ok, status}
-    # end
   end
 end
