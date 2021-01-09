@@ -10,7 +10,7 @@ defmodule Glific.Contacts.Simulator do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Contacts.Contact, Repo}
+  alias Glific.{Communications, Contacts.Contact, Repo}
 
   # lets first define the genserver Server callbacks
 
@@ -173,6 +173,15 @@ defmodule Glific.Contacts.Simulator do
     %{}
   end
 
+  @spec publish_data(non_neg_integer, non_neg_integer) :: any()
+  defp publish_data(organization_id, user_id) do
+    Communications.publish_data(
+      %{key: "simulator_release", value: %{user_id: user_id}},
+      :periodic_info,
+      organization_id
+    )
+  end
+
   @spec free_simulators(map(), non_neg_integer | nil) :: map()
   defp free_simulators(%{free: free, busy: busy} = _state, uid \\ nil) do
     expiry_time = DateTime.utc_now() |> DateTime.add(-1 * @cache_time * 60, :second)
@@ -183,6 +192,7 @@ defmodule Glific.Contacts.Simulator do
         {free, busy},
         fn {user_id, {contact, time}}, {f, b} ->
           if uid == user_id || DateTime.compare(time, expiry_time) == :lt do
+            publish_data(contact.organization_id, user_id)
             {
               [contact | f],
               Map.delete(b, user_id)
