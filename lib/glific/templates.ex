@@ -261,8 +261,7 @@ defmodule Glific.Templates do
         # this check is required,
         # as is_active field can be updated by graphql API,
         # and should not be reverted back
-        template["modifiedOn"] >
-            DateTime.to_unix(db_templates[template["id"]].updated_at, :millisecond) ->
+        Map.has_key?(db_templates, template["id"]) ->
           update_hsm(template, organization, languages)
 
         true ->
@@ -366,12 +365,7 @@ defmodule Glific.Templates do
   @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_hsm(template, db_templates) do
     update_attrs = %{
-      status: template["status"],
-      is_active:
-        if(template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
-          do: true,
-          else: false
-        )
+      status: template["status"]
     }
 
     {:ok, _} =
@@ -393,11 +387,6 @@ defmodule Glific.Templates do
     # setting default language id if languageCode is not known
     language_id = languages[template["languageCode"]] || organization.default_language_id
 
-    is_active =
-      if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
-        do: true,
-        else: false
-
     example =
       case Jason.decode(template["meta"]) do
         {:ok, meta} ->
@@ -415,7 +404,6 @@ defmodule Glific.Templates do
           language_id: language_id,
           status: template["status"],
           type: type,
-          is_active: is_active,
           number_parameters: number_of_parameter,
           example: example,
           category: template["category"],
