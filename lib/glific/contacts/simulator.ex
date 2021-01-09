@@ -15,12 +15,14 @@ defmodule Glific.Contacts.Simulator do
   # lets first define the genserver Server callbacks
 
   @impl true
+  @doc false
   def init(_opts) do
     # our state is a map of organization ids to simulator contexts
     {:ok, reset_state()}
   end
 
   @impl true
+  @doc false
   def handle_call({:get, organization_id, user_id}, _from, state) do
     {contact, state} = get_simulator(organization_id, user_id, state)
 
@@ -28,6 +30,7 @@ defmodule Glific.Contacts.Simulator do
   end
 
   @impl true
+  @doc false
   def handle_call({:release, organization_id, user_id}, _from, state) do
     state = release_simulator(organization_id, user_id, state)
 
@@ -35,40 +38,42 @@ defmodule Glific.Contacts.Simulator do
   end
 
   @impl true
+  @doc false
   def handle_call({:state, organization_id}, _from, state) do
     {:reply, get_state(state, organization_id), state}
   end
 
   @impl true
+  @doc false
   def handle_call(:reset, _from, _state) do
     {:reply, :ok, reset_state()}
   end
 
-  @impl true
-  def handle_cast(_, state) do
-    # we are not handling asynchronous calls
-    raise ArgumentError, message: "Asynchronous calls are not handled by Simulator"
-
-    {:noreply, nil, state}
-  end
+  # Note that we are specifically not implementing the handle_cast callback
+  # since it does not make sense for the purposes of this interface
 
   # lets define the client interface
+  @doc false
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
+  @doc false
   def get(pid, organization_id, user_id) do
     GenServer.call(pid, {:get, organization_id, user_id})
   end
 
+  @doc false
   def release(pid, organization_id, user_id) do
     GenServer.call(pid, {:release, organization_id, user_id})
   end
 
+  @doc false
   def state(pid, organization_id) do
     GenServer.call(pid, {:state, organization_id})
   end
 
+  @doc false
   def reset(pid) do
     GenServer.call(pid, :reset)
   end
@@ -163,8 +168,8 @@ defmodule Glific.Contacts.Simulator do
     %{free: contacts, busy: %{}}
   end
 
-  @spec reset_state() :: map()
-  defp reset_state() do
+  @spec reset_state :: map()
+  defp reset_state do
     %{}
   end
 

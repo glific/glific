@@ -20,7 +20,7 @@ defmodule Glific.SimulatorTest do
 
     # we have 3 simulators in our dev seeder
     assert length(free) == 3
-    assert Enum.count(busy) == 0
+    assert Enum.empty?(busy)
   end
 
   test "Ensure we can request and get 3 simulator contacts, but the 4th is denied" do
