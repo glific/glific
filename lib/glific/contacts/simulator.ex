@@ -59,23 +59,23 @@ defmodule Glific.Contacts.Simulator do
   end
 
   @doc false
-  def get(pid, organization_id, user_id) do
-    GenServer.call(pid, {:get, organization_id, user_id})
+  def get(organization_id, user_id) do
+    GenServer.call(__MODULE__, {:get, organization_id, user_id})
   end
 
   @doc false
-  def release(pid, organization_id, user_id) do
-    GenServer.call(pid, {:release, organization_id, user_id})
+  def release(organization_id, user_id) do
+    GenServer.call(__MODULE__, {:release, organization_id, user_id})
   end
 
   @doc false
-  def state(pid, organization_id) do
-    GenServer.call(pid, {:state, organization_id})
+  def state(organization_id) do
+    GenServer.call(__MODULE__, {:state, organization_id})
   end
 
   @doc false
-  def reset(pid) do
-    GenServer.call(pid, :reset)
+  def reset() do
+    GenServer.call(__MODULE__, :reset)
   end
 
   # We now implement the rest of the API
