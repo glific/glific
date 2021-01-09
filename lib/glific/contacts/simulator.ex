@@ -193,6 +193,7 @@ defmodule Glific.Contacts.Simulator do
         fn {user_id, {contact, time}}, {f, b} ->
           if uid == user_id || DateTime.compare(time, expiry_time) == :lt do
             publish_data(contact.organization_id, user_id)
+
             {
               [contact | f],
               Map.delete(b, user_id)

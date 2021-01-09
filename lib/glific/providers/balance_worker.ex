@@ -23,11 +23,11 @@ defmodule Glific.Jobs.BSPBalanceWorker do
         # We should move this to an embedded schema
         # and then fix the function in publish_data. Basically have a periodic
         # status message packet sent to frontend with this and other details
-           Communications.publish_data(
-             %{key: "bsp_balance", value: %{balance: data["balance"]}},
-             :periodic_info,
-             organization_id
-           )
+        Communications.publish_data(
+          %{key: "bsp_balance", value: %{balance: data["balance"]}},
+          :periodic_info,
+          organization_id
+        )
 
       _ ->
         nil

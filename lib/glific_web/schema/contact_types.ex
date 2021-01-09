@@ -158,7 +158,7 @@ defmodule GlificWeb.Schema.ContactTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.simulator_release/3)
     end
-end
+  end
 
   object :contact_mutations do
     field :create_contact, :contact_result do
