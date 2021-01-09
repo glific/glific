@@ -73,6 +73,8 @@ defmodule Glific.Contacts.Simulator do
     GenServer.call(pid, :reset)
   end
 
+  # We now implement the rest of the API
+
   @doc """
   Check if there is an available simulator for this user_id
   - If available, return the free Simulator Contact
