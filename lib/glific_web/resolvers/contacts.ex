@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Contacts, Contacts.Contact, Repo}
+  alias Glific.{Contacts, Contacts.Contact, Contacts.Simulator, Repo}
 
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -75,7 +75,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   end
 
   @doc """
-    Upload a contact phone as opted in
+  Upload a contact phone as opted in
   """
   @spec optin_contact(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
@@ -84,4 +84,24 @@ defmodule GlificWeb.Resolvers.Contacts do
       {:ok, %{contact: contact}}
     end
   end
+
+  @doc """
+  Grab a simulator contact or nil if possible for this user
+  """
+  @spec simulator_get(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  {:ok, any} | {:error, any}
+  def simulator_get(_, _params, %{context: %{current_user: user}}) do
+    {:ok, Simulator.get(user.organization_id, user.id)}
+  end
+
+
+  @doc """
+  Release a simulator contact or nil if possible for this user
+  """
+  @spec simulator_release(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  {:ok, any} | {:error, any}
+  def simulator_release(_, _params, %{context: %{current_user: user}}) do
+    {:ok, Simulator.release(user.organization_id, user.id)}
+  end
+
 end

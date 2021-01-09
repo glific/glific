@@ -146,7 +146,19 @@ defmodule GlificWeb.Schema.ContactTypes do
       middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.contact_location/3)
     end
-  end
+
+    @desc "Get a simulator contact for this user"
+    field :simulator_get, :contact do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Contacts.simulator_get/3)
+    end
+
+    @desc "Release a simulator contact for this user"
+    field :simulator_release, :contact do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Contacts.simulator_release/3)
+    end
+end
 
   object :contact_mutations do
     field :create_contact, :contact_result do

@@ -34,7 +34,7 @@ defmodule Glific.Contacts.Simulator do
   def handle_call({:release, organization_id, user_id}, _from, state) do
     state = release_simulator(organization_id, user_id, state)
 
-    {:reply, :ok, state}
+    {:reply, nil, state}
   end
 
   @impl true
@@ -74,7 +74,7 @@ defmodule Glific.Contacts.Simulator do
   end
 
   @doc false
-  def reset() do
+  def reset do
     GenServer.call(__MODULE__, :reset)
   end
 
