@@ -6,9 +6,72 @@ defmodule Glific.Contacts.Simulator do
 
   use Publicist
 
+  use GenServer
+
   import Ecto.Query, warn: false
 
-  alias Glific.{Caches, Contacts.Contact, Repo}
+  alias Glific.{Contacts.Contact, Repo}
+
+  # lets first define the genserver Server callbacks
+
+  @impl true
+  def init(_opts) do
+    # our state is a map of organization ids to simulator contexts
+    {:ok, reset_state()}
+  end
+
+  @impl true
+  def handle_call({:get, organization_id, user_id}, _from, state) do
+    {contact, state} = get_simulator(organization_id, user_id, state)
+
+    {:reply, contact, state}
+  end
+
+  @impl true
+  def handle_call({:release, organization_id, user_id}, _from, state) do
+    state = release_simulator(organization_id, user_id, state)
+
+    {:reply, :ok, state}
+  end
+
+  @impl true
+  def handle_call({:state, organization_id}, _from, state) do
+    {:reply, get_state(state, organization_id), state}
+  end
+
+  @impl true
+  def handle_call(:reset, _from, _state) do
+    {:reply, :ok, reset_state()}
+  end
+
+  @impl true
+  def handle_cast(_, state) do
+    # we are not handling asynchronous calls
+    raise ArgumentError, message: "Asynchronous calls are not handled by Simulator"
+
+    {:noreply, nil, state}
+  end
+
+  # lets define the client interface
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  def get(pid, organization_id, user_id) do
+    GenServer.call(pid, {:get, organization_id, user_id})
+  end
+
+  def release(pid, organization_id, user_id) do
+    GenServer.call(pid, {:release, organization_id, user_id})
+  end
+
+  def state(pid, organization_id) do
+    GenServer.call(pid, {:state, organization_id})
+  end
+
+  def reset(pid) do
+    GenServer.call(pid, :reset)
+  end
 
   @doc """
   Check if there is an available simulator for this user_id
@@ -16,19 +79,18 @@ defmodule Glific.Contacts.Simulator do
     (there are multiple simulator contacts per organization)
   - If none available, trurn nil
   """
-  @spec get_simulator(non_neg_integer) :: Contact.t() | nil
-  def get_simulator(user_id) do
-    {simulator, contact} =
-      get_cache()
+  @spec get_simulator(non_neg_integer, non_neg_integer, map()) :: {Contact.t(), map()}
+  def get_simulator(organization_id, user_id, state) do
+    {org_state, contact} =
+      get_state(state, organization_id)
       |> free_simulators()
       |> get_simulator(user_id)
 
-    set_cache(simulator)
-    contact
+    {contact, Map.put(state, organization_id, org_state)}
   end
 
   @spec get_simulator(map(), non_neg_integer) :: {map, Contact.t()} | nil
-  defp get_simulator(%{free: free, busy: busy} = simulators, user_id) do
+  defp get_simulator(%{free: free, busy: busy} = state, user_id) do
     cond do
       # if userid already has a simulator, send that contact
       # and update time
@@ -44,7 +106,7 @@ defmodule Glific.Contacts.Simulator do
         }
 
       Enum.empty?(free) ->
-        {simulators, nil}
+        {state, nil}
 
       true ->
         [contact | free] = free
@@ -63,48 +125,27 @@ defmodule Glific.Contacts.Simulator do
   Release the simulator associated with this user id. It is possible
   that there is no simulator associated with this user
   """
-  @spec release_simulator(non_neg_integer) :: nil
-  def release_simulator(user_id) do
-    get_cache()
-    |> free_simulators(user_id)
-    |> set_cache()
+  @spec release_simulator(non_neg_integer, non_neg_integer, map()) :: map()
+  def release_simulator(organization_id, user_id, state) do
+    org_state =
+      get_state(state, organization_id)
+      |> free_simulators(user_id)
+
+    Map.put(state, organization_id, org_state)
   end
 
   # initializes the simulator cache for this organization
   # if not already present
-  @spec get_cache :: map()
-  defp get_cache() do
-    organization_id = Repo.get_organization_id()
-
-    {status, simulators} =
-      Caches.fetch(
-        organization_id,
-        :simulators,
-        &load_cache/1
-      )
-
-    if status not in [:ok, :commit],
-      do: raise(ArgumentError, message: "Failed to retrieve simulators for #{organization_id}")
-
-    simulators
-  end
-
-  @spec set_cache(map()) :: nil
-  defp set_cache(simulators) do
-    {:ok, _} = Caches.set(Repo.get_organization_id(), :simulators, simulators)
-    nil
+  @spec get_state(map(), non_neg_integer) :: map()
+  defp get_state(state, organization_id) do
+    if Map.has_key?(state, organization_id),
+      do: state[organization_id],
+      else: init_state(organization_id)
   end
 
   @simulator_phone_prefix "9876543210"
   # we'll assign the simulator for 10 minute intervals
   @cache_time 10
-
-  @spec load_cache(tuple()) :: tuple()
-  defp load_cache(cache_key) do
-    {organization_id, :simulators} = cache_key
-
-    {:commit, init_state(organization_id)}
-  end
 
   @spec init_state(non_neg_integer) :: map()
   defp init_state(organization_id) do
@@ -120,15 +161,13 @@ defmodule Glific.Contacts.Simulator do
     %{free: contacts, busy: %{}}
   end
 
-  @spec init_cache(non_neg_integer) :: nil
-  defp init_cache(organization_id) do
-    Caches.set(organization_id, :simulators, init_state(organization_id))
+  @spec reset_state() :: map()
+  defp reset_state() do
+    %{}
   end
 
   @spec free_simulators(map(), non_neg_integer | nil) :: map()
-  defp free_simulators(simulators, uid \\ nil) do
-    %{free: free, busy: busy} = simulators
-
+  defp free_simulators(%{free: free, busy: busy} = _state, uid \\ nil) do
     expiry_time = DateTime.utc_now() |> DateTime.add(-1 * @cache_time * 60, :second)
 
     {f, b} =
