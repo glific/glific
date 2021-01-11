@@ -684,7 +684,7 @@ query simulatorGet() {
     name
   }
 }
-
+```
 
 > The above query returns JSON structured like this:
 
@@ -697,6 +697,8 @@ query simulatorGet() {
     }
   }
 }
+
+OR if no simulator is available
 
 {
   "data": {
