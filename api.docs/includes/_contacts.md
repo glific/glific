@@ -698,8 +698,6 @@ query simulatorGet() {
   }
 }
 
-OR (if no simulator is available
-
 {
   "data": {
     "simulatorGet": null
