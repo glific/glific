@@ -735,8 +735,6 @@ query simulatorRelease {
 
 ```json
 {
-
-{
   "data": {
     "simulatorRelease": null
   }

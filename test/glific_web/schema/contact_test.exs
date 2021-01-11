@@ -429,8 +429,7 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "simulator get returns a simulator contact",
-    %{staff: staff, manager: manager, user: user} do
-
+       %{staff: staff, manager: manager, user: user} do
     result = auth_query_gql_by(:sim_get, staff, variables: %{})
     assert {:ok, query_data} = result
     assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
