@@ -38,7 +38,10 @@ defmodule Glific.Application do
       },
 
       # add poolboy and list of associated worker
-      :poolboy.child_spec(message_poolname(), poolboy_config())
+      :poolboy.child_spec(message_poolname(), poolboy_config()),
+
+      # Add the process to manage simulator contacts
+      Glific.Contacts.Simulator
     ]
 
     glific_children = []
