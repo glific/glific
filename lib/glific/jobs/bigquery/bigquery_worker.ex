@@ -582,15 +582,13 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
   defp handle_insert_error(table, dataset_id, organization_id, response, job) do
     with true <- Map.has_key?(response, :body),
-         {:ok, error} <- Jason.decode(response.body)
-
-    true <-
-      String.equivalent? error["error"]["status"], "NOT_FOUND" do
-        Bigquery.bigquery_dataset(dataset_id, organization_id)
-        make_job(job.args[table], table, organization_id, @reschedule_time)
-        :ok
-      else
-        _ -> :ok
-      end
+         {:ok, error} <- Jason.decode(response.body),
+         true <- String.equivalent?(error["error"]["status"], "NOT_FOUND") do
+      Bigquery.bigquery_dataset(dataset_id, organization_id)
+      make_job(job.args[table], table, organization_id, @reschedule_time)
+      :ok
+    else
+      _ -> raise("Bigquery Insert Error #{response}")
+    end
   end
 end
