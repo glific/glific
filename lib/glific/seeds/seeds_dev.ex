@@ -511,6 +511,88 @@ if Code.ensure_loaded?(Faker) do
 
       translations = %{
         hi.id => %{
+          body: " मुझे खेद है कि मैं कल आपकी चिंताओं का जवाब देने में सक्षम नहीं था, लेकिन मैं अब आपकी सहायता करने में प्रसन्न हूं।
+            यदि आप इस चर्चा को जारी रखना चाहते हैं, तो कृपया 'हां' के साथ उत्तर दें।",
+          language_id: hi.id,
+          number_parameters: 0
+        }
+      }
+
+      Repo.insert!(%SessionTemplate{
+        label: "Missed Message Apology",
+        type: :text,
+        shortcode: "missed_message",
+        is_hsm: true,
+        number_parameters: 0,
+        language_id: en_us.id,
+        organization_id: organization.id,
+        body: """
+        I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
+        If you’d like to continue this discussion, please reply with ‘yes’
+        """,
+        translations: translations,
+        status: "PENDING",
+        category: "ALERT_UPDATE",
+        uuid: generate_uuid(organization, "9381b1b9-1b9b-45a6-81f4-f91306959619")
+      })
+
+      translations = %{
+        hi.id => %{
+          body: "{{1}} के लिए आपका OTP {{2}} है। यह {{3}} के लिए मान्य है।",
+          language_id: hi.id,
+          number_parameters: 3
+        }
+      }
+
+      Repo.insert!(%SessionTemplate{
+        label: "OTP Message",
+        type: :text,
+        shortcode: "otp",
+        is_hsm: true,
+        number_parameters: 3,
+        language_id: en_us.id,
+        organization_id: organization.id,
+        translations: translations,
+        status: "REJECTED",
+        category: "ALERT_UPDATE",
+        body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+        example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
+        uuid: generate_uuid(organization, "e55f2c10-541c-470b-a5ff-9249ae82bc95")
+      })
+
+      translations = %{
+        hi.id => %{
+          body:
+            " कृपया फोन नंबर @ contact.phone के साथ पंजीकरण करने के लिए लिंक पर क्लिक करें @ global.registration.url",
+          language_id: hi.id,
+          number_parameters: 0
+        }
+      }
+
+      Repo.insert!(%SessionTemplate{
+        label: "User Registration",
+        body: """
+        Please click on the link to register with the phone number @contact.phone
+        @global.registration.url
+        """,
+        example: """
+        Please click on the link to register with the phone number @contact.phone
+        [https://www.gupshup.io/developer/register]
+        """,
+        type: :text,
+        shortcode: "user-registration",
+        is_reserved: true,
+        language_id: en_us.id,
+        translations: translations,
+        status: "REJECTED",
+        category: "ALERT_UPDATE",
+        organization_id: organization.id,
+        number_parameters: 0,
+        uuid: generate_uuid(organization, "fbf8d5a6-91ab-47ab-9691-35ef35443ad8")
+      })
+
+      translations = %{
+        hi.id => %{
           body:
             " अब आप नीचे दिए विकल्पों में से एक का चयन करके {{1}} के साथ समाप्त होने वाले खाते के लिए अपना खाता शेष या मिनी स्टेटमेंट देख सकते हैं। | [अकाउंट बैलेंस देखें] | [देखें मिनी स्टेटमेंट]",
           language_id: hi.id,
@@ -638,6 +720,14 @@ if Code.ensure_loaded?(Faker) do
         uuid: Ecto.UUID.generate()
       })
 
+    end
+
+    defp generate_uuid(organization, default) do
+      # we have static uuids for the first organization since we might have our test cases
+      # hardcoded with these uuids
+      if organization.id == 1,
+        do: default,
+        else: Ecto.UUID.generate()
     end
 
     @doc false
