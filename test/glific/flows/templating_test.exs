@@ -3,6 +3,7 @@ defmodule Glific.Flows.TemplatingTest do
 
   alias Glific.{
     Flows.Templating,
+    Seeds.SeedsDev,
     Templates
   }
 
