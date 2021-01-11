@@ -94,11 +94,7 @@ if Code.ensure_loaded?(Faker) do
           phone: @simulator_phone <> "_2",
           language_id: en_us.id
         },
-        %{
-          name: "Simulator Three",
-          phone: @simulator_phone <> "_3",
-          language_id: en_us.id
-        }
+
       ]
 
       utc_now = DateTime.utc_now() |> DateTime.truncate(:second)

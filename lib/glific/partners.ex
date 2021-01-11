@@ -565,11 +565,12 @@ defmodule Glific.Partners do
   defp recent_organizations(map, false), do: map
 
   defp recent_organizations(map, true) do
-    Enum.reject(map, fn {_id, %{last_communication_at: last_communication_at}} ->
-      if Timex.diff(DateTime.utc_now(), last_communication_at, :hours) < @active_hours,
-        do: false,
-        else: true
-    end)
+    Enum.filter(
+      map,
+      fn {_id, %{last_communication_at: last_communication_at}} ->
+        Timex.diff(DateTime.utc_now(), last_communication_at, :hours) < @active_hours
+      end
+    )
   end
 
   @doc """

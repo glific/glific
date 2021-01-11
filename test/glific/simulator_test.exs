@@ -18,8 +18,8 @@ defmodule Glific.SimulatorTest do
   test "Ensure cache is initialized to all contacts in free state" do
     %{free: free, busy: busy} = Simulator.state(1)
 
-    # we have 3 simulators in our dev seeder
-    assert length(free) == 3
+    # we have 2 simulators in our dev seeder
+    assert length(free) == 2
     assert Enum.empty?(busy)
   end
 
@@ -31,10 +31,7 @@ defmodule Glific.SimulatorTest do
     assert contact_2 != nil
 
     contact_3 = Simulator.get(1, 3)
-    assert contact_3 != nil
-
-    contact_4 = Simulator.get(1, 4)
-    assert contact_4 == nil
+    assert contact_3 == nil
   end
 
   test "Ensure we can request and get same simulator contact, for same user id" do
