@@ -730,6 +730,7 @@ query simulatorRelease {
     id
   }
 }
+```
 
 > The above query returns JSON structured like this:
 
