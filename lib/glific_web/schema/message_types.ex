@@ -29,11 +29,6 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :errors, list_of(:input_error)
   end
 
-  object :message_status do
-    field :key, :string
-    field :value, :json
-  end
-
   object :message do
     field :id, :id
     field :body, :string
@@ -226,7 +221,7 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(fn contact, _, _ -> {:ok, contact} end)
     end
 
-    field :message_status_updated, :message_status do
+    field :message_status_updated, :message do
       arg(:organization_id, non_null(:id))
 
       config(&Schema.config_fun/2)
