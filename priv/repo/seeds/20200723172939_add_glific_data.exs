@@ -18,7 +18,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Seeds.SeedsDev,
     Settings.Language,
     Tags.Tag,
-    Templates.SessionTemplate,
     Users
   }
 
