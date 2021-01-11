@@ -17,8 +17,9 @@ defmodule Glific.Messages.MessageVariables do
           }
         }
 
-      _ ->
-        :error
+        # in case base url does not exiss, for now we return an empty
+        # map
+      _ -> %{}
     end
   end
 end
