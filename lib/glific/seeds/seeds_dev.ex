@@ -54,6 +54,8 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @simulator_phone "9876543210"
+
     @doc false
     @spec seed_contacts(Organization.t() | nil) :: {integer(), nil}
     def seed_contacts(organization \\ nil) do
@@ -85,6 +87,16 @@ if Code.ensure_loaded?(Faker) do
         %{
           name: "Chrissy Cron",
           phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+          language_id: en_us.id
+        },
+        %{
+          name: "Simulator Two",
+          phone: @simulator_phone <> "_2",
+          language_id: en_us.id
+        },
+        %{
+          name: "Simulator Three",
+          phone: @simulator_phone <> "_3",
           language_id: en_us.id
         }
       ]
@@ -529,7 +541,8 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id,
         status: "REJECTED",
         category: "ACCOUNT_UPDATE",
-        example: "You can now view your Account Balance or Mini statement for Account ending with [003] simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
+        example:
+          "You can now view your Account Balance or Mini statement for Account ending with [003] simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
         # spaces are important here, since gupshup pattern matches on it
         body:
           "You can now view your Account Balance or Mini statement for Account ending with {{1}} simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
@@ -587,7 +600,6 @@ if Code.ensure_loaded?(Faker) do
         example: "Hi [Anil],\nPlease find the attached bill.",
         body: "Hi {{1}},\nPlease find the attached bill.",
         uuid: Ecto.UUID.generate()
-
       })
 
       translations = %{
@@ -610,7 +622,8 @@ if Code.ensure_loaded?(Faker) do
         status: "PENDING",
         category: "ALERT_UPDATE",
         body: "Hi {{1}},\n\nYour account image was updated on {{2}} by {{3}} with above",
-        example: "Hi [Anil],\n\nYour account image was updated on [19th December] by [Saurav] with above",
+        example:
+          "Hi [Anil],\n\nYour account image was updated on [19th December] by [Saurav] with above",
         uuid: Ecto.UUID.generate()
       })
 
@@ -637,7 +650,6 @@ if Code.ensure_loaded?(Faker) do
         example: "Hi [Anil],\nPlease find the attached bill.",
         uuid: Ecto.UUID.generate()
       })
-
     end
 
     @doc false
