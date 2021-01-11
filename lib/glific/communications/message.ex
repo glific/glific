@@ -103,7 +103,7 @@ defmodule Glific.Communications.Message do
   @spec publish_message_status(Message.t()) :: any()
   defp publish_message_status(message) do
     Communications.publish_data(
-      %{key: "message_status", value: %{message_id: message.id, status: message.status}},
+      %{key: "message_status_updated", value: %{message_id: message.id, status: message.status}},
       :message_status,
       message.organization_id
     )

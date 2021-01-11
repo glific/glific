@@ -141,19 +141,6 @@ defmodule Glific.Messages do
     %Message{}
     |> Message.changeset(attrs)
     |> Repo.insert()
-    |> case do
-      {:ok, message} ->
-        Communications.publish_data(
-          %{key: "message_status", value: %{message_id: message.id, status: message.status}},
-          :message_status,
-          message.organization_id
-        )
-
-        {:ok, message}
-
-      {:error, error} ->
-        {:error, error}
-    end
   end
 
   @spec put_contact_id(map()) :: map()
