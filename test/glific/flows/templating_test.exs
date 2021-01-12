@@ -3,8 +3,15 @@ defmodule Glific.Flows.TemplatingTest do
 
   alias Glific.{
     Flows.Templating,
+    Seeds.SeedsDev,
     Templates
   }
+
+  setup do
+    organization = SeedsDev.seed_organizations()
+    SeedsDev.hsm_templates(organization)
+    :ok
+  end
 
   test "process extracts the right values from json for templating action",
        %{organization_id: organization_id} = _attrs do
