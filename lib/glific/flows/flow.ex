@@ -92,9 +92,7 @@ defmodule Glific.Flows.Flow do
       |> unique_constraint([:name, :organization_id])
       |> update_change(:keywords, &Enum.map(&1, fn keyword -> String.downcase(keyword) end))
 
-    if get_change(changeset, :keywords) == [""],
-      do: changeset,
-      else: validate_keywords(changeset, get_change(changeset, :keywords))
+    validate_keywords(changeset, get_change(changeset, :keywords))
   end
 
   @spec check_for_empty_keyword?(map()) :: map()
@@ -107,6 +105,8 @@ defmodule Glific.Flows.Flow do
   Changeset helper for keywords
   """
   @spec validate_keywords(Ecto.Changeset.t(), any()) :: Ecto.Changeset.t()
+  def validate_keywords(changeset, [""]), do: changeset
+
   def validate_keywords(changeset, nil), do: validate_keywords(changeset, [""])
 
   def validate_keywords(changeset, keywords) do
