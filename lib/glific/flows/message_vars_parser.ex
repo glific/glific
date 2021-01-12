@@ -41,12 +41,6 @@ defmodule Glific.Flows.MessageVarParser do
       |> bound()
 
     if substitution == nil, do: "@#{var}", else: substitution
-  rescue
-    FunctionClauseError ->
-      error = "get_in threw an exception, var: #{inspect(var)}, binding: #{inspect(binding)}"
-      Logger.error(error)
-      Appsignal.send_error(:error, error, __STACKTRACE__)
-      "@#{var}"
   end
 
   # this is for the otherfileds like @contact.fields.name which is a map of (value)

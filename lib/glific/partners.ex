@@ -663,6 +663,21 @@ defmodule Glific.Partners do
     end
   end
 
+  # check for non empty string or nil
+  @spec non_empty_string(String.t() | nil) :: boolean()
+  defp non_empty_string(str) do
+    !is_nil(str) && str != ""
+  end
+
+  # Ensures we have all the keys required in the credential to call Gupshup
+  @spec valid_bsp?(Credential.t()) :: boolean()
+  defp valid_bsp?(credential) do
+    credential.provider.group == "bsp" &&
+      non_empty_string(credential.keys["api_end_point"]) &&
+      non_empty_string(credential.secrets["app_name"]) &&
+      non_empty_string(credential.secrets["api_key"])
+  end
+
   @doc """
   Updates an organization's credential
   """
@@ -672,9 +687,8 @@ defmodule Glific.Partners do
     # when updating the bsp credentials fetch list of opted in contacts
     credential = credential |> Repo.preload([:provider, :organization])
 
-    if credential.provider.group == "bsp" do
-      fetch_opted_in_contacts(attrs)
-    end
+    if valid_bsp?(credential),
+      do: fetch_opted_in_contacts(attrs)
 
     # delete the cached organization and associated credentials
     organization = organization(credential.organization_id)
