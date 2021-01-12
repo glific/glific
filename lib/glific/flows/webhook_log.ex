@@ -95,11 +95,10 @@ defmodule Glific.Flows.WebhookLog do
   """
   @spec list_webhook_logs(map()) :: list()
   def list_webhook_logs(args) do
-    webhook_logs =
-      Repo.list_filter(args, WebhookLog, &Repo.opts_with_inserted_at/2, &filter_with/2)
-
-    Enum.map(webhook_logs, fn webhook_log ->
-      webhook_log |> Map.put(:status, get_status(webhook_log.status_code))
+    Repo.list_filter(args, WebhookLog, &Repo.opts_with_inserted_at/2, &filter_with/2)
+    |> Enum.map(fn webhook_log ->
+      webhook_log
+      |> Map.put(:status, get_status(webhook_log.status_code))
     end)
   end
 
@@ -113,10 +112,11 @@ defmodule Glific.Flows.WebhookLog do
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
-
+    # these filters are specfic to webhook logs only.
+    # We might want to move them in the repo in the future.
     Enum.reduce(filter, query, fn
       {:url, url}, query ->
-        from q in query, where: q.url == ^url
+        from q in query, where: ilike(q.url, ^"%#{url}%")
 
       {:status_code, status_code}, query ->
         from q in query, where: q.status_code == ^status_code
