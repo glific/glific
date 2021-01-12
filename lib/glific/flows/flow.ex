@@ -97,7 +97,7 @@ defmodule Glific.Flows.Flow do
 
   @spec check_for_empty_keyword?(map()) :: map()
   defp check_for_empty_keyword?(attrs) do
-    attrs = Map.put_new(attrs, :keywords, nil)
+    attrs = %{keywords: []} |> Map.merge(attrs)
     if attrs.keywords == nil, do: Map.merge(attrs, %{keywords: []}), else: attrs
   end
 
