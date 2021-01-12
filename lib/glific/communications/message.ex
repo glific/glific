@@ -135,13 +135,19 @@ defmodule Glific.Communications.Message do
   """
   @spec update_bsp_status(String.t(), atom(), map()) :: {:ok, Message.t()}
   def update_bsp_status(bsp_message_id, :error, errors) do
+    # we are making an additional query to db to fetch message for sending message status subscription
     from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
     |> Repo.update_all(set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()])
+    {:ok, message} = Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id)
+    publish_message_status(message)
   end
 
   def update_bsp_status(bsp_message_id, bsp_status, _params) do
+    # we are making an additional query to db to fetch message for sending message status subscription
     from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
     |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
+    {:ok, message} = Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id)
+    publish_message_status(message)
   end
 
   @doc """
