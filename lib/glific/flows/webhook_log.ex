@@ -95,11 +95,10 @@ defmodule Glific.Flows.WebhookLog do
   """
   @spec list_webhook_logs(map()) :: list()
   def list_webhook_logs(args) do
-    webhook_logs =
       Repo.list_filter(args, WebhookLog, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
-
-    Enum.map(webhook_logs, fn webhook_log ->
-      webhook_log |> Map.put(:status, get_status(webhook_log.status_code))
+      |> Enum.map(fn webhook_log 
+        -> webhook_log 
+          |> Map.put(:status, get_status(webhook_log.status_code))
     end)
   end
 
