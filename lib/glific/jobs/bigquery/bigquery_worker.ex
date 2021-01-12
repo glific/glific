@@ -46,11 +46,8 @@ defmodule Glific.Jobs.BigQueryWorker do
     if credential do
       Jobs.get_bigquery_jobs(organization_id)
       |> Enum.each(&perform_for_table(&1, organization_id))
-
-      :ok
-    else
-      :ok
     end
+    :ok
   end
 
   @doc """
@@ -66,6 +63,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       else: :ok
   end
 
+  # need to add an order by and limit here, so we are sending chunks of 1K at a time
   @spec update_flow_results(non_neg_integer) :: :ok
   defp update_flow_results(organization_id) do
     query =
