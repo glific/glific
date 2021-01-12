@@ -14,8 +14,7 @@ defmodule Glific.Flows.ContactActionTest do
 
   setup do
     organization = SeedsDev.seed_organizations()
-    default_provider = SeedsDev.seed_providers()
-    SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_providers()
     SeedsDev.seed_contacts()
     SeedsDev.seed_session_templates()
     SeedsDev.hsm_templates(organization)
