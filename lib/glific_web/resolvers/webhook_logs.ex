@@ -14,7 +14,7 @@ defmodule GlificWeb.Resolvers.WebhookLogs do
   """
   @spec webhook_logs(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [WebhookLog]}
   def webhook_logs(_, args, _) do
-    {:ok, Repo.list_filter(args, WebhookLog, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)}
+    {:ok, WebhookLog.list_webhook_logs(args)}
   end
 
   @doc """
