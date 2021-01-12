@@ -684,28 +684,28 @@ defmodule Glific.Partners do
   @spec update_credential(Credential.t(), map()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
+    # delete the cached organization and associated credentials
+    organization = organization(credential.organization_id)
+
+    remove_organization_cache(organization.id, organization.shortcode)
+
+    {:ok, credential} =
+      credential
+      |> Credential.changeset(attrs)
+      |> Repo.update()
+
     # when updating the bsp credentials fetch list of opted in contacts
     credential = credential |> Repo.preload([:provider, :organization])
 
     if valid_bsp?(credential),
       do: fetch_opted_in_contacts(attrs)
 
-    # delete the cached organization and associated credentials
-    organization = organization(credential.organization_id)
-
-    remove_organization_cache(organization.id, organization.shortcode)
-
-    response =
-      credential
-      |> Credential.changeset(attrs)
-      |> Repo.update()
-
     if credential.provider.shortcode == "bigquery" do
       org = credential.organization |> Repo.preload(:contact)
       Bigquery.bigquery_dataset(org.contact.phone, org.id)
     end
 
-    response
+    {:ok, credential}
   end
 
   @doc """
