@@ -97,17 +97,15 @@ defmodule Glific.Flows.Flow do
 
   @spec check_for_empty_keyword?(map()) :: map()
   defp check_for_empty_keyword?(attrs) do
-    attrs = Map.put_new(attrs, :keywords, [""])
-    if attrs.keywords == nil, do: Map.merge(attrs, %{keywords: [""]}), else: attrs
+    attrs = Map.put_new(attrs, :keywords, nil)
+    if attrs.keywords == nil, do: Map.merge(attrs, %{keywords: []}), else: attrs
   end
 
   @doc """
   Changeset helper for keywords
   """
   @spec validate_keywords(Ecto.Changeset.t(), any()) :: Ecto.Changeset.t()
-  def validate_keywords(changeset, [""]), do: changeset
-
-  def validate_keywords(changeset, nil), do: validate_keywords(changeset, [""])
+  def validate_keywords(changeset, nil), do: validate_keywords(changeset, [])
 
   def validate_keywords(changeset, keywords) do
     id = get_field(changeset, :id)
