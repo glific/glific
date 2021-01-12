@@ -4,10 +4,7 @@ defmodule GlificWeb.Resolvers.WebhookLogs do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{
-    Flows.WebhookLog,
-    Repo
-  }
+  alias Glific.Flows.WebhookLog
 
   @doc """
   Get the list of webhook_logs filtered by args
