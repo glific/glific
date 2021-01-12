@@ -138,7 +138,7 @@ defmodule Glific.Communications.Message do
     # we are making an additional query to db to fetch message for sending message status subscription
     from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
     |> Repo.update_all(set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()])
-    {:ok, message} = Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id)
+    {:ok, message} = Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id})
     publish_message_status(message)
   end
 
@@ -146,7 +146,7 @@ defmodule Glific.Communications.Message do
     # we are making an additional query to db to fetch message for sending message status subscription
     from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
     |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
-    {:ok, message} = Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id)
+    {:ok, message} = Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id})
     publish_message_status(message)
   end
 
