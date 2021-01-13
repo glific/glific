@@ -674,7 +674,8 @@ defmodule Glific.PartnersTest do
       valid_update_attrs = %{
         keys: %{"api_end_point" => "test_end_point"},
         secrets: %{"api_key" => "updated_test_value", "app_name" => "test_app_name"},
-        organization_id: organization_id
+        organization_id: organization_id,
+        shortcode: "gupshup"
       }
 
       {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
