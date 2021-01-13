@@ -83,23 +83,21 @@ defmodule Glific.Flows.Flow do
   """
   @spec changeset(Flow.t(), map()) :: Ecto.Changeset.t()
   def changeset(flow, attrs) do
-    attrs = check_for_empty_keyword?(attrs)
-
     changeset =
       flow
       |> cast(attrs, @required_fields ++ @optional_fields)
       |> validate_required(@required_fields)
       |> unique_constraint([:name, :organization_id])
-      |> update_change(:keywords, &Enum.map(&1, fn keyword -> String.downcase(keyword) end))
+      |> update_change(:keywords, &update_keywords &1)
 
     validate_keywords(changeset, get_change(changeset, :keywords))
   end
 
-  @spec check_for_empty_keyword?(map()) :: map()
-  defp check_for_empty_keyword?(attrs) do
-    attrs = %{keywords: []} |> Map.merge(attrs)
-    if attrs.keywords == nil, do: Map.merge(attrs, %{keywords: []}), else: attrs
-  end
+  @spec update_keywords(any()) :: list()
+  defp update_keywords(keywords) when is_list(keywords), do:
+    Enum.map(keywords, fn keyword -> String.downcase(keyword) end)
+
+  defp update_keywords(_), do: []
 
   @doc """
   Changeset helper for keywords
