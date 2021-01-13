@@ -663,35 +663,49 @@ defmodule Glific.Partners do
     end
   end
 
+  # check for non empty string or nil
+  @spec non_empty_string(String.t() | nil) :: boolean()
+  defp non_empty_string(str) do
+    !is_nil(str) && str != ""
+  end
+
+  # Ensures we have all the keys required in the credential to call Gupshup
+  @spec valid_bsp?(Credential.t()) :: boolean()
+  defp valid_bsp?(credential) do
+    credential.provider.group == "bsp" &&
+      non_empty_string(credential.keys["api_end_point"]) &&
+      non_empty_string(credential.secrets["app_name"]) &&
+      non_empty_string(credential.secrets["api_key"])
+  end
+
   @doc """
   Updates an organization's credential
   """
   @spec update_credential(Credential.t(), map()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
-    # when updating the bsp credentials fetch list of opted in contacts
-    credential = credential |> Repo.preload([:provider, :organization])
-
-    if credential.provider.group == "bsp" do
-      fetch_opted_in_contacts(attrs)
-    end
-
     # delete the cached organization and associated credentials
     organization = organization(credential.organization_id)
 
     remove_organization_cache(organization.id, organization.shortcode)
 
-    response =
+    {:ok, credential} =
       credential
       |> Credential.changeset(attrs)
       |> Repo.update()
+
+    # when updating the bsp credentials fetch list of opted in contacts
+    credential = credential |> Repo.preload([:provider, :organization])
+
+    if valid_bsp?(credential),
+      do: fetch_opted_in_contacts(attrs)
 
     if credential.provider.shortcode == "bigquery" do
       org = credential.organization |> Repo.preload(:contact)
       Bigquery.bigquery_dataset(org.contact.phone, org.id)
     end
 
-    response
+    {:ok, credential}
   end
 
   @doc """
