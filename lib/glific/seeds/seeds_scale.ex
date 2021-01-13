@@ -5,6 +5,7 @@ if Code.ensure_loaded?(Faker) do
     """
     alias Glific.{
       Contacts.Contact,
+      Flows.FlowResult,
       Groups.ContactGroup,
       Groups.Group,
       Messages.Message,
@@ -186,8 +187,63 @@ if Code.ensure_loaded?(Faker) do
         |> Enum.map(&Repo.insert_all(Message, &1, timeout: 120_000))
 
       seed_flows(contact_ids, sender_id, organization.id)
+      seed_flow_results(contact_ids, organization.id)
 
       Repo.query!("ALTER TABLE messages ENABLE TRIGGER update_search_message_trigger;")
+    end
+
+    #Creating and Seeding Flow Results
+    defp create_flow_results_entry(contact_id, organization_id) do
+      flow_id = Enum.random(1..3)
+      %{
+        contact_id: contact_id,
+        flow_id: flow_id,
+        uuid: Ecto.UUID.generate(),
+        flow_version: "1",
+        organization_id: organization_id,
+        flow_context_id: "1",
+        results: create_results_entry(flow_id),
+        inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
+        updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      }
+    end
+
+    #Adding the results for each flow
+    defp create_results_entry(flow_id) do
+      #flow_id = 1
+      case flow_id do 
+        1 -> 
+          Enum.random([
+            #%{1 => "Hindi"}
+            "{1: Hindi}"
+            #"{2: English}"
+          ])
+        #2 ->
+         # Enum.random([
+          #  {1, "Visual Arts"},
+           # {2, "Poetry"},
+            #{3, "Theater"},
+            #{4, "Help"},
+            #{5, "Other"}
+          #])
+        #3 ->
+         # Enum.random([
+          #  {1, "Interesting"},
+           # {2, "Boring"}
+          #])
+      end
+    end
+
+    @contact_num 5..15
+    defp seed_flow_results(contact_ids, organization_id) when is_list(contact_ids) do
+      num_contacts = div(length(contact_ids) * Enum.random(@contact_num), 100)
+
+      contact_ids
+      |> Enum.take_random(num_contacts)
+      |> Enum.flat_map(&create_flow_results_entry(&1, organization_id))
+      # this enables us to send smaller chunks to postgres for insert
+      |> Enum.chunk_every(1000)
+      |> Enum.map(&Repo.insert_all(FlowResult, &1, timeout: 120_000))
     end
 
     @contact_range 10..40
