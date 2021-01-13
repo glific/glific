@@ -18,7 +18,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Seeds.SeedsDev,
     Settings.Language,
     Tags.Tag,
-    Templates.SessionTemplate,
     Users
   }
 
@@ -52,8 +51,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     admin = contacts(organization, en_us)
 
     users(admin, organization)
-
-    hsm_templates(organization, en_us, hi)
 
     saved_searches(organization)
 
@@ -514,90 +511,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     if organization.id == 1,
       do: default,
       else: Ecto.UUID.generate()
-  end
-
-  def hsm_templates(organization, en_us, hi) do
-    translations = %{
-      hi.id => %{
-        body: " मुझे खेद है कि मैं कल आपकी चिंताओं का जवाब देने में सक्षम नहीं था, लेकिन मैं अब आपकी सहायता करने में प्रसन्न हूं।
-          यदि आप इस चर्चा को जारी रखना चाहते हैं, तो कृपया 'हां' के साथ उत्तर दें।",
-        language_id: hi.id,
-        number_parameters: 0
-      }
-    }
-
-    Repo.insert!(%SessionTemplate{
-      label: "Missed Message Apology",
-      type: :text,
-      shortcode: "missed_message",
-      is_hsm: true,
-      number_parameters: 0,
-      language_id: en_us.id,
-      organization_id: organization.id,
-      body: """
-      I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
-      If you’d like to continue this discussion, please reply with ‘yes’
-      """,
-      translations: translations,
-      status: "PENDING",
-      category: "ALERT_UPDATE",
-      uuid: generate_uuid(organization, "9381b1b9-1b9b-45a6-81f4-f91306959619")
-    })
-
-    translations = %{
-      hi.id => %{
-        body: "{{1}} के लिए आपका OTP {{2}} है। यह {{3}} के लिए मान्य है।",
-        language_id: hi.id,
-        number_parameters: 3
-      }
-    }
-
-    Repo.insert!(%SessionTemplate{
-      label: "OTP Message",
-      type: :text,
-      shortcode: "otp",
-      is_hsm: true,
-      number_parameters: 3,
-      language_id: en_us.id,
-      organization_id: organization.id,
-      translations: translations,
-      status: "REJECTED",
-      category: "ALERT_UPDATE",
-      body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
-      example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
-      uuid: generate_uuid(organization, "e55f2c10-541c-470b-a5ff-9249ae82bc95")
-    })
-
-    translations = %{
-      hi.id => %{
-        body:
-          " कृपया फोन नंबर @ contact.phone के साथ पंजीकरण करने के लिए लिंक पर क्लिक करें @ global.registration.url",
-        language_id: hi.id,
-        number_parameters: 0
-      }
-    }
-
-    Repo.insert!(%SessionTemplate{
-      label: "User Registration",
-      body: """
-      Please click on the link to register with the phone number @contact.phone
-      @global.registration.url
-      """,
-      example: """
-      Please click on the link to register with the phone number @contact.phone
-      [https://www.gupshup.io/developer/register]
-      """,
-      type: :text,
-      shortcode: "user-registration",
-      is_reserved: true,
-      language_id: en_us.id,
-      translations: translations,
-      status: "REJECTED",
-      category: "ALERT_UPDATE",
-      organization_id: organization.id,
-      number_parameters: 0,
-      uuid: generate_uuid(organization, "fbf8d5a6-91ab-47ab-9691-35ef35443ad8")
-    })
   end
 
   def saved_searches(organization) do

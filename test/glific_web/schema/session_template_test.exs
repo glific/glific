@@ -11,10 +11,12 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   }
 
   setup do
+    organization = SeedsDev.seed_organizations()
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
+    SeedsDev.hsm_templates(organization)
     Fixtures.session_template_fixture()
     :ok
   end

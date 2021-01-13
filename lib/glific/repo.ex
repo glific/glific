@@ -11,6 +11,7 @@ defmodule Glific.Repo do
   alias Glific.{Partners, Users.User}
 
   import Ecto.Query
+  require Logger
 
   use Ecto.Repo,
     otp_app: :glific,
@@ -74,6 +75,12 @@ defmodule Glific.Repo do
     args
     |> list_filter_query(object, opts_with_fn, filter_with_fn)
     |> Repo.all(repo_opts)
+  rescue
+    Postgrex.Error ->
+      error = "list_filter threw an exception, args: #{inspect(args)}, object: #{inspect(object)}"
+      Logger.error(error)
+      Appsignal.send_error(:error, error, __STACKTRACE__)
+      []
   end
 
   @spec add_opts(

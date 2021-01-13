@@ -16,6 +16,8 @@ defmodule GlificWeb.Schema.MessageTest do
 
   setup do
     default_provider = SeedsDev.seed_providers()
+    organization = SeedsDev.seed_organizations()
+    SeedsDev.hsm_templates(organization)
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()

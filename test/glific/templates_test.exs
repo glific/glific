@@ -3,10 +3,17 @@ defmodule Glific.TemplatesTest do
 
   alias Glific.{
     Fixtures,
+    Seeds.SeedsDev,
     Settings,
     Templates,
     Templates.SessionTemplate
   }
+
+  setup do
+    organization = SeedsDev.seed_organizations()
+    SeedsDev.hsm_templates(organization)
+    :ok
+  end
 
   describe "session_template" do
     @valid_attrs %{
