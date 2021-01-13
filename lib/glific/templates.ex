@@ -30,8 +30,10 @@ defmodule Glific.Templates do
 
   """
   @spec list_session_templates(map()) :: [SessionTemplate.t()]
-  def list_session_templates(args),
-    do: Repo.list_filter(args, SessionTemplate, &Repo.opts_with_label/2, &filter_with/2)
+  def list_session_templates(args) do
+    Logger.info("Fetching list of session templates, #{inspect(args)}")
+    Repo.list_filter(args, SessionTemplate, &Repo.opts_with_label/2, &filter_with/2)
+  end
 
   @doc """
   Return the count of session_templates, using the same filter as list_session_templates
