@@ -365,7 +365,7 @@ defmodule Glific.Contacts do
   """
   @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t()) :: {:ok}
   def contact_opted_out(phone, organization_id, utc_time) do
-    upsert(%{
+    attrs = %{
       phone: phone,
       optout_time: utc_time,
       optin_time: nil,
@@ -373,7 +373,15 @@ defmodule Glific.Contacts do
       bsp_status: :none,
       organization_id: organization_id,
       updated_at: DateTime.utc_now()
-    })
+    }
+
+    case Repo.get_by(Contact, %{phone: phone}) do
+      nil ->
+        raise "Contact does not exist with phone: #{phone}"
+
+      contact ->
+        update_contact(contact, attrs)
+    end
 
     {:ok}
   end
