@@ -20,8 +20,8 @@ defmodule Glific.Bigquery do
   @doc """
   Creating a dataset with messages and contacts as tables
   """
-  @spec bigquery_dataset(String.t(), non_neg_integer) :: :ok
-  def bigquery_dataset(dataset_id, organization_id) do
+  @spec sync_schema_with_bigquery(String.t(), non_neg_integer) :: :ok
+  def sync_schema_with_bigquery(dataset_id, organization_id) do
     organization = Partners.organization(organization_id)
 
     organization.services["bigquery"]
@@ -30,24 +30,40 @@ defmodule Glific.Bigquery do
         nil
 
       credentials ->
-        {:ok, secrets} = Jason.decode(credentials.secrets["service_account"])
-        project_id = secrets["project_id"]
+        {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
+        project_id = service_account["project_id"]
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
 
         case create_dataset(conn, project_id, dataset_id) do
           {:ok, _} ->
-            create_tables(conn, dataset_id, project_id)
-            contacts_messages_view(conn, dataset_id, project_id)
-            flat_fields_procedure(conn, dataset_id, project_id)
-
+           do_refresh_the_schema(conn, dataset_id, project_id)
           {:error, response} ->
-            {:ok, data} = Jason.decode(response.body)
-            handle_response(data, conn, dataset_id, project_id, organization_id)
+            handle_sync_errors(response, conn, dataset_id, project_id)
         end
     end
-
     :ok
+  end
+
+  def do_refresh_the_schema(conn, dataset_id, project_id) do
+      create_tables(conn, dataset_id, project_id)
+      alter_bigquery_tables(conn, dataset_id, project_id)
+      contacts_messages_view(conn, dataset_id, project_id)
+      flat_fields_procedure(conn, dataset_id, project_id)
+  end
+
+  @spec handle_sync_errors(map(), Tesla.Client.t(), String.t(), String.t()) :: :ok
+  defp handle_sync_errors(response, conn, dataset_id, project_id) do
+    Jason.decode(response.body)
+    |> case do
+      {:ok, data} ->
+        error = data["error"]
+        if error["status"] == "ALREADY_EXISTS" do
+          do_refresh_the_schema(conn, dataset_id, project_id)
+        end
+      _ ->
+         raise("Error while sync data with biquery. #{inspect response}")
+    end
   end
 
   ## Creating a view with unnested fields from contacts
@@ -66,22 +82,7 @@ defmodule Glific.Bigquery do
             projectId: project_id
           },
           routineType: "PROCEDURE",
-          definitionBody: """
-          BEGIN
-          EXECUTE IMMEDIATE
-          '''
-          CREATE OR REPLACE VIEW `#{project_id}.#{dataset_id}.flat_fields` AS SELECT id, (SELECT label from UNNEST(`groups`)) AS group_category,
-          '''
-          || (
-            SELECT STRING_AGG(DISTINCT "(SELECT value FROM UNNEST(fields) WHERE label = '" || label || "') AS " || REPLACE(label, ' ', '_')
-            )
-            FROM `#{project_id}.#{dataset_id}.contacts`, unnest(fields)
-          ) || '''
-          ,(SELECT MIN(inserted_at) FROM UNNEST(fields)) AS inserted_at,
-          (SELECT MAX(inserted_at) FROM UNNEST(fields)) AS last_updated_at
-          FROM `#{project_id}.#{dataset_id}.contacts`''';
-          END;
-          """
+          definitionBody: BigquerySchema.flat_fields_procedure(project_id, dataset_id)
         }
       ],
       []
@@ -97,31 +98,14 @@ defmodule Glific.Bigquery do
     table(BigquerySchema.flow_result_schema(), conn, dataset_id, project_id, "flow_results")
   end
 
-  @spec handle_response(map(), Tesla.Client.t(), String.t(), String.t(), integer()) :: :ok
-  defp handle_response(data, conn, dataset_id, project_id, organization_id) do
-    error = data["error"]
 
-    if error["status"] == "ALREADY_EXISTS" do
-      create_tables(conn, dataset_id, project_id)
-      alter_bigquery_tables(dataset_id, organization_id)
-    end
-  end
 
   @doc """
   Alter bigquery table schema,
   if required this function should be called from iex
   """
   @spec alter_bigquery_tables(String.t(), non_neg_integer) :: :ok
-  def alter_bigquery_tables(dataset_id, organization_id) do
-    organization = Partners.organization(organization_id)
-
-    credentials = organization.services["bigquery"]
-
-    {:ok, secrets} = Jason.decode(credentials.secrets["service_account"])
-    project_id = secrets["project_id"]
-    token = Partners.get_goth_token(organization_id, "bigquery")
-    conn = Connection.new(token.token)
-
+  def alter_bigquery_tables(conn, project_id, dataset_id) do
     case Datasets.bigquery_datasets_get(conn, project_id, dataset_id) do
       {:ok, _} ->
         alter_table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")

@@ -687,7 +687,7 @@ defmodule Glific.Partners do
 
     if credential.provider.shortcode == "bigquery" do
       org = credential.organization |> Repo.preload(:contact)
-      Bigquery.bigquery_dataset(org.contact.phone, org.id)
+      Bigquery.sync_schema_with_bigquery(org.contact.phone, org.id)
     end
 
     response
