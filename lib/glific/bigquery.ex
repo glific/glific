@@ -64,6 +64,8 @@ defmodule Glific.Bigquery do
       _ ->
          raise("Error while sync data with biquery. #{inspect response}")
     end
+
+    :ok
   end
 
   ## Creating a view with unnested fields from contacts
@@ -104,7 +106,7 @@ defmodule Glific.Bigquery do
   Alter bigquery table schema,
   if required this function should be called from iex
   """
-  @spec alter_bigquery_tables(String.t(), non_neg_integer) :: :ok
+  @spec alter_bigquery_tables(Tesla.Client.t(), String.t(), String.t()) :: :ok
   def alter_bigquery_tables(conn, project_id, dataset_id) do
     case Datasets.bigquery_datasets_get(conn, project_id, dataset_id) do
       {:ok, _} ->
@@ -117,7 +119,6 @@ defmodule Glific.Bigquery do
       {:error, _} ->
         nil
     end
-
     :ok
   end
 
