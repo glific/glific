@@ -224,13 +224,5 @@ defmodule GlificWeb.Schema.MessageTypes do
 
       resolve(fn contact, _, _ -> {:ok, contact} end)
     end
-
-    field :message_status_updated, :message do
-      arg(:organization_id, non_null(:id))
-
-      config(&Schema.config_fun/2)
-
-      resolve(fn message, _, _ -> {:ok, message} end)
-    end
   end
 end
