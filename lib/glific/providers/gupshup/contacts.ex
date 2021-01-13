@@ -54,36 +54,47 @@ defmodule Glific.Providers.GupshupContacts do
 
     api_key = attrs.secrets["api_key"]
 
-    with {:ok, response} <- Tesla.get(url, headers: [{"apikey", api_key}]),
-         {:ok, response_data} <- Jason.decode(response.body),
-         false <- is_nil(response_data["users"]) do
-      users = response_data["users"]
+    case ApiClient.get(url, headers: [{"apikey", api_key}]) do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        {:ok, response_data} = Jason.decode(body)
+        users = response_data["users"]
+        update_contacts(users)
 
-      Enum.each(users, fn user ->
-        # handle scenario when contact has not sent a message yet
-        last_message_at =
-          if user["lastMessageTimeStamp"] != 0,
-            do:
-              DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
-              |> elem(1)
-              |> DateTime.truncate(:second),
-            else: nil
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
+        raise "Error updating opted-in contacts #{body}"
 
-        {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
-
-        phone = user["countryCode"] <> user["phoneCode"]
-
-        Contacts.upsert(%{
-          phone: phone,
-          last_message_at: last_message_at,
-          optin_time: optin_time |> DateTime.truncate(:second),
-          bsp_status: check_bsp_status(last_message_at),
-          organization_id: organization.id,
-          language_id: organization.default_language_id
-        })
-      end)
+      {:error, %Tesla.Error{reason: reason}} ->
+        raise "Error updating opted-in contacts #{reason}"
     end
+
     :ok
+  end
+
+  @spec update_contacts(list()) :: {:ok, Contact.t()}
+  defp update_contacts(users) do
+    Enum.each(users, fn user ->
+      # handle scenario when contact has not sent a message yet
+      last_message_at =
+        if user["lastMessageTimeStamp"] != 0,
+          do:
+            DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
+            |> elem(1)
+            |> DateTime.truncate(:second),
+          else: nil
+
+      {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
+
+      phone = user["countryCode"] <> user["phoneCode"]
+
+      Contacts.upsert(%{
+        phone: phone,
+        last_message_at: last_message_at,
+        optin_time: optin_time |> DateTime.truncate(:second),
+        bsp_status: check_bsp_status(last_message_at),
+        organization_id: organization.id,
+        language_id: organization.default_language_id
+      })
+    end)
   end
 
   @spec check_bsp_status(DateTime.t()) :: atom()
