@@ -359,14 +359,45 @@ defmodule Glific.Flows.FlowContext do
     |> Map.put(:node, node)
   end
 
+  # given an unknown return type, create an error string from it
+  # drop complex objects since they print too much info
+  @spec make_error(any()) :: String.t()
+  defp make_error(args) when is_tuple(args) do
+    list =
+      args
+      |> Tuple.to_list()
+      |> Enum.map(fn x ->
+        if is_struct(x) and x.__struct__ == FlowContext,
+          do: "FlowContext: flow: #{x.flow_id}, contact: #{x.contact_id}, context: #{x.id}",
+          else: x
+      end)
+
+    inspect(list)
+  end
+
+  # log the error and also send it over to our friends at appsignal
+  @spec log_error(String.t()) :: {:error, String.t()}
+  defp log_error(error) do
+    Logger.error(error)
+    Appsignal.send_error(:error, error, nil)
+    {:error, error}
+  end
+
   @doc """
   Given an input string, consume the input and advance the state of the context
   """
   @spec step_forward(FlowContext.t(), Message.t()) :: {:ok, map()} | {:error, String.t()}
   def step_forward(context, message) do
     case FlowContext.execute(context, [message]) do
-      {:ok, context, []} -> {:ok, context}
-      {:error, error} -> {:error, error}
+      {:ok, context, []} ->
+        {:ok, context}
+
+      {:error, error} ->
+        log_error(error)
+
+      other ->
+        error = "step_forward returned something unexpected: #{make_error(other)}"
+        log_error(error)
     end
   end
 
