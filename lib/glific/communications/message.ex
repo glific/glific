@@ -141,7 +141,7 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback to update the provider status for a message
   """
-  @spec update_bsp_status(String.t(), atom(), map()) :: {:ok, Message.t()}
+  @spec update_bsp_status(String.t(), atom(), map()) :: any()
   def update_bsp_status(bsp_message_id, :error, errors) do
     # we are making an additional query to db to fetch message for sending message status subscription
     from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
