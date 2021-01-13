@@ -671,6 +671,85 @@ Type | Description
 | ---- | -----------
 <a href="#contactresult">ContactResult</a> | contact object
 
+## Get a simulator contact
+
+Gets a simulator contact for the logged in user. We are currently returning the same simulator
+for the same user ID. We will revisit this protocol and potentially pass the user token instead
+to get a different simulator for different sessions for the same logged in user.
+
+```graphql
+query simulatorGet() {
+  simulatorGet {
+    id
+    name
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "simulatorGet": {
+      "id": "2",
+      "name": "Simulator"
+    }
+  }
+}
+
+OR if no simulator is available
+
+{
+  "data": {
+    "simulatorGet": null
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+
+### Return Parameters
+Type | Description
+--------- | ---- | ------- | -----------
+<a href="#contact">Contact</a> | A contact object
+
+
+## Release a simulator contact
+
+Releases a simulator contact for the logged in user if one exists. The system also releases the simulator
+when it has been idle for more than 10 minutes and there is a request for a simulator
+
+```graphql
+
+query simulatorRelease {
+  simulatorRelease {
+    id
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "simulatorRelease": null
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+
+### Return Parameters
+Type | Description
+--------- | ---- | ------- | -----------
 
 ## Contact Objects
 

@@ -275,6 +275,18 @@ defmodule Glific.Contacts do
     {:ok, contact}
   end
 
+  @spec handle_phone_error(map(), Ecto.Changeset.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp handle_phone_error(sender, changeset) do
+    map = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+
+    if Map.get(map, :phone) == ["has already been taken"] do
+      Repo.fetch_by(Contact, %{phone: sender.phone})
+    else
+      {:error, changeset}
+    end
+  end
+
   @doc """
   This function is called by the messaging framework for all incoming messages, hence
   might be a good candidate to maintain a contact level cache at some point
@@ -285,7 +297,13 @@ defmodule Glific.Contacts do
   def maybe_create_contact(sender) do
     case Repo.get_by(Contact, %{phone: sender.phone}) do
       nil ->
-        create_contact(sender)
+        case create_contact(sender) do
+          {:ok, contact} -> {:ok, contact}
+          # there is a small chance that due to the opt-in and first message
+          # arriving at the same time, we fire this twice, which results in an error
+          # Issue #850
+          {:error, changeset} -> handle_phone_error(sender, changeset)
+        end
 
       contact ->
         if contact.name != sender.name do
@@ -298,13 +316,16 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Check if this contact id is a new conatct
+  Check if this contact id is a new contact.
+  In general, we should always retrive as little as possible from the DB
   """
   @spec is_new_contact(integer()) :: boolean()
   def is_new_contact(contact_id) do
     case Glific.Messages.Message
-         |> where([c], c.contact_id == ^contact_id)
-         |> where([c], c.flow == "outbound")
+         |> where([m], m.contact_id == ^contact_id)
+         |> where([m], m.flow == "outbound")
+         |> select([m], m.id)
+         |> limit(1)
          |> Repo.all() do
       [] -> true
       _ -> false
@@ -314,16 +335,10 @@ defmodule Glific.Contacts do
   @doc """
   Update DB fields when contact opted in and ignore if it's blocked
   """
-  @spec contact_opted_in(String.t(), non_neg_integer, DateTime.t()) :: {:ok}
+  @spec contact_opted_in(String.t(), non_neg_integer, DateTime.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def contact_opted_in(phone, organization_id, utc_time) do
-    if is_contact_blocked?(phone, organization_id),
-      do: {:ok},
-      else: do_contact_opted_in(phone, organization_id, utc_time)
-  end
-
-  @spec do_contact_opted_in(String.t(), non_neg_integer, DateTime.t()) :: {:ok}
-  defp do_contact_opted_in(phone, organization_id, utc_time) do
-    upsert(%{
+    attrs = %{
       phone: phone,
       optin_time: utc_time,
       last_message_at: nil,
@@ -332,9 +347,17 @@ defmodule Glific.Contacts do
       bsp_status: :hsm,
       organization_id: organization_id,
       updated_at: DateTime.utc_now()
-    })
+    }
 
-    {:ok}
+    case Repo.get_by(Contact, %{phone: phone}) do
+      nil ->
+        create_contact(attrs)
+
+      contact ->
+        if contact.status == :blocked,
+          do: {:ok, contact},
+          else: update_contact(contact, attrs)
+    end
   end
 
   @doc """
@@ -358,33 +381,28 @@ defmodule Glific.Contacts do
   @doc """
   Check if we can send a message to the contact
   """
-
   @spec can_send_message_to?(Contact.t()) :: boolean()
   def can_send_message_to?(contact), do: can_send_message_to?(contact, false)
 
   @doc false
   @spec can_send_message_to?(Contact.t(), boolean()) :: boolean()
   def can_send_message_to?(contact, true = _is_hsm) do
-    with :valid <- contact.status,
-         true <- contact.bsp_status in [:session_and_hsm, :hsm],
-         true <- contact.optin_time != nil do
-      true
-    else
-      _ -> false
-    end
+    if contact.status == :valid &&
+         contact.bsp_status in [:session_and_hsm, :hsm] &&
+         contact.optin_time != nil,
+       do: true,
+       else: false
   end
 
   @doc """
   Check if we can send a session message to the contact
   """
   def can_send_message_to?(contact, _is_hsm) do
-    with :valid <- contact.status,
-         true <- contact.bsp_status in [:session_and_hsm, :session],
-         true <- Glific.in_past_time(contact.last_message_at, :hours, 24) do
-      true
-    else
-      _ -> false
-    end
+    if contact.status == :valid &&
+         contact.bsp_status in [:session_and_hsm, :session] &&
+         Glific.in_past_time(contact.last_message_at, :hours, 24),
+       do: true,
+       else: false
   end
 
   @doc """
@@ -474,19 +492,18 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-    check if contact is blocked or not
+  check if contact is blocked or not
   """
   @spec is_contact_blocked?(String.t(), non_neg_integer) :: boolean()
-  def is_contact_blocked?(phone, organization_id) do
-    Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id})
-    |> case do
+  def is_contact_blocked?(phone, _organization_id) do
+    case Repo.fetch_by(Contact, %{phone: phone}) do
       {:ok, contact} -> contact.status == :blocked
       _ -> false
     end
   end
 
   @doc """
-    Upload a contact phone as opted in
+  Upload a contact phone as opted in
   """
   @spec optin_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
@@ -499,7 +516,7 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-    Convert contact field to map for variable substitution
+  Convert contact field to map for variable substitution
   """
   @spec get_contact_field_map(integer) :: map()
   def get_contact_field_map(contact_id) do

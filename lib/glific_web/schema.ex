@@ -33,6 +33,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.FlowTypes)
   import_types(__MODULE__.TriggerTypes)
   import_types(__MODULE__.WebhookLogTypes)
+  import_types(__MODULE__.LocationTypes)
 
   query do
     import_fields(:contact_queries)
@@ -64,6 +65,8 @@ defmodule GlificWeb.Schema do
     import_fields(:trigger_queries)
 
     import_fields(:webhook_log_queries)
+
+    import_fields(:location_queries)
   end
 
   mutation do

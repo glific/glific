@@ -70,6 +70,10 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(dataloader(Repo, use_parent: true))
     end
 
+    field :location, :locations do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
     field :tags, list_of(:tag) do
       resolve(dataloader(Repo, use_parent: true))
     end
@@ -167,6 +171,13 @@ defmodule GlificWeb.Schema.MessageTypes do
       arg(:parameters, list_of(:string))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.send_hsm_message/3)
+    end
+
+    field :send_session_message, :message_result do
+      arg(:id, non_null(:id))
+      arg(:receiver_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Messages.send_session_message/3)
     end
 
     field :update_message, :message_result do

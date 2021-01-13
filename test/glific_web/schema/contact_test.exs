@@ -27,6 +27,8 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contacts/delete.gql")
   load_gql(:contact_location, GlificWeb.Schema, "assets/gql/contacts/contact_location.gql")
   load_gql(:optin_contact, GlificWeb.Schema, "assets/gql/contacts/optin_contact.gql")
+  load_gql(:sim_get, GlificWeb.Schema, "assets/gql/contacts/simulator_get.gql")
+  load_gql(:sim_rel, GlificWeb.Schema, "assets/gql/contacts/simulator_release.gql")
 
   test "contacts field returns list of contacts", %{staff: user} do
     result = auth_query_gql_by(:list, user)
@@ -424,5 +426,29 @@ defmodule GlificWeb.Schema.ContactTest do
     error = get_in(query_data, [:data, "optinContact", "errors", Access.at(0)])
     assert error["key"] == "gupshup"
     assert error["message"] == "couldn't connect"
+  end
+
+  test "simulator get returns a simulator contact",
+       %{staff: staff, manager: manager, user: user} do
+    result = auth_query_gql_by(:sim_get, staff, variables: %{})
+    assert {:ok, query_data} = result
+    assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
+
+    result = auth_query_gql_by(:sim_get, manager, variables: %{})
+    assert {:ok, query_data} = result
+    assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
+
+    result = auth_query_gql_by(:sim_get, user, variables: %{})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "simulatorGet"]) == nil
+
+    # now release a simulator and try again
+    result = auth_query_gql_by(:sim_rel, staff, variables: %{})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "simulatorRelease"]) == nil
+
+    result = auth_query_gql_by(:sim_get, user, variables: %{})
+    assert {:ok, query_data} = result
+    assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
   end
 end

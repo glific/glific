@@ -33,10 +33,11 @@ defmodule Glific.Flows.Action do
   @required_fields_language [:language | @required_field_common]
   @required_fields_set_contact_field [:value, :field | @required_field_common]
   @required_fields_set_contact_name [:name | @required_field_common]
-  @required_fields_webook [:url, :headers, :method, :result_name | @required_field_common]
+  @required_fields_webhook [:url, :headers, :method, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
   @required_fields_group [:groups | @required_field_common]
+  @required_fields_waittime [:delay]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -58,7 +59,8 @@ defmodule Glific.Flows.Action do
           enter_flow: Flow.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
-          templating: Templating.t() | nil
+          templating: Templating.t() | nil,
+          wait_time: integer() | nil
         }
 
   embedded_schema do
@@ -86,6 +88,8 @@ defmodule Glific.Flows.Action do
 
     field :labels, :map
     field :groups, :map
+
+    field :wait_time, :integer
 
     field :node_uuid, Ecto.UUID
     embeds_one :node, Node
@@ -133,17 +137,22 @@ defmodule Glific.Flows.Action do
   def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_set_contact_field)
 
+    name =
+      if is_nil(json["field"]["name"]),
+        do: json["field"]["key"],
+        else: json["field"]["name"]
+
     process(json, uuid_map, node, %{
       value: json["value"],
       field: %{
-        name: json["field"]["name"],
+        name: name,
         key: json["field"]["key"]
       }
     })
   end
 
   def process(%{"type" => "call_webhook"} = json, uuid_map, node) do
-    Flows.check_required_fields(json, @required_fields_webook)
+    Flows.check_required_fields(json, @required_fields_webhook)
 
     process(json, uuid_map, node, %{
       url: json["url"],
@@ -174,6 +183,19 @@ defmodule Glific.Flows.Action do
     end
   end
 
+  def process(%{"type" => "wait_for_time"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_waittime)
+
+    wait_time =
+      if is_nil(json["delay"]) || String.trim(json["delay"]) == "" do
+        0
+      else
+        String.to_integer(json["delay"])
+      end
+
+    process(json, uuid_map, node, %{wait_time: wait_time})
+  end
+
   def process(json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields)
 
@@ -195,7 +217,7 @@ defmodule Glific.Flows.Action do
   Consume the message stream as processing occurs
   """
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
-          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, messages) do
     ContactAction.send_message(context, action, messages)
   end
@@ -211,8 +233,10 @@ defmodule Glific.Flows.Action do
     {:ok, context, messages}
   end
 
-  def execute(%{type: "set_contact_field"} = action, context, messages) do
-    key = String.downcase(action.field.name) |> String.replace(" ", "_")
+  # Fake the valid key so we can have the same function signature and simplify the code base
+  def execute(%{type: "set_contact_field_valid"} = action, context, messages) do
+    name = action.field.name
+    key = String.downcase(name) |> String.replace(" ", "_")
     value = FlowContext.get_result_value(context, action.value)
 
     context =
@@ -224,10 +248,23 @@ defmodule Glific.Flows.Action do
           ContactSetting.set_contact_preference(context, value)
 
         true ->
-          ContactField.add_contact_field(context, key, action.field[:name], value, "string")
+          ContactField.add_contact_field(context, key, name, value, "string")
       end
 
     {:ok, context, messages}
+  end
+
+  def execute(%{type: "set_contact_field"} = action, context, messages) do
+    # sometimes action.field.name does not exist based on what the user
+    # has entered in the flow. We should have a validation for this, but
+    # lets prevent the error from happening
+    # if we dont recognize it, we just ignore it, and avoid an error being thrown
+    # Issue #858
+    if Map.get(action.field, :name) in ["", nil] do
+      {:ok, context, messages}
+    else
+      execute(Map.put(action, :type, "set_contact_field_valid"), context, messages)
+    end
   end
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do
@@ -273,9 +310,16 @@ defmodule Glific.Flows.Action do
       |> Enum.map(fn label -> label["name"] end)
       |> Enum.join(", ")
 
-    Repo.get(Message, context.last_message.id)
-    |> Message.changeset(%{flow_label: flow_label})
-    |> Repo.update()
+    # there is a chance that:
+    # when we send a fake temp message (like No Response)
+    # or when a flow is resumed, there is no last_message
+    # hence check for the existence of one
+    if context.last_message != nil do
+      {:ok, _} =
+        Repo.get(Message, context.last_message.id)
+        |> Message.changeset(%{flow_label: flow_label})
+        |> Repo.update()
+    end
 
     {:ok, context, messages}
   end
@@ -319,6 +363,27 @@ defmodule Glific.Flows.Action do
 
       Groups.delete_group_contacts_by_ids(context.contact_id, groups_ids)
       {:ok, context, messages}
+    end
+  end
+
+  def execute(%{type: "wait_for_time"} = _action, context, [msg]) do
+    if msg.body != "No Response",
+      do: raise(ArgumentError, "Unexpected message #{msg.body} received")
+
+    {:ok, context, []}
+  end
+
+  def execute(%{type: "wait_for_time"} = action, context, []) do
+    if action.wait_time <= 0 do
+      {:ok, context, []}
+    else
+      {:ok, context} =
+        FlowContext.update_flow_context(
+          context,
+          %{wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time)}
+        )
+
+      {:wait, context, []}
     end
   end
 

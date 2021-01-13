@@ -271,6 +271,7 @@ defmodule Glific.Searches do
     |> offset(^offset)
   end
 
+  @spec get_filtered_contacts(String.t(), map()) :: list()
   defp get_filtered_contacts(term, args) do
     {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
 
@@ -282,6 +283,7 @@ defmodule Glific.Searches do
     |> Repo.all()
   end
 
+  @spec get_filtered_messages_with_term(String.t(), map()) :: list()
   defp get_filtered_messages_with_term(term, args) do
     filtered_query(args)
     |> where([m: m], ilike(m.body, ^"%#{term}%"))
@@ -289,6 +291,7 @@ defmodule Glific.Searches do
     |> Repo.all()
   end
 
+  @spec get_filtered_tagged_message(String.t(), map()) :: list()
   defp get_filtered_tagged_message(term, args) do
     filtered_query(args)
     |> join(:left, [m: m], mt in MessageTag, as: :mt, on: m.id == mt.message_id)

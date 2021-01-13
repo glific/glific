@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Templates do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Messages, Repo, Templates, Templates.SessionTemplate}
+  alias Glific.{Repo, Templates, Templates.SessionTemplate}
 
   @doc """
   Get a specific session template by id
@@ -67,14 +67,6 @@ defmodule GlificWeb.Resolvers.Templates do
       {:ok, session_template}
     end
   end
-
-  @doc false
-  @spec send_session_message(Absinthe.Resolution.t(), %{id: integer, receiver_id: integer}, %{
-          context: map()
-        }) ::
-          {:ok, any} | {:error, any}
-  def send_session_message(_, %{id: id, receiver_id: receiver_id}, _),
-    do: Messages.create_and_send_session_template(id, receiver_id)
 
   @doc """
   Converting a message to message template

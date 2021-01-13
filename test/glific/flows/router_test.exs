@@ -242,4 +242,73 @@ defmodule Glific.Flows.RouterTest do
     result = Router.execute(router, context, [message])
     assert result == {:ok, nil, []}
   end
+
+  test "router with split by expression with EEx code" do
+    flow = %Flow{uuid: "Flow UUID 1"}
+    exit_uuid = Ecto.UUID.generate()
+    uuid_map = %{}
+
+    json = %{
+      "uuid" => "Node UUID",
+      "actions" => [],
+      "exits" => [
+        %{"uuid" => exit_uuid, "destination_uuid" => nil}
+      ]
+    }
+
+    {node, uuid_map} = Node.process(json, uuid_map, flow)
+
+    json = %{
+      "type" => "switch",
+      "default_category_uuid" => "Default Cat UUID",
+      "result_name" => "Language",
+      "categories" => [
+        %{
+          "uuid" => "Default Cat UUID",
+          "exit_uuid" => exit_uuid,
+          "name" => "Default Category"
+        }
+      ],
+      "cases" => []
+    }
+
+    # correct EEx expression
+    {router, uuid_map} =
+      json
+      |> Map.merge(%{"operand" => "<%= rem(5, 2) %>"})
+      |> Router.process(uuid_map, node)
+
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+    Router.execute(router, context, [])
+
+    {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
+    [recent_inbound_message] = updated_context.recent_inbound
+    assert recent_inbound_message["message"] == "#{rem(5, 2)}"
+
+    # incorrect EEx expression
+    {router, uuid_map} =
+      json
+      |> Map.merge(%{"operand" => "<%= end %>"})
+      |> Router.process(uuid_map, node)
+
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+    Router.execute(router, context, [])
+
+    {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
+    [recent_inbound_message] = updated_context.recent_inbound
+    assert recent_inbound_message["message"] == "Invalid Code"
+
+    # invalid EEx expression
+    {router, uuid_map} =
+      json
+      |> Map.merge(%{"operand" => "<%= IO.inspect('This is for test') %>"})
+      |> Router.process(uuid_map, node)
+
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+    Router.execute(router, context, [])
+
+    {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
+    [recent_inbound_message] = updated_context.recent_inbound
+    assert recent_inbound_message["message"] == "Invalid Code"
+  end
 end

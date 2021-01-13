@@ -54,6 +54,8 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @simulator_phone "9876543210"
+
     @doc false
     @spec seed_contacts(Organization.t() | nil) :: {integer(), nil}
     def seed_contacts(organization \\ nil) do
@@ -85,6 +87,11 @@ if Code.ensure_loaded?(Faker) do
         %{
           name: "Chrissy Cron",
           phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
+          language_id: en_us.id
+        },
+        %{
+          name: "Simulator Two",
+          phone: @simulator_phone <> "_2",
           language_id: en_us.id
         }
       ]
@@ -527,6 +534,10 @@ if Code.ensure_loaded?(Faker) do
         language_id: en_us.id,
         translations: translations,
         organization_id: organization.id,
+        status: "REJECTED",
+        category: "ACCOUNT_UPDATE",
+        example:
+          "You can now view your Account Balance or Mini statement for Account ending with [003] simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
         # spaces are important here, since gupshup pattern matches on it
         body:
           "You can now view your Account Balance or Mini statement for Account ending with {{1}} simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
@@ -547,10 +558,15 @@ if Code.ensure_loaded?(Faker) do
         type: :text,
         shortcode: "movie_ticket",
         is_hsm: true,
+        is_active: true,
         number_parameters: 2,
         language_id: en_us.id,
         organization_id: organization.id,
         translations: translations,
+        status: "APPROVED",
+        category: "TICKET_UPDATE",
+        example:
+          "Download your [message] ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/[message]]",
         body:
           "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{2}}]",
         uuid: Ecto.UUID.generate()
@@ -573,6 +589,10 @@ if Code.ensure_loaded?(Faker) do
         language_id: en_us.id,
         organization_id: organization.id,
         translations: translations,
+        status: "APPROVED",
+        is_active: true,
+        category: "ALERT_UPDATE",
+        example: "Hi [Anil],\nPlease find the attached bill.",
         body: "Hi {{1}},\nPlease find the attached bill.",
         uuid: Ecto.UUID.generate()
       })
@@ -594,7 +614,35 @@ if Code.ensure_loaded?(Faker) do
         translations: translations,
         language_id: en_us.id,
         organization_id: organization.id,
+        status: "PENDING",
+        category: "ALERT_UPDATE",
         body: "Hi {{1}},\n\nYour account image was updated on {{2}} by {{3}} with above",
+        example:
+          "Hi [Anil],\n\nYour account image was updated on [19th December] by [Saurav] with above",
+        uuid: Ecto.UUID.generate()
+      })
+
+      translations = %{
+        hi.id => %{
+          body: " हाय {{1}}, \n कृपया बिल संलग्न करें।",
+          language_id: hi.id,
+          number_parameters: 1
+        }
+      }
+
+      Repo.insert!(%SessionTemplate{
+        label: "Bill",
+        type: :text,
+        shortcode: "bill",
+        is_hsm: true,
+        number_parameters: 1,
+        language_id: en_us.id,
+        organization_id: organization.id,
+        translations: translations,
+        status: "PENDING",
+        category: "ALERT_UPDATE",
+        body: "Hi {{1}},\nPlease find the attached bill.",
+        example: "Hi [Anil],\nPlease find the attached bill.",
         uuid: Ecto.UUID.generate()
       })
     end
@@ -790,6 +838,96 @@ if Code.ensure_loaded?(Faker) do
         else: organization
     end
 
+    @doc false
+    @spec hsm_templates(Organization.t()) :: nil
+    def hsm_templates(organization) do
+      [hi | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
+      [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+
+      translations = %{
+        hi.id => %{
+          body: " मुझे खेद है कि मैं कल आपकी चिंताओं का जवाब देने में सक्षम नहीं था, लेकिन मैं अब आपकी सहायता करने में प्रसन्न हूं।
+          यदि आप इस चर्चा को जारी रखना चाहते हैं, तो कृपया 'हां' के साथ उत्तर दें।",
+          language_id: hi.id,
+          number_parameters: 0
+        }
+      }
+
+      Repo.insert!(%SessionTemplate{
+        label: "Missed Message Apology",
+        type: :text,
+        shortcode: "missed_message",
+        is_hsm: true,
+        number_parameters: 0,
+        language_id: en_us.id,
+        organization_id: organization.id,
+        body: """
+        I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
+        If you’d like to continue this discussion, please reply with ‘yes’
+        """,
+        translations: translations,
+        status: "PENDING",
+        category: "ALERT_UPDATE",
+        uuid: Ecto.UUID.generate()
+      })
+
+      translations = %{
+        hi.id => %{
+          body: "{{1}} के लिए आपका OTP {{2}} है। यह {{3}} के लिए मान्य है।",
+          language_id: hi.id,
+          number_parameters: 3
+        }
+      }
+
+      Repo.insert!(%SessionTemplate{
+        label: "OTP Message",
+        type: :text,
+        shortcode: "otp",
+        is_hsm: true,
+        number_parameters: 3,
+        language_id: en_us.id,
+        organization_id: organization.id,
+        translations: translations,
+        status: "REJECTED",
+        category: "ALERT_UPDATE",
+        body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+        example:
+          "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
+        uuid: Ecto.UUID.generate()
+      })
+
+      translations = %{
+        hi.id => %{
+          body:
+            " कृपया फोन नंबर @ contact.phone के साथ पंजीकरण करने के लिए लिंक पर क्लिक करें @ global.registration.url",
+          language_id: hi.id,
+          number_parameters: 0
+        }
+      }
+
+      Repo.insert!(%SessionTemplate{
+        label: "User Registration",
+        body: """
+        Please click on the link to register with the phone number @contact.phone
+        @global.registration.url
+        """,
+        example: """
+        Please click on the link to register with the phone number @contact.phone
+        [https://www.gupshup.io/developer/register]
+        """,
+        type: :text,
+        shortcode: "user-registration",
+        is_reserved: true,
+        language_id: en_us.id,
+        translations: translations,
+        status: "REJECTED",
+        category: "ALERT_UPDATE",
+        organization_id: organization.id,
+        number_parameters: 0,
+        uuid: Ecto.UUID.generate()
+      })
+    end
+
     @doc """
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
@@ -825,6 +963,8 @@ if Code.ensure_loaded?(Faker) do
       seed_group_users(organization)
 
       seed_group_messages(organization)
+
+      hsm_templates(organization)
     end
   end
 end

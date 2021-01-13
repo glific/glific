@@ -4,7 +4,7 @@ defmodule Glific.Partners do
   and Provider information.
   """
   @behaviour Waffle.Storage.Google.Token.Fetcher
-
+  @active_hours 1
   use Publicist
 
   import Ecto.Query, warn: false
@@ -175,17 +175,17 @@ defmodule Glific.Partners do
   def active_organizations(orgs) do
     Organization
     |> where([q], q.is_active == true)
-    |> select([q], [q.id, q.name])
+    |> select([q], [q.id, q.name, q.last_communication_at])
     |> restrict_orgs(orgs)
     |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(%{}, fn row, acc ->
-      [id, value] = row
-      Map.put(acc, id, value)
+      [id, value, time] = row
+      Map.put(acc, id, %{name: value, last_communication_at: time})
     end)
   end
 
   @spec restrict_orgs(Ecto.Query.t(), list()) :: Ecto.Query.t()
-  defp restrict_orgs(query, list) when list == [], do: query
+  defp restrict_orgs(query, []), do: query
 
   defp restrict_orgs(query, org_list),
     do: query |> where([q], q.id in ^org_list)
@@ -328,12 +328,17 @@ defmodule Glific.Partners do
   @spec get_bsp_balance(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
   def get_bsp_balance(organization_id) do
     organization = Glific.Partners.organization(organization_id)
-    credentials = organization.services["bsp"]
-    api_key = credentials.secrets["api_key"]
 
-    case organization.bsp.shortcode do
-      "gupshup" -> GupshupWallet.balance(api_key)
-      _ -> {:error, "Invalid provider"}
+    if is_nil(organization.services["bsp"]) do
+      {:error, "No active BSP available"}
+    else
+      credentials = organization.services["bsp"]
+      api_key = credentials.secrets["api_key"]
+
+      case organization.bsp.shortcode do
+        "gupshup" -> GupshupWallet.balance(api_key)
+        _ -> {:error, "Invalid provider"}
+      end
     end
   end
 
@@ -391,8 +396,8 @@ defmodule Glific.Partners do
         end
       end
 
-    # we are already storing this in the cache, so we can ask
-    # cachex to ignore the value. We need to do this since we are
+    # we are already storing this in the cache (in the function fill_cache),
+    # so we can ask cachex to ignore the value. We need to do this since we are
     # storing multiple keys for the same object
     {:ignore, organization}
   end
@@ -532,13 +537,17 @@ defmodule Glific.Partners do
   list == [] (empty list) - the action should be performed for all organizations
   list == [ values ] - the actions should be performed only for organizations in the values list
   """
-  @spec perform_all((... -> nil), map() | nil, list()) :: :ok
-  def perform_all(_handler, _handler_args, nil = _list), do: :ok
+  @spec perform_all((... -> nil), map() | nil, list() | [] | nil, boolean) :: :ok
+  def perform_all(handler, handler_args, list, only_recent \\ false)
 
-  def perform_all(handler, handler_args, list) do
+  def perform_all(_handler, _handler_args, nil, _only_recent), do: :ok
+
+  def perform_all(handler, handler_args, list, only_recent) do
     # We need to do this for all the active organizations
-    active_organizations(list)
-    |> Enum.each(fn {id, name} ->
+    list
+    |> active_organizations()
+    |> recent_organizations(only_recent)
+    |> Enum.each(fn {id, %{name: name}} ->
       Repo.put_process_state(id)
 
       if is_nil(handler_args),
@@ -551,6 +560,18 @@ defmodule Glific.Partners do
     end)
 
     :ok
+  end
+
+  @spec recent_organizations(map(), boolean) :: map()
+  defp recent_organizations(map, false), do: map
+
+  defp recent_organizations(map, true) do
+    Enum.filter(
+      map,
+      fn {_id, %{last_communication_at: last_communication_at}} ->
+        Timex.diff(DateTime.utc_now(), last_communication_at, :hours) < @active_hours
+      end
+    )
   end
 
   @doc """
@@ -639,8 +660,23 @@ defmodule Glific.Partners do
         |> Repo.insert()
 
       _ ->
-        {:error, ["shortcode", "Invalid provider shortcode."]}
+        {:error, ["shortcode", "Invalid provider shortcode: #{attrs[:shortcode]}."]}
     end
+  end
+
+  # check for non empty string or nil
+  @spec non_empty_string(String.t() | nil) :: boolean()
+  defp non_empty_string(str) do
+    !is_nil(str) && str != ""
+  end
+
+  # Ensures we have all the keys required in the credential to call Gupshup
+  @spec valid_bsp?(Credential.t()) :: boolean()
+  defp valid_bsp?(credential) do
+    credential.provider.group == "bsp" &&
+      non_empty_string(credential.keys["api_end_point"]) &&
+      non_empty_string(credential.secrets["app_name"]) &&
+      non_empty_string(credential.secrets["api_key"])
   end
 
   @doc """
@@ -649,29 +685,28 @@ defmodule Glific.Partners do
   @spec update_credential(Credential.t(), map()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
-    # when updating the bsp credentials fetch list of opted in contacts
-    credential = credential |> Repo.preload([:provider, :organization])
-
-    if credential.provider.group == "bsp" do
-      fetch_opted_in_contacts(attrs)
-    end
-
     # delete the cached organization and associated credentials
     organization = organization(credential.organization_id)
 
     remove_organization_cache(organization.id, organization.shortcode)
 
-    response =
+    {:ok, credential} =
       credential
       |> Credential.changeset(attrs)
       |> Repo.update()
+
+    # when updating the bsp credentials fetch list of opted in contacts
+    credential = credential |> Repo.preload([:provider, :organization])
+
+    if valid_bsp?(credential),
+      do: fetch_opted_in_contacts(attrs)
 
     if credential.provider.shortcode == "bigquery" do
       org = credential.organization |> Repo.preload(:contact)
       Bigquery.bigquery_dataset(org.contact.phone, org.id)
     end
 
-    response
+    {:ok, credential}
   end
 
   @doc """

@@ -58,7 +58,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
         filter: %{organization_id: conn.assigns[:organization_id]}
       })
       |> Enum.reduce([], fn cf, acc ->
-        [%{key: cf.shortcode, name: cf.name, value_type: cf.value_type} | acc]
+        [%{key: cf.shortcode, name: cf.name, value_type: cf.value_type, label: cf.name} | acc]
       end)
 
     json(conn, %{results: fields})
@@ -78,7 +78,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     {:ok, contact_field} =
       ContactField.create_contact_field(%{
         name: params["label"],
-        shortcode: Glific.string_clean(params["label"]),
+        shortcode: String.downcase(params["label"]) |> String.replace(" ", "_"),
         organization_id: conn.assigns[:organization_id]
       })
 
@@ -311,6 +311,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, activity)
   end
 
+  @spec get_recent_message(FlowCount.t()) :: list()
   defp get_recent_message(flow_count) do
     # flow editor shows only last 3 messages. We are just tacking 5 for the safe side.
     flow_count.recent_messages

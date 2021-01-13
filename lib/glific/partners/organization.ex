@@ -33,7 +33,8 @@ defmodule Glific.Partners.Organization do
     :active_language_ids,
     :session_limit,
     :organization_id,
-    :signature_phrase
+    :signature_phrase,
+    :last_communication_at
     # commenting this out, since the tests were giving me an error
     # about cast_embed etc
     # :out_of_office
@@ -64,7 +65,8 @@ defmodule Glific.Partners.Organization do
           organization_id: non_neg_integer | nil,
           signature_phrase: binary | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          last_communication_at: :utc_datetime | nil
         }
 
   schema "organizations" do
@@ -109,6 +111,8 @@ defmodule Glific.Partners.Organization do
     # webhook sign phrase, kept encrypted (soon)
     field :signature_phrase, Glific.Encrypted.Binary
 
+    field :last_communication_at, :utc_datetime
+
     timestamps(type: :utc_datetime)
   end
 
@@ -130,6 +134,7 @@ defmodule Glific.Partners.Organization do
     |> unique_constraint(:contact_id)
   end
 
+  @spec validate_active_languages(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_active_languages(changeset) do
     language_ids =
       Language
@@ -140,6 +145,7 @@ defmodule Glific.Partners.Organization do
     |> validate_subset(:active_language_ids, language_ids)
   end
 
+  @spec validate_default_language(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_default_language(changeset) do
     default_language_id = get_field(changeset, :default_language_id)
     active_language_ids = get_field(changeset, :active_language_ids)
@@ -147,6 +153,8 @@ defmodule Glific.Partners.Organization do
     check_valid_language(changeset, default_language_id, active_language_ids)
   end
 
+  @spec check_valid_language(Ecto.Changeset.t(), non_neg_integer(), [non_neg_integer()]) ::
+          Ecto.Changeset.t()
   defp check_valid_language(changeset, nil, _), do: changeset
   defp check_valid_language(changeset, _, nil), do: changeset
 
@@ -161,6 +169,7 @@ defmodule Glific.Partners.Organization do
         )
   end
 
+  @spec add_out_of_office_if_missing(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp add_out_of_office_if_missing(
          %Ecto.Changeset{data: %Organization{out_of_office: nil}} = changeset
        ) do

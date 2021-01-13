@@ -338,6 +338,10 @@ defmodule Glific.Flows do
     args = make_args(key, value)
     flow = Flow.get_loaded_flow(organization_id, status, args)
     Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
+
+    # We are setting the cache in the above statement with multiple keys
+    # hence we are asking cachex to just ignore this aspect. All the other
+    # requests will get the cache value sent above
     {:ignore, flow}
   end
 
@@ -351,9 +355,8 @@ defmodule Glific.Flows do
   def get_cached_flow(organization_id, key) do
     case Caches.fetch(organization_id, key, &load_cache/1) do
       {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve flow, #{inspect(key)}, #{error}"
-        )
+        Logger.info("Failed to retrieve flow, #{inspect(key)}, #{error}")
+        {:error, error}
 
       {_, flow} ->
         {:ok, flow}
@@ -564,6 +567,33 @@ defmodule Glific.Flows do
     end
   end
 
+  @spec update_flow_keyword_map(map(), String.t(), String.t(), non_neg_integer) :: map()
+  defp update_flow_keyword_map(map, status, keyword, flow_id) do
+    map
+    |> Map.update(
+      status,
+      %{keyword => flow_id},
+      fn m -> Map.put(m, keyword, flow_id) end
+    )
+  end
+
+  @spec add_flow_keyword_map(map(), map()) :: map()
+  defp add_flow_keyword_map(flow, acc) do
+    Enum.reduce(
+      flow.keywords,
+      acc,
+      fn keyword, acc ->
+        keyword = Glific.string_clean(keyword)
+        acc = update_flow_keyword_map(acc, flow.status, keyword, flow.id)
+
+        # always add to draft status if published
+        if flow.status == "published",
+          do: update_flow_keyword_map(acc, "draft", keyword, flow.id),
+          else: acc
+      end
+    )
+  end
+
   @spec load_flow_keywords_map(tuple()) :: tuple()
   defp load_flow_keywords_map(cache_key) do
     # this is of the form {organization_id, "flow_keywords_map}"
@@ -573,28 +603,25 @@ defmodule Glific.Flows do
     value =
       Flow
       |> where([f], f.organization_id == ^organization_id)
-      |> select([:keywords, :id])
+      |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
+      |> select([f, fr], %{keywords: f.keywords, id: f.id, status: fr.status})
+      # the revisions table is potentially large, so we really want just a few rows from
+      # it, hence this where clause
+      |> where([f, fr], fr.status == "published" or fr.revision_number == 0)
       |> Repo.all(skip_organization_id: true)
       |> Enum.reduce(
         %{},
-        fn flow, acc ->
-          Enum.reduce(flow.keywords, acc, fn keyword, acc ->
-            ## Keyword matching for the flow is case insenstive.
-            ## So let's clean the keywords before generating the map.
-            keyword = Glific.string_clean(keyword)
-            Map.put(acc, keyword, flow.id)
-          end)
-        end
+        fn flow, acc -> add_flow_keyword_map(flow, acc) end
       )
 
     organization = Partners.organization(organization_id)
 
-    organization =
+    value =
       if organization.out_of_office.enabled and organization.out_of_office.flow_id,
         do: Map.put(value, "outofoffice", organization.out_of_office.flow_id),
         else: value
 
-    {:commit, organization}
+    {:commit, value}
   end
 
   @doc false

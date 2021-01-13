@@ -3,7 +3,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   use Wormwood.GQLCase
 
   alias Glific.{
-    Contacts.Contact,
     Fixtures,
     Messages,
     Repo,
@@ -12,19 +11,15 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   }
 
   setup do
+    organization = SeedsDev.seed_organizations()
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
+    SeedsDev.hsm_templates(organization)
     Fixtures.session_template_fixture()
     :ok
   end
-
-  load_gql(
-    :send_session_message,
-    GlificWeb.Schema,
-    "assets/gql/session_templates/send_session_message.gql"
-  )
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/session_templates/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/session_templates/list.gql")
@@ -270,24 +265,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       get_in(query_data, [:data, "deleteSessionTemplate", "errors", Access.at(0), "message"])
 
     assert message == "Resource not found"
-  end
-
-  test "send session message", %{staff: user} do
-    body = "Default Template"
-
-    {:ok, session_template} =
-      Repo.fetch_by(SessionTemplate, %{body: body, organization_id: user.organization_id})
-
-    name = "Adelle Cavin"
-    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
-
-    result =
-      auth_query_gql_by(:send_session_message, user,
-        variables: %{"id" => session_template.id, "receiver_id" => contact.id}
-      )
-
-    assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "sendSessionMessage", "errors"]) == [nil]
   end
 
   test "create a session_template from message", %{staff: user} do

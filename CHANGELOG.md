@@ -4,18 +4,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2021-01-11
+### Added
+- Support for location in messages
+- Status in Webhook logs
+- Support for filtering webhook logs with part URL
+- Updated Seeder for dev
+### Fixed
+- Optimizing organization subscription by checking for active organizations
+- Updating all HSM templates
+## [0.9.1] - 2021-01-06
+### Added
+- Support in flow engine for "wait for time" node
+- Upgrade elixir packages to latest version
+
+### Fixed
+- Fixed contact field with name containing underscore
+## [0.9.0] - 2021-01-04
+### Added
+- Support for "wait for time" node
+- Updating Flow results that were updated in last 90 mins
+- Support for sending media HSMs
+- Support for showing webhook logs
+
+### Fixed
+- Fixed issue of contact field being saved to Bigquery with label as nil
+- Fixed appsignal errors
 ## [0.8.7] - 2020-12-28
 ### Added
 - Store messages sent to group in messages table
-- Add API to retrieve group conversations
-- Add flow_context id to flow results table so we store each run through the flow
+- API to retrieve group conversations
+- flow_context id to flow results table so we store each run through the flow
 
 ## [0.8.6] - 2020-12-22
 ### Added
 - Stir usecase, computing score based on answers of survey
 - Stir usecase, returning list of wrongly answered
-- Added support for message variable parser
-- Added support for fetching hsm templates from gupshup periodically
+- Support for message variable parser
+- Support for fetching hsm templates from gupshup periodically
 
 ### Fixed
 - fixed message variable parsing in webhook, route and contact field
