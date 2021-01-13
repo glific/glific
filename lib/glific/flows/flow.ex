@@ -21,8 +21,8 @@ defmodule Glific.Flows.Flow do
     Repo
   }
 
-  @required_fields [:name, :uuid, :keywords, :organization_id]
-  @optional_fields [:flow_type, :version_number, :uuid_map, :nodes, :ignore_keywords]
+  @required_fields [:name, :uuid, :organization_id]
+  @optional_fields [:flow_type, :keywords, :version_number, :uuid_map, :nodes, :ignore_keywords]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -88,16 +88,22 @@ defmodule Glific.Flows.Flow do
       |> cast(attrs, @required_fields ++ @optional_fields)
       |> validate_required(@required_fields)
       |> unique_constraint([:name, :organization_id])
-      |> update_change(:keywords, &Enum.map(&1, fn keyword -> String.downcase(keyword) end))
+      |> update_change(:keywords, &update_keywords &1)
 
     validate_keywords(changeset, get_change(changeset, :keywords))
   end
 
+  @spec update_keywords(any()) :: list()
+  defp update_keywords(keywords) when is_list(keywords), do:
+    Enum.map(keywords, fn keyword -> String.downcase(keyword) end)
+
+  defp update_keywords(_), do: []
+
   @doc """
   Changeset helper for keywords
   """
-  @spec validate_keywords(Ecto.Changeset.t(), []) :: Ecto.Changeset.t()
-  def validate_keywords(changeset, nil), do: changeset
+  @spec validate_keywords(Ecto.Changeset.t(), any()) :: Ecto.Changeset.t()
+  def validate_keywords(changeset, nil), do: validate_keywords(changeset, [])
 
   def validate_keywords(changeset, keywords) do
     id = get_field(changeset, :id)

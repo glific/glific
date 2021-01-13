@@ -20,6 +20,7 @@ defmodule Glific.MessagesTest do
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_contacts(organization)
+    SeedsDev.hsm_templates(organization)
     :ok
   end
 
