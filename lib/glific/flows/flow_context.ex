@@ -283,8 +283,8 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Seed the context and set the wakeup time as needed
   """
-  @spec seed_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
-          {:ok, FlowContext.t() | :error, String.t()}
+  @spec seed_context(Flow.t(), Contact.t(), String.t(), Keyword.t()) ::
+          {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
   def seed_context(flow, contact, status, opts \\ []) do
     parent_id = Keyword.get(opts, :parent_id)
     current_delay = Keyword.get(opts, :delay, 0)
