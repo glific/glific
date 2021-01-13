@@ -21,33 +21,44 @@ defmodule Glific.Bigquery do
   Creating a dataset with messages and contacts as tables
   """
   @spec sync_schema_with_bigquery(String.t(), non_neg_integer) :: :ok
-  def sync_schema_with_bigquery(dataset_id, organization_id) do
-    organization = Partners.organization(organization_id)
-
-    organization.services["bigquery"]
+  def sync_schema_with_bigquery(_dataset_id, organization_id) do
+    fetch_bigquery_credentials(organization_id)
     |> case do
-      nil ->
-        nil
-
-      credentials ->
-        {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
-        project_id = service_account["project_id"]
-        token = Partners.get_goth_token(organization_id, "bigquery")
-        conn = Connection.new(token.token)
-
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}}
+        ->
         case create_dataset(conn, project_id, dataset_id) do
           {:ok, _} ->
            do_refresh_the_schema(conn, dataset_id, project_id)
           {:error, response} ->
             handle_sync_errors(response, conn, dataset_id, project_id)
         end
+      _
+       -> nil
     end
     :ok
   end
 
+  def fetch_bigquery_credentials(organization_id) do
+    organization = Partners.organization(organization_id)
+    {:ok, org_contact} = Repo.fetch_by(Contact, %{contact_id: organization.contact_id})
+
+    organization.services["bigquery"]
+    |> case do
+        nil -> nil
+
+      credentials
+        ->
+        {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
+        project_id = service_account["project_id"]
+        token = Partners.get_goth_token(organization_id, "bigquery")
+        conn = Connection.new(token.token)
+        {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+    end
+  end
+
   def do_refresh_the_schema(conn, dataset_id, project_id) do
       create_tables(conn, dataset_id, project_id)
-      alter_bigquery_tables(conn, dataset_id, project_id)
+      alter_tables(conn, dataset_id, project_id)
       contacts_messages_view(conn, dataset_id, project_id)
       flat_fields_procedure(conn, dataset_id, project_id)
   end
@@ -100,14 +111,12 @@ defmodule Glific.Bigquery do
     table(BigquerySchema.flow_result_schema(), conn, dataset_id, project_id, "flow_results")
   end
 
-
-
   @doc """
   Alter bigquery table schema,
   if required this function should be called from iex
   """
-  @spec alter_bigquery_tables(Tesla.Client.t(), String.t(), String.t()) :: :ok
-  def alter_bigquery_tables(conn, project_id, dataset_id) do
+  @spec alter_tables(Tesla.Client.t(), String.t(), String.t()) :: :ok
+  def alter_tables(conn, project_id, dataset_id) do
     case Datasets.bigquery_datasets_get(conn, project_id, dataset_id) do
       {:ok, _} ->
         alter_table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
