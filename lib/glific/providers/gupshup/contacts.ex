@@ -7,6 +7,7 @@ defmodule Glific.Providers.GupshupContacts do
     Contacts,
     Contacts.Contact,
     Partners,
+    Partners.Organization,
     Providers.Gupshup.ApiClient
   }
 
@@ -47,7 +48,7 @@ defmodule Glific.Providers.GupshupContacts do
   @doc """
   Fetch opted in contacts data from providers server
   """
-  @spec fetch_opted_in_contacts(map()) :: :ok | any
+  @spec fetch_opted_in_contacts(map()) :: :ok | any()
   def fetch_opted_in_contacts(attrs) do
     organization = Partners.organization(attrs.organization_id)
     url = attrs.keys["api_end_point"] <> "/users/" <> attrs.secrets["app_name"]
@@ -58,7 +59,7 @@ defmodule Glific.Providers.GupshupContacts do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, response_data} = Jason.decode(body)
         users = response_data["users"]
-        update_contacts(users)
+        update_contacts(users, organization)
 
       {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
         raise "Error updating opted-in contacts #{body}"
@@ -70,8 +71,8 @@ defmodule Glific.Providers.GupshupContacts do
     :ok
   end
 
-  @spec update_contacts(list()) :: {:ok, Contact.t()}
-  defp update_contacts(users) do
+  @spec update_contacts(list(), Organization.t() | nil) :: :ok | any()
+  defp update_contacts(users, organization) do
     Enum.each(users, fn user ->
       # handle scenario when contact has not sent a message yet
       last_message_at =

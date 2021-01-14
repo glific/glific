@@ -17,8 +17,8 @@ defmodule Glific.Partners do
     Partners.Credential,
     Partners.Organization,
     Partners.Provider,
-    Providers.GupshupContacts,
     Providers.Gupshup.GupshupWallet,
+    Providers.GupshupContacts,
     Repo,
     Settings.Language,
     Users.User
@@ -578,10 +578,17 @@ defmodule Glific.Partners do
   """
   @spec fetch_opted_in_contacts(map()) :: :ok | any
   def fetch_opted_in_contacts(attrs) do
-    case attrs.shortcode do
-      "gupshup" -> GupshupContacts.fetch_opted_in_contacts(attrs)
-        _ -> raise "Invalid BSP Provider #{attrs.shortcode}"
+    organization = organization(attrs.organization_id)
+
+    if is_nil(organization.services["bsp"]) do
+      raise "No active BSP available"
+    else
+      case organization.bsp.shortcode do
+        "gupshup" -> GupshupContacts.fetch_opted_in_contacts(attrs)
+        _ -> raise "Error fetching opted in contacts #{attrs}"
+      end
     end
+
     :ok
   end
 

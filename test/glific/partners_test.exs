@@ -672,10 +672,9 @@ defmodule Glific.PartnersTest do
       {:ok, credential} = Partners.create_credential(valid_attrs)
 
       valid_update_attrs = %{
-        keys: %{"api_end_point" => "test_end_point"},
+        keys: %{"api_end_point" => "test_end_point", "url" => "https://gupshup.io/"},
         secrets: %{"api_key" => "updated_test_value", "app_name" => "test_app_name"},
         organization_id: organization_id,
-        shortcode: "gupshup"
       }
 
       {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
