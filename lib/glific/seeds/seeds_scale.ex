@@ -192,55 +192,61 @@ if Code.ensure_loaded?(Faker) do
       Repo.query!("ALTER TABLE messages ENABLE TRIGGER update_search_message_trigger;")
     end
 
-    #Creating and Seeding Flow Results
-    defp create_flow_results_entry(contact_id, organization_id) do
-      flow_id = Enum.random(1..3)
+    @flow_ids [1, 2, 3]
+    @flow_uuids [Ecto.UUID.generate(), Ecto.UUID.generate(), Ecto.UUID.generate()]
+
+    # Creating and Seeding Flow Results
+    defp create_flow_results_entry(contact_id, organization_id, context_id) do
+      flow_id = Enum.random(@flow_ids)
+      flow_uuid = Enum.at(@flow_uuids, flow_id - 1)
+
       %{
         contact_id: contact_id,
         flow_id: flow_id,
-        uuid: Ecto.UUID.generate(),
-        flow_version: "1",
+        flow_uuid: flow_uuid,
+        flow_version: 1,
         organization_id: organization_id,
-        flow_context_id: "1",
+        flow_context_id: context_id,
         results: create_results_entry(flow_id),
         inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
         updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
       }
     end
 
-    #Adding the results for each flow
-    defp create_results_entry(flow_id) do
-      #flow_id = 1
-      case flow_id do 
-        1 -> 
-          Enum.random([
-            #%{1 => "Hindi"}
-            "{1: Hindi}"
-            #"{2: English}"
-          ])
-        #2 ->
-         # Enum.random([
-          #  {1, "Visual Arts"},
-           # {2, "Poetry"},
-            #{3, "Theater"},
-            #{4, "Help"},
-            #{5, "Other"}
-          #])
-        #3 ->
-         # Enum.random([
-          #  {1, "Interesting"},
-           # {2, "Boring"}
-          #])
-      end
-    end
+    # Adding the results for each flow
+    defp create_results_entry(1 = _flow_id),
+      do:
+        Enum.random([
+          %{1 => "Hindi"},
+          %{2 => "English"}
+        ])
+
+    defp create_results_entry(2 = _flow_id),
+      do:
+        Enum.random([
+          %{1 => "Visual Arts"},
+          %{2 => "Poetry"},
+          %{3 => "Theater"},
+          %{4 => "Help"},
+          %{5 => "Other"}
+        ])
+
+    defp create_results_entry(3 = _flow_id),
+      do:
+        Enum.random([
+          %{1 => "Interesting"},
+          %{2 => "Boring"}
+        ])
 
     @contact_num 5..15
+
     defp seed_flow_results(contact_ids, organization_id) when is_list(contact_ids) do
       num_contacts = div(length(contact_ids) * Enum.random(@contact_num), 100)
 
       contact_ids
       |> Enum.take_random(num_contacts)
-      |> Enum.flat_map(&create_flow_results_entry(&1, organization_id))
+      |> Enum.with_index()
+      |> Enum.map(fn {cid, idx} -> create_flow_results_entry(cid, organization_id, idx) end)
       # this enables us to send smaller chunks to postgres for insert
       |> Enum.chunk_every(1000)
       |> Enum.map(&Repo.insert_all(FlowResult, &1, timeout: 120_000))
