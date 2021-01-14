@@ -30,6 +30,7 @@ defmodule Glific.Flows.FlowContext do
     :parent_id,
     :results,
     :wakeup_at,
+    :wait_for_time,
     :completed_at,
     :delay,
     :uuid_map,
@@ -61,6 +62,7 @@ defmodule Glific.Flows.FlowContext do
           recent_inbound: [map()] | [],
           recent_outbound: [map()] | [],
           wakeup_at: :utc_datetime | nil,
+          wait_for_time: boolean,
           completed_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -79,6 +81,8 @@ defmodule Glific.Flows.FlowContext do
 
     field :wakeup_at, :utc_datetime, default: nil
     field :completed_at, :utc_datetime, default: nil
+
+    field :wait_for_time, :boolean, default: false
 
     field :delay, :integer, default: 0, virtual: true
 
@@ -174,7 +178,9 @@ defmodule Glific.Flows.FlowContext do
 
     # since we have recd a message, we also ensure that we are not going to be woken
     # up by a timer if present.
-    {:ok, context} = update_flow_context(context, %{type => messages, wakeup_at: nil})
+    {:ok, context} =
+      update_flow_context(context, %{type => messages, wakeup_at: nil, wait_for_time: false})
+
     context
   end
 
@@ -277,6 +283,8 @@ defmodule Glific.Flows.FlowContext do
     FlowContext
     |> where([fc], fc.contact_id == ^contact_id)
     |> where([fc], is_nil(fc.completed_at))
+    # lets not touch the contexts which are waiting to be woken up at a specific time
+    |> where([fc], fc.wait_for_time == false)
     |> Repo.update_all(set: [completed_at: now, updated_at: now])
   end
 
@@ -341,12 +349,14 @@ defmodule Glific.Flows.FlowContext do
     # need to fix this instead of assuming the highest id is the most
     # active context (or is that a wrong assumption). Maybe a context number? like
     # we do for other tables
+    # We should not wakeup those contexts which are waiting on time
     query =
       from fc in FlowContext,
         where:
           fc.contact_id == ^contact_id and
             not is_nil(fc.node_uuid) and
-            is_nil(fc.completed_at),
+            is_nil(fc.completed_at) and
+            fc.wait_for_time == false,
         order_by: [desc: fc.id],
         limit: 1
 
@@ -438,7 +448,8 @@ defmodule Glific.Flows.FlowContext do
   def wakeup_one(context) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
-    {:ok, context} = FlowContext.update_flow_context(context, %{wakeup_at: nil})
+    {:ok, context} =
+      FlowContext.update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
 
     {:ok, flow} =
       Flows.get_cached_flow(

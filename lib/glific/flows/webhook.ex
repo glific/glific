@@ -54,8 +54,8 @@ defmodule Glific.Flows.Webhook do
     webhook_log
   end
 
-  @spec update_log(map(), WebhookLog.t()) :: {:ok, WebhookLog.t()}
-  defp update_log(message, webhook_log) when is_map(message) do
+  @spec update_log(WebhookLog.t(), map()) :: {:ok, WebhookLog.t()}
+  defp update_log(webhook_log, message) when is_map(message) do
     # handle incorrect json body
     json_body =
       case Jason.decode(message.body) do
@@ -75,8 +75,8 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @spec update_log(String.t(), WebhookLog.t()) :: {:ok, WebhookLog.t()}
-  defp update_log(error_message, webhook_log) do
+  @spec update_log(WebhookLog.t(), String.t()) :: {:ok, WebhookLog.t()}
+  defp update_log(webhook_log, error_message) do
     attrs = %{
       error: error_message
     }
@@ -85,7 +85,7 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()}
+  @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
   defp create_body(context, action_body) do
     default_payload = %{
       contact: %{
@@ -111,37 +111,52 @@ defmodule Glific.Flows.Webhook do
       |> String.replace("\"@contact\"", default_contact)
       |> String.replace("\"@results\"", default_results)
 
-    {:ok, action_body_map} = Jason.decode(action_body)
-    {action_body_map, action_body}
+    case Jason.decode(action_body) do
+      {:ok, action_body_map} -> {action_body_map, action_body}
+      _ -> {:error, "Error in decoding webhook body. Please check the json body in floweditor"}
+    end
   end
 
   @spec post(Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
   defp post(action, context, headers) do
-    {map, body} = create_body(context, action.body)
-    headers = add_signature(headers, context.organization_id, body)
+    case create_body(context, action.body) do
+      {:error, message} ->
+        action
+        |> create_log(%{}, headers, context)
+        |> update_log(message)
 
+        nil
+
+      {map, body} ->
+        do_post(action, context, headers, {map, body})
+    end
+  end
+
+  @spec do_post(Action.t(), FlowContext.t(), Keyword.t(), tuple()) :: map() | nil
+  defp do_post(action, context, headers, {map, body}) do
+    headers = add_signature(headers, context.organization_id, body)
     webhook_log = create_log(action, map, headers, context)
 
     case Tesla.post(action.url, body, headers: headers) do
       {:ok, %Tesla.Env{status: 200} = message} ->
         case Jason.decode(message.body) do
           {:ok, json_response} ->
-            update_log(message, webhook_log)
+            update_log(webhook_log, message)
             json_response
 
           {:error, _error} ->
-            update_log("Could not decode message body: " <> message.body, webhook_log)
+            update_log(webhook_log, "Could not decode message body: " <> message.body)
+
             nil
         end
 
       {:ok, %Tesla.Env{} = message} ->
-        update_log("Did not return a 200 status code" <> message.body, webhook_log)
+        update_log(webhook_log, "Did not return a 200 status code" <> message.body)
         nil
 
       {:error, error_message} ->
-        error_message
-        |> inspect()
-        |> update_log(webhook_log)
+        webhook_log
+        |> update_log(inspect(error_message))
 
         nil
     end
@@ -157,17 +172,16 @@ defmodule Glific.Flows.Webhook do
 
     case Tesla.get(action.url, headers: headers) do
       {:ok, %Tesla.Env{status: 200} = message} ->
-        update_log(message, webhook_log)
+        update_log(webhook_log, message)
         message.body |> Jason.decode!()
 
       {:ok, %Tesla.Env{} = message} ->
-        update_log(message, webhook_log)
+        update_log(webhook_log, message)
         nil
 
       {:error, error_message} ->
-        error_message
-        |> inspect()
-        |> update_log(webhook_log)
+        webhook_log
+        |> update_log(inspect(error_message))
 
         nil
     end
