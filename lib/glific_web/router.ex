@@ -43,8 +43,6 @@ defmodule GlificWeb.Router do
     post "/registration/reset-password", RegistrationController, :reset_password
     resources "/session", SessionController, singleton: true, only: [:create, :delete]
     post "/session/renew", SessionController, :renew
-
-
   end
 
   scope "/", GlificWeb do
@@ -130,7 +128,7 @@ defmodule GlificWeb.Router do
   end
 
   scope "/cors-proxy", GlificWeb.API.V1 do
-    #https://github.com/bcentinaro/cors-proxy
+    # https://github.com/bcentinaro/cors-proxy
     get("/*url", CorsController, :get)
   end
 

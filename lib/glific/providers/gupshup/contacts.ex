@@ -59,12 +59,14 @@ defmodule Glific.Providers.GupshupContacts do
     case ApiClient.get(url, headers: [{"apikey", api_key}]) do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, response_data} = Jason.decode(body)
+
         if is_nil(response_data["users"]) do
           raise "Error updating opted-in contacts #{response_data["message"]}"
         else
           users = response_data["users"]
           update_contacts(users, organization)
         end
+
       {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
         raise "Error updating opted-in contacts #{body}"
 
