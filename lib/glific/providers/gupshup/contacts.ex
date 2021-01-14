@@ -17,6 +17,7 @@ defmodule Glific.Providers.GupshupContacts do
     Update a contact phone as opted in
   """
   @impl Glific.Providers.ContactBehaviour
+
   @spec optin_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
     organization = Partners.organization(organization_id)

@@ -390,6 +390,11 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, functions)
   end
 
+  @spec functions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def validate_media(conn, params) do
+    json(conn, %{is_valid: Glific.validate_media?(params["url"], params["type"])})
+  end
+
   @doc false
   @spec generate_uuid() :: String.t()
   defp generate_uuid do
