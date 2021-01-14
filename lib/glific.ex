@@ -155,6 +155,7 @@ defmodule Glific do
     Base.encode16(hmac, case: :lower)
   end
 
+  @doc false
   @spec validate_media?(String.t(), String.t()) :: boolean
   def validate_media?(url, type) do
     case Tesla.get(url) do
