@@ -119,6 +119,8 @@ defmodule GlificWeb.Router do
     get "/revisions/*vars", FlowEditorController, :revisions
 
     post "/revisions/*vars", FlowEditorController, :save_revisions
+
+    get "/validate-media", FlowEditorController, :validate_media
   end
 
   scope "/webhook", GlificWeb.Flows do
