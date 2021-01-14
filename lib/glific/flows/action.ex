@@ -380,7 +380,10 @@ defmodule Glific.Flows.Action do
       {:ok, context} =
         FlowContext.update_flow_context(
           context,
-          %{wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time)}
+          %{
+            wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
+            wait_for_time: true
+          }
         )
 
       {:wait, context, []}

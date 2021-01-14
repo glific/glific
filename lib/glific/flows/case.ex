@@ -17,6 +17,8 @@ defmodule Glific.Flows.Case do
     FlowContext
   }
 
+  alias Pow.Ecto.Schema.Changeset
+
   @required_fields [:uuid, :type, :arguments, :category_uuid]
 
   @type t() :: %__MODULE__{
@@ -116,6 +118,26 @@ defmodule Glific.Flows.Case do
   def execute(%{type: type} = c, _context, msg)
       when type == "has_all_words",
       do: is_has_all_the_words?(true, strip(msg), c.arguments)
+
+  def execute(%{type: type} = _c, _context, msg)
+      when type == "has_phone" do
+    phone = strip(msg)
+
+    case ExPhoneNumber.parse(phone, "IN") do
+      {:ok, phone_number} -> ExPhoneNumber.is_valid_number?(phone_number)
+      _ -> false
+    end
+  end
+
+  def execute(%{type: type} = _c, _context, msg)
+      when type == "has_email" do
+    email = strip(msg)
+
+    case Changeset.validate_email(email) do
+      :ok -> true
+      _ -> false
+    end
+  end
 
   def execute(c, _context, _msg),
     do:
