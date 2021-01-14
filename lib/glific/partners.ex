@@ -581,7 +581,7 @@ defmodule Glific.Partners do
     organization = organization(attrs.organization_id)
 
     if is_nil(organization.services["bsp"]) do
-      raise "No active BSP available"
+      :ok
     else
       case organization.bsp.shortcode do
         "gupshup" -> GupshupContacts.fetch_opted_in_contacts(attrs)
