@@ -127,6 +127,11 @@ defmodule GlificWeb.Router do
     post "/stir/survey", WebhookController, :stir_survey
   end
 
+  scope "/cors-proxy", GlificWeb.API.V1 do
+    # https://github.com/bcentinaro/cors-proxy
+    get("/*url", CorsController, :get)
+  end
+
   # defp debug_response(conn, _) do
   #  Plug.Conn.register_before_send(conn, fn conn ->
   #    conn.resp_body |> IO.puts()
