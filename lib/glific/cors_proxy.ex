@@ -36,7 +36,7 @@ defmodule Glific.CorsProxy do
   end
 
   @doc false
-  @spec write_response({atom(), any}, Conn.t()) ::  Conn.t() | no_return()
+  @spec write_response({atom(), any}, Conn.t()) :: Conn.t() | no_return()
   def write_response({:ok, response}, conn) do
     response.headers
     |> filter_response_headers
