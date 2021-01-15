@@ -54,15 +54,8 @@ defmodule Glific.Providers.Gupshup.Template do
   """
   @spec update_hsm_templates(non_neg_integer()) :: :ok | {:error, String.t()}
   def update_hsm_templates(organization_id) do
-    organization = Partners.organization(organization_id)
-    bsp_creds = organization.services["bsp"]
-    api_key = bsp_creds.secrets["api_key"]
-
-    template_url =
-      bsp_creds.keys["api_end_point"] <> "/template/list/" <> bsp_creds.secrets["app_name"]
-
     with {:ok, response} <-
-           ApiClient.get(template_url, headers: [{"apikey", api_key}]),
+           ApiClient.get_template(template_url, headers: [{"apikey", api_key}]),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
       Glific.Templates.do_update_hsms(response_data["templates"], organization)
