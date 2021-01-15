@@ -734,6 +734,57 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#messageresult">MessageResult</a> | An error or object
 
+## Subscription for Updated Message Status
+
+```graphql
+subscription {
+  updated_message_status() {
+    id
+    body
+    flow
+    type
+    status
+    receiver {
+        id
+        phone
+    }
+
+    sender {
+        id
+        phone
+    }
+  }
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "sentMessage": {
+      "body": "Test",
+      "flow": "OUTBOUND",
+      "id" : "10397",
+      "type": "TEXT",
+      "status": "sent",
+      "receiver": {
+          "id" : "484",
+          "phone" : "91997612324"
+      },
+      "sender": {
+          "id" : "1",
+          "phone" : "917834811114"
+      }
+    }
+  }
+}
+```
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#messageresult">MessageResult</a> | An error or object
+
 
 ## Subscription for Received Message
 
@@ -830,6 +881,16 @@ Parameter | Type | Default | Description
 <tr>
 <td colspan="2" valign="top"><strong>BspStatus</strong></td>
 <td valign="top"><a href="#string">MessageStatusEnum</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>status</strong></td>
+<td valign="top"><a href="#string">MessageStatusEnum</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
 <td></td>
 </tr>
 <tr>
