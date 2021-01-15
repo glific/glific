@@ -111,7 +111,7 @@ defmodule Glific.Communications.Message do
   defp publish_message_status(message) do
     Communications.publish_data(
       message,
-      :message_status,
+      :update_message_status,
       message.organization_id
     )
   end

@@ -734,11 +734,11 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#messageresult">MessageResult</a> | An error or object
 
-## Subscription for Updated Message Status
+## Subscription for Update Message Status
 
 ```graphql
 subscription {
-  updated_message_status() {
+  update_message_status() {
     id
     body
     flow
@@ -762,7 +762,7 @@ subscription {
 ```json
 {
   "data": {
-    "sentMessage": {
+    "update_message_status": {
       "body": "Test",
       "flow": "OUTBOUND",
       "id" : "10397",
