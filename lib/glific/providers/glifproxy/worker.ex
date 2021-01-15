@@ -10,7 +10,8 @@ defmodule Glific.Providers.Glifproxy.Worker do
 
   alias Glific.{
     Communications,
-    Partners
+    Partners,
+    Providers.Gupshup.ApiClient
   }
 
   @doc """
@@ -80,7 +81,7 @@ defmodule Glific.Providers.Glifproxy.Worker do
 
     credential = organization.services["glifproxy"]
 
-    Tesla.post(
+    ApiClient.post(
       credential.keys["api_end_point"] <> "/gupshup",
       payload
     )

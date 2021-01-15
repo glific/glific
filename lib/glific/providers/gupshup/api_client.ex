@@ -14,11 +14,17 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   plug Tesla.Middleware.FormUrlencoded,
     encode: &Query.encode/1
 
+  @doc """
+  Making Tesla get call and adding api key in header
+  """
   @spec get(String.t(), String.t()) :: Tesla.Env.result()
-  defp get(url, api_key), do: Tesla.get(url, headers: [{"apikey", api_key}])
+  def get(url, api_key), do: Tesla.get(url, headers: [{"apikey", api_key}])
 
+  @doc """
+  Making Tesla post call and adding api key in header
+  """
   @spec post(String.t(), any(), String.t()) :: Tesla.Env.result()
-  defp post(url, payload, api_key), do: Tesla.post(url, payload, headers: [{"apikey", api_key}])
+  def post(url, payload, api_key), do: Tesla.post(url, payload, headers: [{"apikey", api_key}])
 
   @spec get_credentials(non_neg_integer()) :: {:error, String.t() | {:ok, map()}}
   defp get_credentials(org_id) do
@@ -119,7 +125,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @doc """
   Fetch opted in contacts data from providers server
   """
-  @spec optin_contact(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
+  @spec fetch_opted_in_contacts(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
   def fetch_opted_in_contacts(org_id) do
     get_credentials(org_id)
     |> case do
