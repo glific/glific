@@ -5,6 +5,8 @@ defmodule Glific.Bigquery do
 
   alias Glific.{
     BigquerySchema,
+    Contacts,
+    Jobs.BigqueryJob,
     Partners,
     Repo
   }
@@ -17,6 +19,8 @@ defmodule Glific.Bigquery do
     Connection
   }
 
+  @bigquery_tables  ["messages", "contacts", "flows", "flow_results"]
+
   @doc """
   Creating a dataset with messages and contacts as tables
   """
@@ -28,9 +32,9 @@ defmodule Glific.Bigquery do
         ->
         case create_dataset(conn, project_id, dataset_id) do
           {:ok, _} ->
-           do_refresh_the_schema(conn, dataset_id, project_id)
+           do_refresh_the_schema(conn, dataset_id, project_id, organization_id)
           {:error, response} ->
-            handle_sync_errors(response, conn, dataset_id, project_id)
+            handle_sync_errors(response, conn, dataset_id, project_id, organization_id)
         end
       _
        -> nil
@@ -38,9 +42,10 @@ defmodule Glific.Bigquery do
     :ok
   end
 
+  @spec fetch_bigquery_credentials(non_neg_integer) :: nil | tuple
   def fetch_bigquery_credentials(organization_id) do
     organization = Partners.organization(organization_id)
-    {:ok, org_contact} = Repo.fetch_by(Contact, %{contact_id: organization.contact_id})
+    org_contact = Contacts.get_contact!(organization.contact_id)
 
     organization.services["bigquery"]
     |> case do
@@ -56,21 +61,40 @@ defmodule Glific.Bigquery do
     end
   end
 
-  def do_refresh_the_schema(conn, dataset_id, project_id) do
+  def do_refresh_the_schema(conn, dataset_id, project_id, organization_id) do
+      insert_bigquery_jobs(organization_id)
       create_tables(conn, dataset_id, project_id)
       alter_tables(conn, dataset_id, project_id)
       contacts_messages_view(conn, dataset_id, project_id)
       flat_fields_procedure(conn, dataset_id, project_id)
   end
 
-  @spec handle_sync_errors(map(), Tesla.Client.t(), String.t(), String.t()) :: :ok
-  defp handle_sync_errors(response, conn, dataset_id, project_id) do
+  def insert_bigquery_jobs(organization_id), do:
+    @bigquery_tables
+    |> Enum.each(&create_bigquery_job(&1, organization_id))
+
+  defp create_bigquery_job(table_name, organization_id) do
+
+    Repo.fetch_by(BigqueryJob, %{table: table_name, organization_id: organization_id})
+    |> case do
+      {:ok, bigquery_job} -> bigquery_job
+      _ ->
+        IO.inspect "Hello 2"
+        %BigqueryJob{}
+        |> BigqueryJob.changeset(%{table: table_name, organization_id: organization_id})
+        |> Repo.insert()
+        |> IO.inspect
+      end
+  end
+
+  @spec handle_sync_errors(map(), Tesla.Client.t(), String.t(), String.t(), non_neg_integer) :: :ok
+  defp handle_sync_errors(response, conn, dataset_id, project_id, organization_id ) do
     Jason.decode(response.body)
     |> case do
       {:ok, data} ->
         error = data["error"]
         if error["status"] == "ALREADY_EXISTS" do
-          do_refresh_the_schema(conn, dataset_id, project_id)
+          do_refresh_the_schema(conn, dataset_id, project_id, organization_id)
         end
       _ ->
          raise("Error while sync data with biquery. #{inspect response}")
@@ -105,10 +129,10 @@ defmodule Glific.Bigquery do
   @spec create_tables(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp create_tables(conn, dataset_id, project_id) do
-    table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
-    table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
-    table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
-    table(BigquerySchema.flow_result_schema(), conn, dataset_id, project_id, "flow_results")
+    create_table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
+    create_table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
+    create_table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
+    create_table(BigquerySchema.flow_result_schema(), conn, dataset_id, project_id, "flow_results")
   end
 
   @doc """
@@ -263,9 +287,9 @@ defmodule Glific.Bigquery do
     )
   end
 
-  @spec table(list(), Tesla.Client.t(), binary(), binary(), String.t()) ::
+  @spec create_table(list(), Tesla.Client.t(), binary(), binary(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
-  defp table(schema, conn, dataset_id, project_id, table_id) do
+  defp create_table(schema, conn, dataset_id, project_id, table_id) do
     Tables.bigquery_tables_insert(
       conn,
       project_id,
