@@ -14,21 +14,73 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   plug Tesla.Middleware.FormUrlencoded,
     encode: &Query.encode/1
 
-  def get_template(org_id) do
-    bsp_creds = get_bsp(org_id)
-    api_key = bsp_creds.secrets["api_key"]
+  def get(url, api_key) do
+    Tesla.get(url, headers: [{"apikey", api_key}])
+  end
 
-    template_url =
-      bsp_creds.keys["api_end_point"] <> "/template/list/" <> bsp_creds.secrets["app_name"]
+  def post(url, payload, api_key) do
+    Tesla.post(url, payload, headers: [{"apikey", api_key}])
+  end
 
-    case Tesla.get(template_url, headers: [{"apikey", api_key}]) do
-      {:ok, response} -> IO.inspect(response)
-      {:error, %{reason: reason}} -> IO.inspect("error")
+  defp get_credentials(org_id) do
+    organization = Partners.organization(org_id)
+
+    if is_nil(organization.services["bsp"]) do
+      {:error, "No active BSP available"}
+    else
+      bsp_credentials = organization.services["bsp"]
+      api_key = bsp_credentials.secrets["api_key"]
+      app_name = bsp_credentials.secrets["app_name"]
+
+      {:ok, %{api_key: api_key, app_name: app_name}}
     end
   end
 
-  defp get_bsp(org_id) do
-    organization = Partners.organization(org_id)
-    bsp_creds = organization.services["bsp"]
+  def get_template(org_id) do
+    get_credentials(org_id)
+    |> case do
+      {:ok, credentials} ->
+        template_url = @gupshup_url <> "/template/list/" <> credentials.app_name
+        get(template_url, credentials.api_key)
+
+      _ ->
+        {:error, "error"}
+    end
+  end
+
+  def submit_template_for_approval(org_id, payload) do
+    get_credentials(org_id)
+    |> case do
+      {:ok, credentials} ->
+        template_url = @gupshup_url <> "/template/add/" <> credentials.app_name
+        post(template_url, payload, credentials.api_key)
+
+      _ ->
+        {:error, "error"}
+    end
+  end
+
+  def send_template(org_id, payload) do
+    get_credentials(org_id)
+    |> case do
+      {:ok, credentials} ->
+        template_url = @gupshup_url <> "/template/msg"
+        post(template_url, payload, credentials.api_key)
+
+      _ ->
+        {:error, "error"}
+    end
+  end
+
+  def send_message(org_id, payload) do
+    get_credentials(org_id)
+    |> case do
+      {:ok, credentials} ->
+        url = @gupshup_url <> "/msg"
+        post(url, payload, credentials.api_key)
+
+      _ ->
+        {:error, "error"}
+    end
   end
 end
