@@ -22,6 +22,10 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     Tesla.post(url, payload, headers: [{"apikey", api_key}])
   end
 
+  def post(url, payload) do
+    Tesla.post(url, payload)
+  end
+
   defp get_credentials(org_id) do
     organization = Partners.organization(org_id)
 
@@ -79,6 +83,29 @@ defmodule Glific.Providers.Gupshup.ApiClient do
         url = @gupshup_url <> "/msg"
         post(url, payload, credentials.api_key)
 
+      _ ->
+        {:error, "error"}
+    end
+  end
+
+  def optin_contact(org_id, payload) do
+    get_credentials(org_id)
+    |> case do
+      {:ok, credentials} ->
+        url = @gupshup_url <> "/app/opt/in/" <> credentials.app_name
+        post(url, payload, credentials.api_key)
+
+      _ ->
+        {:error, "error"}
+    end
+  end
+
+  def fetch_opted_in_contacts(org_id) do
+    get_credentials(org_id)
+    |> case do
+      {:ok, credentials} ->
+        template_url = @gupshup_url <> "/users/" <> credentials.app_name
+        get(template_url, credentials.api_key)
       _ ->
         {:error, "error"}
     end
