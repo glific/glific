@@ -35,6 +35,8 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :type, :message_type_enum
     field :flow, :message_flow_enum
     field :bsp_message_id, :string
+    field :status, :string
+    field :errors, :json
     field :message_number, :integer
 
     field :is_hsm, :boolean
@@ -223,6 +225,14 @@ defmodule GlificWeb.Schema.MessageTypes do
       config(&Schema.config_fun/2)
 
       resolve(fn contact, _, _ -> {:ok, contact} end)
+    end
+
+    field :updated_message_status, :message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(fn message, _, _ -> {:ok, message} end)
     end
   end
 end

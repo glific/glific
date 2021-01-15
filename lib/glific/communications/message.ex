@@ -79,6 +79,8 @@ defmodule Glific.Communications.Message do
         sent_at: DateTime.truncate(DateTime.utc_now(), :second)
       })
 
+    publish_message_status(message)
+
     Tags.remove_tag_from_all_message(
       message.contact_id,
       ["notreplied", "unread"],
@@ -98,6 +100,22 @@ defmodule Glific.Communications.Message do
     end
   end
 
+  @spec fetch_and_publish_message_status(String.t()) :: any()
+  defp fetch_and_publish_message_status(bsp_message_id) do
+    with  {:ok, message} <-  Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id}) do
+      publish_message_status(message)
+    end
+  end
+
+  @spec publish_message_status(Message.t()) :: any()
+  defp publish_message_status(message) do
+    Communications.publish_data(
+      message,
+      :message_status,
+      message.organization_id
+    )
+  end
+
   @doc """
   Callback in case of any error while sending the message
   """
@@ -114,21 +132,27 @@ defmodule Glific.Communications.Message do
         errors: build_error(response.body)
       })
 
+    publish_message_status(message)
+
     {:error, response.body}
   end
 
   @doc """
   Callback to update the provider status for a message
   """
-  @spec update_bsp_status(String.t(), atom(), map()) :: {:ok, Message.t()}
+  @spec update_bsp_status(String.t(), atom(), map()) :: any()
   def update_bsp_status(bsp_message_id, :error, errors) do
+    # we are making an additional query to db to fetch message for sending message status subscription
     from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
     |> Repo.update_all(set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()])
+    fetch_and_publish_message_status(bsp_message_id)
   end
 
   def update_bsp_status(bsp_message_id, bsp_status, _params) do
+    # we are making an additional query to db to fetch message for sending message status subscription
     from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
     |> Repo.update_all(set: [bsp_status: bsp_status, updated_at: DateTime.utc_now()])
+    fetch_and_publish_message_status(bsp_message_id)
   end
 
   @doc """
