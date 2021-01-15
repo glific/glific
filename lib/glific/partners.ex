@@ -13,12 +13,12 @@ defmodule Glific.Partners do
   alias Glific.{
     Bigquery,
     Caches,
-    Contacts,
     Flags,
     Partners.Credential,
     Partners.Organization,
     Partners.Provider,
     Providers.Gupshup.GupshupWallet,
+    Providers.GupshupContacts,
     Repo,
     Settings.Language,
     Users.User
@@ -579,48 +579,17 @@ defmodule Glific.Partners do
   @spec fetch_opted_in_contacts(map()) :: :ok | any
   def fetch_opted_in_contacts(attrs) do
     organization = organization(attrs.organization_id)
-    url = attrs.keys["api_end_point"] <> "/users/" <> attrs.secrets["app_name"]
 
-    api_key = attrs.secrets["api_key"]
-
-    with {:ok, response} <- Tesla.get(url, headers: [{"apikey", api_key}]),
-         {:ok, response_data} <- Jason.decode(response.body),
-         false <- is_nil(response_data["users"]) do
-      users = response_data["users"]
-
-      Enum.each(users, fn user ->
-        # handle scenario when contact has not sent a message yet
-        last_message_at =
-          if user["lastMessageTimeStamp"] != 0,
-            do:
-              DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
-              |> elem(1)
-              |> DateTime.truncate(:second),
-            else: nil
-
-        {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
-
-        phone = user["countryCode"] <> user["phoneCode"]
-
-        Contacts.upsert(%{
-          phone: phone,
-          last_message_at: last_message_at,
-          optin_time: optin_time |> DateTime.truncate(:second),
-          bsp_status: check_bsp_status(last_message_at),
-          organization_id: organization.id,
-          language_id: organization.default_language_id
-        })
-      end)
-    end
-  end
-
-  @spec check_bsp_status(DateTime.t()) :: atom()
-  defp check_bsp_status(last_message_at) do
-    if Timex.diff(DateTime.utc_now(), last_message_at, :hours) < 24 do
-      :session_and_hsm
+    if is_nil(organization.services["bsp"]) do
+      :ok
     else
-      :hsm
+      case organization.bsp.shortcode do
+        "gupshup" -> GupshupContacts.fetch_opted_in_contacts(attrs)
+        _ -> raise "Error fetching opted in contacts #{attrs}"
+      end
     end
+
+    :ok
   end
 
   @doc """

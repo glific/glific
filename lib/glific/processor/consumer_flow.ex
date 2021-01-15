@@ -138,6 +138,8 @@ defmodule Glific.Processor.ConsumerFlow do
     |> FlowContext.load_context(flow)
     # we are using message.body here since we want to use the original message
     # not the stripped version
+    # I'm not sure why we are creating a message here instead of reusing the existing
+    # message
     |> FlowContext.step_forward(
       Messages.create_temp_message(
         message.organization_id,

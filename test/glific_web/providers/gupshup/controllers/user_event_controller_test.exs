@@ -4,6 +4,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
   alias Faker.Phone
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Repo,
     Seeds.SeedsDev
@@ -65,8 +66,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
 
   describe "opted_out" do
     setup do
+      contact = Contacts.get_contact!(1)
+
       contact_payload = %{
-        "phone" => Phone.EnUs.phone(),
+        "phone" => contact.phone,
         "type" => "opted-out"
       }
 
