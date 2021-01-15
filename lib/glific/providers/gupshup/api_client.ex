@@ -2,8 +2,8 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @moduledoc """
   Http API client to intract with Gupshup
   """
-  alias Plug.Conn.Query
   alias Glific.Partners
+  alias Plug.Conn.Query
 
   @gupshup_url "https://api.gupshup.io/sm/api/v1"
 
@@ -17,16 +17,16 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @doc """
   Making Tesla get call and adding api key in header
   """
-  @spec get(String.t(), String.t()) :: Tesla.Env.result()
-  def get(url, api_key), do: Tesla.get(url, headers: [{"apikey", api_key}])
+  @spec gupshup_get(String.t(), String.t()) :: Tesla.Env.result()
+  def gupshup_get(url, api_key), do: get(url, headers: [{"apikey", api_key}])
 
   @doc """
   Making Tesla post call and adding api key in header
   """
-  @spec post(String.t(), any(), String.t()) :: Tesla.Env.result()
-  def post(url, payload, api_key), do: Tesla.post(url, payload, headers: [{"apikey", api_key}])
+  @spec gupshup_post(String.t(), any(), String.t()) :: Tesla.Env.result()
+  def gupshup_post(url, payload, api_key), do: post(url, payload, headers: [{"apikey", api_key}])
 
-  @spec get_credentials(non_neg_integer()) :: {:error, String.t() | {:ok, map()}}
+  @spec get_credentials(non_neg_integer()) :: {:error, String.t()} | {:ok, map()}
   defp get_credentials(org_id) do
     organization = Partners.organization(org_id)
 
@@ -50,10 +50,10 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     |> case do
       {:ok, credentials} ->
         template_url = @gupshup_url <> "/template/list/" <> credentials.app_name
-        get(template_url, credentials.api_key)
+        gupshup_get(template_url, credentials.api_key)
 
       _ ->
-        {:error, "error"}
+        :error
     end
   end
 
@@ -61,13 +61,13 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   Submitting HSM template for approval
   """
   @spec submit_template_for_approval(non_neg_integer(), map()) ::
-          Tesla.Env.result() | {:error, String.t()}
+          Tesla.Env.result() | {:error, any()}
   def submit_template_for_approval(org_id, payload) do
     get_credentials(org_id)
     |> case do
       {:ok, credentials} ->
         template_url = @gupshup_url <> "/template/add/" <> credentials.app_name
-        post(template_url, payload, credentials.api_key)
+        gupshup_post(template_url, payload, credentials.api_key)
 
       _ ->
         {:error, "error"}
@@ -83,7 +83,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     |> case do
       {:ok, credentials} ->
         template_url = @gupshup_url <> "/template/msg"
-        post(template_url, payload, credentials.api_key)
+        gupshup_post(template_url, payload, credentials.api_key)
 
       _ ->
         {:error, "error"}
@@ -93,15 +93,15 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @doc """
   Sending HSM template to contact
   """
-  @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
+  @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
   def send_message(org_id, payload) do
     get_credentials(org_id)
     |> case do
       {:ok, credentials} ->
         url = @gupshup_url <> "/msg"
-        post(url, payload, credentials.api_key)
+        gupshup_post(url, payload, credentials.api_key)
 
-      _ ->
+      {:error, _} ->
         {:error, "error"}
     end
   end
@@ -115,7 +115,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     |> case do
       {:ok, credentials} ->
         url = @gupshup_url <> "/app/opt/in/" <> credentials.app_name
-        post(url, payload, credentials.api_key)
+        gupshup_post(url, payload, credentials.api_key)
 
       _ ->
         {:error, "error"}
@@ -131,7 +131,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     |> case do
       {:ok, credentials} ->
         template_url = @gupshup_url <> "/users/" <> credentials.app_name
-        get(template_url, credentials.api_key)
+        gupshup_get(template_url, credentials.api_key)
 
       _ ->
         {:error, "error"}
