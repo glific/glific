@@ -43,6 +43,7 @@ defmodule Glific.Providers.GupshupContacts do
   @spec fetch_opted_in_contacts(map()) :: :ok | any()
   def fetch_opted_in_contacts(attrs) do
     organization = Partners.organization(attrs.organization_id)
+
     case ApiClient.fetch_opted_in_contacts(attrs.organization_id) do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, response_data} = Jason.decode(body)

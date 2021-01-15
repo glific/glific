@@ -14,18 +14,13 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   plug Tesla.Middleware.FormUrlencoded,
     encode: &Query.encode/1
 
-  def get(url, api_key) do
-    Tesla.get(url, headers: [{"apikey", api_key}])
-  end
+  @spec get(String.t(), String.t()) :: Tesla.Env.result()
+  defp get(url, api_key), do: Tesla.get(url, headers: [{"apikey", api_key}])
 
-  def post(url, payload, api_key) do
-    Tesla.post(url, payload, headers: [{"apikey", api_key}])
-  end
+  @spec post(String.t(), any(), String.t()) :: Tesla.Env.result()
+  defp post(url, payload, api_key), do: Tesla.post(url, payload, headers: [{"apikey", api_key}])
 
-  def post(url, payload) do
-    Tesla.post(url, payload)
-  end
-
+  @spec get_credentials(non_neg_integer()) :: {:error, String.t() | {:ok, map()}}
   defp get_credentials(org_id) do
     organization = Partners.organization(org_id)
 
@@ -40,7 +35,11 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     end
   end
 
-  def get_template(org_id) do
+  @doc """
+  Fetching HSM templates for an organization
+  """
+  @spec get_templates(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
+  def get_templates(org_id) do
     get_credentials(org_id)
     |> case do
       {:ok, credentials} ->
@@ -52,6 +51,11 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     end
   end
 
+  @doc """
+  Submitting HSM template for approval
+  """
+  @spec submit_template_for_approval(non_neg_integer(), map()) ::
+          Tesla.Env.result() | {:error, String.t()}
   def submit_template_for_approval(org_id, payload) do
     get_credentials(org_id)
     |> case do
@@ -64,6 +68,10 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     end
   end
 
+  @doc """
+  Sending HSM template to contact
+  """
+  @spec send_template(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
   def send_template(org_id, payload) do
     get_credentials(org_id)
     |> case do
@@ -76,6 +84,10 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     end
   end
 
+  @doc """
+  Sending HSM template to contact
+  """
+  @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
   def send_message(org_id, payload) do
     get_credentials(org_id)
     |> case do
@@ -88,6 +100,10 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     end
   end
 
+  @doc """
+    Update a contact phone as opted in
+  """
+  @spec optin_contact(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
   def optin_contact(org_id, payload) do
     get_credentials(org_id)
     |> case do
@@ -100,12 +116,17 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     end
   end
 
+  @doc """
+  Fetch opted in contacts data from providers server
+  """
+  @spec optin_contact(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
   def fetch_opted_in_contacts(org_id) do
     get_credentials(org_id)
     |> case do
       {:ok, credentials} ->
         template_url = @gupshup_url <> "/users/" <> credentials.app_name
         get(template_url, credentials.api_key)
+
       _ ->
         {:error, "error"}
     end

@@ -18,7 +18,10 @@ defmodule Glific.Providers.Gupshup.Template do
     organization = Partners.organization(attrs.organization_id)
 
     with {:ok, response} <-
-           ApiClient.submit_template_for_approval(attrs.organization_id, body(attrs, organization)),
+           ApiClient.submit_template_for_approval(
+             attrs.organization_id,
+             body(attrs, organization)
+           ),
          {200, _response} <- {response.status, response} do
       {:ok, response_data} = Jason.decode(response.body)
 
@@ -50,8 +53,9 @@ defmodule Glific.Providers.Gupshup.Template do
   @spec update_hsm_templates(non_neg_integer()) :: :ok | {:error, String.t()}
   def update_hsm_templates(organization_id) do
     organization = Partners.organization(organization_id)
+
     with {:ok, response} <-
-          ApiClient.get_template(organization_id),
+           ApiClient.get_templates(organization_id),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
       Glific.Templates.do_update_hsms(response_data["templates"], organization)
