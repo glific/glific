@@ -762,7 +762,7 @@ subscription {
 ```json
 {
   "data": {
-    "sentMessage": {
+    "updated_message_status": {
       "body": "Test",
       "flow": "OUTBOUND",
       "id" : "10397",
