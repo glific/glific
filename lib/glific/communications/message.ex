@@ -100,11 +100,11 @@ defmodule Glific.Communications.Message do
     end
   end
 
-  @spec fetch_and_publish_message_status(String.t()) :: any()
+  @spec fetch_and_publish_message_status(String.t()) :: any() | nil
   defp fetch_and_publish_message_status(bsp_message_id) do
     case Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id}) do
       {:ok, message} -> publish_message_status(message)
-      {:error, _} -> raise("Error fetching message with bsp_message_id: #{bsp_message_id}")
+      {:error, _} -> nil
     end
   end
 
