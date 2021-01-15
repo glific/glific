@@ -734,11 +734,11 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#messageresult">MessageResult</a> | An error or object
 
-## Subscription for Updated Message Status
+## Subscription for Message Status Update
 
 ```graphql
 subscription {
-  updated_message_status() {
+  update_message_status() {
     id
     body
     flow
