@@ -19,7 +19,12 @@ defmodule Glific.Bigquery do
     Connection
   }
 
-  @bigquery_tables  ["messages", "contacts", "flows", "flow_results"]
+  @bigquery_tables %{
+      "messages" => :message_schema,
+      "contacts" => :contact_schema,
+      "flows" => :flow_schema,
+      "flow_results" => :flow_result_schema
+  }
 
   @doc """
   Creating a dataset with messages and contacts as tables
@@ -66,11 +71,13 @@ defmodule Glific.Bigquery do
       create_tables(conn, dataset_id, project_id)
       alter_tables(conn, dataset_id, project_id)
       contacts_messages_view(conn, dataset_id, project_id)
+      alter_contacts_messages_view(conn, dataset_id, project_id)
       flat_fields_procedure(conn, dataset_id, project_id)
   end
 
   def insert_bigquery_jobs(organization_id), do:
     @bigquery_tables
+    |> Map.keys()
     |> Enum.each(&create_bigquery_job(&1, organization_id))
 
   defp create_bigquery_job(table_name, organization_id) do
@@ -79,7 +86,6 @@ defmodule Glific.Bigquery do
     |> case do
       {:ok, bigquery_job} -> bigquery_job
       _ ->
-        IO.inspect "Hello 2"
         %BigqueryJob{}
         |> BigqueryJob.changeset(%{table: table_name, organization_id: organization_id})
         |> Repo.insert()
@@ -129,10 +135,13 @@ defmodule Glific.Bigquery do
   @spec create_tables(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp create_tables(conn, dataset_id, project_id) do
-    create_table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
-    create_table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
-    create_table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
-    create_table(BigquerySchema.flow_result_schema(), conn, dataset_id, project_id, "flow_results")
+    @bigquery_tables
+    |> Enum.each(
+      fn {table_id, schema}
+        ->
+        apply( BigquerySchema, @bigquery_tables[table_id], [])
+      |> create_table(conn, dataset_id, project_id, table_id)
+    end)
   end
 
   @doc """
@@ -143,12 +152,13 @@ defmodule Glific.Bigquery do
   def alter_tables(conn, project_id, dataset_id) do
     case Datasets.bigquery_datasets_get(conn, project_id, dataset_id) do
       {:ok, _} ->
-        alter_table(BigquerySchema.contact_schema(), conn, dataset_id, project_id, "contacts")
-        alter_table(BigquerySchema.message_schema(), conn, dataset_id, project_id, "messages")
-        alter_table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flows")
-        alter_table(BigquerySchema.flow_schema(), conn, dataset_id, project_id, "flow_results")
-        alter_contacts_messages_view(conn, dataset_id, project_id)
-
+        @bigquery_tables
+        |> Enum.each(
+          fn {table_id, schema}
+            ->
+            apply( BigquerySchema, @bigquery_tables[table_id], [])
+          |> alter_table(conn, dataset_id, project_id, table_id)
+        end)
       {:error, _} ->
         nil
     end
