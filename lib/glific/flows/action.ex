@@ -350,7 +350,6 @@ defmodule Glific.Flows.Action do
     if action.groups == ["all_groups"] do
       groups_ids = Groups.get_group_ids()
       Groups.delete_contact_groups_by_ids(context.contact_id, groups_ids)
-      {:ok, context, messages}
     else
       groups_ids =
         Enum.map(
@@ -362,8 +361,9 @@ defmodule Glific.Flows.Action do
         )
 
       Groups.delete_group_contacts_by_ids(context.contact_id, groups_ids)
-      {:ok, context, messages}
     end
+
+    {:ok, context, messages}
   end
 
   def execute(%{type: "wait_for_time"} = _action, context, [msg]) do
@@ -380,7 +380,10 @@ defmodule Glific.Flows.Action do
       {:ok, context} =
         FlowContext.update_flow_context(
           context,
-          %{wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time)}
+          %{
+            wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
+            wait_for_time: true
+          }
         )
 
       {:wait, context, []}

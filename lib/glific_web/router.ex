@@ -119,10 +119,17 @@ defmodule GlificWeb.Router do
     get "/revisions/*vars", FlowEditorController, :revisions
 
     post "/revisions/*vars", FlowEditorController, :save_revisions
+
+    get "/validate-media", FlowEditorController, :validate_media
   end
 
   scope "/webhook", GlificWeb.Flows do
     post "/stir/survey", WebhookController, :stir_survey
+  end
+
+  scope "/cors-proxy", GlificWeb.API.V1 do
+    # https://github.com/bcentinaro/cors-proxy
+    get("/*url", CorsController, :get)
   end
 
   # defp debug_response(conn, _) do

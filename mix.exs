@@ -8,7 +8,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "0.9.2",
+      version: "0.9.3",
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -132,7 +132,8 @@ defmodule Glific.MixProject do
       {:waffle_ecto, "~> 0.0"},
       {:csv, "~> 2.4"},
       {:observer_cli, "~> 1.6"},
-      {:apiac_filter_ip_whitelist, "~> 1.0"}
+      {:apiac_filter_ip_whitelist, "~> 1.0"},
+      {:ex_phone_number, "~> 0.2"}
     ]
   end
 
