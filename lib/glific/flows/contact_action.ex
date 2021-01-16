@@ -18,7 +18,12 @@ defmodule Glific.Flows.ContactAction do
   @min_delay 2
 
   @doc """
-  If the template is not defined for the message send text messages
+  If the template is not defined for the message send text messages.
+  Given a shortcode and a context, send the right session template message
+  to the contact.
+
+  We also need to handle translations for template messages, since whatsapp
+  gives them unique uuids
   """
   @spec send_message(FlowContext.t(), Action.t(), [Message.t()]) :: {:ok, map(), any()}
   def send_message(context, %Action{templating: nil} = action, messages) do
@@ -84,12 +89,6 @@ defmodule Glific.Flows.ContactAction do
     end
   end
 
-  @doc """
-  Given a shortcode and a context, send the right session template message
-  to the contact.
-
-  We need to handle translations for template messages, since whatsapp gives them unique
-  """
   def send_message(
         context,
         %Action{templating: templating} = action,
