@@ -34,10 +34,17 @@ defmodule Glific.Providers.Gupshup.ApiClient do
       {:error, "No active BSP available"}
     else
       bsp_credentials = organization.services["bsp"]
-      api_key = bsp_credentials.secrets["api_key"]
-      app_name = bsp_credentials.secrets["app_name"]
 
-      {:ok, %{api_key: api_key, app_name: app_name}}
+      with false <- is_nil(bsp_credentials.secrets["api_key"]),
+           false <- is_nil(bsp_credentials.secrets["api_key"]) do
+        api_key = bsp_credentials.secrets["api_key"]
+        app_name = bsp_credentials.secrets["app_name"]
+        {:ok, %{api_key: api_key, app_name: app_name}}
+      else
+        _ ->
+          {:error,
+           "Please check your credential settings and ensure you have added the API Key and App Name also"}
+      end
     end
   end
 
@@ -46,14 +53,9 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   @spec get_templates(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
   def get_templates(org_id) do
-    get_credentials(org_id)
-    |> case do
-      {:ok, credentials} ->
-        template_url = @gupshup_url <> "/template/list/" <> credentials.app_name
-        gupshup_get(template_url, credentials.api_key)
-
-      _ ->
-        :error
+    with {:ok, credentials} <- get_credentials(org_id) do
+      template_url = @gupshup_url <> "/template/list/" <> credentials.app_name
+      gupshup_get(template_url, credentials.api_key)
     end
   end
 
@@ -64,13 +66,10 @@ defmodule Glific.Providers.Gupshup.ApiClient do
           Tesla.Env.result() | {:error, any()}
   def submit_template_for_approval(org_id, payload) do
     get_credentials(org_id)
-    |> case do
-      {:ok, credentials} ->
-        template_url = @gupshup_url <> "/template/add/" <> credentials.app_name
-        gupshup_post(template_url, payload, credentials.api_key)
 
-      _ ->
-        {:error, "error"}
+    with {:ok, credentials} <- get_credentials(org_id) do
+      template_url = @gupshup_url <> "/template/add/" <> credentials.app_name
+      gupshup_post(template_url, payload, credentials.api_key)
     end
   end
 
@@ -80,13 +79,10 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @spec send_template(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
   def send_template(org_id, payload) do
     get_credentials(org_id)
-    |> case do
-      {:ok, credentials} ->
-        template_url = @gupshup_url <> "/template/msg"
-        gupshup_post(template_url, payload, credentials.api_key)
 
-      _ ->
-        {:error, "error"}
+    with {:ok, credentials} <- get_credentials(org_id) do
+      template_url = @gupshup_url <> "/template/msg"
+      gupshup_post(template_url, payload, credentials.api_key)
     end
   end
 
@@ -96,29 +92,23 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
   def send_message(org_id, payload) do
     get_credentials(org_id)
-    |> case do
-      {:ok, credentials} ->
-        url = @gupshup_url <> "/msg"
-        gupshup_post(url, payload, credentials.api_key)
 
-      {:error, _} ->
-        {:error, "error"}
+    with {:ok, credentials} <- get_credentials(org_id) do
+      url = @gupshup_url <> "/msg"
+      gupshup_post(url, payload, credentials.api_key)
     end
   end
 
   @doc """
-    Update a contact phone as opted in
+  Update a contact phone as opted in
   """
   @spec optin_contact(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
   def optin_contact(org_id, payload) do
     get_credentials(org_id)
-    |> case do
-      {:ok, credentials} ->
-        url = @gupshup_url <> "/app/opt/in/" <> credentials.app_name
-        gupshup_post(url, payload, credentials.api_key)
 
-      _ ->
-        {:error, "error"}
+    with {:ok, credentials} <- get_credentials(org_id) do
+      url = @gupshup_url <> "/app/opt/in/" <> credentials.app_name
+      gupshup_post(url, payload, credentials.api_key)
     end
   end
 
@@ -128,13 +118,10 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @spec fetch_opted_in_contacts(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
   def fetch_opted_in_contacts(org_id) do
     get_credentials(org_id)
-    |> case do
-      {:ok, credentials} ->
-        template_url = @gupshup_url <> "/users/" <> credentials.app_name
-        gupshup_get(template_url, credentials.api_key)
 
-      _ ->
-        {:error, "error"}
+    with {:ok, credentials} <- get_credentials(org_id) do
+      template_url = @gupshup_url <> "/users/" <> credentials.app_name
+      gupshup_get(template_url, credentials.api_key)
     end
   end
 end
