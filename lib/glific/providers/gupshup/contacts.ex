@@ -20,16 +20,7 @@ defmodule Glific.Providers.GupshupContacts do
 
   @spec optin_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
-    organization = Partners.organization(organization_id)
-    bsp_credentials = organization.services["bsp"]
-
-    url =
-      bsp_credentials.keys["api_end_point"] <>
-        "/app/opt/in/" <> bsp_credentials.secrets["app_name"]
-
-    api_key = bsp_credentials.secrets["api_key"]
-
-    ApiClient.post(url, %{user: attrs.phone}, headers: [{"apikey", api_key}])
+    ApiClient.optin_contact(organization_id, %{user: attrs.phone})
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
         %{
@@ -52,11 +43,8 @@ defmodule Glific.Providers.GupshupContacts do
   @spec fetch_opted_in_contacts(map()) :: :ok | any()
   def fetch_opted_in_contacts(attrs) do
     organization = Partners.organization(attrs.organization_id)
-    url = attrs.keys["api_end_point"] <> "/users/" <> attrs.secrets["app_name"]
 
-    api_key = attrs.secrets["api_key"]
-
-    case ApiClient.get(url, headers: [{"apikey", api_key}]) do
+    case ApiClient.fetch_opted_in_contacts(attrs.organization_id) do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, response_data} = Jason.decode(body)
 
