@@ -34,12 +34,6 @@ defmodule Glific.Flows.ContactField do
         %{fields: fields}
       )
 
-    # Bigquery.update_contact(
-    #   context.contact.phone,
-    #   %{"fields" => fields},
-    #   context.contact.organization_id
-    # )
-
     Map.put(context, :contact, contact)
   end
 

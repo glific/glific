@@ -6,7 +6,11 @@ defmodule Glific.Bigquery do
   alias Glific.{
     BigquerySchema,
     Contacts,
+    Contacts.Contact,
+    Flows.FlowResult,
+    Flows.FlowRevision,
     Jobs.BigqueryJob,
+    Messages.Message,
     Partners,
     Repo
   }
@@ -50,8 +54,11 @@ defmodule Glific.Bigquery do
   @doc false
   @spec fetch_bigquery_credentials(non_neg_integer) :: nil | tuple
   def fetch_bigquery_credentials(organization_id) do
-    organization = Partners.organization(organization_id)
-    org_contact = Contacts.get_contact!(organization.contact_id)
+    organization =
+      Partners.organization(organization_id)
+      |> Repo.preload(:contact)
+
+    org_contact = organization.contact
 
     organization.services["bigquery"]
     |> case do
@@ -198,7 +205,7 @@ defmodule Glific.Bigquery do
 
         updated_values =
           Enum.reduce(updated_fields, %{}, fn {key, field}, acc ->
-            Map.put(acc, key, format_field_values(key, field, organization_id))
+            Map.put(acc, key, format_contact_field_values(field, organization_id))
           end)
 
         sql =
@@ -219,18 +226,14 @@ defmodule Glific.Bigquery do
     :ok
   end
 
-  @spec format_field_values(String.t(), map() | any(), integer()) :: any()
-  defp format_field_values("fields", contact_fields, org_id) when is_map(contact_fields) do
+  @spec format_contact_field_values(map() | any(), integer()) :: any()
+  def format_contact_field_values(contact_fields, org_id) when is_map(contact_fields) do
     contact_fields = validate_fields(contact_fields)
-
     values =
       Enum.map(contact_fields, fn contact_field ->
         contact_field = Glific.atomize_keys(contact_field)
         value = format_value(contact_field.value)
-
-        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{
-          format_date(contact_field.inserted_at, org_id)
-        }')"
+        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{ format_date(contact_field.inserted_at, org_id)}')"
       end)
 
     "[STRUCT<label STRING, value STRING, type STRING, inserted_at DATETIME>#{
@@ -238,7 +241,22 @@ defmodule Glific.Bigquery do
     }]"
   end
 
-  defp format_field_values(_key, field, _org_id), do: field
+  @spec format_contact_field_values(map() | any(), integer()) :: any()
+  def format_contact_field_values(contact_fields, org_id) when is_list(contact_fields) do
+    values =
+      Enum.map(contact_fields, fn contact_field ->
+        contact_field = Glific.atomize_keys(contact_field)
+        value = format_value(contact_field.value)
+        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{ format_date(contact_field.inserted_at, org_id)}')"
+      end)
+
+    "[STRUCT<label STRING, value STRING, type STRING, inserted_at DATETIME>#{
+      Enum.join(values, ",")
+    }]"
+  end
+
+
+  def format_contact_field_values( field, _org_id), do: field
 
   @spec format_value(map() | any()) :: any()
   defp format_value(value) when is_map(value), do: Map.get(value, :input, "Unknown format")
