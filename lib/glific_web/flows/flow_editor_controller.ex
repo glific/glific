@@ -268,7 +268,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
       Contacts.list_user_contacts()
       |> Enum.reduce(
         [],
-        fn c, acc -> [%{uuid: c.id, name: c.name} | acc] end
+    fn c, acc -> [%{uuid: "#{c.id}", name: c.name} | acc] end
     )
       |> IO.inspect()
 
