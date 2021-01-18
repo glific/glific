@@ -653,8 +653,6 @@ defmodule Glific.Partners do
   @spec update_credential(Credential.t(), map()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
-    IO.inspect(attrs)
-    IO.inspect(credential)
     # delete the cached organization and associated credentials
     organization = organization(credential.organization_id)
 

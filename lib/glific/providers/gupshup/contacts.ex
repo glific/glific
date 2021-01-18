@@ -56,7 +56,7 @@ defmodule Glific.Providers.GupshupContacts do
         end
 
       {:ok, %Tesla.Env{status: status}} when status in 400..499 ->
-        {:error, "Error updating opted-in contacts Invalid Key"}
+        {:error, "Error updating opted-in contacts invalid key"}
 
       {:error, %Tesla.Error{reason: reason}} ->
         {:error, "Error updating opted-in contacts #{reason}"}
