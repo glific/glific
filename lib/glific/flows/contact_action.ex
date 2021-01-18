@@ -18,6 +18,25 @@ defmodule Glific.Flows.ContactAction do
   @min_delay 2
 
   @doc """
+  This is just a think wrapper for send_message, since its basically the same,
+  but instead of sending the message to the contact, sends it to another contact
+  that is identified in the action. You can send the same notification to multiple
+  contacts
+  """
+  @spec send_broadcast(FlowContext.t(), Action.t(), [Message.t()]) :: {:ok, map(), any()}
+  def send_broadcast(context, action, messages) do
+    # note that we return the result of the last reduce
+    # all the ones in between are ignored
+    action.contacts
+    |> Enum.reduce(
+    {:ok, context, messages},
+    fn contact, {_, _, _} ->
+      {:ok, cid} = Glific.parse_maybe_integer(contact["uuid"])
+      send_message(context, action, messages, cid)
+    end)
+  end
+
+  @doc """
   If the template is not defined for the message send text messages.
   Given a shortcode and a context, send the right session template message
   to the contact.
@@ -25,15 +44,24 @@ defmodule Glific.Flows.ContactAction do
   We also need to handle translations for template messages, since whatsapp
   gives them unique uuids
   """
-  @spec send_message(FlowContext.t(), Action.t(), [Message.t()]) :: {:ok, map(), any()}
-  def send_message(context, %Action{templating: nil} = action, messages) do
+  @spec send_message(FlowContext.t(), Action.t(), [Message.t()], non_neg_integer | nil) ::
+          {:ok, map(), any()}
+  def send_message(context, action, messages, cid \\ nil)
+
+  def send_message(context, %Action{templating: nil} = action, messages, cid) do
+    cid =
+      if is_nil(cid),
+        do: context.contact_id,
+        else: cid
+
     # get the test translation if needed
     text = Localization.get_translation(context, action, :text)
     attachments = Localization.get_translation(context, action, :attachments)
+
     # Since we are saving the data after loading the flow
     # so we have to fetch the latest contact fields
     message_vars = %{
-      "contact" => Contacts.get_contact_field_map(context.contact_id),
+      "contact" => Contacts.get_contact_field_map(cid),
       "results" => context.results
     }
 
@@ -50,7 +78,7 @@ defmodule Glific.Flows.ContactAction do
       body: body,
       type: type,
       media_id: media_id,
-      receiver_id: context.contact_id,
+      receiver_id: cid,
       organization_id: organization_id,
       flow_id: context.flow_id,
       send_at: DateTime.add(DateTime.utc_now(), context.delay)
@@ -92,10 +120,16 @@ defmodule Glific.Flows.ContactAction do
   def send_message(
         context,
         %Action{templating: templating} = action,
-        messages
+        messages,
+        cid
       ) do
+    cid =
+      if is_nil(cid),
+        do: context.contact_id,
+        else: cid
+
     message_vars = %{
-      "contact" => Contacts.get_contact_field_map(context.contact_id),
+      "contact" => Contacts.get_contact_field_map(cid),
       "results" => context.results
     }
 
@@ -125,7 +159,7 @@ defmodule Glific.Flows.ContactAction do
       Messages.create_and_send_session_template(
         session_template,
         %{
-          receiver_id: context.contact_id,
+          receiver_id: cid,
           flow_id: context.flow_id,
           is_hsm: true,
           send_at: DateTime.add(DateTime.utc_now(), context.delay)

@@ -31,9 +31,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
         true
       )
       |> Enum.reduce([], fn group, acc ->
-        [%{uuid: "#{group.id}", name: group.label} | acc]
+        [%{uuid: "#{group.id}", name: group.label, type: "group"} | acc]
       end)
-      |> IO.inspect()
 
     conn
     |> json(%{results: group_list})
@@ -266,7 +265,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     # this to be fixed in the frontend
     recipients =
       Contacts.list_user_contacts()
-      |> Enum.reduce([], fn c, acc -> [%{id: c.id, name: c.name, type: "contact", extra: c.id} | acc] end)
+      |> Enum.reduce([], fn c, acc -> [%{id: "#{c.id}", name: c.name, type: "contact", extra: c.id} | acc] end)
 
       json(conn, %{results: recipients})
   end

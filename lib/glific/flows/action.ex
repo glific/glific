@@ -37,6 +37,7 @@ defmodule Glific.Flows.Action do
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
   @required_fields_group [:groups | @required_field_common]
+  @required_fields_contact [:contacts | @required_field_common]
   @required_fields_waittime [:delay]
 
   @type t() :: %__MODULE__{
@@ -56,6 +57,7 @@ defmodule Glific.Flows.Action do
           attachments: list() | nil,
           labels: list() | nil,
           groups: list() | nil,
+          contacts: list() | nil,
           enter_flow: Flow.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
@@ -88,6 +90,7 @@ defmodule Glific.Flows.Action do
 
     field :labels, :map
     field :groups, :map
+    field :contacts, :map
 
     field :wait_time, :integer
 
@@ -173,6 +176,16 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, %{groups: json["groups"]})
   end
 
+  def process(%{"type" => "send_broadcast"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_contact)
+    attrs = %{
+      text: json["text"],
+      attachments: process_attachments(json["attachments"]),
+      contacts: json["contacts"]
+    }
+    process(json, uuid_map, node, attrs)
+  end
+
   def process(%{"type" => "remove_contact_groups"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_group)
 
@@ -220,6 +233,10 @@ defmodule Glific.Flows.Action do
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, messages) do
     ContactAction.send_message(context, action, messages)
+  end
+
+  def execute(%{type: "send_broadcast"} = action, context, messages) do
+    ContactAction.send_broadcast(context, action, messages)
   end
 
   def execute(%{type: "set_contact_language"} = action, context, messages) do
