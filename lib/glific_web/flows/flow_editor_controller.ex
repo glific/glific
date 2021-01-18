@@ -33,6 +33,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
       |> Enum.reduce([], fn group, acc ->
         [%{uuid: "#{group.id}", name: group.label} | acc]
       end)
+      |> IO.inspect()
 
     conn
     |> json(%{results: group_list})
