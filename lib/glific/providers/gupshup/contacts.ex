@@ -48,18 +48,18 @@ defmodule Glific.Providers.GupshupContacts do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, response_data} = Jason.decode(body)
 
-        if is_nil(response_data["users"]) do
-          raise "Error updating opted-in contacts #{response_data["message"]}"
+        if response_data["status"] == "error" do
+          {:error, "Error updating opted-in contacts #{response_data["message"]}"}
         else
           users = response_data["users"]
           update_contacts(users, organization)
         end
 
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
-        raise "Error updating opted-in contacts #{body}"
+      {:ok, %Tesla.Env{status: status}} when status in 400..499 ->
+        {:error, "Error updating opted-in contacts invalid key"}
 
       {:error, %Tesla.Error{reason: reason}} ->
-        raise "Error updating opted-in contacts #{reason}"
+        {:error, "Error updating opted-in contacts #{reason}"}
     end
 
     :ok
