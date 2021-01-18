@@ -62,7 +62,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     test "Incoming text message should be stored in the database",
          %{conn: conn, message_params: message_params} do
       conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      assert conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -109,7 +109,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     test "Incoming image message should be stored in the database",
          setup_config = %{conn: conn} do
       conn = post(conn, "/gupshup", setup_config.message_params)
-      json_response(conn, 200)
+      assert conn.halted
 
       bsp_message_id = get_in(setup_config.message_params, ["payload", "id"])
 
@@ -148,7 +148,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "payload", "caption"], nil)
 
       conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      assert conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -178,7 +178,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "type"], "video")
 
       conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      assert conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -207,7 +207,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "type"], "file")
 
       conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      assert conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -237,7 +237,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "type"], "sticker")
 
       conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      assert conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
@@ -282,7 +282,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       message_params = setup_config.message_params
 
       conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      assert conn.halted
+
+      # text_response(conn, 200)
       bsp_message_id = get_in(message_params, ["payload", "id"])
 
       {:ok, message} =
