@@ -47,6 +47,7 @@ defmodule Glific.Bigquery do
     :ok
   end
 
+  @doc false
   @spec fetch_bigquery_credentials(non_neg_integer) :: nil | tuple
   def fetch_bigquery_credentials(organization_id) do
     organization = Partners.organization(organization_id)
@@ -63,6 +64,19 @@ defmodule Glific.Bigquery do
         token = Partners.get_goth_token(organization_id, "bigquery")
         conn = Connection.new(token.token)
         {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+    end
+  end
+
+  @doc false
+  @spec get_table_struct(String.t()) :: any()
+  def get_table_struct(table) do
+    case table do
+      "messages" -> Message
+      "contacts" -> Contact
+      "flows" -> FlowRevision
+      "flow_results" -> FlowResult
+      "update_flow_results" -> FlowResult
+      _ -> ""
     end
   end
 
@@ -137,9 +151,9 @@ defmodule Glific.Bigquery do
   defp create_tables(conn, dataset_id, project_id) do
     @bigquery_tables
     |> Enum.each(
-      fn {table_id, schema}
+      fn {table_id, _schema}
         ->
-        apply( BigquerySchema, @bigquery_tables[table_id], [])
+        apply(BigquerySchema, @bigquery_tables[table_id], [])
       |> create_table(conn, dataset_id, project_id, table_id)
     end)
   end
@@ -154,7 +168,7 @@ defmodule Glific.Bigquery do
       {:ok, _} ->
         @bigquery_tables
         |> Enum.each(
-          fn {table_id, schema}
+          fn {table_id, _schema}
             ->
             apply( BigquerySchema, @bigquery_tables[table_id], [])
           |> alter_table(conn, dataset_id, project_id, table_id)

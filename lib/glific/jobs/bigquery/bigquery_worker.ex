@@ -31,7 +31,6 @@ defmodule Glific.Jobs.BigQueryWorker do
   }
 
   @simulater_phone "9876543210"
-  @reschedule_time 120
   @update_minutes 90
 
   @doc """
@@ -102,22 +101,25 @@ defmodule Glific.Jobs.BigQueryWorker do
     table_id = bigquery_job.table_id
 
     max_id =
-      get_table_struct(bigquery_job.table)
+      Bigquery.get_table_struct(bigquery_job.table)
       |> select([m], max(m.id))
-      |> where([m], m.organization_id == ^organization_id)
-      |> where[[m], m.id > table_id]
+      |> where([m], m.organization_id == ^organization_id and m.id > ^table_id)
       |> limit(100)
       |> Repo.one()
 
-    if max_id > table_id,
-    do:queue_table_data(bigquery_job.table, organization_id, table_id, max_id)
+    cond do
+      is_nil(max_id)
+        -> nil
+      max_id > table_id
+        -> queue_table_data(bigquery_job.table, organization_id, table_id, max_id)
+      true -> nil
+    end
 
     :ok
   end
 
   @spec queue_table_data(String.t(), non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
   defp queue_table_data("messages", organization_id, min_id, max_id) do
-    query =
       Message
       |> where([m], m.organization_id == ^organization_id)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
@@ -142,7 +144,7 @@ defmodule Glific.Jobs.BigQueryWorker do
           user_phone: if(!is_nil(row.user), do: row.user.phone),
           user_name: if(!is_nil(row.user), do: row.user.name),
           tags_label: tags_label,
-          flow_label: row.flow_label
+          flow_label: row.flow_label,
           media_url: media_url(row.media)
         }
         |> format_data_for_bigquery("messages")
@@ -195,7 +197,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         ]
       end
     )
-    |> make_job(contacts, organization_id, max_id)
+    |> make_job(:contacts, organization_id, max_id)
   end
 
   defp queue_table_data("flows", organization_id, min_id, max_id) do
@@ -262,7 +264,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
     )
     |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
-    |> make_job(:flow_resultsm organization_id, max_id)
+    |> make_job(:flow_results, organization_id, max_id)
   end
 
   defp queue_table_data(_, _, _, _), do: nil
@@ -274,9 +276,17 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   @spec make_job(list(), String.t(), non_neg_integer, non_neg_integer) :: :ok | nil
+  defp make_job(data, "update_flow_results", organization_id) do
+    __MODULE__.new(%{organization_id: organization_id, update_flow_results: data})
+    |> Oban.insert()
+  end
+
+  defp make_job(data, _, _, _) when data in [%{}, nil], do: nil
+
   defp make_job(data, table, organization_id, max_id) do
     __MODULE__.new(%{
-        table => data,
+        data: data,
+        table: table,
         organization_id: organization_id,
         max_id: max_id
       })
@@ -284,23 +294,18 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  defp make_job(data, "update_flow_results", organization_id) do
-    __MODULE__.new(%{organization_id: organization_id, update_flow_results: data})
-    |> Oban.insert()
-  end
-
-  defp make_job(_, _, _, _), do: nil
-
   @doc """
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
+
+  @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(
         %Oban.Job{
           args: %{
             "update_flow_results" => update_flow_results,
             "organization_id" => organization_id,
-            "max_id" => max_id
+            "max_id" => _max_id
           }
         } = job
       ), do:
@@ -309,22 +314,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         |> make_update_query(organization_id, job)
 
 
-  @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
-  def perform(%Oban.Job{args: %{table => data, "organization_id" => organization_id, "max_id" => max_id }} = job),
+  def perform(%Oban.Job{args: %{"data" => data, "table" => table, "organization_id" => organization_id, "max_id" => max_id }} = job),
   do: make_insert_query(data, table, organization_id, job, max_id)
-
-
-  @spec get_table_struct(String.t()) :: any()
-  defp get_table_struct(table) do
-    case table do
-      "messages" -> Message
-      "contacts" -> Contact
-      "flows" -> FlowRevision
-      "flow_results" -> FlowResult
-      "update_flow_results" -> FlowResult
-      _ -> ""
-    end
-  end
 
   defp media_url(nil), do: nil
   defp media_url(media), do: media.url
@@ -350,9 +341,6 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   @spec format_data_for_bigquery(map(), String.t()) :: map()
-  defp format_data_for_bigquery(data, table),
-  do:%{json: msg}
-
   defp format_data_for_bigquery(flow, "update_flow_results") do
     %{
       id: flow["id"],
@@ -362,45 +350,33 @@ defmodule Glific.Jobs.BigQueryWorker do
     }
   end
 
-  defp format_data_for_bigquery(_, _), do: %{}
+  defp format_data_for_bigquery(data, _table),
+  do: %{json: data}
 
-  @spec make_insert_query(list(), String.t(), non_neg_integer, Oban.Job.t()) :: :ok
+  @spec make_insert_query(list(), String.t(), non_neg_integer, Oban.Job.t(), non_neg_integer) :: :ok
   defp make_insert_query(data, table, organization_id, job, max_id) do
-    organization =
-      Partners.organization(organization_id)
-      |> Repo.preload(:contact)
-
-    credentials =
-      organization.services["bigquery"]
-      |> case do
-        nil -> %{url: nil, id: nil, email: nil}
-        credentials -> credentials
-      end
-
-    {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
-    project_id = service_account["project_id"]
-    dataset_id = organization.contact.phone
-    table_id = table
-    token = Partners.get_goth_token(organization_id, "bigquery")
-    conn = Connection.new(token.token)
-    # In case of error response error will be stored in the oban job
-    Tabledata.bigquery_tabledata_insert_all(
-      conn,
-      project_id,
-      dataset_id,
-      table_id,
-      [body: %{rows: data}],
-      []
-    )
+    Bigquery.fetch_bigquery_credentials(organization_id)
     |> case do
-      {:ok, _} ->
-        Jobs.update_bigquery_job(bigquery_job, %{table_id: max_id})
-        :ok
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}}
+        ->
+           Tabledata.bigquery_tabledata_insert_all(
+            conn,
+            project_id,
+            dataset_id,
+            table,
+            [body: %{rows: data}],
+            []
+          )
+          |> case do
+            {:ok, _} ->
+              Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+              :ok
+            {:error, response} ->
+              handle_insert_error(table, dataset_id, organization_id, response, job)
+          end
 
-      {:error, response} ->
-        handle_insert_error(table, dataset_id, organization_id, response, job)
+      _ -> %{url: nil, id: nil, email: nil}
     end
-
     :ok
   end
 
@@ -417,8 +393,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         credentials -> credentials
       end
 
-    {:ok, secrets} = Jason.decode(credentials.secrets["service_account"])
-    project_id = secrets["project_id"]
+    {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
+    project_id = service_account["project_id"]
     dataset_id = organization.contact.phone
     token = Partners.get_goth_token(organization_id, "bigquery")
     conn = Connection.new(token.token)
@@ -441,12 +417,12 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
-  defp handle_insert_error(table, dataset_id, organization_id, response, job) do
+  defp handle_insert_error(table, dataset_id, organization_id, response, _job) do
     if should_retry_job?(response) do
       Bigquery.sync_schema_with_bigquery(dataset_id, organization_id)
       :ok
     else
-      raise("Bigquery Insert Error #{response}")
+      raise("Bigquery Insert Error for table #{table}  #{response}")
     end
   end
 

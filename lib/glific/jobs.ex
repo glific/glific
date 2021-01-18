@@ -99,6 +99,12 @@ defmodule Glific.Jobs do
     |> Repo.update()
   end
 
+  @spec update_bigquery_job(non_neg_integer, String.t(), map()) ::
+          {:ok, BigqueryJob.t()} | {:error, Ecto.Changeset.t()}
+  def update_bigquery_job(organization_id, table, attrs),
+  do: get_bigquery_job(organization_id, table)
+    |> update_bigquery_job(attrs)
+
   @doc false
   @spec get_bigquery_jobs(integer) :: list() | nil
   def get_bigquery_jobs(organization_id) do
