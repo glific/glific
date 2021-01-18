@@ -29,11 +29,12 @@ defmodule Glific.Flows.ContactAction do
     # all the ones in between are ignored
     action.contacts
     |> Enum.reduce(
-    {:ok, context, messages},
-    fn contact, {_, _, _} ->
-      {:ok, cid} = Glific.parse_maybe_integer(contact["uuid"])
-      send_message(context, action, messages, cid)
-    end)
+      {:ok, context, messages},
+      fn contact, {_, _, _} ->
+        {:ok, cid} = Glific.parse_maybe_integer(contact["uuid"])
+        send_message(context, action, messages, cid)
+      end
+    )
   end
 
   @doc """

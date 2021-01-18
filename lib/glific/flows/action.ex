@@ -178,11 +178,13 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => "send_broadcast"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_contact)
+
     attrs = %{
       text: json["text"],
       attachments: process_attachments(json["attachments"]),
       contacts: json["contacts"]
     }
+
     process(json, uuid_map, node, attrs)
   end
 

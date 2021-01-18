@@ -525,7 +525,8 @@ defmodule Glific.Contacts do
   @doc """
   Upload a contact phone as opted in
   """
-  @spec optin_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  @spec optin_contact(map()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
     organization = Partners.organization(organization_id)
 

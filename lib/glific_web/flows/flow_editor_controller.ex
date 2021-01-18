@@ -265,9 +265,11 @@ defmodule GlificWeb.Flows.FlowEditorController do
     # this to be fixed in the frontend
     recipients =
       Contacts.list_user_contacts()
-      |> Enum.reduce([], fn c, acc -> [%{id: "#{c.id}", name: c.name, type: "contact", extra: c.id} | acc] end)
+      |> Enum.reduce([], fn c, acc ->
+        [%{id: "#{c.id}", name: c.name, type: "contact", extra: c.id} | acc]
+      end)
 
-      json(conn, %{results: recipients})
+    json(conn, %{results: recipients})
   end
 
   @doc """
