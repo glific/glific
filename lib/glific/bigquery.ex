@@ -256,10 +256,10 @@ defmodule Glific.Bigquery do
   end
 
   @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
-  defp format_date(nil, _),
+  def format_date(nil, _),
     do: nil
 
-  defp format_date(date, organization_id) when is_binary(date) do
+  def format_date(date, organization_id) when is_binary(date) do
     timezone = Partners.organization(organization_id).timezone
 
     Timex.parse(date, "{RFC3339z}")
@@ -268,7 +268,7 @@ defmodule Glific.Bigquery do
     |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
   end
 
-  defp format_date(date, organization_id) do
+  def format_date(date, organization_id) do
     timezone = Partners.organization(organization_id).timezone
 
     date

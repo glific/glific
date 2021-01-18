@@ -68,7 +68,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     query =
       FlowResult
       |> where([fr], fr.organization_id == ^organization_id)
-      |> where([fr], fr.updated_at <= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+      |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
       |> preload([:flow, :contact])
 
     Repo.all(query)
@@ -78,8 +78,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         [
           %{
             id: row.flow.id,
-            inserted_at: format_date(row.inserted_at, organization_id),
-            updated_at: format_date(row.updated_at, organization_id),
+            inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+            updated_at: Bigquery.format_date(row.updated_at, organization_id),
             results: format_json(row.results),
             contact_phone: row.contact.phone,
             flow_version: row.flow_version,
@@ -133,8 +133,8 @@ defmodule Glific.Jobs.BigQueryWorker do
           body: row.body,
           type: row.type,
           flow: row.flow,
-          inserted_at: format_date(row.inserted_at, organization_id),
-          sent_at: format_date(row.sent_at, organization_id),
+          inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+          sent_at: Bigquery.format_date(row.sent_at, organization_id),
           uuid: row.uuid,
           status: row.status,
           sender_phone: row.sender.phone,
@@ -176,14 +176,14 @@ defmodule Glific.Jobs.BigQueryWorker do
             provider_status: row.bsp_status,
             status: row.status,
             language: row.language.label,
-            optin_time: format_date(row.optin_time, organization_id),
-            optout_time: format_date(row.optout_time, organization_id),
-            last_message_at: format_date(row.last_message_at, organization_id),
-            inserted_at: format_date(row.inserted_at, organization_id),
+            optin_time: Bigquery.format_date(row.optin_time, organization_id),
+            optout_time: Bigquery.format_date(row.optout_time, organization_id),
+            last_message_at: Bigquery.format_date(row.last_message_at, organization_id),
+            inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
             fields: Enum.map(row.fields, fn {_key, field} ->
                 %{
                   label: field["label"],
-                  inserted_at: format_date(field["inserted_at"], organization_id),
+                  inserted_at: Bigquery.format_date(field["inserted_at"], organization_id),
                   type: field["type"],
                   value: field["value"]
                 }
@@ -219,8 +219,8 @@ defmodule Glific.Jobs.BigQueryWorker do
             id: row.flow.id,
             name: row.flow.name,
             uuid: row.flow.uuid,
-            inserted_at: format_date(row.inserted_at, organization_id),
-            updated_at: format_date(row.updated_at, organization_id),
+            inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+            updated_at: Bigquery.format_date(row.updated_at, organization_id),
             keywords: format_json(row.flow.keywords),
             status: row.status,
             revision: format_json(row.definition)
@@ -251,8 +251,8 @@ defmodule Glific.Jobs.BigQueryWorker do
             id: row.flow.id,
             name: row.flow.name,
             uuid: row.flow.uuid,
-            inserted_at: format_date(row.inserted_at, organization_id),
-            updated_at: format_date(row.updated_at, organization_id),
+            inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+            updated_at: Bigquery.format_date(row.updated_at, organization_id),
             results: format_json(row.results),
             contact_phone: row.contact.phone,
             contact_name: row.contact.name,
@@ -319,26 +319,6 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp media_url(nil), do: nil
   defp media_url(media), do: media.url
-
-  @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
-  defp format_date(nil, _), do: nil
-
-  defp format_date(date, organization_id) when is_binary(date) do
-    timezone = Partners.organization(organization_id).timezone
-
-    Timex.parse(date, "{RFC3339z}")
-    |> elem(1)
-    |> Timex.Timezone.convert(timezone)
-    |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
-  end
-
-  defp format_date(date, organization_id) do
-    timezone = Partners.organization(organization_id).timezone
-
-    date
-    |> Timex.Timezone.convert(timezone)
-    |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
-  end
 
   @spec format_data_for_bigquery(map(), String.t()) :: map()
   defp format_data_for_bigquery(flow, "update_flow_results") do
