@@ -48,7 +48,7 @@ defmodule Glific.Providers.GupshupContacts do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, response_data} = Jason.decode(body)
 
-        if is_nil(response_data["users"]) do
+        if response_data["status"] == "error" do
           {:error, "Error updating opted-in contacts #{response_data["message"]}"}
         else
           users = response_data["users"]
