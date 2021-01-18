@@ -92,7 +92,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     )
     |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
     |> Enum.chunk_every(5)
-    |> Enum.each(&make_job(&1, "update_flow_results", organization_id, 1))
+    |> Enum.each(&make_job(&1, "update_flow_results", organization_id))
   end
 
   @spec perform_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
@@ -109,9 +109,8 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> limit(100)
       |> Repo.one()
 
-    if max_id > table_id do
-      queue_table_data(bigquery_job.table, organization_id, table_id, max_id)
-    end
+    if max_id > table_id,
+    do:queue_table_data(bigquery_job.table, organization_id, table_id, max_id)
 
     :ok
   end
@@ -124,34 +123,17 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:tags, :receiver, :sender, :contact, :user, :media])
-
-    query =
-      case Repo.fetch_by(Contact, %{phone: @simulater_phone, organization_id: organization_id}) do
-        {:ok, simulator_contact} ->
-          query
-          |> where([m], m.contact_id != ^simulator_contact.id)
-
-        {:error, _} ->
-          query
-      end
-
-    Repo.all(query)
-    |> Enum.reduce(
-      [],
-      fn row, acc ->
-        tags_label =
-          Enum.map(row.tags, fn tag -> tag.label end)
-          |> Enum.join(", ")
-
-        message_row = %{
+      |> Repo.all()
+      |> Enum.reduce( [], fn row, acc ->
+          tags_label = Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", ")
+          bq_message_row = %{
+          id: row.id,
+          body: row.body,
           type: row.type,
-          user_id: row.contact_id,
-          message: row.body,
+          flow: row.flow,
           inserted_at: format_date(row.inserted_at, organization_id),
           sent_at: format_date(row.sent_at, organization_id),
           uuid: row.uuid,
-          id: row.id,
-          flow: row.flow,
           status: row.status,
           sender_phone: row.sender.phone,
           receiver_phone: row.receiver.phone,
@@ -159,15 +141,16 @@ defmodule Glific.Jobs.BigQueryWorker do
           contact_name: row.contact.name,
           user_phone: if(!is_nil(row.user), do: row.user.phone),
           user_name: if(!is_nil(row.user), do: row.user.name),
-          media: media_url(row.media),
           tags_label: tags_label,
           flow_label: row.flow_label
+          media_url: media_url(row.media)
         }
+        |> format_data_for_bigquery("messages")
 
-        [message_row | acc]
+        [bq_message_row | acc]
       end
     )
-    |> Enum.each(&make_job(&1, "messages", organization_id, 1, max_id))
+    |> make_job(:messages, organization_id, max_id)
   end
 
   defp queue_table_data("contacts", organization_id, min_id, max_id) do
@@ -195,8 +178,7 @@ defmodule Glific.Jobs.BigQueryWorker do
             optout_time: format_date(row.optout_time, organization_id),
             last_message_at: format_date(row.last_message_at, organization_id),
             inserted_at: format_date(row.inserted_at, organization_id),
-            fields:
-              Enum.map(row.fields, fn {_key, field} ->
+            fields: Enum.map(row.fields, fn {_key, field} ->
                 %{
                   label: field["label"],
                   inserted_at: format_date(field["inserted_at"], organization_id),
@@ -208,11 +190,12 @@ defmodule Glific.Jobs.BigQueryWorker do
             groups: Enum.map(row.groups, fn group -> %{label: group.label} end),
             tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
           }
+          |> format_data_for_bigquery("contacts")
           | acc
         ]
       end
     )
-    |> Enum.each(&make_job(&1, "contacts", organization_id, 1, max_id))
+    |> make_job(contacts, organization_id, max_id)
   end
 
   defp queue_table_data("flows", organization_id, min_id, max_id) do
@@ -240,11 +223,12 @@ defmodule Glific.Jobs.BigQueryWorker do
             status: row.status,
             revision: format_json(row.definition)
           }
+          |> format_data_for_bigquery("flows")
           | acc
         ]
       end
     )
-    |> Enum.each(&make_job(&1, "flows", organization_id, 1, max_id))
+    |> make_job(:flows, organization_id, max_id)
   end
 
   defp queue_table_data("flow_results", organization_id, min_id, max_id) do
@@ -270,14 +254,15 @@ defmodule Glific.Jobs.BigQueryWorker do
             results: format_json(row.results),
             contact_phone: row.contact.phone,
             contact_name: row.contact.name,
-            flow_version: row.flow_version
-          }
+            flow_version: row.flow_version,
+            flow_context_id: row.flow_context_id
+          } |> format_data_for_bigquery("flow_results")
           | acc
         ]
       end
     )
     |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
-    |> Enum.each(&make_job(&1, "flow_results", organization_id, 1, max_id))
+    |> make_job(:flow_resultsm organization_id, max_id)
   end
 
   defp queue_table_data(_, _, _, _), do: nil
@@ -289,36 +274,18 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   @spec make_job(list(), String.t(), non_neg_integer, non_neg_integer) :: :ok | nil
-  defp make_job(data, "messages", organization_id, schedule_in, max_id) do
-    __MODULE__.new(%{organization_id: organization_id, messages: data, max_id: max_id}, schedule_in: schedule_in)
-    |> Oban.insert()
-
+  defp make_job(data, table, organization_id, max_id) do
+    __MODULE__.new(%{
+        table => data,
+        organization_id: organization_id,
+        max_id: max_id
+      })
+    |> Oban.insert
     :ok
   end
 
-  defp make_job(data, "contacts", organization_id, schedule_in, max_id) do
-    __MODULE__.new(%{organization_id: organization_id, contacts: data, max_id: max_id}, schedule_in: schedule_in)
-    |> Oban.insert()
-  end
-
-  defp make_job(data, "flows", organization_id, schedule_in, max_id) do
-    __MODULE__.new(%{organization_id: organization_id, flows: data, max_id: max_id},
-      schedule_in: schedule_in
-    )
-    |> Oban.insert()
-  end
-
-  defp make_job(data, "flow_results", organization_id, schedule_in, max_id) do
-    __MODULE__.new(%{organization_id: organization_id, flow_results: data, max_id: max_id},
-      schedule_in: schedule_in
-    )
-    |> Oban.insert()
-  end
-
-  defp make_job(data, "update_flow_results", organization_id, schedule_in) do
-    __MODULE__.new(%{organization_id: organization_id, update_flow_results: data},
-      schedule_in: schedule_in
-    )
+  defp make_job(data, "update_flow_results", organization_id) do
+    __MODULE__.new(%{organization_id: organization_id, update_flow_results: data})
     |> Oban.insert()
   end
 
@@ -328,39 +295,6 @@ defmodule Glific.Jobs.BigQueryWorker do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
-  def perform(
-        %Oban.Job{args: %{"messages" => messages, "organization_id" => organization_id, "max_id" => max_id }} = job
-      ) do
-    messages
-    |> Enum.map(fn msg -> format_data_for_bigquery("messages", msg) end)
-    |> make_insert_query("messages", organization_id, job, max_id)
-  end
-
-  def perform(
-        %Oban.Job{args: %{"contacts" => contacts, "organization_id" => organization_id, "max_id" => max_id}} = job
-      ) do
-    contacts
-    |> Enum.map(fn msg -> format_data_for_bigquery("contacts", msg) end)
-    |> make_insert_query("contacts", organization_id, job, max_id)
-  end
-
-  def perform(%Oban.Job{args: %{"flows" => flows, "organization_id" => organization_id, "max_id" => max_id}} = job) do
-    flows
-    |> Enum.map(fn msg -> format_data_for_bigquery("flows", msg) end)
-    |> make_insert_query("flows", organization_id, job, max_id)
-  end
-
-  def perform(
-        %Oban.Job{
-          args: %{"flow_results" => flow_results, "organization_id" => organization_id, "max_id" => max_id}
-        } = job
-      ) do
-    flow_results
-    |> Enum.map(fn msg -> format_data_for_bigquery("flow_results", msg) end)
-    |> make_insert_query("flow_results", organization_id, job, max_id)
-  end
-
   def perform(
         %Oban.Job{
           args: %{
@@ -369,13 +303,18 @@ defmodule Glific.Jobs.BigQueryWorker do
             "max_id" => max_id
           }
         } = job
-      ) do
-    update_flow_results
-    |> Enum.map(fn fr -> format_data_for_bigquery("update_flow_results", fr) end)
-    |> make_update_query(organization_id, job)
-  end
+      ), do:
+        update_flow_results
+        |> Enum.map(fn fr -> format_data_for_bigquery(fr, "update_flow_results") end)
+        |> make_update_query(organization_id, job)
 
-    @spec get_table_struct(String.t()) :: any()
+
+  @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
+  def perform(%Oban.Job{args: %{table => data, "organization_id" => organization_id, "max_id" => max_id }} = job),
+  do: make_insert_query(data, table, organization_id, job, max_id)
+
+
+  @spec get_table_struct(String.t()) :: any()
   defp get_table_struct(table) do
     case table do
       "messages" -> Message
@@ -391,8 +330,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp media_url(media), do: media.url
 
   @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
-  defp format_date(nil, _),
-    do: nil
+  defp format_date(nil, _), do: nil
 
   defp format_date(date, organization_id) when is_binary(date) do
     timezone = Partners.organization(organization_id).timezone
@@ -411,85 +349,11 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
   end
 
-  @spec format_data_for_bigquery(String.t(), map()) :: map()
-  defp format_data_for_bigquery("messages", msg) do
-    %{
-      json: %{
-        id: msg["id"],
-        body: msg["message"],
-        type: msg["type"],
-        flow: msg["flow"],
-        inserted_at: msg["inserted_at"],
-        sent_at: msg["sent_at"],
-        uuid: msg["uuid"],
-        status: msg["status"],
-        sender_phone: msg["sender_phone"],
-        receiver_phone: msg["receiver_phone"],
-        contact_phone: msg["contact_phone"],
-        contact_name: msg["contact_name"],
-        user_phone: msg["user_phone"],
-        user_name: msg["user_name"],
-        tags_label: msg["tags_label"],
-        flow_label: msg["flow_label"],
-        media_url: msg["media"]
-      }
-    }
-  end
+  @spec format_data_for_bigquery(map(), String.t()) :: map()
+  defp format_data_for_bigquery(data, table),
+  do:%{json: msg}
 
-  defp format_data_for_bigquery("contacts", contact) do
-    %{
-      json: %{
-        id: contact["id"],
-        name: contact["name"],
-        phone: contact["phone"],
-        provider_status: contact["provider_status"],
-        status: contact["status"],
-        language: contact["language"],
-        optin_time: contact["optin_time"],
-        optout_time: contact["optout_time"],
-        last_message_at: contact["last_message_at"],
-        inserted_at: contact["inserted_at"],
-        fields: contact["fields"],
-        settings: contact["settings"],
-        groups: contact["groups"],
-        tags: contact["tags"]
-      }
-    }
-  end
-
-  defp format_data_for_bigquery("flows", flow) do
-    %{
-      json: %{
-        id: flow["id"],
-        name: flow["name"],
-        uuid: flow["uuid"],
-        inserted_at: flow["inserted_at"],
-        updated_at: flow["updated_at"],
-        keywords: flow["keywords"],
-        status: flow["status"],
-        revision: flow["revision"]
-      }
-    }
-  end
-
-  defp format_data_for_bigquery("flow_results", flow) do
-    %{
-      json: %{
-        id: flow["id"],
-        name: flow["name"],
-        uuid: flow["uuid"],
-        inserted_at: flow["inserted_at"],
-        updated_at: flow["updated_at"],
-        results: flow["results"],
-        contact_phone: flow["contact_phone"],
-        contact_name: flow["contact_name"],
-        flow_version: flow["flow_version"],
-        flow_context_id: flow["flow_context_id"]
-      }
-    }
-  end
-
-  defp format_data_for_bigquery("update_flow_results", flow) do
+  defp format_data_for_bigquery(flow, "update_flow_results") do
     %{
       id: flow["id"],
       results: flow["results"],
@@ -513,8 +377,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         credentials -> credentials
       end
 
-    {:ok, secrets} = Jason.decode(credentials.secrets["service_account"])
-    project_id = secrets["project_id"]
+    {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
+    project_id = service_account["project_id"]
     dataset_id = organization.contact.phone
     table_id = table
     token = Partners.get_goth_token(organization_id, "bigquery")
