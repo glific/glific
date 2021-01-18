@@ -6,6 +6,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   use GlificWeb, :controller
 
   alias Glific.{
+    Contacts,
     Flows,
     Flows.ContactField,
     Flows.Flow,
@@ -259,8 +260,18 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec recipients(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def recipients(conn, _params) do
-    recipients = %{results: []}
-    json(conn, recipients)
+    # we should return only staff contact ids here
+    # ideally should only be able to send them an HSM template, so we need
+    # this to be fixed in the frontend
+    recipients =
+      Contacts.list_user_contacts()
+      |> Enum.reduce(
+        [],
+        fn c, acc -> [%{uuid: c.id, name: c.name} | acc] end
+    )
+      |> IO.inspect()
+
+    json(conn, %{results: recipients})
   end
 
   @doc """

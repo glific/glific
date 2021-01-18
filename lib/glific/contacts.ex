@@ -58,6 +58,18 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Return the list of contacts who are also users
+  """
+  @spec list_user_contacts(map()) :: [Contact.t()]
+  def list_user_contacts(args \\ %{}) do
+    args
+    |> Repo.list_filter_query(Contact, &Repo.opts_with_name/2, &filter_with/2)
+    |> join(:inner, [c], u in User, as: :u, on: u.contact_id == c.id)
+    |> where([u: u], :none not in u.roles)
+    |> Repo.all()
+  end
+
+  @doc """
   Return the count of contacts, using the same filter as list_contacts
   """
   @spec count_contacts(map()) :: integer
