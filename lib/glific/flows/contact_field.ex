@@ -5,7 +5,6 @@ defmodule Glific.Flows.ContactField do
   """
 
   alias Glific.{
-    Bigquery,
     Contacts,
     Contacts.ContactsField,
     Flows.FlowContext,

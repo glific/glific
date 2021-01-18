@@ -26,12 +26,11 @@ defmodule Glific.Jobs.BigQueryWorker do
   }
 
   alias GoogleApi.BigQuery.{
-    V2.Api.Tabledata,
-    V2.Connection
+    V2.Api.Tabledata
   }
 
   @simulater_phone "9876543210"
-  @update_minutes 90
+  @update_minutes -90
 
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
@@ -58,8 +57,13 @@ defmodule Glific.Jobs.BigQueryWorker do
     credential = organization.services["bigquery"]
 
     if credential,
-      do: update_flow_results(organization_id),
+      do: update_biquery_tables(organization_id),
       else: :ok
+  end
+
+  def update_biquery_tables(organization_id) do
+    update_flow_results(organization_id)
+    update_contact(organization_id)
   end
 
   # need to add an order by and limit here, so we are sending chunks of 1K at a time
@@ -90,8 +94,50 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
     )
     |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
-    |> Enum.chunk_every(5)
+    |> Enum.chunk_every(10)
     |> Enum.each(&make_job(&1, "update_flow_results", organization_id))
+  end
+
+   # need to add an order by and limit here, so we are sending chunks of 1K at a time
+  @spec update_flow_results(non_neg_integer) :: :ok
+  defp update_contact(organization_id) do
+    query =
+      Contact
+      |> where([fr], fr.organization_id == ^organization_id)
+      |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+      |> preload([:language, :groups])
+
+    Repo.all(query)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            name: row.name,
+            phone: row.phone,
+            status: row.status,
+            language: row.language.label,
+            optin_time: Bigquery.format_date(row.optin_time, organization_id),
+            optout_time: Bigquery.format_date(row.optout_time, organization_id),
+            groups: Enum.map(row.groups, fn group -> %{label: group.label} end),
+            fields: Enum.map(row.fields, fn {_key, field} ->
+                %{
+                  label: field["label"] || "unknown",
+                  type: field["type"] ||  "unknown",
+                  value: field["value"] ||  "unknown",
+                  inserted_at: Bigquery.format_date(field["inserted_at"], organization_id),
+                }
+              end),
+
+          }
+          | acc
+        ]
+      end
+    )
+    |> Enum.reject(fn contact -> contact.phone == @simulater_phone end)
+    |> Enum.chunk_every(10)
+    |> Enum.each(&make_job(&1, "update_contacts", organization_id))
   end
 
   @spec perform_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
@@ -281,6 +327,11 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Oban.insert()
   end
 
+  defp make_job(data, "update_contacts", organization_id) do
+    __MODULE__.new(%{organization_id: organization_id, update_contacts: data})
+    |> Oban.insert()
+  end
+
   defp make_job(data, _, _, _) when data in [%{}, nil], do: nil
 
   defp make_job(data, table, organization_id, max_id) do
@@ -304,14 +355,24 @@ defmodule Glific.Jobs.BigQueryWorker do
         %Oban.Job{
           args: %{
             "update_flow_results" => update_flow_results,
-            "organization_id" => organization_id,
-            "max_id" => _max_id
+            "organization_id" => organization_id
           }
         } = job
       ), do:
         update_flow_results
-        |> Enum.map(fn fr -> format_data_for_bigquery(fr, "update_flow_results") end)
-        |> make_update_query(organization_id, job)
+        |> make_update_query(organization_id, "update_flow_results", job)
+
+  @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
+  def perform(
+        %Oban.Job{
+          args: %{
+            "update_contacts" => update_contacts,
+            "organization_id" => organization_id
+          }
+        } = job
+      ), do:
+      update_contacts
+      |> make_update_query(organization_id, "update_contacts", job)
 
 
   def perform(%Oban.Job{args: %{"data" => data, "table" => table, "organization_id" => organization_id, "max_id" => max_id }} = job),
@@ -360,41 +421,45 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  @spec make_update_query(list(), non_neg_integer, Oban.Job.t()) :: :ok
-  defp make_update_query(data, organization_id, _job) do
-    organization =
-      Partners.organization(organization_id)
-      |> Repo.preload(:contact)
+  @spec make_update_query(list(), non_neg_integer, String.t(), Oban.Job.t()) :: :ok
+  defp make_update_query(data, organization_id, table, _job) do
+    Bigquery.fetch_bigquery_credentials(organization_id)
+    |> case do
+        {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}}
+          ->
+          data
+          |> Enum.each(fn row ->
+            sql = generate_update_sql_query(row, table, dataset_id, organization_id)
+            IO.inspect(sql)
+            # GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
+            #   body: %{query: sql, useLegacySql: false}
+            # )
+            |> case do
+              {:ok, response}
+                -> response
+              {:error, _} -> nil
+              _ -> nil
+            end
+          end)
 
-    credentials =
-      organization.services["bigquery"]
-      |> case do
-        nil -> %{url: nil, id: nil, email: nil}
-        credentials -> credentials
-      end
+        _ ->
+          %{url: nil, id: nil, email: nil}
 
-    {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
-    project_id = service_account["project_id"]
-    dataset_id = organization.contact.phone
-    token = Partners.get_goth_token(organization_id, "bigquery")
-    conn = Connection.new(token.token)
-
-    data
-    |> Enum.each(fn flow_result ->
-      sql =
-        "UPDATE `#{dataset_id}.flow_results` SET results = '#{flow_result.results}' WHERE contact_phone= '#{
-          flow_result.contact_phone
-        }' AND id = #{flow_result.id} AND flow_context_id =  #{flow_result.flow_context_id} "
-
-      GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-        body: %{query: sql, useLegacySql: false}
-      )
-      |> case do
-        {:ok, response} -> response
-        {:error, _} -> nil
-      end
-    end)
+    end
   end
+
+  defp generate_update_sql_query(flow_result, "update_flow_results", dataset_id, _organization_id) do
+      "UPDATE `#{dataset_id}.flow_results` SET results = '#{flow_result["results"]}' WHERE contact_phone= '#{
+                flow_result["contact_phone"]
+              }' AND id = #{flow_result["id"]} AND flow_context_id =  #{flow_result["flow_context_id"]}"
+  end
+
+  defp generate_update_sql_query(contact, "update_contacts", dataset_id, organization_id) do
+    formatted_field_values = Bigquery.format_contact_field_values(contact["fileds"], organization_id)
+    "UPDATE `#{dataset_id}.contacts` SET fileds =  #{formatted_field_values} WHERE phone= '#{contact["phone"]}'"
+  end
+
+  defp generate_update_sql_query(_, _, _, _), do: nil
 
   @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
   defp handle_insert_error(table, dataset_id, organization_id, response, _job) do

@@ -5,7 +5,6 @@ defmodule Glific.Bigquery do
 
   alias Glific.{
     BigquerySchema,
-    Contacts,
     Contacts.Contact,
     Flows.FlowResult,
     Flows.FlowRevision,
@@ -243,6 +242,7 @@ defmodule Glific.Bigquery do
 
   @spec format_contact_field_values(map() | any(), integer()) :: any()
   def format_contact_field_values(contact_fields, org_id) when is_list(contact_fields) do
+    IO.inspect contact_fields
     values =
       Enum.map(contact_fields, fn contact_field ->
         contact_field = Glific.atomize_keys(contact_field)
