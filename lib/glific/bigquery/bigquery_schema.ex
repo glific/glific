@@ -359,6 +359,9 @@ defmodule Glific.BigquerySchema do
     ]
   end
 
+  @doc """
+  Procedure for flat fields
+  """
   @spec flat_fields_procedure(String.t(), String.t()) :: String.t()
   def flat_fields_procedure(project_id, dataset_id) do
     """

@@ -62,7 +62,8 @@ defmodule Glific.Jobs.BigQueryWorker do
       else: :ok
   end
 
-  def update_biquery_tables(organization_id) do
+  @spec update_biquery_tables(non_neg_integer) :: :ok
+  defp update_biquery_tables(organization_id) do
     update_flow_results(organization_id)
     update_contact(organization_id)
   end
@@ -459,6 +460,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     end
   end
 
+  @spec generate_update_sql_query(map(), String.t(), String.t(), non_neg_integer()) :: String.t()
   defp generate_update_sql_query(flow_result, "update_flow_results", dataset_id, _organization_id) do
     "UPDATE `#{dataset_id}.flow_results` SET results = '#{flow_result["results"]}' WHERE contact_phone= '#{
       flow_result["contact_phone"]
@@ -493,6 +495,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     end
   end
 
+  @spec handle_update_response(tuple() | nil) :: any()
   defp handle_update_response({:ok, response})  do
     response
   end
