@@ -37,7 +37,7 @@ defmodule Glific.Flows.Action do
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
   @required_fields_group [:groups | @required_field_common]
-  @required_fields_contact [:contacts | @required_field_common]
+  @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
 
   @type t() :: %__MODULE__{
