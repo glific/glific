@@ -11,6 +11,7 @@ defmodule Glific.Repo.Migrations.V0_9_5_AlterGlificTables do
     tags()
     languages()
     groups()
+    providers()
   end
 
   defp tags do
@@ -27,6 +28,12 @@ defmodule Glific.Repo.Migrations.V0_9_5_AlterGlificTables do
 
   defp groups do
     alter table(:groups) do
+      modify :description, :text
+    end
+  end
+
+  defp providers do
+    alter table("providers", prefix: @global_schema) do
       modify :description, :text
     end
   end
