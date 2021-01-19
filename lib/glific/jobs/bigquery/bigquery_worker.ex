@@ -98,7 +98,8 @@ defmodule Glific.Jobs.BigQueryWorker do
     )
     |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
     |> Enum.chunk_every(10)
-    |> Enum.each(&make_job(&1, "update_flow_results", organization_id, 0))
+    |> Enum.each(&make_job(&1, :update_flow_results, organization_id, 0))
+
     :ok
   end
 
@@ -141,7 +142,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     )
     |> Enum.reject(fn contact -> contact.phone == @simulater_phone end)
     |> Enum.chunk_every(10)
-    |> Enum.each(&make_job(&1, "update_contacts", organization_id, 0))
+    |> Enum.each(&make_job(&1, :update_contacts, organization_id, 0))
 
     :ok
   end
@@ -173,7 +174,8 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  @spec queue_table_data(String.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: :ok
+  @spec queue_table_data(String.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
+          :ok
   defp queue_table_data("messages", organization_id, min_id, max_id) do
     Message
     |> where([m], m.organization_id == ^organization_id)
@@ -341,19 +343,19 @@ defmodule Glific.Jobs.BigQueryWorker do
     data
   end
 
-  @spec make_job(any(), any(), non_neg_integer, non_neg_integer) ::  :ok
-  defp make_job(data, "update_flow_results", organization_id, _) do
-    __MODULE__.new(%{organization_id: organization_id, update_flow_results: data})
-    |> Oban.insert()
-    :ok
-  end
+  # defp make_job(data, "update_flow_results", organization_id, _) do
+  #   __MODULE__.new(%{organization_id: organization_id, update_flow_results: data})
+  #   |> Oban.insert()
+  #   :ok
+  # end
 
-  defp make_job(data, "update_contacts", organization_id, _) do
-    __MODULE__.new(%{organization_id: organization_id, update_contacts: data})
-    |> Oban.insert()
-    :ok
-  end
+  # defp make_job(data, "update_contacts", organization_id, _) do
+  #   __MODULE__.new(%{organization_id: organization_id, update_contacts: data})
+  #   |> Oban.insert()
+  #   :ok
+  # end
 
+  @spec make_job(any(), any(), non_neg_integer, non_neg_integer) :: :ok
   defp make_job(data, _, _, _) when data in [%{}, nil], do: :ok
 
   defp make_job(data, table, organization_id, max_id) do
@@ -377,26 +379,14 @@ defmodule Glific.Jobs.BigQueryWorker do
   def perform(
         %Oban.Job{
           args: %{
-            "update_flow_results" => update_flow_results,
-            "organization_id" => organization_id
+            "data" => data,
+            "table" => table,
+            "organization_id" => organization_id,
+            "max_id" => _max_id
           }
         } = job
-      ),
-      do:
-        update_flow_results
-        |> make_update_query(organization_id, "update_flow_results", job)
-
-  def perform(
-        %Oban.Job{
-          args: %{
-            "update_contacts" => update_contacts,
-            "organization_id" => organization_id
-          }
-        } = job
-      ),
-      do:
-        update_contacts
-        |> make_update_query(organization_id, "update_contacts", job)
+      ) when table in ["update_flow_results", "update_contacts"],
+      do: make_update_query(data, organization_id, table, job)
 
   def perform(
         %Oban.Job{

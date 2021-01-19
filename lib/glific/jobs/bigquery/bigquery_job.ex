@@ -9,8 +9,7 @@ defmodule Glific.Jobs.BigqueryJob do
 
   alias __MODULE__
   alias Glific.{
-    Partners.Organization,
-    Repo
+    Partners.Organization
   }
 
   @required_fields [:organization_id]
@@ -43,16 +42,6 @@ defmodule Glific.Jobs.BigqueryJob do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:organization_id)
-  end
-
-  @doc """
-  create  biqquery
-  """
-  @spec create_bigquery_job(map()) :: {:ok, BigqueryJob.t()} | {:error, Ecto.Changeset.t()}
-  def create_bigquery_job(attrs) do
-    %BigqueryJob{}
-    |> changeset(attrs)
-    |> Repo.insert()
   end
 
 end
