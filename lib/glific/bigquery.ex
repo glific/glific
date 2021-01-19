@@ -123,7 +123,6 @@ defmodule Glific.Bigquery do
         |> Repo.insert()
     end
 
-
     :ok
   end
 
