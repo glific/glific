@@ -442,7 +442,9 @@ defmodule Glific.Messages do
       {:ok, message} ->
         group_message_subscription(message)
         {:ok, message}
-      {:error, error} -> {:error, error}
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 
@@ -454,6 +456,7 @@ defmodule Glific.Messages do
       message.organization_id
     )
   end
+
   @doc """
   Create and send message to all contacts of a group
   """
