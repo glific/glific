@@ -1,6 +1,8 @@
 defmodule GlificWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :glific
   use Absinthe.Phoenix.Endpoint
+  use Appsignal.Phoenix
+  plug GlificWeb.Plugs.AppsignalAbsinthePlug
 
   @moduledoc false
   # The session will be stored in the cookie and signed,
