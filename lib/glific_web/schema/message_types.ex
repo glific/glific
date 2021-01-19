@@ -42,6 +42,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :is_hsm, :boolean
 
     field :template_id, :integer
+    field :group_id, :integer
     field :params, list_of(:string)
 
     field :bsp_status, :message_status_enum
@@ -228,6 +229,14 @@ defmodule GlificWeb.Schema.MessageTypes do
     end
 
     field :update_message_status, :message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(fn message, _, _ -> {:ok, message} end)
+    end
+
+    field :sent_group_message, :message do
       arg(:organization_id, non_null(:id))
 
       config(&Schema.config_fun/2)

@@ -466,13 +466,13 @@ defmodule Glific.Flows do
 
     {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, status})
 
-    {:ok, _group_message} = Messages.create_group_message(
-      %{
+    {:ok, _group_message} =
+      Messages.create_group_message(%{
         body: "Starting flow: #{flow.name} for group: #{group.label}",
         type: :text,
-        group_id: group.id,
-      }
-    )
+        group_id: group.id
+      })
+
     group = group |> Repo.preload([:contacts])
     process_contact_flow(group.contacts, flow, status)
   end

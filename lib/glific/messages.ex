@@ -438,6 +438,23 @@ defmodule Glific.Messages do
     })
     |> update_message_attrs()
     |> create_message()
+    |> case do
+      {:ok, message} ->
+        group_message_subscription(message)
+        {:ok, message}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @spec group_message_subscription(Message.t()) :: any()
+  defp group_message_subscription(message) do
+    Communications.publish_data(
+      message,
+      :sent_group_message,
+      message.organization_id
+    )
   end
 
   @doc """

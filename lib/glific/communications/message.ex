@@ -121,7 +121,7 @@ defmodule Glific.Communications.Message do
   """
   @spec handle_error_response(Tesla.Env.t(), Message.t()) :: {:error, String.t()}
   def handle_error_response(response, message) do
-    {:ok, _} =
+    {:ok, message} =
       message
       |> Poison.encode!()
       |> Poison.decode!(as: %Message{})

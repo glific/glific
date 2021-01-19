@@ -56,7 +56,8 @@ You will need to do the following:
 
   * Create a [Gupshup Account](https://www.gupshup.io/developer/home)
   * Install [ngrok](https://ngrok.com/download)
-  * Start ngrok to proxy port 4000: `$ ngrok http 4000` (do this in a new window))
+  * Start ngrok to proxy port 4000:
+    * `$ ngrok http 4000 --host-header=api.glific.glific.test:4000` (do this in a new window))
     * Remember the URL it assigns you, something like: `https://9f6a7c7822d2.ngrok.io`
     * Also start the backend server: `mix phx.server` (do this in a new window)
   * Create a [WhatsApp Messaging App on Gupshup](https://www.gupshup.io/whatsappassistant/#/account-setup)

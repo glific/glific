@@ -785,6 +785,42 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#messageresult">MessageResult</a> | An error or object
 
+## Subscription for Sent Group Message
+
+```graphql
+subscription {
+  sent_group_message() {
+    id
+    body
+    flow
+    type
+    status
+    group_id
+  }
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "sent_group_message": {
+      "body": "Test",
+      "flow": "OUTBOUND",
+      "id" : "10397",
+      "type": "TEXT",
+      "status": "sent",
+      "group_id" : "3",
+    }
+  }
+}
+```
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#messageresult">MessageResult</a> | An error or object
+
 
 ## Subscription for Received Message
 
