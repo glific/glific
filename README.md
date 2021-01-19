@@ -55,21 +55,23 @@ application. The currently supported backend is [Gupshup](https://www.gupshup.io
 You will need to do the following:
 
   * Create a [Gupshup Account](https://www.gupshup.io/developer/home)
-  * Install [ngrok](https://ngrok.com/download)
-  * Start ngrok to proxy port 4000:
-    * `$ ngrok http 4000 --host-header=api.glific.glific.test:4000` (do this in a new window))
-    * Remember the URL it assigns you, something like: `https://9f6a7c7822d2.ngrok.io`
-    * Also start the backend server: `mix phx.server` (do this in a new window)
   * Create a [WhatsApp Messaging App on Gupshup](https://www.gupshup.io/whatsappassistant/#/account-setup)
   * You can name it `GlificTest` and ensure the `App Type` is `Access API`
-  * Goto the [Settings Page](https://www.gupshup.io/whatsappassistant/#/settings/GlificTest?bt=ACP)
-  * On that page, Search for `Callback URL / Link your Bot`
+  * Edit `config/dev.secret.exs` in the backend directory
+  * Enter your API Key, which can be found by clicking on your profile in the top left
+  corner of your gupshup dashboard
+  * Enter your APP name
+  * Install [ngrok](https://ngrok.com/download)
+  * Start ngrok to proxy port 4000:
+    * Start the backend server: `mix phx.server` (do this in a new window)
+    * `$ ngrok http 4000 --host-header=localhost:4000` (do this in a new window))
+    * Remember the URL it assigns you, something like: `https://9f6a7c7822d2.ngrok.io`
+  * Goto the [Settings Page](https://www.gupshup.io/whatsappassistant/#/settings)
+  * On that page, Search for `Manage your Template messaging settings` and enable it
+  * On same page, Search for `Callback URL / Link your Bot`
   * Enter your callback URL that ngrok gave you, add: `/gupshup` to the end. Something like:
   `https://9f6a7c7822d2.ngrok.io/gupshup/`
   * Click `Set`. It should give you a `Callback set successfully` message. If not, check the above steps.
-  * Edit `config/dev.secret.exs` in the backend directory
-  * You will need to enter your API Key, which can be found by clicking on your profile in the top left
-  corner of your gupshup dashboard
 
 ## Updating your instance
 
