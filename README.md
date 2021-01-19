@@ -93,7 +93,8 @@ to update your codebase from the glicic repository.
 ## Documentation
 
   * [GraphQL API docs](https://glific.github.io/slate/)
-  * [Code docs](https://glific.github.io/glific/doc/)
+  * [Code docs](https://hexdocs.pm/glific/readme.html)
+  * [Slab docs](https://glific.slab.com/public/glific-documentation-nb8345sh)
 
 ## Learn more
 
