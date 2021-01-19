@@ -45,6 +45,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       Jobs.get_bigquery_jobs(organization_id)
       |> Enum.each(&perform_for_table(&1, organization_id))
     end
+
     :ok
   end
 
@@ -98,7 +99,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.each(&make_job(&1, "update_flow_results", organization_id))
   end
 
-   # need to add an order by and limit here, so we are sending chunks of 1K at a time
+  # need to add an order by and limit here, so we are sending chunks of 1K at a time
   @spec update_flow_results(non_neg_integer) :: :ok
   defp update_contact(organization_id) do
     query =
@@ -121,15 +122,15 @@ defmodule Glific.Jobs.BigQueryWorker do
             optin_time: Bigquery.format_date(row.optin_time, organization_id),
             optout_time: Bigquery.format_date(row.optout_time, organization_id),
             groups: Enum.map(row.groups, fn group -> %{label: group.label} end),
-            fields: Enum.map(row.fields, fn {_key, field} ->
+            fields:
+              Enum.map(row.fields, fn {_key, field} ->
                 %{
                   label: field["label"] || "unknown",
-                  type: field["type"] ||  "unknown",
-                  value: field["value"] ||  "unknown",
-                  inserted_at: Bigquery.format_date(field["inserted_at"], organization_id),
+                  type: field["type"] || "unknown",
+                  value: field["value"] || "unknown",
+                  inserted_at: field["inserted_at"]
                 }
-              end),
-
+              end)
           }
           | acc
         ]
@@ -154,27 +155,33 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> Repo.one()
 
     cond do
-      is_nil(max_id)
-        -> nil
-      max_id > table_id
-        -> queue_table_data(bigquery_job.table, organization_id, table_id, max_id)
-      true -> nil
+      is_nil(max_id) ->
+        nil
+
+      max_id > table_id ->
+        queue_table_data(bigquery_job.table, organization_id, table_id, max_id)
+
+      true ->
+        nil
     end
 
     :ok
   end
 
-  @spec queue_table_data(String.t(), non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
+  @spec queue_table_data(String.t(), non_neg_integer, non_neg_integer, non_neg_integer) ::
+          :ok | nil
   defp queue_table_data("messages", organization_id, min_id, max_id) do
-      Message
-      |> where([m], m.organization_id == ^organization_id)
-      |> where([m], m.id > ^min_id and m.id <= ^max_id)
-      |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:tags, :receiver, :sender, :contact, :user, :media])
-      |> Repo.all()
-      |> Enum.reduce( [], fn row, acc ->
-          tags_label = Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", ")
-          bq_message_row = %{
+    Message
+    |> where([m], m.organization_id == ^organization_id)
+    |> where([m], m.id > ^min_id and m.id <= ^max_id)
+    |> order_by([m], [m.inserted_at, m.id])
+    |> preload([:tags, :receiver, :sender, :contact, :user, :media])
+    |> Repo.all()
+    |> Enum.reduce([], fn row, acc ->
+      tags_label = Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", ")
+
+      bq_message_row =
+        %{
           id: row.id,
           body: row.body,
           type: row.type,
@@ -195,9 +202,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         }
         |> format_data_for_bigquery("messages")
 
-        [bq_message_row | acc]
-      end
-    )
+      [bq_message_row | acc]
+    end)
     |> make_job(:messages, organization_id, max_id)
   end
 
@@ -226,7 +232,8 @@ defmodule Glific.Jobs.BigQueryWorker do
             optout_time: Bigquery.format_date(row.optout_time, organization_id),
             last_message_at: Bigquery.format_date(row.last_message_at, organization_id),
             inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
-            fields: Enum.map(row.fields, fn {_key, field} ->
+            fields:
+              Enum.map(row.fields, fn {_key, field} ->
                 %{
                   label: field["label"],
                   inserted_at: Bigquery.format_date(field["inserted_at"], organization_id),
@@ -304,7 +311,8 @@ defmodule Glific.Jobs.BigQueryWorker do
             contact_name: row.contact.name,
             flow_version: row.flow_version,
             flow_context_id: row.flow_context_id
-          } |> format_data_for_bigquery("flow_results")
+          }
+          |> format_data_for_bigquery("flow_results")
           | acc
         ]
       end
@@ -336,12 +344,13 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp make_job(data, table, organization_id, max_id) do
     __MODULE__.new(%{
-        data: data,
-        table: table,
-        organization_id: organization_id,
-        max_id: max_id
-      })
-    |> Oban.insert
+      data: data,
+      table: table,
+      organization_id: organization_id,
+      max_id: max_id
+    })
+    |> Oban.insert()
+
     :ok
   end
 
@@ -358,7 +367,8 @@ defmodule Glific.Jobs.BigQueryWorker do
             "organization_id" => organization_id
           }
         } = job
-      ), do:
+      ),
+      do:
         update_flow_results
         |> make_update_query(organization_id, "update_flow_results", job)
 
@@ -370,13 +380,22 @@ defmodule Glific.Jobs.BigQueryWorker do
             "organization_id" => organization_id
           }
         } = job
-      ), do:
-      update_contacts
-      |> make_update_query(organization_id, "update_contacts", job)
+      ),
+      do:
+        update_contacts
+        |> make_update_query(organization_id, "update_contacts", job)
 
-
-  def perform(%Oban.Job{args: %{"data" => data, "table" => table, "organization_id" => organization_id, "max_id" => max_id }} = job),
-  do: make_insert_query(data, table, organization_id, job, max_id)
+  def perform(
+        %Oban.Job{
+          args: %{
+            "data" => data,
+            "table" => table,
+            "organization_id" => organization_id,
+            "max_id" => max_id
+          }
+        } = job
+      ),
+      do: make_insert_query(data, table, organization_id, job, max_id)
 
   defp media_url(nil), do: nil
   defp media_url(media), do: media.url
@@ -392,32 +411,35 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp format_data_for_bigquery(data, _table),
-  do: %{json: data}
+    do: %{json: data}
 
-  @spec make_insert_query(list(), String.t(), non_neg_integer, Oban.Job.t(), non_neg_integer) :: :ok
+  @spec make_insert_query(list(), String.t(), non_neg_integer, Oban.Job.t(), non_neg_integer) ::
+          :ok
   defp make_insert_query(data, table, organization_id, job, max_id) do
     Bigquery.fetch_bigquery_credentials(organization_id)
     |> case do
-      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}}
-        ->
-           Tabledata.bigquery_tabledata_insert_all(
-            conn,
-            project_id,
-            dataset_id,
-            table,
-            [body: %{rows: data}],
-            []
-          )
-          |> case do
-            {:ok, _} ->
-              Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
-              :ok
-            {:error, response} ->
-              handle_insert_error(table, dataset_id, organization_id, response, job)
-          end
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
+        Tabledata.bigquery_tabledata_insert_all(
+          conn,
+          project_id,
+          dataset_id,
+          table,
+          [body: %{rows: data}],
+          []
+        )
+        |> case do
+          {:ok, _} ->
+            Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+            :ok
 
-      _ -> %{url: nil, id: nil, email: nil}
+          {:error, response} ->
+            handle_insert_error(table, dataset_id, organization_id, response, job)
+        end
+
+      _ ->
+        %{url: nil, id: nil, email: nil}
     end
+
     :ok
   end
 
@@ -425,38 +447,47 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp make_update_query(data, organization_id, table, _job) do
     Bigquery.fetch_bigquery_credentials(organization_id)
     |> case do
-        {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}}
-          ->
-          data
-          |> Enum.each(fn row ->
-            sql = generate_update_sql_query(row, table, dataset_id, organization_id)
-            IO.inspect(sql)
-            # GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-            #   body: %{query: sql, useLegacySql: false}
-            # )
-            |> case do
-              {:ok, response}
-                -> response
-              {:error, _} -> nil
-              _ -> nil
-            end
-          end)
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
+        data
+        |> Enum.each(fn row ->
+          sql = generate_update_sql_query(row, table, dataset_id, organization_id)
+          IO.inspect(sql)
 
-        _ ->
-          %{url: nil, id: nil, email: nil}
+          GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
+            body: %{query: sql, useLegacySql: false}
+          )
+          |> case do
+            {:ok, response} ->
+              response
+              |> IO.inspect()
 
+            {:error, error} ->
+              error
+              |> IO.inspect()
+
+            _ ->
+              nil
+          end
+        end)
+
+      _ ->
+        %{url: nil, id: nil, email: nil}
     end
   end
 
   defp generate_update_sql_query(flow_result, "update_flow_results", dataset_id, _organization_id) do
-      "UPDATE `#{dataset_id}.flow_results` SET results = '#{flow_result["results"]}' WHERE contact_phone= '#{
-                flow_result["contact_phone"]
-              }' AND id = #{flow_result["id"]} AND flow_context_id =  #{flow_result["flow_context_id"]}"
+    "UPDATE `#{dataset_id}.flow_results` SET results = '#{flow_result["results"]}' WHERE contact_phone= '#{
+      flow_result["contact_phone"]
+    }' AND id = #{flow_result["id"]} AND flow_context_id =  #{flow_result["flow_context_id"]}"
   end
 
   defp generate_update_sql_query(contact, "update_contacts", dataset_id, organization_id) do
-    formatted_field_values = Bigquery.format_contact_field_values(contact["fileds"], organization_id)
-    "UPDATE `#{dataset_id}.contacts` SET fileds =  #{formatted_field_values} WHERE phone= '#{contact["phone"]}'"
+    formatted_field_values =
+      Bigquery.format_contact_field_values(contact["fields"], organization_id)
+
+    "UPDATE `#{dataset_id}.contacts` SET fields =  #{formatted_field_values} WHERE phone= '#{
+      contact["phone"]
+    }'"
   end
 
   defp generate_update_sql_query(_, _, _, _), do: nil

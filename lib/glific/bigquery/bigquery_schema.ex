@@ -378,5 +378,4 @@ defmodule Glific.BigquerySchema do
       END;
     """
   end
-
 end

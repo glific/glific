@@ -23,10 +23,10 @@ defmodule Glific.Bigquery do
   }
 
   @bigquery_tables %{
-      "messages" => :message_schema,
-      "contacts" => :contact_schema,
-      "flows" => :flow_schema,
-      "flow_results" => :flow_result_schema
+    "messages" => :message_schema,
+    "contacts" => :contact_schema,
+    "flows" => :flow_schema,
+    "flow_results" => :flow_result_schema
   }
 
   @doc """
@@ -36,17 +36,19 @@ defmodule Glific.Bigquery do
   def sync_schema_with_bigquery(_dataset_id, organization_id) do
     fetch_bigquery_credentials(organization_id)
     |> case do
-      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}}
-        ->
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
         case create_dataset(conn, project_id, dataset_id) do
           {:ok, _} ->
-           do_refresh_the_schema(conn, dataset_id, project_id, organization_id)
+            do_refresh_the_schema(conn, dataset_id, project_id, organization_id)
+
           {:error, response} ->
             handle_sync_errors(response, conn, dataset_id, project_id, organization_id)
         end
-      _
-       -> nil
+
+      _ ->
+        nil
     end
+
     :ok
   end
 
@@ -61,10 +63,10 @@ defmodule Glific.Bigquery do
 
     organization.services["bigquery"]
     |> case do
-        nil -> nil
+      nil ->
+        nil
 
-      credentials
-        ->
+      credentials ->
         {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
         project_id = service_account["project_id"]
         token = Partners.get_goth_token(organization_id, "bigquery")
@@ -87,43 +89,47 @@ defmodule Glific.Bigquery do
   end
 
   def do_refresh_the_schema(conn, dataset_id, project_id, organization_id) do
-      insert_bigquery_jobs(organization_id)
-      create_tables(conn, dataset_id, project_id)
-      alter_tables(conn, dataset_id, project_id)
-      contacts_messages_view(conn, dataset_id, project_id)
-      alter_contacts_messages_view(conn, dataset_id, project_id)
-      flat_fields_procedure(conn, dataset_id, project_id)
+    insert_bigquery_jobs(organization_id)
+    create_tables(conn, dataset_id, project_id)
+    alter_tables(conn, dataset_id, project_id)
+    contacts_messages_view(conn, dataset_id, project_id)
+    alter_contacts_messages_view(conn, dataset_id, project_id)
+    flat_fields_procedure(conn, dataset_id, project_id)
   end
 
-  def insert_bigquery_jobs(organization_id), do:
-    @bigquery_tables
-    |> Map.keys()
-    |> Enum.each(&create_bigquery_job(&1, organization_id))
+  def insert_bigquery_jobs(organization_id),
+    do:
+      @bigquery_tables
+      |> Map.keys()
+      |> Enum.each(&create_bigquery_job(&1, organization_id))
 
   defp create_bigquery_job(table_name, organization_id) do
-
     Repo.fetch_by(BigqueryJob, %{table: table_name, organization_id: organization_id})
     |> case do
-      {:ok, bigquery_job} -> bigquery_job
+      {:ok, bigquery_job} ->
+        bigquery_job
+
       _ ->
         %BigqueryJob{}
         |> BigqueryJob.changeset(%{table: table_name, organization_id: organization_id})
         |> Repo.insert()
-        |> IO.inspect
-      end
+    end
   end
 
-  @spec handle_sync_errors(map(), Tesla.Client.t(), String.t(), String.t(), non_neg_integer) :: :ok
-  defp handle_sync_errors(response, conn, dataset_id, project_id, organization_id ) do
+  @spec handle_sync_errors(map(), Tesla.Client.t(), String.t(), String.t(), non_neg_integer) ::
+          :ok
+  defp handle_sync_errors(response, conn, dataset_id, project_id, organization_id) do
     Jason.decode(response.body)
     |> case do
       {:ok, data} ->
         error = data["error"]
+
         if error["status"] == "ALREADY_EXISTS" do
           do_refresh_the_schema(conn, dataset_id, project_id, organization_id)
         end
+
       _ ->
-         raise("Error while sync data with biquery. #{inspect response}")
+        raise("Error while sync data with biquery. #{inspect(response)}")
     end
 
     :ok
@@ -156,10 +162,8 @@ defmodule Glific.Bigquery do
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp create_tables(conn, dataset_id, project_id) do
     @bigquery_tables
-    |> Enum.each(
-      fn {table_id, _schema}
-        ->
-        apply(BigquerySchema, @bigquery_tables[table_id], [])
+    |> Enum.each(fn {table_id, _schema} ->
+      apply(BigquerySchema, @bigquery_tables[table_id], [])
       |> create_table(conn, dataset_id, project_id, table_id)
     end)
   end
@@ -173,53 +177,13 @@ defmodule Glific.Bigquery do
     case Datasets.bigquery_datasets_get(conn, project_id, dataset_id) do
       {:ok, _} ->
         @bigquery_tables
-        |> Enum.each(
-          fn {table_id, _schema}
-            ->
-            apply( BigquerySchema, @bigquery_tables[table_id], [])
+        |> Enum.each(fn {table_id, _schema} ->
+          apply(BigquerySchema, @bigquery_tables[table_id], [])
           |> alter_table(conn, dataset_id, project_id, table_id)
         end)
+
       {:error, _} ->
         nil
-    end
-    :ok
-  end
-
-  @doc """
-    Updating existing field in a table
-  """
-  @spec update_contact(non_neg_integer, map(), non_neg_integer) :: :ok
-  def update_contact(phone_no, updated_fields, organization_id) do
-    organization = Partners.organization(organization_id) |> Repo.preload(:contact)
-    dataset_id = organization.contact.phone
-
-    organization.services["bigquery"]
-    |> case do
-      nil ->
-        nil
-
-      credentials ->
-        {:ok, secrets} = Jason.decode(credentials.secrets["service_account"])
-        project_id = secrets["project_id"]
-
-        updated_values =
-          Enum.reduce(updated_fields, %{}, fn {key, field}, acc ->
-            Map.put(acc, key, format_contact_field_values(field, organization_id))
-          end)
-
-        sql =
-          "UPDATE `#{dataset_id}.contacts` SET #{format_update_values(updated_values)} WHERE phone= '#{
-            phone_no
-          }'"
-
-        token = Partners.get_goth_token(organization_id, "bigquery")
-        conn = Connection.new(token.token)
-
-        Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
-        |> case do
-          {:ok, response} -> response
-          {:error, _} -> nil
-        end
     end
 
     :ok
@@ -228,11 +192,15 @@ defmodule Glific.Bigquery do
   @spec format_contact_field_values(map() | any(), integer()) :: any()
   def format_contact_field_values(contact_fields, org_id) when is_map(contact_fields) do
     contact_fields = validate_fields(contact_fields)
+
     values =
       Enum.map(contact_fields, fn contact_field ->
         contact_field = Glific.atomize_keys(contact_field)
         value = format_value(contact_field.value)
-        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{ format_date(contact_field.inserted_at, org_id)}')"
+
+        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{
+          format_date(contact_field.inserted_at, org_id)
+        }')"
       end)
 
     "[STRUCT<label STRING, value STRING, type STRING, inserted_at DATETIME>#{
@@ -242,12 +210,14 @@ defmodule Glific.Bigquery do
 
   @spec format_contact_field_values(map() | any(), integer()) :: any()
   def format_contact_field_values(contact_fields, org_id) when is_list(contact_fields) do
-    IO.inspect contact_fields
     values =
       Enum.map(contact_fields, fn contact_field ->
         contact_field = Glific.atomize_keys(contact_field)
         value = format_value(contact_field.value)
-        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{ format_date(contact_field.inserted_at, org_id)}')"
+
+        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{
+          format_date(contact_field.inserted_at, org_id)
+        }')"
       end)
 
     "[STRUCT<label STRING, value STRING, type STRING, inserted_at DATETIME>#{
@@ -255,8 +225,7 @@ defmodule Glific.Bigquery do
     }]"
   end
 
-
-  def format_contact_field_values( field, _org_id), do: field
+  def format_contact_field_values(field, _org_id), do: field
 
   @spec format_value(map() | any()) :: any()
   defp format_value(value) when is_map(value), do: Map.get(value, :input, "Unknown format")
