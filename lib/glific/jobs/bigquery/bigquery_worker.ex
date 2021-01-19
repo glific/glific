@@ -451,25 +451,9 @@ defmodule Glific.Jobs.BigQueryWorker do
         data
         |> Enum.each(fn row ->
           sql = generate_update_sql_query(row, table, dataset_id, organization_id)
-          IO.inspect(sql)
-
-          GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-            body: %{query: sql, useLegacySql: false}
-          )
-          |> case do
-            {:ok, response} ->
-              response
-              |> IO.inspect()
-
-            {:error, error} ->
-              error
-              |> IO.inspect()
-
-            _ ->
-              nil
-          end
+          GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
+          |> handle_update_response()
         end)
-
       _ ->
         %{url: nil, id: nil, email: nil}
     end
@@ -482,12 +466,8 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp generate_update_sql_query(contact, "update_contacts", dataset_id, organization_id) do
-    formatted_field_values =
-      Bigquery.format_contact_field_values(contact["fields"], organization_id)
-
-    "UPDATE `#{dataset_id}.contacts` SET fields =  #{formatted_field_values} WHERE phone= '#{
-      contact["phone"]
-    }'"
+    formatted_field_values = Bigquery.format_contact_field_values(contact["fields"], organization_id)
+    "UPDATE `#{dataset_id}.contacts` SET fields =  #{formatted_field_values} WHERE phone= '#{contact["phone"]}'"
   end
 
   defp generate_update_sql_query(_, _, _, _), do: nil
@@ -512,4 +492,17 @@ defmodule Glific.Jobs.BigQueryWorker do
       _ -> false
     end
   end
+
+  defp handle_update_response({:ok, response})  do
+    response
+  end
+
+  defp handle_update_response({:error, error})  do
+    error
+  end
+
+  defp handle_update_response(nil)  do
+    "Something went wrong while updating the data on bigquery"
+  end
+
 end

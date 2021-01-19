@@ -16,7 +16,6 @@ defmodule Glific.Bigquery do
 
   alias GoogleApi.BigQuery.V2.{
     Api.Datasets,
-    Api.Jobs,
     Api.Routines,
     Api.Tables,
     Connection
@@ -88,6 +87,11 @@ defmodule Glific.Bigquery do
     end
   end
 
+  @doc """
+  Refresh the biquery schema and update all the older versions.
+  """
+  @spec do_refresh_the_schema(Tesla.Client.t(), binary, binary, non_neg_integer) ::
+          {:error, Tesla.Env.t()} | {:ok, Tesla.Env.t()}
   def do_refresh_the_schema(conn, dataset_id, project_id, organization_id) do
     insert_bigquery_jobs(organization_id)
     create_tables(conn, dataset_id, project_id)
@@ -97,12 +101,16 @@ defmodule Glific.Bigquery do
     flat_fields_procedure(conn, dataset_id, project_id)
   end
 
+  @doc false
+  @spec insert_bigquery_jobs(non_neg_integer) :: :ok
   def insert_bigquery_jobs(organization_id),
     do:
       @bigquery_tables
       |> Map.keys()
       |> Enum.each(&create_bigquery_job(&1, organization_id))
 
+  @doc false
+  @spec create_bigquery_job(String.t(), non_neg_integer) :: :ok
   defp create_bigquery_job(table_name, organization_id) do
     Repo.fetch_by(BigqueryJob, %{table: table_name, organization_id: organization_id})
     |> case do
@@ -114,6 +122,9 @@ defmodule Glific.Bigquery do
         |> BigqueryJob.changeset(%{table: table_name, organization_id: organization_id})
         |> Repo.insert()
     end
+
+
+    :ok
   end
 
   @spec handle_sync_errors(map(), Tesla.Client.t(), String.t(), String.t(), non_neg_integer) ::
@@ -189,26 +200,11 @@ defmodule Glific.Bigquery do
     :ok
   end
 
-  @spec format_contact_field_values(map() | any(), integer()) :: any()
-  def format_contact_field_values(contact_fields, org_id) when is_map(contact_fields) do
-    contact_fields = validate_fields(contact_fields)
+  @doc """
+  Format contact field values for the bigquery.
+  """
 
-    values =
-      Enum.map(contact_fields, fn contact_field ->
-        contact_field = Glific.atomize_keys(contact_field)
-        value = format_value(contact_field.value)
-
-        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{
-          format_date(contact_field.inserted_at, org_id)
-        }')"
-      end)
-
-    "[STRUCT<label STRING, value STRING, type STRING, inserted_at DATETIME>#{
-      Enum.join(values, ",")
-    }]"
-  end
-
-  @spec format_contact_field_values(map() | any(), integer()) :: any()
+  @spec format_contact_field_values(list() | any(), integer()) :: any()
   def format_contact_field_values(contact_fields, org_id) when is_list(contact_fields) do
     values =
       Enum.map(contact_fields, fn contact_field ->
@@ -232,15 +228,9 @@ defmodule Glific.Bigquery do
 
   defp format_value(value), do: value
 
-  @spec validate_fields(map()) :: list()
-  defp validate_fields(contact_fields) do
-    contact_fields
-    |> Map.values()
-    |> Enum.reject(fn field ->
-      [:value, :label, :inserted_at, :type]
-      |> Enum.all?(&Map.has_key?(Glific.atomize_keys(field), &1)) == false
-    end)
-  end
+  @doc """
+  Format dates for the bigquery.
+  """
 
   @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
   def format_date(nil, _),
@@ -262,23 +252,6 @@ defmodule Glific.Bigquery do
     |> Timex.Timezone.convert(timezone)
     |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
   end
-
-  @spec format_update_values(map()) :: String.t()
-  defp format_update_values(values) do
-    Map.keys(values)
-    |> Enum.map(fn key ->
-      if key == "fields" do
-        " #{key} = #{values[key]}"
-      else
-        " #{key} = #{get_key(values[key])}"
-      end
-    end)
-    |> Enum.join(",")
-  end
-
-  @spec get_key(any() | String.t()) :: any()
-  defp get_key(value) when is_binary(value), do: "'#{value}'"
-  defp get_key(value), do: value
 
   @spec create_dataset(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Dataset.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
