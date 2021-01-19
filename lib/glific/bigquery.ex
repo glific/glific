@@ -168,8 +168,7 @@ defmodule Glific.Bigquery do
     )
   end
 
-  @spec create_tables(Tesla.Client.t(), String.t(), String.t()) ::
-          {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
+  @spec create_tables(Tesla.Client.t(), binary, binary) :: :ok
   defp create_tables(conn, dataset_id, project_id) do
     @bigquery_tables
     |> Enum.each(fn {table_id, _schema} ->
