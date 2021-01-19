@@ -219,7 +219,7 @@ defmodule Glific.Bigquery do
     }]"
   end
 
-  def format_contact_field_values(field, _org_id), do: field
+  def format_contact_field_values(field, _org_id), do: ""
 
   @spec format_value(map() | any()) :: any()
   defp format_value(value) when is_map(value), do: Map.get(value, :input, "Unknown format")
