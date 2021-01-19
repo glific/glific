@@ -37,6 +37,32 @@ defmodule Glific.Flows.ContactAction do
     )
   end
 
+  # handle the case if we are sending a notification to another contact who is
+  # staff, so we need info for both
+  # the nil case is the regular case of sending a message
+  @spec resolve_cid(FlowContext.t(), non_neg_integer | nil) :: tuple()
+  defp resolve_cid(context, nil = _cid) do
+    # Since we are saving the data after loading the flow
+    # so we have to fetch the latest contact fields
+    {
+      context.contact_id,
+      %{
+        "contact" => Contacts.get_contact_field_map(context.contact_id),
+        "results" => context.results
+      }
+    }
+  end
+
+  defp resolve_cid(context, cid),
+    do: {
+      cid,
+      %{
+        "contact" => Contacts.get_contact_field_map(context.contact_id),
+        "staff" => Contacts.get_contact_field_map(cid),
+        "results" => context.results
+      }
+    }
+
   @doc """
   If the template is not defined for the message send text messages.
   Given a shortcode and a context, send the right session template message
@@ -50,21 +76,11 @@ defmodule Glific.Flows.ContactAction do
   def send_message(context, action, messages, cid \\ nil)
 
   def send_message(context, %Action{templating: nil} = action, messages, cid) do
-    cid =
-      if is_nil(cid),
-        do: context.contact_id,
-        else: cid
+    {cid, message_vars} = resolve_cid(context, cid)
 
-    # get the test translation if needed
+    # get the text translation if needed
     text = Localization.get_translation(context, action, :text)
     attachments = Localization.get_translation(context, action, :attachments)
-
-    # Since we are saving the data after loading the flow
-    # so we have to fetch the latest contact fields
-    message_vars = %{
-      "contact" => Contacts.get_contact_field_map(cid),
-      "results" => context.results
-    }
 
     body =
       text
@@ -124,15 +140,7 @@ defmodule Glific.Flows.ContactAction do
         messages,
         cid
       ) do
-    cid =
-      if is_nil(cid),
-        do: context.contact_id,
-        else: cid
-
-    message_vars = %{
-      "contact" => Contacts.get_contact_field_map(cid),
-      "results" => context.results
-    }
+    {cid, message_vars} = resolve_cid(context, cid)
 
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
 
