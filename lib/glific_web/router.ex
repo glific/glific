@@ -25,7 +25,6 @@ defmodule GlificWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
-    plug GlificWeb.Plugs.AppsignalAbsinthePlug
     plug GlificWeb.APIAuthPlug, otp_app: :glific
     # plug :debug_response
   end
