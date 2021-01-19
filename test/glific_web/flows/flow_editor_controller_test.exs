@@ -99,7 +99,9 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
 
     test "recipients", %{conn: conn} do
       conn = get(conn, "/flow-editor/recipients", %{})
-      assert json_response(conn, 200)["results"] == []
+      # we have already create quite a few users and contacts, so this will
+      # have a gew recipients
+      assert json_response(conn, 200)["results"] != []
     end
 
     test "completion", %{conn: conn} do
