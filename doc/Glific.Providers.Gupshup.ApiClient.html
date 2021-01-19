@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>Glific.Providers.Gupshup.ApiClient — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>Glific.Providers.Gupshup.ApiClient — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,8 +63,8 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.2.0</small>
-Glific.Providers.Gupshup.ApiClient          <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L1" title="View Source" class="view-source" rel="help">
+        Glific.Providers.Gupshup.ApiClient <small class="app-vsn">(Glific v0.9.4)</small>
+          <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -110,6 +110,12 @@ Glific.Providers.Gupshup.ApiClient          <a href="https://github.com/glific/g
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#fetch_opted_in_contacts/1">fetch_opted_in_contacts(org_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Fetch opted in contacts data from providers server</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#get/3">get(client, url, opts)</a>
   </div>
     <div class="summary-synopsis"><p>Perform a GET request.</p></div>
@@ -122,6 +128,24 @@ Glific.Providers.Gupshup.ApiClient          <a href="https://github.com/glific/g
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#get_templates/1">get_templates(org_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Fetching HSM templates for an organization</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#gupshup_get/2">gupshup_get(url, api_key)</a>
+  </div>
+    <div class="summary-synopsis"><p>Making Tesla get call and adding api key in header</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#gupshup_post/3">gupshup_post(url, payload, api_key)</a>
+  </div>
+    <div class="summary-synopsis"><p>Making Tesla post call and adding api key in header</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#head/3">head(client, url, opts)</a>
   </div>
     <div class="summary-synopsis"><p>Perform a HEAD request.</p></div>
@@ -131,6 +155,12 @@ Glific.Providers.Gupshup.ApiClient          <a href="https://github.com/glific/g
     <a href="#head!/3">head!(client, url, opts)</a>
   </div>
     <div class="summary-synopsis"><p>Perform a HEAD request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#optin_contact/2">optin_contact(org_id, payload)</a>
+  </div>
+    <div class="summary-synopsis"><p>Update a contact phone as opted in</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -194,6 +224,24 @@ Glific.Providers.Gupshup.ApiClient          <a href="https://github.com/glific/g
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#send_message/2">send_message(org_id, payload)</a>
+  </div>
+    <div class="summary-synopsis"><p>Sending HSM template to contact</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#send_template/2">send_template(org_id, payload)</a>
+  </div>
+    <div class="summary-synopsis"><p>Sending HSM template to contact</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#submit_template_for_approval/2">submit_template_for_approval(org_id, payload)</a>
+  </div>
+    <div class="summary-synopsis"><p>Submitting HSM template for approval</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#trace/3">trace(client, url, opts)</a>
   </div>
     <div class="summary-synopsis"><p>Perform a TRACE request.</p></div>
@@ -222,7 +270,7 @@ Types          </h1>
       <span class="sr-only">Link to this type</span>
     </a>
     <h1 class="signature">option()</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -232,12 +280,12 @@ Types          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>option() ::
-  {:method, <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:method/0">Tesla.Env.method</a>()}
-  | {:url, <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>()}
-  | {:query, <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:query/0">Tesla.Env.query</a>()}
-  | {:headers, <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:headers/0">Tesla.Env.headers</a>()}
-  | {:body, <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:body/0">Tesla.Env.body</a>()}
-  | {:opts, <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:opts/0">Tesla.Env.opts</a>()}</pre>
+  {:method, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:method/0">Tesla.Env.method</a>()}
+  | {:url, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>()}
+  | {:query, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:query/0">Tesla.Env.query</a>()}
+  | {:headers, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:headers/0">Tesla.Env.headers</a>()}
+  | {:body, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>()}
+  | {:opts, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:opts/0">Tesla.Env.opts</a>()}</pre>
       </div>
 
   </section>
@@ -259,7 +307,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete(client, url, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -268,13 +316,14 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>delete(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+          <pre>delete(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
       </div>
 
-<p>Perform a DELETE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">delete</span><span class="p" data-group-id="0622698383-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0622698383-1">)</span><span class="w">
-</span><span class="n">delete</span><span class="p" data-group-id="0622698383-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0622698383-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0622698383-3">]</span><span class="p" data-group-id="0622698383-2">)</span><span class="w">
-</span><span class="n">delete</span><span class="p" data-group-id="0622698383-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0622698383-4">)</span><span class="w">
-</span><span class="n">delete</span><span class="p" data-group-id="0622698383-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0622698383-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0622698383-6">]</span><span class="p" data-group-id="0622698383-5">)</span></code></pre>  </section>
+<p>Perform a DELETE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">delete</span><span class="p" data-group-id="2663653402-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2663653402-1">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="2663653402-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2663653402-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2663653402-3">]</span><span class="p" data-group-id="2663653402-2">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="2663653402-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2663653402-4">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="2663653402-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2663653402-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2663653402-6">]</span><span class="p" data-group-id="2663653402-5">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="2663653402-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2663653402-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2663653402-8">}</span><span class="p" data-group-id="2663653402-7">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="delete!/3">
   <div class="detail-header">
@@ -283,7 +332,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete!(client, url, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -292,14 +341,37 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>delete!(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
-  <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+          <pre>delete!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
       </div>
 
-<p>Perform a DELETE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">delete!</span><span class="p" data-group-id="1437343866-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1437343866-1">)</span><span class="w">
-</span><span class="n">delete!</span><span class="p" data-group-id="1437343866-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1437343866-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1437343866-3">]</span><span class="p" data-group-id="1437343866-2">)</span><span class="w">
-</span><span class="n">delete!</span><span class="p" data-group-id="1437343866-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1437343866-4">)</span><span class="w">
-</span><span class="n">delete!</span><span class="p" data-group-id="1437343866-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1437343866-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1437343866-6">]</span><span class="p" data-group-id="1437343866-5">)</span></code></pre>  </section>
+<p>Perform a DELETE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">delete!</span><span class="p" data-group-id="3182422014-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3182422014-1">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="3182422014-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3182422014-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3182422014-3">]</span><span class="p" data-group-id="3182422014-2">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="3182422014-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3182422014-4">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="3182422014-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3182422014-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3182422014-6">]</span><span class="p" data-group-id="3182422014-5">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="3182422014-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3182422014-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3182422014-8">}</span><span class="p" data-group-id="3182422014-7">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="fetch_opted_in_contacts/1">
+  <div class="detail-header">
+    <a href="#fetch_opted_in_contacts/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">fetch_opted_in_contacts(org_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L119" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>fetch_opted_in_contacts(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>() | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+      </div>
+
+<p>Fetch opted in contacts data from providers server</p>  </section>
 </section>
 <section class="detail" id="get/3">
   <div class="detail-header">
@@ -308,7 +380,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get(client, url, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -317,13 +389,14 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>get(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+          <pre>get(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
       </div>
 
-<p>Perform a GET request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">get</span><span class="p" data-group-id="7787912958-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="7787912958-1">)</span><span class="w">
-</span><span class="n">get</span><span class="p" data-group-id="7787912958-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7787912958-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7787912958-3">]</span><span class="p" data-group-id="7787912958-2">)</span><span class="w">
-</span><span class="n">get</span><span class="p" data-group-id="7787912958-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="7787912958-4">)</span><span class="w">
-</span><span class="n">get</span><span class="p" data-group-id="7787912958-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7787912958-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7787912958-6">]</span><span class="p" data-group-id="7787912958-5">)</span></code></pre>  </section>
+<p>Perform a GET request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">get</span><span class="p" data-group-id="5201106194-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5201106194-1">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="5201106194-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5201106194-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5201106194-3">]</span><span class="p" data-group-id="5201106194-2">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="5201106194-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5201106194-4">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="5201106194-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5201106194-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5201106194-6">]</span><span class="p" data-group-id="5201106194-5">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="5201106194-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5201106194-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5201106194-8">}</span><span class="p" data-group-id="5201106194-7">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="get!/3">
   <div class="detail-header">
@@ -332,7 +405,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get!(client, url, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -341,14 +414,78 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>get!(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
-  <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+          <pre>get!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
       </div>
 
-<p>Perform a GET request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">get!</span><span class="p" data-group-id="5771397841-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5771397841-1">)</span><span class="w">
-</span><span class="n">get!</span><span class="p" data-group-id="5771397841-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5771397841-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5771397841-3">]</span><span class="p" data-group-id="5771397841-2">)</span><span class="w">
-</span><span class="n">get!</span><span class="p" data-group-id="5771397841-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5771397841-4">)</span><span class="w">
-</span><span class="n">get!</span><span class="p" data-group-id="5771397841-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5771397841-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5771397841-6">]</span><span class="p" data-group-id="5771397841-5">)</span></code></pre>  </section>
+<p>Perform a GET request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">get!</span><span class="p" data-group-id="9030053287-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9030053287-1">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="9030053287-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9030053287-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9030053287-3">]</span><span class="p" data-group-id="9030053287-2">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="9030053287-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9030053287-4">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="9030053287-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9030053287-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9030053287-6">]</span><span class="p" data-group-id="9030053287-5">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="9030053287-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9030053287-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9030053287-8">}</span><span class="p" data-group-id="9030053287-7">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="get_templates/1">
+  <div class="detail-header">
+    <a href="#get_templates/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_templates(org_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L55" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>get_templates(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>() | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+      </div>
+
+<p>Fetching HSM templates for an organization</p>  </section>
+</section>
+<section class="detail" id="gupshup_get/2">
+  <div class="detail-header">
+    <a href="#gupshup_get/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">gupshup_get(url, api_key)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L21" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>gupshup_get(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+      </div>
+
+<p>Making Tesla get call and adding api key in header</p>  </section>
+</section>
+<section class="detail" id="gupshup_post/3">
+  <div class="detail-header">
+    <a href="#gupshup_post/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">gupshup_post(url, payload, api_key)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L27" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>gupshup_post(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+      </div>
+
+<p>Making Tesla post call and adding api key in header</p>  </section>
 </section>
 <section class="detail" id="head/3">
   <div class="detail-header">
@@ -357,7 +494,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">head(client, url, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -366,13 +503,14 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>head(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+          <pre>head(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
       </div>
 
-<p>Perform a HEAD request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">head</span><span class="p" data-group-id="2463198960-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2463198960-1">)</span><span class="w">
-</span><span class="n">head</span><span class="p" data-group-id="2463198960-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2463198960-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2463198960-3">]</span><span class="p" data-group-id="2463198960-2">)</span><span class="w">
-</span><span class="n">head</span><span class="p" data-group-id="2463198960-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2463198960-4">)</span><span class="w">
-</span><span class="n">head</span><span class="p" data-group-id="2463198960-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2463198960-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2463198960-6">]</span><span class="p" data-group-id="2463198960-5">)</span></code></pre>  </section>
+<p>Perform a HEAD request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">head</span><span class="p" data-group-id="1196922171-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1196922171-1">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="1196922171-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1196922171-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1196922171-3">]</span><span class="p" data-group-id="1196922171-2">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="1196922171-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1196922171-4">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="1196922171-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1196922171-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1196922171-6">]</span><span class="p" data-group-id="1196922171-5">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="1196922171-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1196922171-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1196922171-8">}</span><span class="p" data-group-id="1196922171-7">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="head!/3">
   <div class="detail-header">
@@ -381,7 +519,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">head!(client, url, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -390,14 +528,37 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>head!(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
-  <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+          <pre>head!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
       </div>
 
-<p>Perform a HEAD request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">head!</span><span class="p" data-group-id="5420669929-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5420669929-1">)</span><span class="w">
-</span><span class="n">head!</span><span class="p" data-group-id="5420669929-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5420669929-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5420669929-3">]</span><span class="p" data-group-id="5420669929-2">)</span><span class="w">
-</span><span class="n">head!</span><span class="p" data-group-id="5420669929-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5420669929-4">)</span><span class="w">
-</span><span class="n">head!</span><span class="p" data-group-id="5420669929-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5420669929-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5420669929-6">]</span><span class="p" data-group-id="5420669929-5">)</span></code></pre>  </section>
+<p>Perform a HEAD request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">head!</span><span class="p" data-group-id="1784475878-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1784475878-1">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="1784475878-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1784475878-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1784475878-3">]</span><span class="p" data-group-id="1784475878-2">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="1784475878-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1784475878-4">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="1784475878-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1784475878-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1784475878-6">]</span><span class="p" data-group-id="1784475878-5">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="1784475878-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1784475878-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1784475878-8">}</span><span class="p" data-group-id="1784475878-7">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="optin_contact/2">
+  <div class="detail-header">
+    <a href="#optin_contact/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">optin_contact(org_id, payload)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L106" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>optin_contact(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>() | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+      </div>
+
+<p>Update a contact phone as opted in</p>  </section>
 </section>
 <section class="detail" id="options/3">
   <div class="detail-header">
@@ -406,7 +567,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">options(client, url, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -415,13 +576,14 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>options(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+          <pre>options(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
       </div>
 
-<p>Perform a OPTIONS request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">options</span><span class="p" data-group-id="1267729261-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1267729261-1">)</span><span class="w">
-</span><span class="n">options</span><span class="p" data-group-id="1267729261-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1267729261-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1267729261-3">]</span><span class="p" data-group-id="1267729261-2">)</span><span class="w">
-</span><span class="n">options</span><span class="p" data-group-id="1267729261-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1267729261-4">)</span><span class="w">
-</span><span class="n">options</span><span class="p" data-group-id="1267729261-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1267729261-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1267729261-6">]</span><span class="p" data-group-id="1267729261-5">)</span></code></pre>  </section>
+<p>Perform a OPTIONS request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">options</span><span class="p" data-group-id="7237389297-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="7237389297-1">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="7237389297-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7237389297-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7237389297-3">]</span><span class="p" data-group-id="7237389297-2">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="7237389297-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="7237389297-4">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="7237389297-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7237389297-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7237389297-6">]</span><span class="p" data-group-id="7237389297-5">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="7237389297-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7237389297-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7237389297-8">}</span><span class="p" data-group-id="7237389297-7">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="options!/3">
   <div class="detail-header">
@@ -430,7 +592,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">options!(client, url, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -439,14 +601,15 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>options!(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
-  <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+          <pre>options!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
       </div>
 
-<p>Perform a OPTIONS request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">options!</span><span class="p" data-group-id="0574749565-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0574749565-1">)</span><span class="w">
-</span><span class="n">options!</span><span class="p" data-group-id="0574749565-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0574749565-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0574749565-3">]</span><span class="p" data-group-id="0574749565-2">)</span><span class="w">
-</span><span class="n">options!</span><span class="p" data-group-id="0574749565-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0574749565-4">)</span><span class="w">
-</span><span class="n">options!</span><span class="p" data-group-id="0574749565-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0574749565-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0574749565-6">]</span><span class="p" data-group-id="0574749565-5">)</span></code></pre>  </section>
+<p>Perform a OPTIONS request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">options!</span><span class="p" data-group-id="0625591763-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0625591763-1">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="0625591763-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0625591763-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0625591763-3">]</span><span class="p" data-group-id="0625591763-2">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="0625591763-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0625591763-4">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="0625591763-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0625591763-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0625591763-6">]</span><span class="p" data-group-id="0625591763-5">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="0625591763-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0625591763-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0625591763-8">}</span><span class="p" data-group-id="0625591763-7">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="patch/4">
   <div class="detail-header">
@@ -455,7 +618,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">patch(client, url, body, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -464,14 +627,14 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>patch(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
-  <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+          <pre>patch(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
       </div>
 
-<p>Perform a PATCH request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">patch</span><span class="p" data-group-id="5933356411-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5933356411-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5933356411-2">}</span><span class="p" data-group-id="5933356411-1">)</span><span class="w">
-</span><span class="n">patch</span><span class="p" data-group-id="5933356411-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5933356411-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5933356411-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5933356411-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5933356411-5">]</span><span class="p" data-group-id="5933356411-3">)</span><span class="w">
-</span><span class="n">patch</span><span class="p" data-group-id="5933356411-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5933356411-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5933356411-7">}</span><span class="p" data-group-id="5933356411-6">)</span><span class="w">
-</span><span class="n">patch</span><span class="p" data-group-id="5933356411-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5933356411-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5933356411-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5933356411-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5933356411-10">]</span><span class="p" data-group-id="5933356411-8">)</span></code></pre>  </section>
+<p>Perform a PATCH request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">patch</span><span class="p" data-group-id="8867850306-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8867850306-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8867850306-2">}</span><span class="p" data-group-id="8867850306-1">)</span><span class="w">
+</span><span class="n">patch</span><span class="p" data-group-id="8867850306-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8867850306-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8867850306-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8867850306-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8867850306-5">]</span><span class="p" data-group-id="8867850306-3">)</span><span class="w">
+</span><span class="n">patch</span><span class="p" data-group-id="8867850306-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8867850306-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8867850306-7">}</span><span class="p" data-group-id="8867850306-6">)</span><span class="w">
+</span><span class="n">patch</span><span class="p" data-group-id="8867850306-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8867850306-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8867850306-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8867850306-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8867850306-10">]</span><span class="p" data-group-id="8867850306-8">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="patch!/4">
   <div class="detail-header">
@@ -480,7 +643,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">patch!(client, url, body, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -489,14 +652,14 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>patch!(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
-  <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+          <pre>patch!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
       </div>
 
-<p>Perform a PATCH request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">patch!</span><span class="p" data-group-id="0542245132-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0542245132-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0542245132-2">}</span><span class="p" data-group-id="0542245132-1">)</span><span class="w">
-</span><span class="n">patch!</span><span class="p" data-group-id="0542245132-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0542245132-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0542245132-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0542245132-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0542245132-5">]</span><span class="p" data-group-id="0542245132-3">)</span><span class="w">
-</span><span class="n">patch!</span><span class="p" data-group-id="0542245132-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0542245132-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0542245132-7">}</span><span class="p" data-group-id="0542245132-6">)</span><span class="w">
-</span><span class="n">patch!</span><span class="p" data-group-id="0542245132-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0542245132-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0542245132-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0542245132-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0542245132-10">]</span><span class="p" data-group-id="0542245132-8">)</span></code></pre>  </section>
+<p>Perform a PATCH request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">patch!</span><span class="p" data-group-id="1303799465-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1303799465-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1303799465-2">}</span><span class="p" data-group-id="1303799465-1">)</span><span class="w">
+</span><span class="n">patch!</span><span class="p" data-group-id="1303799465-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1303799465-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1303799465-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1303799465-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1303799465-5">]</span><span class="p" data-group-id="1303799465-3">)</span><span class="w">
+</span><span class="n">patch!</span><span class="p" data-group-id="1303799465-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1303799465-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1303799465-7">}</span><span class="p" data-group-id="1303799465-6">)</span><span class="w">
+</span><span class="n">patch!</span><span class="p" data-group-id="1303799465-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1303799465-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1303799465-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1303799465-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1303799465-10">]</span><span class="p" data-group-id="1303799465-8">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="post/4">
   <div class="detail-header">
@@ -505,7 +668,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">post(client, url, body, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -514,14 +677,14 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>post(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
-  <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+          <pre>post(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
       </div>
 
-<p>Perform a POST request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">post</span><span class="p" data-group-id="3780351613-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3780351613-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3780351613-2">}</span><span class="p" data-group-id="3780351613-1">)</span><span class="w">
-</span><span class="n">post</span><span class="p" data-group-id="3780351613-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3780351613-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3780351613-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3780351613-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3780351613-5">]</span><span class="p" data-group-id="3780351613-3">)</span><span class="w">
-</span><span class="n">post</span><span class="p" data-group-id="3780351613-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3780351613-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3780351613-7">}</span><span class="p" data-group-id="3780351613-6">)</span><span class="w">
-</span><span class="n">post</span><span class="p" data-group-id="3780351613-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3780351613-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3780351613-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3780351613-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3780351613-10">]</span><span class="p" data-group-id="3780351613-8">)</span></code></pre>  </section>
+<p>Perform a POST request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">post</span><span class="p" data-group-id="1277015001-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1277015001-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1277015001-2">}</span><span class="p" data-group-id="1277015001-1">)</span><span class="w">
+</span><span class="n">post</span><span class="p" data-group-id="1277015001-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1277015001-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1277015001-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1277015001-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1277015001-5">]</span><span class="p" data-group-id="1277015001-3">)</span><span class="w">
+</span><span class="n">post</span><span class="p" data-group-id="1277015001-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1277015001-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1277015001-7">}</span><span class="p" data-group-id="1277015001-6">)</span><span class="w">
+</span><span class="n">post</span><span class="p" data-group-id="1277015001-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1277015001-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1277015001-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1277015001-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1277015001-10">]</span><span class="p" data-group-id="1277015001-8">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="post!/4">
   <div class="detail-header">
@@ -530,7 +693,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">post!(client, url, body, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -539,14 +702,14 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>post!(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
-  <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+          <pre>post!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
       </div>
 
-<p>Perform a POST request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">post!</span><span class="p" data-group-id="7416382792-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7416382792-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7416382792-2">}</span><span class="p" data-group-id="7416382792-1">)</span><span class="w">
-</span><span class="n">post!</span><span class="p" data-group-id="7416382792-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7416382792-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7416382792-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7416382792-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7416382792-5">]</span><span class="p" data-group-id="7416382792-3">)</span><span class="w">
-</span><span class="n">post!</span><span class="p" data-group-id="7416382792-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7416382792-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7416382792-7">}</span><span class="p" data-group-id="7416382792-6">)</span><span class="w">
-</span><span class="n">post!</span><span class="p" data-group-id="7416382792-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7416382792-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7416382792-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7416382792-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7416382792-10">]</span><span class="p" data-group-id="7416382792-8">)</span></code></pre>  </section>
+<p>Perform a POST request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">post!</span><span class="p" data-group-id="9751134097-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9751134097-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9751134097-2">}</span><span class="p" data-group-id="9751134097-1">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="9751134097-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9751134097-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9751134097-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9751134097-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9751134097-5">]</span><span class="p" data-group-id="9751134097-3">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="9751134097-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9751134097-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9751134097-7">}</span><span class="p" data-group-id="9751134097-6">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="9751134097-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9751134097-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9751134097-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9751134097-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9751134097-10">]</span><span class="p" data-group-id="9751134097-8">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="put/4">
   <div class="detail-header">
@@ -555,7 +718,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">put(client, url, body, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -564,14 +727,14 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>put(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
-  <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+          <pre>put(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
       </div>
 
-<p>Perform a PUT request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">put</span><span class="p" data-group-id="2434376727-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2434376727-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2434376727-2">}</span><span class="p" data-group-id="2434376727-1">)</span><span class="w">
-</span><span class="n">put</span><span class="p" data-group-id="2434376727-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2434376727-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2434376727-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2434376727-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2434376727-5">]</span><span class="p" data-group-id="2434376727-3">)</span><span class="w">
-</span><span class="n">put</span><span class="p" data-group-id="2434376727-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2434376727-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2434376727-7">}</span><span class="p" data-group-id="2434376727-6">)</span><span class="w">
-</span><span class="n">put</span><span class="p" data-group-id="2434376727-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2434376727-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2434376727-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2434376727-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2434376727-10">]</span><span class="p" data-group-id="2434376727-8">)</span></code></pre>  </section>
+<p>Perform a PUT request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">put</span><span class="p" data-group-id="2070801967-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2070801967-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2070801967-2">}</span><span class="p" data-group-id="2070801967-1">)</span><span class="w">
+</span><span class="n">put</span><span class="p" data-group-id="2070801967-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2070801967-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2070801967-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2070801967-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2070801967-5">]</span><span class="p" data-group-id="2070801967-3">)</span><span class="w">
+</span><span class="n">put</span><span class="p" data-group-id="2070801967-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2070801967-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2070801967-7">}</span><span class="p" data-group-id="2070801967-6">)</span><span class="w">
+</span><span class="n">put</span><span class="p" data-group-id="2070801967-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2070801967-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2070801967-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2070801967-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2070801967-10">]</span><span class="p" data-group-id="2070801967-8">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="put!/4">
   <div class="detail-header">
@@ -580,7 +743,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">put!(client, url, body, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -589,14 +752,14 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>put!(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
-  <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+          <pre>put!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
       </div>
 
-<p>Perform a PUT request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">put!</span><span class="p" data-group-id="8777653804-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8777653804-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8777653804-2">}</span><span class="p" data-group-id="8777653804-1">)</span><span class="w">
-</span><span class="n">put!</span><span class="p" data-group-id="8777653804-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8777653804-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8777653804-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8777653804-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8777653804-5">]</span><span class="p" data-group-id="8777653804-3">)</span><span class="w">
-</span><span class="n">put!</span><span class="p" data-group-id="8777653804-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8777653804-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8777653804-7">}</span><span class="p" data-group-id="8777653804-6">)</span><span class="w">
-</span><span class="n">put!</span><span class="p" data-group-id="8777653804-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8777653804-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8777653804-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8777653804-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8777653804-10">]</span><span class="p" data-group-id="8777653804-8">)</span></code></pre>  </section>
+<p>Perform a PUT request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">put!</span><span class="p" data-group-id="0839586151-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0839586151-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0839586151-2">}</span><span class="p" data-group-id="0839586151-1">)</span><span class="w">
+</span><span class="n">put!</span><span class="p" data-group-id="0839586151-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0839586151-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0839586151-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0839586151-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0839586151-5">]</span><span class="p" data-group-id="0839586151-3">)</span><span class="w">
+</span><span class="n">put!</span><span class="p" data-group-id="0839586151-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0839586151-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0839586151-7">}</span><span class="p" data-group-id="0839586151-6">)</span><span class="w">
+</span><span class="n">put!</span><span class="p" data-group-id="0839586151-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0839586151-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0839586151-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0839586151-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0839586151-10">]</span><span class="p" data-group-id="0839586151-8">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="request/2">
     <span id="request/1"></span>
@@ -606,7 +769,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">request(client \\ %Tesla.Client{}, options)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -615,22 +778,22 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>request(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+          <pre>request(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
       </div>
 
 <p>Perform a request.</p><h2 id="request/2-options" class="section-heading">
   <a href="#request/2-options" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Options
 </h2>
-<ul><li><code class="inline">:method</code> - the request method, one of [:head, :get, :delete, :trace, :options, :post, :put, :patch]</li><li><code class="inline">:url</code> - either full url e.g. &quot;<a href="http://example.com/some/path%22">http://example.com/some/path&quot;</a> or just &quot;/some/path&quot; if using <a href="https://hexdocs.pm/tesla/Tesla.Middleware.BaseUrl.html"><code class="inline">Tesla.Middleware.BaseUrl</code></a></li><li><code class="inline">:query</code> - a keyword list of query params, e.g. <code class="inline">[page: 1, per_page: 100]</code></li><li><code class="inline">:headers</code> - a keyworld list of headers, e.g. <code class="inline">[{&quot;content-type&quot;, &quot;text/plain&quot;}]</code></li><li><code class="inline">:body</code> - depends on used middleware:<ul><li>by default it can be a binary</li><li>if using e.g. JSON encoding middleware it can be a nested map</li><li>if adapter supports it it can be a Stream with any of the above</li></ul></li><li><code class="inline">:opts</code> - custom, per-request middleware or adapter options</li></ul><h2 id="request/2-examples" class="section-heading">
+<ul><li><code class="inline">:method</code> - the request method, one of [:head, :get, :delete, :trace, :options, :post, :put, :patch]</li><li><code class="inline">:url</code> - either full url e.g. &quot;<a href="http://example.com/some/path%22">http://example.com/some/path&quot;</a> or just &quot;/some/path&quot; if using <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Middleware.BaseUrl.html"><code class="inline">Tesla.Middleware.BaseUrl</code></a></li><li><code class="inline">:query</code> - a keyword list of query params, e.g. <code class="inline">[page: 1, per_page: 100]</code></li><li><code class="inline">:headers</code> - a keyworld list of headers, e.g. <code class="inline">[{&quot;content-type&quot;, &quot;text/plain&quot;}]</code></li><li><code class="inline">:body</code> - depends on used middleware:<ul><li>by default it can be a binary</li><li>if using e.g. JSON encoding middleware it can be a nested map</li><li>if adapter supports it it can be a Stream with any of the above</li></ul></li><li><code class="inline">:opts</code> - custom, per-request middleware or adapter options</li></ul><h2 id="request/2-examples" class="section-heading">
   <a href="#request/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">request</span><span class="p" data-group-id="9111538980-1">(</span><span class="ss">method</span><span class="p">:</span><span class="w"> </span><span class="ss">:get</span><span class="p">,</span><span class="w"> </span><span class="ss">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/users/path&quot;</span><span class="p" data-group-id="9111538980-1">)</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">request</span><span class="p" data-group-id="0537844990-1">(</span><span class="ss">method</span><span class="p">:</span><span class="w"> </span><span class="ss">:get</span><span class="p">,</span><span class="w"> </span><span class="ss">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/users/path&quot;</span><span class="p" data-group-id="0537844990-1">)</span><span class="w">
 
 </span><span class="c1"># use shortcut methods</span><span class="w">
-</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">get</span><span class="p" data-group-id="9111538980-2">(</span><span class="s">&quot;/users/1&quot;</span><span class="p" data-group-id="9111538980-2">)</span><span class="w">
-</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">post</span><span class="p" data-group-id="9111538980-3">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9111538980-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9111538980-4">}</span><span class="p" data-group-id="9111538980-3">)</span></code></pre>  </section>
+</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">get</span><span class="p" data-group-id="0537844990-2">(</span><span class="s">&quot;/users/1&quot;</span><span class="p" data-group-id="0537844990-2">)</span><span class="w">
+</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">post</span><span class="p" data-group-id="0537844990-3">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0537844990-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0537844990-4">}</span><span class="p" data-group-id="0537844990-3">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="request!/2">
     <span id="request!/1"></span>
@@ -640,7 +803,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">request!(client \\ %Tesla.Client{}, options)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -649,10 +812,75 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>request!(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+          <pre>request!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
       </div>
 
 <p>Perform request and raise in case of error.</p><p>This is similar to <a href="#request/2"><code class="inline">request/2</code></a> behaviour from Tesla 0.x</p><p>See <a href="#request/2"><code class="inline">request/2</code></a> for list of available options.</p>  </section>
+</section>
+<section class="detail" id="send_message/2">
+  <div class="detail-header">
+    <a href="#send_message/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">send_message(org_id, payload)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L93" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>send_message(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()</pre>
+      </div>
+
+<p>Sending HSM template to contact</p>  </section>
+</section>
+<section class="detail" id="send_template/2">
+  <div class="detail-header">
+    <a href="#send_template/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">send_template(org_id, payload)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L80" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>send_template(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>() | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+      </div>
+
+<p>Sending HSM template to contact</p>  </section>
+</section>
+<section class="detail" id="submit_template_for_approval/2">
+  <div class="detail-header">
+    <a href="#submit_template_for_approval/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">submit_template_for_approval(org_id, payload)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L67" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>submit_template_for_approval(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>() | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Submitting HSM template for approval</p>  </section>
 </section>
 <section class="detail" id="trace/3">
   <div class="detail-header">
@@ -661,7 +889,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">trace(client, url, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -670,13 +898,14 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>trace(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+          <pre>trace(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
       </div>
 
-<p>Perform a TRACE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">trace</span><span class="p" data-group-id="9736038483-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9736038483-1">)</span><span class="w">
-</span><span class="n">trace</span><span class="p" data-group-id="9736038483-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9736038483-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9736038483-3">]</span><span class="p" data-group-id="9736038483-2">)</span><span class="w">
-</span><span class="n">trace</span><span class="p" data-group-id="9736038483-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9736038483-4">)</span><span class="w">
-</span><span class="n">trace</span><span class="p" data-group-id="9736038483-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9736038483-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9736038483-6">]</span><span class="p" data-group-id="9736038483-5">)</span></code></pre>  </section>
+<p>Perform a TRACE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">trace</span><span class="p" data-group-id="2568125470-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2568125470-1">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="2568125470-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2568125470-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2568125470-3">]</span><span class="p" data-group-id="2568125470-2">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="2568125470-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2568125470-4">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="2568125470-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2568125470-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2568125470-6">]</span><span class="p" data-group-id="2568125470-5">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="2568125470-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2568125470-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2568125470-8">}</span><span class="p" data-group-id="2568125470-7">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="trace!/3">
   <div class="detail-header">
@@ -685,7 +914,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">trace!(client, url, opts)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L6" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/providers/gupshup/api_client.ex#L10" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -694,14 +923,15 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>trace!(<a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
-  <a href="https://hexdocs.pm/tesla/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+          <pre>trace!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
       </div>
 
-<p>Perform a TRACE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">trace!</span><span class="p" data-group-id="0245622702-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0245622702-1">)</span><span class="w">
-</span><span class="n">trace!</span><span class="p" data-group-id="0245622702-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0245622702-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0245622702-3">]</span><span class="p" data-group-id="0245622702-2">)</span><span class="w">
-</span><span class="n">trace!</span><span class="p" data-group-id="0245622702-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0245622702-4">)</span><span class="w">
-</span><span class="n">trace!</span><span class="p" data-group-id="0245622702-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0245622702-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0245622702-6">]</span><span class="p" data-group-id="0245622702-5">)</span></code></pre>  </section>
+<p>Perform a TRACE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">trace!</span><span class="p" data-group-id="0437757705-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0437757705-1">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="0437757705-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0437757705-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0437757705-3">]</span><span class="p" data-group-id="0437757705-2">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="0437757705-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0437757705-4">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="0437757705-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0437757705-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0437757705-6">]</span><span class="p" data-group-id="0437757705-5">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="0437757705-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0437757705-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0437757705-8">}</span><span class="p" data-group-id="0437757705-7">)</span></code></pre>  </section>
 </section>
           </div>
         </section>
@@ -709,14 +939,16 @@ Functions          </h1>
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>

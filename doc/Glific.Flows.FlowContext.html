@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>Glific.Flows.FlowContext — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>Glific.Flows.FlowContext — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,8 +63,8 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.2.0</small>
-Glific.Flows.FlowContext          <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L1" title="View Source" class="view-source" rel="help">
+        Glific.Flows.FlowContext <small class="app-vsn">(Glific v0.9.4)</small>
+          <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -100,7 +100,7 @@ this in a module and isolate the flow from the other aspects of Glific</p>      
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#active_context/1">active_context(contact_id)</a>
+    <a href="#active_context/2">active_context(contact_id, parent_id \\ nil)</a>
   </div>
     <div class="summary-synopsis"><p>Check if there is an active context (i.e. with a non null, node_uuid for this contact)</p></div>
 </div>
@@ -118,6 +118,18 @@ this in a module and isolate the flow from the other aspects of Glific</p>      
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#delete_completed_flow_contexts/0">delete_completed_flow_contexts()</a>
+  </div>
+    <div class="summary-synopsis"><p>Delete all the contexts which are completed before two days</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#delete_old_flow_contexts/0">delete_old_flow_contexts()</a>
+  </div>
+    <div class="summary-synopsis"><p>Delete all the contexts which are older than 30 days</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#execute/2">execute(context, messages)</a>
   </div>
     <div class="summary-synopsis"><p>Execute one (or more) steps in a flow based on the message stream</p></div>
@@ -130,7 +142,7 @@ this in a module and isolate the flow from the other aspects of Glific</p>      
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#init_context/4">init_context(flow, contact, parent_id \\ nil, current_delay \\ 0)</a>
+    <a href="#init_context/4">init_context(flow, contact, status, opts \\ [])</a>
   </div>
     <div class="summary-synopsis"><p>Start a new context, if there is an existing context, blow it away</p></div>
 </div>
@@ -140,6 +152,18 @@ this in a module and isolate the flow from the other aspects of Glific</p>      
   </div>
     <div class="summary-synopsis"><p>Load the context object, given a flow object and a contact. At some point,
 we'll get the genserver to cache this</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#mark_flows_complete/1">mark_flows_complete(contact_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Set all the flows for a specific context to be completed</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#match_outbound/3">match_outbound(context, body, go_back \\ 6)</a>
+  </div>
+    <div class="summary-synopsis"><p>Count the number of times we have sent the same message in the recent past</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -156,9 +180,15 @@ if one exists</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#step_forward/2">step_forward(context, body)</a>
+    <a href="#step_forward/2">step_forward(context, message)</a>
   </div>
     <div class="summary-synopsis"><p>Given an input string, consume the input and advance the state of the context</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_recent/3">update_recent(context, body, type)</a>
+  </div>
+    <div class="summary-synopsis"><p>Update the recent_* state as we consume or send a message</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -174,9 +204,15 @@ if one exists</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#wakeup/0">wakeup()</a>
+    <a href="#wakeup_flows/1">wakeup_flows(organization_id)</a>
   </div>
     <div class="summary-synopsis"><p>Find all the contexts which need to be woken up and processed</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#wakeup_one/1">wakeup_one(context)</a>
+  </div>
+    <div class="summary-synopsis"><p>Process one context at a time that is ready to be woken</p></div>
 </div>
   </div>
         </section>
@@ -196,7 +232,7 @@ Types          </h1>
       <span class="sr-only">Link to this type</span>
     </a>
     <h1 class="signature">t()</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L23" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L44" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -206,23 +242,31 @@ Types          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>t() :: %Glific.Flows.FlowContext{
-  __meta__: <a href="https://hexdocs.pm/ecto/Ecto.Schema.Metadata.html#t:t/0">Ecto.Schema.Metadata.t</a>(),
+  __meta__: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Schema.Metadata.html#t:t/0">Ecto.Schema.Metadata.t</a>(),
   completed_at: :utc_datetime | nil,
-  contact: <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>() | <a href="https://hexdocs.pm/ecto/Ecto.Association.NotLoaded.html#t:t/0">Ecto.Association.NotLoaded.t</a>() | nil,
+  contact: <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>() | <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Association.NotLoaded.html#t:t/0">Ecto.Association.NotLoaded.t</a>() | nil,
   contact_id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | nil,
   delay: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(),
-  flow: <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>() | <a href="https://hexdocs.pm/ecto/Ecto.Association.NotLoaded.html#t:t/0">Ecto.Association.NotLoaded.t</a>() | nil,
+  flow: <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>() | <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Association.NotLoaded.html#t:t/0">Ecto.Association.NotLoaded.t</a>() | nil,
   flow_id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | nil,
-  flow_uuid: <a href="https://hexdocs.pm/ecto/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>() | nil,
+  flow_uuid: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>() | nil,
   id: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   inserted_at: :utc_datetime | nil,
+  last_message: Glific.Messages.Message.t() | nil,
   node: <a href="Glific.Flows.Node.html#t:t/0">Glific.Flows.Node.t</a>() | nil,
-  node_uuid: <a href="https://hexdocs.pm/ecto/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>() | nil,
-  parent: <a href="#t:t/0">t</a>() | <a href="https://hexdocs.pm/ecto/Ecto.Association.NotLoaded.html#t:t/0">Ecto.Association.NotLoaded.t</a>() | nil,
+  node_uuid: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>() | nil,
+  organization:
+    <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>() | <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Association.NotLoaded.html#t:t/0">Ecto.Association.NotLoaded.t</a>() | nil,
+  organization_id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | nil,
+  parent: <a href="#t:t/0">t</a>() | <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Association.NotLoaded.html#t:t/0">Ecto.Association.NotLoaded.t</a>() | nil,
   parent_id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | nil,
+  recent_inbound: [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()] | [],
+  recent_outbound: [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()] | [],
   results: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>() | nil,
+  status: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
   updated_at: :utc_datetime | nil,
   uuid_map: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>() | nil,
+  wait_for_time: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
   wakeup_at: :utc_datetime | nil
 }</pre>
       </div>
@@ -239,14 +283,15 @@ Types          </h1>
             </a>
 Functions          </h1>
           <div class="functions-list">
-<section class="detail" id="active_context/1">
+<section class="detail" id="active_context/2">
+    <span id="active_context/1"></span>
   <div class="detail-header">
-    <a href="#active_context/1" class="detail-link" title="Link to this function">
+    <a href="#active_context/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">active_context(contact_id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L230" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">active_context(contact_id, parent_id \\ nil)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L334" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -255,7 +300,7 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>active_context(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="#t:t/0">t</a>() | nil</pre>
+          <pre>active_context(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | nil) :: <a href="#t:t/0">t</a>() | nil</pre>
       </div>
 
 <p>Check if there is an active context (i.e. with a non null, node_uuid for this contact)</p>  </section>
@@ -267,7 +312,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">changeset(context, attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L68" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L106" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -276,7 +321,7 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>changeset(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre>changeset(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
       </div>
 
 <p>Standard changeset pattern we use for all data types</p>  </section>
@@ -289,7 +334,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">create_flow_context(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L81" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L119" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -298,10 +343,52 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>create_flow_context(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+          <pre>create_flow_context(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Create a FlowContext</p>  </section>
+</section>
+<section class="detail" id="delete_completed_flow_contexts/0">
+  <div class="detail-header">
+    <a href="#delete_completed_flow_contexts/0" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_completed_flow_contexts()</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L471" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete_completed_flow_contexts() :: :ok</pre>
+      </div>
+
+<p>Delete all the contexts which are completed before two days</p>  </section>
+</section>
+<section class="detail" id="delete_old_flow_contexts/0">
+  <div class="detail-header">
+    <a href="#delete_old_flow_contexts/0" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_old_flow_contexts()</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L488" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete_old_flow_contexts() :: :ok</pre>
+      </div>
+
+<p>Delete all the contexts which are older than 30 days</p>  </section>
 </section>
 <section class="detail" id="execute/2">
   <div class="detail-header">
@@ -310,7 +397,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">execute(context, messages)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L165" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L262" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -319,7 +406,8 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>execute(<a href="#t:t/0">t</a>(), [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]) :: {:ok, <a href="#t:t/0">t</a>(), [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+          <pre>execute(<a href="#t:t/0">t</a>(), [Glific.Messages.Message.t()]) ::
+  {:ok, <a href="#t:t/0">t</a>(), [Glific.Messages.Message.t()]} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
       </div>
 
 <p>Execute one (or more) steps in a flow based on the message stream</p>  </section>
@@ -331,7 +419,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_result_value(context, value)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L276" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L460" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -346,15 +434,14 @@ Functions          </h1>
 <p>Retrieve the value from a results string</p>  </section>
 </section>
 <section class="detail" id="init_context/4">
-    <span id="init_context/2"></span>
     <span id="init_context/3"></span>
   <div class="detail-header">
     <a href="#init_context/4" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">init_context(flow, contact, parent_id \\ nil, current_delay \\ 0)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L181" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">init_context(flow, contact, status, opts \\ [])</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L293" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -366,8 +453,8 @@ Functions          </h1>
           <pre>init_context(
   <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(),
   <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>(),
-  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | nil,
-  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | 0
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>() | []
 ) :: {:ok, <a href="#t:t/0">t</a>(), [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
       </div>
 
@@ -380,7 +467,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">load_context(context, flow)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L251" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L362" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -395,6 +482,49 @@ Functions          </h1>
 <p>Load the context object, given a flow object and a contact. At some point,
 we'll get the genserver to cache this</p>  </section>
 </section>
+<section class="detail" id="mark_flows_complete/1">
+  <div class="detail-header">
+    <a href="#mark_flows_complete/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">mark_flows_complete(contact_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L277" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>mark_flows_complete(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: nil</pre>
+      </div>
+
+<p>Set all the flows for a specific context to be completed</p>  </section>
+</section>
+<section class="detail" id="match_outbound/3">
+    <span id="match_outbound/2"></span>
+  <div class="detail-header">
+    <a href="#match_outbound/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">match_outbound(context, body, go_back \\ 6)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L225" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>match_outbound(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+      </div>
+
+<p>Count the number of times we have sent the same message in the recent past</p>  </section>
+</section>
 <section class="detail" id="reset_context/1">
   <div class="detail-header">
     <a href="#reset_context/1" class="detail-link" title="Link to this function">
@@ -402,7 +532,7 @@ we'll get the genserver to cache this</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">reset_context(context)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L101" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L139" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -424,7 +554,7 @@ if one exists</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">set_node(context, node)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L155" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L252" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -444,8 +574,8 @@ if one exists</p>  </section>
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">step_forward(context, body)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L265" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">step_forward(context, message)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L400" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -454,10 +584,32 @@ if one exists</p>  </section>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>step_forward(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+          <pre>step_forward(<a href="#t:t/0">t</a>(), Glific.Messages.Message.t()) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
       </div>
 
 <p>Given an input string, consume the input and advance the state of the context</p>  </section>
+</section>
+<section class="detail" id="update_recent/3">
+  <div class="detail-header">
+    <a href="#update_recent/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_recent(context, body, type)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L167" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>update_recent(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: <a href="#t:t/0">t</a>()</pre>
+      </div>
+
+<p>Update the recent_* state as we consume or send a message</p>  </section>
 </section>
 <section class="detail" id="update_results/3">
   <div class="detail-header">
@@ -466,7 +618,7 @@ if one exists</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_results(context, key, json)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L141" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L197" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -475,7 +627,7 @@ if one exists</p>  </section>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>update_results(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="#t:t/0">t</a>()</pre>
+          <pre>update_results(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>() | <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="#t:t/0">t</a>()</pre>
       </div>
 
 <p>Update the contact results with each element of the json map</p>  </section>
@@ -487,7 +639,7 @@ if one exists</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_results(context, key, input, category)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L121" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L189" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -496,19 +648,19 @@ if one exists</p>  </section>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>update_results(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="#t:t/0">t</a>()</pre>
+          <pre>update_results(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="#t:t/0">t</a>()</pre>
       </div>
 
 <p>Update the contact results state as we step through the flow</p>  </section>
 </section>
-<section class="detail" id="wakeup/0">
+<section class="detail" id="wakeup_flows/1">
   <div class="detail-header">
-    <a href="#wakeup/0" class="detail-link" title="Link to this function">
+    <a href="#wakeup_flows/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">wakeup()</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L219" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">wakeup_flows(organization_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L418" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -517,10 +669,31 @@ if one exists</p>  </section>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>wakeup() :: [<a href="#t:t/0">t</a>()]</pre>
+          <pre>wakeup_flows(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: :ok</pre>
       </div>
 
 <p>Find all the contexts which need to be woken up and processed</p>  </section>
+</section>
+<section class="detail" id="wakeup_one/1">
+  <div class="detail-header">
+    <a href="#wakeup_one/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">wakeup_one(context)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L434" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>wakeup_one(<a href="#t:t/0">t</a>()) :: {:ok, <a href="#t:t/0">t</a>() | nil, [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+      </div>
+
+<p>Process one context at a time that is ready to be woken</p>  </section>
 </section>
           </div>
         </section>
@@ -528,14 +701,16 @@ if one exists</p>  </section>
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>

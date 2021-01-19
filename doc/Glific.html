@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>Glific — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>Glific — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,8 +63,8 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.2.0</small>
-Glific          <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L1" title="View Source" class="view-source" rel="help">
+        Glific <small class="app-vsn">(Glific v0.9.4)</small>
+          <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -91,9 +91,40 @@ a new file</p>        </section>
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#atomize_keys/1">atomize_keys(map)</a>
+  </div>
+    <div class="summary-synopsis"><p>Convert map string keys to :atom keys</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#go_back_time/3">go_back_time(go_back, time \\ DateTime.utc_now(), unit \\ :hour)</a>
+  </div>
+    <div class="summary-synopsis"><p>Return a time object where you go back x units. We introduce the notion
+of hour and minute</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#in_past_time/3">in_past_time(time, units \\ :hours, back \\ 24)</a>
+  </div>
+    <div class="summary-synopsis"><p>See if the current time is within the past time units</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#parse_maybe_integer/1">parse_maybe_integer(value)</a>
   </div>
     <div class="summary-synopsis"><p>Wrapper to return :ok/:error when parsing strings to potential integers</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#signature/3">signature(organization_id, body, timestamp)</a>
+  </div>
+    <div class="summary-synopsis"><p>Compute the signature at a specific time for the body</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#stacktrace/0">stacktrace()</a>
+  </div>
+    <div class="summary-synopsis"><p>easy way for glific developers to get a stacktrace when debugging</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -101,6 +132,22 @@ a new file</p>        </section>
   </div>
     <div class="summary-synopsis"><p>Lets get rid of all non valid characters. We are assuming any language and hence using unicode syntax
 and not restricting ourselves to alphanumeric</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#suspicious_code/1">suspicious_code(code)</a>
+  </div>
+    <div class="summary-synopsis"><p>Really simple function to ensure folks do not add Repo and/or IO calls
+to an EEx snippet. This is an extremely short term fix to avoid shooting
+ourselves in the foot, but we should move to lua for flows scripting in the
+near future</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#validate_shortcode/1">validate_shortcode(changeset)</a>
+  </div>
+    <div class="summary-synopsis"><p>Validates inputed shortcode, if shortcode is invalid it returns message that the shortcode is invalid
+along with the valid shortcode.</p></div>
 </div>
   </div>
         </section>
@@ -113,6 +160,74 @@ and not restricting ourselves to alphanumeric</p></div>
             </a>
 Functions          </h1>
           <div class="functions-list">
+<section class="detail" id="atomize_keys/1">
+  <div class="detail-header">
+    <a href="#atomize_keys/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">atomize_keys(map)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L100" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>atomize_keys(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+      </div>
+
+<p>Convert map string keys to :atom keys</p>  </section>
+</section>
+<section class="detail" id="go_back_time/3">
+    <span id="go_back_time/1"></span>
+    <span id="go_back_time/2"></span>
+  <div class="detail-header">
+    <a href="#go_back_time/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">go_back_time(go_back, time \\ DateTime.utc_now(), unit \\ :hour)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L84" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>go_back_time(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>()</pre>
+      </div>
+
+<p>Return a time object where you go back x units. We introduce the notion
+of hour and minute</p>  </section>
+</section>
+<section class="detail" id="in_past_time/3">
+    <span id="in_past_time/1"></span>
+    <span id="in_past_time/2"></span>
+  <div class="detail-header">
+    <a href="#in_past_time/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">in_past_time(time, units \\ :hours, back \\ 24)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L76" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>in_past_time(<a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+      </div>
+
+<p>See if the current time is within the past time units</p>  </section>
+</section>
 <section class="detail" id="parse_maybe_integer/1">
   <div class="detail-header">
     <a href="#parse_maybe_integer/1" class="detail-link" title="Link to this function">
@@ -120,7 +235,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">parse_maybe_integer(value)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L17" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L21" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -134,6 +249,48 @@ Functions          </h1>
 
 <p>Wrapper to return :ok/:error when parsing strings to potential integers</p>  </section>
 </section>
+<section class="detail" id="signature/3">
+  <div class="detail-header">
+    <a href="#signature/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">signature(organization_id, body, timestamp)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L150" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>signature(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+      </div>
+
+<p>Compute the signature at a specific time for the body</p>  </section>
+</section>
+<section class="detail" id="stacktrace/0">
+  <div class="detail-header">
+    <a href="#stacktrace/0" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">stacktrace()</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L126" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>stacktrace() :: :ok</pre>
+      </div>
+
+<p>easy way for glific developers to get a stacktrace when debugging</p>  </section>
+</section>
 <section class="detail" id="string_clean/1">
   <div class="detail-header">
     <a href="#string_clean/1" class="detail-link" title="Link to this function">
@@ -141,7 +298,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">string_clean(str)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L33" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L63" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -156,20 +313,70 @@ Functions          </h1>
 <p>Lets get rid of all non valid characters. We are assuming any language and hence using unicode syntax
 and not restricting ourselves to alphanumeric</p>  </section>
 </section>
+<section class="detail" id="suspicious_code/1">
+  <div class="detail-header">
+    <a href="#suspicious_code/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">suspicious_code(code)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L143" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>suspicious_code(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+      </div>
+
+<p>Really simple function to ensure folks do not add Repo and/or IO calls
+to an EEx snippet. This is an extremely short term fix to avoid shooting
+ourselves in the foot, but we should move to lua for flows scripting in the
+near future</p><p>Note that folks can potentially find other ways to access the same modules, so
+this by no means should be considered remotely secure</p>  </section>
+</section>
+<section class="detail" id="validate_shortcode/1">
+  <div class="detail-header">
+    <a href="#validate_shortcode/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">validate_shortcode(changeset)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L44" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>validate_shortcode(<a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()) ::
+  <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>() | <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+      </div>
+
+<p>Validates inputed shortcode, if shortcode is invalid it returns message that the shortcode is invalid
+along with the valid shortcode.</p>  </section>
+</section>
           </div>
         </section>
       <footer class="footer">
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>

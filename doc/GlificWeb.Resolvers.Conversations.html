@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>GlificWeb.Resolvers.Conversations — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>GlificWeb.Resolvers.Conversations — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,8 +63,8 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.2.0</small>
-GlificWeb.Resolvers.Conversations          <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/conversations.ex#L1" title="View Source" class="view-source" rel="help">
+        GlificWeb.Resolvers.Conversations <small class="app-vsn">(Glific v0.9.4)</small>
+          <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/conversations.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -89,12 +89,6 @@ This layer basically stiches together one or more calls to resolve the incoming 
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#conversation/3">conversation(_, args, _)</a>
-  </div>
-    <div class="summary-synopsis"><p>Get a specific conversation by contact id</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
     <a href="#conversations/3">conversations(_, args, _)</a>
   </div>
     <div class="summary-synopsis"><p>Get the list of conversations filtered by args
@@ -112,28 +106,6 @@ For an authenticated session, we can get the current user from the context via t
             </a>
 Functions          </h1>
           <div class="functions-list">
-<section class="detail" id="conversation/3">
-  <div class="detail-header">
-    <a href="#conversation/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">conversation(_, args, _)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/conversations.ex#L14" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-  </div>
-
-  <section class="docstring">
-      <h2>Specs</h2>
-      <div class="specs">
-          <pre>conversation(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
-  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
-      </div>
-
-<p>Get a specific conversation by contact id</p>  </section>
-</section>
 <section class="detail" id="conversations/3">
   <div class="detail-header">
     <a href="#conversations/3" class="detail-link" title="Link to this function">
@@ -141,7 +113,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">conversations(_, args, _)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/conversations.ex#L25" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/conversations.ex#L16" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -150,7 +122,7 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>conversations(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+          <pre>conversations(<a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
   {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
       </div>
 
@@ -164,14 +136,16 @@ For an authenticated session, we can get the current user from the context via t
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>

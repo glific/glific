@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>Glific.Contacts — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>Glific.Contacts — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,8 +63,8 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.2.0</small>
-Glific.Contacts          <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L1" title="View Source" class="view-source" rel="help">
+        Glific.Contacts <small class="app-vsn">(Glific v0.9.4)</small>
+          <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -82,10 +82,27 @@ Glific.Contacts          <a href="https://github.com/glific/glific/blob/master/l
             </a>
             Summary
           </h1>
+  <div class="summary-types summary">
+    <h2>
+      <a href="#types">Types</a>
+    </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:option/0">option()</a>
+  </div>
+</div>
+  </div>
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
     </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#add_permission/2">add_permission(query, user)</a>
+  </div>
+    <div class="summary-synopsis"><p>Add permissioning specific to groups, in this case we want to restrict the visibility of
+groups that the user can see</p></div>
+</div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#can_send_message_to?/1">can_send_message_to?(contact)</a>
@@ -112,25 +129,25 @@ Glific.Contacts          <a href="https://github.com/glific/glific/blob/master/l
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#contact_opted_in/2">contact_opted_in(phone, utc_time)</a>
+    <a href="#contact_opted_in/3">contact_opted_in(phone, organization_id, utc_time)</a>
   </div>
-    <div class="summary-synopsis"><p>Update DB fields when contact opted in</p></div>
+    <div class="summary-synopsis"><p>Update DB fields when contact opted in and ignore if it's blocked</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#contact_opted_out/2">contact_opted_out(phone, utc_time)</a>
+    <a href="#contact_opted_out/3">contact_opted_out(phone, organization_id, utc_time)</a>
   </div>
     <div class="summary-synopsis"><p>Update DB fields when contact opted out</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#count_contacts/1">count_contacts(args \\ %{})</a>
+    <a href="#count_contacts/1">count_contacts(args)</a>
   </div>
     <div class="summary-synopsis"><p>Return the count of contacts, using the same filter as list_contacts</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#create_contact/1">create_contact(attrs \\ %{})</a>
+    <a href="#create_contact/1">create_contact(attrs)</a>
   </div>
     <div class="summary-synopsis"><p>Creates a contact.</p></div>
 </div>
@@ -142,9 +159,33 @@ Glific.Contacts          <a href="https://github.com/glific/glific/blob/master/l
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#delete/3">delete(client, url, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a DELETE request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#delete!/3">delete!(client, url, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a DELETE request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#delete_contact/1">delete_contact(contact)</a>
   </div>
     <div class="summary-synopsis"><p>Deletes a contact.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get/3">get(client, url, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a GET request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get!/3">get!(client, url, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a GET request.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -154,21 +195,150 @@ Glific.Contacts          <a href="https://github.com/glific/glific/blob/master/l
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#is_new_contact/1">is_new_contact(contact_id)</a>
+    <a href="#get_contact_field_map/1">get_contact_field_map(contact_id)</a>
   </div>
-    <div class="summary-synopsis"><p>Check if this contact id is a new conatct</p></div>
+    <div class="summary-synopsis"><p>Convert contact field to map for variable substitution</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#list_contacts/1">list_contacts(args \\ %{})</a>
+    <a href="#head/3">head(client, url, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a HEAD request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#head!/3">head!(client, url, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a HEAD request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#is_contact_blocked?/2">is_contact_blocked?(phone, organization_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>check if contact is blocked or not</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#is_new_contact/1">is_new_contact(contact_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Check if this contact id is a new contact.
+In general, we should always retrive as little as possible from the DB</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#list_contacts/1">list_contacts(args)</a>
   </div>
     <div class="summary-synopsis"><p>Returns the list of contacts.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#list_user_contacts/1">list_user_contacts(args \\ %{})</a>
+  </div>
+    <div class="summary-synopsis"><p>Return the list of contacts who are also users</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#maybe_create_contact/1">maybe_create_contact(sender)</a>
+  </div>
+    <div class="summary-synopsis"><p>This function is called by the messaging framework for all incoming messages, hence
+might be a good candidate to maintain a contact level cache at some point</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#optin_contact/1">optin_contact(attrs)</a>
+  </div>
+    <div class="summary-synopsis"><p>Upload a contact phone as opted in</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#options/3">options(client, url, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a OPTIONS request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#options!/3">options!(client, url, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a OPTIONS request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#patch/4">patch(client, url, body, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a PATCH request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#patch!/4">patch!(client, url, body, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a PATCH request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#post/4">post(client, url, body, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a POST request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#post!/4">post!(client, url, body, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a POST request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#put/4">put(client, url, body, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a PUT request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#put!/4">put!(client, url, body, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a PUT request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#request/2">request(client \\ %Tesla.Client{}, options)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#request!/2">request!(client \\ %Tesla.Client{}, options)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform request and raise in case of error.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#set_session_status/2">set_session_status(contact, status)</a>
+  </div>
+    <div class="summary-synopsis"><p>Set session status for opted in and opted out contacts</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#trace/3">trace(client, url, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a TRACE request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#trace!/3">trace!(client, url, opts)</a>
+  </div>
+    <div class="summary-synopsis"><p>Perform a TRACE request.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#update_contact/2">update_contact(contact, attrs)</a>
   </div>
     <div class="summary-synopsis"><p>Updates a contact.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_contact_status/2">update_contact_status(organization_id, args)</a>
+  </div>
+    <div class="summary-synopsis"><p>Invoked from cron jobs to mass update the status of contacts belonging to
+a specific organization</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -180,6 +350,43 @@ it returns the existing contact, else it creates a new one</p></div>
   </div>
         </section>
 
+        <section id="types" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#types">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+Types          </h1>
+          <div class="types-list">
+<section class="detail" id="t:option/0">
+  <div class="detail-header">
+    <a href="#t:option/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">option()</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>option() ::
+  {:method, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:method/0">Tesla.Env.method</a>()}
+  | {:url, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>()}
+  | {:query, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:query/0">Tesla.Env.query</a>()}
+  | {:headers, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:headers/0">Tesla.Env.headers</a>()}
+  | {:body, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>()}
+  | {:opts, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:opts/0">Tesla.Env.opts</a>()}</pre>
+      </div>
+
+  </section>
+</section>
+          </div>
+        </section>
         <section id="functions" class="details-list">
           <h1 class="section-heading">
             <a class="hover-link" href="#functions">
@@ -188,6 +395,28 @@ it returns the existing contact, else it creates a new one</p></div>
             </a>
 Functions          </h1>
           <div class="functions-list">
+<section class="detail" id="add_permission/2">
+  <div class="detail-header">
+    <a href="#add_permission/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">add_permission(query, user)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L29" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>add_permission(<a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(), Glific.Users.User.t()) :: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
+      </div>
+
+<p>Add permissioning specific to groups, in this case we want to restrict the visibility of
+groups that the user can see</p>  </section>
+</section>
 <section class="detail" id="can_send_message_to?/1">
   <div class="detail-header">
     <a href="#can_send_message_to?/1" class="detail-link" title="Link to this function">
@@ -195,7 +424,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">can_send_message_to?(contact)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L220" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L405" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -216,7 +445,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">can_send_message_to?(contact, is_hsm)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L224" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L409" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -238,7 +467,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">change_contact(contact, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L139" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L262" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -247,15 +476,15 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>change_contact(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre>change_contact(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
       </div>
 
 <p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking contact changes.</p><h2 id="change_contact/2-examples" class="section-heading">
   <a href="#change_contact/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_contact</span><span class="p" data-group-id="4128975673-1">(</span><span class="n">contact</span><span class="p" data-group-id="4128975673-1">)</span><span class="w">
-</span><span class="p" data-group-id="4128975673-2">%</span><span class="nc" data-group-id="4128975673-2">Ecto.Changeset</span><span class="p" data-group-id="4128975673-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4128975673-3">%</span><span class="nc" data-group-id="4128975673-3">Contact</span><span class="p" data-group-id="4128975673-3">{</span><span class="p" data-group-id="4128975673-3">}</span><span class="p" data-group-id="4128975673-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_contact</span><span class="p" data-group-id="2296203182-1">(</span><span class="n">contact</span><span class="p" data-group-id="2296203182-1">)</span><span class="w">
+</span><span class="p" data-group-id="2296203182-2">%</span><span class="nc" data-group-id="2296203182-2">Ecto.Changeset</span><span class="p" data-group-id="2296203182-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2296203182-3">%</span><span class="nc" data-group-id="2296203182-3">Contact</span><span class="p" data-group-id="2296203182-3">{</span><span class="p" data-group-id="2296203182-3">}</span><span class="p" data-group-id="2296203182-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="contact_location/1">
   <div class="detail-header">
@@ -264,7 +493,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">contact_location(contact)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L251" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L432" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -279,14 +508,14 @@ Functions          </h1>
 
 <p>Get contact's current location</p>  </section>
 </section>
-<section class="detail" id="contact_opted_in/2">
+<section class="detail" id="contact_opted_in/3">
   <div class="detail-header">
-    <a href="#contact_opted_in/2" class="detail-link" title="Link to this function">
+    <a href="#contact_opted_in/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">contact_opted_in(phone, utc_time)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L184" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">contact_opted_in(phone, organization_id, utc_time)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L352" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -295,19 +524,20 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>contact_opted_in(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>()) :: {:ok}</pre>
+          <pre>contact_opted_in(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>()) ::
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
-<p>Update DB fields when contact opted in</p>  </section>
+<p>Update DB fields when contact opted in and ignore if it's blocked</p>  </section>
 </section>
-<section class="detail" id="contact_opted_out/2">
+<section class="detail" id="contact_opted_out/3">
   <div class="detail-header">
-    <a href="#contact_opted_out/2" class="detail-link" title="Link to this function">
+    <a href="#contact_opted_out/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">contact_opted_out(phone, utc_time)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L202" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">contact_opted_out(phone, organization_id, utc_time)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L379" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -316,20 +546,19 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>contact_opted_out(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>()) :: {:ok}</pre>
+          <pre>contact_opted_out(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>()) :: {:ok}</pre>
       </div>
 
 <p>Update DB fields when contact opted out</p>  </section>
 </section>
 <section class="detail" id="count_contacts/1">
-    <span id="count_contacts/0"></span>
   <div class="detail-header">
     <a href="#count_contacts/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">count_contacts(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L30" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">count_contacts(args)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L76" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -344,14 +573,13 @@ Functions          </h1>
 <p>Return the count of contacts, using the same filter as list_contacts</p>  </section>
 </section>
 <section class="detail" id="create_contact/1">
-    <span id="create_contact/0"></span>
   <div class="detail-header">
     <a href="#create_contact/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">create_contact(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L82" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">create_contact(attrs)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L193" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -361,18 +589,18 @@ Functions          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>create_contact(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Creates a contact.</p><h2 id="create_contact/1-examples" class="section-heading">
   <a href="#create_contact/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact</span><span class="p" data-group-id="1124816799-1">(</span><span class="p" data-group-id="1124816799-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="1124816799-2">}</span><span class="p" data-group-id="1124816799-1">)</span><span class="w">
-</span><span class="p" data-group-id="1124816799-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1124816799-4">%</span><span class="nc" data-group-id="1124816799-4">Contact</span><span class="p" data-group-id="1124816799-4">{</span><span class="p" data-group-id="1124816799-4">}</span><span class="p" data-group-id="1124816799-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact</span><span class="p" data-group-id="4150345292-1">(</span><span class="p" data-group-id="4150345292-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="4150345292-2">}</span><span class="p" data-group-id="4150345292-1">)</span><span class="w">
+</span><span class="p" data-group-id="4150345292-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4150345292-4">%</span><span class="nc" data-group-id="4150345292-4">Contact</span><span class="p" data-group-id="4150345292-4">{</span><span class="p" data-group-id="4150345292-4">}</span><span class="p" data-group-id="4150345292-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact</span><span class="p" data-group-id="1124816799-5">(</span><span class="p" data-group-id="1124816799-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1124816799-6">}</span><span class="p" data-group-id="1124816799-5">)</span><span class="w">
-</span><span class="p" data-group-id="1124816799-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1124816799-8">%</span><span class="nc" data-group-id="1124816799-8">Ecto.Changeset</span><span class="p" data-group-id="1124816799-8">{</span><span class="p" data-group-id="1124816799-8">}</span><span class="p" data-group-id="1124816799-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact</span><span class="p" data-group-id="4150345292-5">(</span><span class="p" data-group-id="4150345292-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4150345292-6">}</span><span class="p" data-group-id="4150345292-5">)</span><span class="w">
+</span><span class="p" data-group-id="4150345292-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4150345292-8">%</span><span class="nc" data-group-id="4150345292-8">Ecto.Changeset</span><span class="p" data-group-id="4150345292-8">{</span><span class="p" data-group-id="4150345292-8">}</span><span class="p" data-group-id="4150345292-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="create_location/1">
     <span id="create_location/0"></span>
@@ -382,7 +610,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">create_location(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L272" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L453" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -392,18 +620,69 @@ Functions          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>create_location(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Contacts.Location.html#t:t/0">Glific.Contacts.Location.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Contacts.Location.html#t:t/0">Glific.Contacts.Location.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Creates a location.</p><h2 id="create_location/1-examples" class="section-heading">
   <a href="#create_location/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Contacts</span><span class="o">.</span><span class="n">create_location</span><span class="p" data-group-id="6946228857-1">(</span><span class="p" data-group-id="6946228857-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="6946228857-2">}</span><span class="p" data-group-id="6946228857-1">)</span><span class="w">
-</span><span class="p" data-group-id="6946228857-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6946228857-4">%</span><span class="nc" data-group-id="6946228857-4">Glific.Contacts.Location</span><span class="p" data-group-id="6946228857-4">{</span><span class="p" data-group-id="6946228857-4">}</span><span class="p" data-group-id="6946228857-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Contacts</span><span class="o">.</span><span class="n">create_location</span><span class="p" data-group-id="3575178051-1">(</span><span class="p" data-group-id="3575178051-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="3575178051-2">}</span><span class="p" data-group-id="3575178051-1">)</span><span class="w">
+</span><span class="p" data-group-id="3575178051-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3575178051-4">%</span><span class="nc" data-group-id="3575178051-4">Glific.Contacts.Location</span><span class="p" data-group-id="3575178051-4">{</span><span class="p" data-group-id="3575178051-4">}</span><span class="p" data-group-id="3575178051-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Contacts</span><span class="o">.</span><span class="n">create_location</span><span class="p" data-group-id="6946228857-5">(</span><span class="p" data-group-id="6946228857-6">%{</span><span class="ss">bad_field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6946228857-6">}</span><span class="p" data-group-id="6946228857-5">)</span><span class="w">
-</span><span class="p" data-group-id="6946228857-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6946228857-8">%</span><span class="nc" data-group-id="6946228857-8">Ecto.Changeset</span><span class="p" data-group-id="6946228857-8">{</span><span class="p" data-group-id="6946228857-8">}</span><span class="p" data-group-id="6946228857-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Contacts</span><span class="o">.</span><span class="n">create_location</span><span class="p" data-group-id="3575178051-5">(</span><span class="p" data-group-id="3575178051-6">%{</span><span class="ss">bad_field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3575178051-6">}</span><span class="p" data-group-id="3575178051-5">)</span><span class="w">
+</span><span class="p" data-group-id="3575178051-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3575178051-8">%</span><span class="nc" data-group-id="3575178051-8">Ecto.Changeset</span><span class="p" data-group-id="3575178051-8">{</span><span class="p" data-group-id="3575178051-8">}</span><span class="p" data-group-id="3575178051-7">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="delete/3">
+  <div class="detail-header">
+    <a href="#delete/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete(client, url, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+      </div>
+
+<p>Perform a DELETE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">delete</span><span class="p" data-group-id="2091744125-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2091744125-1">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="2091744125-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2091744125-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2091744125-3">]</span><span class="p" data-group-id="2091744125-2">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="2091744125-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2091744125-4">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="2091744125-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2091744125-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2091744125-6">]</span><span class="p" data-group-id="2091744125-5">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="2091744125-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2091744125-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2091744125-8">}</span><span class="p" data-group-id="2091744125-7">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="delete!/3">
+  <div class="detail-header">
+    <a href="#delete!/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete!(client, url, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+      </div>
+
+<p>Perform a DELETE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">delete!</span><span class="p" data-group-id="6139236009-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6139236009-1">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="6139236009-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6139236009-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6139236009-3">]</span><span class="p" data-group-id="6139236009-2">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="6139236009-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6139236009-4">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="6139236009-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6139236009-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6139236009-6">]</span><span class="p" data-group-id="6139236009-5">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="6139236009-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6139236009-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6139236009-8">}</span><span class="p" data-group-id="6139236009-7">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="delete_contact/1">
   <div class="detail-header">
@@ -412,7 +691,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete_contact(contact)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L125" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L246" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -422,18 +701,69 @@ Functions          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>delete_contact(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()) ::
-  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Deletes a contact.</p><h2 id="delete_contact/1-examples" class="section-heading">
   <a href="#delete_contact/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact</span><span class="p" data-group-id="4120745689-1">(</span><span class="n">contact</span><span class="p" data-group-id="4120745689-1">)</span><span class="w">
-</span><span class="p" data-group-id="4120745689-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4120745689-3">%</span><span class="nc" data-group-id="4120745689-3">Contact</span><span class="p" data-group-id="4120745689-3">{</span><span class="p" data-group-id="4120745689-3">}</span><span class="p" data-group-id="4120745689-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact</span><span class="p" data-group-id="8957355743-1">(</span><span class="n">contact</span><span class="p" data-group-id="8957355743-1">)</span><span class="w">
+</span><span class="p" data-group-id="8957355743-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8957355743-3">%</span><span class="nc" data-group-id="8957355743-3">Contact</span><span class="p" data-group-id="8957355743-3">{</span><span class="p" data-group-id="8957355743-3">}</span><span class="p" data-group-id="8957355743-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact</span><span class="p" data-group-id="4120745689-4">(</span><span class="n">contact</span><span class="p" data-group-id="4120745689-4">)</span><span class="w">
-</span><span class="p" data-group-id="4120745689-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4120745689-6">%</span><span class="nc" data-group-id="4120745689-6">Ecto.Changeset</span><span class="p" data-group-id="4120745689-6">{</span><span class="p" data-group-id="4120745689-6">}</span><span class="p" data-group-id="4120745689-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact</span><span class="p" data-group-id="8957355743-4">(</span><span class="n">contact</span><span class="p" data-group-id="8957355743-4">)</span><span class="w">
+</span><span class="p" data-group-id="8957355743-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8957355743-6">%</span><span class="nc" data-group-id="8957355743-6">Ecto.Changeset</span><span class="p" data-group-id="8957355743-6">{</span><span class="p" data-group-id="8957355743-6">}</span><span class="p" data-group-id="8957355743-5">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="get/3">
+  <div class="detail-header">
+    <a href="#get/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get(client, url, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>get(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+      </div>
+
+<p>Perform a GET request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">get</span><span class="p" data-group-id="1510374951-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1510374951-1">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="1510374951-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1510374951-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1510374951-3">]</span><span class="p" data-group-id="1510374951-2">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="1510374951-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1510374951-4">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="1510374951-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1510374951-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1510374951-6">]</span><span class="p" data-group-id="1510374951-5">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="1510374951-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1510374951-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1510374951-8">}</span><span class="p" data-group-id="1510374951-7">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="get!/3">
+  <div class="detail-header">
+    <a href="#get!/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get!(client, url, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>get!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+      </div>
+
+<p>Perform a GET request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">get!</span><span class="p" data-group-id="3396947034-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3396947034-1">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="3396947034-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3396947034-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3396947034-3">]</span><span class="p" data-group-id="3396947034-2">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="3396947034-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3396947034-4">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="3396947034-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3396947034-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3396947034-6">]</span><span class="p" data-group-id="3396947034-5">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="3396947034-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3396947034-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3396947034-8">}</span><span class="p" data-group-id="3396947034-7">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_contact!/1">
   <div class="detail-header">
@@ -442,7 +772,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_contact!(id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L67" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L173" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -454,15 +784,108 @@ Functions          </h1>
           <pre>get_contact!(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()</pre>
       </div>
 
-<p>Gets a single contact.</p><p>Raises <a href="https://hexdocs.pm/ecto/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Contact does not exist.</p><h2 id="get_contact!/1-examples" class="section-heading">
+<p>Gets a single contact.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Contact does not exist.</p><h2 id="get_contact!/1-examples" class="section-heading">
   <a href="#get_contact!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="4060976067-1">(</span><span class="mi">123</span><span class="p" data-group-id="4060976067-1">)</span><span class="w">
-</span><span class="p" data-group-id="4060976067-2">%</span><span class="nc" data-group-id="4060976067-2">Contact</span><span class="p" data-group-id="4060976067-2">{</span><span class="p" data-group-id="4060976067-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="5604231243-1">(</span><span class="mi">123</span><span class="p" data-group-id="5604231243-1">)</span><span class="w">
+</span><span class="p" data-group-id="5604231243-2">%</span><span class="nc" data-group-id="5604231243-2">Contact</span><span class="p" data-group-id="5604231243-2">{</span><span class="p" data-group-id="5604231243-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="4060976067-3">(</span><span class="mi">456</span><span class="p" data-group-id="4060976067-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="5604231243-3">(</span><span class="mi">456</span><span class="p" data-group-id="5604231243-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
+</section>
+<section class="detail" id="get_contact_field_map/1">
+  <div class="detail-header">
+    <a href="#get_contact_field_map/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_contact_field_map(contact_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L543" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>get_contact_field_map(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+      </div>
+
+<p>Convert contact field to map for variable substitution</p>  </section>
+</section>
+<section class="detail" id="head/3">
+  <div class="detail-header">
+    <a href="#head/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">head(client, url, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>head(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+      </div>
+
+<p>Perform a HEAD request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">head</span><span class="p" data-group-id="4977221339-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="4977221339-1">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="4977221339-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4977221339-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4977221339-3">]</span><span class="p" data-group-id="4977221339-2">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="4977221339-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="4977221339-4">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="4977221339-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4977221339-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4977221339-6">]</span><span class="p" data-group-id="4977221339-5">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="4977221339-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4977221339-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4977221339-8">}</span><span class="p" data-group-id="4977221339-7">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="head!/3">
+  <div class="detail-header">
+    <a href="#head!/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">head!(client, url, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>head!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+      </div>
+
+<p>Perform a HEAD request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">head!</span><span class="p" data-group-id="6031380989-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6031380989-1">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="6031380989-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6031380989-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6031380989-3">]</span><span class="p" data-group-id="6031380989-2">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="6031380989-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6031380989-4">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="6031380989-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6031380989-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6031380989-6">]</span><span class="p" data-group-id="6031380989-5">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="6031380989-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6031380989-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6031380989-8">}</span><span class="p" data-group-id="6031380989-7">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="is_contact_blocked?/2">
+  <div class="detail-header">
+    <a href="#is_contact_blocked?/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">is_contact_blocked?(phone, organization_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L518" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>is_contact_blocked?(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+      </div>
+
+<p>check if contact is blocked or not</p>  </section>
 </section>
 <section class="detail" id="is_new_contact/1">
   <div class="detail-header">
@@ -471,7 +894,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">is_new_contact(contact_id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L170" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L335" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -483,17 +906,17 @@ Functions          </h1>
           <pre>is_new_contact(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
       </div>
 
-<p>Check if this contact id is a new conatct</p>  </section>
+<p>Check if this contact id is a new contact.
+In general, we should always retrive as little as possible from the DB</p>  </section>
 </section>
 <section class="detail" id="list_contacts/1">
-    <span id="list_contacts/0"></span>
   <div class="detail-header">
     <a href="#list_contacts/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">list_contacts(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L23" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">list_contacts(args)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L53" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -509,8 +932,409 @@ Functions          </h1>
   <a href="#list_contacts/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_contacts</span><span class="p" data-group-id="2098898777-1">(</span><span class="p" data-group-id="2098898777-1">)</span><span class="w">
-</span><span class="p" data-group-id="2098898777-2">[</span><span class="p" data-group-id="2098898777-3">%</span><span class="nc" data-group-id="2098898777-3">Contact</span><span class="p" data-group-id="2098898777-3">{</span><span class="p" data-group-id="2098898777-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="2098898777-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_contacts</span><span class="p" data-group-id="0785293211-1">(</span><span class="p" data-group-id="0785293211-1">)</span><span class="w">
+</span><span class="p" data-group-id="0785293211-2">[</span><span class="p" data-group-id="0785293211-3">%</span><span class="nc" data-group-id="0785293211-3">Contact</span><span class="p" data-group-id="0785293211-3">{</span><span class="p" data-group-id="0785293211-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="0785293211-2">]</span></code></pre><p>Get the list of contacts filtered by various search options
+Include contacts only if within list of groups
+Include contacts only if have list of tags</p>  </section>
+</section>
+<section class="detail" id="list_user_contacts/1">
+    <span id="list_user_contacts/0"></span>
+  <div class="detail-header">
+    <a href="#list_user_contacts/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">list_user_contacts(args \\ %{})</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L64" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>list_user_contacts(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()]</pre>
+      </div>
+
+<p>Return the list of contacts who are also users</p>  </section>
+</section>
+<section class="detail" id="maybe_create_contact/1">
+  <div class="detail-header">
+    <a href="#maybe_create_contact/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">maybe_create_contact(sender)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L309" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>maybe_create_contact(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>This function is called by the messaging framework for all incoming messages, hence
+might be a good candidate to maintain a contact level cache at some point</p><p>We use a fetch followed by create, to avoid the explosion in the id namespace</p>  </section>
+</section>
+<section class="detail" id="optin_contact/1">
+  <div class="detail-header">
+    <a href="#optin_contact/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">optin_contact(attrs)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L530" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>optin_contact(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()}
+  | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}
+  | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+      </div>
+
+<p>Upload a contact phone as opted in</p>  </section>
+</section>
+<section class="detail" id="options/3">
+  <div class="detail-header">
+    <a href="#options/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">options(client, url, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>options(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+      </div>
+
+<p>Perform a OPTIONS request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">options</span><span class="p" data-group-id="8626662999-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="8626662999-1">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="8626662999-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8626662999-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8626662999-3">]</span><span class="p" data-group-id="8626662999-2">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="8626662999-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="8626662999-4">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="8626662999-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8626662999-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8626662999-6">]</span><span class="p" data-group-id="8626662999-5">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="8626662999-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8626662999-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8626662999-8">}</span><span class="p" data-group-id="8626662999-7">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="options!/3">
+  <div class="detail-header">
+    <a href="#options!/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">options!(client, url, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>options!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+      </div>
+
+<p>Perform a OPTIONS request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">options!</span><span class="p" data-group-id="3040203797-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3040203797-1">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="3040203797-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3040203797-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3040203797-3">]</span><span class="p" data-group-id="3040203797-2">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="3040203797-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3040203797-4">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="3040203797-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3040203797-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3040203797-6">]</span><span class="p" data-group-id="3040203797-5">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="3040203797-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3040203797-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3040203797-8">}</span><span class="p" data-group-id="3040203797-7">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="patch/4">
+  <div class="detail-header">
+    <a href="#patch/4" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">patch(client, url, body, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>patch(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+      </div>
+
+<p>Perform a PATCH request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">patch</span><span class="p" data-group-id="9133276543-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9133276543-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9133276543-2">}</span><span class="p" data-group-id="9133276543-1">)</span><span class="w">
+</span><span class="n">patch</span><span class="p" data-group-id="9133276543-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9133276543-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9133276543-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9133276543-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9133276543-5">]</span><span class="p" data-group-id="9133276543-3">)</span><span class="w">
+</span><span class="n">patch</span><span class="p" data-group-id="9133276543-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9133276543-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9133276543-7">}</span><span class="p" data-group-id="9133276543-6">)</span><span class="w">
+</span><span class="n">patch</span><span class="p" data-group-id="9133276543-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9133276543-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9133276543-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9133276543-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9133276543-10">]</span><span class="p" data-group-id="9133276543-8">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="patch!/4">
+  <div class="detail-header">
+    <a href="#patch!/4" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">patch!(client, url, body, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>patch!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+      </div>
+
+<p>Perform a PATCH request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">patch!</span><span class="p" data-group-id="8185242297-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8185242297-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8185242297-2">}</span><span class="p" data-group-id="8185242297-1">)</span><span class="w">
+</span><span class="n">patch!</span><span class="p" data-group-id="8185242297-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8185242297-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8185242297-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8185242297-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8185242297-5">]</span><span class="p" data-group-id="8185242297-3">)</span><span class="w">
+</span><span class="n">patch!</span><span class="p" data-group-id="8185242297-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8185242297-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8185242297-7">}</span><span class="p" data-group-id="8185242297-6">)</span><span class="w">
+</span><span class="n">patch!</span><span class="p" data-group-id="8185242297-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8185242297-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8185242297-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8185242297-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8185242297-10">]</span><span class="p" data-group-id="8185242297-8">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="post/4">
+  <div class="detail-header">
+    <a href="#post/4" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">post(client, url, body, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>post(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+      </div>
+
+<p>Perform a POST request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">post</span><span class="p" data-group-id="6269304172-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6269304172-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6269304172-2">}</span><span class="p" data-group-id="6269304172-1">)</span><span class="w">
+</span><span class="n">post</span><span class="p" data-group-id="6269304172-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6269304172-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6269304172-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6269304172-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6269304172-5">]</span><span class="p" data-group-id="6269304172-3">)</span><span class="w">
+</span><span class="n">post</span><span class="p" data-group-id="6269304172-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6269304172-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6269304172-7">}</span><span class="p" data-group-id="6269304172-6">)</span><span class="w">
+</span><span class="n">post</span><span class="p" data-group-id="6269304172-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6269304172-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6269304172-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6269304172-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6269304172-10">]</span><span class="p" data-group-id="6269304172-8">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="post!/4">
+  <div class="detail-header">
+    <a href="#post!/4" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">post!(client, url, body, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>post!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+      </div>
+
+<p>Perform a POST request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">post!</span><span class="p" data-group-id="0254567616-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0254567616-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0254567616-2">}</span><span class="p" data-group-id="0254567616-1">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="0254567616-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0254567616-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0254567616-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0254567616-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0254567616-5">]</span><span class="p" data-group-id="0254567616-3">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="0254567616-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0254567616-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0254567616-7">}</span><span class="p" data-group-id="0254567616-6">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="0254567616-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0254567616-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0254567616-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0254567616-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0254567616-10">]</span><span class="p" data-group-id="0254567616-8">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="put/4">
+  <div class="detail-header">
+    <a href="#put/4" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">put(client, url, body, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>put(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+      </div>
+
+<p>Perform a PUT request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">put</span><span class="p" data-group-id="2468562062-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2468562062-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2468562062-2">}</span><span class="p" data-group-id="2468562062-1">)</span><span class="w">
+</span><span class="n">put</span><span class="p" data-group-id="2468562062-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2468562062-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2468562062-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2468562062-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2468562062-5">]</span><span class="p" data-group-id="2468562062-3">)</span><span class="w">
+</span><span class="n">put</span><span class="p" data-group-id="2468562062-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2468562062-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2468562062-7">}</span><span class="p" data-group-id="2468562062-6">)</span><span class="w">
+</span><span class="n">put</span><span class="p" data-group-id="2468562062-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2468562062-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2468562062-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2468562062-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2468562062-10">]</span><span class="p" data-group-id="2468562062-8">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="put!/4">
+  <div class="detail-header">
+    <a href="#put!/4" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">put!(client, url, body, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>put!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+      </div>
+
+<p>Perform a PUT request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">put!</span><span class="p" data-group-id="0729948868-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0729948868-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0729948868-2">}</span><span class="p" data-group-id="0729948868-1">)</span><span class="w">
+</span><span class="n">put!</span><span class="p" data-group-id="0729948868-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0729948868-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0729948868-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0729948868-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0729948868-5">]</span><span class="p" data-group-id="0729948868-3">)</span><span class="w">
+</span><span class="n">put!</span><span class="p" data-group-id="0729948868-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0729948868-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0729948868-7">}</span><span class="p" data-group-id="0729948868-6">)</span><span class="w">
+</span><span class="n">put!</span><span class="p" data-group-id="0729948868-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0729948868-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0729948868-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0729948868-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0729948868-10">]</span><span class="p" data-group-id="0729948868-8">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="request/2">
+    <span id="request/1"></span>
+  <div class="detail-header">
+    <a href="#request/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">request(client \\ %Tesla.Client{}, options)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>request(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+      </div>
+
+<p>Perform a request.</p><h2 id="request/2-options" class="section-heading">
+  <a href="#request/2-options" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Options
+</h2>
+<ul><li><code class="inline">:method</code> - the request method, one of [:head, :get, :delete, :trace, :options, :post, :put, :patch]</li><li><code class="inline">:url</code> - either full url e.g. &quot;<a href="http://example.com/some/path%22">http://example.com/some/path&quot;</a> or just &quot;/some/path&quot; if using <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Middleware.BaseUrl.html"><code class="inline">Tesla.Middleware.BaseUrl</code></a></li><li><code class="inline">:query</code> - a keyword list of query params, e.g. <code class="inline">[page: 1, per_page: 100]</code></li><li><code class="inline">:headers</code> - a keyworld list of headers, e.g. <code class="inline">[{&quot;content-type&quot;, &quot;text/plain&quot;}]</code></li><li><code class="inline">:body</code> - depends on used middleware:<ul><li>by default it can be a binary</li><li>if using e.g. JSON encoding middleware it can be a nested map</li><li>if adapter supports it it can be a Stream with any of the above</li></ul></li><li><code class="inline">:opts</code> - custom, per-request middleware or adapter options</li></ul><h2 id="request/2-examples" class="section-heading">
+  <a href="#request/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Examples
+</h2>
+<pre><code class="nohighlight makeup elixir"><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">request</span><span class="p" data-group-id="2467552555-1">(</span><span class="ss">method</span><span class="p">:</span><span class="w"> </span><span class="ss">:get</span><span class="p">,</span><span class="w"> </span><span class="ss">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/users/path&quot;</span><span class="p" data-group-id="2467552555-1">)</span><span class="w">
+
+</span><span class="c1"># use shortcut methods</span><span class="w">
+</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">get</span><span class="p" data-group-id="2467552555-2">(</span><span class="s">&quot;/users/1&quot;</span><span class="p" data-group-id="2467552555-2">)</span><span class="w">
+</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">post</span><span class="p" data-group-id="2467552555-3">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2467552555-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2467552555-4">}</span><span class="p" data-group-id="2467552555-3">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="request!/2">
+    <span id="request!/1"></span>
+  <div class="detail-header">
+    <a href="#request!/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">request!(client \\ %Tesla.Client{}, options)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>request!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+      </div>
+
+<p>Perform request and raise in case of error.</p><p>This is similar to <a href="#request/2"><code class="inline">request/2</code></a> behaviour from Tesla 0.x</p><p>See <a href="#request/2"><code class="inline">request/2</code></a> for list of available options.</p>  </section>
+</section>
+<section class="detail" id="set_session_status/2">
+  <div class="detail-header">
+    <a href="#set_session_status/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">set_session_status(contact, status)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L484" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>set_session_status(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>() | [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()], <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) ::
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()} | :ok</pre>
+      </div>
+
+<p>Set session status for opted in and opted out contacts</p>  </section>
+</section>
+<section class="detail" id="trace/3">
+  <div class="detail-header">
+    <a href="#trace/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">trace(client, url, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>trace(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) :: <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:result/0">Tesla.Env.result</a>()</pre>
+      </div>
+
+<p>Perform a TRACE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">trace</span><span class="p" data-group-id="2685661059-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2685661059-1">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="2685661059-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2685661059-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2685661059-3">]</span><span class="p" data-group-id="2685661059-2">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="2685661059-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2685661059-4">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="2685661059-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2685661059-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2685661059-6">]</span><span class="p" data-group-id="2685661059-5">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="2685661059-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2685661059-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2685661059-8">}</span><span class="p" data-group-id="2685661059-7">)</span></code></pre>  </section>
+</section>
+<section class="detail" id="trace!/3">
+  <div class="detail-header">
+    <a href="#trace!/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">trace!(client, url, opts)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>trace!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+      </div>
+
+<p>Perform a TRACE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="nohighlight makeup elixir"><span class="n">trace!</span><span class="p" data-group-id="8574307059-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="8574307059-1">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="8574307059-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8574307059-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8574307059-3">]</span><span class="p" data-group-id="8574307059-2">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="8574307059-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="8574307059-4">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="8574307059-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8574307059-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8574307059-6">]</span><span class="p" data-group-id="8574307059-5">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="8574307059-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8574307059-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8574307059-8">}</span><span class="p" data-group-id="8574307059-7">)</span></code></pre>  </section>
 </section>
 <section class="detail" id="update_contact/2">
   <div class="detail-header">
@@ -519,7 +1343,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_contact(contact, attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L106" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L223" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -529,18 +1353,42 @@ Functions          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>update_contact(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Updates a contact.</p><h2 id="update_contact/2-examples" class="section-heading">
   <a href="#update_contact/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_contact</span><span class="p" data-group-id="4613021632-1">(</span><span class="n">contact</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4613021632-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="4613021632-2">}</span><span class="p" data-group-id="4613021632-1">)</span><span class="w">
-</span><span class="p" data-group-id="4613021632-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4613021632-4">%</span><span class="nc" data-group-id="4613021632-4">Contact</span><span class="p" data-group-id="4613021632-4">{</span><span class="p" data-group-id="4613021632-4">}</span><span class="p" data-group-id="4613021632-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_contact</span><span class="p" data-group-id="4231934785-1">(</span><span class="n">contact</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4231934785-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="4231934785-2">}</span><span class="p" data-group-id="4231934785-1">)</span><span class="w">
+</span><span class="p" data-group-id="4231934785-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4231934785-4">%</span><span class="nc" data-group-id="4231934785-4">Contact</span><span class="p" data-group-id="4231934785-4">{</span><span class="p" data-group-id="4231934785-4">}</span><span class="p" data-group-id="4231934785-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_contact</span><span class="p" data-group-id="4613021632-5">(</span><span class="n">contact</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4613021632-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4613021632-6">}</span><span class="p" data-group-id="4613021632-5">)</span><span class="w">
-</span><span class="p" data-group-id="4613021632-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4613021632-8">%</span><span class="nc" data-group-id="4613021632-8">Ecto.Changeset</span><span class="p" data-group-id="4613021632-8">{</span><span class="p" data-group-id="4613021632-8">}</span><span class="p" data-group-id="4613021632-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_contact</span><span class="p" data-group-id="4231934785-5">(</span><span class="n">contact</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4231934785-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4231934785-6">}</span><span class="p" data-group-id="4231934785-5">)</span><span class="w">
+</span><span class="p" data-group-id="4231934785-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4231934785-8">%</span><span class="nc" data-group-id="4231934785-8">Ecto.Changeset</span><span class="p" data-group-id="4231934785-8">{</span><span class="p" data-group-id="4231934785-8">}</span><span class="p" data-group-id="4231934785-7">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="update_contact_status/2">
+  <div class="detail-header">
+    <a href="#update_contact_status/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_contact_status(organization_id, args)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L468" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>update_contact_status(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: :ok</pre>
+      </div>
+
+<p>Invoked from cron jobs to mass update the status of contacts belonging to
+a specific organization</p><p>In this case, if we can, we might want to do it across the entire DB since the
+update is across all organizations. The main issue might be the row level security
+of postgres and how it ties in. For now, lets stick to per organization</p>  </section>
 </section>
 <section class="detail" id="upsert/1">
   <div class="detail-header">
@@ -549,7 +1397,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">upsert(attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L148" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L271" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -570,14 +1418,16 @@ it returns the existing contact, else it creates a new one</p>  </section>
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>

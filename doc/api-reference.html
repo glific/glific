@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>API Reference — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>API Reference — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="extras">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,8 +63,7 @@ Glific      </a>
     <div id="content" class="content-inner">
 
 <h1>
-  <small class="app-vsn">Glific v0.2.0</small>
-  API Reference
+  API Reference <small class="app-vsn">Glific v0.9.4</small>
 </h1>
 
   <section class="details-list">
@@ -83,15 +82,81 @@ and business logic.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Appsignal.html">Glific.Appsignal</a>
+  </div>
+    <div class="summary-synopsis"><p>A simple interface that connect Oban job status to Appsignal</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Bigquery.html">Glific.Bigquery</a>
+  </div>
+    <div class="summary-synopsis"><p>Glific Bigquery Dataset and table creation</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.BigquerySchema.html">Glific.BigquerySchema</a>
+  </div>
+    <div class="summary-synopsis"><p>Schema for tables to be created for a dataset</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.CSV.Content.html">Glific.CSV.Content</a>
+  </div>
+    <div class="summary-synopsis"><p>Represent a menu interpreted from the CSV. Each Menu item either sends a content message
+or sends a sub-menu. A menu is an array of menu items</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.CSV.File.html">Glific.CSV.File</a>
+  </div>
+    <div class="summary-synopsis"><p>First implemenetation to convert sheets to flows using a menu structure and UUID</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.CSV.Flow.html">Glific.CSV.Flow</a>
+  </div>
+    <div class="summary-synopsis"><p>Given a CSV model, and a tracking shortcode, generate the json flow for the CSV
+incorporating the UUID's used in previous conversions. Store the latest UUID mapping
+back in the database</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.CSV.Menu.html">Glific.CSV.Menu</a>
+  </div>
+    <div class="summary-synopsis"><p>Represent a menu interpreted from the CSV. Each Menu item either sends a content message
+or sends a sub-menu. A menu is an array of menu items</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.CSV.Template.html">Glific.CSV.Template</a>
+  </div>
+    <div class="summary-synopsis"><p>Wrapper to allow each organization to modify how the templates are assembled. We will
+store this either in the DB and/or in the Flow CSV.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Caches.html">Glific.Caches</a>
   </div>
-    <div class="summary-synopsis"><p>  Glific Cache management</p></div>
+    <div class="summary-synopsis"><p>Glific Cache management</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="Glific.Caches.CacheBehaviour.html">Glific.Caches.CacheBehaviour</a>
   </div>
     <div class="summary-synopsis"><p>The cache API behaviour</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.Stir.html">Glific.Clients.Stir</a>
+  </div>
+    <div class="summary-synopsis"><p>Example implementation of survey computation for STiR
+Glific.Clients.Stir.compute_art_content(res)</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.CloakMigration.html">Glific.CloakMigration</a>
+  </div>
+    <div class="summary-synopsis"><p>Glific Cloak migration management on changing encryption keys</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -119,9 +184,22 @@ and business logic.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Contacts.ContactsField.html">Glific.Contacts.ContactsField</a>
+  </div>
+    <div class="summary-synopsis"><p>The minimal wrapper for the base Contact structure</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Contacts.Location.html">Glific.Contacts.Location</a>
   </div>
     <div class="summary-synopsis"><p>Current location of a contact</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Contacts.Simulator.html">Glific.Contacts.Simulator</a>
+  </div>
+    <div class="summary-synopsis"><p>Manage simulator state and allocation to ensure we can have multiple simulators
+run at the same time</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -138,6 +216,53 @@ fair number of iterations to get right</p></div>
   </div>
     <div class="summary-synopsis"><p>The Glific Abstraction to represent the conversation with a user. This unifies a vast majority of the
 glific data types including: message, contact, and tag</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.ConversationsGroup.html">Glific.ConversationsGroup</a>
+  </div>
+    <div class="summary-synopsis"><p>The main Glific abstraction that exposes the group conversation data in a stuctured manner as a set
+of conversations. For now each group is associated with a set of outgoing messages
+We will keep the API simple for now, but it is likely to become similar to the contact conversations
+API</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.CorsProxy.html">Glific.CorsProxy</a>
+  </div>
+    <div class="summary-synopsis"><p>CorsProxy keeps the contexts that define your domain
+and business logic.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Dialogflow.html">Glific.Dialogflow</a>
+  </div>
+    <div class="summary-synopsis"><p>Module to communicate with DialogFlow v2. This module was taken directly from:
+<a href="https://github.com/resuelve/flowex/">https://github.com/resuelve/flowex/</a></p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Dialogflow.SessionWorker.html">Glific.Dialogflow.SessionWorker</a>
+  </div>
+    <div class="summary-synopsis"><p>A worker to handle send message processes</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Dialogflow.Sessions.html">Glific.Dialogflow.Sessions</a>
+  </div>
+    <div class="summary-synopsis"><p>Helper to help manage intents</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Encrypted.Binary.html">Glific.Encrypted.Binary</a>
+  </div>
+    <div class="summary-synopsis"><p>Cloak for encrypting strings</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Encrypted.Map.html">Glific.Encrypted.Map</a>
+  </div>
+    <div class="summary-synopsis"><p>Cloak for encrypting maps</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -159,6 +284,21 @@ functions</p></div>
     <div class="summary-synopsis"><p>The Enums constant are where all enum values across our entire
 application should be defined. This is the source of truth for
 all enums</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Enums.ContactFieldScope.html">Glific.Enums.ContactFieldScope</a>
+  </div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Enums.ContactFieldValueType.html">Glific.Enums.ContactFieldValueType</a>
+  </div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Enums.ContactProviderStatus.html">Glific.Enums.ContactProviderStatus</a>
+  </div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -209,6 +349,30 @@ all enums</p></div>
   <div class="summary-signature">
     <a href="Glific.Enums.SortOrder.html">Glific.Enums.SortOrder</a>
   </div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Enums.UserRoles.html">Glific.Enums.UserRoles</a>
+  </div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Extensions.html">Glific.Extensions</a>
+  </div>
+    <div class="summary-synopsis"><p>The Extensions Context, which encapsulates and manages dynamic loading and unloading of elixir code</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Extensions.Extension.html">Glific.Extensions.Extension</a>
+  </div>
+    <div class="summary-synopsis"><p>The minimal wrapper for the base Extension structure</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flags.html">Glific.Flags</a>
+  </div>
+    <div class="summary-synopsis"><p>Centralizing all the code we need to handle flags across Glific. For now, we'll
+also put operational code on flags here, as we figure out the right structure</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -278,6 +442,24 @@ this in a module and isolate the flow from the other aspects of Glific</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Flows.FlowCount.html">Glific.Flows.FlowCount</a>
+  </div>
+    <div class="summary-synopsis"><p>The flow count object</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.FlowLabel.html">Glific.Flows.FlowLabel</a>
+  </div>
+    <div class="summary-synopsis"><p>The flow label object</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.FlowResult.html">Glific.Flows.FlowResult</a>
+  </div>
+    <div class="summary-synopsis"><p>Table which stores the flow results for each run of a contact through a flow</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Flows.FlowRevision.html">Glific.Flows.FlowRevision</a>
   </div>
     <div class="summary-synopsis"><p>The flow revision object which encapsulates the complete flow as emitted by
@@ -301,6 +483,13 @@ languages for a flow</p></div>
     <a href="Glific.Flows.Node.html">Glific.Flows.Node</a>
   </div>
     <div class="summary-synopsis"><p>The Node object which encapsulates one node in a given flow</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.Periodic.html">Glific.Flows.Periodic</a>
+  </div>
+    <div class="summary-synopsis"><p>A central place to define and execute all periodic flows. The current periodic flows in
+priority order are</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -329,6 +518,12 @@ a better handle on the breadth and depth of webhooks</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Flows.WebhookLog.html">Glific.Flows.WebhookLog</a>
+  </div>
+    <div class="summary-synopsis"><p>The webhook log object</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Groups.html">Glific.Groups</a>
   </div>
     <div class="summary-synopsis"><p>The Groups context.</p></div>
@@ -341,15 +536,119 @@ a better handle on the breadth and depth of webhooks</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Groups.ContactGroups.html">Glific.Groups.ContactGroups</a>
+  </div>
+    <div class="summary-synopsis"><p>Simple container to hold all the contact groups we associate with one contact</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Groups.Group.html">Glific.Groups.Group</a>
   </div>
     <div class="summary-synopsis"><p>The minimal wrapper for the base Group structure</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Groups.GroupContacts.html">Glific.Groups.GroupContacts</a>
+  </div>
+    <div class="summary-synopsis"><p>Simple container to hold all the group contacts we associate with one group</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Groups.GroupUsers.html">Glific.Groups.GroupUsers</a>
+  </div>
+    <div class="summary-synopsis"><p>Simple container to hold all the group users we associate with one group</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Groups.UserGroup.html">Glific.Groups.UserGroup</a>
   </div>
     <div class="summary-synopsis"><p>A pipe for managing the user groups</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Groups.UserGroups.html">Glific.Groups.UserGroups</a>
+  </div>
+    <div class="summary-synopsis"><p>Simple container to hold all the user groups we associate with one user</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.html">Glific.Jobs</a>
+  </div>
+    <div class="summary-synopsis"><p>The Jobs context.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.BSPBalanceWorker.html">Glific.Jobs.BSPBalanceWorker</a>
+  </div>
+    <div class="summary-synopsis"><p>Module for checking remaining balance</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.BigQueryWorker.html">Glific.Jobs.BigQueryWorker</a>
+  </div>
+    <div class="summary-synopsis"><p>Process the message table for each organization. Chunk number of messages
+in groups of 128 and create a bigquery Worker Job to deliver the message to
+the bigquery servers</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.BigqueryJob.html">Glific.Jobs.BigqueryJob</a>
+  </div>
+    <div class="summary-synopsis"><p>Book keeping table to keep track of the last job that we processed from the
+messages belonging to the organization</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.ChatbaseJob.html">Glific.Jobs.ChatbaseJob</a>
+  </div>
+    <div class="summary-synopsis"><p>Book keeping table to keep track of the last job that we processed from the
+messages belonging to the organization</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.ChatbaseWorker.html">Glific.Jobs.ChatbaseWorker</a>
+  </div>
+    <div class="summary-synopsis"><p>Process the message table for each organization. Chunk number of messages
+in groups of 128 and create a Chatbase Worker Job to deliver the message to
+the chatbase servers</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.CollectionCountWorker.html">Glific.Jobs.CollectionCountWorker</a>
+  </div>
+    <div class="summary-synopsis"><p>Module for checking collection count</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.GcsJob.html">Glific.Jobs.GcsJob</a>
+  </div>
+    <div class="summary-synopsis"><p>Book keeping table to keep track of the last job that we processed from the
+messages belonging to the organization</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.GcsWorker.html">Glific.Jobs.GcsWorker</a>
+  </div>
+    <div class="summary-synopsis"><p>Process the  media table for each organization. Chunk number of message medias
+in groups of 128 and create a Gcs Worker Job to deliver the message media url to
+the gcs servers</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.MinuteWorker.html">Glific.Jobs.MinuteWorker</a>
+  </div>
+    <div class="summary-synopsis"><p>Processes the tasks that need to be handled on a minute schedule</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Media.html">Glific.Media</a>
+  </div>
+    <div class="summary-synopsis"><p>This is an auto generated file from waffle, that is used to control storage behavior</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Media.Type.html">Glific.Media.Type</a>
+  </div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -379,9 +678,27 @@ and Provider information.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Partners.Credential.html">Glific.Partners.Credential</a>
+  </div>
+    <div class="summary-synopsis"><p>Organization's credentials</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Partners.Organization.html">Glific.Partners.Organization</a>
   </div>
     <div class="summary-synopsis"><p>Organizations are the group of users who will access the system</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Partners.OrganizationSettings.OutOfOffice.html">Glific.Partners.OrganizationSettings.OutOfOffice</a>
+  </div>
+    <div class="summary-synopsis"><p>The Glific abstraction to represent the organization settings of out of office</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Partners.OrganizationSettings.OutOfOffice.EnabledDay.html">Glific.Partners.OrganizationSettings.OutOfOffice.EnabledDay</a>
+  </div>
+    <div class="summary-synopsis"><p>The Glific abstraction to represent the out of office enabled day schema</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -391,11 +708,30 @@ and Provider information.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Processor.ConsumerFlow.html">Glific.Processor.ConsumerFlow</a>
+  </div>
+    <div class="summary-synopsis"><p>Given a message, run it thru the flow engine. This is an auxilary module to help
+consumer_worker which is the main workhorse</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Processor.ConsumerTagger.html">Glific.Processor.ConsumerTagger</a>
+  </div>
+    <div class="summary-synopsis"><p>Process all messages of type consumer and run them thru the various in-built taggers.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Processor.ConsumerWorker.html">Glific.Processor.ConsumerWorker</a>
   </div>
     <div class="summary-synopsis"><p>Process all messages of type consumer and run them thru the various in-built taggers.
 At a later stage, we will also do translation and dialogflow queries as an offshoot
 from this GenStage</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Processor.ConsumerWorkerMock.html">Glific.Processor.ConsumerWorkerMock</a>
+  </div>
+    <div class="summary-synopsis"><p>A mock for the consumer worker for poolboy</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -406,10 +742,9 @@ later stage</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Processor.Producer.html">Glific.Processor.Producer</a>
+    <a href="Glific.Providers.ContactBehaviour.html">Glific.Providers.ContactBehaviour</a>
   </div>
-    <div class="summary-synopsis"><p>This producer is linked to the message receiving end and gets messages from
-the external world in the message structure</p></div>
+    <div class="summary-synopsis"><p>The contact behaviour which all the providers needs to implement for communication</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -425,7 +760,19 @@ the external world in the message structure</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Providers.Gupshup.GupshupWallet.html">Glific.Providers.Gupshup.GupshupWallet</a>
+  </div>
+    <div class="summary-synopsis"><p>Module for checking gupshup remaining balance</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Providers.Gupshup.Message.html">Glific.Providers.Gupshup.Message</a>
+  </div>
+    <div class="summary-synopsis"><p>Messgae API layer between application and Gupshup</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Providers.Gupshup.Template.html">Glific.Providers.Gupshup.Template</a>
   </div>
     <div class="summary-synopsis"><p>Messgae API layer between application and Gupshup</p></div>
 </div>
@@ -437,6 +784,12 @@ the external world in the message structure</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Providers.GupshupContacts.html">Glific.Providers.GupshupContacts</a>
+  </div>
+    <div class="summary-synopsis"><p>Contacts API layer between application and Gupshup</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Providers.MessageBehaviour.html">Glific.Providers.MessageBehaviour</a>
   </div>
     <div class="summary-synopsis"><p>The message behaviour which all the providers needs to implement for communication</p></div>
@@ -445,8 +798,9 @@ the external world in the message structure</p></div>
   <div class="summary-signature">
     <a href="Glific.Release.html">Glific.Release</a>
   </div>
-    <div class="summary-synopsis"><p>  This file will be handling production database migrations
-  Called from &quot;build_scripts/entrypoint.sh&quot; just before starting up application</p></div>
+    <div class="summary-synopsis"><p>This file will be handling production database migrations. This is a standard elixir/ecto
+release file. Copied from:
+<a href="https://hexdocs.pm/phoenix/releases.html">https://hexdocs.pm/phoenix/releases.html</a></p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -474,6 +828,13 @@ the external world in the message structure</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Searches.Search.html">Glific.Searches.Search</a>
+  </div>
+    <div class="summary-synopsis"><p>The Glific Abstraction to represent the conversation with a user. This unifies a vast majority of the
+glific data types including: message, contact, and tag</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Seeds.Seed.html">Glific.Seeds.Seed</a>
   </div>
     <div class="summary-synopsis"><p>First experiments with PhilColumns. Hopefully it will work</p></div>
@@ -490,6 +851,12 @@ Wish us luck</p></div>
     <a href="Glific.Seeds.SeedsDev.html">Glific.Seeds.SeedsDev</a>
   </div>
     <div class="summary-synopsis"><p>Script for populating the database. We can call this from tests and/or /priv/repo</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Seeds.SeedsOptins.html">Glific.Seeds.SeedsOptins</a>
+  </div>
+    <div class="summary-synopsis"><p>  Script for importing optin contacts for an organization</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -563,6 +930,12 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Tags.ContactTags.html">Glific.Tags.ContactTags</a>
+  </div>
+    <div class="summary-synopsis"><p>Simple container to hold all the contact tags we associate with one contact</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Tags.MessageTag.html">Glific.Tags.MessageTag</a>
   </div>
     <div class="summary-synopsis"><p>A file for managing the join table message tags</p></div>
@@ -581,6 +954,18 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Tags.TemplateTag.html">Glific.Tags.TemplateTag</a>
+  </div>
+    <div class="summary-synopsis"><p>A pipe for managing the template tags</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Tags.TemplateTags.html">Glific.Tags.TemplateTags</a>
+  </div>
+    <div class="summary-synopsis"><p>Simple container to hold all the template tags we associate with one template</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Templates.html">Glific.Templates</a>
   </div>
     <div class="summary-synopsis"><p>The Templates context.</p></div>
@@ -593,10 +978,22 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Vault.html">Glific.Vault</a>
+  </div>
+    <div class="summary-synopsis"><p>Cloak Vault</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.html">GlificWeb</a>
   </div>
     <div class="summary-synopsis"><p>The entrypoint for defining your web interface, such
 as controllers, views, channels and so on.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.API.V1.CorsController.html">GlificWeb.API.V1.CorsController</a>
+  </div>
+    <div class="summary-synopsis"><p> Controller to manage the CORS request from the frontend.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -624,6 +1021,18 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="GlificWeb.EnsurePlug.html">GlificWeb.EnsurePlug</a>
+  </div>
+    <div class="summary-synopsis"><p>This is a basic plug that ensure the organization is loaded.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.EnsurePlugConfig.html">GlificWeb.EnsurePlugConfig</a>
+  </div>
+    <div class="summary-synopsis"><p>This is a struct that holds the configuration for <a href="GlificWeb.EnsurePlug.html"><code class="inline">GlificWeb.EnsurePlug</code></a>.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.ErrorHelpers.html">GlificWeb.ErrorHelpers</a>
   </div>
     <div class="summary-synopsis"><p>Conveniences for translating and building error messages.</p></div>
@@ -641,9 +1050,36 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="GlificWeb.Flows.WebhookController.html">GlificWeb.Flows.WebhookController</a>
+  </div>
+    <div class="summary-synopsis"><p>Experimental approach on trying to handle webhooks for NGOs within the system.
+This bypasses using a third party and hence makes things a lot more efficient</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.Gettext.html">GlificWeb.Gettext</a>
   </div>
     <div class="summary-synopsis"><p>A module providing Internationalization with a gettext-based API.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Misc.BodyReader.html">GlificWeb.Misc.BodyReader</a>
+  </div>
+    <div class="summary-synopsis"><p>Code to cache the raw body in a conn variable before being
+processed by Phoenix. Used to validate the signature</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Misc.HTTPSignature.html">GlificWeb.Misc.HTTPSignature</a>
+  </div>
+    <div class="summary-synopsis"><p>Verify that the signature matches from the incoming webhook</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Plug.html">GlificWeb.Plug</a>
+  </div>
+    <div class="summary-synopsis"><p>This file and the below files have been &quot;borrowed and modified&quot; from triplex: <a href="https://github.com/ateliware/triplex">https://github.com/ateliware/triplex</a>
+The original copyright and license - MIT belong to the authors and contributors of Triplex</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -667,7 +1103,7 @@ as controllers, views, channels and so on.</p></div>
   <div class="summary-signature">
     <a href="GlificWeb.Providers.Gupshup.Plugs.Shunt.html">GlificWeb.Providers.Gupshup.Plugs.Shunt</a>
   </div>
-    <div class="summary-synopsis"><p> A Gupshup shunt which will redirect all the incoming requests to the gupshup router based on there event type.</p></div>
+    <div class="summary-synopsis"><p>A Gupshup shunt which will redirect all the incoming requests to the gupshup router based on there event type.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -707,6 +1143,19 @@ one or more calls to resolve the incoming queries.</p></div>
     <a href="GlificWeb.Resolvers.Groups.html">GlificWeb.Resolvers.Groups</a>
   </div>
     <div class="summary-synopsis"><p>Group Resolver which sits between the GraphQL schema and Glific Group Context API. This layer basically stiches together
+one or more calls to resolve the incoming queries.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.Helper.html">GlificWeb.Resolvers.Helper</a>
+  </div>
+    <div class="summary-synopsis"><p>Helper funcations for GQL resolvers</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.Locations.html">GlificWeb.Resolvers.Locations</a>
+  </div>
+    <div class="summary-synopsis"><p>Location Resolver which sits between the GraphQL schema and Glific Location Context API. This layer basically stiches together
 one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
@@ -760,6 +1209,13 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.WebhookLogs.html">GlificWeb.Resolvers.WebhookLogs</a>
+  </div>
+    <div class="summary-synopsis"><p>WebhookLog Resolver which sits between the GraphQL schema and Glific WebhookLog Context API. This layer basically stiches together
+one or more calls to resolve the incoming queries.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.Router.html">GlificWeb.Router</a>
   </div>
     <div class="summary-synopsis"><p>a default gateway for all the external requests</p></div>
@@ -797,10 +1253,9 @@ This file is primarily a container and pulls in the relevant information for dat
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.ConversationTypes.html">GlificWeb.Schema.ConversationTypes</a>
+    <a href="GlificWeb.Schema.CredentialTypes.html">GlificWeb.Schema.CredentialTypes</a>
   </div>
-    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Conversation Data. This is virtual and pulled
-together from multiple pieces by Glific Core</p></div>
+    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Organization Credential DataType</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -836,6 +1291,12 @@ Glific's DataType</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="GlificWeb.Schema.LocationTypes.html">GlificWeb.Schema.LocationTypes</a>
+  </div>
+    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Location DataType</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.Schema.MessageMediaTypes.html">GlificWeb.Schema.MessageMediaTypes</a>
   </div>
     <div class="summary-synopsis"><p>GraphQL Representation of Glific's MessageMedia DataType</p></div>
@@ -851,6 +1312,20 @@ Glific's DataType</p></div>
     <a href="GlificWeb.Schema.MessageTypes.html">GlificWeb.Schema.MessageTypes</a>
   </div>
     <div class="summary-synopsis"><p>GraphQL Representation of Glific's Message DataType</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Schema.Middleware.AddOrganization.html">GlificWeb.Schema.Middleware.AddOrganization</a>
+  </div>
+    <div class="summary-synopsis"><p>Implementing middleware functions to transform errors from Ecto Changeset into a format
+consumable and displayable to the API user. This version is specifically for mutations.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Schema.Middleware.Authorize.html">GlificWeb.Schema.Middleware.Authorize</a>
+  </div>
+    <div class="summary-synopsis"><p>Implementing middleware functions to transform errors from Ecto Changeset into a format
+consumable and displayable to the API user. This version is specifically for mutations.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -898,6 +1373,12 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="GlificWeb.Schema.TemplateTagTypes.html">GlificWeb.Schema.TemplateTagTypes</a>
+  </div>
+    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Template Tag DataType</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.Schema.UserGroupTypes.html">GlificWeb.Schema.UserGroupTypes</a>
   </div>
     <div class="summary-synopsis"><p>GraphQL Representation of Glific's User Group DataType</p></div>
@@ -908,6 +1389,34 @@ consumable and displayable to the API user. This version is specifically for que
   </div>
     <div class="summary-synopsis"><p>GraphQL Representation of Glific's User DataType</p></div>
 </div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Schema.WebhookLogTypes.html">GlificWeb.Schema.WebhookLogTypes</a>
+  </div>
+    <div class="summary-synopsis"><p>GraphQL Representation of Glific's WebhookLog DataType</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.SubdomainPlug.html">GlificWeb.SubdomainPlug</a>
+  </div>
+    <div class="summary-synopsis"><p>This is a basic plug that loads the current organization assign from a given
+value set on subdomain.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.SubdomainPlugConfig.html">GlificWeb.SubdomainPlugConfig</a>
+  </div>
+    <div class="summary-synopsis"><p>This is a struct that holds the configuration for <a href="GlificWeb.SubdomainPlug.html"><code class="inline">GlificWeb.SubdomainPlug</code></a>.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Tenants.html">GlificWeb.Tenants</a>
+  </div>
+    <div class="summary-synopsis"><p>This is the main module of multi-tenancy in Glific. It has been borrowed from
+Triplex. (<a href="https://github.com/ateliware/triplex).">https://github.com/ateliware/triplex).</a> However we are going to us
+postgres row level security instead, and hence copying the code from there. The
+original copyright and license (MIT) belong to the contributors to Triplex.</p></div>
+</div>
     </div>
   </section>
 
@@ -915,14 +1424,16 @@ consumable and displayable to the API user. This version is specifically for que
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>

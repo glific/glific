@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>Glific.Processor.ConsumerTagger — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>Glific.Processor.ConsumerTagger — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,8 +63,8 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.2.0</small>
-Glific.Processor.ConsumerTagger          <a href="https://github.com/glific/glific/blob/master/lib/glific/processor/consumer_tagger.ex#L1" title="View Source" class="view-source" rel="help">
+        Glific.Processor.ConsumerTagger <small class="app-vsn">(Glific v0.9.4)</small>
+          <a href="https://github.com/glific/glific/blob/master/lib/glific/processor/consumer_tagger.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -72,9 +72,7 @@ Glific.Processor.ConsumerTagger          <a href="https://github.com/glific/glif
 
 
         <section id="moduledoc">
-<p>Process all messages of type consumer and run them thru the various in-built taggers.
-At a later stage, we will also do translation and dialogflow queries as an offshoot
-from this GenStage</p>        </section>
+<p>Process all messages of type consumer and run them thru the various in-built taggers.</p>        </section>
 
         <section id="summary" class="details-list">
           <h1 class="section-heading">
@@ -90,10 +88,10 @@ from this GenStage</p>        </section>
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#handle_info/2">handle_info(atom, state)</a>
+    <a href="#load_state/1">load_state(organization_id)</a>
   </div>
-    <div class="summary-synopsis"><p>This callback handles the nudges in the system. It processes the jobs and then sets a timer to invoke itself when
-done</p></div>
+    <div class="summary-synopsis"><p>Load the relevant state into the gen_server state object that we need
+to process messages</p></div>
 </div>
   </div>
         </section>
@@ -106,23 +104,27 @@ done</p></div>
             </a>
 Functions          </h1>
           <div class="functions-list">
-<section class="detail" id="handle_info/2">
+<section class="detail" id="load_state/1">
   <div class="detail-header">
-    <a href="#handle_info/2" class="detail-link" title="Link to this function">
+    <a href="#load_state/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">handle_info(atom, state)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/processor/consumer_tagger.ex#L165" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">load_state(organization_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/processor/consumer_tagger.ex#L20" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
   </div>
 
   <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>load_state(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+      </div>
 
-<p>This callback handles the nudges in the system. It processes the jobs and then sets a timer to invoke itself when
-done</p>  </section>
+<p>Load the relevant state into the gen_server state object that we need
+to process messages</p>  </section>
 </section>
           </div>
         </section>
@@ -130,14 +132,16 @@ done</p>  </section>
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>

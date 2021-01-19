@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>Glific.Flows.ContactField — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>Glific.Flows.ContactField — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,8 +63,8 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.2.0</small>
-Glific.Flows.ContactField          <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L1" title="View Source" class="view-source" rel="help">
+        Glific.Flows.ContactField <small class="app-vsn">(Glific v0.9.4)</small>
+          <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -89,10 +89,22 @@ centralize all the code here for now</p>        </section>
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#add_contact_field/4">add_contact_field(context, field, value, type)</a>
+    <a href="#add_contact_field/5">add_contact_field(context, field, label, value, type)</a>
   </div>
     <div class="summary-synopsis"><p>Add a field {key, value} to a contact. For now, all preferences are stored under the
 settings map, with a sub-map of preferences. We expect to get more clarity on this soon</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create_contact_field/1">create_contact_field(attrs)</a>
+  </div>
+    <div class="summary-synopsis"><p>Create contact field</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#list_contacts_fields/1">list_contacts_fields(args)</a>
+  </div>
+    <div class="summary-synopsis"><p>list contacts fields.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -111,14 +123,14 @@ settings map, with a sub-map of preferences. We expect to get more clarity on th
             </a>
 Functions          </h1>
           <div class="functions-list">
-<section class="detail" id="add_contact_field/4">
+<section class="detail" id="add_contact_field/5">
   <div class="detail-header">
-    <a href="#add_contact_field/4" class="detail-link" title="Link to this function">
+    <a href="#add_contact_field/5" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">add_contact_field(context, field, value, type)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L17" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">add_contact_field(context, field, label, value, type)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L21" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -131,12 +143,56 @@ Functions          </h1>
   <a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>(),
   <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
   <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
   <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()
 ) :: <a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>()</pre>
       </div>
 
 <p>Add a field {key, value} to a contact. For now, all preferences are stored under the
 settings map, with a sub-map of preferences. We expect to get more clarity on this soon</p>  </section>
+</section>
+<section class="detail" id="create_contact_field/1">
+  <div class="detail-header">
+    <a href="#create_contact_field/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_contact_field(attrs)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L71" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>create_contact_field(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Contacts.ContactsField.html#t:t/0">Glific.Contacts.ContactsField.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Create contact field</p>  </section>
+</section>
+<section class="detail" id="list_contacts_fields/1">
+  <div class="detail-header">
+    <a href="#list_contacts_fields/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">list_contacts_fields(args)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L64" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>list_contacts_fields(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Contacts.ContactsField.html#t:t/0">Glific.Contacts.ContactsField.t</a>()]</pre>
+      </div>
+
+<p>list contacts fields.</p>  </section>
 </section>
 <section class="detail" id="reset_contact_fields/1">
   <div class="detail-header">
@@ -145,7 +201,7 @@ settings map, with a sub-map of preferences. We expect to get more clarity on th
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">reset_contact_fields(context)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L40" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L50" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -166,14 +222,16 @@ settings map, with a sub-map of preferences. We expect to get more clarity on th
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>

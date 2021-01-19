@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>Glific.Partners — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>Glific.Partners — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,8 +63,8 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.2.0</small>
-Glific.Partners          <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L1" title="View Source" class="view-source" rel="help">
+        Glific.Partners <small class="app-vsn">(Glific v0.9.4)</small>
+          <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -87,6 +87,12 @@ and Provider information.</p>        </section>
     <h2>
       <a href="#functions">Functions</a>
     </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#active_organizations/1">active_organizations(orgs)</a>
+  </div>
+    <div class="summary-synopsis"><p>List of organizations that are active within the system</p></div>
+</div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#change_organization/2">change_organization(organization, attrs \\ %{})</a>
@@ -113,6 +119,12 @@ and Provider information.</p>        </section>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#create_credential/1">create_credential(attrs)</a>
+  </div>
+    <div class="summary-synopsis"><p>Creates an organization's credential</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#create_organization/1">create_organization(attrs \\ %{})</a>
   </div>
     <div class="summary-synopsis"><p>Creates a organization.</p></div>
@@ -127,13 +139,44 @@ and Provider information.</p>        </section>
   <div class="summary-signature">
     <a href="#delete_organization/1">delete_organization(organization)</a>
   </div>
-    <div class="summary-synopsis"><p>Deletes an Organization.</p></div>
+    <div class="summary-synopsis"><p>Deletes an Orgsanization.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#delete_provider/1">delete_provider(provider)</a>
   </div>
     <div class="summary-synopsis"><p>Deletes a provider.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#fetch_opted_in_contacts/1">fetch_opted_in_contacts(attrs)</a>
+  </div>
+    <div class="summary-synopsis"><p>Fetch opted in contacts data from providers server</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#fill_cache/1">fill_cache(organization)</a>
+  </div>
+    <div class="summary-synopsis"><p>Given a minimal organization object, fill it up and store in cache. Making this
+public so we can call from test harness and avoid SQL Sandbox issues</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_bsp_balance/1">get_bsp_balance(organization_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns bsp balance for an organization</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_credential/1">get_credential(map)</a>
+  </div>
+    <div class="summary-synopsis"><p>Get organization's credential by service shortcode</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_goth_token/2">get_goth_token(organization_id, provider_shortcode)</a>
+  </div>
+    <div class="summary-synopsis"><p>  Common function to get the goth config</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -161,14 +204,57 @@ and Provider information.</p>        </section>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#organization_contact_id/0">organization_contact_id()</a>
+    <a href="#load_cache/1">load_cache(cachex_key)</a>
   </div>
-    <div class="summary-synopsis"><p>We will cache this soon, since this is a frequently requested item. This contact id is special
-since it is the sender for all outbound messages and the receiver for all inbound messages</p></div>
+    <div class="summary-synopsis"><p>Follow the cachex protocol to load the cache from the DB</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#update_organization/2">update_organization(provider, attrs)</a>
+    <a href="#organization/1">organization(cache_key)</a>
+  </div>
+    <div class="summary-synopsis"><p>Cache the entire organization structure.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#organization_contact_id/1">organization_contact_id(organization_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>This contact id is special since it is the sender for all outbound messages
+and the receiver for all inbound messages</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#organization_language_id/1">organization_language_id(organization_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Get the default language id</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#organization_timezone/1">organization_timezone(organization_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Get the timezone</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#perform_all/4">perform_all(handler, handler_args, list, only_recent \\ false)</a>
+  </div>
+    <div class="summary-synopsis"><p>Execute a function across all active organizations. This function is typically called
+by a cron job worker process</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#remove_organization_cache/2">remove_organization_cache(organization_id, shortcode)</a>
+  </div>
+    <div class="summary-synopsis"><p>  Removing organization cache</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_credential/2">update_credential(credential, attrs)</a>
+  </div>
+    <div class="summary-synopsis"><p>Updates an organization's credential</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_organization/2">update_organization(organization, attrs)</a>
   </div>
     <div class="summary-synopsis"><p>Updates an organization.</p></div>
 </div>
@@ -189,6 +275,27 @@ since it is the sender for all outbound messages and the receiver for all inboun
             </a>
 Functions          </h1>
           <div class="functions-list">
+<section class="detail" id="active_organizations/1">
+  <div class="detail-header">
+    <a href="#active_organizations/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">active_organizations(orgs)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L175" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>active_organizations(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+      </div>
+
+<p>List of organizations that are active within the system</p>  </section>
+</section>
 <section class="detail" id="change_organization/2">
     <span id="change_organization/1"></span>
   <div class="detail-header">
@@ -197,7 +304,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">change_organization(organization, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L278" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L321" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -207,15 +314,15 @@ Functions          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>change_organization(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+  <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
       </div>
 
 <p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking organization changes.</p><h2 id="change_organization/2-examples" class="section-heading">
   <a href="#change_organization/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">change_organization</span><span class="p" data-group-id="4608272791-1">(</span><span class="n">organization</span><span class="p" data-group-id="4608272791-1">)</span><span class="w">
-</span><span class="p" data-group-id="4608272791-2">%</span><span class="nc" data-group-id="4608272791-2">Ecto.Changeset</span><span class="p" data-group-id="4608272791-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4608272791-3">%</span><span class="nc" data-group-id="4608272791-3">Glific.Partners.Organization</span><span class="p" data-group-id="4608272791-3">{</span><span class="p" data-group-id="4608272791-3">}</span><span class="p" data-group-id="4608272791-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">change_organization</span><span class="p" data-group-id="4141229164-1">(</span><span class="n">organization</span><span class="p" data-group-id="4141229164-1">)</span><span class="w">
+</span><span class="p" data-group-id="4141229164-2">%</span><span class="nc" data-group-id="4141229164-2">Ecto.Changeset</span><span class="p" data-group-id="4141229164-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4141229164-3">%</span><span class="nc" data-group-id="4141229164-3">Glific.Partners.Organization</span><span class="p" data-group-id="4141229164-3">{</span><span class="p" data-group-id="4141229164-3">}</span><span class="p" data-group-id="4141229164-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="change_provider/2">
     <span id="change_provider/1"></span>
@@ -225,7 +332,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">change_provider(provider, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L134" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L147" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -237,24 +344,29 @@ Functions          </h1>
           <pre>change_provider(
   %Glific.Partners.Provider{
     __meta__: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-    api_end_point: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    credential: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    description: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    group: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
     id: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
     inserted_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    is_required: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    keys: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
     name: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
     organizations: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-    updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-    url: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
+    secrets: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    shortcode: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
   },
   <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()
-) :: <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+) :: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
       </div>
 
 <p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking provider changes.</p><h2 id="change_provider/2-examples" class="section-heading">
   <a href="#change_provider/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_provider</span><span class="p" data-group-id="3440674450-1">(</span><span class="n">provider</span><span class="p" data-group-id="3440674450-1">)</span><span class="w">
-</span><span class="p" data-group-id="3440674450-2">%</span><span class="nc" data-group-id="3440674450-2">Ecto.Changeset</span><span class="p" data-group-id="3440674450-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3440674450-3">%</span><span class="nc" data-group-id="3440674450-3">Provider</span><span class="p" data-group-id="3440674450-3">{</span><span class="p" data-group-id="3440674450-3">}</span><span class="p" data-group-id="3440674450-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_provider</span><span class="p" data-group-id="2466204859-1">(</span><span class="n">provider</span><span class="p" data-group-id="2466204859-1">)</span><span class="w">
+</span><span class="p" data-group-id="2466204859-2">%</span><span class="nc" data-group-id="2466204859-2">Ecto.Changeset</span><span class="p" data-group-id="2466204859-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2466204859-3">%</span><span class="nc" data-group-id="2466204859-3">Provider</span><span class="p" data-group-id="2466204859-3">{</span><span class="p" data-group-id="2466204859-3">}</span><span class="p" data-group-id="2466204859-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="count_organizations/1">
     <span id="count_organizations/0"></span>
@@ -264,7 +376,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">count_organizations(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L155" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L197" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -286,7 +398,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">count_providers(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L33" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L52" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -300,6 +412,28 @@ Functions          </h1>
 
 <p>Return the count of providers, using the same filter as list_providers</p>  </section>
 </section>
+<section class="detail" id="create_credential/1">
+  <div class="detail-header">
+    <a href="#create_credential/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_credential(attrs)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L617" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>create_credential(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Partners.Credential.html#t:t/0">Glific.Partners.Credential.t</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Creates an organization's credential</p>  </section>
+</section>
 <section class="detail" id="create_organization/1">
     <span id="create_organization/0"></span>
   <div class="detail-header">
@@ -308,7 +442,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">create_organization(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L224" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L264" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -318,18 +452,18 @@ Functions          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>create_organization(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Creates a organization.</p><h2 id="create_organization/1-examples" class="section-heading">
   <a href="#create_organization/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">create_organization</span><span class="p" data-group-id="0166710421-1">(</span><span class="p" data-group-id="0166710421-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="0166710421-2">}</span><span class="p" data-group-id="0166710421-1">)</span><span class="w">
-</span><span class="p" data-group-id="0166710421-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0166710421-4">%</span><span class="nc" data-group-id="0166710421-4">Glific.Partners.Organization</span><span class="p" data-group-id="0166710421-4">{</span><span class="p" data-group-id="0166710421-4">}</span><span class="p" data-group-id="0166710421-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">create_organization</span><span class="p" data-group-id="2509071828-1">(</span><span class="p" data-group-id="2509071828-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="2509071828-2">}</span><span class="p" data-group-id="2509071828-1">)</span><span class="w">
+</span><span class="p" data-group-id="2509071828-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2509071828-4">%</span><span class="nc" data-group-id="2509071828-4">Glific.Partners.Organization</span><span class="p" data-group-id="2509071828-4">{</span><span class="p" data-group-id="2509071828-4">}</span><span class="p" data-group-id="2509071828-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">create_organization</span><span class="p" data-group-id="0166710421-5">(</span><span class="p" data-group-id="0166710421-6">%{</span><span class="ss">bad_field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0166710421-6">}</span><span class="p" data-group-id="0166710421-5">)</span><span class="w">
-</span><span class="p" data-group-id="0166710421-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0166710421-8">%</span><span class="nc" data-group-id="0166710421-8">Ecto.Changeset</span><span class="p" data-group-id="0166710421-8">{</span><span class="p" data-group-id="0166710421-8">}</span><span class="p" data-group-id="0166710421-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">create_organization</span><span class="p" data-group-id="2509071828-5">(</span><span class="p" data-group-id="2509071828-6">%{</span><span class="ss">bad_field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2509071828-6">}</span><span class="p" data-group-id="2509071828-5">)</span><span class="w">
+</span><span class="p" data-group-id="2509071828-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2509071828-8">%</span><span class="nc" data-group-id="2509071828-8">Ecto.Changeset</span><span class="p" data-group-id="2509071828-8">{</span><span class="p" data-group-id="2509071828-8">}</span><span class="p" data-group-id="2509071828-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="create_provider/1">
     <span id="create_provider/0"></span>
@@ -339,7 +473,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">create_provider(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L79" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L91" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -352,26 +486,31 @@ Functions          </h1>
   {:ok,
    %Glific.Partners.Provider{
      __meta__: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-     api_end_point: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     credential: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     description: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     group: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
      id: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
      inserted_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     is_required: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     keys: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
      name: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
      organizations: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-     updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-     url: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
+     secrets: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     shortcode: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
    }}
-  | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Creates a provider.</p><h2 id="create_provider/1-examples" class="section-heading">
   <a href="#create_provider/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_provider</span><span class="p" data-group-id="6116933815-1">(</span><span class="p" data-group-id="6116933815-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="6116933815-2">}</span><span class="p" data-group-id="6116933815-1">)</span><span class="w">
-</span><span class="p" data-group-id="6116933815-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6116933815-4">%</span><span class="nc" data-group-id="6116933815-4">Provider</span><span class="p" data-group-id="6116933815-4">{</span><span class="p" data-group-id="6116933815-4">}</span><span class="p" data-group-id="6116933815-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_provider</span><span class="p" data-group-id="6452365103-1">(</span><span class="p" data-group-id="6452365103-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="6452365103-2">}</span><span class="p" data-group-id="6452365103-1">)</span><span class="w">
+</span><span class="p" data-group-id="6452365103-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6452365103-4">%</span><span class="nc" data-group-id="6452365103-4">Provider</span><span class="p" data-group-id="6452365103-4">{</span><span class="p" data-group-id="6452365103-4">}</span><span class="p" data-group-id="6452365103-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_provider</span><span class="p" data-group-id="6116933815-5">(</span><span class="p" data-group-id="6116933815-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6116933815-6">}</span><span class="p" data-group-id="6116933815-5">)</span><span class="w">
-</span><span class="p" data-group-id="6116933815-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6116933815-8">%</span><span class="nc" data-group-id="6116933815-8">Ecto.Changeset</span><span class="p" data-group-id="6116933815-8">{</span><span class="p" data-group-id="6116933815-8">}</span><span class="p" data-group-id="6116933815-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_provider</span><span class="p" data-group-id="6452365103-5">(</span><span class="p" data-group-id="6452365103-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6452365103-6">}</span><span class="p" data-group-id="6452365103-5">)</span><span class="w">
+</span><span class="p" data-group-id="6452365103-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6452365103-8">%</span><span class="nc" data-group-id="6452365103-8">Ecto.Changeset</span><span class="p" data-group-id="6452365103-8">{</span><span class="p" data-group-id="6452365103-8">}</span><span class="p" data-group-id="6452365103-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="delete_organization/1">
   <div class="detail-header">
@@ -380,7 +519,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete_organization(organization)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L264" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L307" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -390,18 +529,18 @@ Functions          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>delete_organization(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()) ::
-  {:ok, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
-<p>Deletes an Organization.</p><h2 id="delete_organization/1-examples" class="section-heading">
+<p>Deletes an Orgsanization.</p><h2 id="delete_organization/1-examples" class="section-heading">
   <a href="#delete_organization/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">delete_organization</span><span class="p" data-group-id="5380365302-1">(</span><span class="n">organization</span><span class="p" data-group-id="5380365302-1">)</span><span class="w">
-</span><span class="p" data-group-id="5380365302-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5380365302-3">%</span><span class="nc" data-group-id="5380365302-3">Glific.Partners.Organization</span><span class="p" data-group-id="5380365302-3">{</span><span class="p" data-group-id="5380365302-3">}</span><span class="p" data-group-id="5380365302-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">delete_organization</span><span class="p" data-group-id="1065197657-1">(</span><span class="n">organization</span><span class="p" data-group-id="1065197657-1">)</span><span class="w">
+</span><span class="p" data-group-id="1065197657-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1065197657-3">%</span><span class="nc" data-group-id="1065197657-3">Glific.Partners.Organization</span><span class="p" data-group-id="1065197657-3">{</span><span class="p" data-group-id="1065197657-3">}</span><span class="p" data-group-id="1065197657-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_organization</span><span class="p" data-group-id="5380365302-4">(</span><span class="n">organization</span><span class="p" data-group-id="5380365302-4">)</span><span class="w">
-</span><span class="p" data-group-id="5380365302-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5380365302-6">%</span><span class="nc" data-group-id="5380365302-6">Ecto.Changeset</span><span class="p" data-group-id="5380365302-6">{</span><span class="p" data-group-id="5380365302-6">}</span><span class="p" data-group-id="5380365302-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_organization</span><span class="p" data-group-id="1065197657-4">(</span><span class="n">organization</span><span class="p" data-group-id="1065197657-4">)</span><span class="w">
+</span><span class="p" data-group-id="1065197657-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1065197657-6">%</span><span class="nc" data-group-id="1065197657-6">Ecto.Changeset</span><span class="p" data-group-id="1065197657-6">{</span><span class="p" data-group-id="1065197657-6">}</span><span class="p" data-group-id="1065197657-5">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="delete_provider/1">
   <div class="detail-header">
@@ -410,7 +549,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete_provider(provider)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L117" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L129" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -421,37 +560,154 @@ Functions          </h1>
       <div class="specs">
           <pre>delete_provider(%Glific.Partners.Provider{
   __meta__: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-  api_end_point: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  credential: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  description: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  group: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   id: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   inserted_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  is_required: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  keys: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   name: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   organizations: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-  updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-  url: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
+  secrets: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  shortcode: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
 }) ::
   {:ok,
    %Glific.Partners.Provider{
      __meta__: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-     api_end_point: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     credential: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     description: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     group: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
      id: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
      inserted_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     is_required: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     keys: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
      name: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
      organizations: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-     updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-     url: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
+     secrets: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     shortcode: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
    }}
-  | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Deletes a provider.</p><h2 id="delete_provider/1-examples" class="section-heading">
   <a href="#delete_provider/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_provider</span><span class="p" data-group-id="1272519802-1">(</span><span class="n">provider</span><span class="p" data-group-id="1272519802-1">)</span><span class="w">
-</span><span class="p" data-group-id="1272519802-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1272519802-3">%</span><span class="nc" data-group-id="1272519802-3">Provider</span><span class="p" data-group-id="1272519802-3">{</span><span class="p" data-group-id="1272519802-3">}</span><span class="p" data-group-id="1272519802-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_provider</span><span class="p" data-group-id="6203075736-1">(</span><span class="n">provider</span><span class="p" data-group-id="6203075736-1">)</span><span class="w">
+</span><span class="p" data-group-id="6203075736-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6203075736-3">%</span><span class="nc" data-group-id="6203075736-3">Provider</span><span class="p" data-group-id="6203075736-3">{</span><span class="p" data-group-id="6203075736-3">}</span><span class="p" data-group-id="6203075736-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_provider</span><span class="p" data-group-id="1272519802-4">(</span><span class="n">provider</span><span class="p" data-group-id="1272519802-4">)</span><span class="w">
-</span><span class="p" data-group-id="1272519802-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1272519802-6">%</span><span class="nc" data-group-id="1272519802-6">Ecto.Changeset</span><span class="p" data-group-id="1272519802-6">{</span><span class="p" data-group-id="1272519802-6">}</span><span class="p" data-group-id="1272519802-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_provider</span><span class="p" data-group-id="6203075736-4">(</span><span class="n">provider</span><span class="p" data-group-id="6203075736-4">)</span><span class="w">
+</span><span class="p" data-group-id="6203075736-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6203075736-6">%</span><span class="nc" data-group-id="6203075736-6">Ecto.Changeset</span><span class="p" data-group-id="6203075736-6">{</span><span class="p" data-group-id="6203075736-6">}</span><span class="p" data-group-id="6203075736-5">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="fetch_opted_in_contacts/1">
+  <div class="detail-header">
+    <a href="#fetch_opted_in_contacts/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">fetch_opted_in_contacts(attrs)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L580" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>fetch_opted_in_contacts(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: :ok | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()</pre>
+      </div>
+
+<p>Fetch opted in contacts data from providers server</p>  </section>
+</section>
+<section class="detail" id="fill_cache/1">
+  <div class="detail-header">
+    <a href="#fill_cache/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">fill_cache(organization)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L350" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>fill_cache(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()) :: <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()</pre>
+      </div>
+
+<p>Given a minimal organization object, fill it up and store in cache. Making this
+public so we can call from test harness and avoid SQL Sandbox issues</p>  </section>
+</section>
+<section class="detail" id="get_bsp_balance/1">
+  <div class="detail-header">
+    <a href="#get_bsp_balance/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_bsp_balance(organization_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L329" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>get_bsp_balance(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+      </div>
+
+<p>Returns bsp balance for an organization</p>  </section>
+</section>
+<section class="detail" id="get_credential/1">
+  <div class="detail-header">
+    <a href="#get_credential/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_credential(map)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L600" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>get_credential(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Partners.Credential.html#t:t/0">Glific.Partners.Credential.t</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]}</pre>
+      </div>
+
+<p>Get organization's credential by service shortcode</p>  </section>
+</section>
+<section class="detail" id="get_goth_token/2">
+  <div class="detail-header">
+    <a href="#get_goth_token/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_goth_token(organization_id, provider_shortcode)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L704" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>get_goth_token(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: nil | <a href="https://hexdocs.pm/goth/1.2.0/Goth.Token.html#t:t/0">Goth.Token.t</a>()</pre>
+      </div>
+
+<p>  Common function to get the goth config</p>  </section>
 </section>
 <section class="detail" id="get_organization!/1">
   <div class="detail-header">
@@ -460,7 +716,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_organization!(id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L209" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L249" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -472,14 +728,14 @@ Functions          </h1>
           <pre>get_organization!(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()</pre>
       </div>
 
-<p>Gets a single organization.</p><p>Raises <a href="https://hexdocs.pm/ecto/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the organization does not exist.</p><h2 id="get_organization!/1-examples" class="section-heading">
+<p>Gets a single organization.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the organization does not exist.</p><h2 id="get_organization!/1-examples" class="section-heading">
   <a href="#get_organization!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">get_organization!</span><span class="p" data-group-id="4407504041-1">(</span><span class="mi">1</span><span class="p" data-group-id="4407504041-1">)</span><span class="w">
-</span><span class="p" data-group-id="4407504041-2">%</span><span class="nc" data-group-id="4407504041-2">Glific.Partners.Organization</span><span class="p" data-group-id="4407504041-2">{</span><span class="p" data-group-id="4407504041-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">get_organization!</span><span class="p" data-group-id="0542441503-1">(</span><span class="mi">1</span><span class="p" data-group-id="0542441503-1">)</span><span class="w">
+</span><span class="p" data-group-id="0542441503-2">%</span><span class="nc" data-group-id="0542441503-2">Glific.Partners.Organization</span><span class="p" data-group-id="0542441503-2">{</span><span class="p" data-group-id="0542441503-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">get_organization!</span><span class="p" data-group-id="4407504041-3">(</span><span class="o">-</span><span class="mi">1</span><span class="p" data-group-id="4407504041-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">get_organization!</span><span class="p" data-group-id="0542441503-3">(</span><span class="o">-</span><span class="mi">1</span><span class="p" data-group-id="0542441503-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_provider!/1">
@@ -489,7 +745,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_provider!(id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L64" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L76" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -500,24 +756,29 @@ Functions          </h1>
       <div class="specs">
           <pre>get_provider!(id :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: %Glific.Partners.Provider{
   __meta__: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-  api_end_point: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  credential: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  description: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  group: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   id: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   inserted_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  is_required: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  keys: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   name: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   organizations: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-  updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-  url: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
+  secrets: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  shortcode: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
 }</pre>
       </div>
 
-<p>Gets a single provider.</p><p>Raises <a href="https://hexdocs.pm/ecto/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Provider does not exist.</p><h2 id="get_provider!/1-examples" class="section-heading">
+<p>Gets a single provider.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Provider does not exist.</p><h2 id="get_provider!/1-examples" class="section-heading">
   <a href="#get_provider!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_provider!</span><span class="p" data-group-id="9568327670-1">(</span><span class="mi">123</span><span class="p" data-group-id="9568327670-1">)</span><span class="w">
-</span><span class="p" data-group-id="9568327670-2">%</span><span class="nc" data-group-id="9568327670-2">Provider</span><span class="p" data-group-id="9568327670-2">{</span><span class="p" data-group-id="9568327670-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_provider!</span><span class="p" data-group-id="0897190431-1">(</span><span class="mi">123</span><span class="p" data-group-id="0897190431-1">)</span><span class="w">
+</span><span class="p" data-group-id="0897190431-2">%</span><span class="nc" data-group-id="0897190431-2">Provider</span><span class="p" data-group-id="0897190431-2">{</span><span class="p" data-group-id="0897190431-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_provider!</span><span class="p" data-group-id="9568327670-3">(</span><span class="mi">456</span><span class="p" data-group-id="9568327670-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_provider!</span><span class="p" data-group-id="0897190431-3">(</span><span class="mi">456</span><span class="p" data-group-id="0897190431-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="list_organizations/1">
@@ -528,7 +789,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">list_organizations(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L148" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L161" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -544,8 +805,8 @@ Functions          </h1>
   <a href="#list_organizations/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">list_organizations</span><span class="p" data-group-id="2359098636-1">(</span><span class="p" data-group-id="2359098636-1">)</span><span class="w">
-</span><span class="p" data-group-id="2359098636-2">[</span><span class="p" data-group-id="2359098636-3">%</span><span class="nc" data-group-id="2359098636-3">Glific.Partners.Organization</span><span class="p" data-group-id="2359098636-3">{</span><span class="p" data-group-id="2359098636-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="2359098636-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">list_organizations</span><span class="p" data-group-id="1072416778-1">(</span><span class="p" data-group-id="1072416778-1">)</span><span class="w">
+</span><span class="p" data-group-id="1072416778-2">[</span><span class="p" data-group-id="1072416778-3">%</span><span class="nc" data-group-id="1072416778-3">Glific.Partners.Organization</span><span class="p" data-group-id="1072416778-3">{</span><span class="p" data-group-id="1072416778-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="1072416778-2">]</span></code></pre>  </section>
 </section>
 <section class="detail" id="list_providers/1">
     <span id="list_providers/0"></span>
@@ -555,7 +816,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">list_providers(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L26" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L41" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -567,13 +828,18 @@ Functions          </h1>
           <pre>list_providers(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [
   %Glific.Partners.Provider{
     __meta__: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-    api_end_point: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    credential: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    description: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    group: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
     id: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
     inserted_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    is_required: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    keys: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
     name: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
     organizations: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-    updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-    url: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
+    secrets: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    shortcode: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
   },
   ...
 ]</pre>
@@ -583,17 +849,17 @@ Functions          </h1>
   <a href="#list_providers/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_providers</span><span class="p" data-group-id="9710243358-1">(</span><span class="p" data-group-id="9710243358-1">)</span><span class="w">
-</span><span class="p" data-group-id="9710243358-2">[</span><span class="p" data-group-id="9710243358-3">%</span><span class="nc" data-group-id="9710243358-3">Provider</span><span class="p" data-group-id="9710243358-3">{</span><span class="p" data-group-id="9710243358-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="9710243358-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_providers</span><span class="p" data-group-id="4561179508-1">(</span><span class="p" data-group-id="4561179508-1">)</span><span class="w">
+</span><span class="p" data-group-id="4561179508-2">[</span><span class="p" data-group-id="4561179508-3">%</span><span class="nc" data-group-id="4561179508-3">Provider</span><span class="p" data-group-id="4561179508-3">{</span><span class="p" data-group-id="4561179508-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="4561179508-2">]</span></code></pre>  </section>
 </section>
-<section class="detail" id="organization_contact_id/0">
+<section class="detail" id="load_cache/1">
   <div class="detail-header">
-    <a href="#organization_contact_id/0" class="detail-link" title="Link to this function">
+    <a href="#load_cache/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">organization_contact_id()</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L287" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">load_cache(cachex_key)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L379" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -602,11 +868,166 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>organization_contact_id() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+          <pre>load_cache(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">tuple</a>()) :: {:ignore, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()}</pre>
       </div>
 
-<p>We will cache this soon, since this is a frequently requested item. This contact id is special
-since it is the sender for all outbound messages and the receiver for all inbound messages</p>  </section>
+<p>Follow the cachex protocol to load the cache from the DB</p>  </section>
+</section>
+<section class="detail" id="organization/1">
+  <div class="detail-header">
+    <a href="#organization/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">organization(cache_key)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L408" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>organization(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) ::
+  <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>() | nil</pre>
+      </div>
+
+<p>Cache the entire organization structure.</p>  </section>
+</section>
+<section class="detail" id="organization_contact_id/1">
+  <div class="detail-header">
+    <a href="#organization_contact_id/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">organization_contact_id(organization_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L426" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>organization_contact_id(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+      </div>
+
+<p>This contact id is special since it is the sender for all outbound messages
+and the receiver for all inbound messages</p>  </section>
+</section>
+<section class="detail" id="organization_language_id/1">
+  <div class="detail-header">
+    <a href="#organization_language_id/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">organization_language_id(organization_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L433" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>organization_language_id(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+      </div>
+
+<p>Get the default language id</p>  </section>
+</section>
+<section class="detail" id="organization_timezone/1">
+  <div class="detail-header">
+    <a href="#organization_timezone/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">organization_timezone(organization_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L440" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>organization_timezone(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+      </div>
+
+<p>Get the timezone</p>  </section>
+</section>
+<section class="detail" id="perform_all/4">
+    <span id="perform_all/3"></span>
+  <div class="detail-header">
+    <a href="#perform_all/4" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">perform_all(handler, handler_args, list, only_recent \\ false)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L540" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>perform_all((... -&gt; nil), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>() | nil, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>() | [] | nil, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()) :: :ok</pre>
+      </div>
+
+<p>Execute a function across all active organizations. This function is typically called
+by a cron job worker process</p><p>The handler is expected to take the organization id as its first argument. The second argument
+is expected to be a map of arguments passed in by the cron job, and can be ignored if not used</p><p>The list is a restricted list of organizations, so we dont repeatedly do work. The convention is as
+follows:</p><p>list == nil - the action should not be performed for any organization
+list == [] (empty list) - the action should be performed for all organizations
+list == [ values ] - the actions should be performed only for organizations in the values list</p>  </section>
+</section>
+<section class="detail" id="remove_organization_cache/2">
+  <div class="detail-header">
+    <a href="#remove_organization_cache/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">remove_organization_cache(organization_id, shortcode)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L684" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>remove_organization_cache(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()</pre>
+      </div>
+
+<p>  Removing organization cache</p>  </section>
+</section>
+<section class="detail" id="update_credential/2">
+  <div class="detail-header">
+    <a href="#update_credential/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_credential(credential, attrs)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L655" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>update_credential(<a href="Glific.Partners.Credential.html#t:t/0">Glific.Partners.Credential.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Partners.Credential.html#t:t/0">Glific.Partners.Credential.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+      </div>
+
+<p>Updates an organization's credential</p>  </section>
 </section>
 <section class="detail" id="update_organization/2">
   <div class="detail-header">
@@ -614,8 +1035,8 @@ since it is the sender for all outbound messages and the receiver for all inboun
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">update_organization(provider, attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L244" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">update_organization(organization, attrs)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L284" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -625,18 +1046,18 @@ since it is the sender for all outbound messages and the receiver for all inboun
       <h2>Specs</h2>
       <div class="specs">
           <pre>update_organization(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Updates an organization.</p><h2 id="update_organization/2-examples" class="section-heading">
   <a href="#update_organization/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">update_organization</span><span class="p" data-group-id="2952955267-1">(</span><span class="nc">Organization</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2952955267-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">new_name</span><span class="p" data-group-id="2952955267-2">}</span><span class="p" data-group-id="2952955267-1">)</span><span class="w">
-</span><span class="p" data-group-id="2952955267-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2952955267-4">%</span><span class="nc" data-group-id="2952955267-4">Glific.Partners.Organization</span><span class="p" data-group-id="2952955267-4">{</span><span class="p" data-group-id="2952955267-4">}</span><span class="p" data-group-id="2952955267-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">update_organization</span><span class="p" data-group-id="8395233770-1">(</span><span class="nc">Organization</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8395233770-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">new_name</span><span class="p" data-group-id="8395233770-2">}</span><span class="p" data-group-id="8395233770-1">)</span><span class="w">
+</span><span class="p" data-group-id="8395233770-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8395233770-4">%</span><span class="nc" data-group-id="8395233770-4">Glific.Partners.Organization</span><span class="p" data-group-id="8395233770-4">{</span><span class="p" data-group-id="8395233770-4">}</span><span class="p" data-group-id="8395233770-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">update_organization</span><span class="p" data-group-id="2952955267-5">(</span><span class="nc">Organization</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2952955267-6">%{</span><span class="ss">abc</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2952955267-6">}</span><span class="p" data-group-id="2952955267-5">)</span><span class="w">
-</span><span class="p" data-group-id="2952955267-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2952955267-8">%</span><span class="nc" data-group-id="2952955267-8">Ecto.Changeset</span><span class="p" data-group-id="2952955267-8">{</span><span class="p" data-group-id="2952955267-8">}</span><span class="p" data-group-id="2952955267-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">update_organization</span><span class="p" data-group-id="8395233770-5">(</span><span class="nc">Organization</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8395233770-6">%{</span><span class="ss">abc</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="8395233770-6">}</span><span class="p" data-group-id="8395233770-5">)</span><span class="w">
+</span><span class="p" data-group-id="8395233770-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8395233770-8">%</span><span class="nc" data-group-id="8395233770-8">Ecto.Changeset</span><span class="p" data-group-id="8395233770-8">{</span><span class="p" data-group-id="8395233770-8">}</span><span class="p" data-group-id="8395233770-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="update_provider/2">
   <div class="detail-header">
@@ -645,7 +1066,7 @@ since it is the sender for all outbound messages and the receiver for all inboun
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_provider(provider, attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L98" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners.ex#L110" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -657,39 +1078,49 @@ since it is the sender for all outbound messages and the receiver for all inboun
           <pre>update_provider(
   %Glific.Partners.Provider{
     __meta__: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-    api_end_point: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    credential: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    description: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    group: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
     id: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
     inserted_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    is_required: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    keys: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
     name: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
     organizations: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-    updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-    url: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
+    secrets: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    shortcode: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+    updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
   },
   <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()
 ) ::
   {:ok,
    %Glific.Partners.Provider{
      __meta__: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-     api_end_point: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     credential: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     description: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     group: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
      id: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
      inserted_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     is_required: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     keys: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
      name: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
      organizations: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-     updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
-     url: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
+     secrets: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     shortcode: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+     updated_at: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
    }}
-  | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Updates a provider.</p><h2 id="update_provider/2-examples" class="section-heading">
   <a href="#update_provider/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_provider</span><span class="p" data-group-id="0105391134-1">(</span><span class="n">provider</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0105391134-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="0105391134-2">}</span><span class="p" data-group-id="0105391134-1">)</span><span class="w">
-</span><span class="p" data-group-id="0105391134-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0105391134-4">%</span><span class="nc" data-group-id="0105391134-4">Provider</span><span class="p" data-group-id="0105391134-4">{</span><span class="p" data-group-id="0105391134-4">}</span><span class="p" data-group-id="0105391134-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_provider</span><span class="p" data-group-id="1492032607-1">(</span><span class="n">provider</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1492032607-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="1492032607-2">}</span><span class="p" data-group-id="1492032607-1">)</span><span class="w">
+</span><span class="p" data-group-id="1492032607-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1492032607-4">%</span><span class="nc" data-group-id="1492032607-4">Provider</span><span class="p" data-group-id="1492032607-4">{</span><span class="p" data-group-id="1492032607-4">}</span><span class="p" data-group-id="1492032607-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_provider</span><span class="p" data-group-id="0105391134-5">(</span><span class="n">provider</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0105391134-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0105391134-6">}</span><span class="p" data-group-id="0105391134-5">)</span><span class="w">
-</span><span class="p" data-group-id="0105391134-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0105391134-8">%</span><span class="nc" data-group-id="0105391134-8">Ecto.Changeset</span><span class="p" data-group-id="0105391134-8">{</span><span class="p" data-group-id="0105391134-8">}</span><span class="p" data-group-id="0105391134-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_provider</span><span class="p" data-group-id="1492032607-5">(</span><span class="n">provider</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1492032607-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1492032607-6">}</span><span class="p" data-group-id="1492032607-5">)</span><span class="w">
+</span><span class="p" data-group-id="1492032607-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1492032607-8">%</span><span class="nc" data-group-id="1492032607-8">Ecto.Changeset</span><span class="p" data-group-id="1492032607-8">{</span><span class="p" data-group-id="1492032607-8">}</span><span class="p" data-group-id="1492032607-7">}</span></code></pre>  </section>
 </section>
           </div>
         </section>
@@ -697,14 +1128,16 @@ since it is the sender for all outbound messages and the receiver for all inboun
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>

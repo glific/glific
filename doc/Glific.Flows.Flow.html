@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>Glific.Flows.Flow — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>Glific.Flows.Flow — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,8 +63,8 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.2.0</small>
-Glific.Flows.Flow          <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L1" title="View Source" class="view-source" rel="help">
+        Glific.Flows.Flow <small class="app-vsn">(Glific v0.9.4)</small>
+          <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -99,12 +99,6 @@ by <code class="inline">https://github.com/nyaruka/floweditor</code></p>        
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#cachex_flows/1">cachex_flows(flows)</a>
-  </div>
-    <div class="summary-synopsis"><p>Store all the flows in cachex :flows_cache. At some point, we will just use this dynamically</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
     <a href="#changeset/2">changeset(flow, attrs)</a>
   </div>
     <div class="summary-synopsis"><p>Standard changeset pattern we use for all data types</p></div>
@@ -117,7 +111,7 @@ by <code class="inline">https://github.com/nyaruka/floweditor</code></p>        
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#get_flow/1">get_flow(uuid)</a>
+    <a href="#get_flow/3">get_flow(organization_id, uuid, status)</a>
   </div>
     <div class="summary-synopsis"><p>Return a flow for a specific uuid. Cache is not present in cache</p></div>
 </div>
@@ -130,10 +124,10 @@ flow_revision table. We return the clean definition back</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#get_loaded_flow/1">get_loaded_flow(args)</a>
+    <a href="#get_loaded_flow/3">get_loaded_flow(organization_id, status, args)</a>
   </div>
-    <div class="summary-synopsis"><p>  Helper function to load a active flow from
-  the database and build an object</p></div>
+    <div class="summary-synopsis"><p>Helper function to load a active flow from
+the database and build an object</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -146,6 +140,12 @@ flow_revision table. We return the clean definition back</p></div>
     <a href="#start_sub_flow/2">start_sub_flow(context, uuid)</a>
   </div>
     <div class="summary-synopsis"><p>Create a subflow of an existing flow</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#validate_keywords/2">validate_keywords(changeset, keywords)</a>
+  </div>
+    <div class="summary-synopsis"><p>Changeset helper for keywords</p></div>
 </div>
   </div>
         </section>
@@ -175,20 +175,26 @@ Types          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>t() :: %Glific.Flows.Flow{
-  __meta__: <a href="https://hexdocs.pm/ecto/Ecto.Schema.Metadata.html#t:t/0">Ecto.Schema.Metadata.t</a>(),
+  __meta__: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Schema.Metadata.html#t:t/0">Ecto.Schema.Metadata.t</a>(),
   definition: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>() | nil,
   flow_type: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
   id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | nil,
+  ignore_keywords: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>() | nil,
   inserted_at: :utc_datetime | nil,
+  keywords: [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()] | nil,
   localization: <a href="Glific.Flows.Localization.html#t:t/0">Glific.Flows.Localization.t</a>() | nil,
   name: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
   nodes: [<a href="Glific.Flows.Node.html#t:t/0">Glific.Flows.Node.t</a>()] | nil,
+  organization:
+    <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>() | <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Association.NotLoaded.html#t:t/0">Ecto.Association.NotLoaded.t</a>() | nil,
+  organization_id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | nil,
   revisions:
-    [<a href="Glific.Flows.FlowRevision.html#t:t/0">Glific.Flows.FlowRevision.t</a>()] | <a href="https://hexdocs.pm/ecto/Ecto.Association.NotLoaded.html#t:t/0">Ecto.Association.NotLoaded.t</a>() | nil,
-  shortcode: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+    [<a href="Glific.Flows.FlowRevision.html#t:t/0">Glific.Flows.FlowRevision.t</a>()] | <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Association.NotLoaded.html#t:t/0">Ecto.Association.NotLoaded.t</a>() | nil,
+  status: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
   updated_at: :utc_datetime | nil,
-  uuid: <a href="https://hexdocs.pm/ecto/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>() | nil,
+  uuid: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>() | nil,
   uuid_map: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>() | nil,
+  version: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   version_number: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil
 }</pre>
       </div>
@@ -205,27 +211,6 @@ Types          </h1>
             </a>
 Functions          </h1>
           <div class="functions-list">
-<section class="detail" id="cachex_flows/1">
-  <div class="detail-header">
-    <a href="#cachex_flows/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">cachex_flows(flows)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L210" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-  </div>
-
-  <section class="docstring">
-      <h2>Specs</h2>
-      <div class="specs">
-          <pre>cachex_flows(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
-      </div>
-
-<p>Store all the flows in cachex :flows_cache. At some point, we will just use this dynamically</p>  </section>
-</section>
 <section class="detail" id="changeset/2">
   <div class="detail-header">
     <a href="#changeset/2" class="detail-link" title="Link to this function">
@@ -233,7 +218,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">changeset(flow, attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L68" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L85" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -242,7 +227,7 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>changeset(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre>changeset(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
       </div>
 
 <p>Standard changeset pattern we use for all data types</p>  </section>
@@ -254,7 +239,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">context(flow, contact)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L99" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L175" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -269,14 +254,14 @@ Functions          </h1>
 
 <p>Build the context so we can execute the flow</p>  </section>
 </section>
-<section class="detail" id="get_flow/1">
+<section class="detail" id="get_flow/3">
   <div class="detail-header">
-    <a href="#get_flow/1" class="detail-link" title="Link to this function">
+    <a href="#get_flow/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">get_flow(uuid)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L165" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">get_flow(organization_id, uuid, status)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L244" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -285,7 +270,7 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>get_flow(<a href="https://hexdocs.pm/ecto/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+          <pre>get_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
       </div>
 
 <p>Return a flow for a specific uuid. Cache is not present in cache</p>  </section>
@@ -297,7 +282,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_latest_definition(flow_id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L137" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L213" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -312,14 +297,14 @@ Functions          </h1>
 <p>load the latest revision, specifically json definition from the
 flow_revision table. We return the clean definition back</p>  </section>
 </section>
-<section class="detail" id="get_loaded_flow/1">
+<section class="detail" id="get_loaded_flow/3">
   <div class="detail-header">
-    <a href="#get_loaded_flow/1" class="detail-link" title="Link to this function">
+    <a href="#get_loaded_flow/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">get_loaded_flow(args)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L176" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">get_loaded_flow(organization_id, status, args)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L255" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -328,11 +313,11 @@ flow_revision table. We return the clean definition back</p>  </section>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>get_loaded_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+          <pre>get_loaded_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
       </div>
 
-<p>  Helper function to load a active flow from
-  the database and build an object</p>  </section>
+<p>Helper function to load a active flow from
+the database and build an object</p>  </section>
 </section>
 <section class="detail" id="process/2">
   <div class="detail-header">
@@ -341,7 +326,7 @@ flow_revision table. We return the clean definition back</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">process(json, flow)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L78" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L154" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -362,7 +347,7 @@ flow_revision table. We return the clean definition back</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">start_sub_flow(context, uuid)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L154" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L230" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -371,11 +356,32 @@ flow_revision table. We return the clean definition back</p>  </section>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>start_sub_flow(<a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>(), <a href="https://hexdocs.pm/ecto/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>()) ::
+          <pre>start_sub_flow(<a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>(), <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.UUID.html#t:t/0">Ecto.UUID.t</a>()) ::
   {:ok, <a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>(), [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
       </div>
 
 <p>Create a subflow of an existing flow</p>  </section>
+</section>
+<section class="detail" id="validate_keywords/2">
+  <div class="detail-header">
+    <a href="#validate_keywords/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">validate_keywords(changeset, keywords)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow.ex#L106" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>validate_keywords(<a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()) :: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+      </div>
+
+<p>Changeset helper for keywords</p>  </section>
 </section>
           </div>
         </section>
@@ -383,14 +389,16 @@ flow_revision table. We return the clean definition back</p>  </section>
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>

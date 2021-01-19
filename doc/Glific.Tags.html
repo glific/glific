@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>Glific.Tags — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>Glific.Tags — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,8 +63,8 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.2.0</small>
-Glific.Tags          <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L1" title="View Source" class="view-source" rel="help">
+        Glific.Tags <small class="app-vsn">(Glific v0.9.4)</small>
+          <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -106,43 +106,43 @@ Glific.Tags          <a href="https://github.com/glific/glific/blob/master/lib/g
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#count_tags/1">count_tags(args \\ %{})</a>
+    <a href="#count_tags/1">count_tags(args)</a>
   </div>
     <div class="summary-synopsis"><p>Return the count of tags, using the same filter as list_tags</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#create_contact_tag/1">create_contact_tag(attrs \\ %{})</a>
+    <a href="#create_contact_tag/1">create_contact_tag(attrs)</a>
   </div>
     <div class="summary-synopsis"><p>Creates a contact.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#create_message_tag/1">create_message_tag(attrs \\ %{})</a>
+    <a href="#create_message_tag/1">create_message_tag(attrs)</a>
   </div>
     <div class="summary-synopsis"><p>Creates a message tag</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#create_tag/1">create_tag(attrs \\ %{})</a>
+    <a href="#create_tag/1">create_tag(attrs)</a>
   </div>
     <div class="summary-synopsis"><p>Creates a tag.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#delete_contact_tag/1">delete_contact_tag(contact_tag)</a>
+    <a href="#create_template_tag/1">create_template_tag(attrs \\ %{})</a>
   </div>
-    <div class="summary-synopsis"><p>Deletes a contact tag.</p></div>
+    <div class="summary-synopsis"><p>Creates a template tag.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#delete_message_tag/1">delete_message_tag(message_tag)</a>
+    <a href="#delete_contact_tag_by_ids/2">delete_contact_tag_by_ids(contact_id, tag_ids)</a>
   </div>
-    <div class="summary-synopsis"><p>Deletes a message tag.</p></div>
+    <div class="summary-synopsis"><p>Deletes a list of contact tags, each tag attached to the same contact</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#delete_message_tag_by_ids/2">delete_message_tag_by_ids(message_id, tag_id)</a>
+    <a href="#delete_message_tag_by_ids/3">delete_message_tag_by_ids(message_id, tag_ids, organization_id)</a>
   </div>
     <div class="summary-synopsis"><p>In Join tables we rarely use the table id. We always know the object ids
 and hence more convenient to delete an entry via its object ids.
@@ -154,6 +154,18 @@ handle on how to do so :)</p></div>
     <a href="#delete_tag/1">delete_tag(tag)</a>
   </div>
     <div class="summary-synopsis"><p>Deletes a tag.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#delete_template_tag_by_ids/2">delete_template_tag_by_ids(template_id, tag_ids)</a>
+  </div>
+    <div class="summary-synopsis"><p>Deletes a list of template tags, each tag attached to the same template</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_all_children/2">get_all_children(shortcode, organization_id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Given a shortcode of tag, retrieve all the children for the tag</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -175,46 +187,33 @@ handle on how to do so :)</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#keyword_map/0">keyword_map()</a>
+    <a href="#include_all_ancestors/1">include_all_ancestors(tag_id)</a>
   </div>
-    <div class="summary-synopsis"><p>  Converts all tag kewords into the map where keyword is the key and tag id is the value</p></div>
+    <div class="summary-synopsis"><p>Given a tag id or a list of tag ids, retrieve all the ancestors for the list_tags</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#list_contacts_tags/1">list_contacts_tags(args \\ %{})</a>
+    <a href="#keyword_map/1">keyword_map(map)</a>
   </div>
-    <div class="summary-synopsis"><p>Returns the list of contacts tags.</p></div>
+    <div class="summary-synopsis"><p>Converts all tag kewords into the map where keyword is the key and tag id is the value</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#list_messages_tags/1">list_messages_tags(args \\ %{})</a>
-  </div>
-    <div class="summary-synopsis"><p>Returns the list of messages tags.</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#list_tags/1">list_tags(args \\ %{})</a>
+    <a href="#list_tags/1">list_tags(args)</a>
   </div>
     <div class="summary-synopsis"><p>Returns the list of tags.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#remove_tag_from_all_message/2">remove_tag_from_all_message(contact_id, tag_label)</a>
+    <a href="#remove_tag_from_all_message/3">remove_tag_from_all_message(contact_id, tag_shortcode, organization_id)</a>
   </div>
-    <div class="summary-synopsis"><p>  Remove a specific tag from contact messages</p></div>
+    <div class="summary-synopsis"><p>Remove a specific tag from contact messages</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#status_map/0">status_map()</a>
+    <a href="#status_map/1">status_map(map)</a>
   </div>
     <div class="summary-synopsis"><p>Filter all the status tag and returns as a map</p></div>
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#tags_map/1">tags_map(tags)</a>
-  </div>
-    <div class="summary-synopsis"><p>Generic function to build a tag map for easy queries. Suspect we'll need it
-for all objects soon, and will promote this to Repo</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
@@ -253,7 +252,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">change_contact_tag(contact_tag, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L382" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L385" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -262,15 +261,15 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>change_contact_tag(<a href="Glific.Tags.ContactTag.html#t:t/0">Glific.Tags.ContactTag.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre>change_contact_tag(<a href="Glific.Tags.ContactTag.html#t:t/0">Glific.Tags.ContactTag.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
       </div>
 
 <p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking contact changes.</p><h2 id="change_contact_tag/2-examples" class="section-heading">
   <a href="#change_contact_tag/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_contact_tag</span><span class="p" data-group-id="2859357215-1">(</span><span class="n">contact_tag</span><span class="p" data-group-id="2859357215-1">)</span><span class="w">
-</span><span class="p" data-group-id="2859357215-2">%</span><span class="nc" data-group-id="2859357215-2">Ecto.Changeset</span><span class="p" data-group-id="2859357215-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2859357215-3">%</span><span class="nc" data-group-id="2859357215-3">ContactTag</span><span class="p" data-group-id="2859357215-3">{</span><span class="p" data-group-id="2859357215-3">}</span><span class="p" data-group-id="2859357215-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_contact_tag</span><span class="p" data-group-id="2360431692-1">(</span><span class="n">contact_tag</span><span class="p" data-group-id="2360431692-1">)</span><span class="w">
+</span><span class="p" data-group-id="2360431692-2">%</span><span class="nc" data-group-id="2360431692-2">Ecto.Changeset</span><span class="p" data-group-id="2360431692-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2360431692-3">%</span><span class="nc" data-group-id="2360431692-3">ContactTag</span><span class="p" data-group-id="2360431692-3">{</span><span class="p" data-group-id="2360431692-3">}</span><span class="p" data-group-id="2360431692-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="change_message_tag/2">
     <span id="change_message_tag/1"></span>
@@ -280,7 +279,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">change_message_tag(message_tag, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L278" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L307" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -289,15 +288,15 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>change_message_tag(<a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre>change_message_tag(<a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
       </div>
 
 <p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking message changes.</p><h2 id="change_message_tag/2-examples" class="section-heading">
   <a href="#change_message_tag/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_message_tag</span><span class="p" data-group-id="2648923704-1">(</span><span class="n">message_tag</span><span class="p" data-group-id="2648923704-1">)</span><span class="w">
-</span><span class="p" data-group-id="2648923704-2">%</span><span class="nc" data-group-id="2648923704-2">Ecto.Changeset</span><span class="p" data-group-id="2648923704-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2648923704-3">%</span><span class="nc" data-group-id="2648923704-3">MessageTag</span><span class="p" data-group-id="2648923704-3">{</span><span class="p" data-group-id="2648923704-3">}</span><span class="p" data-group-id="2648923704-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_message_tag</span><span class="p" data-group-id="3131884577-1">(</span><span class="n">message_tag</span><span class="p" data-group-id="3131884577-1">)</span><span class="w">
+</span><span class="p" data-group-id="3131884577-2">%</span><span class="nc" data-group-id="3131884577-2">Ecto.Changeset</span><span class="p" data-group-id="3131884577-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3131884577-3">%</span><span class="nc" data-group-id="3131884577-3">MessageTag</span><span class="p" data-group-id="3131884577-3">{</span><span class="p" data-group-id="3131884577-3">}</span><span class="p" data-group-id="3131884577-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="change_tag/2">
     <span id="change_tag/1"></span>
@@ -307,7 +306,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">change_tag(tag, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L115" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L141" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -316,25 +315,24 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>change_tag(<a href="Glific.Tags.Tag.html#t:t/0">Glific.Tags.Tag.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre>change_tag(<a href="Glific.Tags.Tag.html#t:t/0">Glific.Tags.Tag.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
       </div>
 
 <p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking tag changes.</p><h2 id="change_tag/2-examples" class="section-heading">
   <a href="#change_tag/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_tag</span><span class="p" data-group-id="7747359555-1">(</span><span class="n">tag</span><span class="p" data-group-id="7747359555-1">)</span><span class="w">
-</span><span class="p" data-group-id="7747359555-2">%</span><span class="nc" data-group-id="7747359555-2">Ecto.Changeset</span><span class="p" data-group-id="7747359555-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7747359555-3">%</span><span class="nc" data-group-id="7747359555-3">Tag</span><span class="p" data-group-id="7747359555-3">{</span><span class="p" data-group-id="7747359555-3">}</span><span class="p" data-group-id="7747359555-2">}</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_tag</span><span class="p" data-group-id="1552390960-1">(</span><span class="n">tag</span><span class="p" data-group-id="1552390960-1">)</span><span class="w">
+</span><span class="p" data-group-id="1552390960-2">%</span><span class="nc" data-group-id="1552390960-2">Ecto.Changeset</span><span class="p" data-group-id="1552390960-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1552390960-3">%</span><span class="nc" data-group-id="1552390960-3">Tag</span><span class="p" data-group-id="1552390960-3">{</span><span class="p" data-group-id="1552390960-3">}</span><span class="p" data-group-id="1552390960-2">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="count_tags/1">
-    <span id="count_tags/0"></span>
   <div class="detail-header">
     <a href="#count_tags/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">count_tags(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L28" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">count_tags(args)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L38" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -349,14 +347,13 @@ Functions          </h1>
 <p>Return the count of tags, using the same filter as list_tags</p>  </section>
 </section>
 <section class="detail" id="create_contact_tag/1">
-    <span id="create_contact_tag/0"></span>
   <div class="detail-header">
     <a href="#create_contact_tag/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">create_contact_tag(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L328" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">create_contact_tag(attrs)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L343" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -366,28 +363,27 @@ Functions          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>create_contact_tag(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Tags.ContactTag.html#t:t/0">Glific.Tags.ContactTag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Tags.ContactTag.html#t:t/0">Glific.Tags.ContactTag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Creates a contact.</p><h2 id="create_contact_tag/1-examples" class="section-heading">
   <a href="#create_contact_tag/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_tag</span><span class="p" data-group-id="5116902930-1">(</span><span class="p" data-group-id="5116902930-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="5116902930-2">}</span><span class="p" data-group-id="5116902930-1">)</span><span class="w">
-</span><span class="p" data-group-id="5116902930-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5116902930-4">%</span><span class="nc" data-group-id="5116902930-4">Contact</span><span class="p" data-group-id="5116902930-4">{</span><span class="p" data-group-id="5116902930-4">}</span><span class="p" data-group-id="5116902930-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_tag</span><span class="p" data-group-id="2969075673-1">(</span><span class="p" data-group-id="2969075673-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="2969075673-2">}</span><span class="p" data-group-id="2969075673-1">)</span><span class="w">
+</span><span class="p" data-group-id="2969075673-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2969075673-4">%</span><span class="nc" data-group-id="2969075673-4">Contact</span><span class="p" data-group-id="2969075673-4">{</span><span class="p" data-group-id="2969075673-4">}</span><span class="p" data-group-id="2969075673-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_tag</span><span class="p" data-group-id="5116902930-5">(</span><span class="p" data-group-id="5116902930-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5116902930-6">}</span><span class="p" data-group-id="5116902930-5">)</span><span class="w">
-</span><span class="p" data-group-id="5116902930-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5116902930-8">%</span><span class="nc" data-group-id="5116902930-8">Ecto.Changeset</span><span class="p" data-group-id="5116902930-8">{</span><span class="p" data-group-id="5116902930-8">}</span><span class="p" data-group-id="5116902930-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_tag</span><span class="p" data-group-id="2969075673-5">(</span><span class="p" data-group-id="2969075673-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2969075673-6">}</span><span class="p" data-group-id="2969075673-5">)</span><span class="w">
+</span><span class="p" data-group-id="2969075673-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2969075673-8">%</span><span class="nc" data-group-id="2969075673-8">Ecto.Changeset</span><span class="p" data-group-id="2969075673-8">{</span><span class="p" data-group-id="2969075673-8">}</span><span class="p" data-group-id="2969075673-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="create_message_tag/1">
-    <span id="create_message_tag/0"></span>
   <div class="detail-header">
     <a href="#create_message_tag/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">create_message_tag(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L205" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">create_message_tag(attrs)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L244" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -397,7 +393,7 @@ Functions          </h1>
       <h2>Specs</h2>
       <div class="specs">
           <pre>create_message_tag(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Creates a message tag</p><h2 id="create_message_tag/1-examples" class="section-heading">
@@ -409,14 +405,13 @@ Functions          </h1>
 {:error, %Ecto.Changeset{}}</p>  </section>
 </section>
 <section class="detail" id="create_tag/1">
-    <span id="create_tag/0"></span>
   <div class="detail-header">
     <a href="#create_tag/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">create_tag(attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L61" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">create_tag(attrs)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L71" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -425,27 +420,28 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>create_tag(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="Glific.Tags.Tag.html#t:t/0">Glific.Tags.Tag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+          <pre>create_tag(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="Glific.Tags.Tag.html#t:t/0">Glific.Tags.Tag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Creates a tag.</p><h2 id="create_tag/1-examples" class="section-heading">
   <a href="#create_tag/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_tag</span><span class="p" data-group-id="1887055899-1">(</span><span class="p" data-group-id="1887055899-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="1887055899-2">}</span><span class="p" data-group-id="1887055899-1">)</span><span class="w">
-</span><span class="p" data-group-id="1887055899-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1887055899-4">%</span><span class="nc" data-group-id="1887055899-4">Tag</span><span class="p" data-group-id="1887055899-4">{</span><span class="p" data-group-id="1887055899-4">}</span><span class="p" data-group-id="1887055899-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_tag</span><span class="p" data-group-id="8369907114-1">(</span><span class="p" data-group-id="8369907114-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="8369907114-2">}</span><span class="p" data-group-id="8369907114-1">)</span><span class="w">
+</span><span class="p" data-group-id="8369907114-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8369907114-4">%</span><span class="nc" data-group-id="8369907114-4">Tag</span><span class="p" data-group-id="8369907114-4">{</span><span class="p" data-group-id="8369907114-4">}</span><span class="p" data-group-id="8369907114-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_tag</span><span class="p" data-group-id="1887055899-5">(</span><span class="p" data-group-id="1887055899-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1887055899-6">}</span><span class="p" data-group-id="1887055899-5">)</span><span class="w">
-</span><span class="p" data-group-id="1887055899-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1887055899-8">%</span><span class="nc" data-group-id="1887055899-8">Ecto.Changeset</span><span class="p" data-group-id="1887055899-8">{</span><span class="p" data-group-id="1887055899-8">}</span><span class="p" data-group-id="1887055899-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_tag</span><span class="p" data-group-id="8369907114-5">(</span><span class="p" data-group-id="8369907114-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="8369907114-6">}</span><span class="p" data-group-id="8369907114-5">)</span><span class="w">
+</span><span class="p" data-group-id="8369907114-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8369907114-8">%</span><span class="nc" data-group-id="8369907114-8">Ecto.Changeset</span><span class="p" data-group-id="8369907114-8">{</span><span class="p" data-group-id="8369907114-8">}</span><span class="p" data-group-id="8369907114-7">}</span></code></pre>  </section>
 </section>
-<section class="detail" id="delete_contact_tag/1">
+<section class="detail" id="create_template_tag/1">
+    <span id="create_template_tag/0"></span>
   <div class="detail-header">
-    <a href="#delete_contact_tag/1" class="detail-link" title="Link to this function">
+    <a href="#create_template_tag/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">delete_contact_tag(contact_tag)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L368" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">create_template_tag(attrs \\ %{})</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L455" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -454,28 +450,28 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>delete_contact_tag(<a href="Glific.Tags.ContactTag.html#t:t/0">Glific.Tags.ContactTag.t</a>()) ::
-  {:ok, <a href="Glific.Tags.ContactTag.html#t:t/0">Glific.Tags.ContactTag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+          <pre>create_template_tag(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Tags.TemplateTag.html#t:t/0">Glific.Tags.TemplateTag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
-<p>Deletes a contact tag.</p><h2 id="delete_contact_tag/1-examples" class="section-heading">
-  <a href="#delete_contact_tag/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+<p>Creates a template tag.</p><h2 id="create_template_tag/1-examples" class="section-heading">
+  <a href="#create_template_tag/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact_tag</span><span class="p" data-group-id="0433203242-1">(</span><span class="n">contact_tag</span><span class="p" data-group-id="0433203242-1">)</span><span class="w">
-</span><span class="p" data-group-id="0433203242-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0433203242-3">%</span><span class="nc" data-group-id="0433203242-3">ContactTag</span><span class="p" data-group-id="0433203242-3">{</span><span class="p" data-group-id="0433203242-3">}</span><span class="p" data-group-id="0433203242-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_template_tag</span><span class="p" data-group-id="7955817773-1">(</span><span class="p" data-group-id="7955817773-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="7955817773-2">}</span><span class="p" data-group-id="7955817773-1">)</span><span class="w">
+</span><span class="p" data-group-id="7955817773-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7955817773-4">%</span><span class="nc" data-group-id="7955817773-4">Contact</span><span class="p" data-group-id="7955817773-4">{</span><span class="p" data-group-id="7955817773-4">}</span><span class="p" data-group-id="7955817773-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact_tag</span><span class="p" data-group-id="0433203242-4">(</span><span class="n">contact_tag</span><span class="p" data-group-id="0433203242-4">)</span><span class="w">
-</span><span class="p" data-group-id="0433203242-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0433203242-6">%</span><span class="nc" data-group-id="0433203242-6">Ecto.Changeset</span><span class="p" data-group-id="0433203242-6">{</span><span class="p" data-group-id="0433203242-6">}</span><span class="p" data-group-id="0433203242-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_template_tag</span><span class="p" data-group-id="7955817773-5">(</span><span class="p" data-group-id="7955817773-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="7955817773-6">}</span><span class="p" data-group-id="7955817773-5">)</span><span class="w">
+</span><span class="p" data-group-id="7955817773-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7955817773-8">%</span><span class="nc" data-group-id="7955817773-8">Ecto.Changeset</span><span class="p" data-group-id="7955817773-8">{</span><span class="p" data-group-id="7955817773-8">}</span><span class="p" data-group-id="7955817773-7">}</span></code></pre>  </section>
 </section>
-<section class="detail" id="delete_message_tag/1">
+<section class="detail" id="delete_contact_tag_by_ids/2">
   <div class="detail-header">
-    <a href="#delete_message_tag/1" class="detail-link" title="Link to this function">
+    <a href="#delete_contact_tag_by_ids/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">delete_message_tag(message_tag)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L244" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">delete_contact_tag_by_ids(contact_id, tag_ids)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L436" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -484,28 +480,19 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>delete_message_tag(<a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>()) ::
-  {:ok, <a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+          <pre>delete_contact_tag_by_ids(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), []) :: {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), nil | [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()]}</pre>
       </div>
 
-<p>Deletes a message tag.</p><h2 id="delete_message_tag/1-examples" class="section-heading">
-  <a href="#delete_message_tag/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
-  Examples
-</h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_tag</span><span class="p" data-group-id="3594285720-1">(</span><span class="n">message_tag</span><span class="p" data-group-id="3594285720-1">)</span><span class="w">
-</span><span class="p" data-group-id="3594285720-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3594285720-3">%</span><span class="nc" data-group-id="3594285720-3">MessageTag</span><span class="p" data-group-id="3594285720-3">{</span><span class="p" data-group-id="3594285720-3">}</span><span class="p" data-group-id="3594285720-2">}</span><span class="w">
-
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_tag</span><span class="p" data-group-id="3594285720-4">(</span><span class="n">message_tag</span><span class="p" data-group-id="3594285720-4">)</span><span class="w">
-</span><span class="p" data-group-id="3594285720-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3594285720-6">%</span><span class="nc" data-group-id="3594285720-6">Ecto.Changeset</span><span class="p" data-group-id="3594285720-6">{</span><span class="p" data-group-id="3594285720-6">}</span><span class="p" data-group-id="3594285720-5">}</span></code></pre>  </section>
+<p>Deletes a list of contact tags, each tag attached to the same contact</p>  </section>
 </section>
-<section class="detail" id="delete_message_tag_by_ids/2">
+<section class="detail" id="delete_message_tag_by_ids/3">
   <div class="detail-header">
-    <a href="#delete_message_tag_by_ids/2" class="detail-link" title="Link to this function">
+    <a href="#delete_message_tag_by_ids/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">delete_message_tag_by_ids(message_id, tag_id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L255" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">delete_message_tag_by_ids(message_id, tag_ids, organization_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L286" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -514,8 +501,8 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>delete_message_tag_by_ids(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), nil | [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()]}</pre>
-          <pre>delete_message_tag_by_ids(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), []) :: {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), nil | [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()]}</pre>
+          <pre>delete_message_tag_by_ids(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), [], <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) ::
+  {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), nil | [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()]}</pre>
       </div>
 
 <p>In Join tables we rarely use the table id. We always know the object ids
@@ -530,7 +517,7 @@ handle on how to do so :)</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete_tag(tag)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L99" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L125" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -540,18 +527,60 @@ handle on how to do so :)</p>  </section>
       <h2>Specs</h2>
       <div class="specs">
           <pre>delete_tag(<a href="Glific.Tags.Tag.html#t:t/0">Glific.Tags.Tag.t</a>()) ::
-  {:ok, <a href="Glific.Tags.Tag.html#t:t/0">Glific.Tags.Tag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Tags.Tag.html#t:t/0">Glific.Tags.Tag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Deletes a tag.</p><h2 id="delete_tag/1-examples" class="section-heading">
   <a href="#delete_tag/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_tag</span><span class="p" data-group-id="3093687556-1">(</span><span class="n">tag</span><span class="p" data-group-id="3093687556-1">)</span><span class="w">
-</span><span class="p" data-group-id="3093687556-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3093687556-3">%</span><span class="nc" data-group-id="3093687556-3">Tag</span><span class="p" data-group-id="3093687556-3">{</span><span class="p" data-group-id="3093687556-3">}</span><span class="p" data-group-id="3093687556-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_tag</span><span class="p" data-group-id="8573825989-1">(</span><span class="n">tag</span><span class="p" data-group-id="8573825989-1">)</span><span class="w">
+</span><span class="p" data-group-id="8573825989-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8573825989-3">%</span><span class="nc" data-group-id="8573825989-3">Tag</span><span class="p" data-group-id="8573825989-3">{</span><span class="p" data-group-id="8573825989-3">}</span><span class="p" data-group-id="8573825989-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_tag</span><span class="p" data-group-id="3093687556-4">(</span><span class="n">tag</span><span class="p" data-group-id="3093687556-4">)</span><span class="w">
-</span><span class="p" data-group-id="3093687556-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3093687556-6">%</span><span class="nc" data-group-id="3093687556-6">Ecto.Changeset</span><span class="p" data-group-id="3093687556-6">{</span><span class="p" data-group-id="3093687556-6">}</span><span class="p" data-group-id="3093687556-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_tag</span><span class="p" data-group-id="8573825989-4">(</span><span class="n">tag</span><span class="p" data-group-id="8573825989-4">)</span><span class="w">
+</span><span class="p" data-group-id="8573825989-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8573825989-6">%</span><span class="nc" data-group-id="8573825989-6">Ecto.Changeset</span><span class="p" data-group-id="8573825989-6">{</span><span class="p" data-group-id="8573825989-6">}</span><span class="p" data-group-id="8573825989-5">}</span></code></pre>  </section>
+</section>
+<section class="detail" id="delete_template_tag_by_ids/2">
+  <div class="detail-header">
+    <a href="#delete_template_tag_by_ids/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_template_tag_by_ids(template_id, tag_ids)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L468" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>delete_template_tag_by_ids(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), []) :: {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), nil | [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()]}</pre>
+      </div>
+
+<p>Deletes a list of template tags, each tag attached to the same template</p>  </section>
+</section>
+<section class="detail" id="get_all_children/2">
+  <div class="detail-header">
+    <a href="#get_all_children/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_all_children(shortcode, organization_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L200" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>get_all_children(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: [<a href="Glific.Tags.Tag.html#t:t/0">Glific.Tags.Tag.t</a>()]</pre>
+      </div>
+
+<p>Given a shortcode of tag, retrieve all the children for the tag</p>  </section>
 </section>
 <section class="detail" id="get_contact_tag!/1">
   <div class="detail-header">
@@ -560,7 +589,7 @@ handle on how to do so :)</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_contact_tag!(id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L311" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L326" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -572,14 +601,14 @@ handle on how to do so :)</p>  </section>
           <pre>get_contact_tag!(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="Glific.Tags.ContactTag.html#t:t/0">Glific.Tags.ContactTag.t</a>()</pre>
       </div>
 
-<p>Gets a single contact.</p><p>Raises <a href="https://hexdocs.pm/ecto/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Contact does not exist.</p><h2 id="get_contact_tag!/1-examples" class="section-heading">
+<p>Gets a single contact.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Contact does not exist.</p><h2 id="get_contact_tag!/1-examples" class="section-heading">
   <a href="#get_contact_tag!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_contact_tag!</span><span class="p" data-group-id="6394664952-1">(</span><span class="mi">123</span><span class="p" data-group-id="6394664952-1">)</span><span class="w">
-</span><span class="p" data-group-id="6394664952-2">%</span><span class="nc" data-group-id="6394664952-2">Contact</span><span class="p" data-group-id="6394664952-2">{</span><span class="p" data-group-id="6394664952-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_contact_tag!</span><span class="p" data-group-id="9725946091-1">(</span><span class="mi">123</span><span class="p" data-group-id="9725946091-1">)</span><span class="w">
+</span><span class="p" data-group-id="9725946091-2">%</span><span class="nc" data-group-id="9725946091-2">Contact</span><span class="p" data-group-id="9725946091-2">{</span><span class="p" data-group-id="9725946091-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_contact_tag!</span><span class="p" data-group-id="6394664952-3">(</span><span class="mi">456</span><span class="p" data-group-id="6394664952-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_contact_tag!</span><span class="p" data-group-id="9725946091-3">(</span><span class="mi">456</span><span class="p" data-group-id="9725946091-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_message_tag!/1">
@@ -589,7 +618,7 @@ handle on how to do so :)</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_message_tag!(id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L188" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L227" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -601,14 +630,14 @@ handle on how to do so :)</p>  </section>
           <pre>get_message_tag!(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>()</pre>
       </div>
 
-<p>Gets a single message.</p><p>Raises <a href="https://hexdocs.pm/ecto/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Message does not exist.</p><h2 id="get_message_tag!/1-examples" class="section-heading">
+<p>Gets a single message.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Message does not exist.</p><h2 id="get_message_tag!/1-examples" class="section-heading">
   <a href="#get_message_tag!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_message_tag!</span><span class="p" data-group-id="9215022920-1">(</span><span class="mi">123</span><span class="p" data-group-id="9215022920-1">)</span><span class="w">
-</span><span class="p" data-group-id="9215022920-2">%</span><span class="nc" data-group-id="9215022920-2">Message</span><span class="p" data-group-id="9215022920-2">{</span><span class="p" data-group-id="9215022920-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_message_tag!</span><span class="p" data-group-id="7304371678-1">(</span><span class="mi">123</span><span class="p" data-group-id="7304371678-1">)</span><span class="w">
+</span><span class="p" data-group-id="7304371678-2">%</span><span class="nc" data-group-id="7304371678-2">Message</span><span class="p" data-group-id="7304371678-2">{</span><span class="p" data-group-id="7304371678-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message_tag!</span><span class="p" data-group-id="9215022920-3">(</span><span class="mi">456</span><span class="p" data-group-id="9215022920-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message_tag!</span><span class="p" data-group-id="7304371678-3">(</span><span class="mi">456</span><span class="p" data-group-id="7304371678-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
 <section class="detail" id="get_tag!/1">
@@ -618,7 +647,7 @@ handle on how to do so :)</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_tag!(id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L46" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L56" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -630,24 +659,24 @@ handle on how to do so :)</p>  </section>
           <pre>get_tag!(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="Glific.Tags.Tag.html#t:t/0">Glific.Tags.Tag.t</a>()</pre>
       </div>
 
-<p>Gets a single tag.</p><p>Raises <a href="https://hexdocs.pm/ecto/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Tag does not exist.</p><h2 id="get_tag!/1-examples" class="section-heading">
+<p>Gets a single tag.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Tag does not exist.</p><h2 id="get_tag!/1-examples" class="section-heading">
   <a href="#get_tag!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_tag!</span><span class="p" data-group-id="4033285119-1">(</span><span class="mi">123</span><span class="p" data-group-id="4033285119-1">)</span><span class="w">
-</span><span class="p" data-group-id="4033285119-2">%</span><span class="nc" data-group-id="4033285119-2">Tag</span><span class="p" data-group-id="4033285119-2">{</span><span class="p" data-group-id="4033285119-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_tag!</span><span class="p" data-group-id="3704292963-1">(</span><span class="mi">123</span><span class="p" data-group-id="3704292963-1">)</span><span class="w">
+</span><span class="p" data-group-id="3704292963-2">%</span><span class="nc" data-group-id="3704292963-2">Tag</span><span class="p" data-group-id="3704292963-2">{</span><span class="p" data-group-id="3704292963-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_tag!</span><span class="p" data-group-id="4033285119-3">(</span><span class="mi">456</span><span class="p" data-group-id="4033285119-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_tag!</span><span class="p" data-group-id="3704292963-3">(</span><span class="mi">456</span><span class="p" data-group-id="3704292963-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
 </section>
-<section class="detail" id="keyword_map/0">
+<section class="detail" id="include_all_ancestors/1">
   <div class="detail-header">
-    <a href="#keyword_map/0" class="detail-link" title="Link to this function">
+    <a href="#include_all_ancestors/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">keyword_map()</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L123" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">include_all_ancestors(tag_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L183" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -656,20 +685,21 @@ handle on how to do so :)</p>  </section>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>keyword_map() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+          <pre>include_all_ancestors(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()]) :: [
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()
+]</pre>
       </div>
 
-<p>  Converts all tag kewords into the map where keyword is the key and tag id is the value</p>  </section>
+<p>Given a tag id or a list of tag ids, retrieve all the ancestors for the list_tags</p>  </section>
 </section>
-<section class="detail" id="list_contacts_tags/1">
-    <span id="list_contacts_tags/0"></span>
+<section class="detail" id="keyword_map/1">
   <div class="detail-header">
-    <a href="#list_contacts_tags/1" class="detail-link" title="Link to this function">
+    <a href="#keyword_map/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">list_contacts_tags(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L292" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">keyword_map(map)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L149" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -678,52 +708,19 @@ handle on how to do so :)</p>  </section>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>list_contacts_tags(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Tags.ContactTag.html#t:t/0">Glific.Tags.ContactTag.t</a>()]</pre>
+          <pre>keyword_map(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
       </div>
 
-<p>Returns the list of contacts tags.</p><h2 id="list_contacts_tags/1-examples" class="section-heading">
-  <a href="#list_contacts_tags/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
-  Examples
-</h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_contacts_tags</span><span class="p" data-group-id="3347928723-1">(</span><span class="p" data-group-id="3347928723-1">)</span><span class="w">
-</span><span class="p" data-group-id="3347928723-2">[</span><span class="p" data-group-id="3347928723-3">%</span><span class="nc" data-group-id="3347928723-3">ContactTag</span><span class="p" data-group-id="3347928723-3">{</span><span class="p" data-group-id="3347928723-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="3347928723-2">]</span></code></pre>  </section>
-</section>
-<section class="detail" id="list_messages_tags/1">
-    <span id="list_messages_tags/0"></span>
-  <div class="detail-header">
-    <a href="#list_messages_tags/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">list_messages_tags(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L169" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-  </div>
-
-  <section class="docstring">
-      <h2>Specs</h2>
-      <div class="specs">
-          <pre>list_messages_tags(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>()]</pre>
-      </div>
-
-<p>Returns the list of messages tags.</p><h2 id="list_messages_tags/1-examples" class="section-heading">
-  <a href="#list_messages_tags/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
-  Examples
-</h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages_tags</span><span class="p" data-group-id="9120293763-1">(</span><span class="p" data-group-id="9120293763-1">)</span><span class="w">
-</span><span class="p" data-group-id="9120293763-2">[</span><span class="p" data-group-id="9120293763-3">%</span><span class="nc" data-group-id="9120293763-3">MessageTag</span><span class="p" data-group-id="9120293763-3">{</span><span class="p" data-group-id="9120293763-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="9120293763-2">]</span></code></pre>  </section>
+<p>Converts all tag kewords into the map where keyword is the key and tag id is the value</p>  </section>
 </section>
 <section class="detail" id="list_tags/1">
-    <span id="list_tags/0"></span>
   <div class="detail-header">
     <a href="#list_tags/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">list_tags(args \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L21" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">list_tags(args)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L31" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -739,17 +736,17 @@ handle on how to do so :)</p>  </section>
   <a href="#list_tags/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_tags</span><span class="p" data-group-id="3855922981-1">(</span><span class="p" data-group-id="3855922981-1">)</span><span class="w">
-</span><span class="p" data-group-id="3855922981-2">[</span><span class="p" data-group-id="3855922981-3">%</span><span class="nc" data-group-id="3855922981-3">Tag</span><span class="p" data-group-id="3855922981-3">{</span><span class="p" data-group-id="3855922981-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="3855922981-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_tags</span><span class="p" data-group-id="0640552859-1">(</span><span class="p" data-group-id="0640552859-1">)</span><span class="w">
+</span><span class="p" data-group-id="0640552859-2">[</span><span class="p" data-group-id="0640552859-3">%</span><span class="nc" data-group-id="0640552859-3">Tag</span><span class="p" data-group-id="0640552859-3">{</span><span class="p" data-group-id="0640552859-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="0640552859-2">]</span></code></pre>  </section>
 </section>
-<section class="detail" id="remove_tag_from_all_message/2">
+<section class="detail" id="remove_tag_from_all_message/3">
   <div class="detail-header">
-    <a href="#remove_tag_from_all_message/2" class="detail-link" title="Link to this function">
+    <a href="#remove_tag_from_all_message/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">remove_tag_from_all_message(contact_id, tag_label)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L390" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">remove_tag_from_all_message(contact_id, tag_shortcode, organization_id)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L393" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -758,20 +755,21 @@ handle on how to do so :)</p>  </section>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>remove_tag_from_all_message(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()</pre>
-          <pre>remove_tag_from_all_message(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()</pre>
+          <pre>remove_tag_from_all_message(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()</pre>
+          <pre>remove_tag_from_all_message(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()], <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) ::
+  <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()</pre>
       </div>
 
-<p>  Remove a specific tag from contact messages</p>  </section>
+<p>Remove a specific tag from contact messages</p>  </section>
 </section>
-<section class="detail" id="status_map/0">
+<section class="detail" id="status_map/1">
   <div class="detail-header">
-    <a href="#status_map/0" class="detail-link" title="Link to this function">
+    <a href="#status_map/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">status_map()</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L143" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">status_map(map)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L170" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -780,32 +778,10 @@ handle on how to do so :)</p>  </section>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>status_map() :: %{required(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}</pre>
+          <pre>status_map(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: %{required(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}</pre>
       </div>
 
 <p>Filter all the status tag and returns as a map</p>  </section>
-</section>
-<section class="detail" id="tags_map/1">
-  <div class="detail-header">
-    <a href="#tags_map/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">tags_map(tags)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L151" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-  </div>
-
-  <section class="docstring">
-      <h2>Specs</h2>
-      <div class="specs">
-          <pre>tags_map([<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]) :: %{required(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}</pre>
-      </div>
-
-<p>Generic function to build a tag map for easy queries. Suspect we'll need it
-for all objects soon, and will promote this to Repo</p>  </section>
 </section>
 <section class="detail" id="update_contact_tag/2">
   <div class="detail-header">
@@ -814,7 +790,7 @@ for all objects soon, and will promote this to Repo</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_contact_tag(contact_tag, attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L349" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L369" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -824,18 +800,18 @@ for all objects soon, and will promote this to Repo</p>  </section>
       <h2>Specs</h2>
       <div class="specs">
           <pre>update_contact_tag(<a href="Glific.Tags.ContactTag.html#t:t/0">Glific.Tags.ContactTag.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Tags.ContactTag.html#t:t/0">Glific.Tags.ContactTag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Tags.ContactTag.html#t:t/0">Glific.Tags.ContactTag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Updates a contact tag.</p><h2 id="update_contact_tag/2-examples" class="section-heading">
   <a href="#update_contact_tag/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_contact_tag</span><span class="p" data-group-id="0141326711-1">(</span><span class="n">contact_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0141326711-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="0141326711-2">}</span><span class="p" data-group-id="0141326711-1">)</span><span class="w">
-</span><span class="p" data-group-id="0141326711-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0141326711-4">%</span><span class="nc" data-group-id="0141326711-4">ContactTag</span><span class="p" data-group-id="0141326711-4">{</span><span class="p" data-group-id="0141326711-4">}</span><span class="p" data-group-id="0141326711-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_contact_tag</span><span class="p" data-group-id="4760716764-1">(</span><span class="n">contact_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4760716764-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="4760716764-2">}</span><span class="p" data-group-id="4760716764-1">)</span><span class="w">
+</span><span class="p" data-group-id="4760716764-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4760716764-4">%</span><span class="nc" data-group-id="4760716764-4">ContactTag</span><span class="p" data-group-id="4760716764-4">{</span><span class="p" data-group-id="4760716764-4">}</span><span class="p" data-group-id="4760716764-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_contact_tag</span><span class="p" data-group-id="0141326711-5">(</span><span class="n">contact_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0141326711-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0141326711-6">}</span><span class="p" data-group-id="0141326711-5">)</span><span class="w">
-</span><span class="p" data-group-id="0141326711-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0141326711-8">%</span><span class="nc" data-group-id="0141326711-8">Ecto.Changeset</span><span class="p" data-group-id="0141326711-8">{</span><span class="p" data-group-id="0141326711-8">}</span><span class="p" data-group-id="0141326711-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_contact_tag</span><span class="p" data-group-id="4760716764-5">(</span><span class="n">contact_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4760716764-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4760716764-6">}</span><span class="p" data-group-id="4760716764-5">)</span><span class="w">
+</span><span class="p" data-group-id="4760716764-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4760716764-8">%</span><span class="nc" data-group-id="4760716764-8">Ecto.Changeset</span><span class="p" data-group-id="4760716764-8">{</span><span class="p" data-group-id="4760716764-8">}</span><span class="p" data-group-id="4760716764-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="update_message_tag/2">
   <div class="detail-header">
@@ -844,7 +820,7 @@ for all objects soon, and will promote this to Repo</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_message_tag(message_tag, attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L225" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L273" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -854,18 +830,18 @@ for all objects soon, and will promote this to Repo</p>  </section>
       <h2>Specs</h2>
       <div class="specs">
           <pre>update_message_tag(<a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Tags.MessageTag.html#t:t/0">Glific.Tags.MessageTag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Updates a message tag.</p><h2 id="update_message_tag/2-examples" class="section-heading">
   <a href="#update_message_tag/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_message_tag</span><span class="p" data-group-id="1128972347-1">(</span><span class="n">message_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1128972347-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="1128972347-2">}</span><span class="p" data-group-id="1128972347-1">)</span><span class="w">
-</span><span class="p" data-group-id="1128972347-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1128972347-4">%</span><span class="nc" data-group-id="1128972347-4">MessageTag</span><span class="p" data-group-id="1128972347-4">{</span><span class="p" data-group-id="1128972347-4">}</span><span class="p" data-group-id="1128972347-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_message_tag</span><span class="p" data-group-id="5013160407-1">(</span><span class="n">message_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5013160407-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="5013160407-2">}</span><span class="p" data-group-id="5013160407-1">)</span><span class="w">
+</span><span class="p" data-group-id="5013160407-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5013160407-4">%</span><span class="nc" data-group-id="5013160407-4">MessageTag</span><span class="p" data-group-id="5013160407-4">{</span><span class="p" data-group-id="5013160407-4">}</span><span class="p" data-group-id="5013160407-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message_tag</span><span class="p" data-group-id="1128972347-5">(</span><span class="n">message_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1128972347-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1128972347-6">}</span><span class="p" data-group-id="1128972347-5">)</span><span class="w">
-</span><span class="p" data-group-id="1128972347-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1128972347-8">%</span><span class="nc" data-group-id="1128972347-8">Ecto.Changeset</span><span class="p" data-group-id="1128972347-8">{</span><span class="p" data-group-id="1128972347-8">}</span><span class="p" data-group-id="1128972347-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message_tag</span><span class="p" data-group-id="5013160407-5">(</span><span class="n">message_tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5013160407-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5013160407-6">}</span><span class="p" data-group-id="5013160407-5">)</span><span class="w">
+</span><span class="p" data-group-id="5013160407-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5013160407-8">%</span><span class="nc" data-group-id="5013160407-8">Ecto.Changeset</span><span class="p" data-group-id="5013160407-8">{</span><span class="p" data-group-id="5013160407-8">}</span><span class="p" data-group-id="5013160407-7">}</span></code></pre>  </section>
 </section>
 <section class="detail" id="update_tag/2">
   <div class="detail-header">
@@ -874,7 +850,7 @@ for all objects soon, and will promote this to Repo</p>  </section>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_tag(tag, attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L80" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/tags.ex#L104" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -884,18 +860,18 @@ for all objects soon, and will promote this to Repo</p>  </section>
       <h2>Specs</h2>
       <div class="specs">
           <pre>update_tag(<a href="Glific.Tags.Tag.html#t:t/0">Glific.Tags.Tag.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Tags.Tag.html#t:t/0">Glific.Tags.Tag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Tags.Tag.html#t:t/0">Glific.Tags.Tag.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
       </div>
 
 <p>Updates a tag.</p><h2 id="update_tag/2-examples" class="section-heading">
   <a href="#update_tag/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_tag</span><span class="p" data-group-id="0171607562-1">(</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0171607562-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="0171607562-2">}</span><span class="p" data-group-id="0171607562-1">)</span><span class="w">
-</span><span class="p" data-group-id="0171607562-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0171607562-4">%</span><span class="nc" data-group-id="0171607562-4">Tag</span><span class="p" data-group-id="0171607562-4">{</span><span class="p" data-group-id="0171607562-4">}</span><span class="p" data-group-id="0171607562-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_tag</span><span class="p" data-group-id="0204494875-1">(</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0204494875-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="0204494875-2">}</span><span class="p" data-group-id="0204494875-1">)</span><span class="w">
+</span><span class="p" data-group-id="0204494875-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0204494875-4">%</span><span class="nc" data-group-id="0204494875-4">Tag</span><span class="p" data-group-id="0204494875-4">{</span><span class="p" data-group-id="0204494875-4">}</span><span class="p" data-group-id="0204494875-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_tag</span><span class="p" data-group-id="0171607562-5">(</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0171607562-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0171607562-6">}</span><span class="p" data-group-id="0171607562-5">)</span><span class="w">
-</span><span class="p" data-group-id="0171607562-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0171607562-8">%</span><span class="nc" data-group-id="0171607562-8">Ecto.Changeset</span><span class="p" data-group-id="0171607562-8">{</span><span class="p" data-group-id="0171607562-8">}</span><span class="p" data-group-id="0171607562-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_tag</span><span class="p" data-group-id="0204494875-5">(</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0204494875-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0204494875-6">}</span><span class="p" data-group-id="0204494875-5">)</span><span class="w">
+</span><span class="p" data-group-id="0204494875-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0204494875-8">%</span><span class="nc" data-group-id="0204494875-8">Ecto.Changeset</span><span class="p" data-group-id="0204494875-8">{</span><span class="p" data-group-id="0204494875-8">}</span><span class="p" data-group-id="0204494875-7">}</span></code></pre>  </section>
 </section>
           </div>
         </section>
@@ -903,14 +879,16 @@ for all objects soon, and will promote this to Repo</p>  </section>
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>

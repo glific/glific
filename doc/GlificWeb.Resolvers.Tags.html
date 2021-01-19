@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>GlificWeb.Resolvers.Tags — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>GlificWeb.Resolvers.Tags — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,8 +63,8 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        <small class="app-vsn">Glific v0.2.0</small>
-GlificWeb.Resolvers.Tags          <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/tags.ex#L1" title="View Source" class="view-source" rel="help">
+        GlificWeb.Resolvers.Tags <small class="app-vsn">(Glific v0.9.4)</small>
+          <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/tags.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
@@ -95,7 +95,13 @@ one or more calls to resolve the incoming queries.</p>        </section>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#tag/3">tag(_, map, _)</a>
+    <a href="#create_template_tag/3">create_template_tag(_, map, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Create entry for tag mapped to template</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#tag/3">tag(_, map1, map2)</a>
   </div>
     <div class="summary-synopsis"><p>Get a specific tag by id</p></div>
 </div>
@@ -104,6 +110,18 @@ one or more calls to resolve the incoming queries.</p>        </section>
     <a href="#tags/3">tags(_, args, _)</a>
   </div>
     <div class="summary-synopsis"><p>Get the list of tags filtered by args</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_contact_tags/3">update_contact_tags(_, map, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Creates and/or deletes a list of contact tags, each tag attached to the same contact</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_template_tags/3">update_template_tags(_, map, _)</a>
+  </div>
+    <div class="summary-synopsis"><p>Creates and/or deletes a list of template tags, each tag attached to the same template</p></div>
 </div>
   </div>
         </section>
@@ -123,7 +141,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">count_tags(_, args, _)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/tags.ex#L32" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/tags.ex#L31" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -132,11 +150,33 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>count_tags(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+          <pre>count_tags(<a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
   {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}</pre>
       </div>
 
 <p>Get the count of tags filtered by args</p>  </section>
+</section>
+<section class="detail" id="create_template_tag/3">
+  <div class="detail-header">
+    <a href="#create_template_tag/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_template_tag(_, map, _)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/tags.ex#L120" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>create_template_tag(<a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{input: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Create entry for tag mapped to template</p>  </section>
 </section>
 <section class="detail" id="tag/3">
   <div class="detail-header">
@@ -144,8 +184,8 @@ Functions          </h1>
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">tag(_, map, _)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/tags.ex#L15" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">tag(_, map1, map2)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/tags.ex#L14" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -154,7 +194,7 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>tag(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+          <pre>tag(<a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
   {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
       </div>
 
@@ -167,7 +207,7 @@ Functions          </h1>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">tags(_, args, _)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/tags.ex#L24" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/tags.ex#L23" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -176,11 +216,55 @@ Functions          </h1>
   <section class="docstring">
       <h2>Specs</h2>
       <div class="specs">
-          <pre>tags(<a href="https://hexdocs.pm/absinthe/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+          <pre>tags(<a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
   {:ok, [Glific.Tags.Tag]}</pre>
       </div>
 
 <p>Get the list of tags filtered by args</p>  </section>
+</section>
+<section class="detail" id="update_contact_tags/3">
+  <div class="detail-header">
+    <a href="#update_contact_tags/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_contact_tags(_, map, _)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/tags.ex#L96" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>update_contact_tags(<a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{input: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Creates and/or deletes a list of contact tags, each tag attached to the same contact</p>  </section>
+</section>
+<section class="detail" id="update_template_tags/3">
+  <div class="detail-header">
+    <a href="#update_template_tags/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_template_tags(_, map, _)</h1>
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/tags.ex#L131" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+  </div>
+
+  <section class="docstring">
+      <h2>Specs</h2>
+      <div class="specs">
+          <pre>update_template_tags(<a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{input: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+      </div>
+
+<p>Creates and/or deletes a list of template tags, each tag attached to the same template</p>  </section>
 </section>
           </div>
         </section>
@@ -188,14 +272,16 @@ Functions          </h1>
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>

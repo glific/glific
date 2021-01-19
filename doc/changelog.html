@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.22.2">
-    <meta name="project" content="Glific v0.2.0">
-    <title>Changelog — Glific v0.2.0</title>
-    <link rel="stylesheet" href="dist/elixir-d678dad126d82ddc061f.css" />
-    <script src="dist/sidebar_items-36aabe96b3.js"></script>
+    <meta name="generator" content="ExDoc v0.23.0">
+    <meta name="project" content="Glific v0.9.4">
+    <title>Changelog — Glific v0.9.4</title>
+    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <script src="dist/sidebar_items-3ad871d56d.js"></script>
       <script src="docs_config.js"></script>
-    <script async src="dist/app-0103364119015b97e56c.js"></script>
+    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
   </head>
   <body data-type="extras">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
@@ -22,14 +22,14 @@
 
 <section class="sidebar">
   <form class="sidebar-search" action="search.html">
-    <button type="submit" class="search-button">
-      <span class="icon-search" aria-hidden="true"></span>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
     </button>
-    <button type="button" tabindex="-1" class="search-close-button">
-      <span class="icon-cross" title="Cancel search"></span>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -42,9 +42,9 @@
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
 Glific      </a>
-      <h2 class="sidebar-projectVersion">
-        v0.2.0
-      </h2>
+      <strong class="sidebar-projectVersion">
+        v0.9.4
+      </strong>
     </div>
   </div>
 
@@ -63,34 +63,180 @@ Glific      </a>
     <div id="content" class="content-inner">
 
 <h1>Changelog</h1><p>All notable changes to this project will be documented in this file.</p><p>The format is based on <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>,
-and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p><h2 id="unreleased" class="section-heading">
-  <a href="#unreleased" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
-  [Unreleased]
+and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p><h2 id="0-9-2-2021-01-11" class="section-heading">
+  <a href="#0-9-2-2021-01-11" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.9.2] - 2021-01-11
 </h2>
 <h3 id="added" class="section-heading">
   <a href="#added" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Added
 </h3>
-<ul><li>Core Glific DB Structure</li><li>Phoenix Schema and Context Structure</li><li>GraphQL API as main interface to the core platform</li><li>Integration with 3rd party communication providers</li><li>Unit Tests for all glific code with 90%+ code and documentation coverage</li><li>CI system via GitHub Actions</li><li>Community documentation (README, LICENSE, CHANGELOG, CODE_OF_CONDUCT)</li></ul><h2 id="0-1-2020-07-03" class="section-heading">
-  <a href="#0-1-2020-07-03" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
-  [0.1] - 2020-07-03
+<ul><li>Support for location in messages</li><li>Status in Webhook logs</li><li>Support for filtering webhook logs with part URL</li><li>Updated Seeder for dev<h3 id="fixed" class="section-heading">
+  <a href="#fixed" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Fixed
+</h3>
+</li><li>Optimizing organization subscription by checking for active organizations</li><li>Updating all HSM templates<h2 id="0-9-1-2021-01-06" class="section-heading">
+  <a href="#0-9-1-2021-01-06" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.9.1] - 2021-01-06
 </h2>
 <h3 id="added-1" class="section-heading">
   <a href="#added-1" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Added
 </h3>
-      <footer class="footer">
+</li><li>Support in flow engine for &quot;wait for time&quot; node</li><li>Upgrade elixir packages to latest version</li></ul><h3 id="fixed-1" class="section-heading">
+  <a href="#fixed-1" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Fixed
+</h3>
+<ul><li>Fixed contact field with name containing underscore<h2 id="0-9-0-2021-01-04" class="section-heading">
+  <a href="#0-9-0-2021-01-04" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.9.0] - 2021-01-04
+</h2>
+<h3 id="added-2" class="section-heading">
+  <a href="#added-2" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Added
+</h3>
+</li><li>Support for &quot;wait for time&quot; node</li><li>Updating Flow results that were updated in last 90 mins</li><li>Support for sending media HSMs</li><li>Support for showing webhook logs</li></ul><h3 id="fixed-2" class="section-heading">
+  <a href="#fixed-2" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Fixed
+</h3>
+<ul><li>Fixed issue of contact field being saved to Bigquery with label as nil</li><li>Fixed appsignal errors<h2 id="0-8-7-2020-12-28" class="section-heading">
+  <a href="#0-8-7-2020-12-28" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.8.7] - 2020-12-28
+</h2>
+<h3 id="added-3" class="section-heading">
+  <a href="#added-3" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Added
+</h3>
+</li><li>Store messages sent to group in messages table</li><li>API to retrieve group conversations</li><li>flow_context id to flow results table so we store each run through the flow</li></ul><h2 id="0-8-6-2020-12-22" class="section-heading">
+  <a href="#0-8-6-2020-12-22" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.8.6] - 2020-12-22
+</h2>
+<h3 id="added-4" class="section-heading">
+  <a href="#added-4" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Added
+</h3>
+<ul><li>Stir usecase, computing score based on answers of survey</li><li>Stir usecase, returning list of wrongly answered</li><li>Support for message variable parser</li><li>Support for fetching hsm templates from gupshup periodically</li></ul><h3 id="fixed-3" class="section-heading">
+  <a href="#fixed-3" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Fixed
+</h3>
+<ul><li>fixed message variable parsing in webhook, route and contact field</li><li>Using dot syntax in webhook results</li></ul><h2 id="0-8-5-2020-12-17" class="section-heading">
+  <a href="#0-8-5-2020-12-17" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.8.5] - 2020-12-17
+</h2>
+<h3 id="added-5" class="section-heading">
+  <a href="#added-5" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Added
+</h3>
+<ul><li>Support for retrieving HSM messages from gupshup</li><li>Switched to new API to send HSM messages</li></ul><h2 id="0-8-4-2020-12-15" class="section-heading">
+  <a href="#0-8-4-2020-12-15" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.8.4] - 2020-12-15
+</h2>
+<h3 id="added-6" class="section-heading">
+  <a href="#added-6" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Added
+</h3>
+<ul><li>Rescheduling oban jobs in case of failure for ensuring data archival</li><li>Added Check for bigquery tables and dataset in case of Bigquery Jobs failure</li><li>Clearing cache on encrypting data with new key</li><li>Adding custom data as JSON in Webhook</li></ul><h3 id="fixed-4" class="section-heading">
+  <a href="#fixed-4" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Fixed
+</h3>
+<ul><li>Webhook fixes</li><li>Fetching all details for bigquery integration from single JSON</li><li>Cloak Key migration fixes</li></ul><h2 id="0-8-3-2020-12-08" class="section-heading">
+  <a href="#0-8-3-2020-12-08" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.8.3] - 2020-12-08
+</h2>
+<h3 id="added-7" class="section-heading">
+  <a href="#added-7" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Added
+</h3>
+<ul><li>Support for translations in templates</li><li>Attachment support for various translations in flow editor and templates</li><li>Cannot block simulator contact anymore.</li><li>UI/UX enhancements<ul><li>Added opt-in instructions on the registration page</li><li>Timer display corrections</li><li>Automations are renamed to &quot;Flows&quot;</li></ul></li></ul><h3 id="fixed-5" class="section-heading">
+  <a href="#fixed-5" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Fixed
+</h3>
+<ul><li>Tweak settings in AppSignal to ignore DB queries</li></ul><h2 id="0-8-2-2020-12-07" class="section-heading">
+  <a href="#0-8-2-2020-12-07" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.8.2] - 2020-12-07
+</h2>
+<h3 id="added-8" class="section-heading">
+  <a href="#added-8" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Added
+</h3>
+<ul><li>Add caches expiration and refreshes support for keeping check that only frequently used data is cached.</li><li>Added logging for tracking various events</li><li>Added has all words option in automation for user responded messages.</li><li>Archiving Flow results in Bigquery</li><li>Stickers have transparent background</li><li>Placeholder in chat input</li><li>Upgrade to 2.0 version of AppSignal</li></ul><h3 id="fixed-6" class="section-heading">
+  <a href="#fixed-6" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Fixed
+</h3>
+<ul><li>High memory utilization problem</li><li>Flow keyword issue, saving clean strings</li><li>Saving only recent five messages in flow recent messages</li><li>Autosave calls after moving away from flow configure screen</li></ul><h2 id="0-8-0-and-prior-2020-12-01" class="section-heading">
+  <a href="#0-8-0-and-prior-2020-12-01" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.8.0 and prior] - 2020-12-01
+</h2>
+<h3 id="added-9" class="section-heading">
+  <a href="#added-9" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Added
+</h3>
+<ul><li>Attachment support from the chat window</li><li>Sticker Support in messages</li><li>Send Media HSM templates from flow editor</li><li>Showing BSP balance on the dashboard</li><li>Added flows information on the bigquery</li><li>Mask phone numbers in the profile page</li><li>Sync contact fields in Bigquery</li><li>Archiving Flows in Bigquery</li><li>Media HSM files</li><li>Showing BSP balance on the dashboard</li><li>Updated Documentation</li></ul><h3 id="fixed-7" class="section-heading">
+  <a href="#fixed-7" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Fixed
+</h3>
+<ul><li>Fixed login timeout issue.</li><li>Update the readme file</li><li>Adding contact to group from automation</li></ul><h2 id="0-7-3-2020-11-30" class="section-heading">
+  <a href="#0-7-3-2020-11-30" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.7.3] - 2020-11-30
+</h2>
+<h3 id="added-10" class="section-heading">
+  <a href="#added-10" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Added
+</h3>
+<ul><li>Logging high level actions</li><li>Attachment support to sending messages in frontend</li><li>Support for stickers type</li><li>Support in BigQuery for updating contacts, messages and new tables for flows, groups.</li></ul><h3 id="changed" class="section-heading">
+  <a href="#changed" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Changed
+</h3>
+<ul><li>Removed most of the standard flows from production</li></ul><h3 id="fixed-8" class="section-heading">
+  <a href="#fixed-8" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Fixed
+</h3>
+<ul><li>Improved support for rate limiting when communicating with Gupshup</li><li>Upgraded floweditor version</li></ul><h2 id="0-7-2-2020-11-23" class="section-heading">
+  <a href="#0-7-2-2020-11-23" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.7.2] - 2020-11-23
+</h2>
+<h3 id="added-11" class="section-heading">
+  <a href="#added-11" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Added
+</h3>
+<ul><li>Support for webhooks (preliminary)</li><li>Support for permissioning at the staff level</li><li>Display of remaining budget on Gupshup</li><li>Support for HSM's including Quick Reply and Call to Action</li></ul><h3 id="fixed-9" class="section-heading">
+  <a href="#fixed-9" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Fixed
+</h3>
+<ul><li>Keywords for flows are now all lowercase</li></ul><h2 id="0-7-1-and-prior-2020-11-16" class="section-heading">
+  <a href="#0-7-1-and-prior-2020-11-16" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.7.1 and prior] - 2020-11-16
+</h2>
+<h3 id="added-12" class="section-heading">
+  <a href="#added-12" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Added
+</h3>
+<ul><li>Core Glific DB Structure and functionality</li><li>Phoenix Schema and Context Structure</li><li>GraphQL API as main interface to the core platform</li><li>User Authentication and Permissioning</li><li>Tags, Collections, Conversations, Groups as core building blocks</li><li>Settings to store and manage credentials of various services</li><li>Integration with 3rd party communication providers</li><li>Unit Tests for all glific code with 80%+ code and documentation coverage</li><li>CI system via GitHub Actions</li><li>CD system to Gigalixir</li><li>Community documentation (README, LICENSE, CHANGELOG, CODE_OF_CONDUCT)</li></ul><h2 id="0-8-0-and-prior-2020-12-01-1" class="section-heading">
+  <a href="#0-8-0-and-prior-2020-12-01-1" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  [0.8.0 and prior] - 2020-12-01
+</h2>
+<h3 id="added-13" class="section-heading">
+  <a href="#added-13" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Added
+</h3>
+<ul><li>Attachment support from the chat window</li><li>Sticker Support in messages</li><li>Send Media HSM templates from flow editor</li><li>Showing BSP balance on the dashboard</li><li>Added flows information on the bigquery</li><li>Mask phone numbers in the profile page</li><li>Sync contact fields in Bigquery</li><li>Archiving Flows in Bigquery</li><li>Media HSM files</li><li>Showing BSP balance on the dashboard</li><li>Updated Documentation</li></ul><h3 id="fixed-10" class="section-heading">
+  <a href="#fixed-10" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  Fixed
+</h3>
+<ul><li>Fixed login timeout issue.</li><li>Update the readme file</li><li>Adding contact to group from automation</li></ul>      <footer class="footer">
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.22.2),
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">
-            designed by
+            Designed by
             <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
           </span>
         </p>
         <p>
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>
