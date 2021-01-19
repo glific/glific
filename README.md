@@ -64,9 +64,11 @@ You will need to do the following:
   * Enter your API Key, which can be found by clicking on your profile in the top left
   corner of your gupshup dashboard
   * Enter your APP name
+  * Start the backend server in iex session: `iex -S mix`
+  * Update HSM templates: `Glific.Templates.update_hsms(1)`
   * Install [ngrok](https://ngrok.com/download)
   * Start ngrok to proxy port 4000:
-    * Start the backend server: `mix phx.server` (do this in a new window)
+    * Start the backend server: `mix phx.server`
     * `$ ngrok http 4000 --host-header=localhost:4000` (do this in a new window))
     * Remember the URL it assigns you, something like: `https://9f6a7c7822d2.ngrok.io`
   * Goto the [Settings Page](https://www.gupshup.io/whatsappassistant/#/settings)
