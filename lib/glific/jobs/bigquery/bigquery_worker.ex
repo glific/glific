@@ -330,7 +330,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     data
   end
 
-  @spec make_job(list(), String.t(), non_neg_integer, non_neg_integer) :: nil | :ok
+  @spec make_job(list(), String.t(), non_neg_integer, non_neg_integer) ::  {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp make_job(data, "update_flow_results", organization_id) do
     __MODULE__.new(%{organization_id: organization_id, update_flow_results: data})
     |> Oban.insert()

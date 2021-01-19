@@ -110,7 +110,7 @@ defmodule Glific.Bigquery do
       |> Enum.each(&create_bigquery_job(&1, organization_id))
 
   @doc false
-  @spec create_bigquery_job(String.t(), non_neg_integer) :: :ok
+  @spec create_bigquery_job(String.t(), non_neg_integer) :: any()
   defp create_bigquery_job(table_name, organization_id) do
     Repo.fetch_by(BigqueryJob, %{table: table_name, organization_id: organization_id})
     |> case do
