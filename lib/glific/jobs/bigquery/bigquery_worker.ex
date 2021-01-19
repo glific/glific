@@ -513,8 +513,8 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec handle_update_response(tuple() | nil) :: any()
   defp handle_update_response({:ok, response}),
-    do: response |> IO.inspect()
+    do: response
 
   defp handle_update_response({:error, error}),
-    do: error |> IO.inspect()
+    do: error
 end
