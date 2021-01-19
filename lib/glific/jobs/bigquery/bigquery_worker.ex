@@ -330,7 +330,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     data
   end
 
-  @spec make_job(list(), String.t(), non_neg_integer, non_neg_integer) ::  {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec make_job(list(), String.t(), non_neg_integer, non_neg_integer) ::  {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | nil
   defp make_job(data, "update_flow_results", organization_id) do
     __MODULE__.new(%{organization_id: organization_id, update_flow_results: data})
     |> Oban.insert()
@@ -351,8 +351,6 @@ defmodule Glific.Jobs.BigQueryWorker do
       max_id: max_id
     })
     |> Oban.insert()
-
-    :ok
   end
 
   @doc """
@@ -503,15 +501,10 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   @spec handle_update_response(tuple() | nil) :: any()
-  defp handle_update_response({:ok, response}) do
-    response
-  end
+  defp handle_update_response({:ok, response}),
+    do: response
 
-  defp handle_update_response({:error, error}) do
-    error
-  end
+  defp handle_update_response({:error, error}),
+  do: error
 
-  defp handle_update_response(nil) do
-    "Something went wrong while updating the data on bigquery"
-  end
 end
