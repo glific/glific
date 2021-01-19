@@ -66,6 +66,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp update_biquery_tables(organization_id) do
     update_flow_results(organization_id)
     update_contact(organization_id)
+    :ok
   end
 
   # need to add an order by and limit here, so we are sending chunks of 1K at a time
@@ -97,7 +98,8 @@ defmodule Glific.Jobs.BigQueryWorker do
     )
     |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
     |> Enum.chunk_every(10)
-    |> Enum.each(&make_job(&1, "update_flow_results", organization_id))
+    |> Enum.each(&make_job(&1, "update_flow_results", organization_id, 0))
+    :ok
   end
 
   # need to add an order by and limit here, so we are sending chunks of 1K at a time
@@ -139,7 +141,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     )
     |> Enum.reject(fn contact -> contact.phone == @simulater_phone end)
     |> Enum.chunk_every(10)
-    |> Enum.each(&make_job(&1, "update_contacts", organization_id))
+    |> Enum.each(&make_job(&1, "update_contacts", organization_id, 0))
+
+    :ok
   end
 
   @spec perform_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
@@ -169,8 +173,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  @spec queue_table_data(String.t(), non_neg_integer, non_neg_integer, non_neg_integer) ::
-          :ok | nil
+  @spec queue_table_data(String.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: :ok
   defp queue_table_data("messages", organization_id, min_id, max_id) do
     Message
     |> where([m], m.organization_id == ^organization_id)
@@ -206,6 +209,8 @@ defmodule Glific.Jobs.BigQueryWorker do
       [bq_message_row | acc]
     end)
     |> make_job(:messages, organization_id, max_id)
+
+    :ok
   end
 
   defp queue_table_data("contacts", organization_id, min_id, max_id) do
@@ -252,6 +257,8 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
     )
     |> make_job(:contacts, organization_id, max_id)
+
+    :ok
   end
 
   defp queue_table_data("flows", organization_id, min_id, max_id) do
@@ -285,6 +292,8 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
     )
     |> make_job(:flows, organization_id, max_id)
+
+    :ok
   end
 
   defp queue_table_data("flow_results", organization_id, min_id, max_id) do
@@ -320,9 +329,11 @@ defmodule Glific.Jobs.BigQueryWorker do
     )
     |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
     |> make_job(:flow_results, organization_id, max_id)
+
+    :ok
   end
 
-  defp queue_table_data(_, _, _, _), do: nil
+  defp queue_table_data(_, _, _, _), do: :ok
 
   @spec format_json(map()) :: iodata
   defp format_json(definition) do
@@ -330,18 +341,20 @@ defmodule Glific.Jobs.BigQueryWorker do
     data
   end
 
-  @spec make_job(list(), String.t(), non_neg_integer, non_neg_integer) ::  {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | nil
-  defp make_job(data, "update_flow_results", organization_id) do
+  @spec make_job(any(), any(), non_neg_integer, non_neg_integer) ::  :ok
+  defp make_job(data, "update_flow_results", organization_id, _) do
     __MODULE__.new(%{organization_id: organization_id, update_flow_results: data})
     |> Oban.insert()
+    :ok
   end
 
-  defp make_job(data, "update_contacts", organization_id) do
+  defp make_job(data, "update_contacts", organization_id, _) do
     __MODULE__.new(%{organization_id: organization_id, update_contacts: data})
     |> Oban.insert()
+    :ok
   end
 
-  defp make_job(data, _, _, _) when data in [%{}, nil], do: nil
+  defp make_job(data, _, _, _) when data in [%{}, nil], do: :ok
 
   defp make_job(data, table, organization_id, max_id) do
     __MODULE__.new(%{
@@ -351,6 +364,8 @@ defmodule Glific.Jobs.BigQueryWorker do
       max_id: max_id
     })
     |> Oban.insert()
+
+    :ok
   end
 
   @doc """
@@ -505,6 +520,5 @@ defmodule Glific.Jobs.BigQueryWorker do
     do: response
 
   defp handle_update_response({:error, error}),
-  do: error
-
+    do: error
 end

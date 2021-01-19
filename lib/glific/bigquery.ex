@@ -103,14 +103,16 @@ defmodule Glific.Bigquery do
 
   @doc false
   @spec insert_bigquery_jobs(non_neg_integer) :: :ok
-  def insert_bigquery_jobs(organization_id),
-    do:
+  def insert_bigquery_jobs(organization_id) do
       @bigquery_tables
       |> Map.keys()
       |> Enum.each(&create_bigquery_job(&1, organization_id))
 
+    :ok
+  end
+
   @doc false
-  @spec create_bigquery_job(String.t(), non_neg_integer) :: {:ok, BigqueryJob.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_bigquery_job(String.t(), non_neg_integer) :: :ok
   defp create_bigquery_job(table_name, organization_id) do
     Repo.fetch_by(BigqueryJob, %{table: table_name, organization_id: organization_id})
     |> case do
@@ -118,10 +120,10 @@ defmodule Glific.Bigquery do
         bigquery_job
 
       _ ->
-        %BigqueryJob{}
-        |> BigqueryJob.changeset(%{table: table_name, organization_id: organization_id})
-        |> Repo.insert()
+        %BigqueryJob{ table: table_name, table_id: 0, organization_id: organization_id}
+        |> Repo.insert!()
     end
+    :ok
   end
 
   @spec handle_sync_errors(map(), Tesla.Client.t(), String.t(), String.t(), non_neg_integer) ::
