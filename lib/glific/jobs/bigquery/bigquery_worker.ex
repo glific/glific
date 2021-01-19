@@ -101,7 +101,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   # need to add an order by and limit here, so we are sending chunks of 1K at a time
-  @spec update_flow_results(non_neg_integer) :: :ok
+  @spec update_contact(non_neg_integer) :: :ok
   defp update_contact(organization_id) do
     query =
       Contact
