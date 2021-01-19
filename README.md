@@ -37,6 +37,9 @@ have the bandwidth to support earlier versions of the packages.
   * Copy the file: `config/dev.secret.exs.txt` to `config/dev.secret.exs` and edit it with your credentials
   * Start the postgres server
   * Run `mix setup`
+  * This will setup Glific with default credentials as:
+    * Phone `917834811114`
+    * Password `secret1234`
   * Run `mix phx.server`
 
 ## Here we go
