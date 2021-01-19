@@ -126,7 +126,7 @@ defmodule Glific.Jobs.BigQueryWorker do
           user_name: if(!is_nil(row.user), do: row.user.name),
           tags_label: tags_label,
           flow_label: row.flow_label,
-          media_url: if(!is_nil(row.media), do: row.media.url),
+          media_url: if(!is_nil(row.media), do: row.media.url)
         }
         |> format_data_for_bigquery("messages")
 
@@ -285,6 +285,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
     |> Enum.chunk_every(10)
     |> Enum.each(&make_job(&1, :update_flow_results, organization_id, 0))
+
     :ok
   end
 
@@ -368,7 +369,8 @@ defmodule Glific.Jobs.BigQueryWorker do
             "max_id" => _max_id
           }
         } = job
-      ) when table in ["update_flow_results", "update_contacts"],
+      )
+      when table in ["update_flow_results", "update_contacts"],
       do: make_update_query(data, organization_id, table, job)
 
   def perform(
@@ -382,7 +384,6 @@ defmodule Glific.Jobs.BigQueryWorker do
         } = job
       ),
       do: make_insert_query(data, table, organization_id, job, max_id)
-
 
   @spec format_data_for_bigquery(map(), String.t()) :: map()
   defp format_data_for_bigquery(flow, "update_flow_results") do
@@ -435,6 +436,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         data
         |> Enum.each(fn row ->
           sql = generate_update_sql_query(row, table, dataset_id, organization_id)
+
           GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
             body: %{query: sql, useLegacySql: false}
           )
@@ -455,12 +457,14 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp generate_update_sql_query(contact, "update_contacts", dataset_id, organization_id) do
     contact_fields_to_update =
-    ["fileds", "name","optout_time", "optin_time", "language" ]
-    |> get_contact_values_to_update(contact, %{}, organization_id)
-    |> Enum.map(fn {column, value} ->  "#{column} = #{value}" end)
-    |> Enum.join(",")
+      ["fileds", "name", "optout_time", "optin_time", "language"]
+      |> get_contact_values_to_update(contact, %{}, organization_id)
+      |> Enum.map(fn {column, value} -> "#{column} = #{value}" end)
+      |> Enum.join(",")
 
-    "UPDATE `#{dataset_id}.contacts` SET #{contact_fields_to_update} WHERE phone= '#{contact["phone"]}'"
+    "UPDATE `#{dataset_id}.contacts` SET #{contact_fields_to_update} WHERE phone= '#{
+      contact["phone"]
+    }'"
   end
 
   defp generate_update_sql_query(_, _, _, _), do: nil
@@ -475,7 +479,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     end
   end
 
-
   defp get_contact_values_to_update([column | tail], contact, acc, org_id) do
     if is_nil(contact[column]) do
       get_contact_values_to_update(tail, contact, acc, org_id)
@@ -486,7 +489,6 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp get_contact_values_to_update([], _, acc, _), do: acc
-
 
   @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
   defp handle_insert_error(table, dataset_id, organization_id, response, _job) do
@@ -511,8 +513,8 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec handle_update_response(tuple() | nil) :: any()
   defp handle_update_response({:ok, response}),
-    do: response |> IO.inspect
+    do: response |> IO.inspect()
 
   defp handle_update_response({:error, error}),
-    do: error |> IO.inspect
+    do: error |> IO.inspect()
 end

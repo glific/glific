@@ -104,9 +104,9 @@ defmodule Glific.Bigquery do
   @doc false
   @spec insert_bigquery_jobs(non_neg_integer) :: :ok
   def insert_bigquery_jobs(organization_id) do
-      @bigquery_tables
-      |> Map.keys()
-      |> Enum.each(&create_bigquery_job(&1, organization_id))
+    @bigquery_tables
+    |> Map.keys()
+    |> Enum.each(&create_bigquery_job(&1, organization_id))
 
     :ok
   end
@@ -120,9 +120,10 @@ defmodule Glific.Bigquery do
         bigquery_job
 
       _ ->
-        %BigqueryJob{ table: table_name, table_id: 0, organization_id: organization_id}
+        %BigqueryJob{table: table_name, table_id: 0, organization_id: organization_id}
         |> Repo.insert!()
     end
+
     :ok
   end
 
@@ -219,7 +220,7 @@ defmodule Glific.Bigquery do
     }]"
   end
 
-  def format_contact_field_values(field, _org_id), do: ""
+  def format_contact_field_values(_field, _org_id), do: ""
 
   @spec format_value(map() | any()) :: any()
   defp format_value(value) when is_map(value), do: Map.get(value, :input, "Unknown format")

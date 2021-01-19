@@ -8,6 +8,7 @@ defmodule Glific.Jobs.BigqueryJob do
   import Ecto.Changeset
 
   alias __MODULE__
+
   alias Glific.{
     Partners.Organization
   }
@@ -43,5 +44,4 @@ defmodule Glific.Jobs.BigqueryJob do
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:organization_id)
   end
-
 end
