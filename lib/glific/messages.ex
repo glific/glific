@@ -418,6 +418,46 @@ defmodule Glific.Messages do
   end
 
   @doc """
+  Record a message sent to a group in the message table. This message is actually not
+  sent, but is used for display purposes in the group listings
+  """
+  @spec create_group_message(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+  def create_group_message(attrs) do
+    # We first need to just create a meta level group message
+    organization_id = Repo.get_organization_id()
+    sender_id = Partners.organization_contact_id(organization_id)
+
+    attrs
+    |> Map.merge(%{
+      organization_id: organization_id,
+      sender_id: sender_id,
+      receiver_id: sender_id,
+      contact_id: sender_id,
+      group_id: attrs.group_id,
+      flow: :outbound
+    })
+    |> update_message_attrs()
+    |> create_message()
+    |> case do
+      {:ok, message} ->
+        group_message_subscription(message)
+        {:ok, message}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @spec group_message_subscription(Message.t()) :: any()
+  defp group_message_subscription(message) do
+    Communications.publish_data(
+      message,
+      :sent_group_message,
+      message.organization_id
+    )
+  end
+
+  @doc """
   Create and send message to all contacts of a group
   """
   @spec create_and_send_message_to_group(map(), Group.t()) :: {:ok, list()}
@@ -428,21 +468,7 @@ defmodule Glific.Messages do
       group.contacts
       |> Enum.map(fn contact -> contact.id end)
 
-    # We first need to just create a meta level group message
-    organization_id = Repo.get_organization_id()
-    sender_id = Partners.organization_contact_id(organization_id)
-
-    {:ok, _group_message} =
-      message_params
-      |> Map.merge(%{
-        sender_id: sender_id,
-        receiver_id: sender_id,
-        contact_id: sender_id,
-        group_id: group.id,
-        flow: :outbound
-      })
-      |> update_message_attrs()
-      |> create_message()
+    {:ok, _group_message} = create_group_message(Map.put(message_params, :group_id, group.id))
 
     create_and_send_message_to_contacts(message_params, contact_ids)
   end

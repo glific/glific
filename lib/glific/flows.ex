@@ -14,6 +14,7 @@ defmodule Glific.Flows do
     Flows.FlowContext,
     Flows.FlowRevision,
     Groups.Group,
+    Messages,
     Partners,
     Repo
   }
@@ -468,10 +469,17 @@ defmodule Glific.Flows do
   Start flow for contacts of a group
   """
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
-  def start_group_flow(%Flow{} = flow, %Group{} = group) do
+  def start_group_flow(flow, group) do
     status = "published"
 
     {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, status})
+
+    {:ok, _group_message} =
+      Messages.create_group_message(%{
+        body: "Starting flow: #{flow.name} for group: #{group.label}",
+        type: :text,
+        group_id: group.id
+      })
 
     group = group |> Repo.preload([:contacts])
     process_contact_flow(group.contacts, flow, status)
@@ -481,7 +489,7 @@ defmodule Glific.Flows do
   Make a copy of a flow
   """
   @spec copy_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, String.t()}
-  def copy_flow(%Flow{} = flow, attrs) do
+  def copy_flow(flow, attrs) do
     attrs =
       attrs
       |> Map.merge(%{

@@ -51,7 +51,7 @@ defmodule Glific.Providers.Gupshup.Worker do
         if payload["destination"] == @simulater_phone do
           process_simulator(payload["destination"], message)
         else
-          process_gupshup(organization.services["bsp"], payload, message, attrs)
+          process_gupshup(organization.id, payload, message, attrs)
         end
 
       _ ->
@@ -90,14 +90,14 @@ defmodule Glific.Providers.Gupshup.Worker do
   end
 
   @spec process_gupshup(
-          Glific.Partners.Credential.t(),
+          non_neg_integer(),
           map(),
           Message.t(),
           map()
         ) ::
           {:ok, Message.t()} | {:error, String.t()}
   defp process_gupshup(
-         credential,
+         org_id,
          payload,
          message,
          %{"is_hsm" => true, "params" => params, "template_uuid" => template_uuid} = _attrs
@@ -109,19 +109,17 @@ defmodule Glific.Providers.Gupshup.Worker do
       "src.name" => payload["src.name"]
     }
 
-    ApiClient.post(
-      credential.keys["api_end_point"] <> "/template/msg",
-      template_payload,
-      headers: [{"apikey", credential.secrets["api_key"]}]
+    ApiClient.send_template(
+      org_id,
+      template_payload
     )
     |> handle_response(message)
   end
 
-  defp process_gupshup(credential, payload, message, _attrs) do
-    ApiClient.post(
-      credential.keys["api_end_point"] <> "/msg",
-      payload,
-      headers: [{"apikey", credential.secrets["api_key"]}]
+  defp process_gupshup(org_id, payload, message, _attrs) do
+    ApiClient.send_message(
+      org_id,
+      payload
     )
     |> handle_response(message)
   end
