@@ -10,11 +10,15 @@ defmodule Glific.Messages do
     Contacts.Contact,
     Conversations.Conversation,
     Flows.MessageVarParser,
+    Groups.Group,
+    Jobs.BigQueryWorker,
     Messages.Message,
     Messages.MessageVariables,
     Partners,
     Repo,
+    Tags,
     Tags.MessageTag,
+    Tags.Tag,
     Templates.SessionTemplate
   }
 
@@ -28,23 +32,24 @@ defmodule Glific.Messages do
 
   """
   @spec list_messages(map()) :: [Message.t()]
-  def list_messages(args \\ %{}),
-    do: Repo.list_filter(args, Message, &Repo.opts_with_body/2, &filter_with/2)
+  def list_messages(args),
+    do:
+      Repo.list_filter(args, Message, &Repo.opts_with_body/2, &filter_with/2)
+      |> Enum.map(&put_clean_body/1)
 
   @doc """
   Return the count of messages, using the same filter as list_messages
   """
   @spec count_messages(map()) :: integer
-  def count_messages(args \\ %{}),
+  def count_messages(args),
     do: Repo.count_filter(args, Message, &filter_with/2)
 
   # codebeat:disable[ABC, LOC]
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
-    Enum.reduce(filter, query, fn
-      {:body, body}, query ->
-        from q in query, where: ilike(q.body, ^"%#{body}%")
+    query = Repo.filter_with(query, filter)
 
+    Enum.reduce(filter, query, fn
       {:sender, sender}, query ->
         from q in query,
           join: c in assoc(q, :sender),
@@ -88,8 +93,11 @@ defmodule Glific.Messages do
 
         query |> where([m], m.id not in ^message_ids)
 
-      {:provider_status, provider_status}, query ->
-        from q in query, where: q.provider_status == ^provider_status
+      {:bsp_status, bsp_status}, query ->
+        from q in query, where: q.bsp_status == ^bsp_status
+
+      _, query ->
+        query
     end)
   end
 
@@ -108,7 +116,7 @@ defmodule Glific.Messages do
 
   """
   @spec get_message!(integer) :: Message.t()
-  def get_message!(id), do: Repo.get!(Message, id)
+  def get_message!(id), do: Repo.get!(Message, id) |> put_clean_body()
 
   @doc """
   Creates a message.
@@ -128,6 +136,7 @@ defmodule Glific.Messages do
       %{flow: :inbound, status: :enqueued}
       |> Map.merge(attrs)
       |> put_contact_id()
+      |> put_clean_body()
 
     %Message{}
     |> Message.changeset(attrs)
@@ -142,6 +151,12 @@ defmodule Glific.Messages do
     do: Map.put(attrs, :contact_id, attrs[:receiver_id])
 
   defp put_contact_id(attrs), do: attrs
+
+  @spec put_clean_body(map()) :: map()
+  defp put_clean_body(%{body: body} = attrs),
+    do: Map.put(attrs, :clean_body, Glific.string_clean(body))
+
+  defp put_clean_body(attrs), do: attrs
 
   @doc """
   Updates a message.
@@ -194,32 +209,54 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, String.t()}
+  @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
-
-    Contacts.can_send_message_to?(contact, attrs[:is_hsm])
-    |> create_and_send_message(attrs)
+    check_for_hsm_message(attrs, contact)
   end
 
   @doc false
-  @spec create_and_send_message(boolean(), map()) :: {:ok, Message.t()}
-  defp create_and_send_message(is_valid_contact, attrs) when is_valid_contact == true do
+  @spec check_for_hsm_message(map(), Contact.t()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp check_for_hsm_message(attrs, contact) do
+    with true <- Map.has_key?(attrs, :template_id),
+         true <- Map.get(attrs, :is_hsm) do
+      create_and_send_hsm_message(
+        attrs.template_id,
+        attrs.receiver_id,
+        attrs.params,
+        attrs.media_id
+      )
+    else
+      _ ->
+        Contacts.can_send_message_to?(contact, attrs[:is_hsm])
+        |> create_and_send_message(attrs)
+    end
+  end
+
+  @doc false
+  @spec create_and_send_message(boolean(), map()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp create_and_send_message(
+         true = _is_valid_contact,
+         %{organization_id: organization_id} = attrs
+       ) do
     {:ok, message} =
       attrs
+      |> Map.put_new(:type, :text)
       |> Map.merge(%{
-        sender_id: Partners.organization_contact_id(),
-        flow: :outbound,
-        body: parse_message_body(attrs)
+        sender_id: Partners.organization_contact_id(organization_id),
+        flow: :outbound
       })
+      |> update_message_attrs()
       |> create_message()
 
-    Communications.Message.send_message(message)
+    Communications.Message.send_message(message, attrs)
   end
 
   @doc false
-  defp create_and_send_message(_, _) do
+  defp create_and_send_message(false, _) do
     {:error, "Cannot send the message to the contact."}
   end
 
@@ -233,20 +270,29 @@ defmodule Glific.Messages do
     MessageVarParser.parse(attrs.body, message_vars)
   end
 
-  @doc """
-  Create and send verification message
-  Using session template of shortcode 'verification'
-  """
-  @spec create_and_send_otp_verification_message(String.t(), String.t()) :: {:ok, Message.t()}
-  def create_and_send_otp_verification_message(phone, otp) do
-    # fetch contact by phone number
-    {:ok, contact} = Glific.Repo.fetch_by(Contact, %{phone: phone})
+  @spec update_message_attrs(map()) :: map()
+  defp update_message_attrs(%{body: nil} = attrs), do: attrs
 
+  defp update_message_attrs(attrs) do
+    {:ok, msg_uuid} = Ecto.UUID.cast(:crypto.hash(:md5, attrs.body))
+
+    attrs
+    |> Map.merge(%{
+      uuid: attrs[:uuid] || msg_uuid,
+      body: parse_message_body(attrs)
+    })
+  end
+
+  @doc false
+  @spec create_and_send_otp_verification_message(integer, Contact.t(), String.t()) ::
+          {:ok, Message.t()}
+  def create_and_send_otp_verification_message(organization_id, contact, otp) do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
-      Glific.Repo.fetch_by(SessionTemplate, %{
-        shortcode: "otp",
-        is_hsm: true
+      Repo.fetch_by(SessionTemplate, %{
+        shortcode: "common_otp",
+        is_hsm: true,
+        organization_id: organization_id
       })
 
     ttl_in_minutes = Application.get_env(:passwordless_auth, :verification_code_ttl) |> div(60)
@@ -263,7 +309,6 @@ defmodule Glific.Messages do
   @doc """
   Send a session template to the specific contact. This is typically used in automation
   """
-
   @spec create_and_send_session_template(String.t(), integer) :: {:ok, Message.t()}
   def create_and_send_session_template(template_id, receiver_id) when is_binary(template_id),
     do: create_and_send_session_template(String.to_integer(template_id), receiver_id)
@@ -278,15 +323,18 @@ defmodule Glific.Messages do
     )
   end
 
-  @spec create_and_send_session_template(SessionTemplate.t(), map()) :: {:ok, Message.t()}
+  @spec create_and_send_session_template(SessionTemplate.t() | map(), map()) :: {:ok, Message.t()}
   def create_and_send_session_template(session_template, args) do
     message_params = %{
       body: session_template.body,
       type: session_template.type,
       media_id: session_template.message_media_id,
-      sender_id: Partners.organization_contact_id(),
+      sender_id: Partners.organization_contact_id(session_template.organization_id),
       receiver_id: args[:receiver_id],
-      send_at: args[:send_at]
+      send_at: args[:send_at],
+      flow_id: args[:flow_id],
+      is_hsm: Map.get(args, :is_hsm, false),
+      organization_id: session_template.organization_id
     }
 
     create_and_send_message(message_params)
@@ -295,25 +343,37 @@ defmodule Glific.Messages do
   @doc """
   Send a hsm template message to the specific contact.
   """
-  @spec create_and_send_hsm_message(integer, integer, [String.t()]) ::
+  @spec create_and_send_hsm_message(integer, integer, [String.t()], integer | nil) ::
           {:ok, Message.t()} | {:error, String.t()}
-  def create_and_send_hsm_message(template_id, receiver_id, parameters) do
+  def create_and_send_hsm_message(template_id, receiver_id, parameters, media_id \\ nil) do
+    contact = Glific.Contacts.get_contact!(receiver_id)
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 
-    if session_template.number_parameters == length(parameters) do
+    with true <- session_template.number_parameters == length(parameters),
+         {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
       updated_template = parse_template_vars(session_template, parameters)
-
+      # Passing uuid to save db call when sending template via provider
       message_params = %{
         body: updated_template.body,
         type: updated_template.type,
         is_hsm: updated_template.is_hsm,
-        sender_id: Partners.organization_contact_id(),
-        receiver_id: receiver_id
+        organization_id: session_template.organization_id,
+        sender_id: Partners.organization_contact_id(session_template.organization_id),
+        receiver_id: receiver_id,
+        template_uuid: session_template.uuid,
+        template_id: template_id,
+        params: parameters,
+        media_id: media_id
       }
 
-      create_and_send_message(message_params)
+      Contacts.can_send_message_to?(contact, true)
+      |> create_and_send_message(message_params)
     else
-      {:error, "You need to provide correct number of parameters for hsm template"}
+      false ->
+        {:error, "You need to provide correct number of parameters for hsm template"}
+
+      {"type", false} ->
+        {:error, "You need to provide media for media hsm template"}
     end
   end
 
@@ -338,19 +398,79 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message_to_contacts(map(), []) :: {:ok, Message.t()}
+  @spec create_and_send_message_to_contacts(map(), []) :: {:ok, list()}
   def create_and_send_message_to_contacts(message_params, contact_ids) do
-    messages =
+    contact_ids =
       contact_ids
-      |> Enum.reduce([], fn contact_id, messages ->
+      |> Enum.reduce([], fn contact_id, contact_ids ->
         message_params = Map.put(message_params, :receiver_id, contact_id)
 
-        with {:ok, message} <- create_and_send_message(message_params) do
-          [message | messages]
+        case create_and_send_message(message_params) do
+          {:ok, message} ->
+            [message.contact_id | contact_ids]
+
+          {:error, _} ->
+            contact_ids
         end
       end)
 
-    {:ok, messages}
+    {:ok, contact_ids}
+  end
+
+  @doc """
+  Record a message sent to a group in the message table. This message is actually not
+  sent, but is used for display purposes in the group listings
+  """
+  @spec create_group_message(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+  def create_group_message(attrs) do
+    # We first need to just create a meta level group message
+    organization_id = Repo.get_organization_id()
+    sender_id = Partners.organization_contact_id(organization_id)
+
+    attrs
+    |> Map.merge(%{
+      organization_id: organization_id,
+      sender_id: sender_id,
+      receiver_id: sender_id,
+      contact_id: sender_id,
+      group_id: attrs.group_id,
+      flow: :outbound
+    })
+    |> update_message_attrs()
+    |> create_message()
+    |> case do
+      {:ok, message} ->
+        group_message_subscription(message)
+        {:ok, message}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @spec group_message_subscription(Message.t()) :: any()
+  defp group_message_subscription(message) do
+    Communications.publish_data(
+      message,
+      :sent_group_message,
+      message.organization_id
+    )
+  end
+
+  @doc """
+  Create and send message to all contacts of a group
+  """
+  @spec create_and_send_message_to_group(map(), Group.t()) :: {:ok, list()}
+  def create_and_send_message_to_group(message_params, group) do
+    group = group |> Repo.preload(:contacts)
+
+    contact_ids =
+      group.contacts
+      |> Enum.map(fn contact -> contact.id end)
+
+    {:ok, _group_message} = create_group_message(Map.put(message_params, :group_id, group.id))
+
+    create_and_send_message_to_contacts(message_params, contact_ids)
   end
 
   @doc """
@@ -484,15 +604,55 @@ defmodule Glific.Messages do
     MessageMedia.changeset(message_media, attrs)
   end
 
-  defp do_list_conversations(query, args, false) do
+  @doc """
+  Go back in history and see the past few messages sent. ensure we are not sending the same
+  message a few too many times
+  """
+  @spec is_message_loop?(map(), integer, integer, integer) :: integer
+  def is_message_loop?(message, past_messages \\ 7, past_count \\ 5, go_back \\ 1)
+
+  def is_message_loop?(
+        %{uuid: uuid, type: :text, receiver_id: receiver_id} = _message,
+        past_messages,
+        past_count,
+        go_back
+      )
+      when not is_nil(uuid) do
+    since = Glific.go_back_time(go_back)
+
+    sub_query =
+      Message
+      |> where(
+        [m],
+        m.contact_id == ^receiver_id and
+          m.inserted_at >= ^since and
+          m.flow == "outbound" and
+          m.type == "text" and
+          m.status in ["enqueued", "delivered"]
+      )
+      |> limit(^past_messages)
+      |> order_by([m], asc: m.message_number)
+      |> select([m], m.uuid)
+
+    query = from m in subquery(sub_query), where: m.uuid == ^uuid
+    count = Repo.aggregate(query, :count)
+
+    if count >= past_count,
+      do: count * 100 / past_messages,
+      else: 0
+  end
+
+  def is_message_loop?(_message, _past, _repeat, _go_back), do: 0
+
+  defp do_list_conversations(query, args, false = _count) do
     query
+    |> preload([:contact, :sender, :receiver, :tags, :user, :media])
     |> Repo.all()
-    |> Repo.preload([:contact, :tags])
     |> make_conversations()
     |> add_empty_conversations(args)
   end
 
-  defp do_list_conversations(query, _args, true) do
+  defp do_list_conversations(query, _args, true = _count) do
     query
     |> select([m], m.contact_id)
     |> distinct(true)
@@ -511,9 +671,11 @@ defmodule Glific.Messages do
       Message,
       fn
         {:ids, ids}, query ->
+          # order by inserted_at instead of updated_at
+          # as message provider status might be updated later
           query
           |> where([m], m.id in ^ids)
-          |> order_by([m], desc: m.updated_at)
+          |> order_by([m], desc: m.inserted_at)
 
         {:filter, filter}, query ->
           query |> conversations_with(filter)
@@ -556,19 +718,19 @@ defmodule Glific.Messages do
       contact_order,
       [],
       fn contact, acc ->
-        [Conversation.new(contact, Enum.reverse(contact_messages[contact])) | acc]
+        [Conversation.new(contact, nil, Enum.reverse(contact_messages[contact])) | acc]
       end
     )
   end
 
   # for all input contact ids that do not have messages attached to them
   # return a conversation data type with empty messages
-  # we dont add empty conversations when we have either include or exclude tags set
+  # we dont add empty conversations when we have either include tags or include users set
   @spec add_empty_conversations([Conversation.t()], map()) :: [Conversation.t()]
   defp add_empty_conversations(results, %{filter: %{include_tags: _tags}}),
     do: results
 
-  defp add_empty_conversations(results, %{filter: %{exclude_tags: _tags}}),
+  defp add_empty_conversations(results, %{filter: %{include_users: _users}}),
     do: results
 
   defp add_empty_conversations(results, %{filter: %{id: id}}),
@@ -610,7 +772,7 @@ defmodule Glific.Messages do
   # add an empty conversation for a specific contact if ONLY if it exists
   @spec add_conversation([Conversation.t()], Contact.t()) :: [Conversation.t()]
   defp add_conversation(results, contact) do
-    [Conversation.new(contact, []) | results]
+    [Conversation.new(contact, nil, []) | results]
   end
 
   # restrict the conversations query based on the filters in the input args
@@ -624,15 +786,38 @@ defmodule Glific.Messages do
         query |> where([m], m.contact_id in ^ids)
 
       {:include_tags, tag_ids}, query ->
-        query
-        |> join(:left, [m], mt in MessageTag, on: m.id == mt.message_id)
-        |> where([m, mt], mt.tag_id in ^tag_ids)
+        include_tag_filter(query, tag_ids)
 
-      {:exclude_tags, tag_ids}, query ->
+      {:include_users, user_ids}, query ->
+        include_user_filter(query, user_ids)
+
+      _filter, query ->
         query
-        |> join(:left, [m], mt in MessageTag, on: m.id == mt.message_id)
-        |> where([m, mt], mt.tag_id not in ^tag_ids or is_nil(mt.tag_id))
     end)
+  end
+
+  # apply filter for message tags
+  @spec include_tag_filter(Ecto.Queryable.t(), []) :: Ecto.Queryable.t()
+  defp include_tag_filter(query, []), do: query
+
+  defp include_tag_filter(query, tag_ids) do
+    # given a list of tag_ids, build another list, which includes the tag_ids
+    # and also all its parent tag_ids
+    all_tag_ids = Tags.include_all_ancestors(tag_ids)
+
+    query
+    |> join(:left, [m], mt in MessageTag, as: :mt, on: m.id == mt.message_id)
+    |> join(:left, [mt: mt], t in Tag, as: :t, on: t.id == mt.tag_id)
+    |> where([mt: mt], mt.tag_id in ^all_tag_ids)
+  end
+
+  # apply filter for user ids
+  @spec include_user_filter(Ecto.Queryable.t(), []) :: Ecto.Queryable.t()
+  defp include_user_filter(query, []), do: query
+
+  defp include_user_filter(query, user_ids) do
+    query
+    |> where([m], m.user_id in ^user_ids)
   end
 
   defp add(element, map) do
@@ -642,5 +827,58 @@ defmodule Glific.Messages do
       [element],
       &[element | &1]
     )
+  end
+
+  @doc """
+  We need to simulate a few messages as we move to the system. This is a wrapper function
+  to add those messages, which trigger specific actions within flows. e.g. include:
+  Completed, Failure, Success etc
+  """
+  @spec create_temp_message(non_neg_integer, any(), Keyword.t()) :: Message.t()
+  def create_temp_message(organization_id, body, attrs \\ []) do
+    body = String.trim(body || "")
+
+    opts =
+      Keyword.merge(
+        [
+          organization_id: organization_id,
+          body: body,
+          clean_body: Glific.string_clean(body)
+        ],
+        attrs
+      )
+
+    Message
+    |> struct(opts)
+  end
+
+  @doc """
+  Delete all messages of a contact
+  """
+  @spec clear_messages(Contact.t()) :: {:ok}
+  def clear_messages(%Contact{} = contact) do
+    # add messages to bigquery oban jobs worker
+    BigQueryWorker.perform_periodic(contact.organization_id)
+
+    # get and delete all messages media
+    messages_media_ids =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> where([m], m.organization_id == ^contact.organization_id)
+      |> select([m], m.media_id)
+      |> Repo.all()
+
+    MessageMedia
+    |> where([m], m.id in ^messages_media_ids)
+    |> Repo.delete_all()
+
+    Message
+    |> where([m], m.contact_id == ^contact.id)
+    |> where([m], m.organization_id == ^contact.organization_id)
+    |> Repo.delete_all()
+
+    Communications.publish_data(contact, :cleared_messages, contact.organization_id)
+
+    {:ok}
   end
 end

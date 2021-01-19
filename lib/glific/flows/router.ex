@@ -5,13 +5,20 @@ defmodule Glific.Flows.Router do
   alias __MODULE__
 
   use Ecto.Schema
+  require Logger
 
-  alias Glific.Flows
+  alias Glific.{
+    Contacts,
+    Flows,
+    Messages,
+    Messages.Message
+  }
 
   alias Glific.Flows.{
     Case,
     Category,
     FlowContext,
+    MessageVarParser,
     Node,
     Wait
   }
@@ -99,21 +106,55 @@ defmodule Glific.Flows.Router do
   Execute a router, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Router.t(), FlowContext.t(), [String.t()]) ::
-          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def execute(nil, context, message_stream),
-    do: {:ok, context, message_stream}
+  @spec execute(Router.t(), FlowContext.t(), [Message.t()]) ::
+          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  def execute(nil, context, messages),
+    do: {:ok, context, messages}
 
-  def execute(router, context, []),
-    do: Wait.execute(router.wait, context, [])
+  def execute(%{wait: wait} = _router, context, []) when wait != nil,
+    do: Wait.execute(wait, context, [])
 
   def execute(
         %{type: type} = router,
         context,
-        message_stream
+        messages
       )
       when type == "switch" do
-    [msg | rest] = message_stream
+    {msg, rest} =
+      if messages == [] do
+        # get the value from the "input" version of the operand field
+        # this is the split by result flow
+        content =
+          router.operand
+          |> MessageVarParser.parse(%{
+            "contact" => Contacts.get_contact_field_map(context.contact_id),
+            "results" => context.results
+          })
+          |> MessageVarParser.parse_results(context.results)
+
+        # Once we have the content, we send it over to EEx to execute
+        content =
+          try do
+            if Glific.suspicious_code(content) do
+              Logger.error("EEx suspicious code: #{content}")
+              "Invalid Code"
+            else
+              EEx.eval_string(content)
+            end
+          rescue
+            EEx.SyntaxError ->
+              Logger.error("EEx threw a SyntaxError: #{content}")
+              "Invalid Code"
+          end
+
+        msg = Messages.create_temp_message(context.contact.organization_id, content)
+        {msg, []}
+      else
+        [msg | rest] = messages
+        {msg, rest}
+      end
+
+    context = FlowContext.update_recent(context, msg.body, :recent_inbound)
 
     category_uuid = find_category(router, context, msg)
 
@@ -124,21 +165,22 @@ defmodule Glific.Flows.Router do
       if is_nil(router.result_name),
         # if there is a result name, store it in the context table along with the category name first
         do: context,
-        else: FlowContext.update_results(context, router.result_name, msg, category.name)
+        else: update_context_results(context, router.result_name, msg, category)
 
     Category.execute(category, context, rest)
   end
 
-  def execute(_router, _context, _message_stream),
+  def execute(_router, _context, _messages),
     do: raise(UndefinedFunctionError, message: "Unimplemented router type and/or wait type")
 
-  @spec find_category(Router.t(), FlowContext.t(), String.t()) :: Ecto.UUID.t()
-  defp find_category(router, _context, "No Response" = msg) do
-    # Find the category with name == "No Response"
-    category = Enum.find(router.categories, fn c -> c.name == msg end)
+  @spec find_category(Router.t(), FlowContext.t(), Message.t()) :: Ecto.UUID.t()
+  defp find_category(router, _context, %{body: body} = _msg)
+       when body in ["No Response", "Exit Loop"] do
+    # Find the category with name == "No Response" or "Exit Loop"
+    category = Enum.find(router.categories, fn c -> c.name == body end)
 
     if is_nil(category),
-      do: raise(MatchError, message: "Did not find a no response category"),
+      do: raise(ArgumentError, message: "Did not find a #{body} category"),
       else: category.uuid
   end
 
@@ -154,5 +196,36 @@ defmodule Glific.Flows.Router do
     if is_nil(c),
       do: router.default_category_uuid,
       else: c.category_uuid
+  end
+
+  @spec update_context_results(FlowContext.t(), String.t(), Message.t(), Category.t()) ::
+          FlowContext.t()
+  defp update_context_results(context, key, msg, category) do
+    cond do
+      Enum.member?([:text], msg.type) ->
+        FlowContext.update_results(context, key, msg.body, category.name)
+
+      Enum.member?([:image, :video, :audio], msg.type) ->
+        media = msg.media
+
+        json =
+          Map.take(media, [:id, :source_url, :url, :caption])
+          |> Map.put(:category, "media")
+          |> Map.put(:input, media.url)
+
+        FlowContext.update_results(context, key, json)
+
+      Enum.member?([:location], msg.type) ->
+        location = msg.location
+
+        json =
+          Map.take(location, [:id, :longitude, :latitude])
+          |> Map.put(:category, "location")
+
+        FlowContext.update_results(context, key, json)
+
+      true ->
+        FlowContext.update_results(context, key, msg.body, category.name)
+    end
   end
 end

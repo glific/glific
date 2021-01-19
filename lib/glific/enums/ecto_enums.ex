@@ -18,6 +18,15 @@ defenum(
   Glific.Enums.contact_status_const()
 )
 
+# we can rename provider status enum to bsp status enum
+# but it seems a bit tricky to rename enums without touching the old migrations
+# so for now we use provider status enum for bsp status fields
+defenum(
+  Glific.Enums.ContactProviderStatus,
+  :contact_provider_status_enum,
+  Glific.Enums.contact_provider_status_const()
+)
+
 defenum(
   Glific.Enums.FlowCase,
   :flow_case_enum,
@@ -70,4 +79,22 @@ defenum(
   Glific.Enums.SortOrder,
   :sort_order_enum,
   Glific.Enums.sort_order_const()
+)
+
+defenum(
+  Glific.Enums.ContactFieldValueType,
+  :contact_field_value_type_enum,
+  Glific.Enums.contact_field_value_type_const()
+)
+
+defenum(
+  Glific.Enums.ContactFieldScope,
+  :contact_field_scope_enum,
+  Glific.Enums.contact_field_scope_const()
+)
+
+defenum(
+  Glific.Enums.UserRoles,
+  :user_roles_enum,
+  Glific.Enums.user_roles_const()
 )

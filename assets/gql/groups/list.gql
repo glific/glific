@@ -3,5 +3,7 @@ query groups($filter: GroupFilter, $opts: Opts) {
     id
     label
     is_restricted
+    contacts_count
+    users_count
   }
 }

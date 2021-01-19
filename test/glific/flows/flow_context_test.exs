@@ -1,6 +1,11 @@
 defmodule Glific.Flows.FlowContextTest do
   use Glific.DataCase, async: true
 
+  alias Glific.{
+    Fixtures,
+    Messages
+  }
+
   alias Glific.Flows.{
     Action,
     Category,
@@ -10,7 +15,6 @@ defmodule Glific.Flows.FlowContextTest do
   }
 
   @valid_attrs %{
-    contact_id: 1,
     flow_id: 1,
     flow_uuid: Ecto.UUID.generate(),
     uuid_map: %{},
@@ -18,28 +22,35 @@ defmodule Glific.Flows.FlowContextTest do
   }
 
   def flow_context_fixture(attrs \\ %{}) do
+    contact = Fixtures.contact_fixture()
+
     {:ok, flow_context} =
       attrs
+      |> Map.put(:contact_id, contact.id)
+      |> Map.put(:organization_id, contact.organization_id)
       |> Enum.into(@valid_attrs)
       |> FlowContext.create_flow_context()
 
     flow_context
+    |> Repo.preload(:contact)
+    |> Repo.preload(:flow)
   end
 
-  test "create_flow_context/1 will create a new flow context" do
+  test "create_flow_context/1 will create a new flow context", attrs do
     # create a simple flow context
     {:ok, context} =
       FlowContext.create_flow_context(%{
-        contact_id: 1,
+        contact_id: Fixtures.contact_fixture().id,
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
-        uuid_map: %{}
+        uuid_map: %{},
+        organization_id: attrs.organization_id
       })
 
     assert context.id != nil
   end
 
-  test "reset_context/1 will reset the context" do
+  test "reset_context/1 will reset the context", attrs do
     node = %Node{uuid: Ecto.UUID.generate()}
 
     json = %{
@@ -52,10 +63,11 @@ defmodule Glific.Flows.FlowContextTest do
 
     {:ok, context_2} =
       FlowContext.create_flow_context(%{
-        contact_id: 1,
+        contact_id: Fixtures.contact_fixture().id,
         flow_id: 1,
         flow_uuid: json["flow"]["uuid"],
-        uuid_map: uuid_map
+        uuid_map: uuid_map,
+        organization_id: attrs.organization_id
       })
 
     FlowContext.reset_context(context_2)
@@ -88,11 +100,13 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.node == node
   end
 
-  test "init_context/3 will initaite a flow context" do
-    [flow | _tail] = Glific.Flows.list_flows()
-    flow = Flow.get_loaded_flow(%{shortcode: flow.shortcode})
-    [contact | _tail] = Glific.Contacts.list_contacts()
-    {:ok, flow_context, _} = FlowContext.init_context(flow, contact)
+  test "init_context/3 will initaite a flow context",
+       %{organization_id: organization_id} = attrs do
+    [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
+    [keyword | _] = flow.keywords
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: keyword})
+    contact = Fixtures.contact_fixture()
+    {:ok, flow_context, _} = FlowContext.init_context(flow, contact, "published")
     assert flow_context.id != nil
   end
 
@@ -101,12 +115,14 @@ defmodule Glific.Flows.FlowContextTest do
     assert {:error, _message} = FlowContext.execute(flow_context, [])
   end
 
-  test "execute an context should return ok tuple" do
-    [flow | _tail] = Glific.Flows.list_flows()
-    flow = Flow.get_loaded_flow(%{shortcode: flow.shortcode})
-    [contact | _tail] = Glific.Contacts.list_contacts()
-    {:ok, flow_context, _} = FlowContext.init_context(flow, contact)
-    assert {:ok, _, _} = FlowContext.execute(flow_context, ["Test"])
+  test "execute an context should return ok tuple", %{organization_id: organization_id} = attrs do
+    [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
+    [keyword | _] = flow.keywords
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: keyword})
+    contact = Fixtures.contact_fixture()
+    {:ok, flow_context, _} = FlowContext.init_context(flow, contact, "published")
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "Test")
+    assert {:ok, _, _} = FlowContext.execute(flow_context, [message])
   end
 
   test "active_context/1 will return the current context for contact" do
@@ -115,20 +131,23 @@ defmodule Glific.Flows.FlowContextTest do
     assert flow_context.id == flow_context_2.id
   end
 
-  test "load_context/2 will load all the nodes and actions in memory for the context" do
-    flow = Flow.get_loaded_flow(%{shortcode: "help"})
+  test "load_context/2 will load all the nodes and actions in memory for the context",
+       %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
     flow_context = FlowContext.load_context(flow_context, flow)
     assert flow_context.uuid_map == flow.uuid_map
   end
 
-  test "step_forward/2 will set the context to next node " do
-    flow = Flow.get_loaded_flow(%{shortcode: "help"})
+  test "step_forward/2 will set the context to next node ",
+       %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
     flow_context = FlowContext.load_context(flow_context, flow)
-    assert {:ok, _map} = FlowContext.step_forward(flow_context, "help")
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "help")
+    assert {:ok, _map} = FlowContext.step_forward(flow_context, message)
   end
 
   test "get_result_value/2 will return the result value for a key" do
@@ -138,7 +157,37 @@ defmodule Glific.Flows.FlowContextTest do
     FlowContext.update_results(flow_context, "test_key", "test_input", category.name)
     flow_context = Glific.Repo.get!(FlowContext, flow_context.id)
 
-    assert FlowContext.get_result_value(flow_context, "@results.test_key") ==
-             %{"category" => "Default Category", "input" => "test_input"}
+    # now results value will always return the input if there is a map.
+    assert FlowContext.get_result_value(flow_context, "@results.test_key") == "test_input"
+
+    assert FlowContext.get_result_value(flow_context, "@results.test_key.category") ==
+             "Default Category"
+
+    assert FlowContext.get_result_value(flow_context, "@results.test_key.input") == "test_input"
+  end
+
+  test "delete_completed_flow_contexts will delete all contexts completed before two days" do
+    flow_context =
+      flow_context_fixture(%{
+        completed_at: DateTime.utc_now() |> DateTime.add(-(2 * 24 * 60 * 60 + 1), :second)
+      })
+
+    FlowContext.delete_completed_flow_contexts()
+
+    assert {:error, _} = Glific.Repo.fetch(FlowContext, flow_context.id)
+  end
+
+  test "delete_old_flow_contexts will delete all contexts older than 30 days" do
+    flow_context = flow_context_fixture()
+
+    last_month_date = DateTime.utc_now() |> DateTime.add(-31 * 24 * 60 * 60, :second)
+
+    FlowContext
+    |> where([f], f.id == ^flow_context.id)
+    |> Repo.update_all(set: [inserted_at: last_month_date])
+
+    FlowContext.delete_old_flow_contexts()
+
+    assert {:error, _} = Glific.Repo.fetch(FlowContext, flow_context.id)
   end
 end

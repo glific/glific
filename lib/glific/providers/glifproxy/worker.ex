@@ -8,11 +8,11 @@ defmodule Glific.Providers.Glifproxy.Worker do
     max_attempts: 2,
     priority: 0
 
-  alias Glific.Communications
-  alias Glific.Providers.Gupshup.ApiClient
-
-  @rate_name Application.fetch_env!(:glific, :provider_id)
-  @rate_limit Application.fetch_env!(:glific, :provider_limit)
+  alias Glific.{
+    Communications,
+    Partners,
+    Providers.Gupshup.ApiClient
+  }
 
   @doc """
   Standard perform method to use Oban worker
@@ -20,12 +20,17 @@ defmodule Glific.Providers.Glifproxy.Worker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok
   def perform(%Oban.Job{args: %{"message" => message, "payload" => payload}}) do
+    organization = Partners.organization(message["organization_id"])
+
     # ensure that we are under the rate limit, all rate limits are in requests/minutes
-    # Refactoring because of credo warning
     # We are in a proxy here, we simulate the message has been sent
     # We turn around and actually flip the contact to a proxy number (or vice versa)
     # and send it back to the frontend
-    case ExRated.check_rate(@rate_name, 60_000, @rate_limit) do
+    case ExRated.check_rate(
+           organization.shortcode,
+           60_000,
+           organization.services["bsp"].keys["bsp_limit"]
+         ) do
       {:ok, _} -> proxy_message(message, payload)
       _ -> {:error, :rate_limit_exceeded}
     end
@@ -33,34 +38,53 @@ defmodule Glific.Providers.Glifproxy.Worker do
     :ok
   end
 
-  @doc """
-  We transform a payload that has been set for sending to a payload that has been
-  tailored for receiving. We need to generate a few random ids for various messages ids
-  """
   @prefix "000"
   @prefix_len 3
+  @trigger "proxy"
+  @trigger_len 5
 
+  @doc """
+  Proxy the message from a number to a fake proxy contact. Do it one way only
+  Don't do the reverse, to avoid infinite loops in automation.
+  For a workaroung, the "faker" message is processed in the reverse direction to
+  create the contact
+  """
   @spec proxy_message(map(), Oban.Job.t()) :: any()
-  def proxy_message(message, payload) do
-    destination = payload["destination"]
+  def proxy_message(message, %{"destination" => destination} = _payload)
+      when binary_part(destination, 0, @prefix_len) == @prefix do
+    name = String.slice(destination, @prefix_len..-1)
 
-    {new_destination, name} =
-      if String.slice(destination, 0, @prefix_len) == @prefix do
-        # we dont have the name with us, so for now, we just
-        # use the phone as the name
-        name = String.slice(destination, @prefix_len..-1)
-        {name, name}
-      else
-        {@prefix <> destination, "PROXY " <> destination}
-      end
+    # we dont have the name with us, so for now, we just
+    # use the phone as the name
+    {new_destination, name} = {name, name}
 
-    new_payload = generate_payload(new_destination, name, message)
+    handle_message(new_destination, name, message)
+  end
+
+  def proxy_message(%{"body" => body} = message, %{"destination" => destination} = _payload)
+      when binary_part(body, 0, @trigger_len) == @trigger do
+    {new_destination, name} = {@prefix <> destination, "PROXY " <> destination}
+
+    handle_message(new_destination, name, message)
+  end
+
+  def proxy_message(message, _payload), do: {:ok, message}
+
+  @spec handle_message(String.t(), String.t(), map()) :: any()
+  defp handle_message(destination, name, message) do
+    payload = generate_payload(destination, name, message)
+    organization = Partners.organization(message["organization_id"])
 
     # lets sleep for 1 seconds before posting, to avoid race
     # conditions with flows et al
-    :timer.sleep(1000)
+    Process.sleep(1000)
 
-    ApiClient.post("/gupshup", new_payload)
+    credential = organization.services["glifproxy"]
+
+    ApiClient.post(
+      credential.keys["api_end_point"] <> "/gupshup",
+      payload
+    )
     |> handle_response(message)
   end
 
@@ -72,7 +96,7 @@ defmodule Glific.Providers.Glifproxy.Worker do
       version: 2,
       type: "message",
       payload: %{
-        id: Faker.String.base64(30),
+        id: Ecto.UUID.generate(),
         source: destination,
         type: "text",
         payload: %{

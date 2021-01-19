@@ -11,6 +11,10 @@ timezone. The DateTime appears in a JSON response as an ISO8601 formatted
 string, including UTC timezone ("Z"). The parsed date and time string will
 be converted to UTC if there is an offset.
 
+### Time
+
+The `Time` scalar type represents a time without microseconds precision. The Time appears in a JSON response as an ISO8601 formatted string.
+
 ### Gid
 
 The `gid` scalar appears in JSON as a String. The string appears to
@@ -40,3 +44,9 @@ A generic json type so return the results as json object
 The `String` scalar type represents textual data, represented as UTF-8
 character sequences. The String type is most often used by GraphQL to
 represent free-form human-readable text.
+
+### UUID4
+
+The `UUID4` scalar type represents UUID4 compliant string data, represented as UTF-8
+character sequences. The UUID4 type is most often used to represent unique
+human-readable ID strings.

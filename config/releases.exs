@@ -3,17 +3,14 @@
 # This file will be used for production release only.
 import Config
 
-db_host =
-  System.get_env("DATABASE_HOST") ||
+db_url =
+  System.get_env("DATABASE_URL") ||
     raise """
-    environment variable DATABASE_HOST is missing.
+    environment variable DATABASE_URL is missing
     """
 
-db_database = System.get_env("DATABASE_DB") || "glific_prod"
-db_username = System.get_env("DATABASE_USER") || "postgres"
-db_password = System.get_env("DATABASE_PASSWORD") || "postgres"
-db_url = "ecto://#{db_username}:#{db_password}@#{db_host}/#{db_database}"
-ssl_port = System.get_env("SSL_PORT") || 444
+ssl_port = System.get_env("SSL_PORT") || 443
+http_port = System.get_env("HTTP_PORT") || 4000
 
 config :glific, Glific.Repo,
   url: db_url,
@@ -27,15 +24,36 @@ secret_key_base =
     You can generate one by calling: mix phx.gen.secret
     """
 
+check_origin =
+  [System.get_env("REQUEST_ORIGIN"), System.get_env("REQUEST_ORIGIN_WILDCARD")] ||
+    raise """
+    environment variable REQUEST_ORIGIN/REQUEST_ORIGIN_WILDCARD is missing.
+    """
+
+# GLific endpoint configs
 config :glific, GlificWeb.Endpoint,
   server: true,
-  http: [:inet6, port: 4000],
-  https: [
-    port: ssl_port,
-    cipher_suite: :strong,
-    keyfile: '/etc/letsencrypt/live/tides.coloredcow.com/privkey.pem',
-    certfile: '/etc/letsencrypt/live/tides.coloredcow.com/cert.pem',
-    cacertfile: '/etc/letsencrypt/live/tides.coloredcow.com/fullchain.pem'
-  ],
+  http: [:inet6, port: http_port],
+  check_origin: check_origin,
   secret_key_base: secret_key_base,
   url: [host: System.get_env("BASE_URL")]
+
+# AppSignal configs
+config :appsignal, :config,
+  otp_app: :glific,
+  name: "Glific",
+  # we need to make this dynamic at some point
+  hostname: System.get_env("APPSIGNAL_HOSTNAME"),
+  active: true,
+  revision: Application.spec(:glific, :vsn) |> to_string(),
+  push_api_key: System.get_env("APPSIGNAL_PUSH_API_KEY")
+
+config :glific, Glific.Vault,
+  ciphers: [
+    default:
+      {Cloak.Ciphers.AES.GCM,
+       tag: "AES.GCM.V3", key: Base.decode64!(System.get_env("CIPHER_KEY"))},
+    old_key:
+      {Cloak.Ciphers.AES.GCM,
+       tag: "AES.GCM.V2", key: Base.decode64!(System.get_env("OLD_CIPHER_KEY"))}
+  ]

@@ -9,32 +9,40 @@ defmodule Glific.Flows.CategoryTest do
   }
 
   test "process extracts the right values from json" do
-    json = %{"uuid" => "UUID 1", "exit_uuid" => "UUID 2", "name" => "Default Category"}
+    uuid_1 = Ecto.UUID.generate()
+    uuid_2 = Ecto.UUID.generate()
+    json = %{"uuid" => uuid_1, "exit_uuid" => uuid_2, "name" => "Default Category"}
 
     {category, uuid_map} = Category.process(json, %{})
 
-    assert category.uuid == "UUID 1"
-    assert category.exit_uuid == "UUID 2"
+    assert category.uuid == uuid_1
+    assert category.exit_uuid == uuid_2
     assert category.name == "Default Category"
     assert uuid_map[category.uuid] == {:category, category}
 
     # ensure that not sending the required fields, raises an error
-    json = %{"uuid" => "UUID 1", "exit_uuid" => "UUID 2"}
+    json = %{"uuid" => uuid_1, "exit_uuid" => uuid_2}
     assert_raise ArgumentError, fn -> Category.process(json, %{}) end
 
-    json = %{"exit_uuid" => "UUID 2", "name" => "Default Category"}
+    json = %{"exit_uuid" => uuid_2, "name" => "Default Category"}
     assert_raise ArgumentError, fn -> Category.process(json, %{}) end
 
     json = %{}
     assert_raise ArgumentError, fn -> Category.process(json, %{}) end
   end
 
-  test "test category execute with exit node with null destination" do
-    node = %Node{uuid: "Test UUID"}
-    json = %{"uuid" => "Exit UUID", "destination_uuid" => nil}
+  test "test category execute with exit node with null destination", attrs do
+    node = %Node{uuid: Ecto.UUID.generate()}
+    exit_uuid = Ecto.UUID.generate()
+    json = %{"uuid" => exit_uuid, "destination_uuid" => nil}
     {_exit, uuid_map} = Exit.process(json, %{}, node)
 
-    json = %{"uuid" => "Cat UUID", "exit_uuid" => "Exit UUID", "name" => "Default Category"}
+    json = %{
+      "uuid" => Ecto.UUID.generate(),
+      "exit_uuid" => exit_uuid,
+      "name" => "Default Category"
+    }
+
     {category, uuid_map} = Category.process(json, uuid_map)
 
     # create a simple flow context
@@ -43,7 +51,8 @@ defmodule Glific.Flows.CategoryTest do
         contact_id: 1,
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
-        uuid_map: uuid_map
+        uuid_map: uuid_map,
+        organization_id: attrs.organization_id
       })
 
     result = Category.execute(category, context, [])

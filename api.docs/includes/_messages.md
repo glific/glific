@@ -40,7 +40,7 @@ query messages($filter: MessageFilter, $opts: Opts) {
             "id": "2",
             "name": "Default Sender"
         }
-        
+
       },
       {
         "id": "15",
@@ -49,7 +49,7 @@ query messages($filter: MessageFilter, $opts: Opts) {
             "id": "13",
             "name": "Althea Hirthe"
         }
-        
+
       }
     ]
   }
@@ -319,6 +319,67 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#messageresult">MessageResult</a> | An error object or empty
 
+## Delete a Messages of a contact
+
+```graphql
+mutation clearMessages($contactId: ID!) {
+  clearMessages(contactId: $contactId) {
+    success
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "contactId": "26"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "clearMessages": {
+      "errors": null,
+      "success": true
+    }
+  }
+}
+```
+
+In case of errors, all the above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "clearMessages": {
+      "errors": [
+        {
+          "key": "Elixir.Glific.Contacts.Contact",
+          "message": "Resource not found"
+        }
+      ],
+      "success": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+contactId | <a href="#id">ID</a>! | required ||
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#clearmessagesresult">ClearMessagesResult</a> | An error object or empty
+
+
 
 ## Create and send Message
 
@@ -346,8 +407,7 @@ mutation createAndSendMessage($input: MessageInput!) {
     "flow": "OUTBOUND",
     "type": "TEXT",
     "senderId": 1,
-    "receiverId": 2,
-    "userId": 1
+    "receiverId": 2
   }
 }
 ```
@@ -366,6 +426,65 @@ mutation createAndSendMessage($input: MessageInput!) {
           "id": "2",
           "name": "Default receiver"
         }
+      }
+    }
+  }
+}
+```
+
+```	```
+## Create and send SessionTemplate
+
+```graphql
+mutation createAndSendMessage($input: MessageInput!) {
+  createAndSendMessage(input: $input) {
+    message {
+      id
+      body
+      receiver {
+        id
+        name
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+{
+  "input": {
+    "flow": "OUTBOUND",
+    "type": "TEXT",
+    "senderId": 1,
+    "receiverId": 11,
+    "isHsm": true,
+    "params": ["Fifty", "Next Week"],
+    "templateId": 32
+    
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+```json
+{
+  "data": {
+    "createAndSendMessage": {
+      "__typename": "MessageResult",
+      "errors": null,
+      "message": {
+        "__typename": "Message",
+        "body": "Your Fifty points will expire on Next Week.",
+        "id": "241",
+        "isHsm": true,
+        "params": null,
+        "receiver": {
+          "__typename": "Contact",
+          "id": "11",
+          "name": "Test"
+        },
+        "templateId": null
       }
     }
   }
@@ -397,8 +516,7 @@ mutation createAndSendMessage($input: MessageInput!) {
     "receiverId": 7,
     "sendAt": "2020-07-10T03:30:00Z",
     "senderId": 1,
-    "type": "TEXT",
-    "userId": 1
+    "type": "TEXT"
   }
 }
 ```
@@ -432,15 +550,17 @@ Parameter | Type | Default | Description
 <a href="#messageresult">MessageResult</a> | An error object or empty
 
 
-## Create and send Message to multiple Contacts
+
+## Create and send Message to contacts of a group
 
 ```graphql
-mutation createAndSendMessageToContacts($input: MessageInput!, $contactIds: [ID]!) {
-  createAndSendMessageToContacts(input: $input, contactIds: $contactIds) {
-    id
-    body
-    receiver{
-      id
+mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {
+  createAndSendMessageToGroup(input: $input, groupId: $groupId) {
+    success
+    contactIds
+    errors {
+      key
+      message
     }
   }
 }
@@ -450,13 +570,9 @@ mutation createAndSendMessageToContacts($input: MessageInput!, $contactIds: [ID]
     "body": "Test message",
     "flow": "OUTBOUND",
     "type": "TEXT",
-    "senderId": 1,
-    "userId": 1
+    "senderId": 1
   },
-  "contactIds": [
-    2,
-    3
-  ]
+  "groupId": 1
 }
 ```
 
@@ -465,22 +581,13 @@ mutation createAndSendMessageToContacts($input: MessageInput!, $contactIds: [ID]
 ```json
 {
   "data": {
-    "createAndSendMessageToContacts": [
-      {
-        "body": "Test message",
-        "id": "61",
-        "receiver": {
-          "id": "3"
-        }
-      },
-      {
-        "body": "Test message",
-        "id": "60",
-        "receiver": {
-          "id": "2"
-        }
-      }
-    ]
+    "createAndSendMessageToGroup": {
+      "contactIds": [
+        "8"
+      ],
+      "errors": null,
+      "success": true
+    }
   }
 }
 ```
@@ -489,12 +596,12 @@ mutation createAndSendMessageToContacts($input: MessageInput!, $contactIds: [ID]
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 input | <a href="#messageinput">MessageInput</a> | required ||
-contactIds | [<a href="#id">ID</a>]! | required ||
+groupId | [<a href="#id">ID</a>]! | required ||
 
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-[<a href="#message">Message</a>] | List of messages
+[<a href="#groupmessageresult">GroupMessageResult</a>] | List of contact ids
 
 
 ## Send hsm Message
@@ -627,6 +734,93 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#messageresult">MessageResult</a> | An error or object
 
+## Subscription for Update Message Status
+
+```graphql
+subscription {
+  update_message_status() {
+    id
+    body
+    flow
+    type
+    status
+    receiver {
+        id
+        phone
+    }
+
+    sender {
+        id
+        phone
+    }
+  }
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "update_message_status": {
+      "body": "Test",
+      "flow": "OUTBOUND",
+      "id" : "10397",
+      "type": "TEXT",
+      "status": "sent",
+      "receiver": {
+          "id" : "484",
+          "phone" : "91997612324"
+      },
+      "sender": {
+          "id" : "1",
+          "phone" : "917834811114"
+      }
+    }
+  }
+}
+```
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#messageresult">MessageResult</a> | An error or object
+
+## Subscription for Sent Group Message
+
+```graphql
+subscription {
+  sent_group_message() {
+    id
+    body
+    flow
+    type
+    status
+    group_id
+  }
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "sent_group_message": {
+      "body": "Test",
+      "flow": "OUTBOUND",
+      "id" : "10397",
+      "type": "TEXT",
+      "status": "sent",
+      "group_id" : "3",
+    }
+  }
+}
+```
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#messageresult">MessageResult</a> | An error or object
+
 
 ## Subscription for Received Message
 
@@ -716,13 +910,23 @@ Parameter | Type | Default | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>ProviderMessageId</strong></td>
+<td colspan="2" valign="top"><strong>BspMessageId</strong></td>
 <td valign="top">[<a href="#string">String</a>]</td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>ProviderStatus</strong></td>
+<td colspan="2" valign="top"><strong>BspStatus</strong></td>
 <td valign="top"><a href="#string">MessageStatusEnum</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>status</strong></td>
+<td valign="top"><a href="#string">MessageStatusEnum</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
 <td></td>
 </tr>
 <tr>
@@ -806,6 +1010,61 @@ Parameter | Type | Default | Description
 </tbody>
 </table>
 
+### GroupMessageResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>success</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>contactIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### ClearMessagesResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>success</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
 ## Message Inputs ##
 
 ### MessageFilter ###
@@ -882,7 +1141,7 @@ Match the phone with either the sender or receiver
 </tr>
 
 <tr>
-<td colspan="2" valign="top"><strong>ProviderStatus</strong></td>
+<td colspan="2" valign="top"><strong>BspStatus</strong></td>
 <td valign="top"><a href="#messagestatusenum">MessageStatusEnum</a></td>
 <td>
 

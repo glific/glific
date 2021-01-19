@@ -4,6 +4,7 @@ defmodule GlificWeb.API.V1.SessionController do
   """
 
   use GlificWeb, :controller
+  require Logger
 
   alias GlificWeb.APIAuthPlug
   alias Plug.Conn
@@ -11,10 +12,14 @@ defmodule GlificWeb.API.V1.SessionController do
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
   def create(conn, %{"user" => user_params}) do
+    user_params = Map.put(user_params, "organization_id", conn.assigns[:organization_id])
+
     conn
     |> Pow.Plug.authenticate_user(user_params)
     |> case do
       {:ok, conn} ->
+        Logger.info("Logged in user: user_id: '#{conn.assigns[:current_user].id}'")
+
         json(conn, %{
           data: %{
             access_token: conn.private[:api_access_token],
@@ -24,6 +29,8 @@ defmodule GlificWeb.API.V1.SessionController do
         })
 
       {:error, conn} ->
+        Logger.error("Logged in user failure: user_phone: '#{user_params["phone"]}'")
+
         conn
         |> put_status(401)
         |> json(%{error: %{status: 401, message: "Invalid phone or password"}})

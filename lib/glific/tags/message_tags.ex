@@ -15,12 +15,13 @@ defmodule Glific.Tags.MessageTags do
   @primary_key false
 
   @type t() :: %__MODULE__{
-          message_tags: [MessageTag.t()]
+          message_tags: [MessageTag.t()],
+          number_deleted: non_neg_integer
         }
 
   embedded_schema do
     # the number of tags we deleted
-    field :number_deleted, :integer
+    field :number_deleted, :integer, default: 0
     embeds_many(:message_tags, MessageTag)
   end
 
@@ -29,7 +30,12 @@ defmodule Glific.Tags.MessageTags do
   """
   @spec update_message_tags(map()) :: MessageTags.t()
   def update_message_tags(
-        %{message_id: message_id, add_tag_ids: add_ids, delete_tag_ids: delete_ids} = attrs
+        %{
+          message_id: message_id,
+          organization_id: organization_id,
+          add_tag_ids: add_ids,
+          delete_tag_ids: delete_ids
+        } = attrs
       ) do
     # we'll ignore errors intentionally here. the return list indicates
     # what objects we created
@@ -45,7 +51,7 @@ defmodule Glific.Tags.MessageTags do
         end
       )
 
-    {number_deleted, _} = Tags.delete_message_tag_by_ids(message_id, delete_ids)
+    {number_deleted, _} = Tags.delete_message_tag_by_ids(message_id, delete_ids, organization_id)
 
     %MessageTags{
       number_deleted: number_deleted,

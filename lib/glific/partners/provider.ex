@@ -9,26 +9,38 @@ defmodule Glific.Partners.Provider do
   # define all the required fields for provider
   @required_fields [
     :name,
-    :url,
-    :api_end_point
+    :shortcode,
+    :keys,
+    :secrets
   ]
 
   # define all the optional fields for provider
-  @optional_fields []
+  @optional_fields [:group, :description]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
-          url: String.t() | nil
+          shortcode: String.t() | nil,
+          group: String.t() | nil,
+          description: String.t() | nil,
+          is_required: boolean(),
+          keys: map() | nil,
+          secrets: map() | nil
         }
 
+  @schema_prefix "global"
   schema "providers" do
     field :name, :string
-    field :url, :string
-    field :api_end_point, :string
+    field :shortcode, :string
+    field :group, :string
+    field :description, :string
+    field :is_required, :boolean, default: false
 
-    has_many :organizations, Glific.Partners.Organization
+    field :keys, :map
+    field :secrets, :map
+    has_many :organizations, Glific.Partners.Organization, foreign_key: :bsp_id
+    has_one :credential, Glific.Partners.Credential
 
     timestamps(type: :utc_datetime)
   end
@@ -42,6 +54,5 @@ defmodule Glific.Partners.Provider do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:name])
-    |> foreign_key_constraint(:organizations)
   end
 end

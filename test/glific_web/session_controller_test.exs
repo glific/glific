@@ -1,18 +1,42 @@
 defmodule GlificWeb.API.V1.SessionControllerTest do
   use GlificWeb.ConnCase
 
-  alias Glific.{Repo, Users.User}
+  alias Glific.{
+    Fixtures,
+    Repo,
+    Users.User
+  }
 
   @password "secret1234"
 
-  setup do
+  @valid_params %{
+    "user" => %{
+      "phone" => "+919820198765",
+      "name" => "Jane Doe",
+      "password" => @password
+    }
+  }
+  @invalid_params %{
+    "user" => %{
+      "phone" => "+919820198765",
+      "name" => "Jane Doe",
+      # less that 8 characters
+      "password" => "invalid"
+    }
+  }
+
+  setup %{organization_id: organization_id} do
+    contact = Fixtures.contact_fixture()
+
     user =
       %User{}
       |> User.changeset(%{
         phone: "+919820198765",
         name: "Jane Jana",
         password: @password,
-        password_confirmation: @password
+        password_confirmation: @password,
+        contact_id: contact.id,
+        organization_id: organization_id
       })
       |> Repo.insert!()
 
@@ -20,15 +44,9 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
   end
 
   describe "create/2" do
-    @valid_params %{
-      "user" => %{"phone" => "+919820198765", "name" => "Jane Doe", "password" => @password}
-    }
-    @invalid_params %{
-      "user" => %{"phone" => "+919820198765", "name" => "Jane Doe", "password" => "invalid"}
-    }
-
-    test "with valid params", %{conn: conn} do
-      conn = post(conn, Routes.api_v1_session_path(conn, :create, @valid_params))
+    test "with valid params", %{conn: conn, organization_id: organization_id} do
+      params = put_in(@valid_params, ["user", "organization_id"], organization_id)
+      conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
 
       assert json = json_response(conn, 200)
       assert json["data"]["access_token"]
@@ -36,8 +54,9 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
       assert json["data"]["token_expiry_time"]
     end
 
-    test "with invalid params", %{conn: conn} do
-      conn = post(conn, Routes.api_v1_session_path(conn, :create, @invalid_params))
+    test "with invalid params", %{conn: conn, organization_id: organization_id} do
+      params = put_in(@invalid_params, ["user", "organization_id"], organization_id)
+      conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
 
       assert json = json_response(conn, 401)
       assert json["error"]["message"] == "Invalid phone or password"
@@ -46,8 +65,9 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
   end
 
   describe "renew/2" do
-    setup %{conn: conn} do
-      authed_conn = post(conn, Routes.api_v1_session_path(conn, :create, @valid_params))
+    setup %{conn: conn, organization_id: organization_id} do
+      params = put_in(@valid_params, ["user", "organization_id"], organization_id)
+      authed_conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
       :timer.sleep(100)
 
       {:ok, renewal_token: authed_conn.private[:api_renewal_token]}
@@ -78,8 +98,9 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
   end
 
   describe "delete/2" do
-    setup %{conn: conn} do
-      authed_conn = post(conn, Routes.api_v1_session_path(conn, :create, @valid_params))
+    setup %{conn: conn, organization_id: organization_id} do
+      params = put_in(@valid_params, ["user", "organization_id"], organization_id)
+      authed_conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
       :timer.sleep(100)
 
       {:ok, access_token: authed_conn.private[:api_access_token]}

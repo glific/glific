@@ -2,20 +2,42 @@ fragment OrganizationFields on OrganizationResult {
   organization {
     id
     name
-    display_name
-    contact_name
+    shortcode
     contact {
       name
     }
     email
-    provider_key
-    provider_number 
-   
-    provider {
+    bsp {
       id
       name
-      url
-      api_end_point   
+      shortcode
+      keys
+      secrets
+    }
+
+    out_of_office {
+      enabled
+      start_time
+      end_time
+      flow_id
+      enabled_days {
+        id
+        enabled
+      }
+    }
+
+    isActive
+    timezone
+    sessionLimit
+
+    default_language {
+      id
+      label
+    }
+
+    active_languages {
+      id
+      label
     }
   }
 }

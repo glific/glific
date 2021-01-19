@@ -12,12 +12,22 @@
 
 Install the following packages using your favorite package manager. Links are provided for some
 
-  * [Install Elixir](https://elixir-lang.org/install.html#distributions)
+  * [Install Elixir](https://elixir-lang.org/install.html#distributions) (check package versions below)
+    1. For Ubuntu users you also need to install the `inotify-tools` package
   * [Install Postgres](https://www.postgresql.org/download/)
-    1. For Postgres, for the development server, we default to using postgres/postgres as the username/password.
-  This is configurable
-    2. The db user needs to have **superuser status** on the database since we create a materialized view.
-  This might change in a future release to a table
+    1. For Postgres, for the development server, we default to using postgres/postgres as the username/password. This is configurable
+
+## Package Versions
+
+Glific is currently developed and hosted on the following platforms. Our goal is to always try and use the latest
+versions of each platform as soon as feasible (i.e. once the ecosystem of packages we used have upgraded). We do not
+have the bandwidth to support earlier versions of the packages.
+
+  * erlang : 23.0.2
+  * elixir : 1.10.4
+  * nodejs : 14.15.0
+  * postgres : v12.x or v13.x
+
 
 ## Download code
 
@@ -25,7 +35,11 @@ Install the following packages using your favorite package manager. Links are pr
 
 ## Setup
   * Copy the file: `config/dev.secret.exs.txt` to `config/dev.secret.exs` and edit it with your credentials
+  * Start the postgres server
   * Run `mix setup`
+  * This will setup Glific with default credentials as:
+    * Phone `917834811114`
+    * Password `secret1234`
   * Run `mix phx.server`
 
 ## Here we go
@@ -44,20 +58,25 @@ application. The currently supported backend is [Gupshup](https://www.gupshup.io
 You will need to do the following:
 
   * Create a [Gupshup Account](https://www.gupshup.io/developer/home)
-  * Install [ngrok](https://ngrok.com/download)
-  * Start ngrok to proxy port 4000: `$ ngrok http 4000` (do this in a new window))
-    * Remember the URL it assigns you, something like: `https://9f6a7c7822d2.ngrok.io`
-    * Also start the backend server: `mix phx.server` (do this in a new window)
   * Create a [WhatsApp Messaging App on Gupshup](https://www.gupshup.io/whatsappassistant/#/account-setup)
   * You can name it `GlificTest` and ensure the `App Type` is `Access API`
-  * Goto the [Settings Page](https://www.gupshup.io/whatsappassistant/#/settings/GlificTest?bt=ACP)
-  * On that page, Search for `Callback URL / Link your Bot`
+  * Edit `config/dev.secret.exs` in the backend directory
+  * Enter your API Key, which can be found by clicking on your profile in the top left
+  corner of your gupshup dashboard
+  * Enter your APP name
+  * Start the backend server in iex session: `iex -S mix`
+  * Update HSM templates: `Glific.Templates.update_hsms(1)`
+  * Install [ngrok](https://ngrok.com/download)
+  * Start ngrok to proxy port 4000:
+    * Start the backend server: `mix phx.server`
+    * `$ ngrok http 4000 --host-header=localhost:4000` (do this in a new window))
+    * Remember the URL it assigns you, something like: `https://9f6a7c7822d2.ngrok.io`
+  * Goto the [Settings Page](https://www.gupshup.io/whatsappassistant/#/settings)
+  * On that page, Search for `Manage your Template messaging settings` and enable it
+  * On same page, Search for `Callback URL / Link your Bot`
   * Enter your callback URL that ngrok gave you, add: `/gupshup` to the end. Something like:
   `https://9f6a7c7822d2.ngrok.io/gupshup/`
   * Click `Set`. It should give you a `Callback set successfully` message. If not, check the above steps.
-  * Edit `config/dev.secret.exs` in the backend directory
-  * You will need to enter your API Key, which can be found by clicking on your profile in the top left
-  corner of your gupshup dashboard
 
 ## Updating your instance
 
@@ -69,10 +88,15 @@ to update your codebase from the glicic repository.
   * Ensure you have not modified any files in this directory, by running: `git status`
   * Run the setup command: `mix setup`
 
+## Deploying release on ECS with CD
+1. If you are using AWS codebuild for CD, use buildspec.yml.sample file content for creating and pushing docker image.
+2. For using and alternative repository like docker hub, you just need to make some changes in the pre_build phase (REPOSITORY_URI and authentications), the rest of the phases will remains same.
+
 ## Documentation
 
   * [GraphQL API docs](https://glific.github.io/slate/)
-  * [Code docs](https://glific.github.io/glific/doc/)
+  * [Code docs](https://hexdocs.pm/glific/readme.html)
+  * [Slab docs](https://glific.slab.com/public/glific-documentation-nb8345sh)
 
 ## Learn more
 

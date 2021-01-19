@@ -10,7 +10,8 @@ defmodule Glific.Flows.Category do
     Flows,
     Flows.Case,
     Flows.Exit,
-    Flows.FlowContext
+    Flows.FlowContext,
+    Messages.Message
   }
 
   @required_fields [:name, :uuid, :exit_uuid]
@@ -52,11 +53,11 @@ defmodule Glific.Flows.Category do
   @doc """
   Execute a category, given a message stream.
   """
-  @spec execute(Category.t(), FlowContext.t(), [String.t()]) ::
-          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def execute(category, context, message_stream) do
+  @spec execute(Category.t(), FlowContext.t(), [Message.t()]) ::
+          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  def execute(category, context, messages) do
     # transfer control to the exit node
     {:ok, {:exit, exit}} = Map.fetch(context.uuid_map, category.exit_uuid)
-    Exit.execute(exit, context, message_stream)
+    Exit.execute(exit, context, messages)
   end
 end

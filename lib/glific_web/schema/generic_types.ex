@@ -14,9 +14,10 @@ defmodule GlificWeb.Schema.GenericTypes do
 
   @desc "Lets collapse sort order, limit and offset into its own little groups"
   input_object :opts do
-    field(:order, type: :sort_order, default_value: :asc)
-    field(:limit, :integer)
-    field(:offset, :integer, default_value: 0)
+    field :order, type: :sort_order, default_value: :asc
+    field :order_with, :string
+    field :limit, :integer
+    field :offset, :integer, default_value: 0
   end
 
   @desc """
@@ -101,4 +102,57 @@ defmodule GlificWeb.Schema.GenericTypes do
   end
 
   defp encode_uuid4(value), do: value
+
+  # We will move this logic somewhere else in the future because it's not generic
+  scalar :role_label, name: "RoleLabel" do
+    description("""
+    Convert a string/atom to lable (camel case)
+    """)
+
+    serialize(&encode_label/1)
+    parse(&parse_label/1)
+  end
+
+  @spec parse_label(Absinthe.Blueprint.Input.String.t()) :: {:ok, String.t()} | :error
+  @spec parse_label(Absinthe.Blueprint.Input.Null.t()) :: {:ok, nil}
+  defp parse_label(%Absinthe.Blueprint.Input.String{value: "No access"}) do
+    {:ok, :none}
+  end
+
+  defp parse_label(%Absinthe.Blueprint.Input.String{value: label}) do
+    if is_binary(label) do
+      label =
+        String.downcase(label)
+        |> String.to_existing_atom()
+
+      {:ok, label}
+    else
+      {:ok, label}
+    end
+  end
+
+  defp parse_label(%Absinthe.Blueprint.Input.Null{}) do
+    {:ok, nil}
+  end
+
+  defp parse_label(_) do
+    :error
+  end
+
+  defp encode_label(:none) do
+    "No access"
+  end
+
+  defp encode_label(label) when is_atom(label) do
+    label
+    |> Atom.to_string()
+    |> String.capitalize()
+  end
+
+  defp encode_label(label) when is_binary(label) do
+    label
+    |> String.capitalize()
+  end
+
+  defp encode_label(label), do: label
 end

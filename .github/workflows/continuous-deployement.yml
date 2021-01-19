@@ -1,0 +1,30 @@
+name: Continuous Deployment
+
+
+on:
+  push:
+    branches: [ master]
+
+jobs:
+  deploy:
+    # only run this job if the verify job succeeds
+
+    # only run this job if the workflow is running on the feature/master branch
+    if: github.ref == 'refs/heads/master'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: master # Checkout out master instead of the latest commit
+          fetch-depth: 0 # Checkout the whole branch
+              
+      # configure the gigalixir-actions with our credentials and app name
+      - uses: mhanberg/gigalixir-action@v0.4.0
+        with:
+          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
+          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
+          GIGALIXIR_APP: ${{ secrets.GIGALIXIR_APPNAME }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          MIGRATIONS: false

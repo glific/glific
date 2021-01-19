@@ -4,6 +4,9 @@ MAINTAINER opensource@coloredcow.com
 # install build dependencies
 RUN apk add --update git nodejs npm
 
+# Dependencies for the AppSignal for Elixir package version 1.7.0 and newer
+Run apk add --update alpine-sdk coreutils
+
 RUN mkdir /app
 WORKDIR /app
 
@@ -41,8 +44,6 @@ WORKDIR /app
 # copy release to app container
 COPY --from=build /app/_build/prod/rel/prod .
 COPY build_scripts/entrypoint.sh .
-# RUN chown -R nobody: /app Need to revisit
-# USER nobody
 
 ENV HOME=/app
 CMD ["bash", "/app/entrypoint.sh"]

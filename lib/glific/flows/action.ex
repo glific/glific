@@ -7,7 +7,13 @@ defmodule Glific.Flows.Action do
 
   use Ecto.Schema
 
-  alias Glific.Flows
+  alias Glific.{
+    Flows,
+    Groups,
+    Messages,
+    Messages.Message,
+    Repo
+  }
 
   alias Glific.Flows.{
     ContactAction,
@@ -27,8 +33,12 @@ defmodule Glific.Flows.Action do
   @required_fields_language [:language | @required_field_common]
   @required_fields_set_contact_field [:value, :field | @required_field_common]
   @required_fields_set_contact_name [:name | @required_field_common]
-  @required_fields_webook [:url, :headers, :method, :result_name | @required_field_common]
+  @required_fields_webhook [:url, :headers, :method, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
+  @required_fields_label [:labels | @required_field_common]
+  @required_fields_group [:groups | @required_field_common]
+  @required_fields_contact [:contacts, :text | @required_field_common]
+  @required_fields_waittime [:delay]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -44,10 +54,15 @@ defmodule Glific.Flows.Action do
           field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
+          attachments: list() | nil,
+          labels: list() | nil,
+          groups: list() | nil,
+          contacts: list() | nil,
           enter_flow: Flow.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
-          templating: Templating.t() | nil
+          templating: Templating.t() | nil,
+          wait_time: integer() | nil
         }
 
   embedded_schema do
@@ -70,6 +85,14 @@ defmodule Glific.Flows.Action do
     field :type, :string
 
     field :quick_replies, {:array, :string}, default: []
+
+    field :attachments, :map
+
+    field :labels, :map
+    field :groups, :map
+    field :contacts, :map
+
+    field :wait_time, :integer
 
     field :node_uuid, Ecto.UUID
     embeds_one :node, Node
@@ -117,17 +140,22 @@ defmodule Glific.Flows.Action do
   def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_set_contact_field)
 
+    name =
+      if is_nil(json["field"]["name"]),
+        do: json["field"]["key"],
+        else: json["field"]["name"]
+
     process(json, uuid_map, node, %{
       value: json["value"],
       field: %{
-        name: json["field"]["name"],
+        name: name,
         key: json["field"]["key"]
       }
     })
   end
 
   def process(%{"type" => "call_webhook"} = json, uuid_map, node) do
-    Flows.check_required_fields(json, @required_fields_webook)
+    Flows.check_required_fields(json, @required_fields_webhook)
 
     process(json, uuid_map, node, %{
       url: json["url"],
@@ -138,13 +166,59 @@ defmodule Glific.Flows.Action do
     })
   end
 
+  def process(%{"type" => "add_input_labels"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_label)
+    process(json, uuid_map, node, %{labels: json["labels"]})
+  end
+
+  def process(%{"type" => "add_contact_groups"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_group)
+    process(json, uuid_map, node, %{groups: json["groups"]})
+  end
+
+  def process(%{"type" => "send_broadcast"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_contact)
+
+    attrs = %{
+      text: json["text"],
+      attachments: process_attachments(json["attachments"]),
+      contacts: json["contacts"]
+    }
+
+    process(json, uuid_map, node, attrs)
+  end
+
+  def process(%{"type" => "remove_contact_groups"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_group)
+
+    if json["all_groups"] do
+      process(json, uuid_map, node, %{groups: ["all_groups"]})
+    else
+      process(json, uuid_map, node, %{groups: json["groups"]})
+    end
+  end
+
+  def process(%{"type" => "wait_for_time"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_waittime)
+
+    wait_time =
+      if is_nil(json["delay"]) || String.trim(json["delay"]) == "" do
+        0
+      else
+        String.to_integer(json["delay"])
+      end
+
+    process(json, uuid_map, node, %{wait_time: wait_time})
+  end
+
   def process(json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields)
 
     attrs = %{
       name: json["name"],
       text: json["text"],
-      quick_replies: json["quick_replies"]
+      quick_replies: json["quick_replies"],
+      attachments: process_attachments(json["attachments"])
     }
 
     {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
@@ -157,26 +231,31 @@ defmodule Glific.Flows.Action do
   Execute a action, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Action.t(), FlowContext.t(), [String.t()]) ::
-          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def execute(%{type: "send_msg"} = action, context, message_stream) do
-    context = ContactAction.send_message(context, action)
-    {:ok, context, message_stream}
+  @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  def execute(%{type: "send_msg"} = action, context, messages) do
+    ContactAction.send_message(context, action, messages)
   end
 
-  def execute(%{type: "set_contact_language"} = action, context, message_stream) do
+  def execute(%{type: "send_broadcast"} = action, context, messages) do
+    ContactAction.send_broadcast(context, action, messages)
+  end
+
+  def execute(%{type: "set_contact_language"} = action, context, messages) do
     context = ContactSetting.set_contact_language(context, action.text)
-    {:ok, context, message_stream}
+    {:ok, context, messages}
   end
 
-  def execute(%{type: "set_contact_name"} = action, context, message_stream) do
+  def execute(%{type: "set_contact_name"} = action, context, messages) do
     value = FlowContext.get_result_value(context, action.value)
     context = ContactSetting.set_contact_name(context, value)
-    {:ok, context, message_stream}
+    {:ok, context, messages}
   end
 
-  def execute(%{type: "set_contact_field"} = action, context, message_stream) do
-    key = String.downcase(action.field.key)
+  # Fake the valid key so we can have the same function signature and simplify the code base
+  def execute(%{type: "set_contact_field_valid"} = action, context, messages) do
+    name = action.field.name
+    key = String.downcase(name) |> String.replace(" ", "_")
     value = FlowContext.get_result_value(context, action.value)
 
     context =
@@ -188,41 +267,165 @@ defmodule Glific.Flows.Action do
           ContactSetting.set_contact_preference(context, value)
 
         true ->
-          ContactField.add_contact_field(context, key, value, "string")
+          ContactField.add_contact_field(context, key, name, value, "string")
       end
 
-    {:ok, context, message_stream}
+    {:ok, context, messages}
   end
 
-  def execute(%{type: "enter_flow"} = action, context, message_stream) do
+  def execute(%{type: "set_contact_field"} = action, context, messages) do
+    # sometimes action.field.name does not exist based on what the user
+    # has entered in the flow. We should have a validation for this, but
+    # lets prevent the error from happening
+    # if we dont recognize it, we just ignore it, and avoid an error being thrown
+    # Issue #858
+    if Map.get(action.field, :name) in ["", nil] do
+      {:ok, context, messages}
+    else
+      execute(Map.put(action, :type, "set_contact_field_valid"), context, messages)
+    end
+  end
+
+  def execute(%{type: "enter_flow"} = action, context, _messages) do
     # we start off a new context here and dont really modify the current context
     # hence ignoring the return value of start_sub_flow
     # for now, we'll just delay by at least min_delay second
     context = %{context | delay: min(context.delay + @min_delay, @min_delay)}
     Flow.start_sub_flow(context, action.enter_flow_uuid)
-    {:ok, context, message_stream}
+
+    # We null the messages here, since we are going into a different flow
+    # this clears any potential errors
+    {:ok, context, []}
   end
 
-  def execute(%{type: "call_webhook"} = action, context, message_stream) do
+  def execute(%{type: "call_webhook"} = action, context, messages) do
     # first call the webhook
-    json =
-      Webhook.get(
-        action.url,
-        Keyword.new(action.headers, fn {k, v} -> {String.to_existing_atom(k), v} end),
-        action.body
-      )
+    json = Webhook.execute(action, context)
 
     if is_nil(json) or is_nil(action.result_name) do
-      {:ok, context, ["Failure" | message_stream]}
+      {:ok, context,
+       [
+         Messages.create_temp_message(context.contact.organization_id, "Failure")
+         | messages
+       ]}
     else
+      json = Map.merge(json, %{"category" => "webhook"})
+
       {
         :ok,
         FlowContext.update_results(context, action.result_name, json),
-        ["Success" | message_stream]
+        [
+          Messages.create_temp_message(context.contact.organization_id, "Success")
+          | messages
+        ]
       }
     end
   end
 
-  def execute(action, _context, _message_stream),
+  def execute(%{type: "add_input_labels"} = action, context, messages) do
+    ## We will soon figure out how we will manage the UUID with tags
+    flow_label =
+      action.labels
+      |> Enum.map(fn label -> label["name"] end)
+      |> Enum.join(", ")
+
+    # there is a chance that:
+    # when we send a fake temp message (like No Response)
+    # or when a flow is resumed, there is no last_message
+    # hence check for the existence of one
+    if context.last_message != nil do
+      {:ok, _} =
+        Repo.get(Message, context.last_message.id)
+        |> Message.changeset(%{flow_label: flow_label})
+        |> Repo.update()
+    end
+
+    {:ok, context, messages}
+  end
+
+  def execute(%{type: "add_contact_groups"} = action, context, messages) do
+    ## We will soon figure out how we will manage the UUID with tags
+    _list =
+      Enum.reduce(
+        action.groups,
+        [],
+        fn group, _acc ->
+          {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
+
+          Groups.create_contact_group(%{
+            contact_id: context.contact_id,
+            group_id: group_id,
+            organization_id: context.organization_id
+          })
+
+          {:ok, group_id}
+        end
+      )
+
+    {:ok, context, messages}
+  end
+
+  def execute(%{type: "remove_contact_groups"} = action, context, messages) do
+    if action.groups == ["all_groups"] do
+      groups_ids = Groups.get_group_ids()
+      Groups.delete_contact_groups_by_ids(context.contact_id, groups_ids)
+    else
+      groups_ids =
+        Enum.map(
+          action.groups,
+          fn group ->
+            {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
+            group_id
+          end
+        )
+
+      Groups.delete_group_contacts_by_ids(context.contact_id, groups_ids)
+    end
+
+    {:ok, context, messages}
+  end
+
+  def execute(%{type: "wait_for_time"} = _action, context, [msg]) do
+    if msg.body != "No Response",
+      do: raise(ArgumentError, "Unexpected message #{msg.body} received")
+
+    {:ok, context, []}
+  end
+
+  def execute(%{type: "wait_for_time"} = action, context, []) do
+    if action.wait_time <= 0 do
+      {:ok, context, []}
+    else
+      {:ok, context} =
+        FlowContext.update_flow_context(
+          context,
+          %{
+            wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
+            wait_for_time: true
+          }
+        )
+
+      {:wait, context, []}
+    end
+  end
+
+  def execute(action, _context, _messages),
     do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
+
+  # let's format attachment and add as a map
+  @spec process_attachments(list()) :: map()
+  defp process_attachments(nil), do: %{}
+
+  defp process_attachments(attachment_list) do
+    attachment_list
+    |> Enum.reduce(
+      %{},
+      fn attachment, acc ->
+        case String.split(attachment, ":", parts: 2) do
+          [type, url] -> Map.put(acc, type, url)
+          _ -> acc
+        end
+      end
+    )
+  end
 end

@@ -1,0 +1,15 @@
+mutation optinContact($phone: String!, $name: String) {
+  optinContact(phone: $phone, name: $name) {
+    contact {
+      id
+      name
+      phone
+      bspStatus
+      optinTime
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

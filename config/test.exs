@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 # Configure your database
 #
@@ -16,21 +16,33 @@ config :glific, Glific.Repo,
 # you can enable the server option below.
 config :glific, GlificWeb.Endpoint,
   http: [port: 4002],
+  url: [host: "glific.test"],
   server: false
 
 # Print only warnings and errors during test
-config :logger, level: :warn
+config :logger,
+  level: :warn
 
 # setting the state of the environment for use within code base
 config :glific, :environment, :test
 
-config :glific, Oban, crontab: false, queues: false, plugins: false
+# config :absinthe, Absinthe.Logger,
+#  pipeline: true,
+#  level: :debug
+
+config :glific, Oban,
+  prefix: "global",
+  crontab: false,
+  queues: false,
+  plugins: false
 
 config :glific,
   provider: Glific.Providers.Gupshup.Message,
   provider_worker: Glific.Providers.Gupshup.Worker,
   provider_id: "gupshup-provider-23",
   provider_limit: 10
+
+config :glific, Poolboy, worker: Glific.Processor.ConsumerWorkerMock
 
 config :tesla, adapter: Tesla.Mock
 
@@ -43,3 +55,16 @@ config :pow, Pow.Ecto.Schema.Password, iterations: 1
 config :glific,
   provider_url: "https://api.gupshup.io/sm/api/v1",
   provider_key: "abcdefghigklmnop"
+
+config :appsignal, :config,
+  otp_app: :glific,
+  active: false,
+  env: :test
+
+config :glific, Glific.Vault,
+  cloak_repo: [Glific.Repo],
+  ciphers: [
+    default:
+      {Cloak.Ciphers.AES.GCM,
+       tag: "AES.GCM.V1", key: Base.decode64!("BliS4zyqMG065ZrRJ8BhhruZFXnpV+eYAQBRqzusnSY=")}
+  ]

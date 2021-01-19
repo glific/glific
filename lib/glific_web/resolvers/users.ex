@@ -5,13 +5,13 @@ defmodule GlificWeb.Resolvers.Users do
   """
 
   alias Glific.Repo
-  alias Glific.{Users, Users.User}
+  alias Glific.{Groups, Users, Users.User}
 
   @doc false
   @spec user(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def user(_, %{id: id}, _) do
-    with {:ok, user} <- Repo.fetch(User, id),
+  def user(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, user} <- Repo.fetch_by(User, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{user: user}}
   end
 
@@ -31,11 +31,59 @@ defmodule GlificWeb.Resolvers.Users do
   end
 
   @doc false
-  @spec update_user(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
+  @spec current_user(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_user(_, %{id: id, input: params}, _) do
-    with {:ok, user} <- Repo.fetch(User, id),
+  def current_user(_, _, %{context: %{current_user: current_user}}) do
+    {:ok, %{user: current_user}}
+  end
+
+  @doc """
+  Update current user
+  """
+  @spec update_current_user(Absinthe.Resolution.t(), %{input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def update_current_user(_, %{input: params}, %{context: %{current_user: current_user}}) do
+    with {:ok, params} <- update_password_params(current_user, params),
+         {:ok, current_user} <- Users.update_user(current_user, params) do
+      {:ok, %{user: current_user}}
+    end
+  end
+
+  @spec update_password_params(User.t(), map()) :: {:ok, map()} | {:error, any}
+  defp update_password_params(user, params) do
+    with false <- is_nil(params[:password]) || is_nil(params[:otp]),
+         :ok <- PasswordlessAuth.verify_code(user.phone, params.otp) do
+      PasswordlessAuth.remove_code(user.phone)
+      params = Map.merge(params, %{password_confirmation: params.password})
+      {:ok, params}
+    else
+      true ->
+        {:ok, params}
+
+      {:error, error} ->
+        {:error, ["OTP", Atom.to_string(error)]}
+    end
+  end
+
+  @doc """
+  Update user
+  Later on this end point will be accessible only to role admin
+  """
+  @spec update_user(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_user(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, user} <- Repo.fetch_by(User, %{id: id, organization_id: user.organization_id}),
          {:ok, user} <- Users.update_user(user, params) do
+      if Map.has_key?(params, :group_ids) do
+        Groups.update_user_groups(%{
+          user_id: user.id,
+          group_ids: params.group_ids,
+          organization_id: user.organization_id
+        })
+      end
+
       {:ok, %{user: user}}
     end
   end
@@ -43,8 +91,8 @@ defmodule GlificWeb.Resolvers.Users do
   @doc false
   @spec delete_user(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_user(_, %{id: id}, _) do
-    with {:ok, user} <- Repo.fetch(User, id),
+  def delete_user(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, user} <- Repo.fetch_by(User, %{id: id, organization_id: user.organization_id}),
          {:ok, user} <- Users.delete_user(user) do
       {:ok, user}
     end

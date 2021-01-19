@@ -11,7 +11,10 @@ defmodule Glific.Enums.Constants do
       @api_status_const [:ok, :error]
 
       # the status determines if we can send a message to the contact
-      @contact_status_const [:failed, :invalid, :processing, :valid]
+      @contact_status_const [:blocked, :failed, :invalid, :processing, :valid]
+
+      # the provider status determines if we can send a message to the contact
+      @contact_provider_status_const [:none, :session, :session_and_hsm, :hsm]
 
       # the enums for the flow engine
       @flow_case_const [:has_any_word]
@@ -43,13 +46,32 @@ defmodule Glific.Enums.Constants do
       ]
 
       # the different possible types of message
-      @message_type_const [:audio, :contact, :document, :hsm, :image, :location, :text, :video]
+      @message_type_const [
+        :audio,
+        :contact,
+        :document,
+        :hsm,
+        :image,
+        :location,
+        :text,
+        :video,
+        :sticker
+      ]
 
       # the possible question type constants
       @question_type_const [:text, :numeric, :date]
 
       # the possible sort direction for lists/rows, typically used in DB operations
       @sort_order_const [:asc, :desc]
+
+      # Supported types for contact field values
+      @contact_field_value_type_const [:text, :integer, :number, :boolean, :date]
+
+      # Contact fields scope types
+      @contact_field_scope_const [:contact, :globals]
+
+      # User roles
+      @user_roles_const [:none, :staff, :manager, :admin, :glific_admin]
     end
   end
 end

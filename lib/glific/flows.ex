@@ -4,11 +4,20 @@ defmodule Glific.Flows do
   """
 
   import Ecto.Query, warn: false
-  alias Glific.Repo
+  require Logger
 
-  alias Glific.Caches
-  alias Glific.Flows.Flow
-  alias Glific.Flows.FlowRevision
+  alias Glific.{
+    Caches,
+    Contacts,
+    Contacts.Contact,
+    Flows.Flow,
+    Flows.FlowContext,
+    Flows.FlowRevision,
+    Groups.Group,
+    Messages,
+    Partners,
+    Repo
+  }
 
   @doc """
   Returns the list of flows.
@@ -20,14 +29,42 @@ defmodule Glific.Flows do
 
   """
   @spec list_flows(map()) :: [Flow.t()]
-  def list_flows(args \\ %{}),
-    do: Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &Repo.filter_with/2)
+  def list_flows(args),
+    do: Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:keyword, keyword}, query ->
+        from f in query,
+          where: ^keyword in f.keywords
+
+      {:uuid, uuid}, query ->
+        from q in query, where: q.uuid == ^uuid
+
+      {:status, status}, query ->
+        query
+        |> where(
+          [f],
+          f.id in subquery(
+            FlowRevision
+            |> where([fr], fr.status == ^status)
+            |> select([fr], fr.flow_id)
+          )
+        )
+
+      _, query ->
+        query
+    end)
+  end
 
   @doc """
   Return the count of tags, using the same filter as list_tags
   """
   @spec count_flows(map()) :: integer
-  def count_flows(args \\ %{}),
+  def count_flows(args),
     do: Repo.count_filter(args, Flow, &Repo.filter_with/2)
 
   @doc """
@@ -60,8 +97,17 @@ defmodule Glific.Flows do
 
   """
   @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
-  def create_flow(attrs \\ %{}) do
-    attrs = Map.merge(attrs, %{uuid: Ecto.UUID.generate()})
+  def create_flow(attrs) do
+    attrs =
+      Map.merge(
+        attrs,
+        %{
+          uuid: Ecto.UUID.generate(),
+          keywords: sanitize_flow_keywords(attrs[:keywords])
+        }
+      )
+
+    clean_cached_flow_keywords_map(attrs.organization_id)
 
     with {:ok, flow} <-
            %Flow{}
@@ -70,7 +116,8 @@ defmodule Glific.Flows do
       {:ok, _} =
         FlowRevision.create_flow_revision(%{
           definition: FlowRevision.default_definition(flow),
-          flow_id: flow.id
+          flow_id: flow.id,
+          organization_id: flow.organization_id
         })
 
       {:ok, flow}
@@ -91,6 +138,14 @@ defmodule Glific.Flows do
   """
   @spec update_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def update_flow(%Flow{} = flow, attrs) do
+    # first delete the cached flow
+    Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
+    clean_cached_flow_keywords_map(flow.organization_id)
+
+    attrs =
+      attrs
+      |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords])})
+
     flow
     |> Flow.changeset(attrs)
     |> Repo.update()
@@ -132,13 +187,30 @@ defmodule Glific.Flows do
   """
   @spec get_flow_revision_list(String.t()) :: %{results: list()}
   def get_flow_revision_list(flow_uuid) do
-    flow = get_flow_with_revision(flow_uuid)
+    results =
+      FlowRevision
+      |> join(:left, [fr], f in Flow, as: :f, on: f.id == fr.flow_id)
+      |> where([fr, f], f.uuid == ^flow_uuid)
+      |> select([fr, f], %FlowRevision{
+        id: fr.id,
+        inserted_at: fr.inserted_at,
+        status: fr.status,
+        revision_number: fr.revision_number,
+        flow_id: fr.flow_id
+      })
+      |> order_by([fr], desc: fr.id)
+      |> limit(15)
+      |> Repo.all()
+
     # We should fix this to get the logged in user
     user = %{email: "user@glific.com", name: "Glific User"}
 
+    # Instead of sorting this list we need to fetch the ordered items from the DB
+    # We will optimize this more in the v0.4
     asset_list =
-      Enum.reduce(
-        flow.revisions,
+      results
+      |> Enum.sort(fn fr1, fr2 -> fr1.id >= fr2.id end)
+      |> Enum.reduce(
         [],
         fn revision, acc ->
           [
@@ -147,14 +219,15 @@ defmodule Glific.Flows do
               created_on: revision.inserted_at,
               id: revision.id,
               version: "13.0.0",
-              revision: revision.id
+              revision: revision.id,
+              status: revision.status
             }
             | acc
           ]
         end
       )
 
-    %{results: Enum.sort(asset_list) |> Enum.reverse()}
+    %{results: asset_list |> Enum.reverse()}
   end
 
   @doc """
@@ -166,14 +239,6 @@ defmodule Glific.Flows do
     %{definition: revision.definition, metadata: %{issues: []}}
   end
 
-  # Preload revisions in a flow.
-  # We still need to do some refactoring on this approch
-  @spec get_flow_with_revision(String.t()) :: Flow.t()
-  defp get_flow_with_revision(flow_uuid) do
-    {:ok, flow} = Repo.fetch_by(Flow, %{uuid: flow_uuid})
-    Repo.preload(flow, :revisions)
-  end
-
   @doc """
   Save new revision for the flow
   """
@@ -183,10 +248,18 @@ defmodule Glific.Flows do
 
     {:ok, revision} =
       %FlowRevision{}
-      |> FlowRevision.changeset(%{definition: definition, flow_id: flow.id})
+      |> FlowRevision.changeset(%{
+        definition: definition,
+        flow_id: flow.id,
+        organization_id: flow.organization_id
+      })
       |> Repo.insert()
 
-    update_cached_flow(flow.uuid)
+    # Now also delete the caches for the draft status, so we can reload
+    # note that we dont bother reloading the cache, since we dont expect
+    # draft simulator to run often, and drafts are being saved quite often
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
+
     revision
   end
 
@@ -233,26 +306,332 @@ defmodule Glific.Flows do
     {Enum.reverse(objects), uuid_map}
   end
 
-  @doc """
-    A helper function to intract with the Caching API and get the cached flow.
-    It will also set the loaded flow to cache in case it does not exists.
-  """
+  # Get a list of all the keys to cache the flow.
+  @spec keys_to_cache_flow(Flow.t(), String.t()) :: list()
+  defp keys_to_cache_flow(flow, status),
+    do:
+      Enum.map(flow.keywords, fn keyword -> {:flow_keyword, keyword, status} end)
+      |> Enum.concat([{:flow_uuid, flow.uuid, status}, {:flow_id, flow.id, status}])
 
-  @spec get_cached_flow(any, any) :: {atom, any}
-  def get_cached_flow(key, args) do
-    with {:ok, false} <- Caches.get(key) do
-      flow = Flow.get_loaded_flow(args)
-      Caches.set([flow.uuid, flow.shortcode], flow)
+  @spec make_args(atom(), any()) :: map()
+  defp make_args(key, value) do
+    case key do
+      :flow_uuid -> %{uuid: value}
+      :flow_id -> %{id: value}
+      :flow_keyword -> %{keyword: value}
+      _ -> raise ArgumentError, message: "Unknown key/value pair: #{key}, #{value}"
+    end
+  end
+
+  @spec load_cache(tuple()) :: tuple()
+  defp load_cache(cache_key) do
+    {organization_id, {key, value, status}} = cache_key
+    Repo.put_organization_id(organization_id)
+    Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
+    args = make_args(key, value)
+    flow = Flow.get_loaded_flow(organization_id, status, args)
+    Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
+
+    # We are setting the cache in the above statement with multiple keys
+    # hence we are asking cachex to just ignore this aspect. All the other
+    # requests will get the cache value sent above
+    {:ignore, flow}
+  end
+
+  @doc """
+  A helper function to interact with the Caching API and get the cached flow.
+  It will also set the loaded flow to cache in case it does not exists.
+  """
+  @spec get_cached_flow(non_neg_integer, {atom(), any(), String.t()}) :: {atom, any} | atom()
+  def get_cached_flow(nil, _key), do: {:ok, nil}
+
+  def get_cached_flow(organization_id, key) do
+    case Caches.fetch(organization_id, key, &load_cache/1) do
+      {:error, error} ->
+        Logger.info("Failed to retrieve flow, #{inspect(key)}, #{error}")
+        {:error, error}
+
+      {_, flow} ->
+        {:ok, flow}
     end
   end
 
   @doc """
-    Remove the flow from cache and add a new one.
+  Update the cached flow from db. This typically happens when the flow definition is updated
+  via the UI
   """
-  @spec update_cached_flow(Flow.t()) :: {atom, any}
-  def update_cached_flow(flow_uuid) do
-    flow = Flow.get_loaded_flow(%{uuid: flow_uuid})
-    Caches.remove([flow.uuid, flow.shortcode])
-    Caches.set([flow.uuid, flow.shortcode], flow)
+  @spec update_cached_flow(Flow.t(), String.t()) :: {atom, any}
+  def update_cached_flow(flow, status) do
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, status))
+    get_cached_flow(flow.organization_id, {:flow_uuid, flow.uuid, status})
   end
+
+  @doc """
+  Check if a flow has been activated since the time sent as a parameter
+  e.g. outofoffice will check if that flow was activated in the last 24 hours
+  daily/weekly will check since start of day/week, etc
+  """
+  @spec flow_activated(non_neg_integer, non_neg_integer, DateTime.t()) :: boolean
+  def flow_activated(flow_id, contact_id, since) do
+    results =
+      FlowContext
+      |> where([fc], fc.flow_id == ^flow_id)
+      |> where([fc], fc.contact_id == ^contact_id)
+      |> where([fc], fc.inserted_at >= ^since)
+      |> Repo.all()
+
+    if results != [],
+      do: true,
+      else: false
+  end
+
+  @doc """
+  Update latest flow revision status as published and increment the version
+  Update cached flow definition
+  """
+  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()}
+  def publish_flow(%Flow{} = flow) do
+    Logger.info("Published Flow: flow_id: '#{flow.id}'")
+
+    last_version = get_last_version_and_update_old_revisions(flow)
+
+    with {:ok, latest_revision} <-
+           FlowRevision
+           |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0}) do
+      {:ok, _} =
+        latest_revision
+        |> FlowRevision.changeset(%{status: "published", version: last_version + 1})
+        |> Repo.update()
+
+      # we need to fix this depending on where we are making the flow a beta or the published version
+      update_cached_flow(flow, "published")
+    end
+
+    {:ok, flow}
+  end
+
+  # Get version of last published flow revision
+  # Archive the last published flow revision
+  @spec get_last_version_and_update_old_revisions(Flow.t()) :: integer
+  defp get_last_version_and_update_old_revisions(flow) do
+    FlowRevision
+    |> Repo.fetch_by(%{flow_id: flow.id, status: "published"})
+    |> case do
+      {:ok, last_published_revision} ->
+        {:ok, _} =
+          last_published_revision
+          |> FlowRevision.changeset(%{status: "archived"})
+          |> Repo.update()
+
+        delete_old_draft_flow_revisions(flow, last_published_revision)
+
+        last_published_revision.version
+
+      {:error, _} ->
+        0
+    end
+  end
+
+  # Delete all old draft flow revisions,
+  # except the ones which are created after the last archived flow revision
+  @spec delete_old_draft_flow_revisions(Flow.t(), FlowRevision.t()) :: {integer(), nil | [term()]}
+  defp delete_old_draft_flow_revisions(flow, old_published_revision) do
+    FlowRevision
+    |> where([fr], fr.flow_id == ^flow.id)
+    |> where([fr], fr.id < ^old_published_revision.id)
+    |> where([fr], fr.status == "draft")
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Start flow for a contact
+  """
+  @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
+  def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
+    status = "published"
+
+    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow.id, status})
+
+    if Contacts.can_send_message_to?(contact),
+      do: process_contact_flow([contact], flow, status),
+      else: {:error, ["contact", "Cannot send the message to the contact."]}
+  end
+
+  @doc """
+  Start flow for contacts of a group
+  """
+  @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
+  def start_group_flow(flow, group) do
+    status = "published"
+
+    {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, status})
+
+    {:ok, _group_message} =
+      Messages.create_group_message(%{
+        body: "Starting flow: #{flow.name} for group: #{group.label}",
+        type: :text,
+        group_id: group.id
+      })
+
+    group = group |> Repo.preload([:contacts])
+    process_contact_flow(group.contacts, flow, status)
+  end
+
+  @doc """
+  Make a copy of a flow
+  """
+  @spec copy_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, String.t()}
+  def copy_flow(flow, attrs) do
+    attrs =
+      attrs
+      |> Map.merge(%{
+        version_number: flow.version_number,
+        flow_type: flow.flow_type,
+        organization_id: flow.organization_id,
+        uuid: Ecto.UUID.generate()
+      })
+
+    with {:ok, flow_copy} <-
+           %Flow{}
+           |> Flow.changeset(attrs)
+           |> Repo.insert() do
+      copy_flow_revision(flow, flow_copy)
+
+      {:ok, flow_copy}
+    end
+  end
+
+  @spec copy_flow_revision(Flow.t(), Flow.t()) :: {:ok, FlowRevision.t()} | {:error, String.t()}
+  defp copy_flow_revision(flow, flow_copy) do
+    with {:ok, latest_flow_revision} <-
+           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
+      definition_copy =
+        latest_flow_revision.definition
+        |> Map.merge(%{"uuid" => flow_copy.uuid})
+
+      {:ok, _} =
+        FlowRevision.create_flow_revision(%{
+          definition: definition_copy,
+          flow_id: flow_copy.id,
+          organization_id: flow_copy.organization_id
+        })
+    end
+  end
+
+  @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
+  defp process_contact_flow(contacts, flow, status) do
+    organization = Partners.organization(flow.organization_id)
+    # lets do 90% of organization bsp limit to allow replies to come in and be processed
+    org_limit = organization.services["bsp"].keys["bsp_limit"]
+    org_limit = if is_nil(org_limit), do: 30, else: org_limit
+    limit = div(org_limit * 90, 100)
+
+    _ignore =
+      Enum.reduce(
+        contacts,
+        0,
+        fn contact, count ->
+          if Contacts.can_send_message_to?(contact) do
+            FlowContext.init_context(flow, contact, status)
+
+            if count + 1 == limit do
+              Process.sleep(1000)
+              0
+            else
+              count + 1
+            end
+          else
+            count
+          end
+        end
+      )
+
+    {:ok, flow}
+  end
+
+  @doc """
+  Create a map of keywords that map to flow ids for each
+  active organization. Also cache this value including the outoffice
+  shortcode
+  """
+  @spec flow_keywords_map(non_neg_integer) :: map()
+  def flow_keywords_map(organization_id) do
+    case Caches.fetch(organization_id, "flow_keywords_map", &load_flow_keywords_map/1) do
+      {:error, error} ->
+        raise(ArgumentError,
+          message: "Failed to retrieve flow_keywords_map, #{inspect(organization_id)}, #{error}"
+        )
+
+      {_, value} ->
+        value
+    end
+  end
+
+  @spec update_flow_keyword_map(map(), String.t(), String.t(), non_neg_integer) :: map()
+  defp update_flow_keyword_map(map, status, keyword, flow_id) do
+    map
+    |> Map.update(
+      status,
+      %{keyword => flow_id},
+      fn m -> Map.put(m, keyword, flow_id) end
+    )
+  end
+
+  @spec add_flow_keyword_map(map(), map()) :: map()
+  defp add_flow_keyword_map(flow, acc) do
+    Enum.reduce(
+      flow.keywords,
+      acc,
+      fn keyword, acc ->
+        keyword = Glific.string_clean(keyword)
+        acc = update_flow_keyword_map(acc, flow.status, keyword, flow.id)
+
+        # always add to draft status if published
+        if flow.status == "published",
+          do: update_flow_keyword_map(acc, "draft", keyword, flow.id),
+          else: acc
+      end
+    )
+  end
+
+  @spec load_flow_keywords_map(tuple()) :: tuple()
+  defp load_flow_keywords_map(cache_key) do
+    # this is of the form {organization_id, "flow_keywords_map}"
+    # we want the organization_id
+    organization_id = cache_key |> elem(0)
+
+    value =
+      Flow
+      |> where([f], f.organization_id == ^organization_id)
+      |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
+      |> select([f, fr], %{keywords: f.keywords, id: f.id, status: fr.status})
+      # the revisions table is potentially large, so we really want just a few rows from
+      # it, hence this where clause
+      |> where([f, fr], fr.status == "published" or fr.revision_number == 0)
+      |> Repo.all(skip_organization_id: true)
+      |> Enum.reduce(
+        %{},
+        fn flow, acc -> add_flow_keyword_map(flow, acc) end
+      )
+
+    organization = Partners.organization(organization_id)
+
+    value =
+      if organization.out_of_office.enabled and organization.out_of_office.flow_id,
+        do: Map.put(value, "outofoffice", organization.out_of_office.flow_id),
+        else: value
+
+    {:commit, value}
+  end
+
+  @doc false
+  @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
+  defp clean_cached_flow_keywords_map(organization_id),
+    do: Caches.remove(organization_id, ["flow_keywords_map"])
+
+  @spec sanitize_flow_keywords(list) :: list()
+  defp sanitize_flow_keywords(keywords) when is_list(keywords),
+    do: Enum.map(keywords, &Glific.string_clean(&1))
+
+  defp sanitize_flow_keywords(keywords), do: keywords
 end

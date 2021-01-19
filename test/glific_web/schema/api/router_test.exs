@@ -1,16 +1,45 @@
 defmodule GlificWeb.RouterTest do
   use GlificWeb.ConnCase, async: true
 
-  alias Glific.Seeds.SeedsDev
+  alias Glific.{
+    Fixtures,
+    Repo,
+    Seeds.SeedsDev,
+    Users.User
+  }
 
-  setup do
+  @password "secret1234"
+  @valid_params %{
+    "user" => %{"phone" => "+919820198765", "name" => "Jane Doe", "password" => @password}
+  }
+
+  setup %{conn: conn, organization_id: organization_id} do
     SeedsDev.seed_tag()
-    :ok
+
+    contact = Fixtures.contact_fixture()
+
+    _user =
+      %User{}
+      |> User.changeset(%{
+        phone: @valid_params["user"]["phone"],
+        name: @valid_params["user"]["name"],
+        password: @password,
+        password_confirmation: @password,
+        contact_id: contact.id,
+        organization_id: organization_id,
+        roles: ["manager"]
+      })
+      |> Repo.insert!()
+
+    authed_conn = post(conn, Routes.api_v1_session_path(conn, :create, @valid_params))
+    :timer.sleep(100)
+
+    {:ok, access_token: authed_conn.private[:api_access_token]}
   end
 
   # lets do a simple tags listing to test the forward call on the normal channel
   describe "test tags via /api and http" do
-    test "gets a list of tags" do
+    test "gets a list of tags", %{conn: conn, access_token: token} do
       query = """
       query listTags {
         tags {
@@ -27,7 +56,8 @@ defmodule GlificWeb.RouterTest do
       variables = %{}
 
       response =
-        build_conn()
+        conn
+        |> Plug.Conn.put_req_header("authorization", token)
         |> post("/api", %{query: query, variables: variables})
 
       response = json_response(response, 200)
@@ -36,7 +66,8 @@ defmodule GlificWeb.RouterTest do
 
       # grab the graphiql end point to ensure it is present and running
       response =
-        build_conn()
+        conn
+        |> Plug.Conn.put_req_header("authorization", token)
         |> post("/graphiql", %{query: query, variables: variables})
 
       gql = json_response(response, 200)
@@ -44,16 +75,16 @@ defmodule GlificWeb.RouterTest do
       assert tags == gql_tags
     end
 
-    test "test secure endpoints and ensure we get an error while we figure out authorization" do
+    test "test  endpoints and ensure we get an error when not authenricated", %{conn: conn} do
       response =
-        build_conn()
-        |> post("/secure/api", %{query: "", variables: %{}})
+        conn
+        |> post("/api", %{query: "", variables: %{}})
 
       assert response.status == 401
 
       response =
-        build_conn()
-        |> post("/secure/graphiql", %{query: "", variables: %{}})
+        conn
+        |> post("/graphiql", %{query: "", variables: %{}})
 
       assert response.status == 401
     end

@@ -1,7 +1,8 @@
 defmodule GlificWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :glific
   use Absinthe.Phoenix.Endpoint
-  use Sentry.Phoenix.Endpoint
+  use Appsignal.Phoenix
+  plug GlificWeb.Plugs.AppsignalAbsinthePlug
 
   @moduledoc false
   # The session will be stored in the cookie and signed,
@@ -13,8 +14,11 @@ defmodule GlificWeb.Endpoint do
     signing_salt: "nE0doVhV"
   ]
 
+  # create pow_config for authentication
+  @pow_config otp_app: :glific
+
   socket "/socket", GlificWeb.UserSocket,
-    websocket: true,
+    websocket: [connect_info: [pow_config: @pow_config]],
     longpoll: false
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
@@ -45,14 +49,34 @@ defmodule GlificWeb.Endpoint do
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
-  plug Plug.Parsers,
+  plug :parse_body
+
+  opts = [
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
     json_decoder: Phoenix.json_library()
+  ]
+
+  @parser_without_cache Plug.Parsers.init(opts)
+  @parser_with_cache Plug.Parsers.init(
+                       [body_reader: {GlificWeb.Misc.BodyReader, :cache_raw_body, []}] ++ opts
+                     )
+
+  # All endpoints that start with "webhooks" have their body cached.
+  defp parse_body(%{path_info: ["webhook" | _]} = conn, _),
+    do: Plug.Parsers.call(conn, @parser_with_cache)
+
+  defp parse_body(conn, _),
+    do: Plug.Parsers.call(conn, @parser_without_cache)
 
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
   plug CORSPlug
+
+  # add the subdomain/domain
+  plug GlificWeb.SubdomainPlug
+  plug GlificWeb.EnsurePlug
+
   plug GlificWeb.Router
 end

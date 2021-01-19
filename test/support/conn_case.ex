@@ -18,7 +18,12 @@ defmodule GlificWeb.ConnCase do
   use ExUnit.CaseTemplate
 
   alias Ecto.Adapters.SQL.Sandbox
-  alias Glific.Repo
+
+  alias Glific.{
+    Fixtures,
+    Partners,
+    Repo
+  }
 
   using do
     quote do
@@ -31,6 +36,15 @@ defmodule GlificWeb.ConnCase do
 
       # The default endpoint for testing
       @endpoint GlificWeb.Endpoint
+
+      defmacro auth_query_gql_by(query, user, options \\ []) do
+        quote do
+          options_user =
+            Keyword.put_new(unquote(options), :context, %{:current_user => unquote(user)})
+
+          query_gql_by(unquote(query), options_user)
+        end
+      end
     end
   end
 
@@ -41,6 +55,23 @@ defmodule GlificWeb.ConnCase do
       Sandbox.mode(Repo, {:shared, self()})
     end
 
-    {:ok, conn: Phoenix.ConnTest.build_conn()}
+    organization_id = 1
+    organization_id |> Partners.get_organization!() |> Partners.fill_cache()
+
+    manager = Fixtures.user_fixture(%{roles: ["manager"]})
+
+    Glific.Repo.put_organization_id(1)
+    Glific.Repo.put_current_user(manager)
+
+    {
+      :ok,
+      conn: Phoenix.ConnTest.build_conn() |> Plug.Conn.assign(:organization_id, organization_id),
+      organization_id: organization_id,
+      user: Fixtures.user_fixture(),
+      manager: manager,
+      staff: Fixtures.user_fixture(%{roles: ["staff"]}),
+      glific_admin: Fixtures.user_fixture(%{roles: ["glific_admin"]}),
+      global_schema: Application.fetch_env!(:glific, :global_schema)
+    }
   end
 end

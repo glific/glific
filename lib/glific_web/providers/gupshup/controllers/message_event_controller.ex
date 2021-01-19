@@ -52,8 +52,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventController do
   # Updates the provider message status based on provider message id
   @spec update_status(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
   defp update_status(conn, params, status) do
-    provider_message_id = get_in(params, ["payload", "gsId"]) || get_in(params, ["payload", "id"])
-    Communications.Message.update_provider_status(provider_message_id, status)
+    bsp_message_id = get_in(params, ["payload", "gsId"]) || get_in(params, ["payload", "id"])
+    Communications.Message.update_bsp_status(bsp_message_id, status, params)
     handler(conn, params, "Status updated")
   end
 end

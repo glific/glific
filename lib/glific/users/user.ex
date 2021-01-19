@@ -3,7 +3,12 @@ defmodule Glific.Users.User do
   use Ecto.Schema
   use Pow.Ecto.Schema, user_id_field: :phone
 
-  alias Glific.{Groups.Group}
+  alias Glific.{
+    Contacts.Contact,
+    Enums.UserRoles,
+    Groups.Group,
+    Partners.Organization
+  }
 
   alias Ecto.Changeset
   import Pow.Ecto.Schema.Changeset, only: [password_changeset: 3, current_password_changeset: 3]
@@ -12,23 +17,42 @@ defmodule Glific.Users.User do
           __meta__: Ecto.Schema.Metadata.t(),
           phone: String.t() | nil,
           password_hash: String.t() | nil,
+          contact_id: non_neg_integer | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          roles: [String.t()] | nil,
+          is_restricted: boolean(),
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
-  @required_fields [:phone, :name, :password]
-  @optional_fields [:name, :roles]
-  @user_roles ~w(none basic advanced admin)
+  @required_fields [:phone, :name, :password, :contact_id, :organization_id]
+  @optional_fields [:name, :roles, :is_restricted]
 
   schema "users" do
     field :name, :string
-    field :roles, {:array, :string}, default: ["none"]
+    field :roles, {:array, UserRoles}, default: [:none]
+
+    # is this user restricted to contacts only in groups that they are part of
+    field :is_restricted, :boolean, default: false
+
+    belongs_to :contact, Contact
+    belongs_to :organization, Organization
 
     pow_user_fields()
 
     many_to_many :groups, Group, join_through: "users_groups", on_replace: :delete
 
     timestamps()
+  end
+
+  @doc """
+  A constant function to get list of roles
+  """
+  def get_roles_list do
+    # keeping the order alphabetical ASC for frontend dropdown display
+    ["Admin", "Manager", "No access", "Staff"]
   end
 
   @doc """
@@ -39,10 +63,10 @@ defmodule Glific.Users.User do
     user_or_changeset
     |> Changeset.cast(attrs, @required_fields ++ @optional_fields)
     |> Changeset.validate_required(@required_fields)
-    |> Changeset.validate_subset(:roles, @user_roles)
     |> glific_phone_field_changeset(attrs, @pow_config)
     |> current_password_changeset(attrs, @pow_config)
     |> password_changeset(attrs, @pow_config)
+    |> Changeset.unique_constraint(:contact_id)
   end
 
   @doc """
@@ -55,31 +79,20 @@ defmodule Glific.Users.User do
     |> Changeset.cast(params, [:phone])
     |> Changeset.update_change(:phone, &maybe_normalize_user_id_field_value/1)
     |> Changeset.validate_required([:phone])
-    |> Changeset.unique_constraint(:phone)
+    |> Changeset.unique_constraint([:phone, :organization_id])
   end
 
   @doc """
-  Simple changeset for update name and roles
+  Simple changeset for update name, roles and is_restricted
   """
   @spec update_fields_changeset(Ecto.Schema.t() | Changeset.t(), map()) ::
           Changeset.t()
   def update_fields_changeset(user_or_changeset, params) do
     user_or_changeset
-    |> Changeset.cast(params, [:name, :roles])
+    |> Changeset.cast(params, [:name, :roles, :password, :is_restricted])
     |> Changeset.validate_required([:name, :roles])
-    |> Changeset.validate_subset(:roles, @user_roles)
-  end
-
-  @doc """
-  Simple changeset for reset password
-  """
-  @spec reset_password_changeset(Ecto.Schema.t() | Changeset.t(), map()) ::
-          Changeset.t()
-  def reset_password_changeset(user_or_changeset, attrs) do
-    user_or_changeset
-    |> Changeset.cast(attrs, [:password])
-    |> Changeset.validate_required([:password])
-    |> password_changeset(attrs, @pow_config)
+    |> password_changeset(params, @pow_config)
+    |> Changeset.unique_constraint(:contact_id)
   end
 
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),

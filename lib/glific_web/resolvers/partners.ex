@@ -4,15 +4,27 @@ defmodule GlificWeb.Resolvers.Partners do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Partners, Partners.Organization, Partners.Provider, Repo}
+  alias Glific.{
+    Partners,
+    Partners.Credential,
+    Partners.Organization,
+    Partners.Provider,
+    Repo
+  }
 
   @doc """
   Get a specific organization by id
   """
-  @spec organization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  @spec organization(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def organization(_, %{id: id}, _) do
-    with {:ok, organization} <- Repo.fetch(Organization, id),
+    with {:ok, organization} <- Repo.fetch(Organization, id, skip_organization_id: true),
+         do: {:ok, %{organization: organization}}
+  end
+
+  def organization(_, _, %{context: %{current_user: current_user}}) do
+    with {:ok, organization} <-
+           Repo.fetch(Organization, current_user.organization_id, skip_organization_id: true),
          do: {:ok, %{organization: organization}}
   end
 
@@ -51,7 +63,7 @@ defmodule GlificWeb.Resolvers.Partners do
           context: map()
         }) :: {:ok, any} | {:error, any}
   def update_organization(_, %{id: id, input: params}, _) do
-    with {:ok, organization} <- Repo.fetch(Organization, id),
+    with {:ok, organization} <- Repo.fetch(Organization, id, skip_organization_id: true),
          {:ok, organization} <- Partners.update_organization(organization, params) do
       {:ok, %{organization: organization}}
     end
@@ -96,6 +108,26 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
+  Get a specific bsp balance by organization id
+  """
+  @spec bspbalance(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def bspbalance(_, _, %{context: %{current_user: user}}) do
+    with {:ok, balance} <- get_balance(user.organization_id) do
+      {:ok, balance}
+    end
+  end
+
+  @spec get_balance(non_neg_integer) :: {:ok, map()} | {:error, String.t()}
+  defp get_balance(organization_id) do
+    Partners.get_bsp_balance(organization_id)
+    |> case do
+      {:ok, data} -> {:ok, %{key: "bsp_balance", value: %{balance: data["balance"]}}}
+      _ -> {:error, "Error while fetching the balance"}
+    end
+  end
+
+  @doc """
   Creates a provider
   """
   @spec create_provider(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
@@ -127,6 +159,59 @@ defmodule GlificWeb.Resolvers.Partners do
     with {:ok, provider} <- Repo.fetch(Provider, id),
          {:ok, provider} <- Partners.delete_provider(provider) do
       {:ok, provider}
+    end
+  end
+
+  @doc """
+  Get organization's credential by shorcode/service
+  """
+  @spec credential(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def credential(_, %{shortcode: shortcode}, %{
+        context: %{current_user: current_user}
+      }) do
+    with {:ok, credential} <-
+           Partners.get_credential(%{
+             organization_id: current_user.organization_id,
+             shortcode: shortcode
+           }),
+         do: {:ok, %{credential: credential}}
+  end
+
+  @doc """
+  Creates an organization's credential
+  """
+  @spec create_credential(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_credential(_, %{input: params}, %{
+        context: %{current_user: current_user}
+      }) do
+    with {:ok, credential} <-
+           Partners.create_credential(
+             Map.merge(params, %{organization_id: current_user.organization_id})
+           ) do
+      {:ok, %{credential: credential}}
+    end
+  end
+
+  @doc """
+  Updates an organization's credential
+  """
+  @spec update_credential(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def update_credential(_, %{id: id, input: params}, %{
+        context: %{current_user: current_user}
+      }) do
+    with {:ok, credential} <-
+           Repo.fetch_by(Credential, %{
+             id: id,
+             organization_id: current_user.organization_id
+           }),
+         {:ok, credential} <-
+           Partners.update_credential(credential, params) do
+      {:ok, %{credential: credential}}
     end
   end
 end

@@ -6,18 +6,21 @@ defmodule Glific.Messages.MessageMedia do
   use Ecto.Schema
   import Ecto.Changeset
   alias __MODULE__
+  alias Glific.Partners.Organization
 
   # define all the required fields for message media
   @required_fields [
     :url,
-    :source_url
+    :source_url,
+    :organization_id
   ]
 
   # define all the optional fields for message media
   @optional_fields [
     :thumbnail,
     :provider_media_id,
-    :caption
+    :caption,
+    :gcs_url
   ]
 
   @type t() :: %__MODULE__{
@@ -29,7 +32,10 @@ defmodule Glific.Messages.MessageMedia do
           thumbnail: String.t() | nil,
           provider_media_id: String.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          gcs_url: String.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "messages_media" do
@@ -38,6 +44,9 @@ defmodule Glific.Messages.MessageMedia do
     field :thumbnail, :string
     field :caption, :string
     field :provider_media_id, :string
+    field :gcs_url, :string
+
+    belongs_to :organization, Organization
 
     timestamps(type: :utc_datetime)
   end

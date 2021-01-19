@@ -1,32 +1,41 @@
 defmodule Glific.Caches do
   @moduledoc """
-    Glific Cache management
+  Glific Cache management
   """
   @cache_bucket :glific_cache
+
   @behaviour Glific.Caches.CacheBehaviour
+
+  # set timer limit
+  @ttl_limit 24
 
   @doc """
   Store all the in cachex :flows_cache. At some point, we will just use this dynamically
   """
   @impl Glific.Caches.CacheBehaviour
-  @spec set(list(), (any() -> any()), map()) :: {:ok, any()}
-  def set(keys, process_fn, args), do: set_to_cache(keys, process_fn.(args))
+  @spec set(non_neg_integer, list(), (any() -> any()), map()) :: {:ok, any()}
+  def set(organization_id, keys, process_fn, args),
+    do: set_to_cache(organization_id, keys, process_fn.(args))
 
   @doc false
   @impl Glific.Caches.CacheBehaviour
-  @spec set(list(), any()) :: {:ok, any()}
-  def set(keys, value) when is_list(keys), do: set_to_cache(keys, value)
+  @spec set(non_neg_integer, any(), any()) :: {:ok, any()}
+  def set(organization_id, keys, value) when is_list(keys),
+    do: set_to_cache(organization_id, keys, value)
 
   @doc false
   @impl Glific.Caches.CacheBehaviour
-  @spec set(String.t() | atom(), any()) :: {:ok, any()}
-  def set(key, value), do: set_to_cache([key], value)
+  def set(organization_id, key, value), do: set_to_cache(organization_id, [key], value)
 
   @doc false
-  @spec set_to_cache(list(), any) :: {:ok, any()}
-  defp set_to_cache(keys, value) do
-    keys = Enum.reduce(keys, [], fn key, acc -> [{key, value} | acc] end)
-    {:ok, true} = Cachex.put_many(@cache_bucket, keys)
+  @spec set_to_cache(non_neg_integer, list(), any) :: {:ok, any()}
+  defp set_to_cache(organization_id, keys, value) do
+    keys = Enum.reduce(keys, [], fn key, acc -> [{{organization_id, key}, value} | acc] end)
+
+    # also update the reload key for consumers to refresh caches
+    keys = [{{organization_id, :cache_reload_key}, Ecto.UUID.generate()} | keys]
+
+    {:ok, true} = Cachex.put_many(@cache_bucket, keys, ttl: :timer.hours(@ttl_limit))
     {:ok, value}
   end
 
@@ -34,17 +43,36 @@ defmodule Glific.Caches do
   Get a cached value based on a key
   """
   @impl Glific.Caches.CacheBehaviour
-  @spec get(String.t() | atom()) :: {:ok, any()} | {:ok, false}
-  def get(key) do
-    with {:ok, true} <- Cachex.exists?(@cache_bucket, key),
-         do: Cachex.get(@cache_bucket, key)
+  @spec get(non_neg_integer, any()) :: {:ok, any()} | {:ok, false}
+  def get(organization_id, key) do
+    case Cachex.exists?(@cache_bucket, {organization_id, key}) do
+      {:ok, true} ->
+        Cachex.refresh(@cache_bucket, {organization_id, key})
+        Cachex.get(@cache_bucket, {organization_id, key})
+
+      _ ->
+        {:ok, false}
+    end
+  end
+
+  @doc """
+  Get a cached value based on a key with fallback
+  """
+  @impl Glific.Caches.CacheBehaviour
+  @spec fetch(non_neg_integer, any(), (any() -> any())) ::
+          {:ok | :error | :commit | :ignore, any()}
+  def fetch(organization_id, key, fallback_fn) do
+    Cachex.fetch(@cache_bucket, {organization_id, key}, fallback_fn)
   end
 
   @doc """
   Remove a value from the cache
   """
   @impl Glific.Caches.CacheBehaviour
-  @spec remove(list()) :: any()
-  def remove(keys),
-    do: Enum.map(keys, fn key -> Cachex.del(@cache_bucket, key) end)
+  @spec remove(non_neg_integer, list()) :: any()
+  def remove(organization_id, keys),
+    do:
+      Enum.map(keys, fn key ->
+        {:ok, _} = Cachex.del(@cache_bucket, {organization_id, key})
+      end)
 end

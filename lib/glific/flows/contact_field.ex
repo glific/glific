@@ -5,16 +5,20 @@ defmodule Glific.Flows.ContactField do
   """
 
   alias Glific.{
+    Bigquery,
     Contacts,
-    Flows.FlowContext
+    Contacts.ContactsField,
+    Flows.FlowContext,
+    Repo
   }
 
   @doc """
   Add a field {key, value} to a contact. For now, all preferences are stored under the
   settings map, with a sub-map of preferences. We expect to get more clarity on this soon
   """
-  @spec add_contact_field(FlowContext.t(), String.t(), String.t(), String.t()) :: FlowContext.t()
-  def add_contact_field(context, field, value, type) do
+  @spec add_contact_field(FlowContext.t(), String.t(), String.t(), String.t(), String.t()) ::
+          FlowContext.t()
+  def add_contact_field(context, field, label, value, type) do
     contact_fields =
       if is_nil(context.contact.fields),
         do: %{},
@@ -22,13 +26,19 @@ defmodule Glific.Flows.ContactField do
 
     fields =
       contact_fields
-      |> Map.put(field, %{value: value, type: type, inserted_at: DateTime.utc_now()})
+      |> Map.put(field, %{value: value, label: label, type: type, inserted_at: DateTime.utc_now()})
 
     {:ok, contact} =
       Contacts.update_contact(
         context.contact,
         %{fields: fields}
       )
+
+    Bigquery.update_contact(
+      context.contact.phone,
+      %{"fields" => fields},
+      context.contact.organization_id
+    )
 
     Map.put(context, :contact, contact)
   end
@@ -45,5 +55,22 @@ defmodule Glific.Flows.ContactField do
       )
 
     Map.put(context, :contact, contact)
+  end
+
+  @doc """
+  list contacts fields.
+  """
+  @spec list_contacts_fields(map()) :: [ContactsField.t()]
+  def list_contacts_fields(%{filter: %{organization_id: _organization_id}} = args),
+    do: Repo.list_filter(args, ContactsField, &Repo.opts_with_label/2, &Repo.filter_with/2)
+
+  @doc """
+  Create contact field
+  """
+  @spec create_contact_field(map()) :: {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
+  def create_contact_field(attrs) do
+    %ContactsField{}
+    |> ContactsField.changeset(attrs)
+    |> Repo.insert()
   end
 end

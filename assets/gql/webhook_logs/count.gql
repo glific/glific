@@ -1,0 +1,3 @@
+query count_webhook_logs($filter: WebhookLogFilter) {
+  countWebhookLogs(filter: $filter)
+}

@@ -13,7 +13,6 @@ defmodule GlificWeb.Schema do
 
   import_types(__MODULE__.ContactTypes)
   import_types(__MODULE__.ContactTagTypes)
-  import_types(__MODULE__.ConversationTypes)
   import_types(__MODULE__.EnumTypes)
   import_types(__MODULE__.GenericTypes)
   import_types(__MODULE__.LanguageTypes)
@@ -21,8 +20,10 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.MessageMediaTypes)
   import_types(__MODULE__.MessageTagTypes)
   import_types(__MODULE__.OrganizationTypes)
+  import_types(__MODULE__.CredentialTypes)
   import_types(__MODULE__.ProviderTypes)
   import_types(__MODULE__.SessionTemplateTypes)
+  import_types(__MODULE__.TemplateTagTypes)
   import_types(__MODULE__.TagTypes)
   import_types(__MODULE__.UserTypes)
   import_types(__MODULE__.GroupTypes)
@@ -30,11 +31,11 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.UserGroupTypes)
   import_types(__MODULE__.SearchTypes)
   import_types(__MODULE__.FlowTypes)
+  import_types(__MODULE__.WebhookLogTypes)
+  import_types(__MODULE__.LocationTypes)
 
   query do
     import_fields(:contact_queries)
-
-    import_fields(:conversation_queries)
 
     import_fields(:language_queries)
 
@@ -43,6 +44,8 @@ defmodule GlificWeb.Schema do
     import_fields(:message_media_queries)
 
     import_fields(:organization_queries)
+
+    import_fields(:credential_queries)
 
     import_fields(:provider_queries)
 
@@ -57,6 +60,10 @@ defmodule GlificWeb.Schema do
     import_fields(:search_queries)
 
     import_fields(:flow_queries)
+
+    import_fields(:webhook_log_queries)
+
+    import_fields(:location_queries)
   end
 
   mutation do
@@ -74,9 +81,13 @@ defmodule GlificWeb.Schema do
 
     import_fields(:organization_mutations)
 
+    import_fields(:credential_mutations)
+
     import_fields(:provider_mutations)
 
     import_fields(:session_template_mutations)
+
+    import_fields(:template_tag_mutations)
 
     import_fields(:tag_mutations)
 
@@ -97,6 +108,8 @@ defmodule GlificWeb.Schema do
     import_fields(:message_subscriptions)
 
     import_fields(:message_tag_subscriptions)
+
+    import_fields(:organization_subscriptions)
   end
 
   @doc """
@@ -111,26 +124,27 @@ defmodule GlificWeb.Schema do
           Absinthe.Type.Object.t()
         ) :: [Absinthe.Middleware.spec(), ...]
   def middleware(middleware, _field, %{identifier: :mutation}),
-    do: middleware ++ [Middleware.ChangesetErrors]
+    do: [Middleware.AddOrganization | middleware] ++ [Middleware.ChangesetErrors]
 
   def middleware(middleware, _field, %{identifier: :query}),
-    do: middleware ++ [Middleware.QueryErrors]
+    do: [Middleware.AddOrganization | middleware] ++ [Middleware.QueryErrors]
 
   def middleware(middleware, _field, _object),
     do: middleware
 
   @doc """
-  Used to set some values in the context that we may need in order to run. For now we are just using it
-  for Dataloader perspectives.
-
-  I think we will be storing authentication and current user in the context map in future releases. We have
-  already started storing current user info in the context map.
+  Used to set some values in the context that we may need in order to run.
+  We store the organization id and the current user in the context once the user has been
+  authenticated
   """
   @spec context(map()) :: map()
   def context(ctx) do
     loader =
       Dataloader.new()
-      |> Dataloader.add_source(Repo, Dataloader.Ecto.new(Repo))
+      |> Dataloader.add_source(
+        Repo,
+        Dataloader.Ecto.new(Repo, repo_opts: [organization_id: ctx.current_user.organization_id])
+      )
 
     Map.put(ctx, :loader, loader)
   end
@@ -141,5 +155,19 @@ defmodule GlificWeb.Schema do
   @spec plugins() :: [Absinthe.Plugin.t()]
   def plugins do
     [Absinthe.Middleware.Dataloader | Absinthe.Plugin.defaults()]
+  end
+
+  @doc """
+  Validation function for all subscriptions received by the system
+  """
+  @spec config_fun(map(), map()) :: {:ok, Keyword.t()} | {:error, String.t()}
+  def config_fun(args, %{context: %{current_user: user}}) do
+    organization_id = args.organization_id
+
+    if organization_id == Integer.to_string(user.organization_id) do
+      {:ok, [topic: organization_id, context_id: organization_id]}
+    else
+      {:error, "Credentials did not match"}
+    end
   end
 end

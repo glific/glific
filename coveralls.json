@@ -1,6 +1,11 @@
 {
+    "coverage_options": {
+        "minimum_coverage": 80,
+        "treat_no_relevant_lines_as_covered": true
+    },
     "skip_files": [
         "lib/glific/application.ex",
+        "lib/glific/release.ex",
         "lib/glific_web.ex",
         "lib/glific_web/endpoint.ex",
         "lib/glific_web/views",
@@ -11,10 +16,27 @@
         "lib/glific/seeds/seeder.ex",
         "lib/glific/seeds/seeds_dev.ex",
         "lib/glific/seeds/seeds_scale.ex",
+        "lib/glific/seeds/seeds_optins.ex",
+        "lib/glific/seeds/add_glific_organization_data.ex",
         "lib/glific/providers/glifproxy",
         "lib/glific_web/providers/glifproxy",
         "lib/glific_web/schema",
         "lib/glific.ex",
+        "lib/glific/csv",
+        "lib/glific/dialogflow",
+        "lib/glific/dialogflow.ex",
+        "lib/glific/bigquery.ex",
+        "lib/glific/jobs",
+        "lib/glific/jobs.ex",
+        "lib/glific/jobs/minute_worker.ex",
+        "lib/glific_web/channels/user_socket.ex",
+        "lib/glific/flags/ecto.ex",
+        "lib/glific/appsignal.ex",
+        "lib/glific/flows/webhook.ex",
+        "lib/glific_web/plugs/subdomain_plug_config.ex",
+        "lib/glific_web/plugs/ensure_plug_config.ex",
+        "lib/glific_web/plugs/absinthe_plug.ex",
+        "lib/glific_web/uploaders",
         "test/support"
     ]
 }

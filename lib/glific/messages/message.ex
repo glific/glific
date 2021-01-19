@@ -2,31 +2,59 @@ defmodule Glific.Messages.Message do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
+
   alias __MODULE__
 
-  alias Glific.{Contacts.Contact, Messages.MessageMedia, Tags.Tag, Users.User}
+  alias Glific.{
+    Contacts.Contact,
+    Contacts.Location,
+    Flows.Flow,
+    Groups.Group,
+    Messages.MessageMedia,
+    Partners.Organization,
+    Tags.Tag,
+    Users.User
+  }
+
   alias Glific.Enums.{MessageFlow, MessageStatus, MessageType}
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
+          uuid: Ecto.UUID.t() | nil,
           type: String.t() | nil,
           is_hsm: boolean | nil,
           flow: String.t() | nil,
+          flow_label: String.t() | nil,
           status: String.t() | nil,
-          provider_status: String.t() | nil,
+          bsp_status: String.t() | nil,
+          errors: map() | nil,
           message_number: integer(),
+          sender_id: non_neg_integer | nil,
           sender: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          receiver_id: non_neg_integer | nil,
           receiver: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          user_id: non_neg_integer | nil,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
+          group_id: non_neg_integer | nil,
+          group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
+          flow_id: non_neg_integer | nil,
+          flow_object: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          media_id: non_neg_integer | nil,
           media: MessageMedia.t() | Ecto.Association.NotLoaded.t() | nil,
+          location: Location.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           body: String.t() | nil,
-          provider_message_id: String.t() | nil,
+          clean_body: String.t() | nil,
+          bsp_message_id: String.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
-          inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          session_uuid: Ecto.UUID.t() | nil,
+          inserted_at: :utc_datetime_usec | nil,
+          updated_at: :utc_datetime_usec | nil
         }
 
   @required_fields [
@@ -34,45 +62,64 @@ defmodule Glific.Messages.Message do
     :flow,
     :sender_id,
     :receiver_id,
-    :contact_id
+    :contact_id,
+    :organization_id
   ]
   @optional_fields [
+    :uuid,
     :body,
+    :flow_label,
+    :clean_body,
     :is_hsm,
     :status,
-    :provider_status,
-    :provider_message_id,
+    :bsp_status,
+    :bsp_message_id,
+    :errors,
     :media_id,
+    :group_id,
     :send_at,
     :sent_at,
-    :user_id
+    :user_id,
+    :flow_id,
+    :session_uuid
   ]
 
   schema "messages" do
+    field :uuid, Ecto.UUID
     field :body, :string
+    field :flow_label, :string
     field :flow, MessageFlow
     field :type, MessageType
     field :status, MessageStatus
 
+    # we keep the clean version of the body here for easy access by flows
+    # and other actors
+    field :clean_body, :string, virtual: true
+
     field :is_hsm, :boolean, default: false
 
-    field :provider_message_id, :string
-    field :provider_status, MessageStatus
+    field :bsp_message_id, :string
+    field :bsp_status, MessageStatus
+    field :errors, :map, default: %{}
     field :send_at, :utc_datetime
     field :sent_at, :utc_datetime
     field :message_number, :integer, default: 0
+    field :session_uuid, Ecto.UUID
 
     belongs_to :sender, Contact
     belongs_to :receiver, Contact
     belongs_to :contact, Contact
-
     belongs_to :user, User
-
+    belongs_to :flow_object, Flow, foreign_key: :flow_id
     belongs_to :media, MessageMedia
+    belongs_to :organization, Organization
+
+    belongs_to :group, Group
+    has_one :location, Location
 
     many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc """

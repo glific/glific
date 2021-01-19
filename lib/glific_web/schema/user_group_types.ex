@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.UserGroupTypes do
 
   alias Glific.Repo
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :user_group_result do
     field :user_group, :user_group
@@ -32,15 +33,45 @@ defmodule GlificWeb.Schema.UserGroupTypes do
     field :group_id, :id
   end
 
+  input_object :group_users_input do
+    field :group_id, non_null(:id)
+    field :add_user_ids, non_null(list_of(:id))
+    field :delete_user_ids, non_null(list_of(:id))
+  end
+
+  object :group_users do
+    field :number_deleted, :integer
+    field :group_users, list_of(:user_group)
+  end
+
+  input_object :user_groups_input do
+    field :user_id, non_null(:id)
+    field :add_group_ids, non_null(list_of(:id))
+    field :delete_group_ids, non_null(list_of(:id))
+  end
+
+  object :user_groups do
+    field :number_deleted, :integer
+    field :user_groups, list_of(:user_group)
+  end
+
   object :user_group_mutations do
     field :create_user_group, :user_group_result do
       arg(:input, non_null(:user_group_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.create_user_group/3)
     end
 
-    field :delete_user_group, :user_group_result do
-      arg(:id, non_null(:id))
-      resolve(&Resolvers.Groups.delete_user_group/3)
+    field :update_group_users, :group_users do
+      arg(:input, non_null(:group_users_input))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Groups.update_group_users/3)
+    end
+
+    field :update_user_groups, :user_groups do
+      arg(:input, non_null(:user_groups_input))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Groups.update_user_groups/3)
     end
   end
 end

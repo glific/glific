@@ -9,16 +9,37 @@ defmodule Glific.Flows.FlowContext do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query, warn: false
+  require Logger
 
   alias Glific.{
     Contacts.Contact,
+    Flows,
     Flows.Flow,
+    Flows.FlowResult,
+    Flows.MessageVarParser,
     Flows.Node,
+    Messages,
+    Messages.Message,
+    Partners.Organization,
     Repo
   }
 
-  @required_fields [:contact_id, :flow_id, :flow_uuid, :uuid_map]
-  @optional_fields [:node_uuid, :parent_id, :results, :wakeup_at, :completed_at, :delay]
+  @required_fields [:contact_id, :flow_id, :flow_uuid, :status, :organization_id]
+  @optional_fields [
+    :node_uuid,
+    :parent_id,
+    :results,
+    :wakeup_at,
+    :wait_for_time,
+    :completed_at,
+    :delay,
+    :uuid_map,
+    :recent_inbound,
+    :recent_outbound
+  ]
+
+  # we store one more than the number of messages specified here
+  @max_message_len 9
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -26,15 +47,22 @@ defmodule Glific.Flows.FlowContext do
           results: map() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          last_message: Message.t() | nil,
           flow_id: non_neg_integer | nil,
           flow_uuid: Ecto.UUID.t() | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          status: String.t() | nil,
           parent_id: non_neg_integer | nil,
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           delay: integer,
+          recent_inbound: [map()] | [],
+          recent_outbound: [map()] | [],
           wakeup_at: :utc_datetime | nil,
+          wait_for_time: boolean,
           completed_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -49,13 +77,23 @@ defmodule Glific.Flows.FlowContext do
     field :node_uuid, Ecto.UUID
     field :flow_uuid, Ecto.UUID
 
+    field :status, :string, default: "published"
+
     field :wakeup_at, :utc_datetime, default: nil
     field :completed_at, :utc_datetime, default: nil
 
+    field :wait_for_time, :boolean, default: false
+
     field :delay, :integer, default: 0, virtual: true
+
+    field :recent_inbound, {:array, :map}, default: []
+    field :recent_outbound, {:array, :map}, default: []
+
+    field :last_message, :map, virtual: true
 
     belongs_to :contact, Contact
     belongs_to :flow, Flow
+    belongs_to :organization, Organization
     belongs_to :parent, FlowContext, foreign_key: :parent_id
 
     timestamps(type: :utc_datetime)
@@ -99,6 +137,8 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec reset_context(FlowContext.t()) :: FlowContext.t() | nil
   def reset_context(context) do
+    Logger.info("Ending Flow: id: '#{context.flow_id}', contact_id: '#{context.contact_id}'")
+
     # we first update this entry with the completed at time
     {:ok, context} = FlowContext.update_flow_context(context, %{completed_at: DateTime.utc_now()})
 
@@ -106,46 +146,103 @@ defmodule Glific.Flows.FlowContext do
     # load that context and keep going
     if context.parent_id do
       # we load the parent context, and resume it with a message of "Completed"
-      parent = active_context(context.contact_id)
+      parent = active_context(context.contact_id, context.parent_id)
+
+      Logger.info(
+        "Resuming Parent Flow: id: '#{parent.flow_id}', contact_id: '#{context.contact_id}'"
+      )
 
       parent
-      |> load_context(Flow.get_flow(parent.flow_uuid))
-      |> step_forward("completed")
+      |> load_context(
+        Flow.get_flow(context.flow.organization_id, parent.flow_uuid, context.status)
+      )
+      |> step_forward(Messages.create_temp_message(context.flow.organization_id, "completed"))
     end
   end
 
   @doc """
-  Update the contact results state as we step through the flow
+  Update the recent_* state as we consume or send a message
   """
-  @spec update_results(FlowContext.t(), String.t(), String.t(), String.t()) :: FlowContext.t()
-  def update_results(context, key, input, category) do
-    results =
-      if is_nil(context.results),
-        do: %{},
-        else: context.results
+  @spec update_recent(FlowContext.t(), String.t(), atom()) :: FlowContext.t()
+  def update_recent(context, body, type) do
+    now = DateTime.utc_now()
 
-    results = Map.put(results, key, %{"input" => input, "category" => category})
+    # since we are storing in DB and want to avoid hassle of atom <-> string conversion
+    # we'll always use strings as keys
+    messages =
+      [%{"message" => body, "date" => now} | Map.get(context, type)]
+      |> Enum.slice(0..@max_message_len)
 
+    # since we have recd a message, we also ensure that we are not going to be woken
+    # up by a timer if present.
     {:ok, context} =
-      context
-      |> FlowContext.changeset(%{results: results})
-      |> Repo.update()
+      update_flow_context(context, %{type => messages, wakeup_at: nil, wait_for_time: false})
 
     context
   end
 
   @doc """
+  Update the contact results state as we step through the flow
+  """
+  @spec update_results(FlowContext.t(), String.t(), String.t() | map(), String.t()) ::
+          FlowContext.t()
+  def update_results(context, key, input, category),
+    do: update_results(context, key, %{"input" => input, "category" => category})
+
+  @doc """
   Update the contact results with each element of the json map
   """
-  @spec update_results(FlowContext.t(), String.t(), map()) :: FlowContext.t()
+  @spec update_results(FlowContext.t(), String.t(), map() | String.t()) ::
+          FlowContext.t()
   def update_results(context, key, json) do
-    Enum.reduce(
-      json,
-      context,
-      fn {k, v}, context ->
-        update_results(context, key <> "_" <> k, v, key)
+    results =
+      if is_nil(context.results),
+        do: %{},
+        else:
+          context.results
+          |> Map.put(key, json)
+
+    {:ok, context} = update_flow_context(context, %{results: results})
+
+    {:ok, _flow_result} =
+      FlowResult.upsert_flow_result(%{
+        results: results,
+        contact_id: context.contact_id,
+        flow_id: context.flow_id,
+        flow_version: context.flow.version,
+        flow_context_id: context.id,
+        flow_uuid: context.flow_uuid,
+        organization_id: context.organization_id
+      })
+
+    context
+  end
+
+  @doc """
+  Count the number of times we have sent the same message in the recent past
+  """
+  @spec match_outbound(FlowContext.t(), String.t(), integer) :: integer
+  def match_outbound(context, body, go_back \\ 6) do
+    since = Glific.go_back_time(go_back)
+
+    Enum.filter(
+      context.recent_outbound,
+      fn item ->
+        # sometime we get this from memory, and its not retrived from DB
+        # in which case its already in a valid date format
+        date =
+          if is_binary(item["date"]),
+            do:
+              (
+                {:ok, date, _} = DateTime.from_iso8601(item["date"])
+                date
+              ),
+            else: item["date"]
+
+        item["message"] == body and DateTime.compare(date, since) in [:gt, :eq]
       end
     )
+    |> length()
   end
 
   @doc """
@@ -160,8 +257,8 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Execute one (or more) steps in a flow based on the message stream
   """
-  @spec execute(FlowContext.t(), [String.t()]) ::
-          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
+  @spec execute(FlowContext.t(), [Message.t()]) ::
+          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%FlowContext{node: node} = _context, _messages) when is_nil(node),
     do: {:error, "We have finished the flow"}
 
@@ -174,19 +271,36 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Set all the flows for a specific context to be completed
+  """
+  @spec mark_flows_complete(non_neg_integer) :: nil
+  def mark_flows_complete(contact_id) do
+    now = DateTime.utc_now()
+
+    FlowContext
+    |> where([fc], fc.contact_id == ^contact_id)
+    |> where([fc], is_nil(fc.completed_at))
+    # lets not touch the contexts which are waiting to be woken up at a specific time
+    |> where([fc], fc.wait_for_time == false)
+    |> Repo.update_all(set: [completed_at: now, updated_at: now])
+  end
+
+  @doc """
   Start a new context, if there is an existing context, blow it away
   """
-  @spec init_context(Flow.t(), Contact.t(), non_neg_integer | nil, non_neg_integer | 0) ::
+  @spec init_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def init_context(flow, contact, parent_id \\ nil, current_delay \\ 0) do
+  def init_context(flow, contact, status, opts \\ []) do
+    parent_id = Keyword.get(opts, :parent_id)
+    current_delay = Keyword.get(opts, :delay, 0)
+
+    Logger.info(
+      "Starting flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
+    )
+
     # set all previous context to be completed if we are not starting a sub flow
     if is_nil(parent_id) do
-      now = DateTime.utc_now()
-
-      FlowContext
-      |> where([fc], fc.contact_id == ^contact.id)
-      |> where([fc], is_nil(fc.completed_at))
-      |> Repo.update_all(set: [completed_at: now, updated_at: now])
+      mark_flows_complete(contact.id)
     end
 
     node = hd(flow.nodes)
@@ -197,48 +311,45 @@ defmodule Glific.Flows.FlowContext do
         parent_id: parent_id,
         node_uuid: node.uuid,
         flow_uuid: flow.uuid,
+        status: status,
         node: node,
         results: %{},
         flow_id: flow.id,
         flow: flow,
+        organization_id: flow.organization_id,
         uuid_map: flow.uuid_map,
         delay: current_delay
       })
 
     context
     |> load_context(flow)
-    |> Repo.preload(:contact)
     # lets do the first steps and start executing it till we need a message
     |> execute([])
-  end
-
-  @spec wakeup() :: [FlowContext.t()]
-  @doc """
-  Find all the contexts which need to be woken up and processed
-  """
-  def wakeup do
-    FlowContext
-    |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
-    |> where([fc], is_nil(fc.completed_at))
-    |> Repo.all()
   end
 
   @doc """
   Check if there is an active context (i.e. with a non null, node_uuid for this contact)
   """
-  @spec active_context(non_neg_integer) :: FlowContext.t() | nil
-  def active_context(contact_id) do
+  @spec active_context(non_neg_integer, non_neg_integer | nil) :: FlowContext.t() | nil
+  def active_context(contact_id, parent_id \\ nil) do
     # need to fix this instead of assuming the highest id is the most
     # active context (or is that a wrong assumption). Maybe a context number? like
     # we do for other tables
+    # We should not wakeup those contexts which are waiting on time
     query =
       from fc in FlowContext,
         where:
           fc.contact_id == ^contact_id and
             not is_nil(fc.node_uuid) and
-            is_nil(fc.completed_at),
+            is_nil(fc.completed_at) and
+            fc.wait_for_time == false,
         order_by: [desc: fc.id],
         limit: 1
+
+    query =
+      if parent_id,
+        do: query |> where([fc], fc.id == ^parent_id),
+        else: query
 
     Repo.one(query) |> Repo.preload(:contact)
   end
@@ -258,15 +369,88 @@ defmodule Glific.Flows.FlowContext do
     |> Map.put(:node, node)
   end
 
+  # given an unknown return type, create an error string from it
+  # drop complex objects since they print too much info
+  @spec make_error(any()) :: String.t()
+  defp make_error(args) when is_tuple(args) do
+    list =
+      args
+      |> Tuple.to_list()
+      |> Enum.map(fn x ->
+        if is_struct(x) and x.__struct__ == FlowContext,
+          do: "FlowContext: flow: #{x.flow_id}, contact: #{x.contact_id}, context: #{x.id}",
+          else: x
+      end)
+
+    inspect(list)
+  end
+
+  # log the error and also send it over to our friends at appsignal
+  @spec log_error(String.t()) :: {:error, String.t()}
+  defp log_error(error) do
+    Logger.error(error)
+    Appsignal.send_error(:error, error, nil)
+    {:error, error}
+  end
+
   @doc """
   Given an input string, consume the input and advance the state of the context
   """
-  @spec step_forward(FlowContext.t(), String.t()) :: {:ok, map()} | {:error, String.t()}
-  def step_forward(context, body) do
-    case FlowContext.execute(context, [body]) do
-      {:ok, context, []} -> {:ok, context}
-      {:error, error} -> {:error, error}
+  @spec step_forward(FlowContext.t(), Message.t()) :: {:ok, map()} | {:error, String.t()}
+  def step_forward(context, message) do
+    case FlowContext.execute(context, [message]) do
+      {:ok, context, []} ->
+        {:ok, context}
+
+      {:error, error} ->
+        log_error(error)
+
+      other ->
+        error = "step_forward returned something unexpected: #{make_error(other)}"
+        log_error(error)
     end
+  end
+
+  @spec wakeup_flows(non_neg_integer) :: :ok
+  @doc """
+  Find all the contexts which need to be woken up and processed
+  """
+  def wakeup_flows(_organization_id) do
+    FlowContext
+    |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
+    |> where([fc], is_nil(fc.completed_at))
+    |> preload(:flow)
+    |> Repo.all()
+    |> Enum.each(&wakeup_one(&1))
+
+    :ok
+  end
+
+  @doc """
+  Process one context at a time that is ready to be woken
+  """
+  @spec wakeup_one(FlowContext.t()) ::
+          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
+  def wakeup_one(context) do
+    # update the context woken up time as soon as possible to avoid someone else
+    # grabbing this context
+    {:ok, context} =
+      FlowContext.update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
+
+    {:ok, flow} =
+      Flows.get_cached_flow(
+        context.flow.organization_id,
+        {:flow_uuid, context.flow_uuid, context.status}
+      )
+
+    {:ok, context} =
+      context
+      |> FlowContext.load_context(flow)
+      |> FlowContext.step_forward(
+        Messages.create_temp_message(context.organization_id, "No Response")
+      )
+
+    {:ok, context, []}
   end
 
   @doc """
@@ -274,9 +458,43 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec get_result_value(FlowContext.t(), String.t()) :: String.t() | nil
   def get_result_value(context, value) when binary_part(value, 0, 9) == "@results." do
-    parts = String.slice(value, 8..-1) |> String.split(".", trim: true)
-    get_in(context.results, parts)
+    MessageVarParser.parse(value, %{"results" => context.results})
+    |> MessageVarParser.parse_results(context.results)
   end
 
   def get_result_value(_context, value), do: value
+
+  @doc """
+  Delete all the contexts which are completed before two days
+  """
+  @spec delete_completed_flow_contexts() :: :ok
+  def delete_completed_flow_contexts do
+    back_date = DateTime.utc_now() |> DateTime.add(-2 * 24 * 60 * 60, :second)
+
+    {count, nil} =
+      FlowContext
+      |> where([fc], fc.completed_at < ^back_date)
+      |> Repo.delete_all(skip_organization_id: true)
+
+    Logger.info("Deleting flow contexts completed two days back: count: '#{count}'")
+
+    :ok
+  end
+
+  @doc """
+  Delete all the contexts which are older than 30 days
+  """
+  @spec delete_old_flow_contexts() :: :ok
+  def delete_old_flow_contexts do
+    last_month_date = DateTime.utc_now() |> DateTime.add(-30 * 24 * 60 * 60, :second)
+
+    {count, nil} =
+      FlowContext
+      |> where([fc], fc.inserted_at < ^last_month_date)
+      |> Repo.delete_all(skip_organization_id: true)
+
+    Logger.info("Deleting flow contexts older than 30 days: count: '#{count}'")
+
+    :ok
+  end
 end

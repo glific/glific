@@ -3,13 +3,25 @@ defmodule Glific.Flows.TemplatingTest do
 
   alias Glific.{
     Flows.Templating,
+    Seeds.SeedsDev,
     Templates
   }
 
-  test "process extracts the right values from json for templating action" do
+  setup do
+    organization = SeedsDev.seed_organizations()
+    SeedsDev.hsm_templates(organization)
+    :ok
+  end
+
+  test "process extracts the right values from json for templating action",
+       %{organization_id: organization_id} = _attrs do
     [template | _] =
       Templates.list_session_templates(%{
-        filter: %{shortcode: "otp", is_hsm: true}
+        filter: %{
+          shortcode: "otp",
+          is_hsm: true,
+          organization_id: organization_id
+        }
       })
 
     json = %{

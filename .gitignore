@@ -33,16 +33,18 @@ npm-debug.log
 # Keep all our secrets in these files
 # We should explore valult for production level secrets
 **/*.secret.exs
-.*credentials.json
+.*credentials.json*
+
+# Not using env files now
+.env*
 
 # Ignore the dialyzer cache files
-/priv/plts/*.plt
-/priv/plts/*.plt.hash
+/priv/plts/
 
-# dont commit apple temp file
-.DS_Store
-
+# ignore visual studio and macos temp files
 .vscode/
 .vscode
+.DS_Store
 
-/Mnesia.nonode@nohost
+# don't commit mnesia files
+/Mnesia*

@@ -5,8 +5,10 @@ defmodule GlificWeb.Resolvers.Flows do
   """
 
   alias Glific.{
+    Contacts.Contact,
     Flows,
     Flows.Flow,
+    Groups.Group,
     Repo
   }
 
@@ -15,8 +17,8 @@ defmodule GlificWeb.Resolvers.Flows do
   """
   @spec flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def flow(_, %{id: id}, _) do
-    with {:ok, flow} <- Repo.fetch(Flow, id),
+  def flow(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{flow: flow}}
   end
 
@@ -48,8 +50,8 @@ defmodule GlificWeb.Resolvers.Flows do
   @doc false
   @spec update_flow(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_flow(_, %{id: id, input: params}, _) do
-    with {:ok, flow} <- Repo.fetch(Flow, id),
+  def update_flow(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
          {:ok, flow} <- Flows.update_flow(flow, params) do
       {:ok, %{flow: flow}}
     end
@@ -58,10 +60,74 @@ defmodule GlificWeb.Resolvers.Flows do
   @doc false
   @spec delete_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_flow(_, %{id: id}, _) do
-    with {:ok, flow} <- Repo.fetch(Flow, id),
+  def delete_flow(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
          {:ok, flow} <- Flows.delete_flow(flow) do
       {:ok, flow}
+    end
+  end
+
+  @doc """
+  Publish a flow
+  """
+  @spec publish_flow(Absinthe.Resolution.t(), %{uuid: String.t()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def publish_flow(_, %{uuid: uuid}, _) do
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{uuid: uuid}),
+         {:ok, _flow} <- Flows.publish_flow(flow) do
+      {:ok, %{success: true}}
+    end
+  end
+
+  @doc """
+  Start a flow for a contact
+  """
+  @spec start_contact_flow(Absinthe.Resolution.t(), %{flow_id: integer, contact_id: integer}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def start_contact_flow(_, %{flow_id: flow_id, contact_id: contact_id}, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, flow} <-
+           Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}),
+         {:ok, contact} <-
+           Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
+         {:ok, _flow} <- Flows.start_contact_flow(flow, contact) do
+      {:ok, %{success: true}}
+    end
+  end
+
+  @doc """
+  Start a flow for all contacts of a group
+  """
+  @spec start_group_flow(Absinthe.Resolution.t(), %{flow_id: integer, group_id: integer}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def start_group_flow(_, %{flow_id: flow_id, group_id: group_id}, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, flow} <-
+           Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}),
+         {:ok, group} <-
+           Repo.fetch_by(Group, %{id: group_id, organization_id: user.organization_id}),
+         {:ok, _flow} <- Flows.start_group_flow(flow, group) do
+      {:ok, %{success: true}}
+    end
+  end
+
+  @doc """
+  Make a copy a flow
+  """
+  @spec copy_flow(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def copy_flow(_, %{id: id, input: params}, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
+         {:ok, flow} <- Flows.copy_flow(flow, params) do
+      {:ok, %{flow: flow}}
     end
   end
 end

@@ -169,6 +169,7 @@ mutation createTag($input:TagInput!) {
 {
   "input": {
     "label": "This is a new tag for this example",
+    "shortcode": "new-tag",
     "description": "This is a cool description",
     "languageId": "1"
   }
@@ -415,6 +416,13 @@ Parameter | Type | Default | Description
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>shortcode</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+
 <tr>
 <td colspan="2" valign="top"><strong>language</strong></td>
 <td valign="top"><a href="#language">Language</a></td>
@@ -423,6 +431,16 @@ Parameter | Type | Default | Description
 <tr>
 <td colspan="2" valign="top"><strong>parent</strong></td>
 <td valign="top"><a href="#tag">Tag</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>insertedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>updatedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
 </tr>
 </tbody>
@@ -561,6 +579,14 @@ Match the parent
 <td></td>
 </tr>
 <tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>color_code</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>Default: #0C976D</td>
+</tr>
+<tr>
+
 <td colspan="2" valign="top"><strong>isActive</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
@@ -582,6 +608,12 @@ Match the parent
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>languageId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>parentId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>

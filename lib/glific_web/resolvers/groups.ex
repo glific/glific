@@ -5,15 +5,15 @@ defmodule GlificWeb.Resolvers.Groups do
   """
 
   alias Glific.{Groups, Groups.Group, Repo}
-  alias Glific.{Groups.ContactGroup, Groups.UserGroup}
+  alias Glific.{Groups.ContactGroups, Groups.UserGroups}
 
   @doc """
   Get a specific group by id
   """
   @spec group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def group(_, %{id: id}, _) do
-    with {:ok, group} <- Repo.fetch(Group, id),
+  def group(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, group} <- Repo.fetch_by(Group, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{group: group}}
   end
 
@@ -49,8 +49,8 @@ defmodule GlificWeb.Resolvers.Groups do
   """
   @spec update_group(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_group(_, %{id: id, input: params}, _) do
-    with {:ok, group} <- Repo.fetch(Group, id),
+  def update_group(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, group} <- Repo.fetch_by(Group, %{id: id, organization_id: user.organization_id}),
          {:ok, group} <- Groups.update_group(group, params) do
       {:ok, %{group: group}}
     end
@@ -61,12 +61,24 @@ defmodule GlificWeb.Resolvers.Groups do
   """
   @spec delete_group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_group(_, %{id: id}, _) do
-    with {:ok, group} <- Repo.fetch(Group, id),
+  def delete_group(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, group} <- Repo.fetch_by(Group, %{id: id, organization_id: user.organization_id}),
          {:ok, group} <- Groups.delete_group(group) do
       {:ok, group}
     end
   end
+
+  @doc """
+  Get count of group contacts
+  """
+  @spec contacts_count(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def contacts_count(_, params, _), do: {:ok, Groups.contacts_count(params)}
+
+  @doc """
+  Get count of group users
+  """
+  @spec users_count(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def users_count(_, params, _), do: {:ok, Groups.users_count(params)}
 
   @doc """
   Creates an contact group entry
@@ -79,16 +91,21 @@ defmodule GlificWeb.Resolvers.Groups do
     end
   end
 
-  @doc """
-  Deletes an contact group entry
-  """
-  @spec delete_contact_group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  @doc false
+  @spec update_group_contacts(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_contact_group(_, %{id: id}, _) do
-    with {:ok, contact_group} <- Repo.fetch(ContactGroup, id),
-         {:ok, contact_group} <- Groups.delete_contact_group(contact_group) do
-      {:ok, contact_group}
-    end
+  def update_group_contacts(_, %{input: params}, _) do
+    # we should add sanity check whether group and contact belongs to the organization of the current user
+    group_contacts = Groups.GroupContacts.update_group_contacts(params)
+    {:ok, group_contacts}
+  end
+
+  @doc false
+  @spec update_contact_groups(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_contact_groups(_, %{input: params}, _) do
+    group_contacts = ContactGroups.update_contact_groups(params)
+    {:ok, group_contacts}
   end
 
   @doc """
@@ -102,15 +119,20 @@ defmodule GlificWeb.Resolvers.Groups do
     end
   end
 
-  @doc """
-  Deletes an user group entry
-  """
-  @spec delete_user_group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  @doc false
+  @spec update_group_users(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_user_group(_, %{id: id}, _) do
-    with {:ok, user_group} <- Repo.fetch(UserGroup, id),
-         {:ok, user_group} <- Groups.delete_user_group(user_group) do
-      {:ok, user_group}
-    end
+  def update_group_users(_, %{input: params}, _) do
+    # we should add sanity check whether group and user belongs to the organization of the current user
+    group_users = Groups.GroupUsers.update_group_users(params)
+    {:ok, group_users}
+  end
+
+  @doc false
+  @spec update_user_groups(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_user_groups(_, %{input: params}, _) do
+    group_users = UserGroups.update_user_groups(params)
+    {:ok, group_users}
   end
 end

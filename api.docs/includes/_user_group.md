@@ -66,20 +66,30 @@ Type | Description
 | ---- | -----------
 <a href="#usergroupresult">UserGroupResult</a> | The created user group object
 
-## Delete a UserGroup
+## Update a Group with users to be added and users to be deleted
 
 ```graphql
-mutation deleteUserGroup($id: ID!) {
-  deleteUserGroup(id: $id) {
-    errors {
-      key
-      message
+mutation updateGroupUsers($input: GroupUsersInput!) {
+  updateGroupUsers(input: $input) {
+    groupUsers {
+      id
+      group {
+        label
+      }
+      user {
+        name
+      }
     }
+    numberDeleted
   }
 }
 
 {
-  "id": 1
+  "input": {
+    "groupId": 2,
+    "addUserIds": [1, 2],
+    "deleteUserIds": [3, 8]
+  }
 }
 ```
 
@@ -88,8 +98,28 @@ mutation deleteUserGroup($id: ID!) {
 ```json
 {
   "data": {
-    "deleteUserGroup": {
-      "errors": null
+    "updateGroupUsers": {
+      "groupUsers": [
+        {
+          "group": {
+            "label": "Art"
+          },
+          "id": "10",
+          "user": {
+            "name": "NGO Basic User 1"
+          }
+        },
+        {
+          "group": {
+            "label": "Art"
+          },
+          "id": "9",
+          "user": {
+            "name": "Glific Admin"
+          }
+        }
+      ],
+      "numberDeleted": 2
     }
   }
 }
@@ -99,13 +129,75 @@ mutation deleteUserGroup($id: ID!) {
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-id | <a href="#id">ID</a> | required |
+input | <a href="#groupusersinput">GroupUsersInput</a> | required ||
 
 ### Return Parameters
 Type | Description
 | ---- | -----------
-<a href="#usergroupresult">UserGroupResult</a> | An error object or empty
+<a href="#group_users">groupUsers</a> | The list of user groups added
+integer | The number of user groups deleted
 
+## Update groups to be added and groups to be deleted to a User
+
+```graphql
+mutation updateUserGroups($input: UserGroupsInput!) {
+  updateUserGroups(input: $input) {
+    userGroups {
+      id
+      group {
+        label
+      }
+      user {
+        name
+      }
+    }
+    numberDeleted
+  }
+}
+
+{
+  "input": {
+    "userId": 2,
+    "addGroupIds": [1],
+    "deleteGroupIds": [2, 3]
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "updateUserGroups": {
+      "numberDeleted": 2,
+      "userGroups": [
+        {
+          "group": {
+            "label": "Poetry"
+          },
+          "id": "13",
+          "user": {
+            "name": "NGO Basic User 1"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#usergroupsinput">UserGroupsInput</a> | required ||
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#user_groups">userGroups</a> | The list of user groups added
+integer | The number of user groups deleted
 
 ## UserGroup Objects
 
@@ -190,6 +282,64 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>userId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### GroupUsersInput ###
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>GroupId</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>AddUserIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>DeleteUserIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### UserGroupsInput ###
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>UserId</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>AddGroupIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>DeleteGroupIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
 <td></td>
 </tr>
 </tbody>

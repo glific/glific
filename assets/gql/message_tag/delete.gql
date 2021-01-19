@@ -1,9 +1,0 @@
-#import "./fields.frag.gql"
-
-mutation deleteMessageTag($id: ID!) {
-  deleteMessageTag(id: $id) {
-    ...MessageTagFields
-
-    ...ErrorFields
-  }
-}

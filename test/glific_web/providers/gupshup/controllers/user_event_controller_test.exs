@@ -4,6 +4,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
   alias Faker.Phone
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Repo,
     Seeds.SeedsDev
@@ -54,7 +55,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
       phone = get_in(setup_config.message_params, ["payload", "phone"])
       conn = post(conn, "/gupshup", setup_config.message_params)
       json_response(conn, 200)
-      {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
+
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{phone: phone, organization_id: conn.assigns[:organization_id]})
+
       assert contact.optin_time != nil
       assert contact.status == :valid
     end
@@ -62,8 +66,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
 
   describe "opted_out" do
     setup do
+      contact = Contacts.get_contact!(1)
+
       contact_payload = %{
-        "phone" => Phone.EnUs.phone(),
+        "phone" => contact.phone,
         "type" => "opted-out"
       }
 
@@ -78,7 +84,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventControllerTest do
       phone = get_in(setup_config.message_params, ["payload", "phone"])
       conn = post(conn, "/gupshup", setup_config.message_params)
       json_response(conn, 200)
-      {:ok, contact} = Repo.fetch_by(Contact, %{phone: phone})
+
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{phone: phone, organization_id: conn.assigns[:organization_id]})
+
       assert contact.optout_time != nil
       assert contact.status == :invalid
     end

@@ -17,7 +17,12 @@ defmodule Glific.DataCase do
   use ExUnit.CaseTemplate
 
   alias Ecto.Adapters.SQL.Sandbox
-  alias Glific.Repo
+
+  alias Glific.{
+    Fixtures,
+    Partners,
+    Repo
+  }
 
   using do
     quote do
@@ -37,7 +42,16 @@ defmodule Glific.DataCase do
       Sandbox.mode(Repo, {:shared, self()})
     end
 
-    :ok
+    Repo.put_organization_id(1)
+    Repo.put_current_user(Fixtures.user_fixture(%{roles: ["manager"]}))
+
+    organization_id = 1
+    organization_id |> Partners.get_organization!() |> Partners.fill_cache()
+
+    %{
+      organization_id: organization_id,
+      global_schema: Application.fetch_env!(:glific, :global_schema)
+    }
   end
 
   @doc """

@@ -30,11 +30,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
   setup do
     default_provider = SeedsDev.seed_providers()
-    SeedsDev.seed_organizations(default_provider)
+    organization = SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_tag()
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
-    :ok
+    {:ok, %{organization_id: organization.id}}
   end
 
   describe "handler" do
@@ -59,22 +59,33 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       %{message_params: message_params}
     end
 
-    test "Incoming text message should be stored in the database", setup_config = %{conn: conn} do
-      conn = post(conn, "/gupshup", setup_config.message_params)
-      json_response(conn, 200)
-      provider_message_id = get_in(setup_config.message_params, ["payload", "id"])
-      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+    test "Incoming text message should be stored in the database",
+         %{conn: conn, message_params: message_params} do
+      conn = post(conn, "/gupshup", message_params)
+      assert conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
       message = Repo.preload(message, [:receiver, :sender, :media])
 
       # Provider message id should be updated
-      assert message.provider_status == :delivered
+      assert message.bsp_status == :delivered
       assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
       assert message.sender.last_message_at != nil
-      assert true == Timex.diff(DateTime.utc_now(), message.sender.last_message_at, :seconds) < 10
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
 
       # Sender should be stored into the db
       assert message.sender.phone ==
-               get_in(setup_config.message_params, ["payload", "sender", "phone"])
+               get_in(message_params, ["payload", "sender", "phone"])
     end
   end
 
@@ -98,22 +109,31 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     test "Incoming image message should be stored in the database",
          setup_config = %{conn: conn} do
       conn = post(conn, "/gupshup", setup_config.message_params)
-      json_response(conn, 200)
+      assert conn.halted
 
-      provider_message_id = get_in(setup_config.message_params, ["payload", "id"])
-      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      bsp_message_id = get_in(setup_config.message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
       message = Repo.preload(message, [:sender, :media])
 
       # Provider message id should be updated
-      assert message.provider_status == :delivered
+      assert message.bsp_status == :delivered
       assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
 
       # test media fields
       assert message.media.caption == setup_config.image_payload["caption"]
       assert message.media.url == setup_config.image_payload["url"]
       assert message.media.source_url == setup_config.image_payload["url"]
 
-      assert true == Timex.diff(DateTime.utc_now(), message.sender.last_message_at, :seconds) < 10
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
 
       # Sender should be stored into the db
       assert message.sender.phone ==
@@ -128,10 +148,19 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "payload", "caption"], nil)
 
       conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
-      provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      assert conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
       message = Repo.preload(message, [:media, :sender])
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -149,10 +178,19 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "type"], "video")
 
       conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
-      provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      assert conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
       message = Repo.preload(message, [:media, :sender])
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -169,10 +207,49 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "type"], "file")
 
       conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
-      provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      assert conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
       message = Repo.preload(message, [:media, :sender])
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      # test media fields
+      assert message.media.url == setup_config.image_payload["url"]
+      assert message.media.source_url == setup_config.image_payload["url"]
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(setup_config.message_params, ["payload", "sender", "phone"])
+    end
+
+    test "Incoming sticker message should be stored in the database",
+         setup_config = %{conn: conn} do
+      message_params =
+        setup_config.message_params
+        |> put_in(["payload", "type"], "sticker")
+
+      conn = post(conn, "/gupshup", message_params)
+      assert conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:media, :sender])
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
 
       # test media fields
       assert message.media.url == setup_config.image_payload["url"]
@@ -205,12 +282,23 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       message_params = setup_config.message_params
 
       conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
-      provider_message_id = get_in(message_params, ["payload", "id"])
-      {:ok, message} = Repo.fetch_by(Message, %{provider_message_id: provider_message_id})
+      assert conn.halted
+
+      # text_response(conn, 200)
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
       message = Repo.preload(message, [:media, :sender])
 
       {:ok, location} = Repo.fetch_by(Location, %{message_id: message.id})
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
 
       # test location fields
       assert location.longitude == setup_config.location_payload["longitude"]

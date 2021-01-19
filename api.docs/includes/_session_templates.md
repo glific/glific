@@ -12,6 +12,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
     isHsm
     type
     isActive
+    translation
     isReserved
     isSource
     parent {
@@ -31,7 +32,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
 
 {
   "filter": {
-  	"body": "template",
+    "body": "template",
     "term": "label"
   },
   "opts": {
@@ -66,6 +67,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
           "label": "Default Template Label"
         },
         "shortcode": null,
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"एक और टेम्पलेट\"}}",
         "type": "TEXT"
       },
       {
@@ -83,6 +85,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "messageMedia": null,
         "parent": null,
         "shortcode": null,
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
         "type": "TEXT"
       }
     ]
@@ -113,6 +116,7 @@ query sessionTemplate($id: ID!) {
       body
       label
       shortcode
+      translation
       type
       language {
         id
@@ -142,6 +146,7 @@ query sessionTemplate($id: ID!) {
           "label": "English (United States)"
         },
         "shortcode": null,
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
         "type": "TEXT"
       }
     }
@@ -195,6 +200,42 @@ Type | Description
 | ---- | -----------
 <a href="#int">Int</a> | Count of filtered session templates
 
+## Get List of Whatsapp HSM categories
+```graphql
+query {
+  whatsappHsmCategories
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+
+{
+  "data": {
+    "whatsappHsmCategories": [
+      "ACCOUNT_UPDATE",
+      "PAYMENT_UPDATE",
+      "PERSONAL_FINANCE_UPDATE",
+      "SHIPPING_UPDATE",
+      "RESERVATION_UPDATE",
+      "ISSUE_RESOLUTION",
+      "APPOINTMENT_UPDATE",
+      "TRANSPORTATION_UPDATE",
+      "TICKET_UPDATE",
+      "ALERT_UPDATE",
+      "AUTO_REPLY"
+    ]
+  }
+}
+```
+This returns list of whatsapp HSM categories
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+[<a href="#string">String</a>] | List of categories
+
 ## Create a Session Template
 
 ```graphql
@@ -208,7 +249,7 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
       type
     }
     errors{
-			key
+            key
       message
     }
   }
@@ -219,6 +260,7 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
     "body": "Test template",
     "label": "Test label",
     "languageId": 1,
+    "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}"
     "type": "TEXT"
   }
 }
@@ -236,6 +278,7 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
         "id": "34",
         "label": "Test label",
         "shortcode": null,
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
         "type": "TEXT"
       }
     }
@@ -264,6 +307,7 @@ mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {
       body
       label
       shortcode
+      translation
       type
     }
     errors {
@@ -293,6 +337,7 @@ mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {
         "id": "1",
         "label": "Default Template Label",
         "shortcode": null,
+        "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",
         "type": "TEXT"
       }
     }
@@ -445,8 +490,38 @@ Type | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>status</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>number_parameters</strong></td>
 <td valign="top"><a href="#int">Int</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>category</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>example</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>insertedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>updatedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
 </tr>
 </tbody>
@@ -498,7 +573,7 @@ Filtering options for session_templates
 <td valign="top"><a href="#string">String</a></td>
 <td>
 
-Match term with label, body or shortcode of template
+Match term with labe/body/shortcode of template or label/shortcode of associated tag
 
 </td>
 </tr>
@@ -579,6 +654,15 @@ Match the parent
 <td valign="top"><a href="#string">String</a></td>
 <td>
 
+Match the translations
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td>
+
 Match the shortcode of template
 
 </td>
@@ -592,6 +676,16 @@ Match the shortcode of template
 <td>
 
 Match the hsm template message
+
+</td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>status</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+
+Match the whatsapp status of hsm template message
 
 </td>
 </tr>
@@ -631,8 +725,18 @@ Match the hsm template message
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>number_parameters</strong></td>
-<td valign="top"><a href="#int">Int</a></td>
+<td colspan="2" valign="top"><strong>category</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>example</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
 <td></td>
 </tr>
 <tr>

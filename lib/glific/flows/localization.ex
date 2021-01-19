@@ -21,6 +21,25 @@ defmodule Glific.Flows.Localization do
     field :localizations, :map
   end
 
+  defp add_text(map, values) do
+    if is_nil(values["text"]) do
+      map
+    else
+      Map.put(map, :text, hd(values["text"]))
+    end
+  end
+
+  defp add_attachments(map, values) do
+    if is_nil(values["attachments"]) do
+      map
+    else
+      case String.split(hd(values["attachments"]), ":", parts: 2) do
+        [type, url] -> Map.put(map, :attachments, %{type => url})
+        _ -> map
+      end
+    end
+  end
+
   # given a json snippet containing all the translation for a specific language
   # store them in a uuid map
   @spec process_translation(map()) :: map()
@@ -31,9 +50,12 @@ defmodule Glific.Flows.Localization do
       json,
       %{},
       fn {uuid, values}, acc ->
-        if is_nil(values["text"]),
-          do: acc,
-          else: Map.put(acc, uuid, hd(values["text"]))
+        if is_nil(values["text"]) and is_nil(values["attachments"]) do
+          acc
+        else
+          map = %{} |> add_text(values) |> add_attachments(values)
+          Map.put(acc, uuid, map)
+        end
       end
     )
   end
@@ -70,8 +92,8 @@ defmodule Glific.Flows.Localization do
   Given a language id and an action uuid, return the translation if
   one exists, else return the original text
   """
-  @spec get_translation(FlowContext.t(), Action.t()) :: String.t()
-  def get_translation(context, action) do
+  @spec get_translation(FlowContext.t(), Action.t(), atom()) :: String.t() | nil | map()
+  def get_translation(context, action, type \\ :text) do
     language_id = context.contact.language_id
 
     localization =
@@ -80,9 +102,16 @@ defmodule Glific.Flows.Localization do
          do: context.flow.localization.localizations,
          else: %{}
 
-    if Map.has_key?(localization, language_id) and
-         Map.has_key?(Map.get(localization, language_id), action.uuid),
-       do: Map.get(Map.get(localization, language_id), action.uuid),
-       else: action.text
+    element =
+      if Map.has_key?(localization, language_id) and
+           Map.has_key?(Map.get(localization, language_id), action.uuid) do
+        Map.get(Map.get(localization, language_id), action.uuid)
+      else
+        action
+      end
+
+    if type == :text,
+      do: Map.get(element, :text, nil),
+      else: Map.get(element, :attachments, nil)
   end
 end

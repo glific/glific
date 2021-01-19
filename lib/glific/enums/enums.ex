@@ -17,7 +17,10 @@ defmodule Glific.Enums do
   [:ok, :error]
 
   iex> Glific.Enums.contact_status_const()
-  [:failed, :invalid, :processing, :valid]
+  [:blocked, :failed, :invalid, :processing, :valid]
+
+  iex> Glific.Enums.contact_provider_status_const()
+  [:none, :session, :session_and_hsm, :hsm]
 
   iex> Glific.Enums.flow_case_const()
   [:has_any_word]
@@ -39,7 +42,7 @@ defmodule Glific.Enums do
   [:sent, :delivered, :enqueued, :error, :read, :received, :contact_opt_out]
 
   iex> Glific.Enums.message_type_const()
-  [:audio, :contact, :document, :hsm, :image, :location, :text, :video]
+  [:audio, :contact, :document, :hsm, :image, :location, :text, :video, :sticker]
 
   iex> Glific.Enums.question_type_const()
   [:text, :numeric, :date]
@@ -54,6 +57,9 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.ContactStatus.__enum_map__()
   Glific.Enums.contact_status_const()
+
+  iex> Glific.Enums.ContactProviderStatus.__enum_map__()
+  Glific.Enums.contact_provider_status_const()
 
   iex> Glific.Enums.FlowCase.__enum_map__()
   Glific.Enums.flow_case_const()
@@ -82,6 +88,15 @@ defmodule Glific.Enums do
   iex> Glific.Enums.SortOrder.__enum_map__()
   Glific.Enums.sort_order_const()
 
+  iex> Glific.Enums.ContactFieldValueType.__enum_map__()
+  Glific.Enums.contact_field_value_type_const()
+
+  iex> Glific.Enums.ContactFieldScope.__enum_map__()
+  Glific.Enums.contact_field_scope_const()
+
+  iex> Glific.Enums.UserRoles.__enum_map__()
+  Glific.Enums.user_roles_const()
+
   """
 
   defmacro api_status_const,
@@ -89,6 +104,9 @@ defmodule Glific.Enums do
 
   defmacro contact_status_const,
     do: Macro.expand(@contact_status_const, __CALLER__)
+
+  defmacro contact_provider_status_const,
+    do: Macro.expand(@contact_provider_status_const, __CALLER__)
 
   defmacro flow_case_const,
     do: Macro.expand(@flow_case_const, __CALLER__)
@@ -116,4 +134,13 @@ defmodule Glific.Enums do
 
   defmacro sort_order_const,
     do: Macro.expand(@sort_order_const, __CALLER__)
+
+  defmacro contact_field_value_type_const,
+    do: Macro.expand(@contact_field_value_type_const, __CALLER__)
+
+  defmacro contact_field_scope_const,
+    do: Macro.expand(@contact_field_scope_const, __CALLER__)
+
+  defmacro user_roles_const,
+    do: Macro.expand(@user_roles_const, __CALLER__)
 end

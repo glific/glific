@@ -66,20 +66,30 @@ Type | Description
 | ---- | -----------
 <a href="#contactgroupresult">ContactGroupResult</a> | The created contact group object
 
-## Delete a ContactGroup
+## Update a Group with contacts to be added and contacts to be deleted
 
 ```graphql
-mutation deleteContactGroup($id: ID!) {
-  deleteContactGroup(id: $id) {
-    errors {
-      key
-      message
+mutation updateGroupContacts($input: GroupContactsInput!) {
+  updateGroupContacts(input: $input) {
+    groupContacts {
+      id
+      group {
+        label
+      }
+      contact {
+        name
+      }
     }
+    numberDeleted
   }
 }
 
 {
-  "id": 1
+  "input": {
+    "groupId": 2,
+    "addContactIds": [1, 2],
+    "deleteContactIds": [3, 8]
+  }
 }
 ```
 
@@ -88,8 +98,28 @@ mutation deleteContactGroup($id: ID!) {
 ```json
 {
   "data": {
-    "deleteContactGroup": {
-      "errors": null
+    "updateGroupContacts": {
+      "groupContacts": [
+        {
+          "contact": {
+            "name": "Default Receiver"
+          },
+          "group": {
+            "label": "Art"
+          },
+          "id": "2"
+        },
+        {
+          "contact": {
+            "name": "Glific Admin"
+          },
+          "group": {
+            "label": "Art"
+          },
+          "id": "1"
+        }
+      ],
+      "numberDeleted": 1
     }
   }
 }
@@ -99,13 +129,75 @@ mutation deleteContactGroup($id: ID!) {
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-id | <a href="#id">ID</a> | required |
+input | <a href="#groupcontactsinput">GroupContactsInput</a> | required ||
 
 ### Return Parameters
 Type | Description
 | ---- | -----------
-<a href="#contactgroupresult">ContactGroupResult</a> | An error object or empty
+<a href="#group_contacts">groupContacts</a> | The list of contact groups added
+integer | The number of contact groups deleted
 
+## Update groups to be added and groups to be deleted to a Contact
+
+```graphql
+mutation updateContactGroups($input: ContactGroupsInput!) {
+  updateContactGroups(input: $input) {
+    contactGroups {
+      id
+      group {
+        label
+      }
+      contact {
+        name
+      }
+    }
+    numberDeleted
+  }
+}
+
+{
+  "input": {
+    "contactId": 2,
+    "addGroupIds": [1],
+    "deleteGroupIds": [2, 3]
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "updateContactGroups": {
+      "numberDeleted": 2,
+      "contactGroups": [
+        {
+          "group": {
+            "label": "Poetry"
+          },
+          "id": "13",
+          "contact": {
+            "name": "Default Receiver"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#contactgroupsinput">ContactGroupsInput</a> | required ||
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#contact_groups">contactGroups</a> | The list of contact groups added
+integer | The number of contact groups deleted
 
 ## ContactGroup Objects
 
@@ -190,6 +282,64 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>groupId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### GroupContactsInput ###
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>GroupId</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>AddContactIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>DeleteContactIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### ContactGroupsInput ###
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>ContactId</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>AddGroupIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>DeleteGroupIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
 <td></td>
 </tr>
 </tbody>

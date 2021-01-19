@@ -3,8 +3,11 @@ defmodule GlificWeb.Schema.GroupTypes do
   GraphQL Representation of Glific's Group DataType
   """
   use Absinthe.Schema.Notation
+  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
+  alias Glific.Repo
   alias GlificWeb.Resolvers
+  alias GlificWeb.Schema.Middleware.Authorize
 
   object :group_result do
     field :group, :group
@@ -14,7 +17,38 @@ defmodule GlificWeb.Schema.GroupTypes do
   object :group do
     field :id, :id
     field :label, :string
+    field :description, :string
     field :is_restricted, :boolean
+
+    field :last_communication_at, :datetime
+
+    field :contacts, list_of(:contact) do
+      resolve(dataloader(Repo))
+    end
+
+    field :users, list_of(:user) do
+      resolve(dataloader(Repo))
+    end
+
+    field :messages, list_of(:message) do
+      resolve(dataloader(Repo))
+    end
+
+    # number of contacts in the group
+    # this is an expensive operation we can come back and optimise it later
+    field :contacts_count, :integer do
+      resolve(fn group, resolution, context ->
+        Resolvers.Groups.contacts_count(resolution, %{id: group.id}, context)
+      end)
+    end
+
+    # number of users in the group
+    # this is an expensive operation we can come back and optimise it later
+    field :users_count, :integer do
+      resolve(fn group, resolution, context ->
+        Resolvers.Groups.users_count(resolution, %{id: group.id}, context)
+      end)
+    end
   end
 
   @desc "Filtering options for groups"
@@ -25,6 +59,7 @@ defmodule GlificWeb.Schema.GroupTypes do
 
   input_object :group_input do
     field :label, :string
+    field :description, :string
     field :is_restricted, :boolean
   end
 
@@ -32,6 +67,7 @@ defmodule GlificWeb.Schema.GroupTypes do
     @desc "get the details of one group"
     field :group, :group_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Groups.group/3)
     end
 
@@ -39,12 +75,14 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :groups, list_of(:group) do
       arg(:filter, :group_filter)
       arg(:opts, :opts)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Groups.groups/3)
     end
 
     @desc "Get a count of all groups filtered by various criteria"
     field :count_groups, :integer do
       arg(:filter, :group_filter)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Groups.count_groups/3)
     end
   end
@@ -52,17 +90,20 @@ defmodule GlificWeb.Schema.GroupTypes do
   object :group_mutations do
     field :create_group, :group_result do
       arg(:input, non_null(:group_input))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.create_group/3)
     end
 
     field :update_group, :group_result do
       arg(:id, non_null(:id))
       arg(:input, :group_input)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.update_group/3)
     end
 
     field :delete_group, :group_result do
       arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Groups.delete_group/3)
     end
   end

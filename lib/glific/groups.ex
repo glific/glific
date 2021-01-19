@@ -4,13 +4,41 @@ defmodule Glific.Groups do
   """
   import Ecto.Query, warn: false
 
-  alias Glific.Repo
+  alias __MODULE__
 
-  alias Glific.Groups.{
-    ContactGroup,
-    Group,
-    UserGroup
-  }
+  alias Glific.{Repo, Users.User}
+
+  alias Glific.Groups.{ContactGroup, Group, UserGroup}
+
+  @spec has_permission?(non_neg_integer) :: boolean()
+  defp has_permission?(id) do
+    if Repo.skip_permission?() == true do
+      true
+    else
+      group =
+        Group
+        |> Ecto.Queryable.to_query()
+        |> Repo.add_permission(&Groups.add_permission/2)
+        |> where([g], g.id == ^id)
+        |> select([g], g.id)
+        |> Repo.one()
+
+      if group == nil,
+        do: false,
+        else: true
+    end
+  end
+
+  @doc """
+  Add permissioning specific to groups, in this case we want to restrict the visibility of
+  groups that the user can see
+  """
+  @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
+  def add_permission(query, user) do
+    query
+    |> join(:inner, [g], ug in UserGroup, as: :ug, on: ug.user_id == ^user.id)
+    |> where([g, ug: ug], g.id == ug.group_id)
+  end
 
   @doc """
   Returns the list of groups.
@@ -21,16 +49,44 @@ defmodule Glific.Groups do
       [%Group{}, ...]
 
   """
-  @spec list_groups(map()) :: [Group.t()]
-  def list_groups(args \\ %{}),
-    do: Repo.list_filter(args, Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
+  @spec list_groups(map(), boolean()) :: [Group.t()]
+  def list_groups(args, skip_permission \\ false) do
+    args
+    |> Repo.list_filter_query(Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
+    |> Repo.add_permission(&Groups.add_permission/2, skip_permission)
+    |> Repo.all()
+  end
 
   @doc """
   Return the count of groups, using the same filter as list_groups
   """
   @spec count_groups(map()) :: integer
-  def count_groups(args \\ %{}),
-    do: Repo.count_filter(args, Group, &Repo.filter_with/2)
+  def count_groups(args) do
+    args
+    |> Repo.list_filter_query(Group, nil, &Repo.filter_with/2)
+    |> Repo.add_permission(&Groups.add_permission/2)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
+  Return the count of group contacts
+  """
+  @spec contacts_count(map()) :: integer
+  def contacts_count(%{id: group_id}) do
+    ContactGroup
+    |> where([cg], cg.group_id == ^group_id)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
+  Return the count of group users
+  """
+  @spec users_count(map()) :: integer
+  def users_count(%{id: group_id}) do
+    UserGroup
+    |> where([cg], cg.group_id == ^group_id)
+    |> Repo.aggregate(:count)
+  end
 
   @doc """
   Gets a single group.
@@ -47,7 +103,21 @@ defmodule Glific.Groups do
 
   """
   @spec get_group!(integer) :: Group.t()
-  def get_group!(id), do: Repo.get!(Group, id)
+  def get_group!(id) do
+    Group
+    |> Ecto.Queryable.to_query()
+    |> Repo.add_permission(&Groups.add_permission/2)
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Fetches all group ids in an organization
+  """
+  @spec get_group_ids :: list()
+  def get_group_ids do
+    Repo.all(Group)
+    |> Enum.map(fn group -> group.id end)
+  end
 
   @doc """
   Creates a group.
@@ -82,9 +152,13 @@ defmodule Glific.Groups do
   """
   @spec update_group(Group.t(), map()) :: {:ok, Group.t()} | {:error, Ecto.Changeset.t()}
   def update_group(%Group{} = group, attrs) do
-    group
-    |> Group.changeset(attrs)
-    |> Repo.update()
+    if has_permission?(group.id) do
+      group
+      |> Group.changeset(attrs)
+      |> Repo.update()
+    else
+      raise "Permission denied"
+    end
   end
 
   @doc """
@@ -101,7 +175,9 @@ defmodule Glific.Groups do
   """
   @spec delete_group(Group.t()) :: {:ok, Group.t()} | {:error, Ecto.Changeset.t()}
   def delete_group(%Group{} = group) do
-    Repo.delete(group)
+    if has_permission?(group.id),
+      do: Repo.delete(group),
+      else: raise("Permission denied")
   end
 
   @doc """
@@ -139,21 +215,22 @@ defmodule Glific.Groups do
   end
 
   @doc """
-  Deletes a contact group.
-
-  ## Examples
-
-      iex> delete_contact_group(contact_group)
-      {:ok, %ContactGroup{}}
-
-      iex> delete_contact_group(contact_group)
-      {:error, %Ecto.Changeset{}}
+  Delete group contacts
 
   """
-  @spec delete_contact_group(ContactGroup.t()) ::
-          {:ok, ContactGroup.t()} | {:error, Ecto.Changeset.t()}
-  def delete_contact_group(%ContactGroup{} = contact_group) do
-    Repo.delete(contact_group)
+  @spec delete_group_contacts_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_group_contacts_by_ids(group_id, contact_ids) do
+    fields = {{:group_id, group_id}, {:contact_id, contact_ids}}
+    Repo.delete_relationships_by_ids(ContactGroup, fields)
+  end
+
+  @doc """
+  Delete contact groups
+  """
+  @spec delete_contact_groups_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_contact_groups_by_ids(contact_id, group_ids) do
+    fields = {{:contact_id, contact_id}, {:group_id, group_ids}}
+    Repo.delete_relationships_by_ids(ContactGroup, fields)
   end
 
   @doc """
@@ -170,26 +247,60 @@ defmodule Glific.Groups do
   """
   @spec create_user_group(map()) :: {:ok, UserGroup.t()} | {:error, Ecto.Changeset.t()}
   def create_user_group(attrs \\ %{}) do
-    # Merge default values if not present in attributes
     %UserGroup{}
     |> UserGroup.changeset(attrs)
     |> Repo.insert()
   end
 
   @doc """
-  Deletes a user group.
-
-  ## Examples
-
-      iex> delete_user_group(user_group)
-      {:ok, %UserGroup{}}
-
-      iex> delete_user_group(user_group)
-      {:error, %Ecto.Changeset{}}
-
+  Delete group users
   """
-  @spec delete_user_group(UserGroup.t()) :: {:ok, UserGroup.t()} | {:error, Ecto.Changeset.t()}
-  def delete_user_group(%UserGroup{} = user_group) do
-    Repo.delete(user_group)
+  @spec delete_group_users_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_group_users_by_ids(group_id, user_ids) do
+    fields = {{:group_id, group_id}, {:user_id, user_ids}}
+    Repo.delete_relationships_by_ids(UserGroup, fields)
+  end
+
+  @doc """
+  Delete user groups
+  """
+  @spec delete_user_groups_by_ids(integer, []) :: {integer(), nil | [term()]}
+  def delete_user_groups_by_ids(user_id, group_ids) do
+    fields = {{:user_id, user_id}, {:group_id, group_ids}}
+    Repo.delete_relationships_by_ids(UserGroup, fields)
+  end
+
+  @doc """
+  Updates user groups entries
+  """
+  @spec update_user_groups(map()) :: :ok
+  def update_user_groups(%{
+        user_id: user_id,
+        group_ids: group_ids,
+        organization_id: organization_id
+      }) do
+    user_group_ids =
+      UserGroup
+      |> where([ug], ug.user_id == ^user_id)
+      |> select([ug], ug.group_id)
+      |> Repo.all()
+
+    group_ids = Enum.map(group_ids, fn x -> String.to_integer(x) end)
+    add_group_ids = group_ids -- user_group_ids
+    delete_group_ids = user_group_ids -- group_ids
+
+    new_group_entries =
+      Enum.map(add_group_ids, fn group_id ->
+        %{user_id: user_id, group_id: group_id, organization_id: organization_id}
+      end)
+
+    UserGroup
+    |> Repo.insert_all(new_group_entries)
+
+    UserGroup
+    |> where([ug], ug.user_id == ^user_id and ug.group_id in ^delete_group_ids)
+    |> Repo.delete_all()
+
+    :ok
   end
 end

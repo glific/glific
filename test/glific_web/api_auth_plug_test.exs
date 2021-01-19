@@ -3,13 +3,26 @@ defmodule GlificWeb.APIAuthPlugTest do
   doctest GlificWeb.APIAuthPlug
 
   alias GlificWeb.{APIAuthPlug, Endpoint}
-  alias Glific.{Repo, Users.User}
+
+  alias Glific.{
+    Fixtures,
+    Repo,
+    Users.User
+  }
 
   @pow_config [otp_app: :glific]
 
   setup %{conn: conn} do
+    contact = Fixtures.contact_fixture()
+
     conn = %{conn | secret_key_base: Endpoint.config(:secret_key_base)}
-    user = Repo.insert!(%User{phone: "+919820198766"})
+
+    user =
+      Repo.insert!(%User{
+        phone: "+919820198766",
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
 
     {:ok, conn: conn, user: user}
   end

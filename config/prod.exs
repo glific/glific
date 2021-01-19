@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 # For production, don't forget to configure the url host
 # to something meaningful, Phoenix uses this information
@@ -57,10 +57,13 @@ config :glific, :environment, :prod
 # We also recommend setting `force_ssl` in your endpoint, ensuring
 # no data is ever sent via http, always redirecting to https:
 #
-config :glific, GlificWeb.Endpoint, force_ssl: [hsts: true]
-#
+
+# Uncomment if ssl required at Elixir level
+# config :glific, GlificWeb.Endpoint, force_ssl: [hsts: true]
+
 # Check `Plug.SSL` for all available options in `force_ssl`.
 
-# Finally import the config/prod.secret.exs which loads secrets
-# and configuration from environment variables.
-import_config "prod.secret.exs"
+config :appsignal, :config,
+  otp_app: :glific,
+  active: true,
+  env: :prod

@@ -1,0 +1,16 @@
+mutation updateUserGroups($input:UserGroupsInput!) {
+  updateUserGroups(input: $input) {
+    userGroups {
+      id
+      user {
+        id
+        name
+      }
+      group {
+        id
+        label
+      }
+    }
+    numberDeleted
+  }
+}

@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createTemplateTag($input: TemplateTagInput!) {
+  createTemplateTag(input: $input) {
+    ...TemplateTagFields
+
+    ...ErrorFields
+  }
+}

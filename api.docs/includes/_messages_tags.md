@@ -148,78 +148,16 @@ Type | Description
 integer | The number of messages deleted
 
 
-## Delete a Message Tag
-
-```graphql
-mutation deleteMessageTag($id: ID!) {
-  deleteMessageTag(id: $id) {
-    errors {
-      key
-      message
-    }
-  }
-}
-
-{
-  "id": "26"
-}
-```
-
-> The above query returns JSON structured like this:
-
-```json
-{
-  "data": {
-    "deleteMessageTag": {
-      "errors": null
-    }
-  }
-}
-```
-
-In case of errors, all the above functions return an error object like the below
-
-```json
-{
-  "data": {
-    "deleteMessageTag": {
-      "errors": [
-        {
-          "key": "Elixir.Glific.Messages.MessageTag 26",
-          "message": "Resource not found"
-        }
-      ]
-    }
-  }
-}
-```
-
-### Query Parameters
-
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-
-### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#messagetagresult">MessageTagResult</a> | An error object or empty
-
-
 ## Subscription for Create Message Tag
 
 ```graphql
 subscription {
-  createdMessageTag() {
-    id
-    message {
-        id
-        body
+  createdMessageTag {
+    message{
+      id
     }
-
-    tag {
-        id
-        label
+    tag{
+      id
     }
   }
 }
@@ -231,25 +169,22 @@ subscription {
 {
   "data": {
     "createdMessageTag": {
-      "body": 11,
       "message": {
-          "id" : 10,
-          "body" : "Hello Sir"
+        "id": "194"
       },
       "tag": {
-          "id" : 10,
-          "label" : "Greeting"
+        "id": "194"
       }
     }
   }
 }
 ```
+
+
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#messagetag">MessageTag</a> | An error or object
-
-
+<a href="#message">Message</a> | An error or object
 
 
 
@@ -259,15 +194,11 @@ Parameter | Type | Default | Description
 ```graphql
 subscription {
   deletedMessageTag() {
-    id
-    message {
-        id
-        body
+    message{
+      id
     }
-
-    tag {
-        id
-        label
+    tag{
+      id
     }
   }
 }
@@ -279,14 +210,11 @@ subscription {
 {
   "data": {
     "deletedMessageTag": {
-      "body": 11,
       "message": {
-          "id" : 10,
-          "body" : "Hello Sir"
+        "id": "194"
       },
       "tag": {
-          "id" : 10,
-          "label" : "Greeting"
+        "id": "194"
       }
     }
   }
@@ -295,7 +223,8 @@ subscription {
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#messagetag">MessageTag</a> | An error or object
+<a href="#messagetag">MessageTags</a> | An error or object
+
 
 
 ## Message Tag Objects
@@ -383,7 +312,7 @@ Parameter | Type | Default | Description
 </tbody>
 </table>
 
-## Message Media Inputs ##
+## Message Tag Inputs ##
 
 ### MessageTagInput ###
 
@@ -434,8 +363,14 @@ Parameter | Type | Default | Description
 </tr>
 
 <tr>
-<td colspan="2" valign="top"><strong>TagsId</strong></td>
-<td valign="top">[<a href="#id">Id</a>]</td>
+<td colspan="2" valign="top"><strong>AddTagIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]!</td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>DeleteTagIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]!</td>
 <td></td>
 </tr>
 

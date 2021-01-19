@@ -1,12 +1,39 @@
 defmodule Glific.Flows.RouterTest do
   use Glific.DataCase, async: true
 
+  alias Glific.{
+    Fixtures,
+    Messages
+  }
+
   alias Glific.Flows.{
     Flow,
     FlowContext,
     Node,
     Router
   }
+
+  @valid_attrs %{
+    flow_id: 1,
+    flow_uuid: Ecto.UUID.generate(),
+    uuid_map: %{},
+    node_uuid: Ecto.UUID.generate()
+  }
+
+  def flow_context_fixture(attrs \\ %{}) do
+    contact = Fixtures.contact_fixture()
+
+    {:ok, flow_context} =
+      attrs
+      |> Map.put(:contact_id, contact.id)
+      |> Map.put(:organization_id, contact.organization_id)
+      |> Enum.into(@valid_attrs)
+      |> FlowContext.create_flow_context()
+
+    flow_context
+    |> Repo.preload(:contact)
+    |> Repo.preload(:flow)
+  end
 
   test "process extracts the right values from json" do
     json = %{
@@ -89,18 +116,20 @@ defmodule Glific.Flows.RouterTest do
   test "router execution with type not equal to switch" do
     router = %Router{type: "No type"}
 
-    assert_raise UndefinedFunctionError, fn -> Router.execute(router, nil, ["Random Input"]) end
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "Random Input")
+    assert_raise UndefinedFunctionError, fn -> Router.execute(router, nil, [message]) end
   end
 
   test "router with switch and one case, category" do
     flow = %Flow{uuid: "Flow UUID 1"}
+    exit_uuid = Ecto.UUID.generate()
     uuid_map = %{}
 
     json = %{
       "uuid" => "Node UUID",
       "actions" => [],
       "exits" => [
-        %{"uuid" => "Exit UUID", "destination_uuid" => nil}
+        %{"uuid" => exit_uuid, "destination_uuid" => nil}
       ]
     }
 
@@ -112,10 +141,10 @@ defmodule Glific.Flows.RouterTest do
       "default_category_uuid" => "Default Cat UUID",
       "result_name" => "Language",
       "categories" => [
-        %{"uuid" => "UUID Cat 1", "exit_uuid" => "Exit UUID", "name" => "Category Uno"},
+        %{"uuid" => "UUID Cat 1", "exit_uuid" => exit_uuid, "name" => "Category Uno"},
         %{
           "uuid" => "Default Cat UUID",
-          "exit_uuid" => "Exit UUID",
+          "exit_uuid" => exit_uuid,
           "name" => "Default Category"
         }
       ],
@@ -132,43 +161,33 @@ defmodule Glific.Flows.RouterTest do
     {router, uuid_map} = Router.process(json, uuid_map, node)
 
     # create a simple flow context
-    {:ok, context} =
-      FlowContext.create_flow_context(%{
-        contact_id: 1,
-        flow_id: 1,
-        flow_uuid: Ecto.UUID.generate(),
-        uuid_map: uuid_map
-      })
+    context = flow_context_fixture(%{uuid_map: uuid_map})
 
-    result = Router.execute(router, context, ["23"])
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "23")
+    result = Router.execute(router, context, [message])
 
     # we send it to a null node. lets ensure we get the right values
     assert result == {:ok, nil, []}
 
     # need to recreate the context, since we blew it away when the previous
-    # flow finished
-    {:ok, context} =
-      FlowContext.create_flow_context(%{
-        contact_id: 1,
-        flow_id: 1,
-        flow_uuid: Ecto.UUID.generate(),
-        uuid_map: uuid_map
-      })
+    context = flow_context_fixture(%{uuid_map: uuid_map})
 
     # lets ensure the default category route also works
-    result = Router.execute(router, context, ["123"])
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "123")
+    result = Router.execute(router, context, [message])
     assert result == {:ok, nil, []}
   end
 
   test "router with switch and two cases, category" do
     flow = %Flow{uuid: "Flow UUID 1"}
+    exit_uuid = Ecto.UUID.generate()
     uuid_map = %{}
 
     json = %{
       "uuid" => "Node UUID",
       "actions" => [],
       "exits" => [
-        %{"uuid" => "Exit UUID", "destination_uuid" => nil}
+        %{"uuid" => exit_uuid, "destination_uuid" => nil}
       ]
     }
 
@@ -180,10 +199,10 @@ defmodule Glific.Flows.RouterTest do
       "default_category_uuid" => "Default Cat UUID",
       "result_name" => "Language",
       "categories" => [
-        %{"uuid" => "UUID Cat 1", "exit_uuid" => "Exit UUID", "name" => "Category Uno"},
+        %{"uuid" => "UUID Cat 1", "exit_uuid" => exit_uuid, "name" => "Category Uno"},
         %{
           "uuid" => "Default Cat UUID",
-          "exit_uuid" => "Exit UUID",
+          "exit_uuid" => exit_uuid,
           "name" => "Default Category"
         }
       ],
@@ -206,31 +225,90 @@ defmodule Glific.Flows.RouterTest do
     {router, uuid_map} = Router.process(json, uuid_map, node)
 
     # create a simple flow context
-    {:ok, context} =
-      FlowContext.create_flow_context(%{
-        contact_id: 1,
-        flow_id: 1,
-        flow_uuid: Ecto.UUID.generate(),
-        uuid_map: uuid_map
-      })
+    context = flow_context_fixture(%{uuid_map: uuid_map})
 
-    result = Router.execute(router, context, ["alpha"])
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "alpha")
+    result = Router.execute(router, context, [message])
 
     # we send it to a null node. lets ensure we get the right values
     assert result == {:ok, nil, []}
 
     # need to recreate the context, since we blew it away when the previous
     # flow finished
-    {:ok, context} =
-      FlowContext.create_flow_context(%{
-        contact_id: 1,
-        flow_id: 1,
-        flow_uuid: Ecto.UUID.generate(),
-        uuid_map: uuid_map
-      })
+    context = flow_context_fixture(%{uuid_map: uuid_map})
 
     # lets ensure the default category route also works
-    result = Router.execute(router, context, ["123"])
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "123")
+    result = Router.execute(router, context, [message])
     assert result == {:ok, nil, []}
+  end
+
+  test "router with split by expression with EEx code" do
+    flow = %Flow{uuid: "Flow UUID 1"}
+    exit_uuid = Ecto.UUID.generate()
+    uuid_map = %{}
+
+    json = %{
+      "uuid" => "Node UUID",
+      "actions" => [],
+      "exits" => [
+        %{"uuid" => exit_uuid, "destination_uuid" => nil}
+      ]
+    }
+
+    {node, uuid_map} = Node.process(json, uuid_map, flow)
+
+    json = %{
+      "type" => "switch",
+      "default_category_uuid" => "Default Cat UUID",
+      "result_name" => "Language",
+      "categories" => [
+        %{
+          "uuid" => "Default Cat UUID",
+          "exit_uuid" => exit_uuid,
+          "name" => "Default Category"
+        }
+      ],
+      "cases" => []
+    }
+
+    # correct EEx expression
+    {router, uuid_map} =
+      json
+      |> Map.merge(%{"operand" => "<%= rem(5, 2) %>"})
+      |> Router.process(uuid_map, node)
+
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+    Router.execute(router, context, [])
+
+    {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
+    [recent_inbound_message] = updated_context.recent_inbound
+    assert recent_inbound_message["message"] == "#{rem(5, 2)}"
+
+    # incorrect EEx expression
+    {router, uuid_map} =
+      json
+      |> Map.merge(%{"operand" => "<%= end %>"})
+      |> Router.process(uuid_map, node)
+
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+    Router.execute(router, context, [])
+
+    {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
+    [recent_inbound_message] = updated_context.recent_inbound
+    assert recent_inbound_message["message"] == "Invalid Code"
+
+    # invalid EEx expression
+    {router, uuid_map} =
+      json
+      |> Map.merge(%{"operand" => "<%= IO.inspect('This is for test') %>"})
+      |> Router.process(uuid_map, node)
+
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+    Router.execute(router, context, [])
+
+    {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
+    [recent_inbound_message] = updated_context.recent_inbound
+    assert recent_inbound_message["message"] == "Invalid Code"
   end
 end

@@ -29,6 +29,7 @@ defmodule GlificWeb.Providers.Gupshup.Router do
     file
     audio
     video
+    sticker
     contact
     location
   """
@@ -50,10 +51,12 @@ defmodule GlificWeb.Providers.Gupshup.Router do
 
     scope "/message" do
       post("/text", MessageController, :text)
+      post("/quick_reply", MessageController, :text)
       post("/image", MessageController, :image)
       post("/file", MessageController, :file)
       post("/audio", MessageController, :audio)
       post("/video", MessageController, :video)
+      post("/sticker", MessageController, :sticker)
       post("/location", MessageController, :location)
       post("/*unknown", DefaultController, :unknown)
     end

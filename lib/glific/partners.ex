@@ -3,15 +3,30 @@ defmodule Glific.Partners do
   The Partners context. This is the gateway for the application to access/update all the organization
   and Provider information.
   """
+  @behaviour Waffle.Storage.Google.Token.Fetcher
+  @active_hours 1
+  use Publicist
 
   import Ecto.Query, warn: false
+  require Logger
 
   alias Glific.{
-    Contacts.Contact,
+    Bigquery,
+    Caches,
+    Flags,
+    Partners.Credential,
     Partners.Organization,
     Partners.Provider,
-    Repo
+    Providers.Gupshup.GupshupWallet,
+    Providers.GupshupContacts,
+    Repo,
+    Settings.Language,
+    Users.User
   }
+
+  # We cache organization info under this id since when we want to retrieve
+  # by shortcode we do not have an organization id to retrieve it from.
+  @global_organization_id 0
 
   @doc """
   Returns the list of providers.
@@ -23,8 +38,12 @@ defmodule Glific.Partners do
 
   """
   @spec list_providers(map()) :: [%Provider{}, ...]
-  def list_providers(args \\ %{}),
-    do: Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
+  def list_providers(args \\ %{}) do
+    Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
+    |> Enum.reject(fn provider ->
+      Enum.member?(["dialogflow", "goth", "shortcode"], provider.shortcode)
+    end)
+  end
 
   @doc """
   Return the count of providers, using the same filter as list_providers
@@ -35,15 +54,8 @@ defmodule Glific.Partners do
 
   @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_provider_with(query, filter) do
-    query = Repo.filter_with(query, filter)
-
-    Enum.reduce(filter, query, fn
-      {:url, url}, query ->
-        from q in query, where: ilike(q.url, ^"%#{url}%")
-
-      _, query ->
-        query
-    end)
+    filter = Map.delete(filter, :organization_id)
+    Repo.filter_with(query, filter)
   end
 
   @doc """
@@ -117,7 +129,8 @@ defmodule Glific.Partners do
   def delete_provider(%Provider{} = provider) do
     provider
     |> Ecto.Changeset.change()
-    |> Ecto.Changeset.no_assoc_constraint(:organizations)
+    |> Ecto.Changeset.no_assoc_constraint(:organizations, name: "organizations_provider_id_fkey")
+    |> Ecto.Changeset.no_assoc_constraint(:credential)
     |> Repo.delete()
   end
 
@@ -146,38 +159,65 @@ defmodule Glific.Partners do
   """
   @spec list_organizations(map()) :: [Organization.t()]
   def list_organizations(args \\ %{}),
-    do: Repo.list_filter(args, Organization, &Repo.opts_with_name/2, &filter_organization_with/2)
+    do:
+      Repo.list_filter(
+        args,
+        Organization,
+        &Repo.opts_with_name/2,
+        &filter_organization_with/2,
+        skip_organization_id: true
+      )
+
+  @doc """
+  List of organizations that are active within the system
+  """
+  @spec active_organizations(list()) :: map()
+  def active_organizations(orgs) do
+    Organization
+    |> where([q], q.is_active == true)
+    |> select([q], [q.id, q.name, q.last_communication_at])
+    |> restrict_orgs(orgs)
+    |> Repo.all(skip_organization_id: true)
+    |> Enum.reduce(%{}, fn row, acc ->
+      [id, value, time] = row
+      Map.put(acc, id, %{name: value, last_communication_at: time})
+    end)
+  end
+
+  @spec restrict_orgs(Ecto.Query.t(), list()) :: Ecto.Query.t()
+  defp restrict_orgs(query, []), do: query
+
+  defp restrict_orgs(query, org_list),
+    do: query |> where([q], q.id in ^org_list)
 
   @doc """
   Return the count of organizations, using the same filter as list_organizations
   """
   @spec count_organizations(map()) :: integer
   def count_organizations(args \\ %{}),
-    do: Repo.count_filter(args, Organization, &filter_organization_with/2)
+    do:
+      Repo.count_filter(
+        args,
+        Organization,
+        &filter_organization_with/2,
+        skip_organization_id: true
+      )
 
   # codebeat:disable[ABC]
   @spec filter_organization_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
           Ecto.Queryable.t()
   defp filter_organization_with(query, filter) do
+    filter = Map.delete(filter, :organization_id)
     query = Repo.filter_with(query, filter)
 
     Enum.reduce(filter, query, fn
-      {:display_name, display_name}, query ->
-        from q in query, where: ilike(q.display_name, ^"%#{display_name}%")
-
-      {:contact_name, contact_name}, query ->
-        from q in query, where: ilike(q.contact_name, ^"%#{contact_name}%")
-
       {:email, email}, query ->
         from q in query, where: ilike(q.email, ^"%#{email}%")
 
-      {:provider, provider}, query ->
+      {:bsp, bsp}, query ->
         from q in query,
-          join: c in assoc(q, :provider),
-          where: ilike(c.name, ^"%#{provider}%")
-
-      {:provider_number, provider_number}, query ->
-        from q in query, where: ilike(q.provider_number, ^"%#{provider_number}%")
+          join: c in assoc(q, :bsp),
+          where: ilike(c.name, ^"%#{bsp}%")
 
       {:default_language, default_language}, query ->
         from q in query,
@@ -206,7 +246,7 @@ defmodule Glific.Partners do
 
   """
   @spec get_organization!(integer) :: Organization.t()
-  def get_organization!(id), do: Repo.get!(Organization, id)
+  def get_organization!(id), do: Repo.get!(Organization, id, skip_organization_id: true)
 
   @doc ~S"""
   Creates a organization.
@@ -224,7 +264,7 @@ defmodule Glific.Partners do
   def create_organization(attrs \\ %{}) do
     %Organization{}
     |> Organization.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(skip_organization_id: true)
   end
 
   @doc ~S"""
@@ -241,14 +281,17 @@ defmodule Glific.Partners do
   """
   @spec update_organization(Organization.t(), map()) ::
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
-  def update_organization(%Organization{} = provider, attrs) do
-    provider
+  def update_organization(%Organization{} = organization, attrs) do
+    # first delete the cached organization
+    remove_organization_cache(organization.id, organization.shortcode)
+
+    organization
     |> Organization.changeset(attrs)
-    |> Repo.update()
+    |> Repo.update(skip_organization_id: true)
   end
 
   @doc ~S"""
-  Deletes an Organization.
+  Deletes an Orgsanization.
 
   ## Examples
 
@@ -279,17 +322,408 @@ defmodule Glific.Partners do
     Organization.changeset(organization, attrs)
   end
 
-  @doc """
-  We will cache this soon, since this is a frequently requested item. This contact id is special
-  since it is the sender for all outbound messages and the receiver for all inbound messages
+  @doc ~S"""
+  Returns bsp balance for an organization
   """
-  @spec organization_contact_id() :: integer()
-  def organization_contact_id do
-    # Get contact id
-    Contact
-    |> join(:inner, [c], o in Organization, on: c.id == o.contact_id)
-    |> select([c, _o], c.id)
-    |> limit(1)
-    |> Repo.one()
+  @spec get_bsp_balance(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
+  def get_bsp_balance(organization_id) do
+    organization = Glific.Partners.organization(organization_id)
+
+    if is_nil(organization.services["bsp"]) do
+      {:error, "No active BSP available"}
+    else
+      credentials = organization.services["bsp"]
+      api_key = credentials.secrets["api_key"]
+
+      case organization.bsp.shortcode do
+        "gupshup" -> GupshupWallet.balance(api_key)
+        _ -> {:error, "Invalid provider"}
+      end
+    end
+  end
+
+  @doc """
+  Given a minimal organization object, fill it up and store in cache. Making this
+  public so we can call from test harness and avoid SQL Sandbox issues
+  """
+  @spec fill_cache(Organization.t()) :: Organization.t()
+  def fill_cache(organization) do
+    # For this process, lets set the organization id
+    Glific.Repo.put_organization_id(organization.id)
+
+    organization =
+      organization
+      |> set_root_user()
+      |> set_credentials()
+      |> Repo.preload(:bsp)
+      |> set_bsp_info()
+      |> set_out_of_office_values()
+      |> set_languages()
+
+    Caches.set(
+      @global_organization_id,
+      [{:organization, organization.id}, {:organization, organization.shortcode}],
+      organization
+    )
+
+    # also update the flags table with updated values
+    Flags.init(organization)
+
+    organization
+  end
+
+  @doc """
+  Follow the cachex protocol to load the cache from the DB
+  """
+  @spec load_cache(tuple()) :: {:ignore, Organization.t()}
+  def load_cache(cachex_key) do
+    # this is of the form {:global_org_key, {:organization, value}}
+    # we want the value element
+    cache_key = cachex_key |> elem(1) |> elem(1)
+    Logger.info("Loading organization cache: #{cache_key}")
+
+    organization =
+      if is_integer(cache_key) do
+        get_organization!(cache_key) |> fill_cache()
+      else
+        case Repo.fetch_by(Organization, %{shortcode: cache_key}, skip_organization_id: true) do
+          {:ok, organization} ->
+            organization |> fill_cache()
+
+          _ ->
+            raise(ArgumentError, message: "Could not find an organization with #{cache_key}")
+        end
+      end
+
+    # we are already storing this in the cache (in the function fill_cache),
+    # so we can ask cachex to ignore the value. We need to do this since we are
+    # storing multiple keys for the same object
+    {:ignore, organization}
+  end
+
+  @doc """
+  Cache the entire organization structure.
+  """
+  @spec organization(non_neg_integer | String.t()) :: Organization.t() | nil
+  def organization(cache_key) do
+    case Caches.fetch(@global_organization_id, {:organization, cache_key}, &load_cache/1) do
+      {:error, error} ->
+        raise(ArgumentError,
+          message: "Failed to retrieve organization, #{inspect(cache_key)}, #{error}"
+        )
+
+      {_, organization} ->
+        Glific.Repo.put_organization_id(organization.id)
+        organization
+    end
+  end
+
+  @doc """
+  This contact id is special since it is the sender for all outbound messages
+  and the receiver for all inbound messages
+  """
+  @spec organization_contact_id(non_neg_integer) :: integer()
+  def organization_contact_id(organization_id),
+    do: organization(organization_id).contact_id
+
+  @doc """
+  Get the default language id
+  """
+  @spec organization_language_id(non_neg_integer) :: integer()
+  def organization_language_id(organization_id),
+    do: organization(organization_id).default_language_id
+
+  @doc """
+  Get the timezone
+  """
+  @spec organization_timezone(non_neg_integer) :: String.t()
+  def organization_timezone(organization_id),
+    do: organization(organization_id).timezone
+
+  @spec set_root_user(Organization.t()) :: Organization.t()
+  defp set_root_user(organization) do
+    {:ok, root_user} = Repo.fetch_by(User, %{contact_id: organization.contact_id})
+    Map.put(organization, :root_user, root_user)
+  end
+
+  @spec set_out_of_office_values(Organization.t()) :: Organization.t()
+  defp set_out_of_office_values(organization) do
+    out_of_office = organization.out_of_office
+
+    {hours, days} =
+      if out_of_office.enabled do
+        hours = [out_of_office.start_time, out_of_office.end_time]
+
+        days =
+          Enum.reduce(
+            out_of_office.enabled_days,
+            [],
+            fn x, acc ->
+              if x.enabled,
+                do: [x.id | acc],
+                else: acc
+            end
+          )
+          |> Enum.reverse()
+
+        {hours, days}
+      else
+        {[], []}
+      end
+
+    organization
+    |> Map.put(:hours, hours)
+    |> Map.put(:days, days)
+  end
+
+  @spec set_languages(map()) :: map()
+  defp set_languages(organization) do
+    languages =
+      Language
+      |> where([l], l.id in ^organization.active_language_ids)
+      |> Repo.all()
+
+    organization
+    |> Map.put(:languages, languages)
+  end
+
+  # Lets cache all bsp provider specific info in the organization entity since
+  # we use it on all sending / receiving of messages
+  @spec set_bsp_info(map()) :: map()
+  defp set_bsp_info(organization) do
+    bsp_credential = organization.services[organization.bsp.shortcode]
+
+    updated_services_map =
+      Map.merge(organization.services, %{
+        "bsp" => bsp_credential
+      })
+
+    %{organization | services: updated_services_map}
+  end
+
+  # Lets cache keys and secrets of all the active services
+  @spec set_credentials(map()) :: map()
+  defp set_credentials(organization) do
+    credentials =
+      Credential
+      |> where([c], c.organization_id == ^organization.id)
+      |> where([c], c.is_active == true)
+      |> preload(:provider)
+      |> Repo.all()
+
+    services_map =
+      Enum.reduce(credentials, %{}, fn credential, acc ->
+        Map.merge(acc, %{
+          credential.provider.shortcode => %{keys: credential.keys, secrets: credential.secrets}
+        })
+      end)
+
+    organization
+    |> Map.put(:services, services_map)
+  end
+
+  @doc """
+  Execute a function across all active organizations. This function is typically called
+  by a cron job worker process
+
+  The handler is expected to take the organization id as its first argument. The second argument
+  is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
+
+  The list is a restricted list of organizations, so we dont repeatedly do work. The convention is as
+  follows:
+
+  list == nil - the action should not be performed for any organization
+  list == [] (empty list) - the action should be performed for all organizations
+  list == [ values ] - the actions should be performed only for organizations in the values list
+  """
+  @spec perform_all((... -> nil), map() | nil, list() | [] | nil, boolean) :: :ok
+  def perform_all(handler, handler_args, list, only_recent \\ false)
+
+  def perform_all(_handler, _handler_args, nil, _only_recent), do: :ok
+
+  def perform_all(handler, handler_args, list, only_recent) do
+    # We need to do this for all the active organizations
+    list
+    |> active_organizations()
+    |> recent_organizations(only_recent)
+    |> Enum.each(fn {id, %{name: name}} ->
+      Repo.put_process_state(id)
+
+      if is_nil(handler_args),
+        do: handler.(id),
+        else:
+          handler.(
+            id,
+            Map.put(handler_args, :organization_name, name)
+          )
+    end)
+
+    :ok
+  end
+
+  @spec recent_organizations(map(), boolean) :: map()
+  defp recent_organizations(map, false), do: map
+
+  defp recent_organizations(map, true) do
+    Enum.filter(
+      map,
+      fn {_id, %{last_communication_at: last_communication_at}} ->
+        Timex.diff(DateTime.utc_now(), last_communication_at, :hours) < @active_hours
+      end
+    )
+  end
+
+  @doc """
+  Fetch opted in contacts data from providers server
+  """
+  @spec fetch_opted_in_contacts(map()) :: :ok | any
+  def fetch_opted_in_contacts(attrs) do
+    organization = organization(attrs.organization_id)
+
+    if is_nil(organization.services["bsp"]) do
+      {:error, "No active BSP available"}
+    else
+      case organization.bsp.shortcode do
+        "gupshup" -> GupshupContacts.fetch_opted_in_contacts(attrs)
+        _ -> raise "Invalid BSP"
+      end
+    end
+
+    :ok
+  end
+
+  @doc """
+  Get organization's credential by service shortcode
+  """
+  @spec get_credential(map()) ::
+          {:ok, Credential.t()} | {:error, String.t() | [String.t()]}
+  def get_credential(%{organization_id: organization_id, shortcode: shortcode}) do
+    case Repo.fetch_by(Provider, %{shortcode: shortcode}) do
+      {:ok, provider} ->
+        Repo.fetch_by(Credential, %{
+          organization_id: organization_id,
+          provider_id: provider.id
+        })
+
+      _ ->
+        {:error, ["shortcode", "Invalid provider shortcode."]}
+    end
+  end
+
+  @doc """
+  Creates an organization's credential
+  """
+  @spec create_credential(map()) :: {:ok, Credential.t()} | {:error, any()}
+  def create_credential(attrs) do
+    case Repo.fetch_by(Provider, %{shortcode: attrs[:shortcode]}) do
+      {:ok, provider} ->
+        # first delete the cached organization
+        organization = get_organization!(attrs.organization_id)
+        remove_organization_cache(organization.id, organization.shortcode)
+
+        attrs = Map.merge(attrs, %{provider_id: provider.id})
+
+        %Credential{}
+        |> Credential.changeset(attrs)
+        |> Repo.insert()
+
+      _ ->
+        {:error, ["shortcode", "Invalid provider shortcode: #{attrs[:shortcode]}."]}
+    end
+  end
+
+  # check for non empty string or nil
+  @spec non_empty_string(String.t() | nil) :: boolean()
+  defp non_empty_string(str) do
+    !is_nil(str) && str != ""
+  end
+
+  # Ensures we have all the keys required in the credential to call Gupshup
+  @spec valid_bsp?(Credential.t()) :: boolean()
+  defp valid_bsp?(credential) do
+    credential.provider.group == "bsp" &&
+      non_empty_string(credential.keys["api_end_point"]) &&
+      non_empty_string(credential.secrets["app_name"]) &&
+      non_empty_string(credential.secrets["api_key"])
+  end
+
+  @doc """
+  Updates an organization's credential
+  """
+  @spec update_credential(Credential.t(), map()) ::
+          {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
+  def update_credential(%Credential{} = credential, attrs) do
+    # delete the cached organization and associated credentials
+    organization = organization(credential.organization_id)
+
+    remove_organization_cache(organization.id, organization.shortcode)
+
+    {:ok, credential} =
+      credential
+      |> Credential.changeset(attrs)
+      |> Repo.update()
+
+    # when updating the bsp credentials fetch list of opted in contacts
+    credential = credential |> Repo.preload([:provider, :organization])
+
+    if valid_bsp?(credential),
+      do: fetch_opted_in_contacts(attrs)
+
+    if credential.provider.shortcode == "bigquery" do
+      org = credential.organization |> Repo.preload(:contact)
+      Bigquery.bigquery_dataset(org.contact.phone, org.id)
+    end
+
+    {:ok, credential}
+  end
+
+  @doc """
+    Removing organization cache
+  """
+  @spec remove_organization_cache(non_neg_integer, String.t()) :: any()
+  def remove_organization_cache(organization_id, shortcode) do
+    Caches.remove(
+      @global_organization_id,
+      [{:organization, organization_id}, {:organization, shortcode}]
+    )
+  end
+
+  # This is required for GCS
+  @impl Waffle.Storage.Google.Token.Fetcher
+  @spec get_token(binary) :: binary
+  def get_token(organization_id) when is_binary(organization_id) do
+    organization_id = String.to_integer(organization_id)
+    token = get_goth_token(organization_id, "google_cloud_storage")
+    token.token
+  end
+
+  @doc """
+    Common function to get the goth config
+  """
+  @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
+  def get_goth_token(organization_id, provider_shortcode) do
+    organization = organization(organization_id)
+
+    organization.services[provider_shortcode]
+    |> case do
+      nil ->
+        nil
+
+      credentials ->
+        config =
+          case Jason.decode(credentials.secrets["service_account"]) do
+            {:ok, config} -> config
+            _ -> :error
+          end
+
+        Goth.Config.add_config(config)
+
+        {:ok, token} =
+          Goth.Token.for_scope(
+            {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
+          )
+
+        token
+    end
   end
 end

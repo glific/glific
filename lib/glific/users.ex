@@ -2,10 +2,16 @@ defmodule Glific.Users do
   @moduledoc """
   The Users context.
   """
+  use Pow.Ecto.Context,
+    repo: Glific.Repo,
+    user: Glific.Users.User
+
   import Ecto.Query, warn: false
 
-  alias Glific.Repo
-  alias Glific.Users.User
+  alias Glific.{
+    Repo,
+    Users.User
+  }
 
   @doc """
   Returns the list of filtered users.
@@ -17,14 +23,15 @@ defmodule Glific.Users do
 
   """
   @spec list_users(map()) :: [User.t()]
-  def list_users(args \\ %{}),
-    do: Repo.list_filter(args, User, &Repo.opts_with_name/2, &Repo.filter_with/2)
+  def list_users(args) do
+    Repo.list_filter(args, User, &Repo.opts_with_name/2, &Repo.filter_with/2)
+  end
 
   @doc """
   Return the count of users, using the same filter as list_users
   """
   @spec count_users(map()) :: integer
-  def count_users(args \\ %{}),
+  def count_users(args),
     do: Repo.count_filter(args, User, &Repo.filter_with/2)
 
   @doc """
@@ -56,8 +63,8 @@ defmodule Glific.Users do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_user(map()) :: %User{}
-  def create_user(attrs \\ %{}) do
+  @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def create_user(attrs) do
     %User{}
     |> User.changeset(attrs)
     |> Repo.insert()
@@ -77,24 +84,9 @@ defmodule Glific.Users do
   """
   @spec update_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user(%User{} = user, attrs) do
-    with false <- is_nil(attrs[:password]) || is_nil(attrs[:otp]),
-         :ok <- PasswordlessAuth.verify_code(user.phone, attrs.otp) do
-      PasswordlessAuth.remove_code(user.phone)
-      attrs = Map.merge(attrs, %{password_confirmation: attrs.password})
-
-      user
-      |> User.update_fields_changeset(attrs)
-      |> User.reset_password_changeset(attrs)
-      |> Repo.update()
-    else
-      true ->
-        user
-        |> User.update_fields_changeset(attrs)
-        |> Repo.update()
-
-      {:error, error} ->
-        {:error, Atom.to_string(error)}
-    end
+    user
+    |> User.update_fields_changeset(attrs)
+    |> Repo.update()
   end
 
   @doc """
@@ -120,7 +112,35 @@ defmodule Glific.Users do
   @spec reset_user_password(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def reset_user_password(%User{} = user, attrs) do
     user
-    |> User.reset_password_changeset(attrs)
+    |> User.update_fields_changeset(attrs)
     |> Repo.update()
   end
+
+  @impl true
+  @spec authenticate(map()) :: User.t() | nil
+  def authenticate(params) do
+    authenticate_user_organization(params["organization_id"], params)
+  end
+
+  @spec authenticate_user_organization(non_neg_integer | nil, map()) :: User.t() | nil
+  defp authenticate_user_organization(nil, _params), do: nil
+
+  defp authenticate_user_organization(organization_id, params) do
+    User
+    |> Repo.get_by(phone: params["phone"], organization_id: organization_id)
+    |> case do
+      # Prevent timing attack
+      nil -> %User{password_hash: nil}
+      user -> user
+    end
+    |> verify_password(params["password"])
+  end
+
+  @spec verify_password(User.t(), String.t()) :: User.t() | nil
+  defp verify_password(user, password),
+    do:
+      if(User.verify_password(user, password),
+        do: user,
+        else: nil
+      )
 end

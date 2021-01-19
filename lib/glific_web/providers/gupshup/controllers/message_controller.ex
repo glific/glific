@@ -13,7 +13,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
   def handler(conn, _params, _msg) do
-    json(conn, nil)
+    conn
+    |> Plug.Conn.send_resp(200, "")
+    |> Plug.Conn.halt()
   end
 
   @doc """
@@ -21,7 +23,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   """
   @spec text(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def text(conn, params) do
-    Gupshup.Message.receive_text(params)
+    params
+    |> Gupshup.Message.receive_text()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
     |> Communications.Message.receive_message()
 
     handler(conn, params, "text handler")
@@ -51,11 +55,19 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   @spec video(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def video(conn, params), do: media(conn, params, :video)
 
+  @doc """
+  Callback for gupshup sticker image
+  """
+  @spec sticker(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def sticker(conn, params), do: media(conn, params, :sticker)
+
   @doc false
   # Handle Gupshup media message and convert them into Glific Message struct
   @spec media(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
   defp media(conn, params, type) do
-    Gupshup.Message.receive_media(params)
+    params
+    |> Gupshup.Message.receive_media()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
     |> Communications.Message.receive_message(type)
 
     handler(conn, params, "media handler")
@@ -65,7 +77,9 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   # Handle Gupshup location message and convert them into Glific Message struct
   @spec location(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def location(conn, params) do
-    Gupshup.Message.receive_location(params)
+    params
+    |> Gupshup.Message.receive_location()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
     |> Communications.Message.receive_message(:location)
 
     handler(conn, params, "location handler")

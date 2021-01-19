@@ -6,13 +6,14 @@
   ## list of tools (see `mix check` docs for defaults)
   tools: [
     ## curated tools may be disabled (e.g. the check for compilation warnings)
-    # {:sobelow, false},
     # {:compiler, false}
+    {:sobelow, false},
     {:npm_test, false},
     {:formatter, false},
 
     ## ...or adjusted (e.g. use one-line formatter for more compact credo output)
     {:credo, "mix credo --format oneline --strict"},
+    {:ex_unit, "mix test_full", detect: [{:file, "test"}]},
 
     ## ...or reordered (e.g. to see output from ex_unit before others)
     ## {:ex_unit, order: -1},
@@ -25,8 +26,8 @@
     {:mix_format, "mix format"},
     {:mix_doctor, command: "mix doctor", env: %{"MIX_ENV" => "test"}},
     {:dialyzer, "mix dialyzer --no-check --quiet", detect: [{:package, :dialyxir}]},
-    {:sobelow, "mix sobelow --skip --exit",
-     umbrella: [recursive: true], detect: [{:package, :sobelow}]},
+    # We will enable it later
+    # {:sobelow, "mix sobelow --skip --exit", umbrella: [recursive: true], detect: [{:package, :sobelow}]},
     {:mix_coveralls, "mix coveralls", [{:deps, [:ex_unit]}, {:env, %{"MIX_ENV" => "test"}}]}
   ]
 ]

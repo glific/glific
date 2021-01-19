@@ -37,7 +37,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
   end
 
   describe "status" do
-    setup do
+    setup %{conn: conn} do
       gupshup_id = Faker.String.base64(36)
 
       message_params =
@@ -47,45 +47,49 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
         |> put_in(["payload", "gsId"], gupshup_id)
         |> put_in(["payload", "payload"], %{"ts" => "1592311836"})
 
-      [message | _] = Messages.list_messages()
-      Messages.update_message(message, %{provider_message_id: gupshup_id})
+      [message | _] =
+        Messages.list_messages(%{filter: %{organization_id: conn.assigns[:organization_id]}})
+
+      Messages.update_message(message, %{bsp_message_id: gupshup_id})
       %{message_params: message_params, message: message}
     end
 
     test "enqueued status should update the message status", setup_config = %{conn: conn} do
       # when message enqueued
-      conn = post(conn, "/gupshup", setup_config.message_params)
-      json_response(conn, 200)
+      success_conn = post(conn, "/gupshup", setup_config.message_params)
+      json_response(success_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
-      assert message.provider_status == :enqueued
+      assert message.bsp_status == :enqueued
 
       # when message failed
       message_params = put_in(setup_config.message_params, ["payload", "type"], "failed")
-      conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      failed_conn = post(conn, "/gupshup", message_params)
+      json_response(failed_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
-      assert message.provider_status == :error
+      assert message.bsp_status == :error
+      assert message.errors != nil
+      assert message.errors != %{}
 
       # when message sent
       message_params = put_in(setup_config.message_params, ["payload", "type"], "sent")
-      conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      sent_conn = post(conn, "/gupshup", message_params)
+      json_response(sent_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
-      assert message.provider_status == :sent
+      assert message.bsp_status == :sent
 
       # when message read
       message_params = put_in(setup_config.message_params, ["payload", "type"], "read")
-      conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      read_conn = post(conn, "/gupshup", message_params)
+      json_response(read_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
-      assert message.provider_status == :read
+      assert message.bsp_status == :read
 
       # when message delivered
       message_params = put_in(setup_config.message_params, ["payload", "type"], "delivered")
-      conn = post(conn, "/gupshup", message_params)
-      json_response(conn, 200)
+      delivered_conn = post(conn, "/gupshup", message_params)
+      json_response(delivered_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
-      assert message.provider_status == :delivered
+      assert message.bsp_status == :delivered
     end
   end
 end

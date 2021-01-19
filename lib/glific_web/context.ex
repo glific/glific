@@ -18,9 +18,12 @@ defmodule GlificWeb.Context do
   @doc """
   Return the current user context based on the authorization header
   """
-  @spec build_context(map()) :: map()
+  @spec build_context(Plug.Conn.t()) :: map()
   def build_context(conn) do
     current_user = conn.assigns[:current_user]
+
+    # Add the current_user to the Process memory
+    Glific.Repo.put_current_user(current_user)
 
     if current_user != nil do
       %{current_user: current_user}

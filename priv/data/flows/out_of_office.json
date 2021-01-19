@@ -1,0 +1,55 @@
+{
+  "uuid" : "OUTOFOFFICE_UUID",
+  "_ui" : {
+    "nodes" : {
+      "5a60660e-30ca-4e95-901d-2f1f77bea840" : {
+        "position" : {
+          "top" : 0,
+          "left" : 200
+        },
+        "type" : "execute_actions"
+      }
+    }
+  },
+  "spec_version" : "13.1.0",
+  "expire_after_minutes" : 10080,
+  "nodes" : [
+    {
+      "uuid" : "5a60660e-30ca-4e95-901d-2f1f77bea840",
+      "actions" : [
+        {
+          "text" : "We are currently not in the office to respond to this message. Our working hours are typically Monday - Friday from 9:00 am - 6:00 pm. We will get back to you as soon as possible.\n\nAs a reminder, we can only send you a message within 24 hours. If you have not heard from us by the next working day, please send us the message again. This will enable us to respond. \n\nYou can use our automated help system to get more information and do our activities.",
+          "uuid" : "740eff58-5d34-4bd5-b7ff-ae3eef46b006",
+          "type" : "send_msg",
+          "quick_replies" : [
+
+          ],
+          "attachments" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : null,
+          "uuid" : "246ce1a1-5a06-4c8d-9985-2b189b992e16"
+        }
+      ]
+    }
+  ],
+  "language" : "base",
+  "localization" : {
+    "hi" : {
+      "740eff58-5d34-4bd5-b7ff-ae3eef46b006" : {
+        "text" : [
+          "हम वर्तमान में इस संदेश का जवाब देने के लिए कार्यालय में नहीं हैं। हमारे काम के घंटे आम तौर पर सोमवार - शुक्रवार सुबह 9:00 बजे से शाम 6:00 बजे तक होते हैं. हम जल्द से जल्द आपके पास लौट आएंगे।\n\nएक अनुस्मारक के रूप में, हम केवल 24 घंटों के भीतर आपको एक संदेश भेज सकते हैं। यदि आपने अगले कार्य दिवस तक हमसे नहीं सुना है, तो कृपया हमें फिर से संदेश भेजें। यह हमें प्रतिक्रिया देने में सक्षम करेगा।\n\nअधिक जानकारी प्राप्त करने और हमारी गतिविधियों को करने के लिए आप हमारी स्वचालित सहायता प्रणाली का उपयोग कर सकते हैं।"
+        ]
+      }
+    }
+  },
+  "vars" : [
+    "OUTOFOFFICE_UUID"
+  ],
+  "type" : "messaging",
+  "name" : "Out of Office Workflow"
+}

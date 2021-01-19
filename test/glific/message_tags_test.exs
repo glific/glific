@@ -15,22 +15,25 @@ defmodule Glific.MessageTagsTest do
     :ok
   end
 
-  test "lets check the edge cases first, no tags, or some crappy tags" do
-    message = Fixtures.message_fixture()
+  test "lets check the edge cases first, no tags, or some crappy tags", attrs do
+    message = Fixtures.message_fixture(attrs)
 
     message_tags =
       MessageTags.update_message_tags(%{
         message_id: message.id,
+        organization_id: message.organization_id,
         add_tag_ids: [],
         delete_tag_ids: []
       })
 
+    assert %MessageTags{} == message_tags
     assert message_tags.message_tags == []
     assert message_tags.number_deleted == 0
 
     message_tags =
       MessageTags.update_message_tags(%{
         message_id: message.id,
+        organization_id: message.organization_id,
         add_tag_ids: [12_345, 765_843],
         delete_tag_ids: [12_345, 765_843]
       })
@@ -39,13 +42,14 @@ defmodule Glific.MessageTagsTest do
     assert message_tags.number_deleted == 0
   end
 
-  test "lets check we can add all the status tags to the message" do
-    message = Fixtures.message_fixture()
-    tags_map = Tags.status_map()
+  test "lets check we can add all the status tags to the message", attrs do
+    message = Fixtures.message_fixture(attrs)
+    tags_map = Tags.status_map(attrs)
 
     message_tags =
       MessageTags.update_message_tags(%{
         message_id: message.id,
+        organization_id: message.organization_id,
         add_tag_ids: Map.values(tags_map),
         delete_tag_ids: []
       })
@@ -56,6 +60,7 @@ defmodule Glific.MessageTagsTest do
     message_tags =
       MessageTags.update_message_tags(%{
         message_id: message.id,
+        organization_id: message.organization_id,
         add_tag_ids: Map.values(tags_map) ++ ["-1"],
         delete_tag_ids: []
       })
@@ -66,6 +71,7 @@ defmodule Glific.MessageTagsTest do
     message_tags =
       MessageTags.update_message_tags(%{
         message_id: message.id,
+        organization_id: message.organization_id,
         add_tag_ids: [],
         delete_tag_ids: Map.values(tags_map)
       })

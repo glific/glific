@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 # Configure your database
 config :glific, Glific.Repo,
@@ -23,6 +23,7 @@ config :glific, GlificWeb.Endpoint,
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
+  url: [host: "glific.test"],
   watchers: [
     node: [
       "node_modules/webpack/bin/webpack.js",
@@ -34,8 +35,8 @@ config :glific, GlificWeb.Endpoint,
   ]
 
 # config :absinthe, Absinthe.Logger,
-#  pipeline: true,
-#  level: :debug
+#   pipeline: true,
+#   level: :debug
 
 # ## SSL Support
 #
@@ -72,8 +73,10 @@ config :glific, GlificWeb.Endpoint,
     ]
   ]
 
-# Do not include metadata nor timestamps in development logs
-config :logger, :console, format: "[$level] $message\n"
+# Do not include timestamps in development logs
+config :logger, :console,
+  format: "$metadata[$level] $message\n",
+  metadata: [:request_id, :user_id, :org_id]
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
@@ -81,5 +84,19 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+config :appsignal, :config,
+  otp_app: :glific,
+  active: false,
+  env: :dev
+
+config :goth,
+  disabled: true
+
+# config :glific, Oban,
+#   prefix: "global",
+#   crontab: false,
+#   queues: false,
+#   plugins: false
 
 import_config "dev.secret.exs"

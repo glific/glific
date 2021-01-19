@@ -1,5 +1,34 @@
 # Users
 
+## Get All Roles
+```graphql
+query {
+  roles
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+
+{
+  "data": {
+    "roles": [
+         "none",
+         "staff",
+         "manager",
+         "admin"
+    ]
+  }
+}
+```
+This returns all the roles
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+[<a href="#string">Role</a>] | List of roles
+
 ## Get All Users
 
 ```graphql
@@ -52,7 +81,7 @@ query users($filter: UserFilter, $opts: Opts) {
         "name": "Jane Doe",
         "phone": "+918820198765",
         "roles": [
-          "basic",
+          "staff",
           "admin"
         ]
       }
@@ -123,6 +152,57 @@ Type | Description
 | ---- | -----------
 <a href="#userresult">UserResult</a> | Queried User
 
+## Get Current User
+
+```graphql
+query currentUser {
+  currentUser {
+    user {
+      id
+      name
+      phone
+      roles
+      organization {
+        activeLanguages {
+          label
+        }
+      }
+    }
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "user": {
+      "user": {
+        "id": "1",
+        "name": "John Doe",
+        "phone": "+919820198765",
+        "roles": [
+          "Admin"
+        ],
+        "organization": {
+          "activeLanguages": [
+            {
+              "label": "English (United States)"
+            }
+          ]
+        },
+      }
+    }
+  }
+}
+```
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#userresult">UserResult</a> | Current User
+
 ## Count all Users
 
 ```graphql
@@ -158,16 +238,20 @@ Type | Description
 | ---- | -----------
 <a href="#int">Int</a> | Count of filtered users
 
+
 ## Update a User
 
 ```graphql
-mutation updateUser($id: ID!, $input:UserInput!) {
+mutation updateUser($id: ID!, $input: UserInput!) {
   updateUser(id: $id, input: $input) {
     user {
       id
       name
       phone
       roles
+      groups {
+        label
+      }
     }
     errors {
       key
@@ -179,7 +263,14 @@ mutation updateUser($id: ID!, $input:UserInput!) {
 {
   "id": "2",
   "input": {
-    "name": "Updated Name"
+    "name": "Updated Name",
+    "roles": [
+      "admin"
+    ],
+    "groupIds": [
+      1,
+      2
+    ]
   }
 }
 ```
@@ -192,11 +283,18 @@ mutation updateUser($id: ID!, $input:UserInput!) {
     "updateUser": {
       "errors": null,
       "user": {
+        "groups": [
+          {
+            "label": "First Group"
+          },
+          {
+            "label": "Poetry Group"
+          }
+        ],
         "id": "2",
         "name": "Updated Name",
-        "phone": "+918820198765",
+        "phone": "919876543210",
         "roles": [
-          "basic",
           "admin"
         ]
       }
@@ -223,11 +321,25 @@ mutation updateUser($id: ID!, $input:UserInput!) {
 }
 ```
 
-## Update a User Password
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+id | <a href="#id">ID</a>! | required ||
+input | <a href="#userinput">UserInput</a> | required ||
+groupIds | [<a href="#id">ID</a>] | required ||
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#userresult">UserResult</a> | The updated user object
+
+
+## Update Current User Details
 
 ```graphql
-mutation updateUser($id: ID!, $input:UserInput!) {
-  updateUser(id: $id, input: $input) {
+mutation updateCurrentUser($input:CurrentUserInput!) {
+  updateCurrentUser(input: $input) {
     user {
       id
       name
@@ -240,11 +352,8 @@ mutation updateUser($id: ID!, $input:UserInput!) {
 }
 
 {
-  "id": "2",
   "input": {
-    "name": "Updated Name",
-    "otp": "340606",
-    "password": "new_password",
+    "name": "Updated Name"
   }
 }
 ```
@@ -254,7 +363,50 @@ mutation updateUser($id: ID!, $input:UserInput!) {
 ```json
 {
   "data": {
-    "updateUser": {
+    "updateCurrentUser": {
+      "errors": null,
+      "user": {
+        "id": "2",
+        "name": "Updated Name"
+      }
+    }
+  }
+}
+```
+
+Current User can update only the name and password, but not the phone number
+
+## Update Current User Password
+
+```graphql
+mutation updateCurrentUser($input:CurrentUserInput!) {
+  updateCurrentUser(input: $input) {
+    user {
+      id
+      name
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "name": "Updated Name",
+    "otp": "340606",
+    "password": "new_password"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "updateCurrentUser": {
       "errors": null,
       "user": {
         "id": "2",
@@ -270,22 +422,16 @@ mutation updateUser($id: ID!, $input:UserInput!) {
 ```
 {
   "data": {
-    "updateUser": null
-  },
-  "errors": [
-    {
-      "locations": [
+    "updateCurrentUser": {
+      "errors": [
         {
-          "column": 3,
-          "line": 2
+          "key": "OTP",
+          "message": "does_not_exist"
         }
       ],
-      "message": "does_not_exist",
-      "path": [
-        "updateUser"
-      ]
+      "user": null
     }
-  ]
+  }
 }
 ```
 
@@ -294,7 +440,7 @@ mutation updateUser($id: ID!, $input:UserInput!) {
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 id | <a href="#id">ID</a>! | required ||
-input | <a href="#userinput">UserInput</a> | required ||
+input | <a href="#currentuserinput">CurrentUserInput</a> | required ||
 
 ### Return Parameters
 Type | Description
@@ -379,6 +525,11 @@ Type | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>contact</strong></td>
+<td valign="top"><a href="#contact">Contact</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>name</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
@@ -396,6 +547,21 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>groups</strong></td>
 <td valign="top">[<a href="#group">Group</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isRestricted</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>insertedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>updatedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
 </tr>
 </tbody>
@@ -421,6 +587,31 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>user</strong></td>
 <td valign="top"><a href="#user">User</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### Role
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>id</strong></td>
+<td valign="top"><a href="#ID">ID</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>label</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 </tbody>
@@ -481,6 +672,35 @@ Match the phone
 <tr>
 <td colspan="2" valign="top"><strong>roles</strong></td>
 <td valign="top">[<a href="#string">String</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>groupIds</strong></td>
+<td valign="top">[<a href="#id">ID</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isRestricted</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### CurrentUserInput
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>name</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>

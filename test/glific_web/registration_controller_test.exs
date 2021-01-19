@@ -1,9 +1,12 @@
 defmodule GlificWeb.API.V1.RegistrationControllerTest do
   use GlificWeb.ConnCase
 
+  alias GlificWeb.API.V1.RegistrationController
+
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Fixtures,
     Repo,
     Seeds.SeedsDev,
     Tags.ContactTag,
@@ -17,6 +20,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
+    Fixtures.otp_hsm_fixture()
     :ok
   end
 
@@ -31,9 +35,17 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     }
 
     test "with valid params", %{conn: conn} do
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+      {:ok, receiver} =
+        Repo.fetch_by(Contact, %{
+          name: "Default receiver",
+          organization_id: conn.assigns[:organization_id]
+        })
 
-      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(receiver.phone)
+      {:ok, otp} =
+        RegistrationController.create_and_send_verification_code(
+          conn.assigns[:organization_id],
+          receiver
+        )
 
       valid_params = %{
         "user" => %{
@@ -52,8 +64,14 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json["data"]["token_expiry_time"]
 
       # We will tag the user as a contact tag
-      {:ok, staff_tag} = Repo.fetch_by(Tag, %{label: "Staff"})
-      {:ok, contact} = Repo.fetch_by(Contact, %{phone: receiver.phone})
+      {:ok, staff_tag} =
+        Repo.fetch_by(Tag, %{label: "Staff", organization_id: conn.assigns[:organization_id]})
+
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{
+          phone: receiver.phone,
+          organization_id: conn.assigns[:organization_id]
+        })
 
       assert {:ok, _contact_tag} =
                Repo.fetch_by(ContactTag, %{
@@ -62,10 +80,19 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
                })
     end
 
-    test "with password less than minimum characters should give error", %{conn: conn} do
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+    test "with password less than minimum characters should give error",
+         %{conn: conn} do
+      {:ok, receiver} =
+        Repo.fetch_by(Contact, %{
+          name: "Default receiver",
+          organization_id: conn.assigns[:organization_id]
+        })
 
-      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(receiver.phone)
+      {:ok, otp} =
+        RegistrationController.create_and_send_verification_code(
+          conn.assigns[:organization_id],
+          receiver
+        )
 
       valid_params = %{
         "user" => %{
@@ -96,9 +123,17 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with invalid params", %{conn: conn} do
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+      {:ok, receiver} =
+        Repo.fetch_by(Contact, %{
+          name: "Default receiver",
+          organization_id: conn.assigns[:organization_id]
+        })
 
-      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(receiver.phone)
+      {:ok, otp} =
+        RegistrationController.create_and_send_verification_code(
+          conn.assigns[:organization_id],
+          receiver
+        )
 
       invalid_params = %{
         "user" => %{
@@ -121,8 +156,13 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
   describe "send_otp/2" do
     test "send otp", %{conn: conn} do
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-      Contacts.contact_opted_in(receiver.phone, DateTime.utc_now())
+      {:ok, receiver} =
+        Repo.fetch_by(Contact, %{
+          name: "Default receiver",
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      Contacts.contact_opted_in(receiver.phone, receiver.organization_id, DateTime.utc_now())
 
       valid_params = %{"user" => %{"phone" => receiver.phone}}
 
@@ -143,7 +183,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "send otp to existing user will return an error", %{conn: conn} do
-      [user | _] = Users.list_users()
+      [user | _] = Users.list_users(%{filter: %{organization_id: conn.assigns[:organization_id]}})
       phone = user.phone
       invalid_params = %{"user" => %{"phone" => phone}}
 
@@ -154,8 +194,13 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "send otp to optout contact will return an error", %{conn: conn} do
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-      Contacts.contact_opted_out(receiver.phone, DateTime.utc_now())
+      {:ok, receiver} =
+        Repo.fetch_by(Contact, %{
+          name: "Default receiver",
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      Contacts.contact_opted_out(receiver.phone, receiver.organization_id, DateTime.utc_now())
       invalid_params = %{"user" => %{"phone" => receiver.phone}}
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, invalid_params))
@@ -168,15 +213,22 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do
       # create a user for a contact
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
-      Contacts.contact_opted_in(receiver.phone, DateTime.utc_now())
+      {:ok, receiver} =
+        Repo.fetch_by(Contact, %{
+          name: "Default receiver",
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      Contacts.contact_opted_in(receiver.phone, receiver.organization_id, DateTime.utc_now())
 
       {:ok, user} =
         %{
           "phone" => receiver.phone,
           "name" => receiver.name,
           "password" => @password,
-          "password_confirmation" => @password
+          "password_confirmation" => @password,
+          "contact_id" => receiver.id,
+          "organization_id" => Fixtures.get_org_id()
         }
         |> Users.create_user()
 
@@ -200,7 +252,9 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
         "phone" => receiver.phone,
         "name" => receiver.name,
         "password" => @password,
-        "password_confirmation" => @password
+        "password_confirmation" => @password,
+        "contact_id" => receiver.id,
+        "organization_id" => Fixtures.get_org_id()
       }
 
       {:ok, user} =
@@ -211,10 +265,14 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with valid params", %{conn: conn} do
-      user = user_fixture()
+      user = user_fixture() |> Repo.preload([:contact])
 
       # reset password of a user
-      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(user.phone)
+      {:ok, otp} =
+        RegistrationController.create_and_send_verification_code(
+          conn.assigns[:organization_id],
+          user.contact
+        )
 
       valid_params = %{
         "user" => %{
@@ -249,9 +307,13 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with incorrect phone number", %{conn: conn} do
-      user = user_fixture()
+      user = user_fixture() |> Repo.preload([:contact])
 
-      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(user.phone)
+      {:ok, otp} =
+        RegistrationController.create_and_send_verification_code(
+          conn.assigns[:organization_id],
+          user.contact
+        )
 
       invalid_params = %{
         "user" => %{
@@ -268,10 +330,14 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with password less than 8 characters", %{conn: conn} do
-      user = user_fixture()
+      user = user_fixture() |> Repo.preload([:contact])
 
       # reset password of user
-      {:ok, otp} = PasswordlessAuth.create_and_send_verification_code(user.phone)
+      {:ok, otp} =
+        RegistrationController.create_and_send_verification_code(
+          conn.assigns[:organization_id],
+          user.contact
+        )
 
       valid_params = %{
         "user" => %{
