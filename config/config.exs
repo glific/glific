@@ -47,7 +47,7 @@ config :glific, Oban,
     {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
     {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
     {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
-    {"30 */1 * * *", Glific.Jobs.MinuteWorker, args: %{job: :sync_glific_db_with_cloud}}
+    {"30 */1 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_data_on_bigquery}}
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
