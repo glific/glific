@@ -42,13 +42,13 @@ defmodule Glific.Templates.SessionTemplate do
         }
 
   @required_fields [
-    :label,
     :body,
     :type,
     :language_id,
     :organization_id
   ]
   @optional_fields [
+    :label,
     :shortcode,
     :number_parameters,
     :is_reserved,
