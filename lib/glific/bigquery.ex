@@ -511,7 +511,7 @@ defmodule Glific.Bigquery do
   @doc """
   Format contact field values for the bigquery.
   """
-  @spec format_contact_field_values(list() | any(), integer()) :: any()
+  @spec format_contact_field_values(String.t(), list() | any(), integer()) :: any()
   def format_contact_field_values("fields", contact_fields, org_id) when is_list(contact_fields) do
     values =
       Enum.map(contact_fields, fn contact_field ->
