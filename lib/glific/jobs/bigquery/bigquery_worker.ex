@@ -98,10 +98,10 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> preload([:tags, :receiver, :sender, :contact, :user, :media])
     |> Repo.all()
     |> Enum.reduce([], fn row, acc ->
-      tags_label = Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", ")
-
-      bq_message_row =
-        %{
+      if is_simulator_contact?(row.contact.phone), do:
+      acc,
+      else:
+        [%{
           id: row.id,
           body: row.body,
           type: row.type,
@@ -116,13 +116,12 @@ defmodule Glific.Jobs.BigQueryWorker do
           contact_name: row.contact.name,
           user_phone: if(!is_nil(row.user), do: row.user.phone),
           user_name: if(!is_nil(row.user), do: row.user.name),
-          tags_label: tags_label,
+          tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
           flow_label: row.flow_label,
           media_url: if(!is_nil(row.media), do: row.media.url)
         }
         |> Bigquery.format_data_for_bigquery("messages")
-
-      [bq_message_row | acc]
+       | acc ]
     end)
     |> make_job(:messages, organization_id, max_id)
 
@@ -142,6 +141,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
+        if is_simulator_contact?(row.phone),
+        do: acc,
+        else:
         [
           %{
             id: row.id,
@@ -226,6 +228,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
+        if is_simulator_contact?(row.contact.phone),
+        do: acc,
+        else:
         [
           %{
             id: row.flow.id,
@@ -244,7 +249,6 @@ defmodule Glific.Jobs.BigQueryWorker do
         ]
       end
     )
-    |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
     |> make_job(:flow_results, organization_id, max_id)
 
     :ok
@@ -325,6 +329,9 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data(_, _, _, _), do: :ok
+
+  @spec is_simulator_contact?(String.t()) :: boolean
+  defp is_simulator_contact?(phone), do: @simulater_phone == phone
 
   @spec make_job(any(), any(), non_neg_integer, non_neg_integer) :: :ok
   defp make_job(data, _, _, _) when data in [%{}, nil], do: :ok
