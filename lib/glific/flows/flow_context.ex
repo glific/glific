@@ -403,7 +403,7 @@ defmodule Glific.Flows.FlowContext do
   @spec log_error(String.t()) :: {:error, String.t()}
   defp log_error(error) do
     Logger.error(error)
-    Appsignal.send_error(:error, error, nil)
+    Appsignal.send_error(:error, error, Glific.stacktrace())
     {:error, error}
   end
 

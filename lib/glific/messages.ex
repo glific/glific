@@ -433,7 +433,6 @@ defmodule Glific.Messages do
       sender_id: sender_id,
       receiver_id: sender_id,
       contact_id: sender_id,
-      group_id: attrs.group_id,
       flow: :outbound
     })
     |> update_message_attrs()
@@ -470,7 +469,11 @@ defmodule Glific.Messages do
 
     {:ok, _group_message} = create_group_message(Map.put(message_params, :group_id, group.id))
 
-    create_and_send_message_to_contacts(message_params, contact_ids)
+    create_and_send_message_to_contacts(
+      # supress publishing a subscription for group messages
+      Map.put(message_params, :publish?, false),
+      contact_ids
+    )
   end
 
   @doc """

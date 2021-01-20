@@ -27,7 +27,11 @@ defmodule Glific.Providers.Gupshup.Worker do
     organization = Partners.organization(message["organization_id"])
 
     if is_nil(organization.services["bsp"]) do
-      handle_fake_response(message, "API Key does not exist", 401)
+      handle_fake_response(
+        message,
+        "{\"message\": \"API Key does not exist\"}",
+        401
+      )
     else
       perform(job, organization)
     end

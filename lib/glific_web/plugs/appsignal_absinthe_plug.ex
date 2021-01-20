@@ -8,7 +8,7 @@ defmodule GlificWeb.Plugs.AppsignalAbsinthePlug do
 
   @doc false
   def call(%Plug.Conn{request_path: @path, method: "POST"} = conn, _opts) do
-    Appsignal.Plug.put_name(conn, "POST " <> @path)
+    Appsignal.Plug.put_name(conn, "GraphQL: " <> @path)
   end
 
   @doc false

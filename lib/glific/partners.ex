@@ -355,8 +355,7 @@ defmodule Glific.Partners do
       organization
       |> set_root_user()
       |> set_credentials()
-      |> Repo.preload(:bsp)
-      |> Repo.preload(:contact)
+      |> Repo.preload([:bsp, :contact])
       |> set_bsp_info()
       |> set_out_of_office_values()
       |> set_languages()
@@ -672,7 +671,7 @@ defmodule Glific.Partners do
 
     if credential.provider.shortcode == "bigquery" do
       org = credential.organization |> Repo.preload(:contact)
-      Bigquery.bigquery_dataset(org.contact.phone, org.id)
+      Bigquery.sync_schema_with_bigquery(org.contact.phone, org.id)
     end
 
     {:ok, credential}

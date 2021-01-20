@@ -8,7 +8,10 @@ defmodule Glific.Jobs.BigqueryJob do
   import Ecto.Changeset
 
   alias __MODULE__
-  alias Glific.Partners.Organization
+
+  alias Glific.{
+    Partners.Organization
+  }
 
   @required_fields [:organization_id]
   @optional_fields [:table_id, :table]
@@ -25,7 +28,7 @@ defmodule Glific.Jobs.BigqueryJob do
         }
 
   schema "bigquery_jobs" do
-    field :table_id, :integer
+    field :table_id, :integer, default: 0
     field :table, :string
     belongs_to :organization, Organization
     timestamps(type: :utc_datetime)
