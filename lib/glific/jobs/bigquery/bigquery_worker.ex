@@ -326,7 +326,6 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp queue_table_data(_, _, _, _), do: :ok
 
-
   @spec make_job(any(), any(), non_neg_integer, non_neg_integer) :: :ok
   defp make_job(data, _, _, _) when data in [%{}, nil], do: :ok
 
@@ -348,11 +347,29 @@ defmodule Glific.Jobs.BigQueryWorker do
   @impl Oban.Worker
 
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
-  def perform( %Oban.Job{ args: %{ "data" => data, "table" => table, "organization_id" => organization_id,"max_id" => _max_id}} = job)
+  def perform(
+        %Oban.Job{
+          args: %{
+            "data" => data,
+            "table" => table,
+            "organization_id" => organization_id,
+            "max_id" => _max_id
+          }
+        } = job
+      )
       when table in ["update_flow_results", "update_contacts"],
       do: Bigquery.make_update_query(data, organization_id, table, job)
 
-  def perform(%Oban.Job{args: %{ "data" => data, "table" => table, "organization_id" => organization_id, "max_id" => max_id}} = job),
+  def perform(
+        %Oban.Job{
+          args: %{
+            "data" => data,
+            "table" => table,
+            "organization_id" => organization_id,
+            "max_id" => max_id
+          }
+        } = job
+      ),
       do: Bigquery.make_insert_query(data, table, organization_id, job, max_id)
 
   def perform(_), do: :ok

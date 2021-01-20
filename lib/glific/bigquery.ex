@@ -111,6 +111,7 @@ defmodule Glific.Bigquery do
     @bigquery_tables
     |> Map.keys()
     |> Enum.each(&create_bigquery_job(&1, organization_id))
+
     :ok
   end
 
@@ -250,7 +251,6 @@ defmodule Glific.Bigquery do
   @spec format_data_for_bigquery(map(), String.t()) :: map()
   def format_data_for_bigquery(data, _table),
     do: %{json: data}
-
 
   @spec create_dataset(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Dataset.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
@@ -417,13 +417,16 @@ defmodule Glific.Bigquery do
 
   @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
   defp handle_insert_error(table, dataset_id, organization_id, response, _job) do
-    Logger.info("Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{inspect response}")
+    Logger.info(
+      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{
+        inspect(response)
+      }"
+    )
 
     if should_retry_job?(response) do
       sync_schema_with_bigquery(dataset_id, organization_id)
       :ok
     else
-
       raise("Bigquery Insert Error for table #{table}  #{response}")
     end
   end
@@ -438,7 +441,6 @@ defmodule Glific.Bigquery do
       _ -> false
     end
   end
-
 
   @doc """
     Update data on the bigquery
@@ -484,7 +486,8 @@ defmodule Glific.Bigquery do
 
   defp generate_update_sql_query(_, _, _, _), do: nil
 
-  defp get_contact_values_to_update([column | tail], contact, acc, org_id) when column in ["fields", "groups"] do
+  defp get_contact_values_to_update([column | tail], contact, acc, org_id)
+       when column in ["fields", "groups"] do
     if is_nil(contact[column]) or contact[column] in [nil, %{}, []] do
       get_contact_values_to_update(tail, contact, acc, org_id)
     else
@@ -509,12 +512,16 @@ defmodule Glific.Bigquery do
   Format contact field values for the bigquery.
   """
   @spec format_contact_field_values(String.t(), list() | any(), integer()) :: any()
-  def format_contact_field_values("fields", contact_fields, org_id) when is_list(contact_fields) do
+  def format_contact_field_values("fields", contact_fields, org_id)
+      when is_list(contact_fields) do
     values =
       Enum.map(contact_fields, fn contact_field ->
         contact_field = Glific.atomize_keys(contact_field)
         value = format_value(contact_field.value)
-        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{format_date(contact_field.inserted_at, org_id)}')"
+
+        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{
+          format_date(contact_field.inserted_at, org_id)
+        }')"
       end)
 
     "[STRUCT<label STRING, value STRING, type STRING, inserted_at DATETIME>#{
@@ -522,7 +529,6 @@ defmodule Glific.Bigquery do
     }]"
   end
 
-  @spec format_contact_field_values(String.t(), list() | any(), integer()) :: any()
   def format_contact_field_values("groups", groups, _org_id) when is_list(groups) do
     values =
       Enum.map(groups, fn group ->
@@ -541,9 +547,8 @@ defmodule Glific.Bigquery do
 
   @spec handle_update_response(tuple() | nil) :: any()
   defp handle_update_response({:ok, response}),
-    do: Logger.info("Updated data on bigquery. #{inspect response}")
+    do: Logger.info("Updated data on bigquery. #{inspect(response)}")
 
   defp handle_update_response({:error, error}),
-    do: Logger.error("Error while updating data on bigquery. #{inspect error}")
-
+    do: Logger.error("Error while updating data on bigquery. #{inspect(error)}")
 end
