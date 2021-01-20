@@ -242,10 +242,6 @@ defmodule Glific.Bigquery do
     end
   end
 
-  @spec format_value_for_bq(any() | String.t()) :: any()
-  defp format_value_for_bq(value) when is_binary(value), do: "'#{value}'"
-  defp format_value_for_bq(value), do: value
-
   @doc """
     Format Data for bigquery error
   """
@@ -384,7 +380,6 @@ defmodule Glific.Bigquery do
     end
   end
 
-
   @doc """
     Insert rows in the biqquery
   """
@@ -486,10 +481,10 @@ defmodule Glific.Bigquery do
   defp generate_update_sql_query(_, _, _, _), do: nil
 
   defp get_contact_values_to_update(["fields" | tail], contact, acc, org_id) do
-    if is_nil(contact["fields"]) do
+    if is_nil(contact["fields"]) or contact["fields"] in [nil, %{}, []] do
       get_contact_values_to_update(tail, contact, acc, org_id)
     else
-      formatted_field_values = format_contact_field_values(contact["fields"], org_id)
+      formatted_field_values = format_contact_field_values("fields", contact["fields"], org_id)
       acc = Map.put(acc, "fields", formatted_field_values)
       get_contact_values_to_update(tail, contact, acc, org_id)
     end
@@ -517,7 +512,7 @@ defmodule Glific.Bigquery do
   Format contact field values for the bigquery.
   """
   @spec format_contact_field_values(list() | any(), integer()) :: any()
-  def format_contact_field_values(contact_fields, org_id) when is_list(contact_fields) do
+  def format_contact_field_values("fields", contact_fields, org_id) when is_list(contact_fields) do
     values =
       Enum.map(contact_fields, fn contact_field ->
         contact_field = Glific.atomize_keys(contact_field)
@@ -530,6 +525,11 @@ defmodule Glific.Bigquery do
     }]"
   end
 
-  def format_contact_field_values(_field, _org_id), do: ""
+
+  def format_contact_field_values(_, _field, _org_id), do: ""
+
+  @spec format_value_for_bq(any() | String.t()) :: any()
+  defp format_value_for_bq(value) when is_binary(value), do: "'#{value}'"
+  defp format_value_for_bq(value), do: value
 
 end
