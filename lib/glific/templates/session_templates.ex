@@ -42,13 +42,13 @@ defmodule Glific.Templates.SessionTemplate do
         }
 
   @required_fields [
-    :body,
+    :label,
     :type,
     :language_id,
     :organization_id
   ]
   @optional_fields [
-    :label,
+    :body,
     :shortcode,
     :number_parameters,
     :is_reserved,
@@ -106,11 +106,31 @@ defmodule Glific.Templates.SessionTemplate do
     session_template
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_body()
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:parent_id)
     |> unique_constraint([:label, :language_id, :organization_id])
     |> unique_constraint([:shortcode, :language_id, :organization_id])
     |> unique_constraint([:uuid])
+  end
+
+  @doc """
+  Standard changeset pattern we use for all data types
+  if message type is text then it should have body
+  """
+  @spec validate_body(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_body(changeset) do
+    type = changeset.changes[:type]
+
+    cond do
+      type in [nil, :text] ->
+        if is_nil(changeset.changes[:body]),
+          do: add_error(changeset, :type, "Non-media messages should have a body"),
+          else: changeset
+
+      true ->
+        changeset
+    end
   end
 
   @doc """
