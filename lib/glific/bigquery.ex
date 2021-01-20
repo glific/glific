@@ -60,8 +60,6 @@ defmodule Glific.Bigquery do
   def fetch_bigquery_credentials(organization_id) do
     organization =
       Partners.organization(organization_id)
-      |> Repo.preload(:contact)
-
     org_contact = organization.contact
 
     organization.services["bigquery"]
