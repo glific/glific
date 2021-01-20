@@ -210,10 +210,7 @@ defmodule Glific.Bigquery do
       Enum.map(contact_fields, fn contact_field ->
         contact_field = Glific.atomize_keys(contact_field)
         value = format_value(contact_field.value)
-
-        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{
-          format_date(contact_field.inserted_at, org_id)
-        }')"
+        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{format_date(contact_field.inserted_at, org_id)}')"
       end)
 
     "[STRUCT<label STRING, value STRING, type STRING, inserted_at DATETIME>#{
@@ -264,6 +261,10 @@ defmodule Glific.Bigquery do
       _ -> nil
     end
   end
+
+  @spec format_value_for_bq(any() | String.t()) :: any()
+  defp format_value_for_bq(value) when is_binary(value), do: "'#{value}'"
+  defp format_value_for_bq(value), do: value
 
   @doc """
     Format Data for bigquery error
@@ -467,7 +468,7 @@ defmodule Glific.Bigquery do
 
   defp generate_update_sql_query(contact, "update_contacts", dataset_id, organization_id) do
     contact_fields_to_update =
-      ["fileds", "name", "optout_time", "optin_time", "language"]
+      ["fields", "name", "optout_time", "optin_time", "language"]
       |> get_contact_values_to_update(contact, %{}, organization_id)
       |> Enum.map(fn {column, value} -> "#{column} = #{value}" end)
       |> Enum.join(",")
@@ -475,16 +476,17 @@ defmodule Glific.Bigquery do
     "UPDATE `#{dataset_id}.contacts` SET #{contact_fields_to_update} WHERE phone= '#{
       contact["phone"]
     }'"
+
   end
 
   defp generate_update_sql_query(_, _, _, _), do: nil
 
-  defp get_contact_values_to_update(["fileds" | tail], contact, acc, org_id) do
-    if is_nil(contact["fileds"]) do
+  defp get_contact_values_to_update(["fields" | tail], contact, acc, org_id) do
+    if is_nil(contact["fields"]) do
       get_contact_values_to_update(tail, contact, acc, org_id)
     else
       formatted_field_values = format_contact_field_values(contact["fields"], org_id)
-      acc = Map.put(acc, "fileds", formatted_field_values)
+      acc = Map.put(acc, "fields", formatted_field_values)
       get_contact_values_to_update(tail, contact, acc, org_id)
     end
   end
@@ -493,12 +495,13 @@ defmodule Glific.Bigquery do
     if is_nil(contact[column]) do
       get_contact_values_to_update(tail, contact, acc, org_id)
     else
-      acc = Map.put(acc, column, contact[column])
+      acc = Map.put(acc, column, format_value_for_bq(contact[column]))
       get_contact_values_to_update(tail, contact, acc, org_id)
     end
   end
 
   defp get_contact_values_to_update([], _, acc, _), do: acc
+
 
   @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
   defp handle_insert_error(table, dataset_id, organization_id, response, _job) do
