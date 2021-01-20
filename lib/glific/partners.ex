@@ -355,7 +355,7 @@ defmodule Glific.Partners do
       organization
       |> set_root_user()
       |> set_credentials()
-      |> Repo.preload(:bsp)
+      |> Repo.preload([:bsp, :contact])
       |> set_bsp_info()
       |> set_out_of_office_values()
       |> set_languages()
