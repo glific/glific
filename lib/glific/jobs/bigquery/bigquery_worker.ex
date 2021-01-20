@@ -154,6 +154,7 @@ defmodule Glific.Jobs.BigQueryWorker do
             optout_time: Bigquery.format_date(row.optout_time, organization_id),
             last_message_at: Bigquery.format_date(row.last_message_at, organization_id),
             inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+            updated_at: Bigquery.format_date(row.updated_at, organization_id),
             fields:
               Enum.map(row.fields, fn {_key, field} ->
                 %{
