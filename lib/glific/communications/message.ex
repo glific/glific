@@ -52,12 +52,24 @@ defmodule Glific.Communications.Message do
           [message, attrs]
         )
 
-      {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
+      publish_message(message)
     else
       Logger.error("Could not send message: message_id: '#{message.id}'")
       {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
       {:error, "Cannot send the message to the contact."}
     end
+  end
+
+  @spec publish_message(Message.t()) :: {:ok, Message.t()}
+  defp publish_message(message) do
+    {
+      :ok,
+      if message.publish? do
+        Communications.publish_data(message, :sent_message, message.organization_id)
+      else
+        message
+      end
+    }
   end
 
   @doc """
