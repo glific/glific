@@ -60,11 +60,7 @@ defmodule Glific.Bigquery do
   def fetch_bigquery_credentials(organization_id) do
     organization =
       Partners.organization(organization_id)
-
-    IO.inspect "organization"
-    IO.inspect organization
     org_contact = organization.contact
-    IO.inspect org_contact
 
     organization.services["bigquery"]
     |> case do
