@@ -265,6 +265,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
+        if is_simulator_contact?(row.contact.phone),
+        do: acc,
+        else:
         [
           %{
             id: row.flow.id,
@@ -279,7 +282,6 @@ defmodule Glific.Jobs.BigQueryWorker do
         ]
       end
     )
-    |> Enum.reject(fn flow_result -> flow_result.contact_phone == @simulater_phone end)
     |> Enum.chunk_every(10)
     |> Enum.each(&make_job(&1, :update_flow_results, organization_id, 0))
 
@@ -297,6 +299,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
+        if is_simulator_contact?(row.contact.phone),
+        do: acc,
+        else:
         [
           %{
             id: row.id,
@@ -321,7 +326,6 @@ defmodule Glific.Jobs.BigQueryWorker do
         ]
       end
     )
-    |> Enum.reject(fn contact -> contact.phone == @simulater_phone end)
     |> Enum.chunk_every(10)
     |> Enum.each(&make_job(&1, :update_contacts, organization_id, 0))
 
