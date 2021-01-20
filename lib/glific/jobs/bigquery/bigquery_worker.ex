@@ -98,30 +98,31 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> preload([:tags, :receiver, :sender, :contact, :user, :media])
     |> Repo.all()
     |> Enum.reduce([], fn row, acc ->
-      if is_simulator_contact?(row.contact.phone), do:
-      acc,
-      else:
-        [%{
-          id: row.id,
-          body: row.body,
-          type: row.type,
-          flow: row.flow,
-          inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
-          sent_at: Bigquery.format_date(row.sent_at, organization_id),
-          uuid: row.uuid,
-          status: row.status,
-          sender_phone: row.sender.phone,
-          receiver_phone: row.receiver.phone,
-          contact_phone: row.contact.phone,
-          contact_name: row.contact.name,
-          user_phone: if(!is_nil(row.user), do: row.user.phone),
-          user_name: if(!is_nil(row.user), do: row.user.name),
-          tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
-          flow_label: row.flow_label,
-          media_url: if(!is_nil(row.media), do: row.media.url)
-        }
-        |> Bigquery.format_data_for_bigquery("messages")
-       | acc ]
+      if is_simulator_contact?(row.contact.phone),
+        do: acc,
+        else: [
+          %{
+            id: row.id,
+            body: row.body,
+            type: row.type,
+            flow: row.flow,
+            inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+            sent_at: Bigquery.format_date(row.sent_at, organization_id),
+            uuid: row.uuid,
+            status: row.status,
+            sender_phone: row.sender.phone,
+            receiver_phone: row.receiver.phone,
+            contact_phone: row.contact.phone,
+            contact_name: row.contact.name,
+            user_phone: if(!is_nil(row.user), do: row.user.phone),
+            user_name: if(!is_nil(row.user), do: row.user.name),
+            tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
+            flow_label: row.flow_label,
+            media_url: if(!is_nil(row.media), do: row.media.url)
+          }
+          |> Bigquery.format_data_for_bigquery("messages")
+          | acc
+        ]
     end)
     |> make_job(:messages, organization_id, max_id)
 
@@ -142,37 +143,36 @@ defmodule Glific.Jobs.BigQueryWorker do
       [],
       fn row, acc ->
         if is_simulator_contact?(row.phone),
-        do: acc,
-        else:
-        [
-          %{
-            id: row.id,
-            name: row.name,
-            phone: row.phone,
-            provider_status: row.bsp_status,
-            status: row.status,
-            language: row.language.label,
-            optin_time: Bigquery.format_date(row.optin_time, organization_id),
-            optout_time: Bigquery.format_date(row.optout_time, organization_id),
-            last_message_at: Bigquery.format_date(row.last_message_at, organization_id),
-            inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
-            updated_at: Bigquery.format_date(row.updated_at, organization_id),
-            fields:
-              Enum.map(row.fields, fn {_key, field} ->
-                %{
-                  label: field["label"],
-                  inserted_at: Bigquery.format_date(field["inserted_at"], organization_id),
-                  type: field["type"],
-                  value: field["value"]
-                }
-              end),
-            settings: row.settings,
-            groups: Enum.map(row.groups, fn group -> %{label: group.label} end),
-            tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
-          }
-          |> Bigquery.format_data_for_bigquery("contacts")
-          | acc
-        ]
+          do: acc,
+          else: [
+            %{
+              id: row.id,
+              name: row.name,
+              phone: row.phone,
+              provider_status: row.bsp_status,
+              status: row.status,
+              language: row.language.label,
+              optin_time: Bigquery.format_date(row.optin_time, organization_id),
+              optout_time: Bigquery.format_date(row.optout_time, organization_id),
+              last_message_at: Bigquery.format_date(row.last_message_at, organization_id),
+              inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+              updated_at: Bigquery.format_date(row.updated_at, organization_id),
+              fields:
+                Enum.map(row.fields, fn {_key, field} ->
+                  %{
+                    label: field["label"],
+                    inserted_at: Bigquery.format_date(field["inserted_at"], organization_id),
+                    type: field["type"],
+                    value: field["value"]
+                  }
+                end),
+              settings: row.settings,
+              groups: Enum.map(row.groups, fn group -> %{label: group.label} end),
+              tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
+            }
+            |> Bigquery.format_data_for_bigquery("contacts")
+            | acc
+          ]
       end
     )
     |> make_job(:contacts, organization_id, max_id)
@@ -229,24 +229,23 @@ defmodule Glific.Jobs.BigQueryWorker do
       [],
       fn row, acc ->
         if is_simulator_contact?(row.contact.phone),
-        do: acc,
-        else:
-        [
-          %{
-            id: row.flow.id,
-            name: row.flow.name,
-            uuid: row.flow.uuid,
-            inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
-            updated_at: Bigquery.format_date(row.updated_at, organization_id),
-            results: Bigquery.format_json(row.results),
-            contact_phone: row.contact.phone,
-            contact_name: row.contact.name,
-            flow_version: row.flow_version,
-            flow_context_id: row.flow_context_id
-          }
-          |> Bigquery.format_data_for_bigquery("flow_results")
-          | acc
-        ]
+          do: acc,
+          else: [
+            %{
+              id: row.flow.id,
+              name: row.flow.name,
+              uuid: row.flow.uuid,
+              inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+              updated_at: Bigquery.format_date(row.updated_at, organization_id),
+              results: Bigquery.format_json(row.results),
+              contact_phone: row.contact.phone,
+              contact_name: row.contact.name,
+              flow_version: row.flow_version,
+              flow_context_id: row.flow_context_id
+            }
+            |> Bigquery.format_data_for_bigquery("flow_results")
+            | acc
+          ]
       end
     )
     |> make_job(:flow_results, organization_id, max_id)
@@ -266,20 +265,19 @@ defmodule Glific.Jobs.BigQueryWorker do
       [],
       fn row, acc ->
         if is_simulator_contact?(row.contact.phone),
-        do: acc,
-        else:
-        [
-          %{
-            id: row.flow.id,
-            inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
-            updated_at: Bigquery.format_date(row.updated_at, organization_id),
-            results: Bigquery.format_json(row.results),
-            contact_phone: row.contact.phone,
-            flow_version: row.flow_version,
-            flow_context_id: row.flow_context_id
-          }
-          | acc
-        ]
+          do: acc,
+          else: [
+            %{
+              id: row.flow.id,
+              inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+              updated_at: Bigquery.format_date(row.updated_at, organization_id),
+              results: Bigquery.format_json(row.results),
+              contact_phone: row.contact.phone,
+              flow_version: row.flow_version,
+              flow_context_id: row.flow_context_id
+            }
+            | acc
+          ]
       end
     )
     |> Enum.chunk_every(10)
@@ -300,30 +298,29 @@ defmodule Glific.Jobs.BigQueryWorker do
       [],
       fn row, acc ->
         if is_simulator_contact?(row.contact.phone),
-        do: acc,
-        else:
-        [
-          %{
-            id: row.id,
-            name: row.name,
-            phone: row.phone,
-            status: row.status,
-            language: row.language.label,
-            optin_time: Bigquery.format_date(row.optin_time, organization_id),
-            optout_time: Bigquery.format_date(row.optout_time, organization_id),
-            groups: Enum.map(row.groups, fn group -> %{label: group.label} end),
-            fields:
-              Enum.map(row.fields, fn {_key, field} ->
-                %{
-                  label: field["label"] || "unknown",
-                  type: field["type"] || "unknown",
-                  value: field["value"] || "unknown",
-                  inserted_at: field["inserted_at"]
-                }
-              end)
-          }
-          | acc
-        ]
+          do: acc,
+          else: [
+            %{
+              id: row.id,
+              name: row.name,
+              phone: row.phone,
+              status: row.status,
+              language: row.language.label,
+              optin_time: Bigquery.format_date(row.optin_time, organization_id),
+              optout_time: Bigquery.format_date(row.optout_time, organization_id),
+              groups: Enum.map(row.groups, fn group -> %{label: group.label} end),
+              fields:
+                Enum.map(row.fields, fn {_key, field} ->
+                  %{
+                    label: field["label"] || "unknown",
+                    type: field["type"] || "unknown",
+                    value: field["value"] || "unknown",
+                    inserted_at: field["inserted_at"]
+                  }
+                end)
+            }
+            | acc
+          ]
       end
     )
     |> Enum.chunk_every(10)
