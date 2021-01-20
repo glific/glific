@@ -200,26 +200,6 @@ defmodule Glific.Bigquery do
     :ok
   end
 
-  @doc """
-  Format contact field values for the bigquery.
-  """
-
-  @spec format_contact_field_values(list() | any(), integer()) :: any()
-  def format_contact_field_values(contact_fields, org_id) when is_list(contact_fields) do
-    values =
-      Enum.map(contact_fields, fn contact_field ->
-        contact_field = Glific.atomize_keys(contact_field)
-        value = format_value(contact_field.value)
-        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{format_date(contact_field.inserted_at, org_id)}')"
-      end)
-
-    "[STRUCT<label STRING, value STRING, type STRING, inserted_at DATETIME>#{
-      Enum.join(values, ",")
-    }]"
-  end
-
-  def format_contact_field_values(_field, _org_id), do: ""
-
   @spec format_value(map() | any()) :: any()
   defp format_value(value) when is_map(value), do: Map.get(value, :input, "Unknown format")
 
@@ -272,6 +252,7 @@ defmodule Glific.Bigquery do
   @spec format_data_for_bigquery(map(), String.t()) :: map()
   def format_data_for_bigquery(data, _table),
     do: %{json: data}
+
 
   @spec create_dataset(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Dataset.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
@@ -403,6 +384,7 @@ defmodule Glific.Bigquery do
     end
   end
 
+
   @doc """
     Insert rows in the biqquery
   """
@@ -435,6 +417,28 @@ defmodule Glific.Bigquery do
 
     :ok
   end
+
+  @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
+  defp handle_insert_error(table, dataset_id, organization_id, response, _job) do
+    if should_retry_job?(response) do
+      sync_schema_with_bigquery(dataset_id, organization_id)
+      :ok
+    else
+      raise("Bigquery Insert Error for table #{table}  #{response}")
+    end
+  end
+
+  @spec should_retry_job?(any()) :: boolean()
+  defp should_retry_job?(response) do
+    with true <- Map.has_key?(response, :body),
+         {:ok, error} <- Jason.decode(response.body),
+         true <- error["status"] == "NOT_FOUND" do
+      true
+    else
+      _ -> false
+    end
+  end
+
 
   @doc """
     Update data on the bigquery
@@ -502,33 +506,30 @@ defmodule Glific.Bigquery do
 
   defp get_contact_values_to_update([], _, acc, _), do: acc
 
-
-  @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
-  defp handle_insert_error(table, dataset_id, organization_id, response, _job) do
-    if should_retry_job?(response) do
-      sync_schema_with_bigquery(dataset_id, organization_id)
-      :ok
-    else
-      raise("Bigquery Insert Error for table #{table}  #{response}")
-    end
-  end
-
-  @spec should_retry_job?(any()) :: boolean()
-  defp should_retry_job?(response) do
-    with true <- Map.has_key?(response, :body),
-         {:ok, error} <- Jason.decode(response.body),
-         true <- error["status"] == "NOT_FOUND" do
-      true
-    else
-      _ -> false
-    end
-  end
-
   @spec handle_update_response(tuple() | nil) :: any()
   defp handle_update_response({:ok, response}),
     do: response
 
   defp handle_update_response({:error, error}),
     do: error
+
+  @doc """
+  Format contact field values for the bigquery.
+  """
+  @spec format_contact_field_values(list() | any(), integer()) :: any()
+  def format_contact_field_values(contact_fields, org_id) when is_list(contact_fields) do
+    values =
+      Enum.map(contact_fields, fn contact_field ->
+        contact_field = Glific.atomize_keys(contact_field)
+        value = format_value(contact_field.value)
+        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{format_date(contact_field.inserted_at, org_id)}')"
+      end)
+
+    "[STRUCT<label STRING, value STRING, type STRING, inserted_at DATETIME>#{
+      Enum.join(values, ",")
+    }]"
+  end
+
+  def format_contact_field_values(_field, _org_id), do: ""
 
 end
