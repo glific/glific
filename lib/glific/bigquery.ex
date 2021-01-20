@@ -8,6 +8,7 @@ defmodule Glific.Bigquery do
     Contacts.Contact,
     Flows.FlowResult,
     Flows.FlowRevision,
+    Jobs,
     Jobs.BigqueryJob,
     Messages.Message,
     Partners,
@@ -17,6 +18,7 @@ defmodule Glific.Bigquery do
   alias GoogleApi.BigQuery.V2.{
     Api.Datasets,
     Api.Routines,
+    Api.Tabledata,
     Api.Tables,
     Connection
   }
@@ -107,7 +109,6 @@ defmodule Glific.Bigquery do
     @bigquery_tables
     |> Map.keys()
     |> Enum.each(&create_bigquery_job(&1, organization_id))
-
     :ok
   end
 
@@ -252,6 +253,25 @@ defmodule Glific.Bigquery do
     |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
   end
 
+  @doc """
+    Format all the json values
+  """
+  @spec format_json(map()) :: iodata
+  def format_json(definition) do
+    Jason.encode(definition)
+    |> case do
+      {:ok, data} -> data
+      _ -> nil
+    end
+  end
+
+  @doc """
+    Format Data for bigquery error
+  """
+  @spec format_data_for_bigquery(map(), String.t()) :: map()
+  def format_data_for_bigquery(data, _table),
+    do: %{json: data}
+
   @spec create_dataset(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Dataset.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp create_dataset(conn, project_id, dataset_id) do
@@ -381,4 +401,131 @@ defmodule Glific.Bigquery do
       {:error, _} -> "Error creating a view"
     end
   end
+
+  @doc """
+    Insert rows in the biqquery
+  """
+  @spec make_insert_query(list(), String.t(), non_neg_integer, Oban.Job.t(), non_neg_integer) ::
+          :ok
+  def make_insert_query(data, table, organization_id, job, max_id) do
+    fetch_bigquery_credentials(organization_id)
+    |> case do
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
+        Tabledata.bigquery_tabledata_insert_all(
+          conn,
+          project_id,
+          dataset_id,
+          table,
+          [body: %{rows: data}],
+          []
+        )
+        |> case do
+          {:ok, _} ->
+            Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+            :ok
+
+          {:error, response} ->
+            handle_insert_error(table, dataset_id, organization_id, response, job)
+        end
+
+      _ ->
+        %{url: nil, id: nil, email: nil}
+    end
+
+    :ok
+  end
+
+  @doc """
+    Update data on the bigquery
+  """
+  @spec make_update_query(list(), non_neg_integer, String.t(), Oban.Job.t()) :: :ok
+  def make_update_query(data, organization_id, table, _job) do
+    fetch_bigquery_credentials(organization_id)
+    |> case do
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
+        data
+        |> Enum.each(fn row ->
+          sql = generate_update_sql_query(row, table, dataset_id, organization_id)
+
+          GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
+            body: %{query: sql, useLegacySql: false}
+          )
+          |> handle_update_response()
+        end)
+
+      _ ->
+        %{url: nil, id: nil, email: nil}
+    end
+  end
+
+  @spec generate_update_sql_query(map(), String.t(), String.t(), non_neg_integer()) :: String.t()
+  defp generate_update_sql_query(flow_result, "update_flow_results", dataset_id, _organization_id) do
+    "UPDATE `#{dataset_id}.flow_results` SET results = '#{flow_result["results"]}' WHERE contact_phone= '#{
+      flow_result["contact_phone"]
+    }' AND id = #{flow_result["id"]} AND flow_context_id =  #{flow_result["flow_context_id"]}"
+  end
+
+  defp generate_update_sql_query(contact, "update_contacts", dataset_id, organization_id) do
+    contact_fields_to_update =
+      ["fileds", "name", "optout_time", "optin_time", "language"]
+      |> get_contact_values_to_update(contact, %{}, organization_id)
+      |> Enum.map(fn {column, value} -> "#{column} = #{value}" end)
+      |> Enum.join(",")
+
+    "UPDATE `#{dataset_id}.contacts` SET #{contact_fields_to_update} WHERE phone= '#{
+      contact["phone"]
+    }'"
+  end
+
+  defp generate_update_sql_query(_, _, _, _), do: nil
+
+  defp get_contact_values_to_update(["fileds" | tail], contact, acc, org_id) do
+    if is_nil(contact["fileds"]) do
+      get_contact_values_to_update(tail, contact, acc, org_id)
+    else
+      formatted_field_values = format_contact_field_values(contact["fields"], org_id)
+      acc = Map.put(acc, "fileds", formatted_field_values)
+      get_contact_values_to_update(tail, contact, acc, org_id)
+    end
+  end
+
+  defp get_contact_values_to_update([column | tail], contact, acc, org_id) do
+    if is_nil(contact[column]) do
+      get_contact_values_to_update(tail, contact, acc, org_id)
+    else
+      acc = Map.put(acc, column, contact[column])
+      get_contact_values_to_update(tail, contact, acc, org_id)
+    end
+  end
+
+  defp get_contact_values_to_update([], _, acc, _), do: acc
+
+  @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
+  defp handle_insert_error(table, dataset_id, organization_id, response, _job) do
+    if should_retry_job?(response) do
+      sync_schema_with_bigquery(dataset_id, organization_id)
+      :ok
+    else
+      raise("Bigquery Insert Error for table #{table}  #{response}")
+    end
+  end
+
+  @spec should_retry_job?(any()) :: boolean()
+  defp should_retry_job?(response) do
+    with true <- Map.has_key?(response, :body),
+         {:ok, error} <- Jason.decode(response.body),
+         true <- error["status"] == "NOT_FOUND" do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  @spec handle_update_response(tuple() | nil) :: any()
+  defp handle_update_response({:ok, response}),
+    do: response
+
+  defp handle_update_response({:error, error}),
+    do: error
+
 end
