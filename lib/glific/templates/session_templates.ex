@@ -121,13 +121,9 @@ defmodule Glific.Templates.SessionTemplate do
     type = changeset.changes[:type]
     body = changeset.changes[:body] || template.body
 
-    cond do
-      type in [nil, :text] && is_nil(body) ->
-        add_error(changeset, :type, "Non-media messages should have a body")
-
-      true ->
-        changeset
-    end
+    if type in [nil, :text] && is_nil(body),
+      do: add_error(changeset, :type, "Non-media messages should have a body"),
+      else: changeset
   end
 
   @doc """
