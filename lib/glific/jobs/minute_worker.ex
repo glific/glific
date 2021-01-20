@@ -148,7 +148,7 @@ defmodule Glific.Jobs.MinuteWorker do
               "hourly_tasks",
               "five_minute_tasks",
               "update_hsms",
-              "sync_glific_db_with_cloud"
+              "update_data_on_bigquery"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
@@ -164,7 +164,7 @@ defmodule Glific.Jobs.MinuteWorker do
       "update_hsms" ->
         Partners.perform_all(&Templates.update_hsms/1, nil, [])
 
-      "sync_glific_db_with_cloud" ->
+      "update_data_on_bigquery" ->
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"])
 
       _ ->
