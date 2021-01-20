@@ -97,6 +97,7 @@ defmodule Glific.Bigquery do
   @spec do_refresh_the_schema(Tesla.Client.t(), binary, binary, non_neg_integer) ::
           {:error, Tesla.Env.t()} | {:ok, Tesla.Env.t()}
   def do_refresh_the_schema(conn, dataset_id, project_id, organization_id) do
+    Logger.info("refresh schema for org_id: #{organization_id}")
     insert_bigquery_jobs(organization_id)
     create_tables(conn, dataset_id, project_id)
     alter_tables(conn, dataset_id, project_id)
@@ -435,7 +436,7 @@ defmodule Glific.Bigquery do
   defp should_retry_job?(response) do
     with true <- Map.has_key?(response, :body),
          {:ok, error} <- Jason.decode(response.body),
-         true <- error["status"] == "NOT_FOUND" do
+         true <- error["error"]["status"] == "NOT_FOUND" do
       true
     else
       _ -> false
