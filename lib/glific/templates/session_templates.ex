@@ -114,10 +114,8 @@ defmodule Glific.Templates.SessionTemplate do
     |> unique_constraint([:uuid])
   end
 
-  @doc """
-  Standard changeset pattern we use for all data types
-  if message type is text then it should have body
-  """
+  @doc false
+  # if message type is text then it should have body
   @spec validate_body(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_body(changeset) do
     type = changeset.changes[:type]
