@@ -186,7 +186,7 @@ defmodule Glific.Bigquery do
   if required this function should be called from iex
   """
   @spec alter_tables(Tesla.Client.t(), String.t(), String.t()) :: :ok
-  def alter_tables(conn, project_id, dataset_id) do
+  def alter_tables(conn, dataset_id, project_id) do
     case Datasets.bigquery_datasets_get(conn, project_id, dataset_id) do
       {:ok, _} ->
         @bigquery_tables
