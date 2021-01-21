@@ -35,8 +35,8 @@ defmodule Glific.Bigquery do
   @doc """
   Creating a dataset with messages and contacts as tables
   """
-  @spec sync_schema_with_bigquery(String.t(), non_neg_integer) :: :ok
-  def sync_schema_with_bigquery(_dataset_id, organization_id) do
+  @spec sync_schema_with_bigquery(non_neg_integer) :: :ok
+  def sync_schema_with_bigquery(organization_id) do
     fetch_bigquery_credentials(organization_id)
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
@@ -423,7 +423,7 @@ defmodule Glific.Bigquery do
     )
 
     if should_retry_job?(response) do
-      sync_schema_with_bigquery(dataset_id, organization_id)
+      sync_schema_with_bigquery(organization_id)
       :ok
     else
       raise("Bigquery Insert Error for table #{table}  #{response}")
