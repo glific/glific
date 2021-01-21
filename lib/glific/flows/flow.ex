@@ -260,6 +260,7 @@ defmodule Glific.Flows.Flow do
         where: fr.flow_id == f.id,
         select: %Flow{
           id: f.id,
+          name: f.name,
           uuid: f.uuid,
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,

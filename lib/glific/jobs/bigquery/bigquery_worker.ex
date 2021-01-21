@@ -167,7 +167,7 @@ defmodule Glific.Jobs.BigQueryWorker do
                   }
                 end),
               settings: row.settings,
-              groups: Enum.map(row.groups, fn group -> %{label: group.label} end),
+              groups: Enum.map(row.groups, fn group -> %{label: group.label, description: group.description} end),
               tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
             }
             |> Bigquery.format_data_for_bigquery("contacts")
@@ -297,7 +297,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        if is_simulator_contact?(row.contact.phone),
+        if is_simulator_contact?(row.phone),
           do: acc,
           else: [
             %{
@@ -308,7 +308,7 @@ defmodule Glific.Jobs.BigQueryWorker do
               language: row.language.label,
               optin_time: Bigquery.format_date(row.optin_time, organization_id),
               optout_time: Bigquery.format_date(row.optout_time, organization_id),
-              groups: Enum.map(row.groups, fn group -> %{label: group.label} end),
+              groups: Enum.map(row.groups, fn group -> %{label: group.label, description: group.description} end),
               fields:
                 Enum.map(row.fields, fn {_key, field} ->
                   %{
