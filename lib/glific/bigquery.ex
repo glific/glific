@@ -415,7 +415,7 @@ defmodule Glific.Bigquery do
   end
 
   @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
-  defp handle_insert_error(table, dataset_id, organization_id, response, _job) do
+  defp handle_insert_error(table, _dataset_id, organization_id, response, _job) do
     Logger.info(
       "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{
         inspect(response)
