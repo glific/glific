@@ -297,7 +297,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        if is_simulator_contact?(row.contact.phone),
+        if is_simulator_contact?(row.phone),
           do: acc,
           else: [
             %{
