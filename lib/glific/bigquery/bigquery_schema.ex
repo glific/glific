@@ -129,6 +129,12 @@ defmodule Glific.BigquerySchema do
             name: "label",
             type: "STRING",
             mode: "REQUIRED"
+          },
+
+          %{
+            name: "description",
+            type: "STRING",
+            mode: "NULLABLE"
           }
         ]
       },
