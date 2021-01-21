@@ -473,7 +473,7 @@ defmodule Glific.Bigquery do
 
   defp generate_update_sql_query(contact, "update_contacts", dataset_id, organization_id) do
     contact_fields_to_update =
-      ["fields", "groups", "name", "optout_time", "optin_time", "language"]
+      ["fields", "name", "optout_time", "optin_time", "language"]
       |> get_contact_values_to_update(contact, %{}, organization_id)
       |> Enum.map(fn {column, value} -> "#{column} = #{value}" end)
       |> Enum.join(",")
