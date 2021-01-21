@@ -491,7 +491,7 @@ defmodule Glific.Bigquery do
       get_contact_values_to_update(tail, contact, acc, org_id)
     else
       formatted_field_values = format_contact_field_values(column, contact[column], org_id)
-      acc = Map.put(acc, column, formatted_field_values)
+      acc = Map.put(acc, "`#{column}`", formatted_field_values)
       get_contact_values_to_update(tail, contact, acc, org_id)
     end
   end
