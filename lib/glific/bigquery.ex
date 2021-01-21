@@ -35,8 +35,8 @@ defmodule Glific.Bigquery do
   @doc """
   Creating a dataset with messages and contacts as tables
   """
-  @spec sync_schema_with_bigquery(String.t(), non_neg_integer) :: :ok
-  def sync_schema_with_bigquery(_dataset_id, organization_id) do
+  @spec sync_schema_with_bigquery(non_neg_integer) :: :ok
+  def sync_schema_with_bigquery(organization_id) do
     fetch_bigquery_credentials(organization_id)
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
@@ -415,7 +415,7 @@ defmodule Glific.Bigquery do
   end
 
   @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
-  defp handle_insert_error(table, dataset_id, organization_id, response, _job) do
+  defp handle_insert_error(table, _dataset_id, organization_id, response, _job) do
     Logger.info(
       "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{
         inspect(response)
@@ -423,7 +423,7 @@ defmodule Glific.Bigquery do
     )
 
     if should_retry_job?(response) do
-      sync_schema_with_bigquery(dataset_id, organization_id)
+      sync_schema_with_bigquery(organization_id)
       :ok
     else
       raise("Bigquery Insert Error for table #{table}  #{response}")
@@ -473,7 +473,7 @@ defmodule Glific.Bigquery do
 
   defp generate_update_sql_query(contact, "update_contacts", dataset_id, organization_id) do
     contact_fields_to_update =
-      ["fields", "name", "optout_time", "optin_time", "language"]
+      ["name", "optout_time", "optin_time", "language", "fields", "groups"]
       |> get_contact_values_to_update(contact, %{}, organization_id)
       |> Enum.map(fn {column, value} -> "#{column} = #{value}" end)
       |> Enum.join(",")
@@ -491,7 +491,7 @@ defmodule Glific.Bigquery do
       get_contact_values_to_update(tail, contact, acc, org_id)
     else
       formatted_field_values = format_contact_field_values(column, contact[column], org_id)
-      acc = Map.put(acc, column, formatted_field_values)
+      acc = Map.put(acc, "`#{column}`", formatted_field_values)
       get_contact_values_to_update(tail, contact, acc, org_id)
     end
   end
@@ -532,10 +532,10 @@ defmodule Glific.Bigquery do
     values =
       Enum.map(groups, fn group ->
         group = Glific.atomize_keys(group)
-        "('#{group.label}')"
+        "('#{group.label}', '#{group.description}')"
       end)
 
-    "[STRUCT<label STRING>#{Enum.join(values, ",")}]"
+    "[STRUCT<label STRING, description STRING>#{Enum.join(values, ",")}]"
   end
 
   def format_contact_field_values(_, _field, _org_id), do: ""
