@@ -19,12 +19,10 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   end
 
   defp update_exisiting_providers() do
-    # add pseudo credentials for gupshup and glifproxy
+    # add pseudo credentials for gupshup
     {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
-    {:ok, glifproxy} = Repo.fetch_by(Provider, %{shortcode: "glifproxy"})
-
-    # update providers gupshup and glifproxy with values for:
+    # update providers gupshup with values for:
     # shortcode, group, is_required, keys and secrets
     Repo.update!(
       Ecto.Changeset.change(
@@ -77,48 +75,10 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
       )
     )
 
-    Repo.update!(
-      Ecto.Changeset.change(
-        glifproxy,
-        %{
-          shortcode: "glifproxy",
-          group: "bsp",
-          is_required: true,
-          keys: %{
-            url: %{
-              type: :string,
-              label: "BSP Home Page",
-              default: "https://glific.io/",
-              view_only: true
-            },
-            api_end_point: %{
-              type: :string,
-              label: "API End Point",
-              default: "https://glific.test:4000/",
-              view_only: false
-            },
-            handler: %{
-              type: :string,
-              label: "Inbound Message Handler",
-              default: "Glific.Providers.Gupshup.Message",
-              view_only: true
-            },
-            worker: %{
-              type: :string,
-              label: "Outbound Message Worker",
-              default: "Glific.Providers.Glifproxy.Worker",
-              view_only: true
-            }
-          },
-          secrets: %{}
-        }
-      )
-    )
-
-    add_credentials(gupshup, glifproxy)
+    add_credentials(gupshup)
   end
 
-  defp add_credentials(gupshup, glifproxy) do
+  defp add_credentials(gupshup) do
     Partners.active_organizations([])
     |> Enum.each(fn {org_id, _name} ->
       Glific.Repo.put_organization_id(org_id)
@@ -143,27 +103,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               api_key: "This is top secret",
               app_name: "Glific42"
             },
-            is_active: true
-          })
-
-      query =
-        from c in Credential,
-          where: c.organization_id == ^org_id and c.provider_id == ^glifproxy.id
-
-      if !Repo.exists?(query),
-        do:
-          Repo.insert!(%Credential{
-            organization_id: org_id,
-            provider_id: glifproxy.id,
-            keys: %{
-              url: "https://glific.io/",
-              api_end_point:
-                "We need to figure out how to get this dynamically, maybe in services?",
-              handler: "Glific.Providers.Gupshup.Message",
-              worker: "Glific.Providers.Glifproxy.Worker",
-              bsp_limit: 40
-            },
-            secrets: %{},
             is_active: true
           })
     end)

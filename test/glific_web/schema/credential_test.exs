@@ -19,7 +19,7 @@ defmodule GlificWeb.Schema.CredentialTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/credentials/update.gql")
 
   test "credential by shortcode returns one credential or nil", %{user: user} do
-    [provider | _] = Glific.Partners.list_providers(%{filter: %{shortcode: "glifproxy"}})
+    [provider | _] = Glific.Partners.list_providers(%{filter: %{shortcode: "gupshup"}})
 
     auth_query_gql_by(:create, user, variables: %{"input" => %{"shortcode" => provider.shortcode}})
 
@@ -29,8 +29,8 @@ defmodule GlificWeb.Schema.CredentialTest do
     assert {:ok, query_data} = result
 
     credential = get_in(query_data, [:data, "credential", "credential"])
-    assert credential["secrets"] == "{}"
-    assert credential["provider"] == %{"shortcode" => "glifproxy"}
+    assert credential["secrets"] != "{}" # this will contain app_name and api_key
+    assert credential["provider"] == %{"shortcode" => "gupshup"}
 
     result =
       auth_query_gql_by(:by_shortcode, user, variables: %{"shortcode" => "wrong shortcode"})

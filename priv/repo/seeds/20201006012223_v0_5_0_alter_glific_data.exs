@@ -15,8 +15,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
   defp update_exisiting_providers() do
     {:ok, gupshup} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
-    {:ok, glifproxy} = Repo.fetch_by(Provider, %{shortcode: "glifproxy"})
-
     {:ok, dialogflow} = Repo.fetch_by(Provider, %{shortcode: "dialogflow"})
 
     {:ok, goth} = Repo.fetch_by(Provider, %{shortcode: "goth"})
@@ -37,30 +35,13 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
         }
       })
 
-    updated_glifproxy_keys =
-      Map.merge(glifproxy.keys, %{
-        bsp_limit: %{
-          type: :integer,
-          label: "BSP limit",
-          default: 40,
-          view_only: true
-        }
-      })
-
-    # add bsp_limit in keys for gupshup and glifproxy
+    # add bsp_limit in keys for gupshup
     # update all providers with description
 
     Repo.update!(
       Ecto.Changeset.change(gupshup, %{
         description: "Setup for WhatsApp message provider",
         keys: updated_gupshup_keys
-      })
-    )
-
-    Repo.update!(
-      Ecto.Changeset.change(glifproxy, %{
-        description: "Setup for Glific simulator",
-        keys: updated_glifproxy_keys
       })
     )
 

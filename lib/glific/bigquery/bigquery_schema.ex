@@ -130,7 +130,6 @@ defmodule Glific.BigquerySchema do
             type: "STRING",
             mode: "REQUIRED"
           },
-
           %{
             name: "description",
             type: "STRING",

@@ -58,8 +58,7 @@ defmodule Glific.Bigquery do
   @doc false
   @spec fetch_bigquery_credentials(non_neg_integer) :: nil | tuple
   def fetch_bigquery_credentials(organization_id) do
-    organization =
-      Partners.organization(organization_id)
+    organization = Partners.organization(organization_id)
     org_contact = organization.contact
 
     organization.services["bigquery"]
