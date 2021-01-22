@@ -29,7 +29,8 @@ defmodule GlificWeb.Schema.CredentialTest do
     assert {:ok, query_data} = result
 
     credential = get_in(query_data, [:data, "credential", "credential"])
-    assert credential["secrets"] != "{}" # this will contain app_name and api_key
+    # this will contain app_name and api_key
+    assert credential["secrets"] != "{}"
     assert credential["provider"] == %{"shortcode" => "gupshup"}
 
     result =
