@@ -158,29 +158,52 @@ defmodule Glific do
   @doc false
   @spec validate_media?(String.t(), String.t()) :: boolean
   def validate_media?(url, type) do
+    size_limit = %{
+      "image" => 5120,
+      "video" => 16384,
+      "audio" => 16384,
+      "document" => 102400,
+      "sticker" => 100,
+    }
+
     case Tesla.get(url) do
       {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
         headers
         |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
         |> Map.put_new("content-type", "")
-        |> do_validate_headers(type, url)
+        |> IO.inspect()
+        |> Map.put_new("content-length", 0)
+        |> do_validate_headers(type, url, size_limit[type])
 
       _ ->
         false
     end
   end
 
-  @spec do_validate_headers(map(), String.t(), String.t()) :: boolean
-  defp do_validate_headers(headers, "document", _url),
+  @spec do_validate_headers(map(), String.t(), String.t(), integer()) :: boolean
+  defp do_validate_headers(headers, "document", _url, size_limit),
     do: String.contains?(headers["content-type"], "pdf")
+    and do_validate_size(size_limit, headers["content-length"])
 
-  defp do_validate_headers(headers, "sticker", _url) do
+  defp do_validate_headers(headers, "sticker", _url, size_limit) do
     ## we might need to do some more changes in this. Currently I can find that this
-    String.contains?(headers["content-type"], "image")
+    String.contains?(headers["content-type"], "image") and do_validate_size(size_limit, headers["content-length"])
   end
 
-  defp do_validate_headers(headers, type, _url) when type in ["image", "video", "audio"],
-    do: String.contains?(headers["content-type"], type)
+  defp do_validate_headers(headers, type, _url, size_limit) when type in ["image", "video", "audio"],
+    do: String.contains?(headers["content-type"], type) and do_validate_size(size_limit, headers["content-length"])
 
-  defp do_validate_headers(_, _, _), do: false
+  defp do_validate_headers(_, _, _, _), do: false
+
+  @spec do_validate_size(Integer, String.t() | integer()) :: boolean
+  defp do_validate_size(_size_limit, nil), do: false
+
+  defp do_validate_size(size_limit, content_length) do
+      {:ok, content_length} =  parse_maybe_integer(content_length)
+      content_length_in_kb  = content_length/1024
+      IO.inspect(size_limit)
+      IO.inspect(content_length_in_kb)
+      size_limit >= content_length_in_kb
+  end
+
 end
