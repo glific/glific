@@ -185,12 +185,12 @@ defmodule Glific.Flows do
   defp get_user do
     user = Repo.get_current_user()
 
-    {name, phone} =
+    {email, name} =
       if user,
-        do: {"#{user.phone}@glific.io", user.name},
-        else: {"glific@glific.io", "Glific Admin"}
+        do: {"#{user.phone}@glific.org", user.name},
+        else: {"unknown@glific.org", "Unknown Glific User"}
 
-    %{email: "#{phone}@glific.com", name: name}
+    %{email: email, name: name}
   end
 
   @doc """
