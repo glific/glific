@@ -343,7 +343,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp is_simulator_contact?(phone), do: @simulater_phone == phone
 
   @spec make_job(any(), any(), non_neg_integer, non_neg_integer) :: :ok
-  defp make_job(data, _, _, _) when data in [%{}, nil], do: :ok
+  defp make_job(data, _, _, _) when data in [%{}, nil, []], do: :ok
 
   defp make_job(data, table, organization_id, max_id) do
     __MODULE__.new(%{
