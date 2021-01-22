@@ -201,8 +201,6 @@ defmodule Glific do
   defp do_validate_size(size_limit, content_length) do
       {:ok, content_length} =  parse_maybe_integer(content_length)
       content_length_in_kb  = content_length/1024
-      IO.inspect(size_limit)
-      IO.inspect(content_length_in_kb)
       size_limit >= content_length_in_kb
   end
 
