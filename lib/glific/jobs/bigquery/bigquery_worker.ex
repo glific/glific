@@ -95,7 +95,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> where([m], m.organization_id == ^organization_id)
     |> where([m], m.id > ^min_id and m.id <= ^max_id)
     |> order_by([m], [m.inserted_at, m.id])
-    |> preload([:tags, :receiver, :sender, :contact, :user, :media])
+    |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object])
     |> Repo.all()
     |> Enum.reduce([], fn row, acc ->
       if is_simulator_contact?(row.contact.phone),
@@ -118,7 +118,9 @@ defmodule Glific.Jobs.BigQueryWorker do
             user_name: if(!is_nil(row.user), do: row.user.name),
             tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
             flow_label: row.flow_label,
-            media_url: if(!is_nil(row.media), do: row.media.url)
+            media_url: if(!is_nil(row.media), do: row.media.url),
+            flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
+            flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name)
           }
           |> Bigquery.format_data_for_bigquery("messages")
           | acc
@@ -167,7 +169,10 @@ defmodule Glific.Jobs.BigQueryWorker do
                   }
                 end),
               settings: row.settings,
-              groups: Enum.map(row.groups, fn group -> %{label: group.label, description: group.description} end),
+              groups:
+                Enum.map(row.groups, fn group ->
+                  %{label: group.label, description: group.description}
+                end),
               tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
             }
             |> Bigquery.format_data_for_bigquery("contacts")
@@ -308,7 +313,10 @@ defmodule Glific.Jobs.BigQueryWorker do
               language: row.language.label,
               optin_time: Bigquery.format_date(row.optin_time, organization_id),
               optout_time: Bigquery.format_date(row.optout_time, organization_id),
-              groups: Enum.map(row.groups, fn group -> %{label: group.label, description: group.description} end),
+              groups:
+                Enum.map(row.groups, fn group ->
+                  %{label: group.label, description: group.description}
+                end),
               fields:
                 Enum.map(row.fields, fn {_key, field} ->
                   %{
@@ -335,7 +343,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp is_simulator_contact?(phone), do: @simulater_phone == phone
 
   @spec make_job(any(), any(), non_neg_integer, non_neg_integer) :: :ok
-  defp make_job(data, _, _, _) when data in [%{}, nil], do: :ok
+  defp make_job(data, _, _, _) when data in [%{}, nil, []], do: :ok
 
   defp make_job(data, table, organization_id, max_id) do
     __MODULE__.new(%{

@@ -130,7 +130,6 @@ defmodule Glific.BigquerySchema do
             type: "STRING",
             mode: "REQUIRED"
           },
-
           %{
             name: "description",
             type: "STRING",
@@ -251,6 +250,11 @@ defmodule Glific.BigquerySchema do
       },
       %{
         name: "flow_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "flow_uuid",
         type: "STRING",
         mode: "NULLABLE"
       }

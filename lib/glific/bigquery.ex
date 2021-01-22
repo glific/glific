@@ -58,8 +58,7 @@ defmodule Glific.Bigquery do
   @doc false
   @spec fetch_bigquery_credentials(non_neg_integer) :: nil | tuple
   def fetch_bigquery_credentials(organization_id) do
-    organization =
-      Partners.organization(organization_id)
+    organization = Partners.organization(organization_id)
     org_contact = organization.contact
 
     organization.services["bigquery"]
@@ -386,7 +385,14 @@ defmodule Glific.Bigquery do
   """
   @spec make_insert_query(list(), String.t(), non_neg_integer, Oban.Job.t(), non_neg_integer) ::
           :ok
+
+  def make_insert_query(%{json: data}, _table, _organization_id, _job, _max_id)
+      when data in [[], nil, %{}],
+      do: :ok
+
   def make_insert_query(data, table, organization_id, job, max_id) do
+    Logger.info("insert data to bigquery for org_id: #{organization_id}, table: #{table}")
+
     fetch_bigquery_credentials(organization_id)
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
@@ -446,6 +452,8 @@ defmodule Glific.Bigquery do
   """
   @spec make_update_query(list(), non_neg_integer, String.t(), Oban.Job.t()) :: :ok
   def make_update_query(data, organization_id, table, _job) do
+    Logger.info("update data on bigquery for org_id: #{organization_id}, table: #{table}")
+
     fetch_bigquery_credentials(organization_id)
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
@@ -473,7 +481,7 @@ defmodule Glific.Bigquery do
 
   defp generate_update_sql_query(contact, "update_contacts", dataset_id, organization_id) do
     contact_fields_to_update =
-      ["name", "optout_time", "optin_time", "language", "fields", "groups"]
+      ["name", "optout_time", "optin_time", "updated_at", "language", "fields", "groups"]
       |> get_contact_values_to_update(contact, %{}, organization_id)
       |> Enum.map(fn {column, value} -> "#{column} = #{value}" end)
       |> Enum.join(",")
