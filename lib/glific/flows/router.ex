@@ -145,9 +145,12 @@ defmodule Glific.Flows.Router do
           Ecto.UUID.t() | nil
         ) ::
           {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
-  defp execute_category(_router, _context, {msg, _rest}, nil = _category_uuid) do
+  defp execute_category(_router, context, {msg, _rest}, nil = _category_uuid) do
     error = "Could not find category for: #{msg.body}"
     Logger.error("Could not find category for: #{msg.body}")
+
+    # lets also reset the context
+    FlowContext.reset_context(context)
     {:error, error}
   end
 
@@ -203,7 +206,7 @@ defmodule Glific.Flows.Router do
     category = Enum.find(router.categories, fn c -> c.name == body end)
 
     if is_nil(category),
-      do: raise(ArgumentError, message: "Did not find a #{body} category"),
+      do: nil,
       else: category.uuid
   end
 
