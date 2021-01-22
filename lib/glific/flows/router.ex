@@ -196,7 +196,7 @@ defmodule Glific.Flows.Router do
   rescue
     EEx.SyntaxError ->
       Logger.error("EEx threw a SyntaxError: #{content}")
-    "Invalid Code"
+      "Invalid Code"
   end
 
   @spec find_category(Router.t(), FlowContext.t(), Message.t()) :: Ecto.UUID.t() | nil
