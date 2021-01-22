@@ -56,6 +56,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     if credential do
       queue_table_data("update_flow_results", organization_id, 0, 0)
       queue_table_data("update_contacts", organization_id, 0, 0)
+      queue_table_data("update_messages", organization_id, 0, 0)
     end
 
     :ok
@@ -72,7 +73,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> select([m], m.id)
       |> where([m], m.organization_id == ^organization_id and m.id > ^table_id)
       |> order_by([m], asc: m.id)
-      |> limit(5)
+      |> limit(100)
       |> Repo.all()
 
     max_id = if is_list(data), do: List.last(data), else: table_id
@@ -340,6 +341,38 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
+   defp queue_table_data("update_messages", organization_id, _, _) do
+    query =
+      Message
+      |> where([fr], fr.organization_id == ^organization_id)
+      |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+      |> preload([:tags, :flow_object, :contact])
+
+    Repo.all(query)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        if is_simulator_contact?(row.contact.phone),
+          do: acc,
+          else: [
+            %{
+              id: row.id,
+               contact_phone: row.contact.phone,
+               tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
+               flow_label: row.flow_label,
+               flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
+               flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name)
+            }
+            | acc
+          ]
+      end
+    )
+    |> Enum.chunk_every(10)
+    |> Enum.each(&make_job(&1, :update_messages, organization_id, 0))
+
+    :ok
+  end
+
   defp queue_table_data(_, _, _, _), do: :ok
 
   @spec is_simulator_contact?(String.t()) :: boolean
@@ -376,7 +409,7 @@ defmodule Glific.Jobs.BigQueryWorker do
           }
         } = job
       )
-      when table in ["update_flow_results", "update_contacts"],
+      when table in ["update_flow_results", "update_contacts", "update_messages"],
       do: Bigquery.make_update_query(data, organization_id, table, job)
 
   def perform(
