@@ -18,8 +18,6 @@
         "lib/glific/seeds/seeds_scale.ex",
         "lib/glific/seeds/seeds_optins.ex",
         "lib/glific/seeds/add_glific_organization_data.ex",
-        "lib/glific/providers/glifproxy",
-        "lib/glific_web/providers/glifproxy",
         "lib/glific_web/schema",
         "lib/glific.ex",
         "lib/glific/csv",
