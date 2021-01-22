@@ -374,41 +374,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         }
       })
 
-    # add glifproxy as a provider also
-    Repo.insert!(%Provider{
-      name: "Glifproxy",
-      shortcode: "glifproxy",
-      group: "bsp",
-      is_required: true,
-      keys: %{
-        url: %{
-          type: :string,
-          label: "BSP Home Page",
-          default: "https://glific.io/",
-          view_only: true
-        },
-        api_end_point: %{
-          type: :string,
-          label: "API End Point",
-          default: "https://glific.test:4000/",
-          view_only: false
-        },
-        handler: %{
-          type: :string,
-          label: "Inbound Message Handler",
-          default: "Glific.Providers.Gupshup.Message",
-          view_only: true
-        },
-        worker: %{
-          type: :string,
-          label: "Outbound Message Worker",
-          default: "Glific.Providers.Glifproxy.Worker",
-          view_only: true
-        }
-      },
-      secrets: %{}
-    })
-
     default
   end
 
