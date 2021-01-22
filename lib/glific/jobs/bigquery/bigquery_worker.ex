@@ -67,12 +67,15 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp insert_for_table(bigquery_job, organization_id) do
     table_id = bigquery_job.table_id
 
-    max_id =
+    data =
       Bigquery.get_table_struct(bigquery_job.table)
-      |> select([m], max(m.id))
+      |> select([m], m.id)
       |> where([m], m.organization_id == ^organization_id and m.id > ^table_id)
+      |> order_by([m], asc: m.id)
       |> limit(5)
-      |> Repo.one()
+      |> Repo.all()
+
+    max_id = if is_list(data), do: List.last(data), else: table_id
 
     cond do
       is_nil(max_id) ->
