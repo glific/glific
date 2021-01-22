@@ -95,7 +95,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> where([m], m.organization_id == ^organization_id)
     |> where([m], m.id > ^min_id and m.id <= ^max_id)
     |> order_by([m], [m.inserted_at, m.id])
-    |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object])
+    |> preload([:tags, :receiver, :sender, :contact, :user, :media, flow_object: [:uuid, :name]])
     |> Repo.all()
     |> Enum.reduce([], fn row, acc ->
       if is_simulator_contact?(row.contact.phone),
