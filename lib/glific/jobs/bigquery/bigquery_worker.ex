@@ -71,7 +71,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       Bigquery.get_table_struct(bigquery_job.table)
       |> select([m], max(m.id))
       |> where([m], m.organization_id == ^organization_id and m.id > ^table_id)
-      |> limit(100)
+      |> limit(20)
       |> Repo.one()
 
     cond do
