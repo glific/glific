@@ -389,7 +389,8 @@ defmodule Glific.Flows.FlowContext do
   @spec log_error(String.t()) :: {:error, String.t()}
   defp log_error(error) do
     Logger.error(error)
-    Appsignal.send_error(:error, error, Glific.stacktrace())
+    {_, stacktrace} = Process.info(self(), :current_stacktrace)
+    Appsignal.send_error(:error, error, stacktrace)
     {:error, error}
   end
 

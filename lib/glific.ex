@@ -122,10 +122,10 @@ defmodule Glific do
   @doc """
   easy way for glific developers to get a stacktrace when debugging
   """
-  @spec stacktrace :: :ok
+  @spec stacktrace :: String.t()
   def stacktrace do
-    inspect(Process.info(self(), :current_stacktrace))
-    :ok
+    {_, stacktrace} = Process.info(self(), :current_stacktrace)
+    inspect(stacktrace)
   end
 
   @not_allowed ["Repo", "IO", "File", "Code"]
