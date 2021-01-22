@@ -264,9 +264,24 @@ defmodule Glific.Flows.FlowContext do
 
   def execute(context, messages) do
     case Node.execute(context.node, context, messages) do
-      {:ok, context, []} -> {:ok, context, []}
-      {:ok, context, messages} -> Node.execute(context.node, context, messages)
-      others -> others
+      {:ok, context, []} ->
+        {:ok, context, []}
+
+      # Routers basically break the processing, and return back to the top level
+      # and hence we hit this case. Since they can be multiple routers stacked (e.g. when
+      # the flow has multiple webhooks in it), we recurse till we no longer change state
+      {:ok, context, new_messages} ->
+        # if we've consumed some messages, lets continue calling the function,
+        # till we consume all messages that we potentially can
+        if messages != new_messages do
+          execute(context, new_messages)
+        else
+          # lets discard the message stream and go forward
+          {:ok, context, []}
+        end
+
+      others ->
+        others
     end
   end
 
@@ -369,22 +384,6 @@ defmodule Glific.Flows.FlowContext do
     |> Map.put(:node, node)
   end
 
-  # given an unknown return type, create an error string from it
-  # drop complex objects since they print too much info
-  @spec make_error(any()) :: String.t()
-  defp make_error(args) when is_tuple(args) do
-    list =
-      args
-      |> Tuple.to_list()
-      |> Enum.map(fn x ->
-        if is_struct(x) and x.__struct__ == FlowContext,
-          do: "FlowContext: flow: #{x.flow_id}, contact: #{x.contact_id}, context: #{x.id}",
-          else: x
-      end)
-
-    inspect(list)
-  end
-
   # log the error and also send it over to our friends at appsignal
   @spec log_error(String.t()) :: {:error, String.t()}
   defp log_error(error) do
@@ -404,10 +403,6 @@ defmodule Glific.Flows.FlowContext do
         {:ok, context}
 
       {:error, error} ->
-        log_error(error)
-
-      other ->
-        error = "step_forward returned something unexpected: #{make_error(other)}"
         log_error(error)
     end
   end
