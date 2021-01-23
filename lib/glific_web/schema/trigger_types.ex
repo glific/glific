@@ -15,40 +15,26 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :errors, list_of(:input_error)
   end
 
-  object :trigger_action do
+  object :trigger do
     field :id, :id
-    field :action_type, :string
+    field :name, :string
+    field :trigger_type, :string
+
+    field :start_at, :datetime
+    field :end_at, :datetime
+    field :is_active, :boolean
+    field :is_repeating, :boolean
+    field :frequency, list_of(:string)
 
     field :flow, :flow do
       resolve(dataloader(Repo))
     end
 
+    field :contact, :contact do
+      resolve(dataloader(Repo))
+    end
+
     field :group, :group do
-      resolve(dataloader(Repo))
-    end
-  end
-
-  object :trigger_condition do
-    field :id, :id
-    field :name, :string
-    field :start_at, :datetime
-    field :ends_at, :datetime
-    field :fire_at, :datetime
-    field :is_active, :boolean
-    field :is_repeating, :boolean
-    field :frequency, :string
-  end
-
-  object :trigger do
-    field :id, :id
-    field :name, :string
-    field :event_type, :string
-
-    field :trigger_action, :trigger_action do
-      resolve(dataloader(Repo))
-    end
-
-    field :trigger_condition, :trigger_condition do
       resolve(dataloader(Repo))
     end
   end
@@ -61,25 +47,29 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
   input_object :trigger_input do
     field :name, :string
-    field :event_type, :string
+    field :trigger_type, :string
 
     field :flow_id, :id
+    field :contact_id, :id
     field :group_id, :id
 
+    field :is_active, :boolean
     field :is_repeating, :boolean
-    field :frequency, :string
+    field :frequency, list_of(:string)
     field :start_at, :datetime
-    field :ends_at, :datetime
+    field :end_at, :datetime
   end
 
   input_object :trigger_update_input do
     field :flow_id, :id
+    field :contact_id, :id
     field :group_id, :id
 
+    field :is_active, :boolean
     field :is_repeating, :boolean
-    field :frequency, :string
+    field :frequency, list_of(:string)
     field :start_at, :datetime
-    field :ends_at, :datetime
+    field :end_at, :datetime
   end
 
   object :trigger_queries do

@@ -6,11 +6,7 @@ defmodule GlificWeb.Resolvers.Triggers do
 
   alias Glific.Repo
 
-  alias Glific.Triggers.{
-    Trigger,
-    TriggerAction,
-    TriggerCondition
-  }
+  alias Glific.Triggers.Trigger
 
   @doc false
   @spec trigger(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -43,16 +39,7 @@ defmodule GlificWeb.Resolvers.Triggers do
           {:ok, any} | {:error, any}
   def create_trigger(_, %{input: params}, _) do
     # here first we need to create trigger action and trigger condition
-    with {:ok, trigger_action} <- TriggerAction.create_trigger_action(params),
-         {:ok, trigger_condition} <- TriggerCondition.create_trigger_condition(params),
-         {:ok, trigger} <-
-           Trigger.create_trigger(
-             params
-             |> Map.merge(%{
-               trigger_action_id: trigger_action.id,
-               trigger_condition_id: trigger_condition.id
-             })
-           ) do
+    with {:ok, trigger} <- Trigger.create_trigger(params) do
       {:ok, %{trigger: trigger}}
     end
   end
@@ -64,9 +51,7 @@ defmodule GlificWeb.Resolvers.Triggers do
           {:ok, any} | {:error, any}
   def update_trigger(_, %{id: id, input: params}, _) do
     with {:ok, trigger} <- Repo.fetch(Trigger, id) do
-      trigger = Repo.preload(trigger, [:trigger_action, :trigger_condition])
-      {:ok, _} = TriggerAction.update_trigger_action(trigger.trigger_action, params)
-      {:ok, _} = TriggerCondition.update_trigger_condition(trigger.trigger_condition, params)
+      {:ok, trigger} = Trigger.update_trigger(trigger, params)
       {:ok, %{trigger: trigger}}
     end
   end

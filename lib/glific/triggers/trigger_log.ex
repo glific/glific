@@ -5,6 +5,7 @@ defmodule Glific.Triggers.TriggerLog do
   alias __MODULE__
 
   alias Glific.{
+    Flows.FlowContext,
     Partners.Organization,
     Repo,
     Triggers.Trigger
@@ -13,37 +14,30 @@ defmodule Glific.Triggers.TriggerLog do
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
-          status: String.t() | nil,
-          organization_id: non_neg_integer | nil,
-          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           trigger_id: non_neg_integer | nil,
           trigger: Trigger.t() | Ecto.Association.NotLoaded.t() | nil,
-          fire_at: :utc_datetime | nil,
+          flow_context_id: non_neg_integer | nil,
+          flow_context: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
           started_at: :utc_datetime | nil,
-          completed_at: :utc_datetime | nil,
+          organization_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
   @required_fields [
-    :status,
-    :organization_id,
     :trigger_id,
-    :fire_at
-  ]
-  @optional_fields [
+    :flow_context_id,
     :started_at,
-    :completed_at
+    :organization_id
   ]
+  @optional_fields []
 
   schema "trigger_logs" do
-    field :status, :string
-
     belongs_to :trigger, Trigger
+    belongs_to :flow_context, FlowContext
 
-    field :fire_at, :utc_datetime
     field :started_at, :utc_datetime, default: nil
-    field :completed_at, :utc_datetime, default: nil
 
     belongs_to :organization, Organization
 

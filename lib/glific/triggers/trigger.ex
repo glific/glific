@@ -2,26 +2,35 @@ defmodule Glific.Triggers.Trigger do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
+
   alias __MODULE__
 
   alias Glific.{
+    Contacts.Contact,
+    Flows.Flow,
+    Groups.Group,
     Partners.Organization,
-    Repo,
-    Triggers.TriggerAction,
-    Triggers.TriggerCondition
+    Repo
   }
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
-          event_type: String.t() | nil,
+          trigger_type: String.t() | nil,
+          flow_id: non_neg_integer | nil,
+          flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
+          contact_id: non_neg_integer | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          group_id: non_neg_integer | nil,
+          group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
+          start_at: :utc_datetime | nil,
+          end_at: :utc_datetime | nil,
+          is_repeating: boolean(),
+          repeats: list() | nil,
+          is_active: boolean(),
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          trigger_action_id: non_neg_integer | nil,
-          trigger_action: TriggerAction.t() | Ecto.Association.NotLoaded.t() | nil,
-          trigger_condition_id: non_neg_integer | nil,
-          trigger_condition: TriggerCondition.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -29,19 +38,33 @@ defmodule Glific.Triggers.Trigger do
   @required_fields [
     :name,
     :organization_id,
-    :trigger_action_id,
-    :trigger_condition_id
+    :flow_id,
+    :start_at
   ]
   @optional_fields [
-    :event_type
+    :trigger_type,
+    :contact_id,
+    :group_id,
+    :end_at,
+    :is_repeating,
+    :repeats
   ]
 
   schema "triggers" do
     field :name, :string
-    field :event_type, :string, default: "scheduled"
+    field :trigger_type, :string, default: "scheduled"
 
-    belongs_to :trigger_action, TriggerAction
-    belongs_to :trigger_condition, TriggerCondition
+    belongs_to :contact, Contact
+    belongs_to :group, Group
+    belongs_to :flow, Flow
+
+    field :start_at, :utc_datetime
+    field :end_at, :utc_datetime
+
+    field :repeats, {:array, :string}, default: []
+
+    field :is_active, :boolean, default: true
+    field :is_repeating, :boolean, default: false
 
     belongs_to :organization, Organization
 
@@ -68,6 +91,16 @@ defmodule Glific.Triggers.Trigger do
     %Trigger{}
     |> Trigger.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Updates the triggger
+  """
+  @spec update_trigger(Trigger.t(), map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  def update_trigger(%Trigger{} = trigger, attrs) do
+    trigger
+    |> Trigger.changeset(attrs)
+    |> Repo.update()
   end
 
   @doc """
