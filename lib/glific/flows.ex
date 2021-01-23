@@ -182,6 +182,17 @@ defmodule Glific.Flows do
     Flow.changeset(flow, attrs)
   end
 
+  defp get_user do
+    user = Repo.get_current_user()
+
+    {email, name} =
+      if user,
+        do: {"#{user.phone}@glific.org", user.name},
+        else: {"unknown@glific.org", "Unknown Glific User"}
+
+    %{email: email, name: name}
+  end
+
   @doc """
   Get a list of all the revisions based on a flow UUID
   """
@@ -202,9 +213,6 @@ defmodule Glific.Flows do
       |> limit(15)
       |> Repo.all()
 
-    # We should fix this to get the logged in user
-    user = %{email: "user@glific.com", name: "Glific User"}
-
     # Instead of sorting this list we need to fetch the ordered items from the DB
     # We will optimize this more in the v0.4
     asset_list =
@@ -215,7 +223,7 @@ defmodule Glific.Flows do
         fn revision, acc ->
           [
             %{
-              user: user,
+              user: get_user(),
               created_on: revision.inserted_at,
               id: revision.id,
               version: "13.0.0",
@@ -231,7 +239,7 @@ defmodule Glific.Flows do
   end
 
   @doc """
-    Get specific flow revision by number
+  Get specific flow revision by number
   """
   @spec get_flow_revision(String.t(), String.t()) :: map()
   def get_flow_revision(_flow_uuid, revision_id) do

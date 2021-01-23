@@ -324,6 +324,7 @@ defmodule Glific.Repo do
   @spec prepare_query(atom(), Ecto.Query.t(), Keyword.t()) :: {Ecto.Query.t(), Keyword.t()}
   def prepare_query(_operation, query, opts) do
     # Glific.stacktrace()
+
     cond do
       opts[:skip_organization_id] ||
         opts[:schema_migration] ||

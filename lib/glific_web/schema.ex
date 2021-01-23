@@ -31,6 +31,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.UserGroupTypes)
   import_types(__MODULE__.SearchTypes)
   import_types(__MODULE__.FlowTypes)
+  import_types(__MODULE__.TriggerTypes)
   import_types(__MODULE__.WebhookLogTypes)
   import_types(__MODULE__.LocationTypes)
 
@@ -60,6 +61,8 @@ defmodule GlificWeb.Schema do
     import_fields(:search_queries)
 
     import_fields(:flow_queries)
+
+    import_fields(:trigger_queries)
 
     import_fields(:webhook_log_queries)
 
@@ -102,6 +105,8 @@ defmodule GlificWeb.Schema do
     import_fields(:search_mutations)
 
     import_fields(:flow_mutations)
+
+    import_fields(:trigger_mutations)
   end
 
   subscription do
