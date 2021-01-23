@@ -341,7 +341,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-   defp queue_table_data("update_messages", organization_id, _, _) do
+  defp queue_table_data("update_messages", organization_id, _, _) do
     query =
       Message
       |> where([fr], fr.organization_id == ^organization_id)
@@ -357,11 +357,11 @@ defmodule Glific.Jobs.BigQueryWorker do
           else: [
             %{
               id: row.id,
-               contact_phone: row.contact.phone,
-               tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
-               flow_label: row.flow_label,
-               flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
-               flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name)
+              contact_phone: row.contact.phone,
+              tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
+              flow_label: row.flow_label,
+              flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
+              flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name)
             }
             | acc
           ]
