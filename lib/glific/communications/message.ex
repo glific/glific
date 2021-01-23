@@ -54,10 +54,20 @@ defmodule Glific.Communications.Message do
 
       publish_message(message)
     else
-      Logger.error("Could not send message: message_id: '#{message.id}'")
-      {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
-      {:error, "Cannot send the message to the contact."}
+      log_error(message)
     end
+  rescue
+    # An exception is thrown if there is no provider handler and/or sending the message
+    # via the provider fails
+    _ ->
+      log_error(message)
+  end
+
+  @spec log_error(Message.t()) :: {:error, String.t()}
+  defp log_error(message) do
+    Logger.error("Could not send message: message_id: '#{message.id}'")
+    {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
+    {:error, "Cannot send the message to the contact."}
   end
 
   @spec publish_message(Message.t()) :: {:ok, Message.t()}
