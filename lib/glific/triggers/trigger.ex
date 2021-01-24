@@ -24,8 +24,10 @@ defmodule Glific.Triggers.Trigger do
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           group_id: non_neg_integer | nil,
           group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
-          start_at: :utc_datetime | nil,
-          end_at: :utc_datetime | nil,
+          start_at: DateTime.t() | nil,
+          end_at: DateTime.t() | nil,
+          last_trigger_at: DateTime.t() | nil,
+          next_trigger_at: DateTime.t() | nil,
           is_repeating: boolean(),
           repeats: list() | nil,
           is_active: boolean(),
@@ -46,6 +48,8 @@ defmodule Glific.Triggers.Trigger do
     :contact_id,
     :group_id,
     :end_at,
+    :last_trigger_at,
+    :next_trigger_at,
     :is_repeating,
     :repeats
   ]
@@ -60,6 +64,9 @@ defmodule Glific.Triggers.Trigger do
 
     field :start_at, :utc_datetime
     field :end_at, :utc_datetime
+
+    field :last_trigger_at, :utc_datetime
+    field :next_trigger_at, :utc_datetime
 
     field :repeats, {:array, :string}, default: []
 
@@ -89,7 +96,8 @@ defmodule Glific.Triggers.Trigger do
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger(attrs) do
     %Trigger{}
-    |> Trigger.changeset(attrs)
+    # set the initial value of the trigger
+    |> Trigger.changeset(Map.put(attrs, :next_trigger_at, attrs.start_at))
     |> Repo.insert()
   end
 

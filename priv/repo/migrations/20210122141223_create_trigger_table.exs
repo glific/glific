@@ -37,6 +37,11 @@ defmodule Glific.Repo.Migrations.Trigger do
       # the optional end time of this trigger
       add :end_at, :utc_datetime, null: true
 
+      # lets cache the last execution time and the next execution time
+      # to make it easier to figure out which triggers to fire
+      add :last_trigger_at, :utc_datetime, null: true
+      add :next_trigger_at, :utc_datetime, null: true
+
       # is this a repeating trigger
       add :is_repeating, :boolean, default: false
 
