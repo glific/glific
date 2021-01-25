@@ -158,6 +158,9 @@ defmodule Glific.Flows.FlowContext do
       )
       |> step_forward(Messages.create_temp_message(context.flow.organization_id, "completed"))
     end
+
+    # return the orginal context, which is now completed
+    context
   end
 
   @doc """
@@ -264,9 +267,24 @@ defmodule Glific.Flows.FlowContext do
 
   def execute(context, messages) do
     case Node.execute(context.node, context, messages) do
-      {:ok, context, []} -> {:ok, context, []}
-      {:ok, context, messages} -> Node.execute(context.node, context, messages)
-      others -> others
+      {:ok, context, []} ->
+        {:ok, context, []}
+
+      # Routers basically break the processing, and return back to the top level
+      # and hence we hit this case. Since they can be multiple routers stacked (e.g. when
+      # the flow has multiple webhooks in it), we recurse till we no longer change state
+      {:ok, context, new_messages} ->
+        # if we've consumed some messages, lets continue calling the function,
+        # till we consume all messages that we potentially can
+        if messages != new_messages do
+          execute(context, new_messages)
+        else
+          # lets discard the message stream and go forward
+          {:ok, context, []}
+        end
+
+      others ->
+        others
     end
   end
 
@@ -286,40 +304,51 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Seed the context and set the wakeup time as needed
+  """
+  @spec seed_context(Flow.t(), Contact.t(), String.t(), Keyword.t()) ::
+          {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
+  def seed_context(flow, contact, status, opts \\ []) do
+    parent_id = Keyword.get(opts, :parent_id)
+    current_delay = Keyword.get(opts, :delay, 0)
+    wakeup_at = Keyword.get(opts, :wakeup_at)
+
+    Logger.info(
+      "Seeding flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
+    )
+
+    node = hd(flow.nodes)
+
+    create_flow_context(%{
+      contact_id: contact.id,
+      parent_id: parent_id,
+      node_uuid: node.uuid,
+      flow_uuid: flow.uuid,
+      status: status,
+      node: node,
+      results: %{},
+      flow_id: flow.id,
+      flow: flow,
+      organization_id: flow.organization_id,
+      uuid_map: flow.uuid_map,
+      delay: current_delay,
+      wakeup_at: wakeup_at
+    })
+  end
+
+  @doc """
   Start a new context, if there is an existing context, blow it away
   """
   @spec init_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def init_context(flow, contact, status, opts \\ []) do
     parent_id = Keyword.get(opts, :parent_id)
-    current_delay = Keyword.get(opts, :delay, 0)
-
-    Logger.info(
-      "Starting flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
-    )
-
     # set all previous context to be completed if we are not starting a sub flow
     if is_nil(parent_id) do
       mark_flows_complete(contact.id)
     end
 
-    node = hd(flow.nodes)
-
-    {:ok, context} =
-      create_flow_context(%{
-        contact_id: contact.id,
-        parent_id: parent_id,
-        node_uuid: node.uuid,
-        flow_uuid: flow.uuid,
-        status: status,
-        node: node,
-        results: %{},
-        flow_id: flow.id,
-        flow: flow,
-        organization_id: flow.organization_id,
-        uuid_map: flow.uuid_map,
-        delay: current_delay
-      })
+    {:ok, context} = seed_context(flow, contact, status, opts)
 
     context
     |> load_context(flow)
@@ -369,22 +398,6 @@ defmodule Glific.Flows.FlowContext do
     |> Map.put(:node, node)
   end
 
-  # given an unknown return type, create an error string from it
-  # drop complex objects since they print too much info
-  @spec make_error(any()) :: String.t()
-  defp make_error(args) when is_tuple(args) do
-    list =
-      args
-      |> Tuple.to_list()
-      |> Enum.map(fn x ->
-        if is_struct(x) and x.__struct__ == FlowContext,
-          do: "FlowContext: flow: #{x.flow_id}, contact: #{x.contact_id}, context: #{x.id}",
-          else: x
-      end)
-
-    inspect(list)
-  end
-
   # log the error and also send it over to our friends at appsignal
   @spec log_error(String.t()) :: {:error, String.t()}
   defp log_error(error) do
@@ -404,10 +417,6 @@ defmodule Glific.Flows.FlowContext do
         {:ok, context}
 
       {:error, error} ->
-        log_error(error)
-
-      other ->
-        error = "step_forward returned something unexpected: #{make_error(other)}"
         log_error(error)
     end
   end

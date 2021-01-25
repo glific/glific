@@ -253,7 +253,6 @@ defmodule Glific.BigquerySchema do
         type: "STRING",
         mode: "NULLABLE"
       },
-
       %{
         name: "flow_uuid",
         type: "STRING",
