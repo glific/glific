@@ -19,6 +19,8 @@ defmodule Glific.GCS do
   def refresh_gsc_setup(organization_id) do
     organization_id
     |> insert_gcs_jobs()
+
+    :ok
   end
 
   @doc false
