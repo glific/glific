@@ -4,17 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.9.7] - 2021-01-25
+
 ### Added
 - Trigger for updating messages's updated_at when message is tagged
 - Trigger for updating contacts's updated_at when contact is tagged
 - Added size validation for media attachments
 ## [0.9.6] - 2021-01-23
+
 ### Fixed
 - BigQuery updating mesages periodically
 - BigQuery updating contacts periodically
+
 ## [0.9.5] - 2021-01-22
 ### Added
 - Trigger for updating contact's updated_at when contact is added to group
+
 ### Fixed
 - Making description fields as text field
 - Updated README.md
