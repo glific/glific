@@ -154,33 +154,4 @@ defmodule Glific do
     hmac = :crypto.hmac(:sha256, secret, signed_payload)
     Base.encode16(hmac, case: :lower)
   end
-
-  @doc false
-  @spec validate_media?(String.t(), String.t()) :: boolean
-  def validate_media?(url, type) do
-    case Tesla.get(url) do
-      {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
-        headers
-        |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
-        |> Map.put_new("content-type", "")
-        |> do_validate_headers(type, url)
-
-      _ ->
-        false
-    end
-  end
-
-  @spec do_validate_headers(map(), String.t(), String.t()) :: boolean
-  defp do_validate_headers(headers, "document", _url),
-    do: String.contains?(headers["content-type"], "pdf")
-
-  defp do_validate_headers(headers, "sticker", _url) do
-    ## we might need to do some more changes in this. Currently I can find that this
-    String.contains?(headers["content-type"], "image")
-  end
-
-  defp do_validate_headers(headers, type, _url) when type in ["image", "video", "audio"],
-    do: String.contains?(headers["content-type"], type)
-
-  defp do_validate_headers(_, _, _), do: false
 end

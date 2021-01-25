@@ -404,7 +404,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec validate_media(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def validate_media(conn, params) do
-    json(conn, %{is_valid: Glific.validate_media?(params["url"], params["type"])})
+    json(conn, Glific.Messages.validate_media(params["url"], params["type"]))
   end
 
   @doc false
