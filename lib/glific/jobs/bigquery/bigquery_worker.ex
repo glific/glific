@@ -317,6 +317,7 @@ defmodule Glific.Jobs.BigQueryWorker do
               language: row.language.label,
               optin_time: Bigquery.format_date(row.optin_time, organization_id),
               optout_time: Bigquery.format_date(row.optout_time, organization_id),
+              updated_at: Bigquery.format_date(row.updated_at, organization_id),
               groups:
                 Enum.map(row.groups, fn group ->
                   %{label: group.label, description: group.description}
