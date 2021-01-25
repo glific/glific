@@ -912,19 +912,18 @@ defmodule Glific.Messages do
   @spec do_validate_media(map(), String.t(), String.t(), integer()) :: map()
   defp do_validate_media(headers, type, url, size_limit) do
     cond do
-      do_validate_headers(headers, type, url) == false
-       -> %{is_valid: false, message: "Media url is not valid."}
+      do_validate_headers(headers, type, url) == false ->
+        %{is_valid: false, message: "Media url is not valid."}
 
-      do_validate_size(size_limit, headers["content-length"]) == false
-       -> %{
-            is_valid: false,
-            message: "Size is too big for the #{type}. Maximum size limit is #{size_limit}KB"
-          }
+      do_validate_size(size_limit, headers["content-length"]) == false ->
+        %{
+          is_valid: false,
+          message: "Size is too big for the #{type}. Maximum size limit is #{size_limit}KB"
+        }
 
-        true
-         -> %{is_valid: true, message: "success"}
+      true ->
+        %{is_valid: true, message: "success"}
     end
-
   end
 
   @spec do_validate_headers(map(), String.t(), String.t()) :: boolean
