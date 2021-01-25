@@ -154,5 +154,4 @@ defmodule Glific do
     hmac = :crypto.hmac(:sha256, secret, signed_payload)
     Base.encode16(hmac, case: :lower)
   end
-
 end

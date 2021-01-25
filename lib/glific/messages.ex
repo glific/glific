@@ -885,15 +885,15 @@ defmodule Glific.Messages do
     {:ok}
   end
 
-   @doc false
+  @doc false
   @spec validate_media(String.t(), String.t()) :: map()
   def validate_media(url, type) do
     size_limit = %{
       "image" => 5120,
-      "video" => 16384,
-      "audio" => 16384,
-      "document" => 102400,
-      "sticker" => 100,
+      "video" => 16_384,
+      "audio" => 16_384,
+      "document" => 102_400,
+      "sticker" => 100
     }
 
     case Tesla.get(url) do
@@ -906,24 +906,24 @@ defmodule Glific.Messages do
 
       _ ->
         %{is_valid: false, message: "Somthing is not right."}
-
     end
   end
 
   @spec do_validate_media(map(), String.t(), String.t(), integer()) :: map()
   defp do_validate_media(headers, type, url, size_limit) do
+    cond do
+      do_validate_headers(headers, type, url) == false
+       -> %{is_valid: false, message: "Media url is not valid."}
 
-     cond do
-        do_validate_headers(headers, type, url)
-        ->
-          if do_validate_size(size_limit, headers["content-length"]),
-          do: %{is_valid: true, message: "success"},
-          else: %{is_valid: false, message: "Size is too big for the #{type}. Maximum size limit is #{size_limit}KB"}
+      do_validate_size(size_limit, headers["content-length"]) == false
+       -> %{
+            is_valid: false,
+            message: "Size is too big for the #{type}. Maximum size limit is #{size_limit}KB"
+          }
 
         true
-          -> %{is_valid: false, message: "Media url is not valid."}
-
-     end
+         -> %{is_valid: true, message: "success"}
+    end
 
   end
 
@@ -943,9 +943,8 @@ defmodule Glific.Messages do
   defp do_validate_size(_size_limit, nil), do: false
 
   defp do_validate_size(size_limit, content_length) do
-      {:ok, content_length} =  Glific.parse_maybe_integer(content_length)
-      content_length_in_kb  = content_length/1024
-      size_limit >= content_length_in_kb
+    {:ok, content_length} = Glific.parse_maybe_integer(content_length)
+    content_length_in_kb = content_length / 1024
+    size_limit >= content_length_in_kb
   end
-
 end
