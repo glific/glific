@@ -884,4 +884,68 @@ defmodule Glific.Messages do
 
     {:ok}
   end
+
+   @doc false
+  @spec validate_media(String.t(), String.t()) :: map()
+  def validate_media(url, type) do
+    size_limit = %{
+      "image" => 5120,
+      "video" => 16384,
+      "audio" => 16384,
+      "document" => 102400,
+      "sticker" => 100,
+    }
+
+    case Tesla.get(url) do
+      {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
+        headers
+        |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
+        |> Map.put_new("content-type", "")
+        |> Map.put_new("content-length", 0)
+        |> do_validate_media(type, url, size_limit[type])
+
+      _ ->
+        %{is_valid: false, message: "Somthing is not right."}
+
+    end
+  end
+
+  @spec do_validate_media(map(), String.t(), String.t(), integer()) :: map()
+  defp do_validate_media(headers, type, url, size_limit) do
+
+     cond do
+        do_validate_headers(headers, type, url)
+        ->
+          if do_validate_size(size_limit, headers["content-length"]),
+          do: %{is_valid: true, message: "success"},
+          else: %{is_valid: false, message: "Size is too big for the #{type}. Maximum size limit is #{size_limit}KB"}
+
+        true
+          -> %{is_valid: false, message: "Media url is not valid."}
+
+     end
+
+  end
+
+  @spec do_validate_headers(map(), String.t(), String.t()) :: boolean
+  defp do_validate_headers(headers, "document", _url),
+    do: String.contains?(headers["content-type"], "pdf")
+
+  defp do_validate_headers(headers, "sticker", _url),
+    do: String.contains?(headers["content-type"], "image")
+
+  defp do_validate_headers(headers, type, _url) when type in ["image", "video", "audio"],
+    do: String.contains?(headers["content-type"], type)
+
+  defp do_validate_headers(_, _, _), do: false
+
+  @spec do_validate_size(Integer, String.t() | integer()) :: boolean
+  defp do_validate_size(_size_limit, nil), do: false
+
+  defp do_validate_size(size_limit, content_length) do
+      {:ok, content_length} =  Glific.parse_maybe_integer(content_length)
+      content_length_in_kb  = content_length/1024
+      size_limit >= content_length_in_kb
+  end
+
 end
