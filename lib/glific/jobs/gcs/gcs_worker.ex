@@ -49,6 +49,8 @@ defmodule Glific.Jobs.GcsWorker do
         do: 0,
         else: gcs_job.message_media_id
 
+    message_media_id = message_media_id || 0
+
     query =
       MessageMedia
       |> select([m], max(m.id))
