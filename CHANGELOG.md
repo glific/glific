@@ -3,7 +3,42 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.9.7] - 2021-01-25
+### Added
+- Trigger for updating messages's updated_at when message is tagged
+- Trigger for updating contacts's updated_at when contact is tagged
+- Added size validation for media attachments
+## [0.9.6] - 2021-01-23
+### Fixed
+- BigQuery updating mesages periodically
+- BigQuery updating contacts periodically
+## [0.9.5] - 2021-01-22
+### Added
+- Trigger for updating contact's updated_at when contact is added to group
+### Fixed
+- Making description fields as text field
+- Updated README.md
+- BigQuery Cleanups
+- Removed GlificProxy server
+- Making message body as nullable in case of media speed sends
 
+## [0.9.4] - 2021-01-18
+### Added
+- Validate media URL in while sending media in flows
+- Added CORS proxy server
+
+### Fixed
+- Optimize fetching opted in contacts from BSP server
+- Sending errors in case of wrong API keys
+- API Client cleanups
+- Handle null message error
+## [0.9.3] - 2021-01-14
+### Added
+- Making keyword as Nullable when creating a new flow
+- Sending Message status subcription
+- Added seeder for flow results
+### Fixed
+- Contact id jump when contact optout
 ## [0.9.2] - 2021-01-11
 ### Added
 - Support for location in messages
