@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.V0_9_6_AlterContactUpdateUpdatedAtOnTaggingTrigger do
+defmodule Glific.Repo.Migrations.V0_9_6_AlterUpdateContactUpdatedAtOnTaggingTrigger do
   use Ecto.Migration
 
   def up do
