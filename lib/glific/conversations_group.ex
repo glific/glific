@@ -61,6 +61,7 @@ defmodule Glific.ConversationsGroup do
   @spec get_messages(list(), map()) :: [Message.t()]
   defp get_messages(ids, %{limit: limit, offset: offset}) do
     Message
+    |> where([m], m.receiver_id == m.sender_id)
     |> where([m], m.group_id in ^ids)
     |> where([m], m.message_number >= ^offset)
     |> where([m], m.message_number < ^(limit + offset))
