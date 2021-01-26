@@ -11,13 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added size validation for media attachments
 ## [0.9.6] - 2021-01-23
 
+### Added
+- Support for failed authentication
+- Added plugins and versioning for appsignal in frontend
+
 ### Fixed
 - BigQuery updating mesages periodically
 - BigQuery updating contacts periodically
+- Simulator scroll issue
+- Jump to latest button position
 
 ## [0.9.5] - 2021-01-22
 ### Added
 - Trigger for updating contact's updated_at when contact is added to group
+- Message status subscription
+- Redirection to https
 
 ### Fixed
 - Making description fields as text field
@@ -25,17 +33,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BigQuery Cleanups
 - Removed GlificProxy server
 - Making message body as nullable in case of media speed sends
+- Search conversation errors
+- Order by column error
 
 ## [0.9.4] - 2021-01-18
 ### Added
+- Webhook signature field
 - Validate media URL in while sending media in flows
 - Added CORS proxy server
+- Flow editor media URL validation
 
 ### Fixed
 - Optimize fetching opted in contacts from BSP server
 - Sending errors in case of wrong API keys
 - API Client cleanups
 - Handle null message error
+- Wallet balance error
+- Not displaying last message media types
+- Background change for contact bar icons
+
 ## [0.9.3] - 2021-01-14
 ### Added
 - Making keyword as Nullable when creating a new flow
@@ -45,6 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Contact id jump when contact optout
 ## [0.9.2] - 2021-01-11
 ### Added
+- Responsive chat screen for mobile view
+- Renamed collections to searches
 - Support for location in messages
 - Status in Webhook logs
 - Support for filtering webhook logs with part URL
@@ -54,7 +72,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updating all HSM templates
 ## [0.9.1] - 2021-01-06
 ### Added
+- Floweditor maximum attachments support set to 1
 - Support in flow engine for "wait for time" node
+- Validation for template list
 - Upgrade elixir packages to latest version
 
 ### Fixed
@@ -191,21 +211,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CD system to Gigalixir
 - Community documentation (README, LICENSE, CHANGELOG, CODE_OF_CONDUCT)
 
-## [0.8.0 and prior] - 2020-12-01
-### Added
-- Attachment support from the chat window
-- Sticker Support in messages
-- Send Media HSM templates from flow editor
-- Showing BSP balance on the dashboard
-- Added flows information on the bigquery
-- Mask phone numbers in the profile page
-- Sync contact fields in Bigquery
-- Archiving Flows in Bigquery
-- Media HSM files
-- Showing BSP balance on the dashboard
-- Updated Documentation
-
-### Fixed
-- Fixed login timeout issue.
-- Update the readme file
-- Adding contact to group from automation
