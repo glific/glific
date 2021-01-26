@@ -240,7 +240,7 @@ defmodule Glific.Searches do
           search_query(args.filter[:term], args)
       end
       |> Repo.all()
-    # contact_ids = Enum.uniq(contact_ids)
+
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Conversations.list_conversations(count)
   end
