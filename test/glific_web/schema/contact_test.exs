@@ -308,7 +308,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert length(get_in(query_data, [:data, "contacts"])) == 2
   end
 
-  @tag pending
+  @tag :pending
   # this test is a bit flaky, hence pending it for now
   test "search contacts field obeys tag filters", %{staff: user} do
     [ct1, _ct2, ct3] = Fixtures.contact_tags_fixture(%{organization_id: user.organization_id})
