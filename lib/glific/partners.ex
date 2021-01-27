@@ -14,6 +14,7 @@ defmodule Glific.Partners do
     Bigquery,
     Caches,
     Flags,
+    GCS,
     Partners.Credential,
     Partners.Organization,
     Partners.Provider,
@@ -669,10 +670,8 @@ defmodule Glific.Partners do
     if valid_bsp?(credential),
       do: fetch_opted_in_contacts(attrs)
 
-    if credential.provider.shortcode == "bigquery" do
-      org = credential.organization
-      Bigquery.sync_schema_with_bigquery(org.id)
-    end
+    credential.organization
+    |> credential_update_callback(credential.provider.shortcode)
 
     {:ok, credential}
   end
@@ -726,4 +725,20 @@ defmodule Glific.Partners do
         token
     end
   end
+
+  @doc """
+    Updating setup
+  """
+  @spec credential_update_callback(Organization.t(), String.t()) :: :ok
+  def credential_update_callback(organization, "bigquery") do
+    Bigquery.sync_schema_with_bigquery(organization.id)
+    :ok
+  end
+
+  def credential_update_callback(organization, "google_cloud_storage") do
+    GCS.refresh_gsc_setup(organization.id)
+    :ok
+  end
+
+  def credential_update_callback(_organization, _provider), do: :ok
 end
