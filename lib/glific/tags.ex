@@ -252,7 +252,6 @@ defmodule Glific.Tags do
 
     if status == :ok,
       do: Communications.publish_data(response, :created_message_tag, organization_id)
-
     {status, response}
   end
 
@@ -389,14 +388,15 @@ defmodule Glific.Tags do
   @doc """
   Remove a specific tag from contact messages
   """
-  @spec remove_tag_from_all_message(integer(), String.t(), non_neg_integer) :: list()
-  def remove_tag_from_all_message(contact_id, tag_shortcode, organization_id)
+  @spec remove_tag_from_all_message(integer(), String.t(), non_neg_integer, boolean()) :: list()
+  def remove_tag_from_all_message(contact_id, tag_shortcode, organization_id, publish \\ true)
+  def remove_tag_from_all_message(contact_id, tag_shortcode, organization_id, publish)
       when is_binary(tag_shortcode) do
-    remove_tag_from_all_message(contact_id, [tag_shortcode], organization_id)
+    remove_tag_from_all_message(contact_id, [tag_shortcode], organization_id, publish)
   end
 
-  @spec remove_tag_from_all_message(integer(), [String.t()], non_neg_integer) :: list()
-  def remove_tag_from_all_message(contact_id, tag_shortcode_list, organization_id) do
+  @spec remove_tag_from_all_message(integer(), [String.t()], non_neg_integer, boolean()) :: list()
+  def remove_tag_from_all_message(contact_id, tag_shortcode_list, organization_id, publish) do
     query =
       from mt in MessageTag,
         join: m in assoc(mt, :message),
@@ -407,7 +407,7 @@ defmodule Glific.Tags do
 
     query
     |> Repo.all()
-    |> publish_delete_message(organization_id)
+    |> publish_delete_message(organization_id, publish)
 
     {_, deleted_rows} =
       select(query, [mt], [mt.message_id])
@@ -416,10 +416,11 @@ defmodule Glific.Tags do
     List.flatten(deleted_rows)
   end
 
-  @spec publish_delete_message(list, non_neg_integer) :: {:ok}
-  defp publish_delete_message([], _organization_id), do: {:ok}
+  @spec publish_delete_message(list, non_neg_integer, boolean()) :: {:ok}
+  defp publish_delete_message(list, organization_id, publish \\ true)
+  defp publish_delete_message([], _organization_id, false), do: {:ok}
 
-  defp publish_delete_message(message_tags, organization_id) do
+  defp publish_delete_message(message_tags, organization_id, true) do
     _list =
       message_tags
       |> Enum.reduce([], fn message_tag, _acc ->

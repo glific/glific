@@ -471,7 +471,7 @@ defmodule Glific.Messages do
 
     create_and_send_message_to_contacts(
       # supress publishing a subscription for group messages
-      Map.put(message_params, :publish?, false),
+      Map.merge(message_params, %{publish?: false, group_id: group.id}),
       contact_ids
     )
   end

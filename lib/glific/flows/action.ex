@@ -302,7 +302,8 @@ defmodule Glific.Flows.Action do
     # first call the webhook
     json = Webhook.execute(action, context)
 
-    if is_nil(json) or is_nil(action.result_name) do
+    # the return result from the webhook HAS to be a map
+    if is_nil(json) || !is_map(json) || is_nil(action.result_name) do
       {:ok, context,
        [
          Messages.create_temp_message(context.contact.organization_id, "Failure")
