@@ -87,8 +87,9 @@ defmodule Glific.Application do
     [
       name: {:local, message_poolname()},
       worker_module: worker,
-      size: 10,
-      max_overflow: 10
+      size: 20,
+      max_overflow: 10,
+      strategy: :fifo,
     ]
   end
 

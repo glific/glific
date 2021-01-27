@@ -271,6 +271,9 @@ defmodule Glific.Communications.Message do
     :ok
   end
 
+  # lets have a default timeout of 3 seconds for each call
+  @timeout 3000
+
   @spec process_message(Message.t()) :: :ok
   defp process_message(message) do
     # lets transfer the organization id and current user to the poolboy worker
@@ -279,9 +282,13 @@ defmodule Glific.Communications.Message do
       Repo.get_current_user()
     }
 
-    :poolboy.transaction(
-      Glific.Application.message_poolname(),
-      fn pid -> GenServer.cast(pid, {message, process_state, self()}) end
+    Task.async(fn ->
+      :poolboy.transaction(
+        Glific.Application.message_poolname(),
+        fn pid -> GenServer.call(pid, {message, process_state, self()}) end,
+        @timeout
+      )
+    end
     )
   end
 end
