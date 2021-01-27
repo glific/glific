@@ -62,7 +62,7 @@ defmodule Glific.Jobs.GcsWorker do
       |> limit(10)
       |> Repo.all()
 
-      max_id = if is_list(data), do: List.last(data), else: table_id
+      max_id = if is_list(data), do: List.last(data), else: message_media_id
 
       if max_id > message_media_id do
         queue_urls(organization_id, message_media_id, max_id)
