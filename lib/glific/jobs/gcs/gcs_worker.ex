@@ -53,18 +53,20 @@ defmodule Glific.Jobs.GcsWorker do
 
     message_media_id = message_media_id || 0
 
-    query =
-      MessageMedia
-      |> select([m], max(m.id))
+    data =
+     MessageMedia
+      |> select([m], m.id)
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
-      |> where([m, msg], msg.organization_id == ^organization_id)
+      |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
+      |> order_by([m], asc: m.id)
+      |> limit(10)
+      |> Repo.all()
 
-    max_id = Repo.one(query)
+      max_id = if is_list(data), do: List.last(data), else: table_id
 
-    if max_id > message_media_id do
-      Jobs.upsert_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
-      queue_urls(organization_id, message_media_id, max_id)
-    end
+      if max_id > message_media_id do
+        queue_urls(organization_id, message_media_id, max_id)
+      end
 
     :ok
   end
@@ -94,6 +96,10 @@ defmodule Glific.Jobs.GcsWorker do
         |> make_job(organization_id)
       end
     )
+
+    Jobs.upsert_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
+
+    :ok
   end
 
   defp make_job(media, organization_id) do
