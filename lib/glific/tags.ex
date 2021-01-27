@@ -242,6 +242,8 @@ defmodule Glific.Tags do
   """
   @spec create_message_tag(map()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def create_message_tag(%{organization_id: organization_id} = attrs) do
+    attrs = Map.merge(%{publish: true}, attrs)
+
     {status, response} =
       %MessageTag{}
       |> MessageTag.changeset(attrs)
@@ -250,8 +252,11 @@ defmodule Glific.Tags do
         conflict_target: [:message_id, :tag_id]
       )
 
-    if status == :ok,
-      do: Communications.publish_data(response, :created_message_tag, organization_id)
+    with true <- attrs.publish,
+         :ok <- status do
+      Communications.publish_data(response, :created_message_tag, organization_id)
+    end
+
     {status, response}
   end
 
@@ -390,6 +395,7 @@ defmodule Glific.Tags do
   """
   @spec remove_tag_from_all_message(integer(), String.t(), non_neg_integer, boolean()) :: list()
   def remove_tag_from_all_message(contact_id, tag_shortcode, organization_id, publish \\ true)
+
   def remove_tag_from_all_message(contact_id, tag_shortcode, organization_id, publish)
       when is_binary(tag_shortcode) do
     remove_tag_from_all_message(contact_id, [tag_shortcode], organization_id, publish)
