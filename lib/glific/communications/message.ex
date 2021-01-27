@@ -100,13 +100,13 @@ defmodule Glific.Communications.Message do
         flow: :outbound,
         sent_at: DateTime.truncate(DateTime.utc_now(), :second)
       })
-
     publish_message_status(message)
 
     Tags.remove_tag_from_all_message(
       message.contact_id,
       ["notreplied", "unread"],
-      message.organization_id
+      message.organization_id,
+      message.publish?
     )
 
     Taggers.TaggerHelper.tag_outbound_message(message)
@@ -131,11 +131,16 @@ defmodule Glific.Communications.Message do
 
   @spec publish_message_status(Message.t()) :: any()
   defp publish_message_status(message) do
+    with true <- !is_nil(message.group_id),
+         true <- Enum.member?([:enqueued, :sent, :delivered], message.bsp_status) do
+    else
+      _ ->
     Communications.publish_data(
       message,
       :update_message_status,
       message.organization_id
     )
+    end
   end
 
   @doc """
