@@ -132,15 +132,13 @@ defmodule Glific.Communications.Message do
 
   @spec publish_message_status(Message.t()) :: any()
   defp publish_message_status(message) do
-    with false <- is_nil(message.group_id) do
-    else
-      _ ->
+    if is_nil(message.group_id),
+      do:
         Communications.publish_data(
           message,
           :update_message_status,
           message.organization_id
         )
-    end
   end
 
   @doc """
