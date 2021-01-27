@@ -230,15 +230,13 @@ defmodule Glific.Communications.Message do
   end
 
   # handler for receiving the text message
-  @spec receive_text(map()) :: {:ok}
+  @spec receive_text(map()) :: :ok
   defp receive_text(message_params) do
     message_params
     |> Messages.create_message()
     |> Taggers.TaggerHelper.tag_inbound_message()
     |> Communications.publish_data(:received_message, message_params.organization_id)
     |> process_message()
-
-    {:ok}
   end
 
   # handler for receiving the media (image|video|audio|document|sticker)  message
@@ -292,5 +290,7 @@ defmodule Glific.Communications.Message do
         @timeout
       )
     end)
+
+    :ok
   end
 end
