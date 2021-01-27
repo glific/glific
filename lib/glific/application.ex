@@ -87,9 +87,11 @@ defmodule Glific.Application do
     [
       name: {:local, message_poolname()},
       worker_module: worker,
-      size: 20,
+      size: 10,
       max_overflow: 10,
-      strategy: :fifo,
+      # we are using the fifo strategy, so the state of all the consumer workers
+      # are filled when the load gets high
+      strategy: :fifo
     ]
   end
 

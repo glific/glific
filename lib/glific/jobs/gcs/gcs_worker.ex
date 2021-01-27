@@ -54,7 +54,7 @@ defmodule Glific.Jobs.GcsWorker do
     message_media_id = message_media_id || 0
 
     data =
-     MessageMedia
+      MessageMedia
       |> select([m], m.id)
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
@@ -62,12 +62,12 @@ defmodule Glific.Jobs.GcsWorker do
       |> limit(10)
       |> Repo.all()
 
-      max_id = if is_list(data), do: List.last(data), else: message_media_id
+    max_id = if is_list(data), do: List.last(data), else: message_media_id
 
-      if max_id > message_media_id do
-        queue_urls(organization_id, message_media_id, max_id)
-        Jobs.upsert_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
-      end
+    if max_id > message_media_id do
+      queue_urls(organization_id, message_media_id, max_id)
+      Jobs.upsert_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
+    end
 
     :ok
   end
@@ -82,21 +82,22 @@ defmodule Glific.Jobs.GcsWorker do
       |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id])
       |> order_by([m], [m.inserted_at, m.id])
 
-    _t = Repo.all(query)
-    |> Enum.reduce(
-      [],
-      fn row, _acc ->
-        [id, url, type, contact_id] = row
+    _t =
+      Repo.all(query)
+      |> Enum.reduce(
+        [],
+        fn row, _acc ->
+          [id, url, type, contact_id] = row
 
-        %{
-          url: url,
-          id: id,
-          type: type,
-          contact_id: contact_id
-        }
-        |> make_job(organization_id)
-      end
-    )
+          %{
+            url: url,
+            id: id,
+            type: type,
+            contact_id: contact_id
+          }
+          |> make_job(organization_id)
+        end
+      )
 
     :ok
   end

@@ -252,6 +252,7 @@ defmodule Glific.Tags do
 
     if status == :ok,
       do: Communications.publish_data(response, :created_message_tag, organization_id)
+
     {status, response}
   end
 
@@ -390,6 +391,7 @@ defmodule Glific.Tags do
   """
   @spec remove_tag_from_all_message(integer(), String.t(), non_neg_integer, boolean()) :: list()
   def remove_tag_from_all_message(contact_id, tag_shortcode, organization_id, publish \\ true)
+
   def remove_tag_from_all_message(contact_id, tag_shortcode, organization_id, publish)
       when is_binary(tag_shortcode) do
     remove_tag_from_all_message(contact_id, [tag_shortcode], organization_id, publish)

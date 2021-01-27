@@ -3,7 +3,7 @@
     Glific.Media,
     Glific.Media.Type,
     Glific.Sandbox,
-    GlificWeb.Plugs.AppsignalAbsinthePlug,
+    GlificWeb.Plugs.AppsignalAbsinthePlug
   ],
   ignore_paths: [
     ~r(lib/glific_web/views/.*),
