@@ -66,6 +66,7 @@ defmodule Glific.Jobs.GcsWorker do
 
       if max_id > message_media_id do
         queue_urls(organization_id, message_media_id, max_id)
+        Jobs.upsert_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
       end
 
     :ok
@@ -81,7 +82,7 @@ defmodule Glific.Jobs.GcsWorker do
       |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id])
       |> order_by([m], [m.inserted_at, m.id])
 
-    Repo.all(query)
+    _t = Repo.all(query)
     |> Enum.reduce(
       [],
       fn row, _acc ->
@@ -96,8 +97,6 @@ defmodule Glific.Jobs.GcsWorker do
         |> make_job(organization_id)
       end
     )
-
-    Jobs.upsert_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
 
     :ok
   end
