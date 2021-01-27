@@ -1,9 +1,9 @@
 defmodule Glific.SandboxTest do
   use ExUnit.Case
-  alias Glific.Sandbox
+
+  alias Glific.{Sandbox, SandboxTest}
 
   doctest Sandbox
-
 
   def mobility(state, _args) do
     state
@@ -111,7 +111,7 @@ defmodule Glific.SandboxTest do
       |> Sandbox.play_file!("test/lua/animal.lua")
       |> Sandbox.eval_function!("voices", [], 0)
 
-    assert output ==  [
+    assert output == [
              {"bunny", "silence"},
              {"cat", "meow"},
              {"cow", "moo"},
@@ -156,7 +156,7 @@ defmodule Glific.SandboxTest do
     output =
       state
       |> Sandbox.let_elixir_eval!("puppy", fn _state, p -> to_string(p) <> " is cute" end)
-      |> Sandbox.eval_function!("puppy", "dog", 10000)
+      |> Sandbox.eval_function!("puppy", "dog", 10_000)
 
     assert output == "dog is cute"
   end
@@ -167,7 +167,7 @@ defmodule Glific.SandboxTest do
     long_function = fn ->
       state
       |> Sandbox.let_elixir_eval!("puppy", fn _state, p ->
-        Enum.map(1..10000, fn _ -> to_string(p) <> " is cute" end)
+        Enum.map(1..10_000, fn _ -> to_string(p) <> " is cute" end)
         |> List.last()
       end)
       |> Sandbox.eval_function!("puppy", "dog", 2000)
@@ -182,7 +182,7 @@ defmodule Glific.SandboxTest do
     output =
       state
       |> Sandbox.play_file!("test/lua/animal.lua")
-      |> Sandbox.play_function!(["talk"], 4, 10000)
+      |> Sandbox.play_function!(["talk"], 4, 10_000)
       |> Sandbox.get!("counter")
 
     assert output == 4
@@ -219,7 +219,7 @@ defmodule Glific.SandboxTest do
     {output, _new_state} =
       state
       |> Sandbox.play_file!("test/lua/animal.lua")
-      |> Sandbox.run_function!("talk", 4, 10000)
+      |> Sandbox.run_function!("talk", 4, 10_000)
 
     assert output == 4
   end
@@ -265,7 +265,7 @@ defmodule Glific.SandboxTest do
     output =
       state
       |> Sandbox.let_elixir_play!("inherit_mobility", &SandboxTest.mobility/2)
-      #      |> Sandbox.eval_function!("waste_cycles", [1000])
+      #      |> Sandbox.eval_function!("waste_cycles", [1_000])
       |> Sandbox.eval_file("test/lua/mobility.lua", 1000)
 
     assert {:error, {:reductions, _}} = output

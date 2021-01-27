@@ -75,7 +75,8 @@ defmodule Glific.Sandbox do
   @doc """
   Creates a Lua state with "dangerous" core library features such as file IO and networking removed.
   """
-  def init() do
+  @spec init :: lua_state()
+  def init do
     :luerl_sandbox.init()
   end
 
@@ -83,7 +84,8 @@ defmodule Glific.Sandbox do
   Creates a Lua state with access to Lua's standard library. The `max_reductions` feature of `Sandbox` is still
   available, but "dangerous" core library features such as file IO and networking are still available.
   """
-  def unsafe_init() do
+  @spec unsafe_init :: lua_state()
+  def unsafe_init do
     :luerl.init()
   end
 
@@ -193,7 +195,6 @@ defmodule Glific.Sandbox do
   @doc """
   Same as `chunk/2`, but will return the raw result or raise a `RuntimeError`.
   """
-
   @spec chunk!(lua_state(), lua_code()) :: lua_chunk()
   def chunk!(state, code) do
     {:ok, result} = chunk(state, code)
@@ -368,7 +369,7 @@ defmodule Glific.Sandbox do
   end
 
   @doc false
-  def reduction_error(), do: @reduction_error
+  def reduction_error, do: @reduction_error
 
   # --- private functions ---
 
