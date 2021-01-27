@@ -251,12 +251,10 @@ defmodule Glific.Tags do
         on_conflict: :replace_all,
         conflict_target: [:message_id, :tag_id]
       )
-
     with true <- attrs.publish,
          :ok <- status do
       Communications.publish_data(response, :created_message_tag, organization_id)
     end
-
     {status, response}
   end
 

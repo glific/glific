@@ -483,7 +483,12 @@ defmodule Glific.MessagesTest do
 
       # a message should be created with group_id
       assert {:ok, _message} =
-               Repo.fetch_by(Message, %{body: valid_attrs.body, group_id: group.id, sender_id: org_contact.id, receiver_id: org_contact.id})
+               Repo.fetch_by(Message, %{
+                 body: valid_attrs.body,
+                 group_id: group.id,
+                 sender_id: org_contact.id,
+                 receiver_id: org_contact.id
+               })
 
       # group should be updated with last communication at
       {:ok, updated_group} =

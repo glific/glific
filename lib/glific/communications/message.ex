@@ -227,15 +227,13 @@ defmodule Glific.Communications.Message do
   end
 
   # handler for receiving the text message
-  @spec receive_text(map()) :: {:ok}
+  @spec receive_text(map()) :: :ok
   defp receive_text(message_params) do
     message_params
     |> Messages.create_message()
     |> Taggers.TaggerHelper.tag_inbound_message()
     |> Communications.publish_data(:received_message, message_params.organization_id)
     |> process_message()
-
-    {:ok}
   end
 
   # handler for receiving the media (image|video|audio|document|sticker)  message
@@ -269,6 +267,9 @@ defmodule Glific.Communications.Message do
     :ok
   end
 
+  # lets have a default timeout of 3 seconds for each call
+  @timeout 3000
+
   @spec process_message(Message.t()) :: :ok
   defp process_message(message) do
     # lets transfer the organization id and current user to the poolboy worker
@@ -277,9 +278,18 @@ defmodule Glific.Communications.Message do
       Repo.get_current_user()
     }
 
-    :poolboy.transaction(
-      Glific.Application.message_poolname(),
-      fn pid -> GenServer.cast(pid, {message, process_state, self()}) end
-    )
+    self = self()
+
+    # We dont want to block the input pipeline, and we are unsure how long the consumer worker
+    # will take. So we run it as a separate task
+    Task.async(fn ->
+      :poolboy.transaction(
+        Glific.Application.message_poolname(),
+        fn pid -> GenServer.call(pid, {message, process_state, self}) end,
+        @timeout
+      )
+    end)
+
+    :ok
   end
 end

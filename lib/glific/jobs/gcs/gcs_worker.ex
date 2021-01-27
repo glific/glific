@@ -8,6 +8,7 @@ defmodule Glific.Jobs.GcsWorker do
   """
 
   import Ecto.Query
+  require Logger
 
   use Oban.Worker,
     queue: :default,
@@ -24,11 +25,11 @@ defmodule Glific.Jobs.GcsWorker do
     Repo
   }
 
-  @spec perform_periodic(non_neg_integer) :: :ok
   @doc """
   This is called from the cron job on a regular schedule. we sweep the message media url  table
   and queue them up for delivery to gcs
   """
+  @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
     credential = organization.services["google_cloud_storage"]
@@ -41,6 +42,7 @@ defmodule Glific.Jobs.GcsWorker do
     end
   end
 
+  @spec jobs(non_neg_integer) :: :ok
   defp jobs(organization_id) do
     gcs_job = Jobs.get_gcs_job(organization_id)
 
@@ -49,17 +51,22 @@ defmodule Glific.Jobs.GcsWorker do
         do: 0,
         else: gcs_job.message_media_id
 
-    query =
-      MessageMedia
-      |> select([m], max(m.id))
-      |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
-      |> where([m, msg], msg.organization_id == ^organization_id)
+    message_media_id = message_media_id || 0
 
-    max_id = Repo.one(query)
+    data =
+      MessageMedia
+      |> select([m], m.id)
+      |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
+      |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
+      |> order_by([m], asc: m.id)
+      |> limit(10)
+      |> Repo.all()
+
+    max_id = if is_list(data), do: List.last(data), else: message_media_id
 
     if max_id > message_media_id do
-      Jobs.upsert_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
       queue_urls(organization_id, message_media_id, max_id)
+      Jobs.upsert_gcs_job(%{message_media_id: max_id, organization_id: organization_id})
     end
 
     :ok
@@ -75,21 +82,24 @@ defmodule Glific.Jobs.GcsWorker do
       |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id])
       |> order_by([m], [m.inserted_at, m.id])
 
-    Repo.all(query)
-    |> Enum.reduce(
-      [],
-      fn row, _acc ->
-        [id, url, type, contact_id] = row
+    _t =
+      Repo.all(query)
+      |> Enum.reduce(
+        [],
+        fn row, _acc ->
+          [id, url, type, contact_id] = row
 
-        %{
-          url: url,
-          id: id,
-          type: type,
-          contact_id: contact_id
-        }
-        |> make_job(organization_id)
-      end
-    )
+          %{
+            url: url,
+            id: id,
+            type: type,
+            contact_id: contact_id
+          }
+          |> make_job(organization_id)
+        end
+      )
+
+    :ok
   end
 
   defp make_job(media, organization_id) do
@@ -129,6 +139,8 @@ defmodule Glific.Jobs.GcsWorker do
   end
 
   defp upload_file_on_gcs(path, org_id, file_name) do
+    Logger.info("Uploading files to GCS for org_id: #{org_id}, file_name: #{file_name}")
+
     CloudStorage.put(
       Glific.Media,
       :original,
