@@ -8,6 +8,7 @@ defmodule Glific.Jobs.GcsWorker do
   """
 
   import Ecto.Query
+  require Logger
 
   use Oban.Worker,
     queue: :default,
@@ -24,11 +25,11 @@ defmodule Glific.Jobs.GcsWorker do
     Repo
   }
 
-  @spec perform_periodic(non_neg_integer) :: :ok
   @doc """
   This is called from the cron job on a regular schedule. we sweep the message media url  table
   and queue them up for delivery to gcs
   """
+  @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
     credential = organization.services["google_cloud_storage"]
@@ -41,6 +42,7 @@ defmodule Glific.Jobs.GcsWorker do
     end
   end
 
+  @spec jobs(non_neg_integer) :: :ok
   defp jobs(organization_id) do
     gcs_job = Jobs.get_gcs_job(organization_id)
 
@@ -129,6 +131,8 @@ defmodule Glific.Jobs.GcsWorker do
   end
 
   defp upload_file_on_gcs(path, org_id, file_name) do
+    Logger.info("Uploading files to GCS for org_id: #{org_id}, file_name: #{file_name}")
+
     CloudStorage.put(
       Glific.Media,
       :original,
