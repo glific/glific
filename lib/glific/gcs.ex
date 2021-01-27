@@ -5,18 +5,17 @@ defmodule Glific.GCS do
 
   require Logger
 
-   alias Glific.{
+  alias Glific.{
     Jobs.GcsJob,
     Repo
   }
 
-
-
   @doc """
   Creating a dataset with messages and contacts as tables
   """
-  @spec sync_schema_with_bigquery(non_neg_integer) :: :ok
+  @spec refresh_gsc_setup(non_neg_integer) :: :ok
   def refresh_gsc_setup(organization_id) do
+    Logger.info("refresh GCS setup for org_id: #{organization_id}")
     organization_id
     |> insert_gcs_jobs()
 
@@ -26,6 +25,7 @@ defmodule Glific.GCS do
   @doc false
   @spec insert_gcs_jobs(non_neg_integer) :: :ok
   def insert_gcs_jobs(organization_id) do
+    Logger.info("Uploading files to GCS for org_id: #{organization_id}")
     Repo.fetch_by(GcsJob, %{organization_id: organization_id})
     |> case do
       {:ok, gcs_job} ->
@@ -38,5 +38,4 @@ defmodule Glific.GCS do
 
     :ok
   end
-
 end
