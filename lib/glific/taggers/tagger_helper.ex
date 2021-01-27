@@ -49,7 +49,8 @@ defmodule Glific.Taggers.TaggerHelper do
       Tags.create_message_tag(%{
         message_id: message.id,
         tag_id: tag.id,
-        organization_id: message.organization_id
+        organization_id: message.organization_id,
+        publish: message.publish?
       })
 
     message
