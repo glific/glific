@@ -38,16 +38,21 @@ config :glific, Oban,
   prefix: "global",
   repo: Glific.Repo,
   queues: [default: 10, dialogflow: 10, gupshup: 10, webhook: 10, crontab: 10],
-  crontab: [
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
-    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
-    {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
-    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
-    {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
-    {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
-    {"30 */1 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_data_on_bigquery}}
+  plugins: [
+    {
+      Oban.Plugins.Cron,
+      crontab: [
+        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
+        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
+        {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
+        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
+        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
+        {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
+        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
+        {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
+        {"30 */1 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_data_on_bigquery}}
+      ]
+    }
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
