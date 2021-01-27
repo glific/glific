@@ -1,4 +1,4 @@
-defmodule SandboxTest do
+defmodule Glific.SandboxTest do
   use ExUnit.Case
   alias Glific.Sandbox
 
