@@ -281,12 +281,14 @@ defmodule Glific.Communications.Message do
       Repo.get_current_user()
     }
 
+    self = self()
+
     # We dont want to block the input pipeline, and we are unsure how long the consumer worker
     # will take. So we run it as a separate task
     Task.async(fn ->
       :poolboy.transaction(
         Glific.Application.message_poolname(),
-        fn pid -> GenServer.call(pid, {message, process_state, self()}) end,
+        fn pid -> GenServer.call(pid, {message, process_state, self}) end,
         @timeout
       )
     end)
