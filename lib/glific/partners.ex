@@ -726,18 +726,19 @@ defmodule Glific.Partners do
     end
   end
 
+  @doc """
+    Updating setup
+  """
   @spec credential_update_callback(Organization.t(), String.t()) :: :ok
   def credential_update_callback(organization, "bigquery") do
-      Bigquery.sync_schema_with_bigquery(organization.id)
-      :ok
+    Bigquery.sync_schema_with_bigquery(organization.id)
+    :ok
   end
 
-  @spec credential_update_callback(Organization.t(), String.t()) :: :ok
   def credential_update_callback(organization, "google_cloud_storage") do
-      GCS.refresh_gsc_setup(organization.id)
-      :ok
+    GCS.refresh_gsc_setup(organization.id)
+    :ok
   end
 
   def credential_update_callback(_organization, _provider), do: :ok
-
 end
