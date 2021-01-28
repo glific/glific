@@ -39,6 +39,8 @@ config :glific, Oban,
   repo: Glific.Repo,
   queues: [default: 10, dialogflow: 10, gupshup: 10, webhook: 10, crontab: 10],
   plugins: [
+    # Prune jobs after 5 mins, gives us some time to go investigate if needed
+    {Oban.Plugins.Pruner, max_age: 300},
     {
       Oban.Plugins.Cron,
       crontab: [
