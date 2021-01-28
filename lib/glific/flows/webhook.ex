@@ -12,15 +12,12 @@ defmodule Glific.Flows.Webhook do
     max_attempts: 1,
     priority: 0
 
-  @spec add_signature(Keyword.t(), non_neg_integer, String.t()) :: Keyword.t()
+  @spec add_signature(map() | nil, non_neg_integer, String.t()) :: map()
   defp add_signature(headers, organization_id, body) do
     now = System.system_time(:second)
     sig = "t=#{now},v1=#{Glific.signature(organization_id, body, now)}"
 
-    [
-      {"X-Glific-Signature", sig}
-      | headers
-    ]
+    Map.put(headers, "X-Glific-Signature", sig)
   end
 
   @doc """
@@ -28,26 +25,20 @@ defmodule Glific.Flows.Webhook do
   """
   @spec execute(Action.t(), FlowContext.t()) :: nil
   def execute(action, context) do
-    headers =
-      Keyword.new(
-        action.headers,
-        fn {k, v} -> {String.to_existing_atom(k), v} end
-      )
-
     case String.downcase(action.method) do
-      "get" -> get(action, context, headers)
-      "post" -> post(action, context, headers)
+      "get" -> get(action, context)
+      "post" -> post(action, context)
     end
 
     nil
   end
 
-  @spec create_log(Action.t(), map(), Keyword.t(), FlowContext.t()) :: WebhookLog.t()
+  @spec create_log(Action.t(), map(), map(), FlowContext.t()) :: WebhookLog.t()
   defp create_log(action, body, headers, context) do
     {:ok, webhook_log} =
       %{
         request_json: body,
-        request_headers: Map.new(headers),
+        request_headers: headers,
         url: action.url,
         method: action.method,
         organization_id: context.organization_id,
@@ -127,23 +118,28 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec post(Action.t(), FlowContext.t(), Keyword.t()) :: nil
-  defp post(action, context, headers) do
+  @spec post(Action.t(), FlowContext.t()) :: nil
+  defp post(action, context) do
     case create_body(context, action.body) do
       {:error, message} ->
         action
-        |> create_log(%{}, headers, context)
+        |> create_log(%{}, action.headers, context)
         |> update_log(message)
 
       {map, body} ->
-        do_oban(action, context, headers, {map, body})
+        do_oban(action, context, {map, body})
     end
 
     nil
   end
 
-  @spec do_oban(Action.t(), FlowContext.t(), Keyword.t(), tuple()) :: nil
-  defp do_oban(action, context, headers, {map, body}) do
+  @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: nil
+  defp do_oban(action, context, {map, body}) do
+    headers =
+      if is_nil(action.headers),
+        do: %{},
+        else: action.headers
+
     headers = add_signature(headers, context.organization_id, body)
     webhook_log = create_log(action, map, headers, context)
 
@@ -162,10 +158,10 @@ defmodule Glific.Flows.Webhook do
   end
 
   defp do_action("post", url, body, headers),
-    do:  Tesla.post(url, body, headers: headers)
+    do: Tesla.post(url, body, headers: headers)
 
   defp do_action("get", url, _body, headers),
-    do: Tesla.post(url, headers: headers)
+    do: Tesla.get(url, headers: headers)
 
   @doc """
   Standard perform method to use Oban worker
@@ -187,6 +183,12 @@ defmodule Glific.Flows.Webhook do
         } = _job
       ) do
     Repo.put_process_state(organization_id)
+
+    headers =
+      Keyword.new(
+        headers,
+        fn {k, v} -> {String.to_existing_atom(k), v} end
+      )
 
     result =
       case do_action(method, url, body, headers) do
@@ -239,8 +241,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   # Send a get request, and if success, sned the json map back
-  @spec get(atom() | Action.t(), FlowContext.t(), Keyword.t()) :: nil
-  defp get(action, context, headers),
-    do: do_oban(action, context, headers, {%{}, ""})
-
+  @spec get(atom() | Action.t(), FlowContext.t()) :: nil
+  defp get(action, context),
+    do: do_oban(action, context, {%{}, ""})
 end

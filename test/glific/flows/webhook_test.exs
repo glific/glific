@@ -57,8 +57,9 @@ defmodule Glific.Flows.WebhookTest do
         body: Jason.encode!(@action_body)
       }
 
-      result = Webhook.execute(action, context)
-      assert @results = result
+      assert Webhook.execute(action, context) == nil
+      # we now need to wait for the Oban job and fire and then
+      # check the results of the context
     end
 
     test "execute a webhook for post method should not break and update the webhook log in case of error",
