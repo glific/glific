@@ -181,7 +181,7 @@ defmodule Glific.Flows.Router do
       # Once we have the content, we send it over to EEx to execute
       |> execute_eex()
 
-    msg = Messages.create_temp_message(context.contact.organization_id, content)
+    msg = Messages.create_temp_message(context.organization_id, content)
     {msg, []}
   end
 

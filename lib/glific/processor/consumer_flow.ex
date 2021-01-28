@@ -139,7 +139,7 @@ defmodule Glific.Processor.ConsumerFlow do
     # we are using message.body here since we want to use the original message
     # not the stripped version
     # I'm not sure why we are creating a message here instead of reusing the existing
-    # message
+    # message. We'll switch this to using message in the next release (1.0.1)
     |> FlowContext.step_forward(
       Messages.create_temp_message(
         message.organization_id,

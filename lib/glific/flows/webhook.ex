@@ -4,9 +4,13 @@ defmodule Glific.Flows.Webhook do
   a better handle on the breadth and depth of webhooks
   """
 
-  alias Glific.Contacts
-  alias Glific.Extensions
+  alias Glific.{Contacts, Extensions, Messages, Repo}
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
+
+  use Oban.Worker,
+    queue: :webhook,
+    max_attempts: 1,
+    priority: 0
 
   @spec add_signature(Keyword.t(), non_neg_integer, String.t()) :: Keyword.t()
   defp add_signature(headers, organization_id, body) do
@@ -22,7 +26,7 @@ defmodule Glific.Flows.Webhook do
   @doc """
   Execute a webhook action, could be either get or post for now
   """
-  @spec execute(Action.t(), FlowContext.t()) :: map() | nil
+  @spec execute(Action.t(), FlowContext.t()) :: nil
   def execute(action, context) do
     headers =
       Keyword.new(
@@ -35,6 +39,8 @@ defmodule Glific.Flows.Webhook do
       "post" -> post(action, context, headers)
       "patch" -> patch(action, context, headers)
     end
+
+    nil
   end
 
   @spec create_log(Action.t(), map(), Keyword.t(), FlowContext.t()) :: WebhookLog.t()
@@ -54,7 +60,12 @@ defmodule Glific.Flows.Webhook do
     webhook_log
   end
 
-  @spec update_log(WebhookLog.t(), map()) :: {:ok, WebhookLog.t()}
+  @spec update_log(WebhookLog.t() | non_neg_integer, map()) :: {:ok, WebhookLog.t()}
+  defp update_log(webhook_log_id, message) when is_integer(webhook_log_id) do
+    webhook_log = Repo.get!(WebhookLog, webhook_log_id)
+    update_log(webhook_log, message)
+  end
+
   defp update_log(webhook_log, message) when is_map(message) do
     # handle incorrect json body
     json_body =
@@ -117,7 +128,7 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec post(Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
+  @spec post(Action.t(), FlowContext.t(), Keyword.t()) :: nil
   defp post(action, context, headers) do
     case create_body(context, action.body) do
       {:error, message} ->
@@ -125,41 +136,100 @@ defmodule Glific.Flows.Webhook do
         |> create_log(%{}, headers, context)
         |> update_log(message)
 
-        nil
-
       {map, body} ->
         do_post(action, context, headers, {map, body})
     end
+
+    nil
   end
 
-  @spec do_post(Action.t(), FlowContext.t(), Keyword.t(), tuple()) :: map() | nil
+  @spec do_post(Action.t(), FlowContext.t(), Keyword.t(), tuple()) :: nil
   defp do_post(action, context, headers, {map, body}) do
     headers = add_signature(headers, context.organization_id, body)
     webhook_log = create_log(action, map, headers, context)
 
-    case Tesla.post(action.url, body, headers: headers) do
-      {:ok, %Tesla.Env{status: 200} = message} ->
-        case Jason.decode(message.body) do
-          {:ok, json_response} ->
-            update_log(webhook_log, message)
-            json_response
+    __MODULE__.new(%{
+      url: action.url,
+      body: body,
+      headers: headers,
+      webhook_log_id: webhook_log.id,
+      context_id: context.id,
+      organization_id: context.organization_id
+    })
+    |> Oban.insert()
 
-          {:error, _error} ->
-            update_log(webhook_log, "Could not decode message body: " <> message.body)
+    nil
+  end
 
-            nil
-        end
+  @doc """
+  Standard perform method to use Oban worker
+  """
+  @impl Oban.Worker
 
-      {:ok, %Tesla.Env{} = message} ->
-        update_log(webhook_log, "Did not return a 200 status code" <> message.body)
-        nil
+  @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
+  def perform(
+        %Oban.Job{
+          args: %{
+            "url" => url,
+            "result_name" => result_name,
+            "body" => body,
+            "headers" => headers,
+            "webhook_log_id" => webhook_log_id,
+            "context_id" => context_id,
+            "organization_id" => organization_id
+          }
+        } = _job
+      ) do
+    Repo.put_process_state(organization_id)
 
-      {:error, error_message} ->
-        webhook_log
-        |> update_log(inspect(error_message))
+    result =
+      case Tesla.post(url, body, headers: headers) do
+        {:ok, %Tesla.Env{status: 200} = message} ->
+          case Jason.decode(message.body) do
+            {:ok, json_response} ->
+              update_log(webhook_log_id, message)
+              json_response
 
-        nil
-    end
+            {:error, _error} ->
+              update_log(webhook_log_id, "Could not decode message body: " <> message.body)
+
+              nil
+          end
+
+        {:ok, %Tesla.Env{} = message} ->
+          update_log(webhook_log_id, "Did not return a 200 status code" <> message.body)
+          nil
+
+        {:error, error_message} ->
+          update_log(webhook_log_id, inspect(error_message))
+          nil
+      end
+
+    handle(result, context_id, result_name)
+  end
+
+  @spec handle(String.t(), non_neg_integer, String.t()) :: :ok
+  defp handle(result, context_id, result_name) do
+    context =
+      Repo.get!(FlowContext, context_id)
+      |> Repo.preload(:flow)
+
+    {context, message} =
+      if is_nil(result) || !is_map(result) || is_nil(result_name) do
+        {
+          context,
+          Messages.create_temp_message(context.organization_id, "Failure")
+        }
+      else
+        # update the context with the results from webhook return values
+        {
+          FlowContext.update_results(context, result_name, result),
+          Messages.create_temp_message(context.organization_id, "Success")
+        }
+      end
+
+    FlowContext.wakeup_one(context, message)
+    :ok
   end
 
   # Send a get request, and if success, sned the json map back
