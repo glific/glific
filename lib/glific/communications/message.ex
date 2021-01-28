@@ -287,8 +287,15 @@ defmodule Glific.Communications.Message do
     Task.async(fn ->
       :poolboy.transaction(
         Glific.Application.message_poolname(),
-        fn pid -> GenServer.call(pid, {message, process_state, self}, @timeout) end,
-        @timeout
+        fn pid ->
+          try do
+            GenServer.call(pid, {message, process_state, self}, @timeout)
+          rescue
+            e ->
+              Logger.error("poolboy genserver call threw exception: #{inspect(e)}")
+              :ok
+          end
+        end
       )
     end)
 
