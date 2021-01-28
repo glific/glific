@@ -4,7 +4,7 @@ defmodule Glific.Flows.Webhook do
   a better handle on the breadth and depth of webhooks
   """
 
-  alias Glific.{Contacts, Extensions, Messages, Repo}
+  alias Glific.{Contacts, Messages, Repo}
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
 
   use Oban.Worker,
@@ -37,7 +37,6 @@ defmodule Glific.Flows.Webhook do
     case String.downcase(action.method) do
       "get" -> get(action, context, headers)
       "post" -> post(action, context, headers)
-      "patch" -> patch(action, context, headers)
     end
 
     nil
@@ -137,18 +136,19 @@ defmodule Glific.Flows.Webhook do
         |> update_log(message)
 
       {map, body} ->
-        do_post(action, context, headers, {map, body})
+        do_oban(action, context, headers, {map, body})
     end
 
     nil
   end
 
-  @spec do_post(Action.t(), FlowContext.t(), Keyword.t(), tuple()) :: nil
-  defp do_post(action, context, headers, {map, body}) do
+  @spec do_oban(Action.t(), FlowContext.t(), Keyword.t(), tuple()) :: nil
+  defp do_oban(action, context, headers, {map, body}) do
     headers = add_signature(headers, context.organization_id, body)
     webhook_log = create_log(action, map, headers, context)
 
     __MODULE__.new(%{
+      method: String.downcase(action.method),
       url: action.url,
       body: body,
       headers: headers,
@@ -161,15 +161,21 @@ defmodule Glific.Flows.Webhook do
     nil
   end
 
+  defp do_action("post", url, body, headers),
+    do:  Tesla.post(url, body, headers: headers)
+
+  defp do_action("get", url, _body, headers),
+    do: Tesla.post(url, headers: headers)
+
   @doc """
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(
         %Oban.Job{
           args: %{
+            "method" => method,
             "url" => url,
             "result_name" => result_name,
             "body" => body,
@@ -183,7 +189,7 @@ defmodule Glific.Flows.Webhook do
     Repo.put_process_state(organization_id)
 
     result =
-      case Tesla.post(url, body, headers: headers) do
+      case do_action(method, url, body, headers) do
         {:ok, %Tesla.Env{status: 200} = message} ->
           case Jason.decode(message.body) do
             {:ok, json_response} ->
@@ -233,50 +239,8 @@ defmodule Glific.Flows.Webhook do
   end
 
   # Send a get request, and if success, sned the json map back
-  @spec get(atom() | Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
-  defp get(action, context, headers) do
-    # The get is an empty body
-    headers = add_signature(headers, context.organization_id, "")
+  @spec get(atom() | Action.t(), FlowContext.t(), Keyword.t()) :: nil
+  defp get(action, context, headers),
+    do: do_oban(action, context, headers, {%{}, ""})
 
-    webhook_log = create_log(action, %{}, headers, context)
-
-    case Tesla.get(action.url, headers: headers) do
-      {:ok, %Tesla.Env{status: 200} = message} ->
-        update_log(webhook_log, message)
-        message.body |> Jason.decode!()
-
-      {:ok, %Tesla.Env{} = message} ->
-        update_log(webhook_log, message)
-        nil
-
-      {:error, error_message} ->
-        webhook_log
-        |> update_log(inspect(error_message))
-
-        nil
-    end
-  end
-
-  # we special case the patch request for now to call a module and function that is specific to the
-  # organization. We dynamically compile and load this code
-  @spec patch(Action.t(), FlowContext.t(), Keyword.t()) :: map() | nil
-  defp patch(action, context, headers) do
-    {map, body} = create_body(context, action.body)
-    headers = add_signature(headers, context.organization_id, body)
-
-    webhook_log = create_log(action, map, headers, context)
-
-    name = Keyword.get(headers, :Extension)
-
-    # For calls within glific, dont create strings, use maps to communicate
-    result = Extensions.execute(name, map)
-
-    webhook_log
-    |> WebhookLog.update_webhook_log(%{
-      response_json: result,
-      status_code: 200
-    })
-
-    result
-  end
 end
