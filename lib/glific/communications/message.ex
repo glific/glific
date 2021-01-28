@@ -282,10 +282,12 @@ defmodule Glific.Communications.Message do
 
     # We dont want to block the input pipeline, and we are unsure how long the consumer worker
     # will take. So we run it as a separate task
+    # We will also set a short timeout for both the genserver and the poolboy transaction
+    # this will be moot soon after we move webhooks to be handled asynchronously
     Task.async(fn ->
       :poolboy.transaction(
         Glific.Application.message_poolname(),
-        fn pid -> GenServer.call(pid, {message, process_state, self}) end,
+        fn pid -> GenServer.call(pid, {message, process_state, self}, @timeout) end,
         @timeout
       )
     end)
