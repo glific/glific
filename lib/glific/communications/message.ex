@@ -290,9 +290,9 @@ defmodule Glific.Communications.Message do
         fn pid ->
           try do
             GenServer.call(pid, {message, process_state, self}, @timeout)
-          rescue
-            e ->
-              Logger.error("poolboy genserver call threw exception: #{inspect(e)}")
+          catch
+            e, r ->
+              Logger.error("poolboy transaction caught error: #{inspect(e)}, #{inspect(r)}")
               :ok
           end
         end
