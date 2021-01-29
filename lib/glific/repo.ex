@@ -376,7 +376,8 @@ defmodule Glific.Repo do
   @doc false
   @spec put_process_state(non_neg_integer) :: non_neg_integer
   def put_process_state(organization_id) do
-    put_current_user(Partners.organization(organization_id).root_user)
     put_organization_id(organization_id)
+    put_current_user(Partners.organization(organization_id).root_user)
+    organization_id
   end
 end

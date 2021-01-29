@@ -10,7 +10,6 @@ defmodule Glific.Flows.Action do
   alias Glific.{
     Flows,
     Groups,
-    Messages,
     Messages.Message,
     Repo
   }
@@ -299,28 +298,11 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
-    # first call the webhook
-    json = Webhook.execute(action, context)
-
-    # the return result from the webhook HAS to be a map
-    if is_nil(json) || !is_map(json) || is_nil(action.result_name) do
-      {:ok, context,
-       [
-         Messages.create_temp_message(context.contact.organization_id, "Failure")
-         | messages
-       ]}
-    else
-      json = Map.merge(json, %{"category" => "webhook"})
-
-      {
-        :ok,
-        FlowContext.update_results(context, action.result_name, json),
-        [
-          Messages.create_temp_message(context.contact.organization_id, "Success")
-          | messages
-        ]
-      }
-    end
+    # just call the webhook, and ask the caller to wait
+    # we are processing the webhook using Oban and this happens asynchrnously
+    Webhook.execute(action, context)
+    # webhooks dont consume a message, so we send it forward
+    {:wait, context, messages}
   end
 
   def execute(%{type: "add_input_labels"} = action, context, messages) do

@@ -12,7 +12,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   use Oban.Worker,
     queue: :default,
     max_attempts: 1,
-    priority: 0
+    priority: 1
 
   alias Glific.{
     Bigquery,

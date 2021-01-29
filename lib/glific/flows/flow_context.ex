@@ -261,7 +261,7 @@ defmodule Glific.Flows.FlowContext do
   Execute one (or more) steps in a flow based on the message stream
   """
   @spec execute(FlowContext.t(), [Message.t()]) ::
-          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%FlowContext{node: node} = _context, _messages) when is_nil(node),
     do: {:error, "We have finished the flow"}
 
@@ -269,6 +269,9 @@ defmodule Glific.Flows.FlowContext do
     case Node.execute(context.node, context, messages) do
       {:ok, context, []} ->
         {:ok, context, []}
+
+      {:wait, context, messages} ->
+        {:wait, context, messages}
 
       # Routers basically break the processing, and return back to the top level
       # and hence we hit this case. Since they can be multiple routers stacked (e.g. when
@@ -412,8 +415,11 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec step_forward(FlowContext.t(), Message.t()) :: {:ok, map()} | {:error, String.t()}
   def step_forward(context, message) do
-    case FlowContext.execute(context, [message]) do
+    case execute(context, [message]) do
       {:ok, context, []} ->
+        {:ok, context}
+
+      {:wait, context, _messages} ->
         {:ok, context}
 
       {:error, error} ->
@@ -439,9 +445,9 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Process one context at a time that is ready to be woken
   """
-  @spec wakeup_one(FlowContext.t()) ::
+  @spec wakeup_one(FlowContext.t(), Message.t() | nil) ::
           {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
-  def wakeup_one(context) do
+  def wakeup_one(context, message \\ nil) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
     {:ok, context} =
@@ -453,12 +459,15 @@ defmodule Glific.Flows.FlowContext do
         {:flow_uuid, context.flow_uuid, context.status}
       )
 
+    message =
+      if is_nil(message),
+        do: Messages.create_temp_message(context.organization_id, "No Response"),
+        else: message
+
     {:ok, context} =
       context
       |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward(
-        Messages.create_temp_message(context.organization_id, "No Response")
-      )
+      |> FlowContext.step_forward(message)
 
     {:ok, context, []}
   end
