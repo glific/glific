@@ -261,7 +261,7 @@ defmodule Glific.Flows.FlowContext do
   Execute one (or more) steps in a flow based on the message stream
   """
   @spec execute(FlowContext.t(), [Message.t()]) ::
-          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%FlowContext{node: node} = _context, _messages) when is_nil(node),
     do: {:error, "We have finished the flow"}
 
@@ -270,8 +270,8 @@ defmodule Glific.Flows.FlowContext do
       {:ok, context, []} ->
         {:ok, context, []}
 
-      {:wait, context, _messages} ->
-        {:ok, context, []}
+      {:wait, context, messages} ->
+        {:wait, context, messages}
 
       # Routers basically break the processing, and return back to the top level
       # and hence we hit this case. Since they can be multiple routers stacked (e.g. when
@@ -415,7 +415,7 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec step_forward(FlowContext.t(), Message.t()) :: {:ok, map()} | {:error, String.t()}
   def step_forward(context, message) do
-    case FlowContext.execute(context, [message]) do
+    case execute(context, [message]) do
       {:ok, context, []} ->
         {:ok, context}
 

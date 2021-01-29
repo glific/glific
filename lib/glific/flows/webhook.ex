@@ -217,11 +217,6 @@ defmodule Glific.Flows.Webhook do
     handle(result, context_id, result_name)
   end
 
-  def perform(job) do
-    IO.inspect(job, label: "job")
-    :ok
-  end
-
   @spec handle(String.t(), non_neg_integer, String.t()) :: :ok
   defp handle(result, context_id, result_name) do
     context =
