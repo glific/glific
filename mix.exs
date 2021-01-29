@@ -90,7 +90,7 @@ defmodule Glific.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
-      {:pow, "~> 1.0"},
+      {:pow, "~> 1.0.21"},
       {:dialyxir, "~> 1.0", only: [:dev | @test_envs], runtime: false},
       {:credo, "~> 1.4", only: [:dev | @test_envs], runtime: false},
       {:ex_doc, "~> 0.22", only: [:dev | @test_envs], runtime: false},
