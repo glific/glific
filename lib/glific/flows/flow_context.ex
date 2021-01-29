@@ -270,6 +270,9 @@ defmodule Glific.Flows.FlowContext do
       {:ok, context, []} ->
         {:ok, context, []}
 
+      {:wait, context, _messages} ->
+        {:ok, context, []}
+
       # Routers basically break the processing, and return back to the top level
       # and hence we hit this case. Since they can be multiple routers stacked (e.g. when
       # the flow has multiple webhooks in it), we recurse till we no longer change state
@@ -414,6 +417,9 @@ defmodule Glific.Flows.FlowContext do
   def step_forward(context, message) do
     case FlowContext.execute(context, [message]) do
       {:ok, context, []} ->
+        {:ok, context}
+
+      {:wait, context, _messages} ->
         {:ok, context}
 
       {:error, error} ->

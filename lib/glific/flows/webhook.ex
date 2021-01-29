@@ -17,7 +17,7 @@ defmodule Glific.Flows.Webhook do
     now = System.system_time(:second)
     sig = "t=#{now},v1=#{Glific.signature(organization_id, body, now)}"
 
-    Map.put(headers, "X-Glific-Signature", sig)
+    Map.put(headers, :"X-Glific-Signature", sig)
   end
 
   @doc """
@@ -146,6 +146,7 @@ defmodule Glific.Flows.Webhook do
     __MODULE__.new(%{
       method: String.downcase(action.method),
       url: action.url,
+      result_name: action.result_name,
       body: body,
       headers: headers,
       webhook_log_id: webhook_log.id,
@@ -214,6 +215,11 @@ defmodule Glific.Flows.Webhook do
       end
 
     handle(result, context_id, result_name)
+  end
+
+  def perform(job) do
+    IO.inspect(job, label: "job")
+    :ok
   end
 
   @spec handle(String.t(), non_neg_integer, String.t()) :: :ok

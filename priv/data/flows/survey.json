@@ -854,7 +854,7 @@
           "quick_replies" : [
 
           ],
-          "text" : "Based on your answers, we think the following content will help you the next week\n\n@results.webhook_content",
+          "text" : "Based on your answers, we think the following content will help you the next week\n\n@results.webhook.content",
           "attachments" : [
 
           ],
@@ -940,7 +940,7 @@
             "name" : "Other"
           }
         ],
-        "operand" : "<%= rem(@results.webhook_status * 2 + 1, 6) %>"
+        "operand" : "<%= rem(@results.webhook.status * 2 + 1, 6) %>"
       },
       "exits" : [
         {
@@ -1007,7 +1007,7 @@
         {
           "type" : "send_msg",
           "uuid" : "037beab4-8faa-4f16-8503-8f469254a69d",
-          "text" : "This is a message for all folks in Group 4.\n\nYour score was: @results.webhook_score",
+          "text" : "This is a message for all folks in Group 4.\n\nYour score was: @results.webhook.score",
           "attachments" : [
 
           ],
@@ -1029,7 +1029,7 @@
         {
           "type" : "send_msg",
           "uuid" : "c704cbf8-d18a-4329-a227-9d6f253515bd",
-          "text" : "This is a message for all folks in Group 1.\n\nYour score was: @results.webhook_score",
+          "text" : "This is a message for all folks in Group 1.\n\nYour score was: @results.webhook.score",
           "attachments" : [
 
           ],
@@ -1056,7 +1056,7 @@
 
           ],
           "type" : "send_msg",
-          "text" : "This is a message for all folks in Group 5\n\nYour score was: @results.webhook_score",
+          "text" : "This is a message for all folks in Group 5\n\nYour score was: @results.webhook.score",
           "uuid" : "c5733dbd-de26-497a-ae4c-32048abb498f"
         }
       ]
@@ -1078,7 +1078,7 @@
 
           ],
           "type" : "send_msg",
-          "text" : "This is a message for all folks in Group 3.\n\nYour score was: @results.webhook_score",
+          "text" : "This is a message for all folks in Group 3.\n\nYour score was: @results.webhook.score",
           "uuid" : "a45fc920-22a1-4b4c-bdc2-036a77c469d7"
         }
       ]
@@ -1100,7 +1100,7 @@
 
           ],
           "type" : "send_msg",
-          "text" : "This is a message for all folks in Group 2.\n\nYour score was: @results.webhook_score",
+          "text" : "This is a message for all folks in Group 2.\n\nYour score was: @results.webhook.score",
           "uuid" : "7e08e01e-7a84-4f86-a9fc-dde4ca4aa453"
         }
       ]
