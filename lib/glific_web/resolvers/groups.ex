@@ -4,17 +4,26 @@ defmodule GlificWeb.Resolvers.Groups do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Groups, Groups.Group, Repo}
-  alias Glific.{Groups.ContactGroups, Groups.UserGroups}
+  alias Glific.{Groups, Repo}
+  alias Glific.Groups.{ContactGroups, Group, UserGroups}
 
   @doc """
   Get a specific group by id
   """
   @spec group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
+  {:ok, any} | {:error, any}
   def group(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, group} <- Repo.fetch_by(Group, %{id: id, organization_id: user.organization_id}),
-         do: {:ok, %{group: group}}
+      do: {:ok, %{group: group}}
+  end
+
+  @doc """
+  Get group info by id
+  """
+  @spec group_info(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  {:ok, any} | {:error, any}
+  def group_info(_, %{id: id}, _) do
+    {:ok, Groups.info_group_contacts(id)}
   end
 
   @doc """

@@ -5,12 +5,10 @@ defmodule Glific.Groups.GroupContacts do
 
   alias __MODULE__
 
-  alias Glific.{
-    Groups,
-    Groups.ContactGroup
-  }
+  alias Glific.{Groups, Groups.ContactGroup}
 
   use Ecto.Schema
+  import Ecto.Query, warn: false
 
   @primary_key false
 

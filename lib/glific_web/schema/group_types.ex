@@ -71,6 +71,13 @@ defmodule GlificWeb.Schema.GroupTypes do
       resolve(&Resolvers.Groups.group/3)
     end
 
+    @desc "get the stats of one group"
+    field :group_info, :json do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Groups.group_info/3)
+    end
+
     @desc "Get a list of all groups filtered by various criteria"
     field :groups, list_of(:group) do
       arg(:filter, :group_filter)
