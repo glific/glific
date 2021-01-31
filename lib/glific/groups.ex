@@ -236,7 +236,7 @@ defmodule Glific.Groups do
     |> Repo.all()
     |> Enum.reduce(
       result,
-      fn [name, count], map -> Map.put(map, name, count) end
+      fn [name, count], result -> Map.put(result, name, count) end
     )
   end
 
