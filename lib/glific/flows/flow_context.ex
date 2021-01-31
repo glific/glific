@@ -146,7 +146,8 @@ defmodule Glific.Flows.FlowContext do
         %{
           completed_at: DateTime.utc_now(),
           node: nil
-        })
+        }
+      )
 
     # check if context has a parent_id, if so, we need to
     # load that context and keep going
