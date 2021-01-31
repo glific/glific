@@ -140,7 +140,14 @@ defmodule Glific.Flows.FlowContext do
     Logger.info("Ending Flow: id: '#{context.flow_id}', contact_id: '#{context.contact_id}'")
 
     # we first update this entry with the completed at time
-    {:ok, context} = FlowContext.update_flow_context(context, %{completed_at: DateTime.utc_now()})
+    {:ok, context} =
+      FlowContext.update_flow_context(
+        context,
+        %{
+          completed_at: DateTime.utc_now(),
+          node: nil
+        }
+      )
 
     # check if context has a parent_id, if so, we need to
     # load that context and keep going
@@ -392,13 +399,25 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec load_context(FlowContext.t(), Flow.t()) :: FlowContext.t()
   def load_context(context, flow) do
-    {:ok, {:node, node}} = Map.fetch(flow.uuid_map, context.node_uuid)
+    case Map.fetch(flow.uuid_map, context.node_uuid) do
+      {:ok, {:node, node}} ->
+        context
+        |> Repo.preload(:contact)
+        |> Map.put(:flow, flow)
+        |> Map.put(:uuid_map, flow.uuid_map)
+        |> Map.put(:node, node)
 
-    context
-    |> Repo.preload(:contact)
-    |> Map.put(:flow, flow)
-    |> Map.put(:uuid_map, flow.uuid_map)
-    |> Map.put(:node, node)
+      :error ->
+        # Seems like the flow changed underneath us
+        # so this node no longer exists. Lets reset the context
+        # and terminate the flow, which sets the context.node to nil
+        # and hence does not execute
+        Logger.error(
+          "Seems like the flow: #{flow.id} changed underneath us for: #{context.organization_id}"
+        )
+
+        reset_context(context)
+    end
   end
 
   # log the error and also send it over to our friends at appsignal

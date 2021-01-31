@@ -45,7 +45,7 @@ if Code.ensure_loaded?(Plug) do
 
         # this is just a temporary fix for now to get CI up and running
         # we need a better long term solution soon
-        host in ["localhost", root_host, "127.0.0.1"] ->
+        host in ["localhost", root_host, "127.0.0.1", "glific.gigalixirapp.com"] ->
           "glific"
 
         true ->

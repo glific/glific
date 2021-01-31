@@ -292,7 +292,9 @@ defmodule Glific.Communications.Message do
             GenServer.call(pid, {message, process_state, self}, @timeout)
           catch
             e, r ->
-              Logger.error("poolboy transaction caught error: #{inspect(e)}, #{inspect(r)}")
+              error = "poolboy transaction caught error: #{inspect(e)}, #{inspect(r)}"
+              Logger.error(error)
+              Appsignal.send_error(:error, error, __STACKTRACE__)
               :ok
           end
         end

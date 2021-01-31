@@ -317,7 +317,7 @@ defmodule Glific.Templates do
     |> Repo.insert()
     |> case do
       {:ok, template} -> Logger.info("New Session Template Added with label: #{template.label}")
-      {:error, error} -> Logger.info("Error adding new Session Template: #{error}")
+      {:error, error} -> Logger.info("Error adding new Session Template: #{inspect(error)}")
     end
 
     {:ok}

@@ -6,7 +6,7 @@ defmodule Glific.Groups do
 
   alias __MODULE__
 
-  alias Glific.{Repo, Users.User}
+  alias Glific.{Contacts.Contact, Repo, Users.User}
 
   alias Glific.Groups.{ContactGroup, Group, UserGroup}
 
@@ -212,6 +212,32 @@ defmodule Glific.Groups do
     %ContactGroup{}
     |> ContactGroup.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Given a group id, get stats on the contacts within this group based on bsp_status
+  and also the total count
+  """
+  @spec info_group_contacts(non_neg_integer) :: map()
+  def info_group_contacts(group_id) do
+    total =
+      ContactGroup
+      |> where([cg], cg.group_id == ^group_id)
+      |> Repo.aggregate(:count)
+
+    result = %{total: total}
+
+    ContactGroup
+    |> join(:inner, [cg], c in Contact, as: :c, on: cg.contact_id == c.id)
+    |> where([cg], cg.group_id == ^group_id)
+    |> where([c: c], c.status == :valid)
+    |> group_by([c: c], c.bsp_status)
+    |> select([c: c], [c.bsp_status, count(c.id)])
+    |> Repo.all()
+    |> Enum.reduce(
+      result,
+      fn [name, count], result -> Map.put(result, name, count) end
+    )
   end
 
   @doc """
