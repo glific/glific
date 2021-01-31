@@ -140,7 +140,13 @@ defmodule Glific.Flows.FlowContext do
     Logger.info("Ending Flow: id: '#{context.flow_id}', contact_id: '#{context.contact_id}'")
 
     # we first update this entry with the completed at time
-    {:ok, context} = FlowContext.update_flow_context(context, %{completed_at: DateTime.utc_now()})
+    {:ok, context} =
+      FlowContext.update_flow_context(
+        context,
+        %{
+          completed_at: DateTime.utc_now(),
+          node: nil
+        })
 
     # check if context has a parent_id, if so, we need to
     # load that context and keep going
@@ -160,8 +166,7 @@ defmodule Glific.Flows.FlowContext do
     end
 
     # return the orginal context, which is now completed
-    # also set the node to nil, so execute will not process it
-    Map.put(context, :node, nil)
+    context
   end
 
   @doc """
