@@ -211,8 +211,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
     assert {:ok, query_data} = result
 
-    {:ok, query_data} =
-      auth_query_gql_by(:info, user, variables: %{"id" => group.id})
+    {:ok, query_data} = auth_query_gql_by(:info, user, variables: %{"id" => group.id})
 
     str = get_in(query_data, [:data, "groupInfo"])
     assert is_binary(str)
@@ -220,5 +219,4 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert(Enum.count(json) > 0)
     assert(Map.has_key?(json, "total"))
   end
-
 end

@@ -223,7 +223,7 @@ defmodule Glific.Groups do
     total =
       ContactGroup
       |> where([cg], cg.group_id == ^group_id)
-    |> Repo.aggregate(:count)
+      |> Repo.aggregate(:count)
 
     result = %{total: total}
 
@@ -236,7 +236,7 @@ defmodule Glific.Groups do
     |> Repo.all()
     |> Enum.reduce(
       result,
-    fn [name, count], map -> Map.put(map, name, count) end
+      fn [name, count], map -> Map.put(map, name, count) end
     )
   end
 
@@ -329,6 +329,4 @@ defmodule Glific.Groups do
 
     :ok
   end
-
-
 end

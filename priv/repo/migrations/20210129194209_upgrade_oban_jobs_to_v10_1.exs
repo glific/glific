@@ -10,5 +10,4 @@ defmodule Glific.Repo.Migrations.UpgradeObanJobsToV101 do
   def down do
     Oban.Migrations.down(version: 9, prefix: @global_schema)
   end
-
 end

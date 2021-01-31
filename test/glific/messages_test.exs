@@ -98,6 +98,7 @@ defmodule Glific.MessagesTest do
       {:ok, message} =
         valid_attrs
         |> Map.merge(attrs)
+        |> Map.put(:bsp_message_id, Faker.String.base64(10))
         |> Messages.create_message()
 
       # we do this to get the session_uuid which is computed by a trigger

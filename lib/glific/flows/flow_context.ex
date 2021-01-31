@@ -406,8 +406,12 @@ defmodule Glific.Flows.FlowContext do
         # so this node no longer exists. Lets reset the context
         # and terminate the flow, which sets the context.node to nil
         # and hence does not execute
-        Logger.error("Seems like the flow: #{flow.id} changed underneath us for: #{context.organization_id}")
+        Logger.error(
+          "Seems like the flow: #{flow.id} changed underneath us for: #{context.organization_id}"
+        )
+
         reset_context(context)
+    end
   end
 
   # log the error and also send it over to our friends at appsignal
