@@ -112,7 +112,10 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_session_template(%{is_hsm: true} = attrs) do
     # validate HSM before calling the BSP's API
-    validation_result = validate_hsm(attrs)
+    validation_result =
+      attrs
+      |> Map.merge(%{shortcode: String.downcase(attrs.shortcode)})
+      |> validate_hsm()
 
     if validation_result == :ok,
       do: submit_for_approval(attrs),
