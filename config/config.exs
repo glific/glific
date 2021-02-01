@@ -34,28 +34,34 @@ config :glific, Glific.Repo, migration_timestamps: [type: :utc_datetime]
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
 # Configure Oban, its queues and crontab entries
+# config :glific, Oban,
+#   prefix: "global",
+#   repo: Glific.Repo,
+#   queues: [default: 10, dialogflow: 10, gupshup: 10, webhook: 10, crontab: 10, bigquery: 5, gcs: 5],
+#   plugins: [
+#     # Prune jobs after 5 mins, gives us some time to go investigate if needed
+#     {Oban.Plugins.Pruner, max_age: 300},
+#     {
+#       Oban.Plugins.Cron,
+#       crontab: [
+#         {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
+#         {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
+#         {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
+#         {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
+#         {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
+#         {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
+#         {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
+#         {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
+#         {"30 */1 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_data_on_bigquery}}
+#       ]
+#     }
+#   ]
+
 config :glific, Oban,
   prefix: "global",
-  repo: Glific.Repo,
-  queues: [default: 10, dialogflow: 10, gupshup: 10, webhook: 10, crontab: 10, bigquery: 5, gcs: 5],
-  plugins: [
-    # Prune jobs after 5 mins, gives us some time to go investigate if needed
-    {Oban.Plugins.Pruner, max_age: 300},
-    {
-      Oban.Plugins.Cron,
-      crontab: [
-        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
-        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
-        {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
-        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
-        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
-        {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
-        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
-        {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
-        {"30 */1 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_data_on_bigquery}}
-      ]
-    }
-  ]
+  crontab: false,
+  queues: false,
+  plugins: false
 
 config :tesla, adapter: Tesla.Adapter.Hackney
 
