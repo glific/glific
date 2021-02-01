@@ -10,7 +10,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   import Ecto.Query
 
   use Oban.Worker,
-    queue: :default,
+    queue: :bigquery,
     max_attempts: 1,
     priority: 1
 
