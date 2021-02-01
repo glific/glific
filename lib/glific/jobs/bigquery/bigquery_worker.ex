@@ -349,7 +349,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       Message
       |> where([fr], fr.organization_id == ^organization_id)
       |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
-      |> preload([:tags, :flow_object, :contact, :location])
+      |> preload([:tags, :flow_object, :contact])
 
     Repo.all(query)
     |> Enum.reduce(
@@ -364,9 +364,7 @@ defmodule Glific.Jobs.BigQueryWorker do
               tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
               flow_label: row.flow_label,
               flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
-              flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
-              longitude: if(!is_nil(row.location), do: row.location.longitude),
-              latitude: if(!is_nil(row.location), do: row.location.latitude)
+              flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name)
             }
             | acc
           ]

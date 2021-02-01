@@ -492,9 +492,11 @@ defmodule Glific.Bigquery do
   end
 
   defp generate_update_sql_query(message, "update_messages", dataset_id, _organization_id) do
-    "UPDATE `#{dataset_id}.messages` SET `tags_label` = '#{message["tags_label"]}',
-    `flow_label` =  '#{message["flow_label"]}', `flow_name` = '#{message["flow_name"]}', `flow_uuid` = '#{message["flow_uuid"]}', `longitude` = '#{message["longitude"]}',  `latitude` = '#{message["latitude"]}' WHERE contact_phone= '#{
-      message["contact_phone"]}' AND id = #{message["id"]}"
+    "UPDATE `#{dataset_id}.messages` SET `tags_label` = '#{message["tags_label"]}', `flow_label` =  '#{
+      message["flow_label"]
+    }', `flow_name` = '#{message["flow_name"]}', `flow_uuid` = '#{message["flow_uuid"]}'  WHERE contact_phone= '#{
+      message["contact_phone"]
+    }' AND id = #{message["id"]}"
   end
 
   defp generate_update_sql_query(_, _, _, _), do: nil
