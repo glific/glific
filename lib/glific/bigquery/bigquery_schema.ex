@@ -258,13 +258,11 @@ defmodule Glific.BigquerySchema do
         type: "STRING",
         mode: "NULLABLE"
       },
-
       %{
         name: "longitude",
         type: "STRING",
         mode: "NULLABLE"
       },
-
       %{
         name: "latitude",
         type: "STRING",

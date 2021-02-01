@@ -105,29 +105,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       if is_simulator_contact?(row.contact.phone),
         do: acc,
         else: [
-          %{
-            id: row.id,
-            body: row.body,
-            type: row.type,
-            flow: row.flow,
-            inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
-            sent_at: Bigquery.format_date(row.sent_at, organization_id),
-            uuid: row.uuid,
-            status: row.status,
-            sender_phone: row.sender.phone,
-            receiver_phone: row.receiver.phone,
-            contact_phone: row.contact.phone,
-            contact_name: row.contact.name,
-            user_phone: if(!is_nil(row.user), do: row.user.phone),
-            user_name: if(!is_nil(row.user), do: row.user.name),
-            tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
-            flow_label: row.flow_label,
-            media_url: if(!is_nil(row.media), do: row.media.url),
-            flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
-            flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
-            longitude: if(!is_nil(row.location), do: row.location.longitude),
-            latitude: if(!is_nil(row.location), do: row.location.latitude)
-          }
+          get_message_row(row)
           |> Bigquery.format_data_for_bigquery("messages")
           | acc
         ]
@@ -377,6 +355,31 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data(_, _, _, _), do: :ok
+
+  defp get_message_row(row),
+    do: %{
+      id: row.id,
+      body: row.body,
+      type: row.type,
+      flow: row.flow,
+      inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+      sent_at: Bigquery.format_date(row.sent_at, organization_id),
+      uuid: row.uuid,
+      status: row.status,
+      sender_phone: row.sender.phone,
+      receiver_phone: row.receiver.phone,
+      contact_phone: row.contact.phone,
+      contact_name: row.contact.name,
+      user_phone: if(!is_nil(row.user), do: row.user.phone),
+      user_name: if(!is_nil(row.user), do: row.user.name),
+      tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
+      flow_label: row.flow_label,
+      media_url: if(!is_nil(row.media), do: row.media.url),
+      flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
+      flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
+      longitude: if(!is_nil(row.location), do: row.location.longitude),
+      latitude: if(!is_nil(row.location), do: row.location.latitude)
+    }
 
   @spec is_simulator_contact?(String.t()) :: boolean
   defp is_simulator_contact?(phone), do: @simulater_phone == phone
