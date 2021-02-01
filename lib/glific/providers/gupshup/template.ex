@@ -78,7 +78,7 @@ defmodule Glific.Providers.Gupshup.Template do
       languageCode: language.locale,
       content: attrs.body,
       category: attrs.category,
-      vertical: attrs.shortcode,
+      vertical: attrs.label,
       templateType: String.upcase(Atom.to_string(attrs.type)),
       example: attrs.example
     }
