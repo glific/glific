@@ -99,7 +99,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> where([m], m.organization_id == ^organization_id)
     |> where([m], m.id > ^min_id and m.id <= ^max_id)
     |> order_by([m], [m.inserted_at, m.id])
-    |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object])
+    |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
     |> Repo.all()
     |> Enum.reduce([], fn row, acc ->
       if is_simulator_contact?(row.contact.phone),
@@ -124,7 +124,9 @@ defmodule Glific.Jobs.BigQueryWorker do
             flow_label: row.flow_label,
             media_url: if(!is_nil(row.media), do: row.media.url),
             flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
-            flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name)
+            flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
+            longitude: if(!is_nil(row.location), do: row.location.longitude),
+            latitude: if(!is_nil(row.location), do: row.location.latitude)
           }
           |> Bigquery.format_data_for_bigquery("messages")
           | acc

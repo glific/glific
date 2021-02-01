@@ -257,6 +257,18 @@ defmodule Glific.BigquerySchema do
         name: "flow_uuid",
         type: "STRING",
         mode: "NULLABLE"
+      },
+
+      %{
+        name: "longitude",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+
+      %{
+        name: "latitude",
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end
