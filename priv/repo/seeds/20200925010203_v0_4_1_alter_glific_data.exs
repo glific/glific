@@ -254,12 +254,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           is_required: false,
           keys: %{},
           secrets: %{
-            email: %{
-              type: :string,
-              label: "Email",
-              default: nil,
-              view_only: false
-            },
             bucket: %{
               type: :string,
               label: "Bucket",
