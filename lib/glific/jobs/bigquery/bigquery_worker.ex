@@ -105,7 +105,8 @@ defmodule Glific.Jobs.BigQueryWorker do
       if is_simulator_contact?(row.contact.phone),
         do: acc,
         else: [
-          get_message_row(row)
+          row
+          |> get_message_row(organization_id)
           |> Bigquery.format_data_for_bigquery("messages")
           | acc
         ]
@@ -356,7 +357,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp queue_table_data(_, _, _, _), do: :ok
 
-  defp get_message_row(row),
+  defp get_message_row(row, organization_id),
     do: %{
       id: row.id,
       body: row.body,
