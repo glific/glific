@@ -11,7 +11,7 @@ defmodule Glific.Jobs.GcsWorker do
   require Logger
 
   use Oban.Worker,
-    queue: :default,
+    queue: :gcs,
     max_attempts: 1,
     priority: 0
 
