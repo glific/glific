@@ -26,7 +26,7 @@ defmodule Glific.Application do
       Pow.Store.Backend.MnesiaCache,
 
       # Add Oban to process jobs
-      # {Oban, oban_config()},
+      {Oban, oban_config()},
 
       # Add Absinthe's subscription
       {Absinthe.Subscription, GlificWeb.Endpoint},
@@ -52,19 +52,19 @@ defmodule Glific.Application do
         else: children ++ glific_children
 
     # Add this :telemetry.attach/4 for oban success/failure call:
-    # :telemetry.attach(
-    #   "oban-success",
-    #   [:oban, :job, :stop],
-    #   &Glific.Appsignal.handle_event/4,
-    #   []
-    # )
+    :telemetry.attach(
+      "oban-success",
+      [:oban, :job, :stop],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
 
-    # :telemetry.attach(
-    #   "oban-failure",
-    #   [:oban, :job, :exception],
-    #   &Glific.Appsignal.handle_event/4,
-    #   []
-    # )
+    :telemetry.attach(
+      "oban-failure",
+      [:oban, :job, :exception],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
@@ -102,7 +102,7 @@ defmodule Glific.Application do
     :ok
   end
 
-  # defp oban_config do
-  #   Application.get_env(:glific, Oban)
-  # end
+  defp oban_config do
+    Application.get_env(:glific, Oban)
+  end
 end
