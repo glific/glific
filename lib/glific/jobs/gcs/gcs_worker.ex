@@ -13,7 +13,7 @@ defmodule Glific.Jobs.GcsWorker do
   use Oban.Worker,
     queue: :gcs,
     max_attempts: 1,
-    priority: 0
+    priority: 2
 
   alias Waffle.Storage.Google.CloudStorage
 
