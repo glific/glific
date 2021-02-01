@@ -124,4 +124,29 @@ defmodule Glific.Providers.Gupshup.ApiClient do
       gupshup_get(template_url, credentials.api_key)
     end
   end
+
+  @doc """
+  Update BSP credentials
+  """
+  @spec update_credentials(non_neg_integer(), String.t(), String.t()) :: {:ok, any} | {:error, any}
+  def update_credentials(org_id, api_key, app_name) do
+    cred = %{
+      is_active: true,
+      keys: %{
+        "api_end_point" => "https://api.gupshup.io/sm/api/v1",
+        "bsp_limit" => 40,
+        "handler" => "Glific.Providers.Gupshup.Message",
+        "url" => "https://gupshup.io/",
+        "worker" => "Glific.Providers.Gupshup.Worker"
+      },
+      organization_id: org_id,
+      secrets: %{
+        "api_key" => api_key,
+        "app_name" => app_name
+      },
+      shortcode: "gupshup"
+    }
+    {:ok, gupshup} = Partners.get_credential(%{organization_id: org_id, shortcode: "gupshup"})
+    Partners.update_credential(gupshup, cred)
+  end
 end
