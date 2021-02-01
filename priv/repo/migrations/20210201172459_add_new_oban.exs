@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.AddObanJobsTable do
+defmodule Glific.Repo.Migrations.AddNewOban do
   use Ecto.Migration
 
   @global_schema Application.fetch_env!(:glific, :global_schema)
