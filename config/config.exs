@@ -114,7 +114,7 @@ config :glific, Glific.Vault, ciphers: false
 
 config :waffle,
   storage: Waffle.Storage.Google.CloudStorage,
-  token_fetcher: Glific.Partners
+  token_fetcher: Glific.GCS
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

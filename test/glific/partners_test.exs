@@ -750,7 +750,7 @@ defmodule Glific.PartnersTest do
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
-        token = Partners.get_token("#{organization_id}")
+        token = Partners.get_goth_token(organization_id, "google_cloud_storage")
 
         assert token != nil
       end

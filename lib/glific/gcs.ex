@@ -3,12 +3,26 @@ defmodule Glific.GCS do
   Glific Bigquery Dataset and table creation
   """
 
+  @behaviour Waffle.Storage.Google.Token.Fetcher
   require Logger
 
   alias Glific.{
     Jobs.GcsJob,
+    Partners,
     Repo
   }
+
+  @doc """
+  Fetch token for GCS
+  """
+  @impl Waffle.Storage.Google.Token.Fetcher
+  @spec get_token(binary) :: binary
+  def get_token(organization_id) when is_binary(organization_id) do
+    Logger.info("fetching gcs token for org_id: #{organization_id}")
+    organization_id = String.to_integer(organization_id)
+    token = Partners.get_goth_token(organization_id, "google_cloud_storage")
+    token.token
+  end
 
   @doc """
   Creating a dataset with messages and contacts as tables
