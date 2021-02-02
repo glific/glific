@@ -86,9 +86,12 @@ defmodule Glific.Bigquery do
   def get_table_struct(table) do
     case table do
       "messages" -> Message
+      "message_delta" -> Message
       "contacts" -> Contact
+      "contact_delta" -> Contact
       "flows" -> FlowRevision
       "flow_results" -> FlowResult
+      "flow_result_delta" -> FlowResult
       "update_flow_results" -> FlowResult
       _ -> ""
     end
