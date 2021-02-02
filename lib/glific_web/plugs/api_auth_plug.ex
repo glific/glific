@@ -66,6 +66,9 @@ defmodule GlificWeb.APIAuthPlug do
       |> Conn.put_private(:api_renewal_token, sign_token(conn, renewal_token, config))
       |> Conn.put_private(:api_token_expiry_time, token_expiry_time)
 
+    # The store caches will use their default `:ttl` settting. To change the
+    # `:ttl`, `Keyword.put(store_config, :ttl, :timer.minutes(10))` can be
+    # passed in as the first argument instead of `store_config`.
     CredentialsCache.put(
       store_config |> Keyword.put(:ttl, :timer.minutes(@ttl)),
       access_token,
@@ -124,15 +127,17 @@ defmodule GlificWeb.APIAuthPlug do
 
     with {:ok, signed_token} <- fetch_access_token(conn),
          {:ok, token} <- verify_token(conn, signed_token, config),
-         {clauses, metadata} <- PersistentSessionCache.get(store_config, token) do
+         {user, metadata} <- PersistentSessionCache.get(store_config, token) do
       Logger.info("Renewing token succeeded")
 
       CredentialsCache.delete(store_config, metadata[:access_token])
       PersistentSessionCache.delete(store_config, token)
 
-      conn
-      |> Conn.put_private(:pow_api_session_fingerprint, metadata[:fingerprint])
-      |> load_and_create_session({clauses, metadata}, config)
+      create(
+        conn |> Conn.put_private(:pow_api_session_fingerprint, metadata[:fingerprint]),
+        user,
+        config
+      )
     else
       _any ->
         Logger.error("Renewing token failed")
@@ -157,13 +162,6 @@ defmodule GlificWeb.APIAuthPlug do
     end)
   end
 
-  defp load_and_create_session(conn, {clauses, _metadata}, config) do
-    case Pow.Operations.get_by(clauses, config) do
-      nil -> {conn, nil}
-      user -> create(conn, user, config)
-    end
-  end
-
   defp sign_token(conn, token, config) do
     Plug.sign_token(conn, signing_salt(), token, config)
   end
@@ -183,6 +181,6 @@ defmodule GlificWeb.APIAuthPlug do
   defp store_config(config) do
     backend = Config.get(config, :cache_store_backend, Pow.Store.Backend.MnesiaCache)
 
-    [backend: backend]
+    [backend: backend, pow_config: config]
   end
 end
