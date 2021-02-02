@@ -176,7 +176,7 @@ defmodule Glific.Contacts.Simulator do
   @spec publish_data(non_neg_integer, non_neg_integer) :: any()
   defp publish_data(organization_id, user_id) do
     Communications.publish_data(
-      %{key: "simulator_release", value: %{user_id: user_id}},
+      %{"simulator_release" => %{user_id: user_id}},
       :periodic_info,
       organization_id
     )

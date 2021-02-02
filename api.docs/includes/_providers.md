@@ -173,8 +173,7 @@ query bspbalance {
 {
   "data": {
     "bspbalance": {
-      "key": "bsp_balance",
-      "value": "{\"balance\":0.628}"
+      \"balance\" :0.628
     }
   }
 }
@@ -183,7 +182,7 @@ query bspbalance {
 ### Return Parameters
 Type | Description
 | ---- | -----------
-<a href="#bsp_balance_result">bsp_balance_result</a> | remaining bsp balance
+<a href="#json">JSON map with key "balance" and value the amount remaining</a> |
 
 ## Create a Provider
 
