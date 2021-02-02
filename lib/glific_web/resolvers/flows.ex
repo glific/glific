@@ -1,7 +1,7 @@
 defmodule GlificWeb.Resolvers.Flows do
   @moduledoc """
-  Flow Resolver which sits between the GraphQL schema and Glific Flow Context API. This layer basically stiches together
-  one or more calls to resolve the incoming queries.
+  Flow Resolver which sits between the GraphQL schema and Glific Flow Context API.
+  This layer basically stiches together one or more calls to resolve the incoming queries.
   """
 
   alias Glific.{
@@ -9,7 +9,8 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows,
     Flows.Flow,
     Groups.Group,
-    Repo
+    Repo,
+    Users.User
   }
 
   @doc """
@@ -51,10 +52,7 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec update_flow(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_flow(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
-    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
-         {:ok, flow} <- Flows.update_flow(flow, params) do
-      {:ok, %{flow: flow}}
-    end
+    do_op_flow(id, params, user, &Flows.update_flow/2)
   end
 
   @doc false
@@ -125,8 +123,19 @@ defmodule GlificWeb.Resolvers.Flows do
   def copy_flow(_, %{id: id, input: params}, %{
         context: %{current_user: user}
       }) do
+    do_op_flow(id, params, user, &Flows.copy_flow/2)
+  end
+
+  @spec do_op_flow(
+          non_neg_integer,
+          map(),
+          User.t(),
+          (Flow.t(), map() -> {:ok, Flow.t()} | {:error, String.t()})
+        ) ::
+          {:ok, any} | {:error, any}
+  defp do_op_flow(id, params, user, fun) do
     with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
-         {:ok, flow} <- Flows.copy_flow(flow, params) do
+         {:ok, flow} <- fun.(flow, params) do
       {:ok, %{flow: flow}}
     end
   end

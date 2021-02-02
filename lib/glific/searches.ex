@@ -153,6 +153,7 @@ defmodule Glific.Searches do
   Add permissioning specific to searches, in this case we want to restrict the visibility of
   contact ids
   """
+  # codebeat:disable[ABC]
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def add_permission(query, user) do
     sub_query =
@@ -180,6 +181,8 @@ defmodule Glific.Searches do
     |> order_by([c: c], desc: c.last_communication_at)
     |> Repo.add_permission(&Searches.add_permission/2)
   end
+
+  # codebeat:enable[ABC]
 
   # common function to build query between count and search
   # order by the last time there was communication with this contact
@@ -219,13 +222,15 @@ defmodule Glific.Searches do
     )
   end
 
+  # codebeat:disable[ABC]
   def search(args, count) do
     # save the search if needed
     Logger.info("Searches.Search/2 with : args: #{inspect(args)}")
     do_save_search(args)
 
     args =
-      check_filter_for_save_search(args)
+      args
+      |> check_filter_for_save_search()
       |> update_args_for_count(count)
 
     contact_ids =
@@ -244,6 +249,8 @@ defmodule Glific.Searches do
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Conversations.list_conversations(count)
   end
+
+  # codebeat:enable[ABC]
 
   @doc """
   Search across multiple tables, and return a multiple context
@@ -271,17 +278,21 @@ defmodule Glific.Searches do
     |> offset(^offset)
   end
 
+  # codebeat:disable[ABC]
   @spec get_filtered_contacts(String.t(), map()) :: list()
   defp get_filtered_contacts(term, args) do
     {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
 
-    # since this revolves arund contacts
-    basic_query(args)
+    # since this revolves around contacts
+    args
+    |> basic_query()
     |> where([c: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
     |> limit(^limit)
     |> offset(^offset)
     |> Repo.all()
   end
+
+  # codebeat:enable[ABC]
 
   @spec get_filtered_messages_with_term(String.t(), map()) :: list()
   defp get_filtered_messages_with_term(term, args) do
@@ -291,6 +302,7 @@ defmodule Glific.Searches do
     |> Repo.all()
   end
 
+  # codebeat:disable[ABC]
   @spec get_filtered_tagged_message(String.t(), map()) :: list()
   defp get_filtered_tagged_message(term, args) do
     filtered_query(args)
@@ -299,6 +311,8 @@ defmodule Glific.Searches do
     |> where([t: t], ilike(t.label, ^"%#{term}%") or ilike(t.shortcode, ^"%#{term}%"))
     |> Repo.all()
   end
+
+  # codebeat:enable[ABC]
 
   # Add the term if present to the list of args
   @spec add_term(map(), String.t() | nil) :: map()
