@@ -24,7 +24,6 @@ defmodule Glific.GCS do
     token.token
   end
 
-
   @doc """
   Creating a dataset with messages and contacts as tables
   """
