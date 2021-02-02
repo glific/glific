@@ -427,18 +427,12 @@ defmodule Glific.BigquerySchema do
         type: "STRING",
         mode: "REQUIRED"
       },
-      %{
-        name: "errors",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
 
       %{
         name: "contact_phone",
         type: "STRING",
         mode: "REQUIRED"
       },
-
 
       %{
         name: "sent_at",
@@ -594,6 +588,12 @@ defmodule Glific.BigquerySchema do
 
       %{
         name: "contact_phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+
+      %{
+        name: "results",
         type: "STRING",
         mode: "REQUIRED"
       },

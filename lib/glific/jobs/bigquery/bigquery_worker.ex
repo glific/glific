@@ -26,7 +26,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   }
 
   @simulater_phone "9876543210"
-  @update_minutes -90
+  @update_minutes -1
 
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
@@ -54,9 +54,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     credential = organization.services["bigquery"]
 
     if credential do
-      queue_table_data("message_delta", organization_id, 0, 0)
-      queue_table_data("contact_delta", organization_id, 0, 0)
-      queue_table_data("flow_result_delta", organization_id, 0, 0)
+      queue_table_data("messages_delta", organization_id, 0, 0)
+      queue_table_data("contacts_delta", organization_id, 0, 0)
+      queue_table_data("flow_results_delta", organization_id, 0, 0)
     end
 
     :ok
@@ -244,7 +244,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
 
-  defp queue_table_data("message_delta", organization_id, _min_id, _max_id) do
+  defp queue_table_data("messages_delta", organization_id, _min_id, _max_id) do
 
     Message
     |> where([m], m.organization_id == ^organization_id)
@@ -256,19 +256,28 @@ defmodule Glific.Jobs.BigQueryWorker do
       if is_simulator_contact?(row.contact.phone),
         do: acc,
         else: [
-          row
-          |> get_message_row(organization_id)
-          |> Bigquery.format_data_for_bigquery("message_delta")
-          | acc
+         %{
+          id: row.id,
+          type: row.type,
+          sent_at: Bigquery.format_date(row.sent_at, organization_id),
+          status: row.status,
+          contact_phone: row.contact.phone,
+          tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
+          flow_label: row.flow_label,
+          flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
+          flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
+        }
+        |> Bigquery.format_data_for_bigquery("messages_delta")
+        | acc
         ]
     end)
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :message_delta, organization_id, 0))
+    |> Enum.each(&make_job(&1, :messages_delta, organization_id, 0))
 
     :ok
   end
 
-  defp queue_table_data("contact_delta", organization_id, _min_id, _max_id) do
+  defp queue_table_data("contacts_delta", organization_id, _min_id, _max_id) do
     query =
       Contact
       |> where([fr], fr.organization_id == ^organization_id)
@@ -286,7 +295,6 @@ defmodule Glific.Jobs.BigQueryWorker do
           else: [
             %{
               id: row.id,
-              name: row.name,
               phone: row.phone,
               provider_status: row.bsp_status,
               status: row.status,
@@ -294,7 +302,6 @@ defmodule Glific.Jobs.BigQueryWorker do
               optin_time: Bigquery.format_date(row.optin_time, organization_id),
               optout_time: Bigquery.format_date(row.optout_time, organization_id),
               last_message_at: Bigquery.format_date(row.last_message_at, organization_id),
-              inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
               updated_at: Bigquery.format_date(row.updated_at, organization_id),
               fields:
                 Enum.map(row.fields, fn {_key, field} ->
@@ -318,11 +325,11 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :contact_delta, organization_id, 0))
+    |> Enum.each(&make_job(&1, :contacts_delta, organization_id, 0))
     :ok
   end
 
-  defp queue_table_data("flow_result_delta", organization_id, _min_id, _max_id) do
+  defp queue_table_data("flow_results_delta", organization_id, _min_id, _max_id) do
     query =
       FlowResult
       |> where([fr], fr.organization_id == ^organization_id)
@@ -339,23 +346,18 @@ defmodule Glific.Jobs.BigQueryWorker do
           else: [
             %{
               id: row.flow.id,
-              name: row.flow.name,
               uuid: row.flow.uuid,
-              inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
-              updated_at: Bigquery.format_date(row.updated_at, organization_id),
               results: Bigquery.format_json(row.results),
               contact_phone: row.contact.phone,
-              contact_name: row.contact.name,
-              flow_version: row.flow_version,
               flow_context_id: row.flow_context_id
             }
-            |> Bigquery.format_data_for_bigquery("flow_result_delta")
+            |> Bigquery.format_data_for_bigquery("flow_results_delta")
             | acc
           ]
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :flow_result_delta, organization_id, 0))
+    |> Enum.each(&make_job(&1, :flow_results_delta, organization_id, 0))
 
     :ok
   end

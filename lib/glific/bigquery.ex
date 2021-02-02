@@ -27,15 +27,15 @@ defmodule Glific.Bigquery do
 
   @bigquery_tables %{
     "messages" => :message_schema,
-    "message_delta" => :message_delta_schema,
+    "messages_delta" => :message_delta_schema,
 
     "contacts" => :contact_schema,
-    "contact_delta" => :contact_delta_schema,
+    "contacts_delta" => :contact_delta_schema,
 
     "flows" => :flow_schema,
 
     "flow_results" => :flow_result_schema,
-    "flow_result_delta" => :flow_result_delta_schema
+    "flow_results_delta" => :flow_result_delta_schema
   }
 
   @doc """
@@ -86,12 +86,12 @@ defmodule Glific.Bigquery do
   def get_table_struct(table) do
     case table do
       "messages" -> Message
-      "message_delta" -> Message
+      "messages_delta" -> Message
       "contacts" -> Contact
-      "contact_delta" -> Contact
+      "contacts_delta" -> Contact
       "flows" -> FlowRevision
       "flow_results" -> FlowResult
-      "flow_result_delta" -> FlowResult
+      "flow_results_delta" -> FlowResult
       "update_flow_results" -> FlowResult
       _ -> ""
     end
@@ -400,7 +400,7 @@ defmodule Glific.Bigquery do
       do: :ok
 
   def make_insert_query(data, table, organization_id, job, max_id) do
-    Logger.info("insert data to bigquery for org_id: #{organization_id}, table: #{table}")
+    Logger.info("insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}")
 
     fetch_bigquery_credentials(organization_id)
     |> case do
@@ -414,7 +414,9 @@ defmodule Glific.Bigquery do
           []
         )
         |> case do
-          {:ok, _} ->
+          {:ok, res} ->
+            Logger.info("Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}")
+            IO.inspect res
             Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
             :ok
 
