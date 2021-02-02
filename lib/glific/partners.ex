@@ -3,7 +3,6 @@ defmodule Glific.Partners do
   The Partners context. This is the gateway for the application to access/update all the organization
   and Provider information.
   """
-  @behaviour Waffle.Storage.Google.Token.Fetcher
   @active_hours 1
   use Publicist
 
@@ -685,15 +684,6 @@ defmodule Glific.Partners do
       @global_organization_id,
       [{:organization, organization_id}, {:organization, shortcode}]
     )
-  end
-
-  # This is required for GCS
-  @impl Waffle.Storage.Google.Token.Fetcher
-  @spec get_token(binary) :: binary
-  def get_token(organization_id) when is_binary(organization_id) do
-    organization_id = String.to_integer(organization_id)
-    token = get_goth_token(organization_id, "google_cloud_storage")
-    token.token
   end
 
   @doc """
