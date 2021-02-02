@@ -116,90 +116,12 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  defp queue_table_data("message_delta", organization_id, min_id, max_id) do
-
-    Message
-    |> where([m], m.organization_id == ^organization_id)
-    |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
-    |> order_by([m], [m.inserted_at, m.id])
-    |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
-    |> Repo.all()
-    |> Enum.reduce([], fn row, acc ->
-      if is_simulator_contact?(row.contact.phone),
-        do: acc,
-        else: [
-          row
-          |> get_message_row(organization_id)
-          |> Bigquery.format_data_for_bigquery("message_delta")
-          | acc
-        ]
-    end)
-    |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :message_delta, organization_id, 0))
-
-    :ok
-  end
-
   defp queue_table_data("contacts", organization_id, min_id, max_id) do
     query =
       Contact
       |> where([m], m.organization_id == ^organization_id)
       |> where([m], m.phone != @simulater_phone)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
-      |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:language, :tags, :groups])
-
-    Repo.all(query)
-    |> Enum.reduce(
-      [],
-      fn row, acc ->
-        if is_simulator_contact?(row.phone),
-          do: acc,
-          else: [
-            %{
-              id: row.id,
-              name: row.name,
-              phone: row.phone,
-              provider_status: row.bsp_status,
-              status: row.status,
-              language: row.language.label,
-              optin_time: Bigquery.format_date(row.optin_time, organization_id),
-              optout_time: Bigquery.format_date(row.optout_time, organization_id),
-              last_message_at: Bigquery.format_date(row.last_message_at, organization_id),
-              inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
-              updated_at: Bigquery.format_date(row.updated_at, organization_id),
-              fields:
-                Enum.map(row.fields, fn {_key, field} ->
-                  %{
-                    label: field["label"],
-                    inserted_at: Bigquery.format_date(field["inserted_at"], organization_id),
-                    type: field["type"],
-                    value: field["value"]
-                  }
-                end),
-              settings: row.settings,
-              groups:
-                Enum.map(row.groups, fn group ->
-                  %{label: group.label, description: group.description}
-                end),
-              tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
-            }
-            |> Bigquery.format_data_for_bigquery("contacts")
-            | acc
-          ]
-      end
-    )
-    |> make_job(:contacts, organization_id, max_id)
-
-    :ok
-  end
-
-  defp queue_table_data("contact_delta", organization_id, min_id, max_id) do
-    query =
-      Contact
-      |> where([fr], fr.organization_id == ^organization_id)
-      |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
-      |> where([m], m.phone != @simulater_phone)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups])
 
@@ -321,12 +243,90 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  defp queue_table_data("flow_result_delta", organization_id, min_id, max_id) do
+
+  defp queue_table_data("message_delta", organization_id, _min_id, max_id) do
+
+    Message
+    |> where([m], m.organization_id == ^organization_id)
+    |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+    |> order_by([m], [m.inserted_at, m.id])
+    |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
+    |> Repo.all()
+    |> Enum.reduce([], fn row, acc ->
+      if is_simulator_contact?(row.contact.phone),
+        do: acc,
+        else: [
+          row
+          |> get_message_row(organization_id)
+          |> Bigquery.format_data_for_bigquery("message_delta")
+          | acc
+        ]
+    end)
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :message_delta, organization_id, 0))
+
+    :ok
+  end
+
+  defp queue_table_data("contact_delta", organization_id, _min_id, _max_id) do
+    query =
+      Contact
+      |> where([fr], fr.organization_id == ^organization_id)
+      |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+      |> where([m], m.phone != @simulater_phone)
+      |> order_by([m], [m.inserted_at, m.id])
+      |> preload([:language, :tags, :groups])
+
+    Repo.all(query)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        if is_simulator_contact?(row.phone),
+          do: acc,
+          else: [
+            %{
+              id: row.id,
+              name: row.name,
+              phone: row.phone,
+              provider_status: row.bsp_status,
+              status: row.status,
+              language: row.language.label,
+              optin_time: Bigquery.format_date(row.optin_time, organization_id),
+              optout_time: Bigquery.format_date(row.optout_time, organization_id),
+              last_message_at: Bigquery.format_date(row.last_message_at, organization_id),
+              inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+              updated_at: Bigquery.format_date(row.updated_at, organization_id),
+              fields:
+                Enum.map(row.fields, fn {_key, field} ->
+                  %{
+                    label: field["label"],
+                    inserted_at: Bigquery.format_date(field["inserted_at"], organization_id),
+                    type: field["type"],
+                    value: field["value"]
+                  }
+                end),
+              settings: row.settings,
+              groups:
+                Enum.map(row.groups, fn group ->
+                  %{label: group.label, description: group.description}
+                end),
+              tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
+            }
+            |> Bigquery.format_data_for_bigquery("contacts")
+            | acc
+          ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :contact_delta, organization_id, 0))
+    :ok
+  end
+
+  defp queue_table_data("flow_result_delta", organization_id, _min_id, _max_id) do
     query =
       FlowResult
-      |> where([f], f.organization_id == ^organization_id)
-      |> where([f], f.id > ^min_id and f.id <= ^max_id)
-      |> where([f], f.id > ^min_id and f.id <= ^max_id)
+      |> where([fr], fr.organization_id == ^organization_id)
+      |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
 
@@ -349,124 +349,13 @@ defmodule Glific.Jobs.BigQueryWorker do
               flow_version: row.flow_version,
               flow_context_id: row.flow_context_id
             }
-            |> Bigquery.format_data_for_bigquery("flow_results")
+            |> Bigquery.format_data_for_bigquery("flow_result_delta")
             | acc
           ]
       end
     )
-    |> make_job(:flow_results, organization_id, max_id)
-
-    :ok
-  end
-
-  defp queue_table_data("update_flow_results", organization_id, _, _) do
-    query =
-      FlowResult
-      |> where([fr], fr.organization_id == ^organization_id)
-      |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
-      |> preload([:flow, :contact])
-
-    Repo.all(query)
-    |> Enum.reduce(
-      [],
-      fn row, acc ->
-        if is_simulator_contact?(row.contact.phone),
-          do: acc,
-          else: [
-            %{
-              id: row.flow.id,
-              inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
-              updated_at: Bigquery.format_date(row.updated_at, organization_id),
-              results: Bigquery.format_json(row.results),
-              contact_phone: row.contact.phone,
-              flow_version: row.flow_version,
-              flow_context_id: row.flow_context_id
-            }
-            | acc
-          ]
-      end
-    )
-    |> Enum.chunk_every(10)
-    |> Enum.each(&make_job(&1, :update_flow_results, organization_id, 0))
-
-    :ok
-  end
-
-  defp queue_table_data("update_contacts", organization_id, _, _) do
-    query =
-      Contact
-      |> where([fr], fr.organization_id == ^organization_id)
-      |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
-      |> preload([:language, :groups])
-
-    Repo.all(query)
-    |> Enum.reduce(
-      [],
-      fn row, acc ->
-        if is_simulator_contact?(row.phone),
-          do: acc,
-          else: [
-            %{
-              id: row.id,
-              name: row.name,
-              phone: row.phone,
-              status: row.status,
-              language: row.language.label,
-              optin_time: Bigquery.format_date(row.optin_time, organization_id),
-              optout_time: Bigquery.format_date(row.optout_time, organization_id),
-              updated_at: Bigquery.format_date(row.updated_at, organization_id),
-              groups:
-                Enum.map(row.groups, fn group ->
-                  %{label: group.label, description: group.description}
-                end),
-              fields:
-                Enum.map(row.fields, fn {_key, field} ->
-                  %{
-                    label: field["label"] || "unknown",
-                    type: field["type"] || "unknown",
-                    value: field["value"] || "unknown",
-                    inserted_at: field["inserted_at"]
-                  }
-                end)
-            }
-            | acc
-          ]
-      end
-    )
-    |> Enum.chunk_every(10)
-    |> Enum.each(&make_job(&1, :update_contacts, organization_id, 0))
-
-    :ok
-  end
-
-  defp queue_table_data("update_messages", organization_id, _, _) do
-    query =
-      Message
-      |> where([fr], fr.organization_id == ^organization_id)
-      |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
-      |> preload([:tags, :flow_object, :contact])
-
-    Repo.all(query)
-    |> Enum.reduce(
-      [],
-      fn row, acc ->
-        if is_simulator_contact?(row.contact.phone),
-          do: acc,
-          else: [
-            %{
-              id: row.id,
-              contact_phone: row.contact.phone,
-              tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
-              flow_label: row.flow_label,
-              flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
-              flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name)
-            }
-            | acc
-          ]
-      end
-    )
-    |> Enum.chunk_every(10)
-    |> Enum.each(&make_job(&1, :update_messages, organization_id, 0))
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :flow_result_delta, organization_id, 0))
 
     :ok
   end
