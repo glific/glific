@@ -244,7 +244,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
 
-  defp queue_table_data("message_delta", organization_id, _min_id, max_id) do
+  defp queue_table_data("message_delta", organization_id, _min_id, _max_id) do
 
     Message
     |> where([m], m.organization_id == ^organization_id)
