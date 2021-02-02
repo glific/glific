@@ -22,16 +22,24 @@ if Code.ensure_loaded?(Plug) do
     @spec init(any) :: %{:__struct__ => atom, optional(atom) => any}
     def init(opts), do: struct(SubdomainPlugConfig, opts)
 
+    defp send_error(conn) do
+      conn
+      |> Conn.put_status(403)
+      |> Conn.send_resp(403, "Unauthorized")
+      |> Conn.halt()
+    end
+
     @doc false
     @spec call(Conn.t(), map()) :: Conn.t()
     def call(conn, config) do
-      Plug.put_organization(conn, get_subdomain(conn, config), config)
+      subdomain = get_subdomain(conn, config)
+      if is_nil(subdomain),
+        do: send_error(conn),
+      else: Plug.put_organization(conn, subdomain, config)
     end
 
     @spec get_subdomain(Conn.t(), map()) :: String.t()
-    defp get_subdomain(_conn, %SubdomainPlugConfig{endpoint: nil}) do
-      nil
-    end
+    defp get_subdomain(_conn, %SubdomainPlugConfig{endpoint: nil}), do: nil
 
     defp get_subdomain(
            %Conn{host: host},
@@ -40,12 +48,12 @@ if Code.ensure_loaded?(Plug) do
       root_host = endpoint.config(:url)[:host]
 
       cond do
-        host in ["0.0.0.0", "www.example.com"] ->
+        host in ["0.0.0.0", "www.example.com", "glific.gigalixirapp.com"] ->
           nil
 
         # this is just a temporary fix for now to get CI up and running
         # we need a better long term solution soon
-        host in ["localhost", root_host, "127.0.0.1", "glific.gigalixirapp.com"] ->
+        host in ["localhost", root_host, "127.0.0.1"] ->
           "glific"
 
         true ->
