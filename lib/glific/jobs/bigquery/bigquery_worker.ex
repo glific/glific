@@ -54,9 +54,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     credential = organization.services["bigquery"]
 
     if credential do
-      queue_table_data("messages_delta", organization_id, 0, 0)
-      queue_table_data("contacts_delta", organization_id, 0, 0)
-      queue_table_data("flow_results_delta", organization_id, 0, 0)
+      make_merge_job("contacts", organization_id)
+      make_merge_job("messages", organization_id)
+      make_merge_job("flow_results", organization_id)
     end
 
     :ok
@@ -64,6 +64,9 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec insert_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
   defp insert_for_table(nil, _), do: nil
+
+  defp insert_for_table(%{table: table} = _bigquery_job, organization_id) when table in ["messages_delta", "contacts_delta", "flow_results_delta"],
+  do: queue_table_data(table, organization_id, 0, 0)
 
   defp insert_for_table(bigquery_job, organization_id) do
     table_id = bigquery_job.table_id
@@ -243,12 +246,13 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-
+  ## Insert update query.
   defp queue_table_data("messages_delta", organization_id, _min_id, _max_id) do
 
     Message
     |> where([m], m.organization_id == ^organization_id)
     |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+    |> where([fr], fr.updated_at !=  fr.inserted_at)
     |> order_by([m], [m.inserted_at, m.id])
     |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
     |> Repo.all()
@@ -407,6 +411,18 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
+  @spec make_merge_job(any(), non_neg_integer) :: :ok
+  defp make_merge_job(table, organization_id) do
+    __MODULE__.new(%{
+      table: table,
+      organization_id: organization_id,
+      merge_table: true
+    })
+    |> Oban.insert()
+
+    :ok
+  end
+
   @doc """
   Standard perform method to use Oban worker
   """
@@ -414,17 +430,8 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(
-        %Oban.Job{
-          args: %{
-            "data" => data,
-            "table" => table,
-            "organization_id" => organization_id,
-            "max_id" => _max_id
-          }
-        } = job
-      )
-      when table in ["update_flow_results", "update_contacts", "update_messages"],
-      do: Bigquery.make_update_query(data, organization_id, table, job)
+      %Oban.Job{args: %{ "table" => table, "organization_id" => organization_id, "merge_table" => true}} = _job),
+      do: Bigquery.make_merge_job(table, organization_id)
 
   def perform(
         %Oban.Job{
@@ -437,6 +444,4 @@ defmodule Glific.Jobs.BigQueryWorker do
         } = job
       ),
       do: Bigquery.make_insert_query(data, table, organization_id, job, max_id)
-
-  def perform(_), do: :ok
 end

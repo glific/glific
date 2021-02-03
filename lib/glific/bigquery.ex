@@ -458,118 +458,63 @@ defmodule Glific.Bigquery do
     end
   end
 
-  @doc """
-    Update data on the bigquery
-  """
-  @spec make_update_query(list(), non_neg_integer, String.t(), Oban.Job.t()) :: :ok
-  def make_update_query(data, organization_id, table, _job) do
-    Logger.info("update data on bigquery for org_id: #{organization_id}, table: #{table}")
 
+  @doc """
+    Merge delta and main tables.
+  """
+
+  def make_merge_job(table, organization_id) do
     fetch_bigquery_credentials(organization_id)
     |> case do
-      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
-        data
-        |> Enum.each(fn row ->
-          sql = generate_update_sql_query(row, table, dataset_id, organization_id)
-
-          GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} =  credentials} ->
+        Logger.info("merge #{table} table on bigquery for org_id: #{organization_id}")
+        sql = generate_merge_query(table, organization_id, credentials)
+        GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
             body: %{query: sql, useLegacySql: false}
           )
-          |> handle_update_response()
-        end)
-
+        |> handle_update_response()
       _ ->
         %{url: nil, id: nil, email: nil}
     end
   end
 
-  @spec generate_update_sql_query(map(), String.t(), String.t(), non_neg_integer()) :: String.t()
-  defp generate_update_sql_query(flow_result, "update_flow_results", dataset_id, _organization_id) do
-    "UPDATE `#{dataset_id}.flow_results` SET results = '#{flow_result["results"]}' WHERE contact_phone= '#{
-      flow_result["contact_phone"]
-    }' AND id = #{flow_result["id"]} AND flow_context_id =  #{flow_result["flow_context_id"]}"
+  defp generate_merge_query("contacts", _organization_id, credentials) do
+    fileds_to_update =
+      ["type", "status", "sent_at", "tags_label", "flow_label", "flow_name", "flow_uuid"]
+      |> format_update_fileds
+
+    "MERGE `#{credentials.dataset_id}.contacts` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.id DESC) AS row_num FROM `#{credentials.dataset_id}.contacts_delta` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE
+    SET #{fileds_to_update}"
+
   end
 
-  defp generate_update_sql_query(contact, "update_contacts", dataset_id, organization_id) do
-    contact_fields_to_update =
-      ["name", "optout_time", "optin_time", "updated_at", "language", "fields", "groups"]
-      |> get_contact_values_to_update(contact, %{}, organization_id)
-      |> Enum.map(fn {column, value} -> "#{column} = #{value}" end)
-      |> Enum.join(",")
+  defp generate_merge_query("messages", _organization_id, credentials) do
+      fileds_to_update =
+      ["type", "status", "sent_at", "tags_label", "flow_label", "flow_name", "flow_uuid"]
+      |> format_update_fileds
 
-    "UPDATE `#{dataset_id}.contacts` SET #{contact_fields_to_update} WHERE phone= '#{
-      contact["phone"]
-    }'"
+      "MERGE `#{credentials.dataset_id}.messages` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.id DESC) AS row_num FROM `#{credentials.dataset_id}.messages_delta` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET #{fileds_to_update}"
+
   end
 
-  defp generate_update_sql_query(message, "update_messages", dataset_id, _organization_id) do
-    "UPDATE `#{dataset_id}.messages` SET `tags_label` = '#{message["tags_label"]}', `flow_label` =  '#{
-      message["flow_label"]
-    }', `flow_name` = '#{message["flow_name"]}', `flow_uuid` = '#{message["flow_uuid"]}'  WHERE contact_phone= '#{
-      message["contact_phone"]
-    }' AND id = #{message["id"]}"
+  defp generate_merge_query("flow_results", _organization_id, credentials) do
+    fileds_to_update =
+      ["results"]
+      |> format_update_fileds
+
+    "MERGE `#{credentials.dataset_id}.flow_results` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.id DESC) AS row_num FROM `#{credentials.dataset_id}.flow_results_delta` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE
+    SET #{fileds_to_update}"
+
   end
 
-  defp generate_update_sql_query(_, _, _, _), do: nil
+  defp generate_merge_query(_, _, _), do: :ok
 
-  defp get_contact_values_to_update([column | tail], contact, acc, org_id)
-       when column in ["fields", "groups"] do
-    if is_nil(contact[column]) or contact[column] in [nil, %{}, []] do
-      get_contact_values_to_update(tail, contact, acc, org_id)
-    else
-      formatted_field_values = format_contact_field_values(column, contact[column], org_id)
-      acc = Map.put(acc, "`#{column}`", formatted_field_values)
-      get_contact_values_to_update(tail, contact, acc, org_id)
-    end
+  defp format_update_fileds(list) do
+    list
+    |> Enum.map(fn field ->  "target.#{field} = source.#{field}" end)
+    |> Enum.join(",")
   end
 
-  defp get_contact_values_to_update([column | tail], contact, acc, org_id) do
-    if is_nil(contact[column]) do
-      get_contact_values_to_update(tail, contact, acc, org_id)
-    else
-      acc = Map.put(acc, column, format_value_for_bq(contact[column]))
-      get_contact_values_to_update(tail, contact, acc, org_id)
-    end
-  end
-
-  defp get_contact_values_to_update([], _, acc, _), do: acc
-
-  @doc """
-  Format contact field values for the bigquery.
-  """
-  @spec format_contact_field_values(String.t(), list() | any(), integer()) :: any()
-  def format_contact_field_values("fields", contact_fields, org_id)
-      when is_list(contact_fields) do
-    values =
-      Enum.map(contact_fields, fn contact_field ->
-        contact_field = Glific.atomize_keys(contact_field)
-        value = format_value(contact_field.value)
-
-        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{
-          format_date(contact_field.inserted_at, org_id)
-        }')"
-      end)
-
-    "[STRUCT<label STRING, value STRING, type STRING, inserted_at DATETIME>#{
-      Enum.join(values, ",")
-    }]"
-  end
-
-  def format_contact_field_values("groups", groups, _org_id) when is_list(groups) do
-    values =
-      Enum.map(groups, fn group ->
-        group = Glific.atomize_keys(group)
-        "('#{group.label}', '#{group.description}')"
-      end)
-
-    "[STRUCT<label STRING, description STRING>#{Enum.join(values, ",")}]"
-  end
-
-  def format_contact_field_values(_, _field, _org_id), do: ""
-
-  @spec format_value_for_bq(any() | String.t()) :: any()
-  defp format_value_for_bq(value) when is_binary(value), do: "'#{value}'"
-  defp format_value_for_bq(value), do: value
 
   @spec handle_update_response(tuple() | nil) :: any()
   defp handle_update_response({:ok, response}),
