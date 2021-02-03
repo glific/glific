@@ -2,9 +2,6 @@ defmodule Glific.Repo.Migrations.NewTriggerTable do
   use Ecto.Migration
 
   def up do
-    # lets delete the old tables if they exist
-    down()
-
     triggers()
     trigger_logs()
   end
@@ -70,7 +67,9 @@ defmodule Glific.Repo.Migrations.NewTriggerTable do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:triggers, [:name, :organization_id])
+    create index(:triggers, :organization_id)
+    create index(:triggers, :last_trigger_at)
+    create index(:triggers, :next_trigger_at)
   end
 
   def trigger_logs() do
