@@ -16,7 +16,6 @@ defmodule Glific.Triggers.Trigger do
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
-          name: String.t() | nil,
           trigger_type: String.t() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -25,11 +24,12 @@ defmodule Glific.Triggers.Trigger do
           group_id: non_neg_integer | nil,
           group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
           start_at: DateTime.t() | nil,
-          end_at: DateTime.t() | nil,
+          end_date: Date.t() | nil,
           last_trigger_at: DateTime.t() | nil,
           next_trigger_at: DateTime.t() | nil,
           is_repeating: boolean(),
           repeats: list() | nil,
+          days: list() | nil,
           is_active: boolean(),
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -41,7 +41,7 @@ defmodule Glific.Triggers.Trigger do
     :name,
     :organization_id,
     :flow_id,
-    :start_at
+    :start_at,
   ]
   @optional_fields [
     :trigger_type,
@@ -55,7 +55,6 @@ defmodule Glific.Triggers.Trigger do
   ]
 
   schema "triggers" do
-    field :name, :string
     field :trigger_type, :string, default: "scheduled"
 
     belongs_to :contact, Contact
@@ -63,12 +62,13 @@ defmodule Glific.Triggers.Trigger do
     belongs_to :flow, Flow
 
     field :start_at, :utc_datetime
-    field :end_at, :utc_datetime
+    field :end_date, :date
 
     field :last_trigger_at, :utc_datetime
     field :next_trigger_at, :utc_datetime
 
     field :repeats, {:array, :string}, default: []
+    field :days, {:array, :integer}, default: []
 
     field :is_active, :boolean, default: true
     field :is_repeating, :boolean, default: false
@@ -86,10 +86,9 @@ defmodule Glific.Triggers.Trigger do
     trigger
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> foreign_key_constraint(:trigger_action_id)
-    |> foreign_key_constraint(:trigger_condition_id)
+    |> foreign_key_constraint(:flow_id)
+    |> foreign_key_constraint(:group_id)
     |> foreign_key_constraint(:organization_id)
-    |> unique_constraint([:name, :organization_id])
   end
 
   @doc false
