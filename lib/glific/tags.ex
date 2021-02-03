@@ -424,7 +424,8 @@ defmodule Glific.Tags do
 
   @spec publish_delete_message(list, non_neg_integer, boolean()) :: {:ok}
   defp publish_delete_message(list, organization_id, publish \\ true)
-  defp publish_delete_message([], _organization_id, false), do: {:ok}
+  defp publish_delete_message(_message_tags, _organization_id, false), do: {:ok}
+  defp publish_delete_message([], _organization_id, _publish), do: {:ok}
 
   defp publish_delete_message(message_tags, organization_id, true) do
     _list =
