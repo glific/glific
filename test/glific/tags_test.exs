@@ -123,14 +123,14 @@ defmodule Glific.TagsTest do
       assert tag == Tags.get_tag!(tag.id)
     end
 
-    test "publish_delete_message with possible scenarios should return {:ok}", %{
+    test "publish_delete_tag with possible scenarios should return {:ok}", %{
       organization_id: organization_id
     } do
       tag = tag_fixture(%{organization_id: organization_id})
-      assert Tags.publish_delete_message([], organization_id, true) === {:ok}
-      assert Tags.publish_delete_message([], organization_id, false) === {:ok}
-      assert Tags.publish_delete_message([tag], organization_id, true) === {:ok}
-      assert Tags.publish_delete_message([tag], organization_id, false) === {:ok}
+      assert Tags.publish_delete_tag([], organization_id, true) === {:ok}
+      assert Tags.publish_delete_tag([], organization_id, false) === {:ok}
+      assert Tags.publish_delete_tag([tag], organization_id, true) === {:ok}
+      assert Tags.publish_delete_tag([tag], organization_id, false) === {:ok}
     end
 
     test "delete_tag/1 deletes the tag", %{organization_id: organization_id} do
