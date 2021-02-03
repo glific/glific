@@ -1,5 +1,6 @@
 defmodule Glific.TagsTest do
   use Glific.DataCase
+  use ExUnit.Case
 
   alias Glific.{
     Fixtures,
@@ -120,6 +121,16 @@ defmodule Glific.TagsTest do
       tag = tag_fixture(%{organization_id: organization_id})
       assert {:error, %Ecto.Changeset{}} = Tags.update_tag(tag, @invalid_attrs)
       assert tag == Tags.get_tag!(tag.id)
+    end
+
+    test "publish_delete_message with possible scenarios should return {:ok}", %{
+      organization_id: organization_id
+    } do
+      tag = tag_fixture(%{organization_id: organization_id})
+      assert Tags.publish_delete_message([], organization_id, true) === {:ok}
+      assert Tags.publish_delete_message([], organization_id, false) === {:ok}
+      assert Tags.publish_delete_message([tag], organization_id, true) === {:ok}
+      assert Tags.publish_delete_message([tag], organization_id, false) === {:ok}
     end
 
     test "delete_tag/1 deletes the tag", %{organization_id: organization_id} do

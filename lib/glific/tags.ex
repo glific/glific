@@ -2,6 +2,7 @@ defmodule Glific.Tags do
   @moduledoc """
   The Tags Context, which encapsulates and manages tags and the related join tables.
   """
+  use Publicist
 
   alias Glific.{
     Communications,
