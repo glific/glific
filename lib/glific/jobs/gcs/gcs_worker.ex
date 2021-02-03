@@ -79,32 +79,40 @@ defmodule Glific.Jobs.GcsWorker do
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m, msg], msg.organization_id == ^organization_id)
-      |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id])
+      |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id, msg.flow_id])
       |> order_by([m], [m.inserted_at, m.id])
 
-    _t =
-      Repo.all(query)
-      |> Enum.reduce(
-        [],
-        fn row, _acc ->
-          [id, url, type, contact_id] = row
-
-          %{
-            url: url,
-            id: id,
-            type: type,
-            contact_id: contact_id
-          }
-          |> make_job(organization_id)
-        end
-      )
-
-    :ok
+    Repo.all(query)
+    |> Enum.reduce(
+      [],
+      fn row, _acc ->
+        row
+        |> make_media()
+        |> make_job(organization_id)
+      end
+    )
   end
 
+  @spec make_media(list()) :: map()
+  defp make_media(row) do
+    [id, url, type, contact_id, flow_id] = row
+
+    %{
+      url: url,
+      id: id,
+      type: type,
+      contact_id: contact_id,
+      flow_id: if(is_nil(flow_id), do: 0, else: flow_id)
+    }
+  end
+
+  @spec make_job(map(), non_neg_integer) :: :ok
   defp make_job(media, organization_id) do
-    __MODULE__.new(%{organization_id: organization_id, media: media})
-    |> Oban.insert()
+    {:ok, _} =
+      __MODULE__.new(%{organization_id: organization_id, media: media})
+      |> Oban.insert()
+
+    :ok
   end
 
   @doc """
@@ -115,7 +123,7 @@ defmodule Glific.Jobs.GcsWorker do
   def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
-    file_name = "#{Ecto.UUID.generate()}_#{media["contact_id"]}.#{extension}"
+    file_name = "#{Ecto.UUID.generate()}_#{media["contact_id"]}_#{media["flow_id"]}.#{extension}"
     path = "#{System.tmp_dir!()}/#{file_name}"
 
     download_file_to_temp(media["url"], path)

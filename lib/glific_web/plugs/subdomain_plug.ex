@@ -33,12 +33,14 @@ if Code.ensure_loaded?(Plug) do
     @spec call(Conn.t(), map()) :: Conn.t()
     def call(conn, config) do
       subdomain = get_subdomain(conn, config)
-      if is_nil(subdomain),
+
+      # we allow nil subdom,ains while testing for now
+      if is_nil(subdomain) && Application.get_env(:glific, :environment) != :test,
         do: send_error(conn),
-      else: Plug.put_organization(conn, subdomain, config)
+        else: Plug.put_organization(conn, subdomain, config)
     end
 
-    @spec get_subdomain(Conn.t(), map()) :: String.t()
+    @spec get_subdomain(Conn.t(), map()) :: String.t() | nil
     defp get_subdomain(_conn, %SubdomainPlugConfig{endpoint: nil}), do: nil
 
     defp get_subdomain(

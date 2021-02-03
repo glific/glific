@@ -78,7 +78,7 @@ defmodule GlificWeb.APIAuthPlug do
     PersistentSessionCache.put(
       store_config,
       renewal_token,
-      {[id: user.id], fingerprint: fingerprint, access_token: access_token}
+      {user, [id: user.id, fingerprint: fingerprint, access_token: access_token]}
     )
 
     {conn, user}
