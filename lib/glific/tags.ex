@@ -294,7 +294,7 @@ defmodule Glific.Tags do
       |> where([m], m.message_id == ^message_id and m.tag_id in ^tag_ids)
 
     Repo.all(query)
-    |> publish_delete_tag(organization_id)
+    |> publish_delete_message_tag(organization_id)
 
     Repo.delete_all(query)
   end
@@ -414,7 +414,7 @@ defmodule Glific.Tags do
 
     query
     |> Repo.all()
-    |> publish_delete_tag(organization_id, publish)
+    |> publish_delete_message_tag(organization_id, publish)
 
     {_, deleted_rows} =
       select(query, [mt], [mt.message_id])
@@ -423,12 +423,12 @@ defmodule Glific.Tags do
     List.flatten(deleted_rows)
   end
 
-  @spec publish_delete_tag(list, non_neg_integer, boolean()) :: {:ok}
-  defp publish_delete_tag(list, organization_id, publish \\ true)
-  defp publish_delete_tag(_message_tags, _organization_id, false), do: {:ok}
-  defp publish_delete_tag([], _organization_id, _publish), do: {:ok}
+  @spec publish_delete_message_tag(list, non_neg_integer, boolean()) :: {:ok}
+  defp publish_delete_message_tag(list, organization_id, publish \\ true)
+  defp publish_delete_message_tag(_message_tags, _organization_id, false), do: {:ok}
+  defp publish_delete_message_tag([], _organization_id, _publish), do: {:ok}
 
-  defp publish_delete_tag(message_tags, organization_id, true) do
+  defp publish_delete_message_tag(message_tags, organization_id, true) do
     _list =
       message_tags
       |> Enum.reduce([], fn message_tag, _acc ->
