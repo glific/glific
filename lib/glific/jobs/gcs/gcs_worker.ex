@@ -122,18 +122,25 @@ defmodule Glific.Jobs.GcsWorker do
     |> case do
       {:ok, _} ->
         {:ok, response} = upload_file_on_gcs(path, organization_id, file_name)
+
         get_public_link(response)
         |> update_gcs_url(media["id"])
 
         File.rm(path)
 
-      {:error, :timeout}
-        ->
-          Logger.info("File downloading timeout for org_id: #{organization_id}, media_id: #{media["id"]}. Will retry in 10 sec")
-          make_job(media, organization_id, 10)
+      {:error, :timeout} ->
+        Logger.info(
+          "File downloading timeout for org_id: #{organization_id}, media_id: #{media["id"]}. Will retry in 10 sec"
+        )
 
-      {:error, error}
-      -> Logger.info("Could not upload a file on GCS for org_id: #{organization_id}, media_id: #{media["id"]}, error #{inspect error}")
+        make_job(media, organization_id, 10)
+
+      {:error, error} ->
+        Logger.info(
+          "Could not upload a file on GCS for org_id: #{organization_id}, media_id: #{media["id"]}, error #{
+            inspect(error)
+          }"
+        )
     end
 
     :ok
@@ -174,22 +181,21 @@ defmodule Glific.Jobs.GcsWorker do
     |> Map.get(String.to_existing_atom(type), "png")
   end
 
-  def download_file_to_temp(url, path) do
+  defp download_file_to_temp(url, path) do
     Tesla.get(url)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body} = _env} when status in 200..299 ->
         File.write!(path, body)
         {:ok, path}
 
-      {:error, :timeout}
-        -> {:error, :timeout}
+      {:error, :timeout} ->
+        {:error, :timeout}
 
       {:error, %Tesla.Error{reason: reason}} ->
         {:error, reason}
 
-      error
-       -> {:error, error}
+      error ->
+        {:error, error}
     end
-
   end
 end
