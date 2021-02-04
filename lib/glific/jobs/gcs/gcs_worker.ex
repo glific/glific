@@ -168,7 +168,7 @@ defmodule Glific.Jobs.GcsWorker do
     %{
       image: "png",
       video: "mp4",
-      audio: "mp3"
+      audio: "mp3",
       document: "pdf"
     }
     |> Map.get(String.to_existing_atom(type), "png")
