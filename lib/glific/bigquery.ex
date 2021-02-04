@@ -79,6 +79,7 @@ defmodule Glific.Bigquery do
   end
 
   @doc false
+ #@spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowRevision.t() | FlowResult.t()
   @spec get_table_struct(String.t()) :: any()
   def get_table_struct(table) do
     case table do
@@ -210,7 +211,7 @@ defmodule Glific.Bigquery do
   Format dates for the bigquery.
   """
 
-  @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
+  @spec format_date(DateTime.t() | nil, non_neg_integer()) :: String.t()
   def format_date(nil, _),
     do: nil
 
@@ -430,7 +431,7 @@ defmodule Glific.Bigquery do
     :ok
   end
 
-  @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
+  @spec handle_insert_error(String.t(), String.t(), non_neg_integer, map(), Oban.Job.t()) :: :ok
   defp handle_insert_error(table, _dataset_id, organization_id, response, _job) do
     Logger.info(
       "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{
@@ -446,7 +447,7 @@ defmodule Glific.Bigquery do
     end
   end
 
-  @spec should_refresh_schema?(any()) :: boolean()
+  @spec should_refresh_schema?(map()) :: boolean()
   defp should_refresh_schema?(response) do
     with true <- Map.has_key?(response, :body),
          {:ok, error} <- Jason.decode(response.body),
@@ -460,7 +461,7 @@ defmodule Glific.Bigquery do
   @doc """
     Merge delta and main tables.
   """
-  @spec make_merge_job(String.t(), non_neg_integer) :: any()
+  @spec make_merge_job(String.t(), non_neg_integer) :: :ok
   def make_merge_job(table, organization_id) do
     fetch_bigquery_credentials(organization_id)
     |> case do
@@ -474,7 +475,7 @@ defmodule Glific.Bigquery do
         |> handle_update_response(table, credentials, organization_id)
 
       _ ->
-        %{url: nil, id: nil, email: nil}
+        :ok
     end
   end
 
@@ -527,7 +528,7 @@ defmodule Glific.Bigquery do
     |> Enum.join(",")
   end
 
-  @spec clean_delta_tables(String.t(), map(), non_neg_integer) :: any()
+  @spec clean_delta_tables(String.t(), map(), non_neg_integer) :: :ok
   defp clean_delta_tables(table, credentials, organization_id) do
     timezone = Partners.organization(organization_id).timezone
     updated_at =
@@ -547,13 +548,14 @@ defmodule Glific.Bigquery do
       error ->
         Logger.info("error while cleaning up #{table}_delta on bigquery. #{inspect(error)}")
     end
+
+    :ok
   end
 
-  @spec handle_update_response(tuple() | nil, String.t(), map(), non_neg_integer) :: any()
+  @spec handle_update_response(tuple() | nil, String.t(), map(), non_neg_integer) :: :ok
   defp handle_update_response({:ok, response}, table, credentials, organization_id) do
     Logger.info("#{table} has been merged on bigquery. #{inspect(response)}")
     clean_delta_tables(table, credentials, organization_id)
-    :ok
   end
 
   defp handle_update_response({:error, error}, table, _, _),
