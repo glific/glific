@@ -467,7 +467,10 @@ defmodule Glific.Bigquery do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = credentials} ->
         Logger.info("merge #{table} table on bigquery for org_id: #{organization_id}")
         sql = generate_merge_query(table, credentials)
-        GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id, body: %{query: sql, useLegacySql: false})
+
+        GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
+          body: %{query: sql, useLegacySql: false}
+        )
         |> handle_update_response(table, credentials)
 
       _ ->
@@ -527,24 +530,25 @@ defmodule Glific.Bigquery do
   @spec clean_delta_tables(String.t(), map()) :: any()
   defp clean_delta_tables(table, credentials) do
     sql = "Delete from `#{credentials.dataset_id}.#{table}_delta` where id != 0;"
-    IO.inspect("sql")
-    IO.inspect(sql)
-     GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(credentials.conn, credentials.project_id, body: %{query: sql, useLegacySql: false})
-      |> case do
-        {:ok, response} ->  Logger.info("#{table}_delta has been cleaned on bigquery. #{inspect(response)}")
-        error ->  Logger.info("error while cleaning up #{table}_delta on bigquery. #{inspect(error)}")
-      end
+    GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(credentials.conn, credentials.project_id,
+      body: %{query: sql, useLegacySql: false}
+    )
+    |> case do
+      {:ok, response} ->
+        Logger.info("#{table}_delta has been cleaned on bigquery. #{inspect(response)}")
+
+      error ->
+        Logger.info("error while cleaning up #{table}_delta on bigquery. #{inspect(error)}")
+    end
   end
 
   @spec handle_update_response(tuple() | nil, String.t(), map()) :: any()
   defp handle_update_response({:ok, response}, table, credentials) do
-   Logger.info("#{table} has been merged on bigquery. #{inspect(response)}")
-   clean_delta_tables(table, credentials)
-   :ok
+    Logger.info("#{table} has been merged on bigquery. #{inspect(response)}")
+    clean_delta_tables(table, credentials)
+    :ok
   end
 
   defp handle_update_response({:error, error}, table, _),
     do: Logger.error("Error while merging table #{table} on bigquery. #{inspect(error)}")
-
-
 end
