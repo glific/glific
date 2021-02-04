@@ -78,19 +78,18 @@ defmodule Glific.Bigquery do
     end
   end
 
+ # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()
   @doc false
- #@spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowRevision.t() | FlowResult.t()
   @spec get_table_struct(String.t()) :: any()
   def get_table_struct(table) do
     case table do
       "messages" -> Message
-      "messages_delta" -> Message
       "contacts" -> Contact
-      "contacts_delta" -> Contact
-      "flows" -> FlowRevision
       "flow_results" -> FlowResult
+      "flows" -> FlowRevision
+      "messages_delta" -> Message
+      "contacts_delta" -> Contact
       "flow_results_delta" -> FlowResult
-      "update_flow_results" -> FlowResult
     end
   end
 
