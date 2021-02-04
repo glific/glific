@@ -37,7 +37,15 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 config :glific, Oban,
   prefix: "global",
   repo: Glific.Repo,
-  queues: [default: 10, dialogflow: 10, gupshup: 10, webhook: 10, crontab: 10, bigquery: 5, gcs: 5],
+  queues: [
+    default: 10,
+    dialogflow: 10,
+    gupshup: 10,
+    webhook: 10,
+    crontab: 10,
+    bigquery: 5,
+    gcs: 5
+  ],
   plugins: [
     # Prune jobs after 5 mins, gives us some time to go investigate if needed
     {Oban.Plugins.Pruner, max_age: 300},
@@ -51,8 +59,7 @@ config :glific, Oban,
         {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
         {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
         {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
-        {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
-        {"30 */1 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_data_on_bigquery}}
+        {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
       ]
     }
   ]
