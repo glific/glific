@@ -18,6 +18,9 @@ defmodule Glific.Repo.Migrations.NewTriggerTable do
     drop_if_exists table(:triggers)
 
     create table(:triggers) do
+      # Useful to identify triggers by name
+      add :name, :string
+
       # We are merging the events and conditions of an E-C-A (event-condition action) system
       # for now. Lets have a field for the type of trigger
       # for now, there is only one events: "scheduled"
@@ -52,7 +55,7 @@ defmodule Glific.Repo.Migrations.NewTriggerTable do
 
       # if repeating, what is the repeat frequency
       # today | daily | weekly | monthly | weekday | weekend
-      add :repeats, {:array, :string}, default: []
+      add :frequency, {:array, :string}, default: []
 
       # if weekly, the days that it repeats
       # 1 - Monday, 7 - Sunday (ISO date convention)
