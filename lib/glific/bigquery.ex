@@ -411,7 +411,9 @@ defmodule Glific.Bigquery do
         |> case do
           {:ok, res} ->
             Logger.info(
-              "Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}"
+              "Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
+                table
+              }, res: #{inspect(res)}"
             )
 
             Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
