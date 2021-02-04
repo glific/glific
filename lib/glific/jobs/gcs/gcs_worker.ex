@@ -111,7 +111,7 @@ defmodule Glific.Jobs.GcsWorker do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
+  @spec perform(Oban.Job.t()) :: :ok
   def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
@@ -122,16 +122,18 @@ defmodule Glific.Jobs.GcsWorker do
     |> case do
       {:ok, _} ->
         {:ok, response} = upload_file_on_gcs(path, organization_id, file_name)
-
         get_public_link(response)
         |> update_gcs_url(media["id"])
 
         File.rm(path)
 
       {:error, :timeout}
-        -> make_job(media, organization_id, 10)
+        ->
+          Logger.info("File downloading timeout for org_id: #{organization_id}, media_id: #{media["id"]}. Will retry in 10 sec")
+          make_job(media, organization_id, 10)
 
-      _ ->
+      {:error, error}
+      -> Logger.info("Could not upload a file on GCS for org_id: #{organization_id}, media_id: #{media["id"]}, error #{inspect error}")
     end
 
     :ok
@@ -167,24 +169,26 @@ defmodule Glific.Jobs.GcsWorker do
       image: "png",
       video: "mp4",
       audio: "mp3"
+      document: "pdf"
     }
     |> Map.get(String.to_existing_atom(type), "png")
   end
 
-  defp download_file_to_temp(url, path) do
-    HTTPoison.get!(url)
+  def download_file_to_temp(url, path) do
+    Tesla.get(url)
     |> case do
-      %HTTPoison.Response{body: data}
-        ->
-          File.write!(path, data)
-          {:ok, path}
+      {:ok, %Tesla.Env{status: status, body: body} = _env} when status in 200..299 ->
+        File.write!(path, body)
+        {:ok, path}
 
-      %HTTPoison.Error{id: nil, reason: :timeout}
+      {:error, :timeout}
         -> {:error, :timeout}
 
+      {:error, %Tesla.Error{reason: reason}} ->
+        {:error, reason}
+
       error
-        ->
-          {:error, error}
+       -> {:error, error}
     end
 
   end
