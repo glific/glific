@@ -102,8 +102,8 @@ defmodule Glific.Jobs.GcsWorker do
     :ok
   end
 
-  defp make_job(media, organization_id) do
-    __MODULE__.new(%{organization_id: organization_id, media: media})
+  defp make_job(media, organization_id, schedule_in \\ 1) do
+    __MODULE__.new(%{organization_id: organization_id, media: media}, schedule_in: schedule_in)
     |> Oban.insert()
   end
 
@@ -127,6 +127,11 @@ defmodule Glific.Jobs.GcsWorker do
         |> update_gcs_url(media["id"])
 
         File.rm(path)
+
+      {:error, :timeout}
+        -> make_job(media, organization_id, 10)
+
+      _ ->
     end
 
     :ok
@@ -167,8 +172,20 @@ defmodule Glific.Jobs.GcsWorker do
   end
 
   defp download_file_to_temp(url, path) do
-    %HTTPoison.Response{body: data} = HTTPoison.get!(url)
-    File.write!(path, data)
-    {:ok, path}
+    HTTPoison.get!(url)
+    |> case do
+      %HTTPoison.Response{body: data}
+        ->
+          File.write!(path, data)
+          {:ok, path}
+
+      %HTTPoison.Error{id: nil, reason: :timeout}
+        -> {:error, :timeout}
+
+      error
+        ->
+          {:error, error}
+    end
+
   end
 end
