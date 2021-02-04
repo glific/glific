@@ -278,6 +278,7 @@ defmodule Glific.Searches do
     # since this revolves arund contacts
     basic_query(args)
     |> where([c: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
+    |> where([c: c], c.status not in ["blocked"])
     |> limit(^limit)
     |> offset(^offset)
     |> Repo.all()
