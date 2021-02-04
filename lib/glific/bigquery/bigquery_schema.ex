@@ -415,31 +415,26 @@ defmodule Glific.BigquerySchema do
         type: "INTEGER",
         mode: "REQUIRED"
       },
-
       %{
         name: "type",
         type: "STRING",
         mode: "REQUIRED"
       },
-
       %{
         name: "status",
         type: "STRING",
         mode: "REQUIRED"
       },
-
       %{
         name: "contact_phone",
         type: "STRING",
         mode: "REQUIRED"
       },
-
       %{
         name: "sent_at",
         type: "DATETIME",
         mode: "NULLABLE"
       },
-
       %{
         name: "tags_label",
         type: "STRING",
@@ -460,11 +455,11 @@ defmodule Glific.BigquerySchema do
         type: "STRING",
         mode: "NULLABLE"
       },
-       %{
+      %{
         name: "updated_at",
         type: "DATETIME",
         mode: "NULLABLE"
-      },
+      }
     ]
   end
 
@@ -516,7 +511,6 @@ defmodule Glific.BigquerySchema do
       }
     ]
   end
-
 
   @doc """
   Schema for flow results table
@@ -590,25 +584,21 @@ defmodule Glific.BigquerySchema do
         type: "STRING",
         mode: "REQUIRED"
       },
-
       %{
         name: "contact_phone",
         type: "STRING",
         mode: "REQUIRED"
       },
-
       %{
         name: "results",
         type: "STRING",
         mode: "REQUIRED"
       },
-
       %{
         name: "flow_context_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
-
       %{
         name: "updated_at",
         type: "DATETIME",

@@ -28,12 +28,9 @@ defmodule Glific.Bigquery do
   @bigquery_tables %{
     "messages" => :message_schema,
     "messages_delta" => :message_delta_schema,
-
     "contacts" => :contact_schema,
     "contacts_delta" => :contact_delta_schema,
-
     "flows" => :flow_schema,
-
     "flow_results" => :flow_result_schema,
     "flow_results_delta" => :flow_result_delta_schema
   }
@@ -209,7 +206,6 @@ defmodule Glific.Bigquery do
 
     :ok
   end
-
 
   @doc """
   Format dates for the bigquery.
@@ -396,7 +392,12 @@ defmodule Glific.Bigquery do
       do: :ok
 
   def make_insert_query(data, table, organization_id, job, max_id) do
-    Logger.info("insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}")
+    Logger.info(
+      "insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{
+        Enum.count(data)
+      }"
+    )
+
     fetch_bigquery_credentials(organization_id)
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
@@ -410,7 +411,10 @@ defmodule Glific.Bigquery do
         )
         |> case do
           {:ok, res} ->
-            Logger.info("Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}")
+            Logger.info(
+              "Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}"
+            )
+
             Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
             :ok
 
@@ -452,7 +456,6 @@ defmodule Glific.Bigquery do
     end
   end
 
-
   @doc """
     Merge delta and main tables.
   """
@@ -460,30 +463,46 @@ defmodule Glific.Bigquery do
   def make_merge_job(table, organization_id) do
     fetch_bigquery_credentials(organization_id)
     |> case do
-      {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} =  credentials} ->
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = credentials} ->
         Logger.info("merge #{table} table on bigquery for org_id: #{organization_id}")
         sql = generate_merge_query(table, credentials)
+
         GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-            body: %{query: sql, useLegacySql: false}
-          )
+          body: %{query: sql, useLegacySql: false}
+        )
         |> handle_update_response()
+
       _ ->
         %{url: nil, id: nil, email: nil}
     end
   end
 
-  defp generate_merge_query("contacts", credentials), do:
-      ["provider_status", "status", "language", "optin_time", "optout_time", "last_message_at", "updated_at", "fields", "settings", "groups", "tags"]
+  defp generate_merge_query("contacts", credentials),
+    do:
+      [
+        "provider_status",
+        "status",
+        "language",
+        "optin_time",
+        "optout_time",
+        "last_message_at",
+        "updated_at",
+        "fields",
+        "settings",
+        "groups",
+        "tags"
+      ]
       |> format_update_fileds
       |> do_generate_merge_query("contacts_delta", "contacts", credentials)
 
-  defp generate_merge_query("messages", credentials), do:
+  defp generate_merge_query("messages", credentials),
+    do:
       ["type", "status", "sent_at", "tags_label", "flow_label", "flow_name", "flow_uuid"]
       |> format_update_fileds
       |> do_generate_merge_query("messages_delta", "messages", credentials)
 
-
-  defp generate_merge_query("flow_results", credentials), do:
+  defp generate_merge_query("flow_results", credentials),
+    do:
       ["results"]
       |> format_update_fileds
       |> do_generate_merge_query("flow_results_delta", "flow_results", credentials)
@@ -491,16 +510,18 @@ defmodule Glific.Bigquery do
   defp generate_merge_query(_, _), do: :ok
 
   defp do_generate_merge_query(fileds_to_update, source, target, credentials) do
-    "MERGE `#{credentials.dataset_id}.#{target}` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{credentials.dataset_id}.#{source}` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET #{fileds_to_update}; Delete from `#{credentials.dataset_id}.#{source}` where id != 0;"
+    "MERGE `#{credentials.dataset_id}.#{target}` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{
+      credentials.dataset_id
+    }.#{source}` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET #{
+      fileds_to_update
+    }; Delete from `#{credentials.dataset_id}.#{source}` where id != 0;"
   end
-
 
   defp format_update_fileds(list) do
     list
-    |> Enum.map(fn field ->  "target.#{field} = source.#{field}" end)
+    |> Enum.map(fn field -> "target.#{field} = source.#{field}" end)
     |> Enum.join(",")
   end
-
 
   @spec handle_update_response(tuple() | nil) :: any()
   defp handle_update_response({:ok, response}),

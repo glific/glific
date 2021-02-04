@@ -65,8 +65,9 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec insert_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
   defp insert_for_table(nil, _), do: nil
 
-  defp insert_for_table(%{table: table} = _bigquery_job, organization_id) when table in ["messages_delta", "contacts_delta", "flow_results_delta"],
-  do: queue_table_data(table, organization_id, 0, 0)
+  defp insert_for_table(%{table: table} = _bigquery_job, organization_id)
+       when table in ["messages_delta", "contacts_delta", "flow_results_delta"],
+       do: queue_table_data(table, organization_id, 0, 0)
 
   defp insert_for_table(bigquery_job, organization_id) do
     table_id = bigquery_job.table_id
@@ -248,11 +249,10 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   ## Insert update query.
   defp queue_table_data("messages_delta", organization_id, _min_id, _max_id) do
-
     Message
     |> where([m], m.organization_id == ^organization_id)
     |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
-    |> where([fr], fr.updated_at !=  fr.inserted_at)
+    |> where([fr], fr.updated_at != fr.inserted_at)
     |> order_by([m], [m.inserted_at, m.id])
     |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
     |> Repo.all()
@@ -260,19 +260,19 @@ defmodule Glific.Jobs.BigQueryWorker do
       if is_simulator_contact?(row.contact.phone),
         do: acc,
         else: [
-         %{
-          id: row.id,
-          type: row.type,
-          sent_at: Bigquery.format_date(row.sent_at, organization_id),
-          status: row.status,
-          contact_phone: row.contact.phone,
-          tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
-          flow_label: row.flow_label,
-          flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
-          flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
-        }
-        |> Bigquery.format_data_for_bigquery("messages_delta")
-        | acc
+          %{
+            id: row.id,
+            type: row.type,
+            sent_at: Bigquery.format_date(row.sent_at, organization_id),
+            status: row.status,
+            contact_phone: row.contact.phone,
+            tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
+            flow_label: row.flow_label,
+            flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
+            flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name)
+          }
+          |> Bigquery.format_data_for_bigquery("messages_delta")
+          | acc
         ]
     end)
     |> Enum.chunk_every(100)
@@ -286,7 +286,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       Contact
       |> where([fr], fr.organization_id == ^organization_id)
       |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
-      |> where([fr], fr.updated_at !=  fr.inserted_at)
+      |> where([fr], fr.updated_at != fr.inserted_at)
       |> where([m], m.phone != @simulater_phone)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups])
@@ -331,6 +331,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :contacts_delta, organization_id, 0))
+
     :ok
   end
 
@@ -339,7 +340,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       FlowResult
       |> where([fr], fr.organization_id == ^organization_id)
       |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
-      |> where([fr], fr.updated_at !=  fr.inserted_at)
+      |> where([fr], fr.updated_at != fr.inserted_at)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
 
@@ -432,7 +433,10 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(
-      %Oban.Job{args: %{ "table" => table, "organization_id" => organization_id, "merge_table" => true}} = _job),
+        %Oban.Job{
+          args: %{"table" => table, "organization_id" => organization_id, "merge_table" => true}
+        } = _job
+      ),
       do: Bigquery.make_merge_job(table, organization_id)
 
   def perform(
