@@ -399,7 +399,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec is_simulator_contact?(String.t()) :: boolean
   defp is_simulator_contact?(phone), do: @simulater_phone == phone
 
-  @spec make_job(any(), any(), non_neg_integer, non_neg_integer) :: :ok
+  @spec make_job(list(), String.t(), non_neg_integer, non_neg_integer) :: :ok
   defp make_job(data, _, _, _) when data in [%{}, nil, []], do: :ok
 
   defp make_job(data, table, organization_id, max_id) do
@@ -414,7 +414,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  @spec make_merge_job(any(), non_neg_integer) :: :ok
+  @spec make_merge_job(String.t(), non_neg_integer) :: :ok
   defp make_merge_job(table, organization_id) do
     __MODULE__.new(%{
       table: table,
