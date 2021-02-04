@@ -286,6 +286,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       Contact
       |> where([fr], fr.organization_id == ^organization_id)
       |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+      |> where([fr], fr.updated_at !=  fr.inserted_at)
       |> where([m], m.phone != @simulater_phone)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups])
@@ -338,6 +339,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       FlowResult
       |> where([fr], fr.organization_id == ^organization_id)
       |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+      |> where([fr], fr.updated_at !=  fr.inserted_at)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
 

@@ -459,7 +459,12 @@ defmodule Glific.BigquerySchema do
         name: "flow_uuid",
         type: "STRING",
         mode: "NULLABLE"
-      }
+      },
+       %{
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
     ]
   end
 
@@ -601,6 +606,12 @@ defmodule Glific.BigquerySchema do
       %{
         name: "flow_context_id",
         type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        name: "updated_at",
+        type: "DATETIME",
         mode: "NULLABLE"
       }
     ]
