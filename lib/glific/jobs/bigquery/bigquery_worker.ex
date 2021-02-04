@@ -55,8 +55,8 @@ defmodule Glific.Jobs.BigQueryWorker do
 
     if credential do
       make_merge_job("contacts", organization_id)
-      make_merge_job("messages", organization_id)
-      make_merge_job("flow_results", organization_id)
+      # make_merge_job("messages", organization_id)
+      # make_merge_job("flow_results", organization_id)
     end
 
     :ok
