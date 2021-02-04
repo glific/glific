@@ -220,7 +220,7 @@ defmodule Glific.Bigquery do
     Timex.parse(date, "{RFC3339z}")
     |> elem(1)
     |> Timex.Timezone.convert(timezone)
-    |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+    |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
   end
 
   def format_date(date, organization_id) do
@@ -228,7 +228,7 @@ defmodule Glific.Bigquery do
 
     date
     |> Timex.Timezone.convert(timezone)
-    |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+    |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
   end
 
   @doc """
@@ -471,7 +471,7 @@ defmodule Glific.Bigquery do
         GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
           body: %{query: sql, useLegacySql: false}
         )
-        |> handle_update_response(table, credentials)
+        |> handle_update_response(table, credentials, organization_id)
 
       _ ->
         %{url: nil, id: nil, email: nil}
@@ -527,9 +527,16 @@ defmodule Glific.Bigquery do
     |> Enum.join(",")
   end
 
-  @spec clean_delta_tables(String.t(), map()) :: any()
-  defp clean_delta_tables(table, credentials) do
-    sql = "Delete from `#{credentials.dataset_id}.#{table}_delta` where id != 0;"
+  @spec clean_delta_tables(String.t(), map(), non_neg_integer) :: any()
+  defp clean_delta_tables(table, credentials, organization_id) do
+    timezone = Partners.organization(organization_id).timezone
+    updated_at =
+      Timex.shift(Timex.now(), minutes: -2)
+      |> Timex.Timezone.convert(timezone)
+      |> Timex.format!("{YYYY}-{0M}-{0D}T{h24}:{m}:{s}")
+
+    sql = "Delete from `#{credentials.dataset_id}.#{table}_delta` where updated_at <= '#{updated_at}';"
+
     GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(credentials.conn, credentials.project_id,
       body: %{query: sql, useLegacySql: false}
     )
@@ -542,13 +549,13 @@ defmodule Glific.Bigquery do
     end
   end
 
-  @spec handle_update_response(tuple() | nil, String.t(), map()) :: any()
-  defp handle_update_response({:ok, response}, table, credentials) do
+  @spec handle_update_response(tuple() | nil, String.t(), map(), non_neg_integer) :: any()
+  defp handle_update_response({:ok, response}, table, credentials, organization_id) do
     Logger.info("#{table} has been merged on bigquery. #{inspect(response)}")
-    clean_delta_tables(table, credentials)
+    clean_delta_tables(table, credentials, organization_id)
     :ok
   end
 
-  defp handle_update_response({:error, error}, table, _),
+  defp handle_update_response({:error, error}, table, _, _),
     do: Logger.error("Error while merging table #{table} on bigquery. #{inspect(error)}")
 end
