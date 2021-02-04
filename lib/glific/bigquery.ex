@@ -90,7 +90,6 @@ defmodule Glific.Bigquery do
       "flow_results" -> FlowResult
       "flow_results_delta" -> FlowResult
       "update_flow_results" -> FlowResult
-      _ -> ""
     end
   end
 
@@ -459,7 +458,7 @@ defmodule Glific.Bigquery do
   @doc """
     Merge delta and main tables.
   """
-
+  @spec make_merge_job(String.t(), non_neg_integer) :: any()
   def make_merge_job(table, organization_id) do
     fetch_bigquery_credentials(organization_id)
     |> case do
@@ -477,6 +476,7 @@ defmodule Glific.Bigquery do
     end
   end
 
+  @spec generate_merge_query(String.t(), map()) :: String.t()
   defp generate_merge_query("contacts", credentials),
     do:
       [
@@ -509,6 +509,7 @@ defmodule Glific.Bigquery do
 
   defp generate_merge_query(_, _), do: :ok
 
+  @spec do_generate_merge_query(String.t(), String.t(), String.t(), map()) :: String.t()
   defp do_generate_merge_query(fileds_to_update, source, target, credentials) do
     "MERGE `#{credentials.dataset_id}.#{target}` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{
       credentials.dataset_id
@@ -517,6 +518,7 @@ defmodule Glific.Bigquery do
     }; Delete from `#{credentials.dataset_id}.#{source}` where id != 0;"
   end
 
+  @spec format_update_fileds(list()) :: String.t()
   defp format_update_fileds(list) do
     list
     |> Enum.map(fn field -> "target.#{field} = source.#{field}" end)

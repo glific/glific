@@ -152,6 +152,7 @@ defmodule Glific.BigquerySchema do
     ]
   end
 
+  @doc false
   @spec contact_delta_schema :: list()
   def contact_delta_schema do
     [
@@ -407,6 +408,7 @@ defmodule Glific.BigquerySchema do
     ]
   end
 
+  @doc false
   @spec message_delta_schema :: list()
   def message_delta_schema do
     [
@@ -571,6 +573,7 @@ defmodule Glific.BigquerySchema do
     ]
   end
 
+  @doc false
   @spec flow_result_delta_schema :: list()
   def flow_result_delta_schema do
     [
