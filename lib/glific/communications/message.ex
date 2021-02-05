@@ -11,9 +11,7 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Partners,
-    Repo,
-    Taggers,
-    Tags
+    Repo
   }
 
   @doc false
@@ -102,15 +100,6 @@ defmodule Glific.Communications.Message do
       })
 
     publish_message_status(message)
-
-    Tags.remove_tag_from_all_message(
-      message.contact_id,
-      ["notreplied", "unread"],
-      message.organization_id,
-      message.publish?
-    )
-
-    Taggers.TaggerHelper.tag_outbound_message(message)
     {:ok, message}
   end
 
@@ -231,7 +220,6 @@ defmodule Glific.Communications.Message do
   defp receive_text(message_params) do
     message_params
     |> Messages.create_message()
-    |> Taggers.TaggerHelper.tag_inbound_message()
     |> Communications.publish_data(:received_message, message_params.organization_id)
     |> process_message()
   end

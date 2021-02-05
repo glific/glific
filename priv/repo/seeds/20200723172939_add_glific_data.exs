@@ -201,29 +201,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         parent_id: message_tags_mt.id
       },
       %{
-        label: "Not replied",
-        shortcode: "notreplied",
-        description: "Marking message as not replied",
-        parent_id: message_tags_mt.id
-      },
-      %{
         label: "Spam",
         shortcode: "spam",
         description: "Marking message as irrelevant or unsolicited message",
-        parent_id: message_tags_mt.id
-      },
-      %{
-        label: "Unread",
-        shortcode: "unread",
-        description: "Marking message as not read",
-        parent_id: message_tags_mt.id
-      },
-
-      # Status of outbound Message
-      %{
-        label: "Not Responded",
-        shortcode: "notresponded",
-        description: "Marking message as not responded",
         parent_id: message_tags_mt.id
       },
 

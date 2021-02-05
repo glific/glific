@@ -16,8 +16,8 @@ defmodule Glific.Repo.Migrations.AddStatusToMessages do
       add :is_replied, :boolean, default: false
     end
 
-    create index(:messages, :is_read)
+    create index(:messages, [:is_read, :flow])
     # since we'll always use is_replied in combination with a flow, we add a combined index
-    create index(:messages, [:is_replied, :flow]
+    create index(:messages, [:is_replied, :flow])
   end
 end
