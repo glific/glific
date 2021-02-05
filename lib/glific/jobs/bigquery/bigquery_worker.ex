@@ -26,7 +26,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   }
 
   @simulater_phone "9876543210"
-  @update_minutes -1
+  @update_minutes -3
 
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
