@@ -59,8 +59,7 @@ config :glific, Oban,
         {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
         {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
         {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
-        {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
-        {"30 */1 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_data_on_bigquery}}
+        {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
       ]
     }
   ]
