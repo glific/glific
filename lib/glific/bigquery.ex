@@ -530,8 +530,9 @@ defmodule Glific.Bigquery do
   @spec clean_delta_tables(String.t(), map(), non_neg_integer) :: :ok
   defp clean_delta_tables(table, credentials, organization_id) do
     timezone = Partners.organization(organization_id).timezone
+    ## remove all the data for last 30 minutes
     updated_at =
-      Timex.shift(Timex.now(), minutes: -2)
+      Timex.shift(Timex.now(), minutes: -30)
       |> Timex.Timezone.convert(timezone)
       |> Timex.format!("{YYYY}-{0M}-{0D}T{h24}:{m}:{s}")
 
