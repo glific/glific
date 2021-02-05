@@ -147,8 +147,7 @@ defmodule Glific.Jobs.MinuteWorker do
        when job in [
               "hourly_tasks",
               "five_minute_tasks",
-              "update_hsms",
-              "update_data_on_bigquery"
+              "update_hsms"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
@@ -156,16 +155,14 @@ defmodule Glific.Jobs.MinuteWorker do
         FlowContext.delete_completed_flow_contexts()
         FlowContext.delete_old_flow_contexts()
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
+        Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"])
+        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [], true)
 
       "five_minute_tasks" ->
-        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
 
       "update_hsms" ->
         Partners.perform_all(&Templates.update_hsms/1, nil, [])
-
-      "update_data_on_bigquery" ->
-        Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"
