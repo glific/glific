@@ -12,7 +12,7 @@ defmodule Glific.Jobs.GcsWorker do
 
   use Oban.Worker,
     queue: :gcs,
-    max_attempts: 1,
+    max_attempts: 3,
     priority: 2
 
   alias Waffle.Storage.Google.CloudStorage
@@ -82,7 +82,8 @@ defmodule Glific.Jobs.GcsWorker do
       |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id, msg.flow_id])
       |> order_by([m], [m.inserted_at, m.id])
 
-    Repo.all(query)
+    query
+    |> Repo.all()
     |> Enum.reduce(
       [],
       fn row, _acc ->
@@ -119,7 +120,7 @@ defmodule Glific.Jobs.GcsWorker do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
+  @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:discard, String.t()}
   def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
@@ -135,6 +136,16 @@ defmodule Glific.Jobs.GcsWorker do
         |> update_gcs_url(media["id"])
 
         File.rm(path)
+        :ok
+
+      {:error, :timeout} ->
+        {:error, "GCS Download timeout for org_id: #{organization_id}, media_id: #{media["id"]}"}
+
+      {:error, error} ->
+        {:discard,
+         "GCS Upload failed for org_id: #{organization_id}, media_id: #{media["id"]}, error #{
+           inspect(error)
+         }"}
     end
 
     :ok
@@ -169,14 +180,27 @@ defmodule Glific.Jobs.GcsWorker do
     %{
       image: "png",
       video: "mp4",
-      audio: "mp3"
+      audio: "mp3",
+      document: "pdf"
     }
     |> Map.get(String.to_existing_atom(type), "png")
   end
 
   defp download_file_to_temp(url, path) do
-    %HTTPoison.Response{body: data} = HTTPoison.get!(url)
-    File.write!(path, data)
-    {:ok, path}
+    Tesla.get(url)
+    |> case do
+      {:ok, %Tesla.Env{status: status, body: body} = _env} when status in 200..299 ->
+        File.write!(path, body)
+        {:ok, path}
+
+      {:error, :timeout} ->
+        {:error, :timeout}
+
+      {:error, %Tesla.Error{reason: reason}} ->
+        {:error, reason}
+
+      error ->
+        {:error, error}
+    end
   end
 end

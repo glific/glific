@@ -152,6 +152,143 @@ defmodule Glific.BigquerySchema do
     ]
   end
 
+  @doc false
+  @spec contact_delta_schema :: list()
+  def contact_delta_schema do
+    [
+      %{
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "provider_status",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "status",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "language",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "optin_time",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "optout_time",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "last_message_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "fields",
+        type: "RECORD",
+        mode: "REPEATED",
+        fields: [
+          %{
+            name: "label",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            name: "value",
+            type: "string",
+            mode: "NULLABLE"
+          },
+          %{
+            name: "type",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            name: "inserted_at",
+            type: "DATETIME",
+            mode: "NULLABLE"
+          }
+        ]
+      },
+      %{
+        name: "settings",
+        type: "RECORD",
+        mode: "NULLABLE",
+        fields: [
+          %{
+            name: "label",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            name: "values",
+            type: "RECORD",
+            mode: "REPEATED",
+            fields: [
+              %{
+                name: "key",
+                type: "STRING",
+                mode: "NULLABLE"
+              },
+              %{
+                name: "value",
+                type: "STRING",
+                mode: "NULLABLE"
+              }
+            ]
+          }
+        ]
+      },
+      %{
+        name: "groups",
+        type: "RECORD",
+        mode: "REPEATED",
+        fields: [
+          %{
+            name: "label",
+            type: "STRING",
+            mode: "REQUIRED"
+          },
+          %{
+            name: "description",
+            type: "STRING",
+            mode: "NULLABLE"
+          }
+        ]
+      },
+      %{
+        name: "tags",
+        type: "RECORD",
+        mode: "REPEATED",
+        fields: [
+          %{
+            name: "label",
+            type: "STRING",
+            mode: "REQUIRED"
+          }
+        ]
+      }
+    ]
+  end
+
   @doc """
   Schema for messages table
   """
@@ -271,6 +408,63 @@ defmodule Glific.BigquerySchema do
     ]
   end
 
+  @doc false
+  @spec message_delta_schema :: list()
+  def message_delta_schema do
+    [
+      %{
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "type",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "status",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "contact_phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "sent_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "tags_label",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "flow_label",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "flow_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "flow_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
   @doc """
   Schema for flows table
   """
@@ -374,6 +568,43 @@ defmodule Glific.BigquerySchema do
       %{
         name: "flow_context_id",
         type: "INTEGER",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc false
+  @spec flow_result_delta_schema :: list()
+  def flow_result_delta_schema do
+    [
+      %{
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "uuid",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "contact_phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "results",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        name: "flow_context_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        name: "updated_at",
+        type: "DATETIME",
         mode: "NULLABLE"
       }
     ]

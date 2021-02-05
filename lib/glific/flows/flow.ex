@@ -248,8 +248,7 @@ defmodule Glific.Flows.Flow do
   end
 
   @doc """
-  Helper function to load a active flow from
-  the database and build an object
+  Helper function to load a active flow from the database and build an object
   """
   @spec get_loaded_flow(non_neg_integer, String.t(), map()) :: map()
   def get_loaded_flow(organization_id, status, args) do
