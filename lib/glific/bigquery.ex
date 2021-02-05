@@ -78,7 +78,7 @@ defmodule Glific.Bigquery do
     end
   end
 
- # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()
+  # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()
   @doc false
   @spec get_table_struct(String.t()) :: any()
   def get_table_struct(table) do
@@ -536,7 +536,8 @@ defmodule Glific.Bigquery do
       |> Timex.Timezone.convert(timezone)
       |> Timex.format!("{YYYY}-{0M}-{0D}T{h24}:{m}:{s}")
 
-    sql = "Delete from `#{credentials.dataset_id}.#{table}_delta` where updated_at <= '#{updated_at}';"
+    sql =
+      "Delete from `#{credentials.dataset_id}.#{table}_delta` where updated_at <= '#{updated_at}';"
 
     GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(credentials.conn, credentials.project_id,
       body: %{query: sql, useLegacySql: false}
