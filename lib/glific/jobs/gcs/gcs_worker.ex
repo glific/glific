@@ -12,7 +12,7 @@ defmodule Glific.Jobs.GcsWorker do
 
   use Oban.Worker,
     queue: :gcs,
-    max_attempts: 1,
+    max_attempts: 3,
     priority: 2
 
   alias Waffle.Storage.Google.CloudStorage
@@ -83,7 +83,8 @@ defmodule Glific.Jobs.GcsWorker do
       |> order_by([m], [m.inserted_at, m.id])
 
     _t =
-      Repo.all(query)
+      query
+      |> Repo.all()
       |> Enum.reduce(
         [],
         fn row, _acc ->
@@ -111,7 +112,7 @@ defmodule Glific.Jobs.GcsWorker do
   Standard perform method to use Oban worker
   """
   @impl Oban.Worker
-  @spec perform(Oban.Job.t()) :: :ok
+  @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:discard, String.t()}
   def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
@@ -127,20 +128,16 @@ defmodule Glific.Jobs.GcsWorker do
         |> update_gcs_url(media["id"])
 
         File.rm(path)
+        :ok
 
       {:error, :timeout} ->
-        Logger.info(
-          "File downloading timeout for org_id: #{organization_id}, media_id: #{media["id"]}. Will retry in 10 sec"
-        )
-
-        make_job(media, organization_id, 10)
+        {:error, "GCS Download timeout for org_id: #{organization_id}, media_id: #{media["id"]}"}
 
       {:error, error} ->
-        Logger.info(
-          "Could not upload a file on GCS for org_id: #{organization_id}, media_id: #{media["id"]}, error #{
-            inspect(error)
-          }"
-        )
+        {:discard,
+         "GCS Upload failed for org_id: #{organization_id}, media_id: #{media["id"]}, error #{
+           inspect(error)
+         }"}
     end
 
     :ok
