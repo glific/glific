@@ -467,7 +467,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       {"Conversations where the contact has opted out", "Optout"}
     ]
 
-    Enum.each(data, &saved_search(&1, organization, labels))
+    Enum.each(data, &saved_search(&1, organization))
   end
 
   # Pre defined collections
