@@ -286,8 +286,8 @@ defmodule GlificWeb.Schema.TagTest do
 
     assert contact_id != message_1.contact_id
 
-    assert Messages.get_message!(message_1.id).is_read == :true
-    assert Messages.get_message!(message_2.id).is_read == :true
-    assert Messages.get_message!(message_3.id).is_read == :true
+    assert Messages.get_message!(message_1.id).is_read == true
+    assert Messages.get_message!(message_2.id).is_read == true
+    assert Messages.get_message!(message_3.id).is_read == true
   end
 end

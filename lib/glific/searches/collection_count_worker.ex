@@ -35,8 +35,8 @@ defmodule Glific.Jobs.CollectionCountWorker do
   @doc """
   Do it in one query for all organizations for each of Unread, Not Responded, Not Replied and OptOut
   """
-  @spec collection_stats() :: map()
-  def collection_stats() do
+  @spec collection_stats :: map()
+  def collection_stats do
     org_id_list =
       Partners.active_organizations([])
       |> Partners.recent_organizations(true)
@@ -49,13 +49,16 @@ defmodule Glific.Jobs.CollectionCountWorker do
     |> not_replied(query)
     |> not_responded(query)
     |> optout(org_id_list)
-    |> Enum.each(fn {id, stats} ->
+    |> Enum.map(fn {id, stats} ->
       Communications.publish_data(
         %{"Collection_count" => stats},
         :periodic_info,
         id
       )
+
+      {id, stats}
     end)
+    |> Enum.into(%{})
   end
 
   @spec empty_result :: map()
