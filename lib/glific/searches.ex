@@ -157,7 +157,7 @@ defmodule Glific.Searches do
     query = from c in Contact, as: :c
 
     query
-    |> where([c], c.status != ^:blocked)
+    |> where([c], c.status != :blocked)
     |> select([c], c.id)
     |> Repo.add_permission(&Searches.add_permission_contact/2)
   end
@@ -173,6 +173,7 @@ defmodule Glific.Searches do
 
   defp filter_status_contacts_of_organization("Optout") do
     status_query()
+    |> where([c], c.status != :blocked)
     |> where([c], not is_nil(c.optout_time))
   end
 
