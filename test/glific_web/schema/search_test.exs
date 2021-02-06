@@ -14,7 +14,7 @@ defmodule GlificWeb.Schema.SearchTest do
     Repo,
     Searches,
     Searches.SavedSearch,
-    Seeds.SeedsDev,
+    Seeds.SeedsDev
   }
 
   setup do
@@ -274,7 +274,6 @@ defmodule GlificWeb.Schema.SearchTest do
   end
 
   test "search for not replied tagged messages in conversations", %{staff: user} do
-
     {:ok, receiver} =
       Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: user.organization_id})
 
@@ -297,15 +296,18 @@ defmodule GlificWeb.Schema.SearchTest do
       }
       |> Messages.create_message()
 
-    result = auth_query_gql_by(:search, user,
-      variables: put_in(saved_search.args, ["filter", "id"], to_string(sender.id)))
+    result =
+      auth_query_gql_by(:search, user,
+        variables: put_in(saved_search.args, ["filter", "id"], to_string(sender.id))
+      )
 
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
              to_string(sender.id)
 
-    is_replied = get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "is_replied"])
+    is_replied =
+      get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "is_replied"])
 
     assert is_replied == false
   end
@@ -319,14 +321,17 @@ defmodule GlificWeb.Schema.SearchTest do
 
     message = Fixtures.message_fixture(%{body: saved_search.args["term"]})
 
-    result = auth_query_gql_by(:search, user,
-      variables: put_in(saved_search.args, ["filter", "id"], to_string(message.contact_id)))
+    result =
+      auth_query_gql_by(:search, user,
+        variables: put_in(saved_search.args, ["filter", "id"], to_string(message.contact_id))
+      )
 
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) != nil
 
-    is_replied = get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "is_replied"])
+    is_replied =
+      get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "is_replied"])
 
     assert is_replied == false
   end
@@ -340,6 +345,7 @@ defmodule GlificWeb.Schema.SearchTest do
       })
 
     message = Fixtures.message_fixture(%{body: saved_search.args["term"]})
+
     result =
       auth_query_gql_by(:search, user,
         variables: %{
@@ -356,7 +362,11 @@ defmodule GlificWeb.Schema.SearchTest do
     result =
       auth_query_gql_by(:search, user,
         variables: %{
-          "filter" => %{"savedSearchId" => saved_search.id, "term" => "defa", "id" => to_string(message.contact_id)},
+          "filter" => %{
+            "savedSearchId" => saved_search.id,
+            "term" => "defa",
+            "id" => to_string(message.contact_id)
+          },
           "contactOpts" => %{},
           "messageOpts" => %{}
         }
@@ -369,7 +379,8 @@ defmodule GlificWeb.Schema.SearchTest do
     result = auth_query_gql_by(:search_count, user, variables: %{"id" => saved_search.id})
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "savedSearchCount"]) > 1 # we dont know how many exist from the seed daya
+    # we dont know how many exist from the seed daya
+    assert get_in(query_data, [:data, "savedSearchCount"]) > 1
   end
 
   # Let's test some of the essential search queries for the conversation

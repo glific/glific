@@ -215,7 +215,7 @@ defmodule Glific.Searches do
   Add permissioning specific to searches, in this case we want to restrict the visibility of
   contact ids where the contact is the main query table
   """
-  @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
+  @spec add_permission_contact(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def add_permission_contact(query, user) do
     sub_query = permission_query(user)
 
