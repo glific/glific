@@ -946,4 +946,18 @@ defmodule Glific.Messages do
     content_length_in_kb = content_length / 1024
     size_limit >= content_length_in_kb
   end
+
+
+  @doc """
+  Mark that the user has read all messages sent by a given contact
+  """
+  @spec mark_contact_messages_as_read(non_neg_integer, non_neg_integer) :: nil
+  def mark_contact_messages_as_read(contact_id, organization_id) do
+    Message
+    |> where([m], m.contact_id == ^contact_id)
+    |> where([m], m.organization_id == ^organization_id)
+    |> where([m], m.is_read == :false)
+    |> Repo.update_all([set: [is_read: :true]])
+  end
+
 end
