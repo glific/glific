@@ -282,9 +282,6 @@ defmodule GlificWeb.Schema.SearchTest do
     {:ok, sender} =
       Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: user.organization_id})
 
-    {:ok, not_replied_tag} =
-      Repo.fetch_by(Tag, %{shortcode: "notreplied", organization_id: user.organization_id})
-
     {:ok, saved_search} =
       Repo.fetch_by(SavedSearch, %{
         label: "Conversations read but not replied",
@@ -305,7 +302,6 @@ defmodule GlificWeb.Schema.SearchTest do
     MessageTags.update_message_tags(%{
       message_id: message.id,
       organization_id: message.organization_id,
-      add_tag_ids: [not_replied_tag.id],
       delete_tag_ids: []
     })
 

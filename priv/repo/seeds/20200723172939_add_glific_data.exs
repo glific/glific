@@ -459,27 +459,19 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def saved_searches(organization) do
-    labels =
-      Repo.label_id_map(
-        Tag,
-        ["Not replied", "Not Responded", "Optout", "Unread"],
-        organization.id,
-        :label
-      )
-
     data = [
       {"All conversations", "All"},
       {"All unread conversations", "Unread"},
       {"Conversations read but not replied", "Not replied"},
-      {"Conversations where the contact has opted out", "Optout"},
-      {"Conversations read but not responded", "Not Responded"}
+      {"Conversations read but not responded", "Not Responded"},
+      {"Conversations where the contact has opted out", "Optout"}
     ]
 
     Enum.each(data, &saved_search(&1, organization, labels))
   end
 
   # Pre defined collections
-  defp saved_search({label, shortcode}, organization, _labels) when shortcode == "All",
+  defp saved_search({label, shortcode}, organization) when shortcode == "All",
     do:
       Repo.insert!(%SavedSearch{
         label: label,
@@ -493,13 +485,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         organization_id: organization.id
       })
 
-  defp saved_search({label, shortcode}, organization, labels),
+  defp saved_search({label, shortcode}, organization),
     do:
       Repo.insert!(%SavedSearch{
         label: label,
         shortcode: shortcode,
         args: %{
-          filter: %{includeTags: [to_string(labels[shortcode])], term: ""},
+          filter: %{status: shortcode, term: ""},
           contactOpts: %{limit: 20, offset: 0},
           messageOpts: %{limit: 10, offset: 0}
         },
