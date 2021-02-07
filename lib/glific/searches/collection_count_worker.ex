@@ -52,7 +52,7 @@ defmodule Glific.Jobs.CollectionCountWorker do
     |> Enum.map(fn {id, stats} ->
       Communications.publish_data(
         %{"Collection_count" => stats},
-        :periodic_info,
+        :collection_count,
         id
       )
 

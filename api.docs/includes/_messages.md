@@ -461,7 +461,7 @@ mutation createAndSendMessage($input: MessageInput!) {
     "isHsm": true,
     "params": ["Fifty", "Next Week"],
     "templateId": 32
-    
+
   }
 }
 ```
@@ -871,7 +871,40 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#messageresult">MessageResult</a> | An error or an object
 
+## Remove unread status from messages belonging to a contact
 
+```graphql
+mutation markContactMessagesAsRead($contactId : Gid!) {
+  markContactMessagesAsRead(contactId: $contactId)
+}
+
+{
+  "contactId": "26"
+}
+```
+
+> The above query returns the same contactID back
+
+```json
+{
+  "data": {
+    "markContactMessagesAsRead": [
+       "26"
+    ]
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+contactId | <a href="#gid">Gid</a>! | required ||
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#gid">Contact ID</a> | The same contact ID or an error object
 
 ## Message Objects
 
@@ -950,6 +983,18 @@ Parameter | Type | Default | Description
 <td colspan="2" valign="top"><strong>isHsm</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>isRead</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>Applicable only to inbound messages</td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>isReplied</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>For inbound messages, false == Not replied, For outbound messages, false == Not Responded</td>
 </tr>
 
 <tr>
