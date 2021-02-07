@@ -117,7 +117,7 @@ defmodule Glific.Jobs.GcsWorker do
   end
 
   @spec pad(non_neg_integer) :: String.t()
-  defp pad(i) when i < 10, do: << ?0, ?0 + i >>
+  defp pad(i) when i < 10, do: <<?0, ?0 + i>>
   defp pad(i), do: to_string(i)
 
   # copied from mix task ecto.gen.migration
@@ -135,7 +135,10 @@ defmodule Glific.Jobs.GcsWorker do
   def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
-    file_name = "#{timestamp()}_C#{media["contact_id"]}_F#{media["flow_id"]}_M#{media["id"]}.#{extension}"
+
+    file_name =
+      "#{timestamp()}_C#{media["contact_id"]}_F#{media["flow_id"]}_M#{media["id"]}.#{extension}"
+
     path = "#{System.tmp_dir!()}/#{file_name}"
 
     download_file_to_temp(media["url"], path)
