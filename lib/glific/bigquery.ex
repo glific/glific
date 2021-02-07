@@ -531,13 +531,16 @@ defmodule Glific.Bigquery do
   defp clean_delta_tables(table, credentials, organization_id) do
     timezone = Partners.organization(organization_id).timezone
     ## remove all the data for last 30 minutes
-    updated_at =
-      Timex.shift(Timex.now(), minutes: -30)
-      |> Timex.Timezone.convert(timezone)
-      |> Timex.format!("{YYYY}-{0M}-{0D}T{h24}:{m}:{s}")
 
-    sql =
-      "Delete from `#{credentials.dataset_id}.#{table}_delta` where updated_at <= '#{updated_at}';"
+    sql = """
+    DELETE FROM `#{credentials.dataset_id}.#{table}_delta`
+    WHERE EXISTS(SELECT * FROM  (
+      SELECT updated_at, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num
+      FROM `#{credentials.dataset_id}.#{table}_delta` delta )
+      WHERE row_num > 0 AND
+        updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 2 MINUTE), '#{timezone}')
+      )
+    """
 
     GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(credentials.conn, credentials.project_id,
       body: %{query: sql, useLegacySql: false}
