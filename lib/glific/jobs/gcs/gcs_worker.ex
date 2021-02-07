@@ -116,6 +116,17 @@ defmodule Glific.Jobs.GcsWorker do
     :ok
   end
 
+  @spec pad(non_neg_integer) :: String.t()
+  defp pad(i) when i < 10, do: << ?0, ?0 + i >>
+  defp pad(i), do: to_string(i)
+
+  # copied from mix task ecto.gen.migration
+  @spec timestamp :: String.t()
+  defp timestamp do
+    {{y, m, d}, {hh, mm, ss}} = :calendar.universal_time()
+    "#{y}#{pad(m)}#{pad(d)}#{pad(hh)}#{pad(mm)}#{pad(ss)}"
+  end
+
   @doc """
   Standard perform method to use Oban worker
   """
@@ -124,7 +135,7 @@ defmodule Glific.Jobs.GcsWorker do
   def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
-    file_name = "#{Ecto.UUID.generate()}_#{media["contact_id"]}_#{media["flow_id"]}.#{extension}"
+    file_name = "#{timestamp()}_C#{media["contact_id"]}_F#{media["flow_id"]}_M#{media["id"]}.#{extension}"
     path = "#{System.tmp_dir!()}/#{file_name}"
 
     download_file_to_temp(media["url"], path)
