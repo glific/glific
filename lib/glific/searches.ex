@@ -163,7 +163,7 @@ defmodule Glific.Searches do
   end
 
   @spec filter_status_contacts_of_organization(String.t()) :: Ecto.Query.t()
-  defp filter_status_contacts_of_organization("Unread") do
+  defp filter_status_contacts_of_organization("unread") do
     status_query()
     |> join(:left, [c: c], m in Message,
       as: :m,
@@ -171,14 +171,14 @@ defmodule Glific.Searches do
     )
   end
 
-  defp filter_status_contacts_of_organization("Optout") do
+  defp filter_status_contacts_of_organization("optout") do
     status_query()
     |> where([c], c.status != :blocked)
     |> where([c], not is_nil(c.optout_time))
   end
 
   defp filter_status_contacts_of_organization(status)
-       when status in ["Not replied", "Not Responded"] do
+       when status in ["notreplied", "notresponded"] do
     direction =
       if status == "Not replied",
         do: :inbound,
