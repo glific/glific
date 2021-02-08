@@ -39,12 +39,12 @@ config :glific, Oban,
   repo: Glific.Repo,
   queues: [
     default: 10,
-    dialogflow: 10,
+    # dialogflow: 10,
     gupshup: 10,
     webhook: 10,
     crontab: 10,
     bigquery: 5,
-    gcs: 5
+    gcs: 3
   ],
   plugins: [
     # Prune jobs after 5 mins, gives us some time to go investigate if needed
