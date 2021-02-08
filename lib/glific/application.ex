@@ -66,6 +66,20 @@ defmodule Glific.Application do
       []
     )
 
+    :telemetry.attach(
+      "oban-plugin-success",
+      [:oban, :plugin, :stop],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
+
+    :telemetry.attach(
+      "oban-plugin-failure",
+      [:oban, :plugin, :exception],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
+
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
