@@ -9,6 +9,7 @@ defmodule Glific.Messages do
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
+    Flows.ContactField,
     Flows.FlowContext,
     Flows.MessageVarParser,
     Groups.Group,
@@ -886,6 +887,11 @@ defmodule Glific.Messages do
   end
 
   defp delete_simulator_messages(contact) do
+    contact.id
+    |> FlowContext.active_context()
+    |> FlowContext.reset_context()
+    |> ContactField.reset_contact_fields()
+
     org = Partners.organization(contact.organization_id)
 
     attrs = %{
@@ -899,7 +905,6 @@ defmodule Glific.Messages do
       user_id: org.root_user.id
     }
 
-    FlowContext.mark_flows_complete(contact.id)
     {:ok, last_message} = create_and_send_message(attrs)
 
     Message
