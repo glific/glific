@@ -12,7 +12,7 @@ defmodule Glific.Jobs.GcsWorker do
 
   use Oban.Worker,
     queue: :gcs,
-    max_attempts: 3,
+    max_attempts: 2,
     priority: 2
 
   alias Waffle.Storage.Google.CloudStorage
@@ -141,7 +141,7 @@ defmodule Glific.Jobs.GcsWorker do
 
     path = "#{System.tmp_dir!()}/#{file_name}"
 
-    download_file_to_temp(media["url"], path)
+    download_file_to_temp(media["url"], path, organization_id)
     |> case do
       {:ok, _} ->
         {:ok, response} = upload_file_on_gcs(path, organization_id, file_name)
@@ -172,7 +172,7 @@ defmodule Glific.Jobs.GcsWorker do
   end
 
   defp upload_file_on_gcs(path, org_id, file_name) do
-    Logger.info("Uploading files to GCS for org_id: #{org_id}, file_name: #{file_name}")
+    Logger.info("Uploading to GCS, org_id: #{org_id}, file_name: #{file_name}")
 
     CloudStorage.put(
       Glific.Media,
@@ -200,7 +200,9 @@ defmodule Glific.Jobs.GcsWorker do
     |> Map.get(String.to_existing_atom(type), "png")
   end
 
-  defp download_file_to_temp(url, path) do
+  defp download_file_to_temp(url, path, org_id) do
+    Logger.info("Downloading file: org_id: #{org_id}, url: #{url}")
+
     Tesla.get(url)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body} = _env} when status in 200..299 ->
