@@ -9,6 +9,7 @@ defmodule Glific.Messages do
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
+    Flows.FlowContext,
     Flows.MessageVarParser,
     Groups.Group,
     Jobs.BigQueryWorker,
@@ -860,8 +861,6 @@ defmodule Glific.Messages do
   """
   @spec clear_messages(Contact.t()) :: {:ok}
   def clear_messages(%Contact{} = contact) do
-    IO.inspect("debug001clear_messages")
-    IO.inspect(contact)
     # add messages to bigquery oban jobs worker
     BigQueryWorker.perform_periodic(contact.organization_id)
 
@@ -887,15 +886,21 @@ defmodule Glific.Messages do
   end
 
   defp delete_simulator_messages(contact) do
-    IO.inspect("debug001delete_simulator_messages")
-    last_message =
-      Message
-      |> order_by([m], desc: m.inserted_at)
-      |> where([m], m.contact_id == ^contact.id)
-      |> where([m], m.organization_id == ^contact.organization_id)
-      |> limit(1)
-      |> Repo.all
-      |> List.first
+    org = Partners.organization(contact.organization_id)
+
+    attrs = %{
+      body: "default message body",
+      flow: :outbound,
+      media_id: nil,
+      organization_id: contact.organization_id,
+      receiver_id: contact.id,
+      sender_id: org.root_user.id,
+      type: :text,
+      user_id: org.root_user.id
+    }
+
+    FlowContext.mark_flows_complete(contact.id)
+    {:ok, last_message} = create_and_send_message(attrs)
 
     Message
     |> where([m], m.id != ^last_message.id)
@@ -905,7 +910,6 @@ defmodule Glific.Messages do
   end
 
   defp delete_all_message(contact) do
-    IO.inspect("debug001delete_all_message")
     Message
     |> where([m], m.contact_id == ^contact.id)
     |> where([m], m.organization_id == ^contact.organization_id)
