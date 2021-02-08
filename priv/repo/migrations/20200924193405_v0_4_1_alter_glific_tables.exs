@@ -19,6 +19,7 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
     bigquery_jobs()
   end
 
+  # codebeat:disable[ABC]
   defp providers do
     alter table("providers", prefix: @global_schema) do
       add :shortcode, :string
@@ -40,6 +41,8 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
 
     create unique_index(:providers, :shortcode, prefix: @global_schema)
   end
+
+  # codebeat:enable[ABC]
 
   defp credentials do
     create table(:credentials) do

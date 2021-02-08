@@ -79,33 +79,52 @@ defmodule Glific.Jobs.GcsWorker do
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m, msg], msg.organization_id == ^organization_id)
-      |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id])
+      |> select([m, msg], [m.id, m.url, msg.type, msg.contact_id, msg.flow_id])
       |> order_by([m], [m.inserted_at, m.id])
 
-    _t =
-      query
-      |> Repo.all()
-      |> Enum.reduce(
-        [],
-        fn row, _acc ->
-          [id, url, type, contact_id] = row
+    query
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, _acc ->
+        row
+        |> make_media()
+        |> make_job(organization_id)
+      end
+    )
+  end
 
-          %{
-            url: url,
-            id: id,
-            type: type,
-            contact_id: contact_id
-          }
-          |> make_job(organization_id)
-        end
-      )
+  @spec make_media(list()) :: map()
+  defp make_media(row) do
+    [id, url, type, contact_id, flow_id] = row
+
+    %{
+      url: url,
+      id: id,
+      type: type,
+      contact_id: contact_id,
+      flow_id: if(is_nil(flow_id), do: 0, else: flow_id)
+    }
+  end
+
+  @spec make_job(map(), non_neg_integer) :: :ok
+  defp make_job(media, organization_id) do
+    {:ok, _} =
+      __MODULE__.new(%{organization_id: organization_id, media: media})
+      |> Oban.insert()
 
     :ok
   end
 
-  defp make_job(media, organization_id, schedule_in \\ 1) do
-    __MODULE__.new(%{organization_id: organization_id, media: media}, schedule_in: schedule_in)
-    |> Oban.insert()
+  @spec pad(non_neg_integer) :: String.t()
+  defp pad(i) when i < 10, do: <<?0, ?0 + i>>
+  defp pad(i), do: to_string(i)
+
+  # copied from mix task ecto.gen.migration
+  @spec timestamp :: String.t()
+  defp timestamp do
+    {{y, m, d}, {hh, mm, ss}} = :calendar.universal_time()
+    "#{y}#{pad(m)}#{pad(d)}#{pad(hh)}#{pad(mm)}#{pad(ss)}"
   end
 
   @doc """
@@ -116,7 +135,10 @@ defmodule Glific.Jobs.GcsWorker do
   def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
-    file_name = "#{Ecto.UUID.generate()}_#{media["contact_id"]}.#{extension}"
+
+    file_name =
+      "#{timestamp()}_C#{media["contact_id"]}_F#{media["flow_id"]}_M#{media["id"]}.#{extension}"
+
     path = "#{System.tmp_dir!()}/#{file_name}"
 
     download_file_to_temp(media["url"], path)
