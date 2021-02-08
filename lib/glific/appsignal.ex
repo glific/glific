@@ -17,6 +17,7 @@ defmodule Glific.Appsignal do
       error = inspect(meta.error)
       @span.add_error(span, meta.kind, error, meta.stacktrace)
     end
+
     @tracer.close_span(span, end_time: time)
   end
 
