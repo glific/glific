@@ -860,6 +860,8 @@ defmodule Glific.Messages do
   """
   @spec clear_messages(Contact.t()) :: {:ok}
   def clear_messages(%Contact{} = contact) do
+    IO.inspect("debug001clear_messages")
+    IO.inspect(contact)
     # add messages to bigquery oban jobs worker
     BigQueryWorker.perform_periodic(contact.organization_id)
 
@@ -875,14 +877,39 @@ defmodule Glific.Messages do
     |> where([m], m.id in ^messages_media_ids)
     |> Repo.delete_all()
 
-    Message
-    |> where([m], m.contact_id == ^contact.id)
-    |> where([m], m.organization_id == ^contact.organization_id)
-    |> Repo.delete_all()
+    if contact.phone == "9876543210",
+      do: delete_simulator_messages(contact),
+      else: delete_all_message(contact)
 
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
 
     {:ok}
+  end
+
+  defp delete_simulator_messages(contact) do
+    IO.inspect("debug001delete_simulator_messages")
+    last_message =
+      Message
+      |> order_by([m], desc: m.inserted_at)
+      |> where([m], m.contact_id == ^contact.id)
+      |> where([m], m.organization_id == ^contact.organization_id)
+      |> limit(1)
+      |> Repo.all
+      |> List.first
+
+    Message
+    |> where([m], m.id != ^last_message.id)
+    |> where([m], m.contact_id == ^contact.id)
+    |> where([m], m.organization_id == ^contact.organization_id)
+    |> Repo.delete_all()
+  end
+
+  defp delete_all_message(contact) do
+    IO.inspect("debug001delete_all_message")
+    Message
+    |> where([m], m.contact_id == ^contact.id)
+    |> where([m], m.organization_id == ^contact.organization_id)
+    |> Repo.delete_all()
   end
 
   @doc false
