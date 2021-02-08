@@ -8,7 +8,7 @@ defmodule Glific.Appsignal do
 
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
-  def handle_event([:oban, :job, event], measurement, meta, _)
+  def handle_event([:oban, _action, event], measurement, meta, _)
       when event in [:stop, :exception] do
     time = :os.system_time()
     span = record_event(measurement, meta, time)
@@ -17,7 +17,6 @@ defmodule Glific.Appsignal do
       error = inspect(meta.error)
       @span.add_error(span, meta.kind, error, meta.stacktrace)
     end
-
     @tracer.close_span(span, end_time: time)
   end
 
