@@ -887,10 +887,13 @@ defmodule Glific.Messages do
   end
 
   defp delete_simulator_messages(contact) do
-    contact.id
-    |> FlowContext.active_context()
-    |> FlowContext.reset_context()
-    |> ContactField.reset_contact_fields()
+    context = FlowContext.active_context(contact.id)
+
+    if context != nil,
+      do:
+        context
+        |> FlowContext.reset_context()
+        |> ContactField.reset_contact_fields()
 
     org = Partners.organization(contact.organization_id)
 
