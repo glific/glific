@@ -44,7 +44,7 @@ config :glific, Oban,
     webhook: 10,
     crontab: 10,
     bigquery: 5,
-    gcs: 3
+    gcs: 5
   ],
   plugins: [
     # Prune jobs after 5 mins, gives us some time to go investigate if needed
@@ -56,7 +56,7 @@ config :glific, Oban,
         {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
         {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
         {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
-        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
+        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
         {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
         {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
         {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
