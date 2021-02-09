@@ -438,22 +438,29 @@ defmodule Glific.Bigquery do
       }"
     )
 
-    if should_refresh_schema?(response) do
-      sync_schema_with_bigquery(organization_id)
-      :ok
-    else
-      raise("Bigquery Insert Error for table #{table}  #{response}")
+    bigquery_error_status(response)
+    |> case do
+      "NOT_FOUND"
+        -> sync_schema_with_bigquery(organization_id)
+
+      "PERMISSION_DENIED"
+        ->
+          Partners.disable_credentails(organization_id, "bigquery")
+      _
+        ->
+        raise("Bigquery Insert Error for table #{table}  #{response}")
     end
+
+    :ok
   end
 
-  @spec should_refresh_schema?(map()) :: boolean()
-  defp should_refresh_schema?(response) do
+  @spec bigquery_error_status(map()) :: String.t() | atom()
+  defp bigquery_error_status(response) do
     with true <- Map.has_key?(response, :body),
-         {:ok, error} <- Jason.decode(response.body),
-         true <- error["error"]["status"] == "NOT_FOUND" do
-      true
+         {:ok, error} <- Jason.decode(response.body) do
+         error["error"]["status"]
     else
-      _ -> false
+      _ -> :unknown
     end
   end
 
