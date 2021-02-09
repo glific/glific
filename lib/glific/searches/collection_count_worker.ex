@@ -17,8 +17,9 @@ defmodule Glific.Jobs.CollectionCountWorker do
     |> Enum.each(fn saved_search ->
       Communications.publish_data(
         %{
-          key: "Collection_count",
-          value: %{saved_search.id => Searches.saved_search_count(%{id: saved_search.id})}
+          "Collection_count" => %{
+            saved_search.id => Searches.saved_search_count(%{id: saved_search.id})
+          }
         },
         :periodic_info,
         organization_id

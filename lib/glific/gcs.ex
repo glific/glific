@@ -18,7 +18,7 @@ defmodule Glific.GCS do
   @impl Waffle.Storage.Google.Token.Fetcher
   @spec get_token(binary) :: binary
   def get_token(organization_id) when is_binary(organization_id) do
-    Logger.info("fetching gcs token for org_id: #{organization_id}")
+    Logger.debug("fetching gcs token for org_id: #{organization_id}")
     organization_id = String.to_integer(organization_id)
     token = Partners.get_goth_token(organization_id, "google_cloud_storage")
     token.token

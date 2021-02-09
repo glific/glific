@@ -39,7 +39,8 @@ defmodule Glific.Communications do
     if is_struct(data) do
       Logger.info("Publishing: #{Ecto.get_meta(data, :source)}, #{topic}:#{organization_id}")
     else
-      Logger.info("Publishing: #{data.key}, #{topic}:#{organization_id}")
+      key = data |> Map.keys()
+      Logger.info("Publishing: #{key}, #{topic}:#{organization_id}")
     end
 
     Absinthe.Subscription.publish(
