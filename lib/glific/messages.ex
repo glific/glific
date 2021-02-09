@@ -892,6 +892,7 @@ defmodule Glific.Messages do
     if context != nil,
       do:
         context
+        |>Repo.preload(:flow)
         |> FlowContext.reset_context()
         |> ContactField.reset_contact_fields()
 
