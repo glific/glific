@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use json maps rather than our own pseudo-maps
 - Improve GCS and BigQuery code
 - Improve garbage collection in consumer worker
+- More learning on GenServer
 
 ## [0.9.7] - 2021-01-25
 
