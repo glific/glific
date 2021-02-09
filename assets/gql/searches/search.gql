@@ -1,7 +1,7 @@
-query search( 
+query search(
     $saveSearchInput: SaveSearchInput,
-    $contactOpts: Opts!, 
-    $messageOpts: Opts!, 
+    $contactOpts: Opts!,
+    $messageOpts: Opts!,
     $filter: SearchFilter
   ) {
     search(saveSearchInput:$saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts, filter: $filter) {
@@ -22,6 +22,8 @@ query search(
         user {
           id
         }
+        is_read
+        is_replied
       }
       group {
         id

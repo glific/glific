@@ -143,27 +143,86 @@ defmodule Glific.Searches do
 
   defp filter_active_contacts_of_organization(contact_ids)
        when is_list(contact_ids) do
-    Contact
+    query = from c in Contact, as: :c
+
+    query
     |> where([c], c.id in ^contact_ids)
     |> where([c], c.status != ^:blocked)
     |> select([c], c.id)
+    |> Repo.add_permission(&Searches.add_permission_contact/2)
+  end
+
+  @spec status_query :: Ecto.Query.t()
+  defp status_query do
+    query = from c in Contact, as: :c
+
+    query
+    |> where([c], c.status != :blocked)
+    |> select([c], c.id)
+    |> Repo.add_permission(&Searches.add_permission_contact/2)
+  end
+
+  @spec filter_status_contacts_of_organization(String.t()) :: Ecto.Query.t()
+  defp filter_status_contacts_of_organization("Unread") do
+    status_query()
+    |> join(:left, [c: c], m in Message,
+      as: :m,
+      on: c.id == m.contact_id and m.is_read == false
+    )
+  end
+
+  defp filter_status_contacts_of_organization("Optout") do
+    status_query()
+    |> where([c], c.status != :blocked)
+    |> where([c], not is_nil(c.optout_time))
+  end
+
+  defp filter_status_contacts_of_organization(status)
+       when status in ["Not replied", "Not Responded"] do
+    direction =
+      if status == "Not replied",
+        do: :inbound,
+        # this is not responded
+        else: :outbound
+
+    status_query()
+    |> join(:left, [c: c], m in Message,
+      as: :m,
+      on: c.id == m.contact_id and m.flow == ^direction and m.is_replied == false
+    )
+  end
+
+  @spec permission_query(User.t()) :: Ecto.Query.t()
+  defp permission_query(user) do
+    ContactGroup
+    |> select([cg], cg.contact_id)
+    |> join(:inner, [cg], ug in UserGroup, as: :ug, on: ug.group_id == cg.group_id)
+    |> where([cg, ug: ug], ug.user_id == ^user.id)
   end
 
   @doc """
   Add permissioning specific to searches, in this case we want to restrict the visibility of
-  contact ids
+  contact ids where message is the main query table
   """
   # codebeat:disable[ABC]
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def add_permission(query, user) do
-    sub_query =
-      ContactGroup
-      |> select([cg], cg.contact_id)
-      |> join(:inner, [cg], ug in UserGroup, as: :ug, on: ug.group_id == cg.group_id)
-      |> where([cg, ug: ug], ug.user_id == ^user.id)
+    sub_query = permission_query(user)
 
     query
     |> where([m: m], m.contact_id == ^user.contact_id or m.contact_id in subquery(sub_query))
+  end
+
+  @doc """
+  Add permissioning specific to searches, in this case we want to restrict the visibility of
+  contact ids where the contact is the main query table
+  """
+  @spec add_permission_contact(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
+  def add_permission_contact(query, user) do
+    sub_query = permission_query(user)
+
+    query
+    |> where([c: c], c.id == ^user.contact_id or c.id in subquery(sub_query))
   end
 
   @spec basic_query(map()) :: Ecto.Query.t()
@@ -240,6 +299,9 @@ defmodule Glific.Searches do
 
         args.filter[:ids] != nil ->
           filter_active_contacts_of_organization(args.filter.ids)
+
+        args.filter[:status] != nil ->
+          filter_status_contacts_of_organization(args.filter.status)
 
         true ->
           search_query(args.filter[:term], args)

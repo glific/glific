@@ -154,9 +154,9 @@ defmodule Glific.Jobs.MinuteWorker do
       "hourly_tasks" ->
         FlowContext.delete_completed_flow_contexts()
         FlowContext.delete_old_flow_contexts()
+        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"])
-        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [], true)
 
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])

@@ -50,6 +50,8 @@ defmodule Glific.Messages.Message do
           body: String.t() | nil,
           clean_body: String.t() | nil,
           publish?: boolean,
+          is_read: boolean,
+          is_replied: boolean,
           bsp_message_id: String.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
@@ -83,7 +85,9 @@ defmodule Glific.Messages.Message do
     :sent_at,
     :user_id,
     :flow_id,
-    :session_uuid
+    :session_uuid,
+    :is_read,
+    :is_replied
   ]
 
   schema "messages" do
@@ -112,6 +116,9 @@ defmodule Glific.Messages.Message do
     field :sent_at, :utc_datetime
     field :message_number, :integer, default: 0
     field :session_uuid, Ecto.UUID
+
+    field :is_read, :boolean, default: false
+    field :is_replied, :boolean, default: false
 
     belongs_to :sender, Contact
     belongs_to :receiver, Contact

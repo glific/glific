@@ -3,7 +3,6 @@ defmodule Glific.Partners do
   The Partners context. This is the gateway for the application to access/update all the organization
   and Provider information.
   """
-  @active_hours 1
   use Publicist
 
   import Ecto.Query, warn: false
@@ -561,14 +560,20 @@ defmodule Glific.Partners do
     :ok
   end
 
-  @spec recent_organizations(map(), boolean) :: map()
-  defp recent_organizations(map, false), do: map
+  @active_minutes 60
 
-  defp recent_organizations(map, true) do
+  @doc """
+  Get the organizations which had a message transaction in the last minutes
+  as defined by @active_minutes
+  """
+  @spec recent_organizations(map(), boolean) :: map()
+  def recent_organizations(map, false), do: map
+
+  def recent_organizations(map, true) do
     Enum.filter(
       map,
       fn {_id, %{last_communication_at: last_communication_at}} ->
-        Timex.diff(DateTime.utc_now(), last_communication_at, :hours) < @active_hours
+        Timex.diff(DateTime.utc_now(), last_communication_at, :minutes) < @active_minutes
       end
     )
   end

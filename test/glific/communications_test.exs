@@ -11,9 +11,7 @@ defmodule Glific.CommunicationsTest do
     Messages,
     Providers.Gupshup.Worker,
     Repo,
-    Seeds.SeedsDev,
-    Tags,
-    Tags.Tag
+    Seeds.SeedsDev
   }
 
   setup do
@@ -117,8 +115,9 @@ defmodule Glific.CommunicationsTest do
     end
 
     test "send message will remove the Not replied tag from messages",
-         %{organization_id: organization_id, global_schema: global_schema} = attrs do
+         %{organization_id: _organization_id, global_schema: global_schema} = attrs do
       message_1 = Fixtures.message_fixture(Map.merge(attrs, %{flow: :inbound}))
+      assert message_1.is_replied == false
 
       message_2 =
         Fixtures.message_fixture(
@@ -134,43 +133,12 @@ defmodule Glific.CommunicationsTest do
 
       assert message_2.contact_id == message_1.contact_id
 
-      {:ok, tag} =
-        Repo.fetch_by(
-          Tag,
-          %{shortcode: "notreplied", organization_id: organization_id}
-        )
-
-      {:ok, unread_tag} =
-        Repo.fetch_by(
-          Tag,
-          %{shortcode: "unread", organization_id: organization_id}
-        )
-
-      message1_tag =
-        Fixtures.message_tag_fixture(
-          Map.merge(
-            attrs,
-            %{message_id: message_1.id, tag_id: tag.id}
-          )
-        )
-
-      message_unread_tag =
-        Fixtures.message_tag_fixture(
-          Map.merge(
-            attrs,
-            %{message_id: message_1.id, tag_id: unread_tag.id}
-          )
-        )
-
       Communications.Message.send_message(message_2)
       assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)
 
-      assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message1_tag.id) end
-
-      assert_raise Ecto.NoResultsError, fn ->
-        Tags.get_message_tag!(message_unread_tag.id)
-      end
+      message_1 = Messages.get_message!(message_1.id)
+      assert message_1.is_replied == true
     end
 
     test "if response status code is not 200 handle the error response",

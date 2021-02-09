@@ -504,10 +504,7 @@ Type | Description
 
 ```graphql
 subscription PeriodicInfo {
-  periodicInfo(organizationId: "1") {
-    key
-    value
-  }
+  periodicInfo(organizationId: "1")
 }
 
 ```
@@ -517,8 +514,7 @@ subscription PeriodicInfo {
 {
   "data": {
     "periodicInfo": {
-      "key": "bsp_balance",
-      "value": "{\"balance\":0.787}"
+      \"balance\": 0.787
     }
   }
 }
@@ -526,16 +522,13 @@ subscription PeriodicInfo {
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#PeriodicInfoResult">PeriodicInfoResult</a> | An error or object
+<a href="#json">JSON</a> | A json map with key balance and value amount
 
 ## Subscription for Collection Count
 
 ```graphql
-subscription PeriodicInfo {
-  periodicInfo(organizationId: "1") {
-    key
-    value
-  }
+subscription collectionCount {
+  collectionCount(organizationId: "1")
 }
 
 ```
@@ -544,10 +537,13 @@ subscription PeriodicInfo {
 ```json
 {
   "data": {
-    "periodicInfo": {
-      "__typename": "PeriodicInfoResult",
-      "key": "Collection_count",
-      "value": "{\"5\":1}"
+    "collectionCount": {
+       \"1\": {
+         \"Unread\": 23,
+         \"Not replied\": 13,
+         \"Not responded\": 17,
+         \"Optout\": 3,
+       }
     }
   }
 }
@@ -555,7 +551,7 @@ subscription PeriodicInfo {
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#PeriodicInfoResult">PeriodicInfoResult</a> | An error or object
+<a href="#json">JSON</a> | A json map or object
 
 ## Organization Objects
 

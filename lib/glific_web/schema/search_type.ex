@@ -91,6 +91,9 @@ defmodule GlificWeb.Schema.SearchTypes do
     @desc "term for saving the search"
     field :term, :string
 
+    @desc "status of the message, this replaces the unread/not responded tags"
+    field :status, :string
+
     @desc "term for saving the search"
     field :date_range, :date_range_input
 

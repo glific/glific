@@ -172,7 +172,7 @@ defmodule Glific.Tags do
     do:
       Repo.label_id_map(
         Tag,
-        ["language", "newcontact", "notreplied", "unread"],
+        ["language", "newcontact"],
         organization_id,
         :shortcode
       )
