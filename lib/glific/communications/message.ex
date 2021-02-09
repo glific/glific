@@ -259,6 +259,13 @@ defmodule Glific.Communications.Message do
   @timeout 3000
   @poolboy_timeout 3000
 
+  @spec error(String.t(), any(), any(), list()) :: :ok
+  defp error(error, e, r, stacktrace) do
+    Logger.error(error <> ": #{inspect(e)}, #{inspect(r)}")
+    Appsignal.send_error(:error, error, stacktrace)
+    :ok
+  end
+
   @spec process_message(Message.t()) :: :ok
   defp process_message(message) do
     # lets transfer the organization id and current user to the poolboy worker
@@ -272,8 +279,7 @@ defmodule Glific.Communications.Message do
     # We dont want to block the input pipeline, and we are unsure how long the consumer worker
     # will take. So we run it as a separate task
     # We will also set a short timeout for both the genserver and the poolboy transaction
-    # this will be moot soon after we move webhooks to be handled asynchronously
-    Task.async(fn ->
+    Task.start(fn ->
       try do
         :poolboy.transaction(
           Glific.Application.message_poolname(),
@@ -281,21 +287,13 @@ defmodule Glific.Communications.Message do
             try do
               GenServer.call(pid, {message, process_state, self}, @timeout)
             catch
-              e, r ->
-                error = "poolboy genserver caught error: #{inspect(e)}, #{inspect(r)}"
-              Logger.error(error)
-              Appsignal.send_error(:error, error, __STACKTRACE__)
-              :ok
+              e, r -> error("poolboy genserver caught error", e, r, __STACKTRACE__)
             end
           end,
           @poolboy_timeout
         )
       catch
-        e, r ->
-          error = "poolboy transaction caught error: #{inspect(e)}, #{inspect(r)}"
-        Logger.error(error)
-        Appsignal.send_error(:error, error, __STACKTRACE__)
-        :ok
+        e, r -> error("poolboy transaction caught error", e, r, __STACKTRACE__)
       end
     end)
 

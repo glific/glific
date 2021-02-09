@@ -63,8 +63,8 @@ defmodule Glific.Processor.ConsumerWorker do
 
   @doc false
   def handle_call({message, process_state, _}, _, state) do
-    {message, state} = handle_common(message, process_state, state)
-    {:reply, message, state, :hibernate}
+    {_message, state} = handle_common(message, process_state, state)
+    {:reply, nil, state, :hibernate}
   end
 
   @doc false

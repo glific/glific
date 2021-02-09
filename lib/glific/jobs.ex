@@ -78,7 +78,6 @@ defmodule Glific.Jobs do
         |> GcsJob.changeset(attrs)
         |> Repo.update()
     end
-
   end
 
   @doc false
