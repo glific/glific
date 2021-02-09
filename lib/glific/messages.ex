@@ -888,7 +888,6 @@ defmodule Glific.Messages do
 
   @spec delete_simulator_messages(Contact.t()) :: {integer(), nil | [term()]}
   defp delete_simulator_messages(contact) do
-    context = FlowContext.active_context(contact.id)
     FlowContext.mark_flows_complete(contact.id)
 
     Contacts.update_contact(
