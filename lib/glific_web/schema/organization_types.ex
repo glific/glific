@@ -190,7 +190,25 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   end
 
   object :organization_subscriptions do
-    field :periodic_info, :json do
+    field :simulator_release, :json do
+      arg(:organization_id, non_null(:id))
+      config(&Schema.config_fun/2)
+
+      resolve(fn data, _, _ ->
+        {:ok, data}
+      end)
+    end
+
+    field :bsp_balance, :json do
+      arg(:organization_id, non_null(:id))
+      config(&Schema.config_fun/2)
+
+      resolve(fn data, _, _ ->
+        {:ok, data}
+      end)
+    end
+
+    field :collection_count, :json do
       arg(:organization_id, non_null(:id))
       config(&Schema.config_fun/2)
 

@@ -21,7 +21,7 @@ defmodule Glific.Jobs.CollectionCountWorker do
             saved_search.id => Searches.saved_search_count(%{id: saved_search.id})
           }
         },
-        :periodic_info,
+        :collection_count,
         organization_id
       )
     end)
