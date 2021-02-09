@@ -888,18 +888,27 @@ defmodule Glific.Messages do
 
   defp delete_simulator_messages(contact) do
     context = FlowContext.active_context(contact.id)
+    FlowContext.mark_flows_complete(contact.id)
 
-    if context != nil,
-      do:
-        context
-        |>Repo.preload(:flow)
-        |> FlowContext.reset_context()
-        |> ContactField.reset_contact_fields()
+    Contacts.update_contact(
+      contact,
+      %{fields: %{}}
+    )
 
     org = Partners.organization(contact.organization_id)
 
+    with {:ok, last_message} <- send_default_msg(contact) do
+      Message
+      |> where([m], m.id != ^last_message.id)
+      |> where([m], m.contact_id == ^contact.id)
+      |> where([m], m.organization_id == ^contact.organization_id)
+      |> Repo.delete_all()
+    end
+  end
+
+  defp send_default_msg(contact) do
     attrs = %{
-      body: "default message body",
+      body: "Default message body",
       flow: :outbound,
       media_id: nil,
       organization_id: contact.organization_id,
@@ -909,13 +918,7 @@ defmodule Glific.Messages do
       user_id: org.root_user.id
     }
 
-    {:ok, last_message} = create_and_send_message(attrs)
-
-    Message
-    |> where([m], m.id != ^last_message.id)
-    |> where([m], m.contact_id == ^contact.id)
-    |> where([m], m.organization_id == ^contact.organization_id)
-    |> Repo.delete_all()
+    create_and_send_message(attrs)
   end
 
   defp delete_all_message(contact) do
