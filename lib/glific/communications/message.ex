@@ -257,6 +257,7 @@ defmodule Glific.Communications.Message do
 
   # lets have a default timeout of 3 seconds for each call
   @timeout 3000
+  @poolboy_timeout 3000
 
   @spec process_message(Message.t()) :: :ok
   defp process_message(message) do
@@ -273,20 +274,29 @@ defmodule Glific.Communications.Message do
     # We will also set a short timeout for both the genserver and the poolboy transaction
     # this will be moot soon after we move webhooks to be handled asynchronously
     Task.async(fn ->
-      :poolboy.transaction(
-        Glific.Application.message_poolname(),
-        fn pid ->
-          try do
-            GenServer.call(pid, {message, process_state, self}, @timeout)
-          catch
-            e, r ->
-              error = "poolboy transaction caught error: #{inspect(e)}, #{inspect(r)}"
+      try do
+        :poolboy.transaction(
+          Glific.Application.message_poolname(),
+          fn pid ->
+            try do
+              GenServer.call(pid, {message, process_state, self}, @timeout)
+            catch
+              e, r ->
+                error = "poolboy genserver caught error: #{inspect(e)}, #{inspect(r)}"
               Logger.error(error)
               Appsignal.send_error(:error, error, __STACKTRACE__)
               :ok
-          end
-        end
-      )
+            end
+          end,
+          @poolboy_timeout
+        )
+      catch
+        e, r ->
+          error = "poolboy transaction caught error: #{inspect(e)}, #{inspect(r)}"
+        Logger.error(error)
+        Appsignal.send_error(:error, error, __STACKTRACE__)
+        :ok
+      end
     end)
 
     :ok
