@@ -886,6 +886,7 @@ defmodule Glific.Messages do
     {:ok}
   end
 
+  @spec delete_simulator_messages(Contact.t()) :: {integer(), nil | [term()]}
   defp delete_simulator_messages(contact) do
     context = FlowContext.active_context(contact.id)
     FlowContext.mark_flows_complete(contact.id)
@@ -894,8 +895,6 @@ defmodule Glific.Messages do
       contact,
       %{fields: %{}}
     )
-
-    org = Partners.organization(contact.organization_id)
 
     with {:ok, last_message} <- send_default_msg(contact) do
       Message
@@ -906,7 +905,10 @@ defmodule Glific.Messages do
     end
   end
 
+  @spec send_default_msg(Contact.t()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
   defp send_default_msg(contact) do
+    org = Partners.organization(contact.organization_id)
+
     attrs = %{
       body: "Default message body",
       flow: :outbound,
@@ -921,6 +923,7 @@ defmodule Glific.Messages do
     create_and_send_message(attrs)
   end
 
+  @spec delete_all_message(Contact.t()) :: {integer(), nil | [term()]}
   defp delete_all_message(contact) do
     Message
     |> where([m], m.contact_id == ^contact.id)
