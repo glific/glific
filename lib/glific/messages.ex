@@ -9,7 +9,6 @@ defmodule Glific.Messages do
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
-    Flows.ContactField,
     Flows.FlowContext,
     Flows.MessageVarParser,
     Groups.Group,
