@@ -172,7 +172,8 @@ defmodule Glific.Jobs.GcsWorker do
     |> String.replace("/#{response.generation}", "")
   end
 
-  @spec upload_file_on_gcs(String.t(), non_neg_integer, String.t()) :: {:ok, GoogleApi.Storage.V1.Model.Object.t} | {:error, Tesla.Env.t}
+  @spec upload_file_on_gcs(String.t(), non_neg_integer, String.t()) ::
+          {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
   defp upload_file_on_gcs(path, org_id, file_name) do
     Logger.info("Uploading to GCS, org_id: #{org_id}, file_name: #{file_name}")
 
@@ -202,7 +203,8 @@ defmodule Glific.Jobs.GcsWorker do
     |> Map.get(String.to_existing_atom(type), "png")
   end
 
-  @spec download_file_to_temp(String.t(), String.t(), non_neg_integer) :: {:ok, String.t()} | {:error, any()}
+  @spec download_file_to_temp(String.t(), String.t(), non_neg_integer) ::
+          {:ok, String.t()} | {:error, any()}
   defp download_file_to_temp(url, path, org_id) do
     Logger.info("Downloading file: org_id: #{org_id}, url: #{url}")
 
