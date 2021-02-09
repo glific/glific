@@ -721,6 +721,9 @@ defmodule Glific.Partners do
     end
   end
 
+  @doc """
+  Disable a specific credential for the organization
+  """
   @spec disable_credential(non_neg_integer, String.t()) :: :ok
   def disable_credential(organization_id, shortcode) do
     case Repo.fetch_by(Provider, %{shortcode: shortcode}) do
