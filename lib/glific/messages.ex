@@ -876,6 +876,8 @@ defmodule Glific.Messages do
     |> where([m], m.id in ^messages_media_ids)
     |> Repo.delete_all()
 
+    FlowContext.mark_flows_complete(contact.id)
+
     if contact.phone == "9876543210",
       do: delete_simulator_messages(contact),
       else: delete_all_message(contact)
@@ -887,8 +889,6 @@ defmodule Glific.Messages do
 
   @spec delete_simulator_messages(Contact.t()) :: {integer(), nil | [term()]}
   defp delete_simulator_messages(contact) do
-    FlowContext.mark_flows_complete(contact.id)
-
     Contacts.update_contact(
       contact,
       %{fields: %{}}
