@@ -721,25 +721,27 @@ defmodule Glific.Partners do
     end
   end
 
-  @spec get_goth_token(non_neg_integer, String.t()) :: :ok
-  def disable_credentails(organization_id, shortcode) do
-     case Repo.fetch_by(Provider, %{shortcode: shortcode}) do
+  @spec disable_credential(non_neg_integer, String.t()) :: :ok
+  def disable_credential(organization_id, shortcode) do
+    case Repo.fetch_by(Provider, %{shortcode: shortcode}) do
       {:ok, provider} ->
         # first delete the cached organization
         organization = get_organization!(organization_id)
         remove_organization_cache(organization.id, organization.shortcode)
 
         Credential
-        |> where([c], c.provider_id == ^provider.id )
+        |> where([c], c.provider_id == ^provider.id)
         |> where([c], c.organization_id == ^organization_id)
-        |> Repo.update_all([set: [is_active: false]])
+        |> Repo.update_all(set: [is_active: false])
+
+        Logger.info("Disable #{shortcode} credential for org_id: #{organization_id}")
 
       _ ->
-        {:error, ["shortcode", "Invalid provider shortcode: #{shortcode}."]}
+        {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
     end
 
+    :ok
   end
-
 
   @doc """
     Updating setup
