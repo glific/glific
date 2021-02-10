@@ -3,21 +3,24 @@
 # This file will be used for production release only.
 import Config
 
-db_url = System.get_env("DATABASE_URL") || "ecto://postgres:postgres@localhost/glific_ilp"
+db_url = System.get_env("DATABASE_URL") || "ecto://postgres:postgres@localhost/glific_dev"
 ssl_port = System.get_env("SSL_PORT") || 443
 http_port = System.get_env("HTTP_PORT") || 4000
 
 config :glific, Glific.Repo,
   url: db_url,
   pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-  show_sensitive_data_on_connection_error: true
+  show_sensitive_data_on_connection_error: true,
+  prepare: :named,
+  parameters: [plan_cache_mode: "force_custom_plan"],
+  log: :info
 
 secret_key_base =
   System.get_env("SECRET_KEY_BASE") ||
     "IN3UOAXU/FC6yPcBcC/iHg85F52QYPvjSiDkRdoydEobrrL+aNhat5I5+WA4IW0e"
 
 # [System.get_env("REQUEST_ORIGIN"), System.get_env("REQUEST_ORIGIN_WILDCARD")] ||
-check_origin = ["http://ilp.glific.test:3000", "//*.glific.test:3000"]
+check_origin = ["http://api.glific.test:3000", "//*.glific.test:3000"]
 
 # GLific endpoint configs
 config :glific, GlificWeb.Endpoint,
@@ -36,6 +39,7 @@ config :appsignal, :config,
   push_api_key: System.get_env("GLIFIC_PUSH_API_KEY")
 
 cipher_key = System.get_env("CIPHER_KEY") || "BliS4zyqMG065ZrRJ8BhhruZFXnpV+eYAQBRqzusnSY="
+old_cipher_key = System.get_env("OLD_CIPHER_KEY") || "BliS4zyqMG065ZrRJ8BhhruZFXnpV+eYAQBRqzusnSY="
 
 config :glific, Glific.Vault,
   ciphers: [
