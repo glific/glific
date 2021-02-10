@@ -24,10 +24,9 @@ defmodule Glific.Repo.Migrations.AddIndexes do
     sql = [
       "CREATE INDEX IF NOT EXISTS search_messages_name_idx_gin ON search_messages USING gin (name gin_trgm_ops)",
       "CREATE INDEX IF NOT EXISTS search_messages_phone_idx_gin ON search_messages USING gin (phone gin_trgm_ops)",
-      "ALTER TABLE search_messages ALTER COLUMN tag_label TYPE TEXT",
-      "CREATE INDEX IF NOT EXISTS search_messages_tag_label_idx_gin ON search_messages USING gin (tag_label gin_trgm_ops)",
-      "CREATE INDEX IF NOT EXISTS messages_body_idx_gin ON messages USING gin (body gin_trgm_ops)",
+      "CREATE INDEX IF NOT EXISTS messages_body_idx_gin ON messages USING gin (body gin_trgm_ops)"
     ]
+
     Enum.each(sql, &execute/1)
   end
 end
