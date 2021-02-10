@@ -14,6 +14,7 @@ defmodule Glific.Messages do
     Groups.Group,
     Jobs.BigQueryWorker,
     Messages.Message,
+    Messages.MessageMedia,
     Messages.MessageVariables,
     Partners,
     Repo,
@@ -486,8 +487,6 @@ defmodule Glific.Messages do
       Enum.find(message.tags, fn t -> t.id == tag_id end) != nil
   end
 
-  alias Glific.Messages.MessageMedia
-
   @doc """
   Returns the list of message media.
 
@@ -903,6 +902,7 @@ defmodule Glific.Messages do
       |> where([m], m.id != ^last_message.id)
     end
   end
+
   defp check_simulator(query, _, _), do: query
 
   @spec send_default_msg(Contact.t()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
