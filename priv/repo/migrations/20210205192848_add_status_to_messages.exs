@@ -48,9 +48,8 @@ defmodule Glific.Repo.Migrations.AddStatusToMessages do
       messageOpts: %{limit: 10, offset: 0}
     }
 
-    query =
-      SavedSearch
-      |> where([s], s.shortcode == ^shortcode)
-      |> Repo.update_all([set: [args: args]], skip_organization_id: true)
+    SavedSearch
+    |> where([s], s.shortcode == ^shortcode)
+    |> Repo.update_all([set: [args: args]], skip_organization_id: true)
   end
 end
