@@ -480,7 +480,7 @@ defmodule Glific.MessagesTest do
                Messages.create_and_send_message_to_contacts(message_attrs, [receiver.id])
     end
 
-    test "create group message",
+    test "create_group_message/1 should create group message",
          %{organization_id: organization_id} do
       org_contact = Glific.Partners.organization(organization_id).contact
 
@@ -498,6 +498,13 @@ defmodule Glific.MessagesTest do
         })
 
       assert {:ok, %Message{}} = Messages.create_group_message(message_attrs)
+    end
+
+    test "create_group_message/1 should return changeset error", attrs do
+      assert {:error, %Ecto.Changeset{}} =
+               @invalid_attrs
+               |> Map.merge(foreign_key_constraint(attrs))
+               |> Messages.create_group_message()
     end
 
     test "create and send message to a group should send message to contacts of the group",
