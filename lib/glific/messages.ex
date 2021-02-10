@@ -9,6 +9,7 @@ defmodule Glific.Messages do
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
+    Flows.FlowContext,
     Flows.MessageVarParser,
     Groups.Group,
     Jobs.BigQueryWorker,
@@ -855,7 +856,7 @@ defmodule Glific.Messages do
     |> struct(opts)
   end
 
-  @doc """
+@doc """
   Delete all messages of a contact
   """
   @spec clear_messages(Contact.t()) :: {:ok}
@@ -875,14 +876,61 @@ defmodule Glific.Messages do
     |> where([m], m.id in ^messages_media_ids)
     |> Repo.delete_all()
 
-    Message
-    |> where([m], m.contact_id == ^contact.id)
-    |> where([m], m.organization_id == ^contact.organization_id)
-    |> Repo.delete_all()
+    FlowContext.mark_flows_complete(contact.id)
+
+    if contact.phone == "9876543210",
+      do: delete_simulator_messages(contact),
+      else: delete_all_message(contact)
 
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
 
     {:ok}
+  end
+
+  @spec delete_simulator_messages(Contact.t()) :: {integer(), nil | [term()]}
+  defp delete_simulator_messages(contact) do
+    Contacts.update_contact(
+      contact,
+      %{fields: %{}}
+    )
+
+    with {:ok, last_message} <- send_default_msg(contact) do
+      Message
+      |> where([m], m.id != ^last_message.id)
+      |> delete_query(contact)
+    end
+  end
+
+  @spec send_default_msg(Contact.t()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp send_default_msg(contact) do
+    org = Partners.organization(contact.organization_id)
+
+    attrs = %{
+      body: "Default message body",
+      flow: :outbound,
+      media_id: nil,
+      organization_id: contact.organization_id,
+      receiver_id: contact.id,
+      sender_id: org.root_user.id,
+      type: :text,
+      user_id: org.root_user.id
+    }
+
+    create_and_send_message(attrs)
+  end
+
+  @spec delete_query(Ecto.Query.t(), Contact.t()) :: {integer(), nil | [term()]}
+  defp delete_query(query, contact) do
+    query
+    |> where([m], m.contact_id == ^contact.id)
+    |> where([m], m.organization_id == ^contact.organization_id)
+    |> Repo.delete_all()
+  end
+
+  @spec delete_all_message(Contact.t()) :: {integer(), nil | [term()]}
+  defp delete_all_message(contact) do
+    Message
+    |> delete_query(contact)
   end
 
   @doc false
