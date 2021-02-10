@@ -244,6 +244,12 @@ defmodule Glific.MessagesTest do
       assert Messages.get_message!(message.id) == message
     end
 
+    test "tag_in_message?/2 should check message has tag", %{organization_id: organization_id} = attrs do
+      tag = Fixtures.tag_fixture(%{organization_id: organization_id})
+      message = message_fixture(attrs)
+      assert false == Messages.tag_in_message?(message, tag.id)
+    end
+
     test "create_message/1 with valid data creates a message", attrs do
       assert {:ok, %Message{} = message} =
                @valid_attrs
