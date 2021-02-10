@@ -256,12 +256,12 @@ defmodule Glific.Communications.Message do
   end
 
   # lets have a default timeout of 3 seconds for each call
-  @timeout 3000
-  @poolboy_timeout 3000
+  @timeout 4000
 
   @spec error(String.t(), any(), any(), list()) :: :ok
   defp error(error, e, r, stacktrace) do
-    Logger.error(error <> ": #{inspect(e)}, #{inspect(r)}")
+    error = error <> ": #{inspect(e)}, #{inspect(r)}"
+    Logger.error(error)
     Appsignal.send_error(:error, error, stacktrace)
     :ok
   end
@@ -280,21 +280,23 @@ defmodule Glific.Communications.Message do
     # will take. So we run it as a separate task
     # We will also set a short timeout for both the genserver and the poolboy transaction
     Task.start(fn ->
-      try do
-        :poolboy.transaction(
-          Glific.Application.message_poolname(),
-          fn pid ->
-            try do
-              GenServer.call(pid, {message, process_state, self}, @timeout)
-            catch
-              e, r -> error("poolboy genserver caught error", e, r, __STACKTRACE__)
-            end
-          end,
-          @poolboy_timeout
-        )
-      catch
-        e, r -> error("poolboy transaction caught error", e, r, __STACKTRACE__)
-      end
+      :poolboy.transaction(
+        Glific.Application.message_poolname(),
+        fn pid ->
+          try do
+            GenServer.call(pid, {message, process_state, self}, @timeout)
+          catch
+            e, r ->
+              if is_tuple(r) and elem(r, 0) == :timeout do
+                # if the error is a timeout, lets kill the genserver
+                Process.exit(pid, :kill)
+                error("poolboy genserver caught timeout, killing server now", e, r, __STACKTRACE__)
+              else
+                error("poolboy genserver caught error", e, r, __STACKTRACE__)
+             end
+          end
+        end
+      )
     end)
 
     :ok
