@@ -480,6 +480,26 @@ defmodule Glific.MessagesTest do
                Messages.create_and_send_message_to_contacts(message_attrs, [receiver.id])
     end
 
+    test "create group message",
+         %{organization_id: organization_id} do
+      org_contact = Glific.Partners.organization(organization_id).contact
+
+      valid_attrs = %{
+        body: "group message",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs =
+        Map.merge(valid_attrs, %{
+          sender_id: org_contact.id,
+          receiver_id: org_contact.id,
+          organization_id: organization_id
+        })
+
+      assert {:ok, %Message{}} = Messages.create_group_message(message_attrs)
+    end
+
     test "create and send message to a group should send message to contacts of the group",
          %{organization_id: organization_id} = attrs do
       [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
