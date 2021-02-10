@@ -153,7 +153,7 @@ defmodule Glific.Jobs.MinuteWorker do
     case job do
       "hourly_tasks" ->
         FlowContext.delete_completed_flow_contexts()
-        FlowContext.delete_old_flow_contexts()
+        FlowContext.delete_old_flow_contexts(30)
         Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"])
