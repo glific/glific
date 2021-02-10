@@ -521,6 +521,19 @@ defmodule Glific.MessagesTest do
       assert updated_group.last_communication_at >= group.last_communication_at
     end
 
+    test "create and send message should send message to contact", attrs do
+      valid_attrs = %{
+        body: "test message",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "test message"
+    end
+
     test "send hsm message incorrect parameters",
          %{organization_id: organization_id, global_schema: global_schema} = attrs do
       contact = Fixtures.contact_fixture(attrs)
