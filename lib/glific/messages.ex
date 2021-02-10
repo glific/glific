@@ -897,9 +897,7 @@ defmodule Glific.Messages do
     with {:ok, last_message} <- send_default_msg(contact) do
       Message
       |> where([m], m.id != ^last_message.id)
-      |> where([m], m.contact_id == ^contact.id)
-      |> where([m], m.organization_id == ^contact.organization_id)
-      |> Repo.delete_all()
+      |> delete_query()
     end
   end
 
@@ -921,12 +919,18 @@ defmodule Glific.Messages do
     create_and_send_message(attrs)
   end
 
-  @spec delete_all_message(Contact.t()) :: {integer(), nil | [term()]}
-  defp delete_all_message(contact) do
-    Message
+  @spec delete_query(Ecto.Query.t()) :: {integer(), nil | [term()]}
+  defp delete_query(query) do
+    query
     |> where([m], m.contact_id == ^contact.id)
     |> where([m], m.organization_id == ^contact.organization_id)
     |> Repo.delete_all()
+  end
+
+  @spec delete_all_message(Contact.t()) :: {integer(), nil | [term()]}
+  defp delete_all_message(contact) do
+    Message
+    |> delete_query()
   end
 
   @doc false
