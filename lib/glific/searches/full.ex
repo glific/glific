@@ -42,7 +42,6 @@ defmodule Glific.Search.Full do
         WHERE search_messages.document @@ plainto_tsquery(unaccent(?))
         OR search_messages.phone ILIKE ?
         OR search_messages.name ILIKE ?
-        OR ? ILIKE ANY(tag_label)
         OFFSET ?
         LIMIT ?
         """,
