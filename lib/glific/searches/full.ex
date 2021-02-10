@@ -49,7 +49,6 @@ defmodule Glific.Search.Full do
         ^unquote(term),
         ^"%#{unquote(term)}%",
         ^"%#{unquote(term)}%",
-        ^"%#{unquote(term)}%",
         ^unquote(args).contact_opts.offset,
         ^unquote(args).contact_opts.limit
       )

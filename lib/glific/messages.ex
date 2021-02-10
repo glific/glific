@@ -903,6 +903,7 @@ defmodule Glific.Messages do
       |> where([m], m.id != ^last_message.id)
     end
   end
+
   defp check_simulator(query, _, _), do: query
 
   @spec send_default_msg(Contact.t()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
