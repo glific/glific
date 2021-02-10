@@ -227,6 +227,14 @@ defmodule Glific.Flows.Action do
   end
 
   @doc """
+  Validate a action and all its children
+  """
+  @spec validate(Action.t(), map(), map()) :: map()
+  def validate(_action, errors, _flow) do
+    errors
+  end
+
+  @doc """
   Execute a action, given a message stream.
   Consume the message stream as processing occurs
   """

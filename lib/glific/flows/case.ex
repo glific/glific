@@ -61,6 +61,15 @@ defmodule Glific.Flows.Case do
     {c, Map.put(uuid_map, c.uuid, {:case, c})}
   end
 
+  @doc """
+  Validate a case
+  """
+  @spec validate(Case.t(), map(), map()) :: map()
+  def validate(_case, errors, _flow) do
+    errors
+  end
+
+
   defp strip(msgs) when is_list(msgs),
     do: msgs |> hd() |> strip()
 

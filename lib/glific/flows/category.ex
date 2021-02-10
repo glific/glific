@@ -51,6 +51,14 @@ defmodule Glific.Flows.Category do
   end
 
   @doc """
+  Validate a category
+  """
+  @spec validate(Category.t(), map(), map()) :: map()
+  def validate(_category, errors, _flow) do
+    errors
+  end
+
+  @doc """
   Execute a category, given a message stream.
   """
   @spec execute(Category.t(), FlowContext.t(), [Message.t()]) ::

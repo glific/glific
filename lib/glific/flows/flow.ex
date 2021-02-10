@@ -280,6 +280,27 @@ defmodule Glific.Flows.Flow do
     |> process(flow)
   end
 
+  @doc """
+  Validate a flow and ensures the flow  is valid with our internal rule-set
+  """
+  @spec validate_flow(non_neg_integer, String.t(), map()) :: map()
+  def validate_flow(organization_id, status, args) do
+    organization_id
+    |> get_loaded_flow(status, args)
+    |> validate_flow()
+  end
+
+  @spec validate_flow(map()) :: map()
+  defp validate_flow(flow) do
+    errors = %{}
+
+    flow.nodes
+    |> Enum.reduce(
+      errors,
+      &Node.validate(&1, &2, flow)
+    )
+  end
+
   # add the appropriate where clause as needed
   @spec args_clause(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   defp args_clause(query, %{id: id}),

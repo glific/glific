@@ -103,6 +103,30 @@ defmodule Glific.Flows.Router do
   end
 
   @doc """
+  Validate a action and all its children
+  """
+  @spec validate(Router.t(), map(), map()) :: map()
+  def validate(router, errors, flow) do
+    errors =
+      router.categories
+      |> Enum.reduce(
+        errors,
+        &Category.validate(&1, &2, flow)
+      )
+
+    errors =
+      router.cases
+      |> Enum.reduce(
+        errors,
+        &Case.validate(&1, &2, flow)
+      )
+
+    if router.wait,
+      do: Wait.validate(router.wait, errors, flow),
+      else: errors
+  end
+
+  @doc """
   Execute a router, given a message stream.
   Consume the message stream as processing occurs
   """

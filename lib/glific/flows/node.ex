@@ -87,6 +87,30 @@ defmodule Glific.Flows.Node do
   end
 
   @doc """
+  Validate a node and all its children
+  """
+  @spec validate(Node.t(), map(), map()) :: map()
+  def validate(node, errors, flow) do
+    errors =
+      node.actions
+      |> Enum.reduce(
+        errors,
+        &Action.validate(&1, &2, flow)
+      )
+
+    errors =
+      node.exits
+      |> Enum.reduce(
+        errors,
+        &Exit.validate(&1, &2, flow)
+      )
+
+    if node.router,
+      do: Router.validate(node.router, errors, flow),
+      else: errors
+  end
+
+  @doc """
   Execute a node, given a message stream.
   Consume the message stream as processing occurs
   """
