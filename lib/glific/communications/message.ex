@@ -290,10 +290,16 @@ defmodule Glific.Communications.Message do
               if is_tuple(r) and elem(r, 0) == :timeout do
                 # if the error is a timeout, lets kill the genserver
                 Process.exit(pid, :kill)
-                error("poolboy genserver caught timeout, killing server now", e, r, __STACKTRACE__)
+
+                error(
+                  "poolboy genserver caught timeout, killing server now",
+                  e,
+                  r,
+                  __STACKTRACE__
+                )
               else
                 error("poolboy genserver caught error", e, r, __STACKTRACE__)
-             end
+              end
           end
         end
       )
