@@ -69,7 +69,6 @@ defmodule Glific.Flows.Case do
     errors
   end
 
-
   defp strip(msgs) when is_list(msgs),
     do: msgs |> hd() |> strip()
 
