@@ -366,6 +366,29 @@ defmodule Glific.MessagesTest do
       assert {:error, _} = Repo.fetch(MessageMedia, message_media.id)
     end
 
+    test "clear_messages/1 deletes messages for simulator and sends a message with default body",
+         attrs do
+      message = message_fixture(attrs)
+
+      {:ok, contact} =
+        Repo.fetch_by(Glific.Contacts.Contact, %{
+          name: "Simulator",
+          organization_id: message.organization_id
+        })
+
+      assert {:ok} = Messages.clear_messages(contact)
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          contact_id: contact.id,
+          organization_id: contact.organization_id
+        })
+
+      message = Messages.get_message!(message.id)
+
+      assert message.body == "Default message body"
+    end
+
     test "change_message/1 returns a message changeset", attrs do
       message = message_fixture(attrs)
       assert %Ecto.Changeset{} = Messages.change_message(message)

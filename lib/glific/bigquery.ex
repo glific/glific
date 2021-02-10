@@ -438,22 +438,28 @@ defmodule Glific.Bigquery do
       }"
     )
 
-    if should_refresh_schema?(response) do
-      sync_schema_with_bigquery(organization_id)
-      :ok
-    else
-      raise("Bigquery Insert Error for table #{table}  #{response}")
+    bigquery_error_status(response)
+    |> case do
+      "NOT_FOUND" ->
+        sync_schema_with_bigquery(organization_id)
+
+      "PERMISSION_DENIED" ->
+        Partners.disable_credential(organization_id, "bigquery")
+
+      _ ->
+        raise("Bigquery Insert Error for table #{table}  #{response}")
     end
+
+    :ok
   end
 
-  @spec should_refresh_schema?(map()) :: boolean()
-  defp should_refresh_schema?(response) do
+  @spec bigquery_error_status(map()) :: String.t() | atom()
+  defp bigquery_error_status(response) do
     with true <- Map.has_key?(response, :body),
-         {:ok, error} <- Jason.decode(response.body),
-         true <- error["error"]["status"] == "NOT_FOUND" do
-      true
+         {:ok, error} <- Jason.decode(response.body) do
+      error["error"]["status"]
     else
-      _ -> false
+      _ -> :unknown
     end
   end
 
@@ -538,7 +544,9 @@ defmodule Glific.Bigquery do
       SELECT updated_at, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num
       FROM `#{credentials.dataset_id}.#{table}_delta` delta )
       WHERE row_num > 0 AND
-        updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 2 MINUTE), '#{timezone}')
+        updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 40 MINUTE), '#{
+      timezone
+    }')
       )
     """
 
