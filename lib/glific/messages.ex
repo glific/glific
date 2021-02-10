@@ -14,6 +14,7 @@ defmodule Glific.Messages do
     Groups.Group,
     Jobs.BigQueryWorker,
     Messages.Message,
+    Messages.MessageMedia,
     Messages.MessageVariables,
     Partners,
     Repo,
@@ -485,8 +486,6 @@ defmodule Glific.Messages do
     Ecto.assoc_loaded?(message.tags) &&
       Enum.find(message.tags, fn t -> t.id == tag_id end) != nil
   end
-
-  alias Glific.Messages.MessageMedia
 
   @doc """
   Returns the list of message media.
