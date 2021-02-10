@@ -42,6 +42,11 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "Enum for question types"
   enum(:question_type_enum, values: Glific.Enums.question_type_const())
 
+  # doing this in a special way, since values: does not work
+  # if we are using default values
   @desc "Enum for ordering results"
-  enum(:sort_order, values: Glific.Enums.sort_order_const())
+  enum :sort_order do
+    value(:asc)
+    value(:desc)
+  end
 end
