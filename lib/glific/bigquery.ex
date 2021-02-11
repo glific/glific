@@ -292,13 +292,14 @@ defmodule Glific.Bigquery do
   end
 
   @doc """
-    reseting table
+  reseting table in bigquery
   """
   def reset_table(organization_id, table_name) do
     fetch_bigquery_credentials(organization_id)
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
         token = Partners.get_goth_token(organization_id, "bigquery")
+
         Tables.bigquery_tables_delete(
           conn,
           project_id,
@@ -307,11 +308,24 @@ defmodule Glific.Bigquery do
           [oauth_token: token.token],
           []
         )
+
         apply(BigquerySchema, @bigquery_tables[table_name], [])
         |> create_table(conn, dataset_id, project_id, table_name)
+
+        reset_jobs_table(organization_id, table_name)
+
       _ ->
         nil
     end
+  end
+
+  @doc """
+  reseting table_id to restart jobs from starting in bigquery
+  """
+  def reset_jobs_table(organization_id, table_name) do
+    Repo.get_by(BigqueryJob, %{table: table_name, organization_id: organization_id})
+    |> BigqueryJob.changeset(%{table_id: 0})
+    |> Repo.update()
   end
 
   @spec alter_table(list(), Tesla.Client.t(), binary(), binary(), String.t()) ::
