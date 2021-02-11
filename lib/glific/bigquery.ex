@@ -291,6 +291,24 @@ defmodule Glific.Bigquery do
     )
   end
 
+  def delete_query(organization_id, table_name) do
+    fetch_bigquery_credentials(organization_id)
+    |> case do
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
+        token = Partners.get_goth_token(organization_id, "bigquery")
+        Tables.bigquery_tables_delete(
+          conn,
+          project_id,
+          dataset_id,
+          table_name,
+          [oauth_token: token.token],
+          []
+        )
+      _ ->
+        nil
+    end
+  end
+
   @spec alter_table(list(), Tesla.Client.t(), binary(), binary(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp alter_table(schema, conn, dataset_id, project_id, table_id) do
