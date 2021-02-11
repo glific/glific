@@ -13,24 +13,16 @@ defmodule Glific.Searches.CollectionCount do
     Repo
   }
 
-  @doc """
-  Do it in one query for all organizations for each of Unread, Not Responded, Not Replied and OptOut
-  """
-  @spec collection_stats(boolean) :: map()
-  def collection_stats(recent \\ true) do
-    org_id_list =
-      Partners.active_organizations([])
-      |> Partners.recent_organizations(recent)
-      |> Enum.reduce([], fn {id, _map}, acc -> [id | acc] end)
+  @spec org_id_list :: list()
+  defp org_id_list do
+    Partners.active_organizations([])
+    |> Partners.recent_organizations(recent)
+    |> Enum.reduce([], fn {id, _map}, acc -> [id | acc] end)
+  end
 
-    query = query(org_id_list)
-
-    %{}
-    |> all(query)
-    |> unread(query)
-    |> not_replied(query)
-    |> not_responded(query)
-    |> optout(org_id_list)
+  @spec publish_data(list()) :: map()
+  defp publish_data(results) do
+    results
     |> Enum.map(fn {id, stats} ->
       Communications.publish_data(
         %{"Collection_count" => stats},
@@ -41,6 +33,24 @@ defmodule Glific.Searches.CollectionCount do
       {id, stats}
     end)
     |> Enum.into(%{})
+  end
+
+  @doc """
+  Do it in one query for all organizations for each of Unread, Not Responded, Not Replied and OptOut
+  """
+  @spec collection_stats(boolean) :: map()
+  def collection_stats(recent \\ true) do
+    org_id_list = org_id_list()
+
+    query = query(org_id_list)
+
+    %{}
+    |> all(query)
+    |> unread(query)
+    |> not_replied(query)
+    |> not_responded(query)
+    |> optout(org_id_list)
+    |> publish_data()
   end
 
   @spec empty_result :: map()
@@ -76,9 +86,8 @@ defmodule Glific.Searches.CollectionCount do
     Message
     |> join(:inner, [m], c in Contact, on: m.contact_id == c.id)
     |> add_orgs(org_id_list)
-    |> where([_m, c], c.status != :blocked)
     # block messages sent to group
-    |> where([m, _c], m.receiver_id != m.sender_id)
+    |> where([m, c], c.status != :blocked and m.receiver_id != m.sender_id)
     |> group_by([_m, c], c.organization_id)
     |> select([_m, c], [count(c.id, :distinct), c.organization_id])
   end
@@ -126,9 +135,8 @@ defmodule Glific.Searches.CollectionCount do
   @spec optout(map(), list()) :: map()
   defp optout(result, org_id_list) do
     Contact
-    |> where([c], c.status != :blocked)
+    |> where([c], c.status != :blocked and not is_nil(c.optout_time))
     |> add_orgs(org_id_list)
-    |> where([c], not is_nil(c.optout_time))
     |> group_by([c], c.organization_id)
     |> select([c], [count(c.id), c.organization_id])
     |> make_result(result, "Optout")
