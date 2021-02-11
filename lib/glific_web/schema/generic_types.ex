@@ -123,7 +123,7 @@ defmodule GlificWeb.Schema.GenericTypes do
     if is_binary(label) do
       label =
         String.downcase(label)
-        |> String.to_existing_atom()
+        |> Glific.safe_string_to_atom()
 
       {:ok, label}
     else

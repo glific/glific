@@ -193,7 +193,7 @@ defmodule Glific.Flows.ContactAction do
       attachment[type]
       |> String.trim()
 
-    type = String.to_existing_atom(type)
+    type = Glific.safe_string_to_atom(type)
 
     {:ok, message_media} =
       %{
