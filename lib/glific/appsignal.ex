@@ -35,6 +35,10 @@ defmodule Glific.Appsignal do
     |> @span.set_sample_data("meta.args", meta.args)
   end
 
+  # ignore the stager plugin
+  defp record_event(:plugin, _measurement, %{plugin: Elixir.Oban.Plugins.Stager}, _time),
+    do: nil
+
   defp record_event(:plugin, measurement, meta, time) do
     metadata = %{"plugin" => meta.plugin}
 

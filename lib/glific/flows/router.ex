@@ -230,7 +230,7 @@ defmodule Glific.Flows.Router do
     category = Enum.find(router.categories, fn c -> c.name == body end)
 
     if is_nil(category),
-      do: router.default_category_uuid,
+      do: nil,
       else: category.uuid
   end
 
