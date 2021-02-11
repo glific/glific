@@ -535,14 +535,20 @@ subscription organization_subscriptions {
 ```json
 {
   "data": {
-    "collection_count": "{\"Collection_count\":{\"5\":1}"
+    "collection": "{
+      \"All\": 5,
+      \"Not Responded\": 3,
+      \"Not replied\": 2,
+      \"Optout\": 0,
+      \"Unread\": 4
+    }"
   }
 }
 ```
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#json">JSON with "Collection_count" as name and array with key as collection count id and value as collection count</a> |
+<a href="#json">JSON with "collection" as name and array with key as collection count name and value as collection count</a> |
 
 ## Subscription for Simulator release
 

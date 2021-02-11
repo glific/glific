@@ -25,7 +25,7 @@ defmodule Glific.Searches.CollectionCount do
     results
     |> Enum.map(fn {id, stats} ->
       Communications.publish_data(
-        %{"Collection_count" => stats},
+        %{"collection" => stats},
         :collection_count,
         id
       )
