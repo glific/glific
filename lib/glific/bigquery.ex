@@ -294,6 +294,7 @@ defmodule Glific.Bigquery do
   @doc """
   reseting table in bigquery
   """
+  @spec reset_table(non_neg_integer(), String.t()) :: nil | {:ok, BigqueryJob.t()} | {:error, Ecto.Changeset.t()}
   def reset_table(organization_id, table_name) do
     fetch_bigquery_credentials(organization_id)
     |> case do
@@ -322,6 +323,7 @@ defmodule Glific.Bigquery do
   @doc """
   reseting table_id to restart jobs from starting in bigquery
   """
+  @spec reset_table(non_neg_integer(), String.t()) :: nil | {:ok, BigqueryJob.t()} | {:error, Ecto.Changeset.t()}
   def reset_jobs_table(organization_id, table_name) do
     Repo.get_by(BigqueryJob, %{table: table_name, organization_id: organization_id})
     |> BigqueryJob.changeset(%{table_id: 0})
