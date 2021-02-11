@@ -291,7 +291,10 @@ defmodule Glific.Bigquery do
     )
   end
 
-  def delete_query(organization_id, table_name) do
+  @doc """
+    reseting table
+  """
+  def reset_table(organization_id, table_name) do
     fetch_bigquery_credentials(organization_id)
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
@@ -304,6 +307,8 @@ defmodule Glific.Bigquery do
           [oauth_token: token.token],
           []
         )
+        apply(BigquerySchema, @bigquery_tables[table_name], [])
+        |> create_table(conn, dataset_id, project_id, table_name)
       _ ->
         nil
     end
