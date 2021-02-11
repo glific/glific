@@ -20,7 +20,7 @@ defmodule Glific.Searches.CollectionCount do
     |> Enum.reduce([], fn {id, _map}, acc -> [id | acc] end)
   end
 
-  @spec publish_data(list()) :: map()
+  @spec publish_data(map()) :: map()
   defp publish_data(results) do
     results
     |> Enum.map(fn {id, stats} ->
