@@ -1,4 +1,4 @@
-defmodule Glific.Jobs.CollectionCountWorker do
+defmodule Glific.Searches.CollectionCount do
   @moduledoc """
   Module for checking collection count
   """
@@ -10,42 +10,23 @@ defmodule Glific.Jobs.CollectionCountWorker do
     Contacts.Contact,
     Messages.Message,
     Partners,
-    Repo,
-    Searches
+    Repo
   }
-
-  @doc """
-  periodic function for making calls to collection for collection count
-  """
-  @spec perform_periodic(non_neg_integer) :: :ok
-  def perform_periodic(organization_id) do
-    Searches.list_saved_searches(%{filter: %{organization_id: organization_id}})
-    |> Enum.each(fn saved_search ->
-      Communications.publish_data(
-        %{
-          "Collection_count" => %{
-            saved_search.id => Searches.saved_search_count(%{id: saved_search.id})
-          }
-        },
-        :periodic_info,
-        organization_id
-      )
-    end)
-  end
 
   @doc """
   Do it in one query for all organizations for each of Unread, Not Responded, Not Replied and OptOut
   """
-  @spec collection_stats :: map()
-  def collection_stats do
+  @spec collection_stats(boolean) :: map()
+  def collection_stats(recent \\ true) do
     org_id_list =
       Partners.active_organizations([])
-      |> Partners.recent_organizations(true)
+      |> Partners.recent_organizations(recent)
       |> Enum.reduce([], fn {id, _map}, acc -> [id | acc] end)
 
     query = query(org_id_list)
 
     %{}
+    |> all(query)
     |> unread(query)
     |> not_replied(query)
     |> not_responded(query)
@@ -65,6 +46,7 @@ defmodule Glific.Jobs.CollectionCountWorker do
   @spec empty_result :: map()
   defp empty_result,
     do: %{
+      "All" => 0,
       "Unread" => 0,
       "Not replied" => 0,
       "Not Responded" => 0,
@@ -81,14 +63,24 @@ defmodule Glific.Jobs.CollectionCountWorker do
     Map.put(result, org_id, Map.put(org_values, key, value))
   end
 
+  @spec add_orgs(Ecto.Query.t(), list()) :: Ecto.Query.t()
+  defp add_orgs(query, []), do: query
+
+  defp add_orgs(query, org_id_list) do
+    query
+    |> where([m], m.organization_id in ^org_id_list)
+  end
+
   @spec query(list()) :: Ecto.Query.t()
   defp query(org_id_list) do
     Message
     |> join(:inner, [m], c in Contact, on: m.contact_id == c.id)
-    |> where([m, _c], m.organization_id in ^org_id_list)
+    |> add_orgs(org_id_list)
     |> where([_m, c], c.status != :blocked)
-    |> group_by([m, _c], m.organization_id)
-    |> select([m, _c], [count(m.id), m.organization_id])
+    # block messages sent to group
+    |> where([m, _c], m.receiver_id != m.sender_id)
+    |> group_by([_m, c], c.organization_id)
+    |> select([_m, c], [count(c.id, :distinct), c.organization_id])
   end
 
   @spec make_result(Ecto.Query.t(), map(), String.t()) :: map()
@@ -99,6 +91,12 @@ defmodule Glific.Jobs.CollectionCountWorker do
       result,
       fn [cnt, org_id], result -> add(result, org_id, key, cnt) end
     )
+  end
+
+  @spec all(map(), Ecto.Query.t()) :: map()
+  defp all(result, query) do
+    query
+    |> make_result(result, "All")
   end
 
   @spec unread(map(), Ecto.Query.t()) :: map()
@@ -129,7 +127,7 @@ defmodule Glific.Jobs.CollectionCountWorker do
   defp optout(result, org_id_list) do
     Contact
     |> where([c], c.status != :blocked)
-    |> where([c], c.organization_id in ^org_id_list)
+    |> add_orgs(org_id_list)
     |> where([c], not is_nil(c.optout_time))
     |> group_by([c], c.organization_id)
     |> select([c], [count(c.id), c.organization_id])
