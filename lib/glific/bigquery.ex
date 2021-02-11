@@ -544,7 +544,7 @@ defmodule Glific.Bigquery do
       SELECT updated_at, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num
       FROM `#{credentials.dataset_id}.#{table}_delta` delta )
       WHERE row_num > 0 AND
-        updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 40 MINUTE), '#{
+        updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 60 MINUTE), '#{
       timezone
     }')
       )
