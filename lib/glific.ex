@@ -163,7 +163,7 @@ defmodule Glific do
   """
 
   @spec safe_string_to_atom(String.t() | atom()) :: atom()
-  def safe_string_to_atom(value) when is_atom(value),  do: value
+  def safe_string_to_atom(value) when is_atom(value), do: value
 
   def safe_string_to_atom(value) do
     try do
@@ -175,5 +175,4 @@ defmodule Glific do
         {:invalid_atom}
     end
   end
-
 end

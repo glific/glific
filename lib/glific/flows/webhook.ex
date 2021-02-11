@@ -183,13 +183,12 @@ defmodule Glific.Flows.Webhook do
           }
         } = _job
       ) do
-
     Repo.put_process_state(organization_id)
 
     headers =
       Keyword.new(
         headers,
-        fn {k, v} -> { Glific.safe_string_to_atom(k), v} end
+        fn {k, v} -> {Glific.safe_string_to_atom(k), v} end
       )
 
     result =
