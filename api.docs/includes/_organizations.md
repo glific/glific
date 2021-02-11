@@ -503,8 +503,8 @@ Type | Description
 ## Subscription for Wallet Balance
 
 ```graphql
-subscription PeriodicInfo {
-  periodicInfo(organizationId: "1")
+subscription organization_subscriptions {
+  bsp_balance(organizationId: "1")
 }
 
 ```
@@ -513,22 +513,20 @@ subscription PeriodicInfo {
 ```json
 {
   "data": {
-    "periodicInfo": {
-      \"balance\": 0.787
-    }
+    "bspbalance": "{\"balance\":0.426}"
   }
 }
 ```
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#json">JSON</a> | A json map with key balance and value amount
+<a href="#json">JSON with "balance" as name and the amount of remaining balance as value</a> |
 
 ## Subscription for Collection Count
 
 ```graphql
-subscription collectionCount {
-  collectionCount(organizationId: "1")
+subscription organization_subscriptions {
+  collection_count(organizationId: "1")
 }
 
 ```
@@ -537,21 +535,37 @@ subscription collectionCount {
 ```json
 {
   "data": {
-    "collectionCount": {
-       \"1\": {
-         \"Unread\": 23,
-         \"Not replied\": 13,
-         \"Not responded\": 17,
-         \"Optout\": 3,
-       }
-    }
+    "collection_count": "{\"Collection_count\":{\"5\":1}"
   }
 }
 ```
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#json">JSON</a> | A json map or object
+<a href="#json">JSON with "Collection_count" as name and array with key as collection count id and value as collection count</a> |
+
+## Subscription for Simulator release
+
+```graphql
+subscription organization_subscriptions {
+  simulator_release(organizationId: "1")
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "simulator_release": "{\"simulator_release\":{\"user_id\":1}"
+ }
+}
+```
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#json">JSON with "simulator_release" as name and array with key as user_id and value as id of user</a> |
+
 
 ## Organization Objects
 
