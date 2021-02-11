@@ -166,13 +166,11 @@ defmodule Glific do
   def safe_string_to_atom(value) when is_atom(value), do: value
 
   def safe_string_to_atom(value) do
-    try do
       String.to_existing_atom(value)
     rescue
       ArgumentError ->
         error = "#{value} can not be converted to atom"
         Appsignal.send_error(:error, error, __STACKTRACE__)
         {:invalid_atom}
-    end
   end
 end
