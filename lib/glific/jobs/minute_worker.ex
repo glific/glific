@@ -15,9 +15,9 @@ defmodule Glific.Jobs.MinuteWorker do
     Jobs.BigQueryWorker,
     Jobs.BSPBalanceWorker,
     Jobs.ChatbaseWorker,
-    Jobs.CollectionCountWorker,
     Jobs.GcsWorker,
     Partners,
+    Searches.CollectionCount,
     Templates
   }
 
@@ -156,10 +156,10 @@ defmodule Glific.Jobs.MinuteWorker do
         FlowContext.delete_old_flow_contexts()
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"])
-        Partners.perform_all(&CollectionCountWorker.perform_periodic/1, nil, [], true)
 
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
+        CollectionCount.collection_stats()
 
       "update_hsms" ->
         Partners.perform_all(&Templates.update_hsms/1, nil, [])

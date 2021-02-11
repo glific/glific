@@ -755,5 +755,32 @@ defmodule Glific.PartnersTest do
         assert token != nil
       end
     end
+
+    test "disable_credentails/2 should disable the crednetails",
+         %{organization_id: organization_id} = _attrs do
+      provider = provider_fixture()
+
+      valid_attrs = %{
+        shortcode: provider.shortcode,
+        secrets: %{api_key: "test_value"},
+        organization_id: organization_id,
+        is_active: true
+      }
+
+      assert {:ok, %Credential{} = credential} = Partners.create_credential(valid_attrs)
+
+      assert credential.is_active == true
+
+      # credential with same provider shortcode for the organization should not be allowed
+      Partners.disable_credential(organization_id, provider.shortcode)
+
+      {:ok, credential} =
+        Repo.fetch_by(Credential, %{
+          organization_id: organization_id,
+          provider_id: provider.id
+        })
+
+      assert credential.is_active == false
+    end
   end
 end

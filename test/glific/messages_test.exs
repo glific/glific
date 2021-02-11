@@ -244,6 +244,13 @@ defmodule Glific.MessagesTest do
       assert Messages.get_message!(message.id) == message
     end
 
+    test "tag_in_message?/2 should check message has tag",
+         %{organization_id: organization_id} = attrs do
+      tag = Fixtures.tag_fixture(%{organization_id: organization_id})
+      message = message_fixture(attrs)
+      assert false == Messages.tag_in_message?(message, tag.id)
+    end
+
     test "create_message/1 with valid data creates a message", attrs do
       assert {:ok, %Message{} = message} =
                @valid_attrs
@@ -366,6 +373,29 @@ defmodule Glific.MessagesTest do
       assert {:error, _} = Repo.fetch(MessageMedia, message_media.id)
     end
 
+    test "clear_messages/1 deletes messages for simulator and sends a message with default body",
+         attrs do
+      message = message_fixture(attrs)
+
+      {:ok, contact} =
+        Repo.fetch_by(Glific.Contacts.Contact, %{
+          name: "Simulator",
+          organization_id: message.organization_id
+        })
+
+      assert {:ok} = Messages.clear_messages(contact)
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          contact_id: contact.id,
+          organization_id: contact.organization_id
+        })
+
+      message = Messages.get_message!(message.id)
+
+      assert message.body == "Default message body"
+    end
+
     test "change_message/1 returns a message changeset", attrs do
       message = message_fixture(attrs)
       assert %Ecto.Changeset{} = Messages.change_message(message)
@@ -457,6 +487,33 @@ defmodule Glific.MessagesTest do
                Messages.create_and_send_message_to_contacts(message_attrs, [receiver.id])
     end
 
+    test "create_group_message/1 should create group message",
+         %{organization_id: organization_id} do
+      org_contact = Glific.Partners.organization(organization_id).contact
+
+      valid_attrs = %{
+        body: "group message",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs =
+        Map.merge(valid_attrs, %{
+          sender_id: org_contact.id,
+          receiver_id: org_contact.id,
+          organization_id: organization_id
+        })
+
+      assert {:ok, %Message{}} = Messages.create_group_message(message_attrs)
+    end
+
+    test "create_group_message/1 should return changeset error", attrs do
+      assert {:error, %Ecto.Changeset{}} =
+               @invalid_attrs
+               |> Map.merge(foreign_key_constraint(attrs))
+               |> Messages.create_group_message()
+    end
+
     test "create and send message to a group should send message to contacts of the group",
          %{organization_id: organization_id} = attrs do
       [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
@@ -496,6 +553,19 @@ defmodule Glific.MessagesTest do
         Repo.fetch_by(Group, %{id: cg1.group_id, organization_id: organization_id})
 
       assert updated_group.last_communication_at >= group.last_communication_at
+    end
+
+    test "create and send message should send message to contact", attrs do
+      valid_attrs = %{
+        body: "test message",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "test message"
     end
 
     test "send hsm message incorrect parameters",

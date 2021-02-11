@@ -15,7 +15,9 @@ http_port = System.get_env("HTTP_PORT") || 4000
 config :glific, Glific.Repo,
   url: db_url,
   pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-  show_sensitive_data_on_connection_error: true
+  show_sensitive_data_on_connection_error: true,
+  prepare: :named,
+  parameters: [plan_cache_mode: "force_custom_plan"]
 
 secret_key_base =
   System.get_env("SECRET_KEY_BASE") ||

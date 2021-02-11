@@ -558,13 +558,14 @@ subscription organization_subscriptions {
 {
   "data": {
     "simulator_release": "{\"simulator_release\":{\"user_id\":1}"
-  }
+ }
 }
 ```
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#json">JSON with "simulator_release" as name and array with key as user_id and value as id of user</a> |
+
 
 ## Organization Objects
 

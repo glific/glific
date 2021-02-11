@@ -280,7 +280,7 @@ defmodule Glific.Templates do
     type =
       template["templateType"]
       |> String.downcase()
-      |> String.to_existing_atom()
+      |> Glific.safe_string_to_atom()
 
     # setting default language id if languageCode is not known
     language_id = languages[template["languageCode"]] || organization.default_language_id
@@ -385,7 +385,7 @@ defmodule Glific.Templates do
     type =
       template["templateType"]
       |> String.downcase()
-      |> String.to_existing_atom()
+      |> Glific.safe_string_to_atom()
 
     # setting default language id if languageCode is not known
     language_id = languages[template["languageCode"]] || organization.default_language_id

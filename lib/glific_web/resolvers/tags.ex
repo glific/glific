@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Tags do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Repo, Tags, Tags.Tag}
+  alias Glific.{Messages, Repo, Tags, Tags.Tag}
 
   @doc """
   Get a specific tag by id
@@ -107,9 +107,8 @@ defmodule GlificWeb.Resolvers.Tags do
   def mark_contact_messages_as_read(_, %{contact_id: contact_id}, %{
         context: %{current_user: user}
       }) do
-    with untag_message_ids <-
-           Tags.remove_tag_from_all_message(contact_id, "unread", user.organization_id),
-         do: {:ok, untag_message_ids}
+    Messages.mark_contact_messages_as_read(contact_id, user.organization_id)
+    {:ok, contact_id}
   end
 
   @doc """

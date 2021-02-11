@@ -9,10 +9,12 @@ defmodule Glific.Messages do
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
+    Flows.FlowContext,
     Flows.MessageVarParser,
     Groups.Group,
     Jobs.BigQueryWorker,
     Messages.Message,
+    Messages.MessageMedia,
     Messages.MessageVariables,
     Partners,
     Repo,
@@ -485,8 +487,6 @@ defmodule Glific.Messages do
       Enum.find(message.tags, fn t -> t.id == tag_id end) != nil
   end
 
-  alias Glific.Messages.MessageMedia
-
   @doc """
   Returns the list of message media.
 
@@ -875,14 +875,52 @@ defmodule Glific.Messages do
     |> where([m], m.id in ^messages_media_ids)
     |> Repo.delete_all()
 
-    Message
-    |> where([m], m.contact_id == ^contact.id)
-    |> where([m], m.organization_id == ^contact.organization_id)
-    |> Repo.delete_all()
+    FlowContext.mark_flows_complete(contact.id)
+
+    query =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> where([m], m.organization_id == ^contact.organization_id)
+      |> check_simulator(contact, contact.phone)
+
+    Repo.delete_all(query)
 
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
 
     {:ok}
+  end
+
+  @spec check_simulator(Ecto.Query.t(), Contact.t(), String.t()) :: Ecto.Query.t()
+  defp check_simulator(query, contact, "9876543210") do
+    Contacts.update_contact(
+      contact,
+      %{fields: %{}}
+    )
+
+    with {:ok, last_message} <- send_default_msg(contact) do
+      query
+      |> where([m], m.id != ^last_message.id)
+    end
+  end
+
+  defp check_simulator(query, _, _), do: query
+
+  @spec send_default_msg(Contact.t()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp send_default_msg(contact) do
+    org = Partners.organization(contact.organization_id)
+
+    attrs = %{
+      body: "Default message body",
+      flow: :outbound,
+      media_id: nil,
+      organization_id: contact.organization_id,
+      receiver_id: contact.id,
+      sender_id: org.root_user.id,
+      type: :text,
+      user_id: org.root_user.id
+    }
+
+    create_and_send_message(attrs)
   end
 
   @doc false
@@ -945,5 +983,17 @@ defmodule Glific.Messages do
     {:ok, content_length} = Glific.parse_maybe_integer(content_length)
     content_length_in_kb = content_length / 1024
     size_limit >= content_length_in_kb
+  end
+
+  @doc """
+  Mark that the user has read all messages sent by a given contact
+  """
+  @spec mark_contact_messages_as_read(non_neg_integer, non_neg_integer) :: nil
+  def mark_contact_messages_as_read(contact_id, organization_id) do
+    Message
+    |> where([m], m.contact_id == ^contact_id)
+    |> where([m], m.organization_id == ^organization_id)
+    |> where([m], m.is_read == false)
+    |> Repo.update_all(set: [is_read: true])
   end
 end

@@ -9,8 +9,7 @@ defmodule Glific.Appsignal do
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
   def handle_event([:oban, action, event], measurement, meta, _)
-      when event in [:stop, :exception]  do
-
+      when event in [:stop, :exception] do
     time = :os.system_time()
     span = record_event(action, measurement, meta, time)
 
@@ -36,6 +35,10 @@ defmodule Glific.Appsignal do
     |> @span.set_sample_data("meta.args", meta.args)
   end
 
+  # ignore the stager plugin
+  defp record_event(:plugin, _measurement, %{plugin: Elixir.Oban.Plugins.Stager}, _time),
+    do: nil
+
   defp record_event(:plugin, measurement, meta, time) do
     metadata = %{"plugin" => meta.plugin}
 
@@ -46,6 +49,5 @@ defmodule Glific.Appsignal do
     |> @span.set_sample_data("meta.data", metadata)
   end
 
-  defp record_event(_,_measurement, _meta, _time), do: nil
-
+  defp record_event(_, _measurement, _meta, _time), do: nil
 end

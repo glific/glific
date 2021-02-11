@@ -20,6 +20,8 @@
         "lib/glific_web/schema",
         "lib/glific.ex",
         "lib/glific/csv",
+        "lib/glific/triggers",
+        "lib/glific/triggers.ex",
         "lib/glific/dialogflow",
         "lib/glific/dialogflow.ex",
         "lib/glific/bigquery.ex",

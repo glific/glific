@@ -3,12 +3,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.10.8] - 2021-02-11
+
+### Fixed
+- Found and fixed infinite loop issue
+- Take advantage of prepared schema's for pg 12+
+- Continue with our DB optimization quest
+
 ## [0.10.4] - 2021-02-08
 
-### Added
+### Fixed
 - Use json maps rather than our own pseudo-maps
 - Improve GCS and BigQuery code
 - Improve garbage collection in consumer worker
+- More learning on GenServer
 
 ## [0.9.7] - 2021-01-25
 
