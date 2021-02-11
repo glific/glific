@@ -171,6 +171,6 @@ defmodule Glific do
       ArgumentError ->
         error = "#{value} can not be converted to atom"
         Appsignal.send_error(:error, error, __STACKTRACE__)
-        {:invalid_atom}
+        :invalid_atom
   end
 end
