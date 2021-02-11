@@ -182,7 +182,7 @@ defmodule Glific.Repo do
             |> Map.put_new(:with, field)
 
           {:order_with, field}, acc ->
-            Map.put(acc, :with, String.to_existing_atom(field))
+            Map.put(acc, :with, Glific.safe_string_to_atom(field))
 
           _, acc ->
             acc

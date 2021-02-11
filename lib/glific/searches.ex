@@ -404,7 +404,7 @@ defmodule Glific.Searches do
         atom_k =
           if is_atom(k),
             do: k,
-            else: k |> Macro.underscore() |> String.to_existing_atom()
+            else: k |> Macro.underscore() |> Glific.safe_string_to_atom()
 
         if atom_k in [:filter, :contact_opts, :message_opts],
           do: {atom_k, convert_to_atom(v)},

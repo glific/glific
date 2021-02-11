@@ -200,7 +200,7 @@ defmodule Glific.Jobs.GcsWorker do
       audio: "mp3",
       document: "pdf"
     }
-    |> Map.get(String.to_existing_atom(type), "png")
+    |> Map.get(Glific.safe_string_to_atom(type), "png")
   end
 
   @spec download_file_to_temp(String.t(), String.t(), non_neg_integer) ::
