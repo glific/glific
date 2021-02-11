@@ -111,10 +111,12 @@ defmodule Glific.Flows.ContactAction do
 
     cond do
       count >= 7 ->
-        # :loop_infinite, for now we just ignore this error, and stay put
-        # we might want to reset the context
-        # this typically will happen when there is no Exit pathway out of the loop
-        {:ok, context, messages}
+        # this might happen when there is no Exit pathway out of the loop
+        Logger.info("Infinite loop detected, body: #{body}. Resetting context")
+        FlowContext.reset_context(context)
+
+        # at some point soon, we should change action signatures to allow error
+        {:ok, context, []}
 
       count >= 5 ->
         # :loop_detected
@@ -128,8 +130,9 @@ defmodule Glific.Flows.ContactAction do
 
           {:error, error} ->
             Logger.info("Error sending message: #{inspect(error)}, #{inspect(attrs)}")
-            # returning for now, since flows are not really handling errors very nicely
-            {:ok, context, messages}
+            # returning for now, but resetting the context
+            FlowContext.reset_context(context)
+            {:ok, context, []}
         end
     end
   end
