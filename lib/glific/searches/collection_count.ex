@@ -13,8 +13,8 @@ defmodule Glific.Searches.CollectionCount do
     Repo
   }
 
-  @spec org_id_list :: list()
-  defp org_id_list do
+  @spec org_id_list(boolean) :: list()
+  defp org_id_list(recent) do
     Partners.active_organizations([])
     |> Partners.recent_organizations(recent)
     |> Enum.reduce([], fn {id, _map}, acc -> [id | acc] end)
@@ -40,7 +40,7 @@ defmodule Glific.Searches.CollectionCount do
   """
   @spec collection_stats(boolean) :: map()
   def collection_stats(recent \\ true) do
-    org_id_list = org_id_list()
+    org_id_list = org_id_list(recent)
 
     query = query(org_id_list)
 

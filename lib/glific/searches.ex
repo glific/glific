@@ -167,6 +167,7 @@ defmodule Glific.Searches do
   defp direction("Not replied"), do: :inbound
   defp direction("Not Responded"), do: :outbound
 
+  # codebeat:disable[ABC]
   @spec filter_status_contacts_of_organization(String.t()) :: Ecto.Query.t()
   defp filter_status_contacts_of_organization("Unread") do
     status_query()
@@ -190,6 +191,8 @@ defmodule Glific.Searches do
       on: c.id == m.contact_id and m.flow == ^direction(status) and m.is_replied == false
     )
   end
+
+  # codebeat:enable[ABC]
 
   @spec permission_query(User.t()) :: Ecto.Query.t()
   defp permission_query(user) do
