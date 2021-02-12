@@ -5,11 +5,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_8_0 do
 
   alias Glific.{
     Contacts.Contact,
-    Partners.Provider,
-    Partners.Credential,
     Settings,
+    Partners.Organization,
     Repo
   }
+
+  @simulator_phone "9876543210"
 
   def up(_repo) do
     adding_simulators()
@@ -20,12 +21,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_8_0 do
 
     organizations |> Enum.each(fn organization -> seed_contacts(organization) end)
   end
+
   @doc false
   @spec seed_contacts(Organization.t() | nil) :: {integer(), nil}
   def seed_contacts(organization \\ nil) do
     utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
     contacts = [
@@ -51,8 +52,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_8_0 do
       }
     ]
 
-    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
-
     contact_entries =
       for contact_entry <- contacts do
         %{
@@ -61,7 +60,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_8_0 do
           organization_id: organization.id,
           last_message_at: utc_now,
           last_communication_at: utc_now,
-          bsp_status: :session
+          optin_time: utc_now,
+          bsp_status: :session_and_hsm
         }
         |> Map.merge(contact_entry)
       end

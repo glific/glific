@@ -88,11 +88,6 @@ if Code.ensure_loaded?(Faker) do
           name: "Chrissy Cron",
           phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
           language_id: en_us.id
-        },
-        %{
-          name: "Simulator Two",
-          phone: @simulator_phone <> "_2",
-          language_id: en_us.id
         }
       ]
 
