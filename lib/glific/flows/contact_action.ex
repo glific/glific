@@ -4,15 +4,8 @@ defmodule Glific.Flows.ContactAction do
   centralizing it here
   """
 
-  alias Glific.{
-    Contacts,
-    Flows.Action,
-    Flows.FlowContext,
-    Flows.Localization,
-    Flows.MessageVarParser,
-    Messages,
-    Messages.Message
-  }
+  alias Glific.{Contacts, Messages, Messages.Message, Templates.SessionTemplate}
+  alias Glific.Flows.{Action, FlowContext, Localization, MessageVarParser}
 
   require Logger
   @min_delay 2
@@ -63,6 +56,26 @@ defmodule Glific.Flows.ContactAction do
       }
     }
 
+  @spec update_recent(FlowContext.t(), String.t()) :: {FlowContext.t(), non_neg_integer}
+  defp update_recent(context, body) do
+    # we'll mark that we came here and are planning to send it, even if
+    # we dont end up sending it. This allows us to detect and abort infinite loops
+    context = FlowContext.update_recent(context, body, :recent_outbound)
+
+    # count the number of times we sent the same message in the recent list
+    # in the past 6 hours
+    count = FlowContext.match_outbound(context, body)
+
+    {context, count}
+  end
+
+  @spec get_body(SessionTemplate.t()) :: String.t()
+  defp get_body(%{body: body} = session_template) when is_nil(body) or body == "" do
+    "Session Template: " <> session_template.label
+  end
+
+  defp get_body(%{body: body}), do: body
+
   @doc """
   If the template is not defined for the message send text messages.
   Given a shortcode and a context, send the right session template message
@@ -86,29 +99,16 @@ defmodule Glific.Flows.ContactAction do
       |> MessageVarParser.parse(message_vars)
       |> MessageVarParser.parse_results(context.results)
 
-    # we'll mark that we came here and are planning to send it, even if
-    # we dont end up sending it. This allows us to detect and abort infinite loops
-    context = FlowContext.update_recent(context, body, :recent_outbound)
+    {context, count} = update_recent(context, body)
 
-    # count the number of times we sent the same message in the recent list
-    # in the past 6 hours
-    count = FlowContext.match_outbound(context, body)
-
-    cond do
-      # this might happen when there is no Exit pathway out of the loop
-      count > 5 ->
-        infinite_loop(context, body)
-
-      # :loop_detected
-      count == 5 ->
-        exit_loop(context, messages)
-
-      true ->
-        do_send_message(context, action, messages, %{
-          cid: cid,
-          body: body,
-          text: text,
-        })
+    if count >= 5 do
+      process_loops(context, count, messages, body)
+    else
+      do_send_message(context, action, messages, %{
+        cid: cid,
+        body: body,
+        text: text
+      })
     end
   end
 
@@ -124,6 +124,25 @@ defmodule Glific.Flows.ContactAction do
 
     session_template = Messages.parse_template_vars(templating.template, vars)
 
+    body = get_body(session_template)
+    {context, count} = update_recent(context, body)
+
+    if count >= 5 do
+      process_loops(context, count, messages, body)
+    else
+      do_send_template_message(context, action, messages, %{
+        cid: cid,
+        session_template: session_template
+      })
+    end
+  end
+
+  @spec do_send_template_message(FlowContext.t(), Action.t(), [Message.t()], map()) ::
+          {:ok, map(), any()}
+  defp do_send_template_message(context, action, messages, %{
+         cid: cid,
+         session_template: session_template
+       }) do
     attachments = Localization.get_translation(context, action, :attachments)
 
     {type, media_id} =
@@ -142,19 +161,28 @@ defmodule Glific.Flows.ContactAction do
       |> Messages.update_message_media(%{caption: session_template.body})
     end
 
-    {:ok, _message} =
-      Messages.create_and_send_session_template(
-        session_template,
-        %{
-          receiver_id: cid,
-          flow_id: context.flow_id,
-          is_hsm: true,
-          send_at: DateTime.add(DateTime.utc_now(), context.delay)
-        }
-      )
+    attrs = %{
+      receiver_id: cid,
+      uuid: action.uuid,
+      flow_id: context.flow_id,
+      is_hsm: true,
+      send_at: DateTime.add(DateTime.utc_now(), context.delay)
+    }
 
-    # increment the delay
-    {:ok, %{context | delay: context.delay + @min_delay}, messages}
+    Messages.create_and_send_session_template(session_template, attrs)
+    |> handle_message_result(context, messages, attrs)
+  end
+
+  @spec process_loops(FlowContext.t(), non_neg_integer, [Message.t()], String.t()) ::
+          {:ok, map(), any()}
+  defp process_loops(context, count, messages, body) do
+    if count > 5 do
+      # this might happen when there is no Exit pathway out of the loop
+      infinite_loop(context, body)
+    else
+      # :loop_detected
+      exit_loop(context, messages)
+    end
   end
 
   @spec infinite_loop(FlowContext.t(), String.t()) ::
@@ -202,17 +230,27 @@ defmodule Glific.Flows.ContactAction do
       send_at: DateTime.add(DateTime.utc_now(), context.delay)
     }
 
-    Messages.create_and_send_message(attrs)
-    |> case do
+    attrs
+    |> Messages.create_and_send_message()
+    |> handle_message_result(context, messages, attrs)
+  end
+
+  defp handle_message_result(result, context, messages, attrs) do
+    case result do
       {:ok, _message} ->
         {:ok, %{context | delay: context.delay + @min_delay}, messages}
 
       {:error, error} ->
-        Logger.info("Error sending message: #{inspect(error)}, #{inspect(attrs)}")
-        # returning for now, but resetting the context
-        FlowContext.reset_context(context)
-        {:ok, context, []}
+        error(context, error, attrs)
     end
+  end
+
+  @spec error(FlowContext.t(), any(), map()) :: {:ok, map(), any()}
+  defp error(context, error, attrs) do
+    Logger.info("Error sending message: #{inspect(error)}, #{inspect(attrs)}")
+    # returning for now, but resetting the context
+    FlowContext.reset_context(context)
+    {:ok, context, []}
   end
 
   @spec get_media_from_attachment(any(), any(), non_neg_integer()) :: any()

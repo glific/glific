@@ -10,6 +10,7 @@ config :glific, Glific.Repo,
   password: "postgres",
   database: "glific_test#{System.get_env("MIX_TEST_PARTITION")}",
   hostname: "localhost",
+  poolsizr: 20,
   pool: Ecto.Adapters.SQL.Sandbox,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
