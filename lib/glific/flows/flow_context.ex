@@ -155,15 +155,19 @@ defmodule Glific.Flows.FlowContext do
       # we load the parent context, and resume it with a message of "Completed"
       parent = active_context(context.contact_id, context.parent_id)
 
-      Logger.info(
-        "Resuming Parent Flow: id: '#{parent.flow_id}', contact_id: '#{context.contact_id}'"
-      )
+      # ensure the parent is still active. If the parent completed (or was terminated)
+      # we dont get back a valid parent
+      if parent do
+        Logger.info(
+          "Resuming Parent Flow: id: '#{parent.flow_id}', contact_id: '#{context.contact_id}'"
+        )
 
-      parent
-      |> load_context(
-        Flow.get_flow(context.flow.organization_id, parent.flow_uuid, context.status)
-      )
-      |> step_forward(Messages.create_temp_message(context.flow.organization_id, "completed"))
+        parent
+        |> load_context(
+          Flow.get_flow(context.flow.organization_id, parent.flow_uuid, context.status)
+        )
+        |> step_forward(Messages.create_temp_message(context.flow.organization_id, "completed"))
+      end
     end
 
     # return the orginal context, which is now completed
@@ -469,8 +473,7 @@ defmodule Glific.Flows.FlowContext do
   def wakeup_one(context, message \\ nil) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
-    {:ok, context} =
-      FlowContext.update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
+    {:ok, context} = update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
 
     {:ok, flow} =
       Flows.get_cached_flow(

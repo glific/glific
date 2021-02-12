@@ -177,7 +177,7 @@ defmodule Glific.Contacts.Simulator do
   defp publish_data(organization_id, user_id) do
     Communications.publish_data(
       %{"simulator_release" => %{user_id: user_id}},
-      :periodic_info,
+      :simulator_release,
       organization_id
     )
   end

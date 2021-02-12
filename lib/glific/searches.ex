@@ -147,7 +147,7 @@ defmodule Glific.Searches do
 
     query
     |> where([c], c.id in ^contact_ids)
-    |> where([c], c.status != ^:blocked)
+    |> where([c], c.status != :blocked)
     |> select([c], c.id)
     |> Repo.add_permission(&Searches.add_permission_contact/2)
   end
@@ -157,15 +157,21 @@ defmodule Glific.Searches do
     query = from c in Contact, as: :c
 
     query
+    |> distinct(true)
     |> where([c], c.status != :blocked)
     |> select([c], c.id)
     |> Repo.add_permission(&Searches.add_permission_contact/2)
   end
 
+  @spec direction(String.t()) :: atom()
+  defp direction("Not replied"), do: :inbound
+  defp direction("Not Responded"), do: :outbound
+
+  # codebeat:disable[ABC]
   @spec filter_status_contacts_of_organization(String.t()) :: Ecto.Query.t()
   defp filter_status_contacts_of_organization("Unread") do
     status_query()
-    |> join(:left, [c: c], m in Message,
+    |> join(:inner, [c: c], m in Message,
       as: :m,
       on: c.id == m.contact_id and m.is_read == false
     )
@@ -179,18 +185,14 @@ defmodule Glific.Searches do
 
   defp filter_status_contacts_of_organization(status)
        when status in ["Not replied", "Not Responded"] do
-    direction =
-      if status == "Not replied",
-        do: :inbound,
-        # this is not responded
-        else: :outbound
-
     status_query()
-    |> join(:left, [c: c], m in Message,
+    |> join(:inner, [c: c], m in Message,
       as: :m,
-      on: c.id == m.contact_id and m.flow == ^direction and m.is_replied == false
+      on: c.id == m.contact_id and m.flow == ^direction(status) and m.is_replied == false
     )
   end
+
+  # codebeat:enable[ABC]
 
   @spec permission_query(User.t()) :: Ecto.Query.t()
   defp permission_query(user) do
@@ -404,7 +406,7 @@ defmodule Glific.Searches do
         atom_k =
           if is_atom(k),
             do: k,
-            else: k |> Macro.underscore() |> String.to_existing_atom()
+            else: k |> Macro.underscore() |> Glific.safe_string_to_atom()
 
         if atom_k in [:filter, :contact_opts, :message_opts],
           do: {atom_k, convert_to_atom(v)},

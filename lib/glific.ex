@@ -112,7 +112,7 @@ defmodule Glific do
         if is_atom(k) do
           {atomize_keys(k), atomize_keys(v)}
         else
-          {String.to_existing_atom(k), atomize_keys(v)}
+          {Glific.safe_string_to_atom(k), atomize_keys(v)}
         end
       end)
       |> Enum.into(%{})
@@ -153,5 +153,24 @@ defmodule Glific do
     signed_payload = "#{timestamp}.#{body}"
     hmac = :crypto.hmac(:sha256, secret, signed_payload)
     Base.encode16(hmac, case: :lower)
+  end
+
+  @doc """
+  You shouldn’t really use String.to_atom/1 on user-supplied data.
+  The BEAM has a limit on how many different atoms you can have and they’re not garbage collected!
+  With data coming from outside the system, stick to strings or use String.to_existing_atom/1 instead!
+  So this is a generic function which will convert the string to atom and throws an error in case of invalid key
+  """
+
+  @spec safe_string_to_atom(String.t() | atom()) :: atom()
+  def safe_string_to_atom(value) when is_atom(value), do: value
+
+  def safe_string_to_atom(value) do
+    String.to_existing_atom(value)
+  rescue
+    ArgumentError ->
+      error = "#{value} can not be converted to atom"
+      Appsignal.send_error(:error, error, __STACKTRACE__)
+      :invalid_atom
   end
 end

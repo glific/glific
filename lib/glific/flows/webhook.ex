@@ -188,7 +188,7 @@ defmodule Glific.Flows.Webhook do
     headers =
       Keyword.new(
         headers,
-        fn {k, v} -> {String.to_existing_atom(k), v} end
+        fn {k, v} -> {Glific.safe_string_to_atom(k), v} end
       )
 
     result =
