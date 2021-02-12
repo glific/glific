@@ -378,7 +378,7 @@ if Code.ensure_loaded?(Faker) do
 
       create_contact_user(
         {organization, en_us, utc_now},
-        {"NGO Admin", "919876543210", ["admin"]}
+        {"NGO Admin", "919988776655", ["admin"]}
       )
 
       {_, user} =

@@ -852,19 +852,21 @@ defmodule Glific.Messages do
   end
 
   @spec check_simulator(Ecto.Query.t(), Contact.t(), String.t()) :: Ecto.Query.t()
-  defp check_simulator(query, contact, "9876543210") do
-    Contacts.update_contact(
-      contact,
-      %{fields: %{}}
-    )
+  defp check_simulator(query, contact, phone) do
+    if Contacts.is_simulator_contact?(phone) do
+      Contacts.update_contact(
+        contact,
+        %{fields: %{}}
+      )
 
-    with {:ok, last_message} <- send_default_msg(contact) do
+      with {:ok, last_message} <- send_default_msg(contact) do
+        query
+        |> where([m], m.id != ^last_message.id)
+      end
+    else
       query
-      |> where([m], m.id != ^last_message.id)
     end
   end
-
-  defp check_simulator(query, _, _), do: query
 
   @spec send_default_msg(Contact.t()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
   defp send_default_msg(contact) do

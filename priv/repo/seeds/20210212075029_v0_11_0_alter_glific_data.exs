@@ -12,9 +12,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
     Users
   }
 
-  @simulator_phone "9876543210"
-  @tides_phone "1234567890"
-
   def up(_repo) do
     adding_simulators()
   end
@@ -40,12 +37,14 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
       {"Five", "_5"}
     ]
 
+    simulator_phone_prefix = Contacts.simulator_phone_prefix()
+
     contact_entries =
       for org <- organizations,
           {name, phone} <- simulators do
         %{
           name: "Simulator " <> name,
-          phone: @simulator_phone <> phone,
+          phone: simulator_phone_prefix <> phone,
           organization_id: org.id,
           inserted_at: utc_now,
           updated_at: utc_now,
@@ -69,10 +68,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
 
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
+    tides_phone = Contacts.tides_phone()
+
     for org <- organizations do
       attrs = %Contact{
         name: "Tides Admin",
-        phone: @tides_phone,
+        phone: tides_phone,
         organization_id: org.id,
         inserted_at: utc_now,
         updated_at: utc_now,

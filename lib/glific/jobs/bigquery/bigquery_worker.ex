@@ -16,6 +16,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   alias Glific.{
     Bigquery,
+    Contacts,
     Contacts.Contact,
     Flows.FlowResult,
     Flows.FlowRevision,
@@ -25,7 +26,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     Repo
   }
 
-  @simulator_phone "9876543210"
   @update_minutes -3
 
   @doc """
@@ -106,7 +106,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
     |> Repo.all()
     |> Enum.reduce([], fn row, acc ->
-      if is_simulator_contact?(row.contact.phone),
+      if Contacts.is_simulator_contact?(row.contact.phone),
         do: acc,
         else: [
           row
@@ -124,7 +124,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     query =
       Contact
       |> where([m], m.organization_id == ^organization_id)
-      |> where([m], m.phone != @simulator_phone)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups])
@@ -133,7 +132,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        if is_simulator_contact?(row.phone),
+        if Contacts.is_simulator_contact?(row.phone),
           do: acc,
           else: [
             %{
@@ -222,7 +221,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        if is_simulator_contact?(row.contact.phone),
+        if Contacts.is_simulator_contact?(row.contact.phone),
           do: acc,
           else: [
             %{
@@ -257,7 +256,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
     |> Repo.all()
     |> Enum.reduce([], fn row, acc ->
-      if is_simulator_contact?(row.contact.phone),
+      if Contacts.is_simulator_contact?(row.contact.phone),
         do: acc,
         else: [
           %{
@@ -287,7 +286,6 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([fr], fr.organization_id == ^organization_id)
       |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
       |> where([fr], fr.updated_at != fr.inserted_at)
-      |> where([m], m.phone != @simulator_phone)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups])
 
@@ -295,7 +293,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        if is_simulator_contact?(row.phone),
+        if Contacts.is_simulator_contact?(row.phone),
           do: acc,
           else: [
             %{
@@ -348,7 +346,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        if is_simulator_contact?(row.contact.phone),
+        if Contacts.is_simulator_contact?(row.contact.phone),
           do: acc,
           else: [
             %{
@@ -395,9 +393,6 @@ defmodule Glific.Jobs.BigQueryWorker do
       longitude: if(!is_nil(row.location), do: row.location.longitude),
       latitude: if(!is_nil(row.location), do: row.location.latitude)
     }
-
-  @spec is_simulator_contact?(String.t()) :: boolean
-  defp is_simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone)
 
   @spec make_job(list(), atom(), non_neg_integer, non_neg_integer) :: :ok
   defp make_job(data, _, _, _) when data in [%{}, nil, []], do: :ok

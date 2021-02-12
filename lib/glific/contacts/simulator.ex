@@ -10,7 +10,7 @@ defmodule Glific.Contacts.Simulator do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Communications, Contacts.Contact, Repo}
+  alias Glific.{Communications, Contacts, Contacts.Contact, Repo}
 
   # lets first define the genserver Server callbacks
 
@@ -150,13 +150,12 @@ defmodule Glific.Contacts.Simulator do
       else: init_state(organization_id)
   end
 
-  @simulator_phone_prefix "9876543210"
   # we'll assign the simulator for 10 minute intervals
   @cache_time 10
 
   @spec init_state(non_neg_integer) :: map()
   defp init_state(organization_id) do
-    phone = @simulator_phone_prefix <> "%"
+    phone = Contacts.simulator_phone_prefix() <> "%"
 
     # fetch all the simulator contacts for this organization
     contacts =
