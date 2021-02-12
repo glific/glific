@@ -72,11 +72,12 @@ defmodule Glific.Flows.ContactActionTest do
 
     # preload contact
     context =
-      %FlowContext{
+      Repo.insert!(%FlowContext{
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
-        contact_id: contact.id
-      }
+        contact_id: contact.id,
+        organization_id: contact.organization_id,
+      })
       |> Repo.preload(:contact)
 
     [template | _] =
@@ -109,12 +110,12 @@ defmodule Glific.Flows.ContactActionTest do
 
     # preload contact
     context =
-      %FlowContext{
+      Repo.insert!(%FlowContext{
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
         contact_id: contact.id,
         organization_id: contact.organization_id
-      }
+      })
       |> Repo.preload(:contact)
 
     [template | _] =
