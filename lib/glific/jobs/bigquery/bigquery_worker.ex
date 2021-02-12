@@ -25,7 +25,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     Repo
   }
 
-  @simulater_phone "9876543210"
+  @simulator_phone "9876543210"
   @update_minutes -3
 
   @doc """
@@ -124,7 +124,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     query =
       Contact
       |> where([m], m.organization_id == ^organization_id)
-      |> where([m], m.phone != @simulater_phone)
+      |> where([m], m.phone != @simulator_phone)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups])
@@ -287,7 +287,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([fr], fr.organization_id == ^organization_id)
       |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
       |> where([fr], fr.updated_at != fr.inserted_at)
-      |> where([m], m.phone != @simulater_phone)
+      |> where([m], m.phone != @simulator_phone)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups])
 
@@ -397,7 +397,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     }
 
   @spec is_simulator_contact?(String.t()) :: boolean
-  defp is_simulator_contact?(phone), do: @simulater_phone == phone
+  defp is_simulator_contact?(phone), do: String.starts_with(phone, @simulater_phone)
 
   @spec make_job(list(), atom(), non_neg_integer, non_neg_integer) :: :ok
   defp make_job(data, _, _, _) when data in [%{}, nil, []], do: :ok
