@@ -473,8 +473,7 @@ defmodule Glific.Flows.FlowContext do
   def wakeup_one(context, message \\ nil) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
-    {:ok, context} =
-      FlowContext.update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
+    {:ok, context} = update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
 
     {:ok, flow} =
       Flows.get_cached_flow(
