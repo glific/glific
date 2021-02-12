@@ -54,8 +54,6 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
-    @simulator_phone "9876543210"
-
     @doc false
     @spec seed_contacts(Organization.t() | nil) :: {integer(), nil}
     def seed_contacts(organization \\ nil) do

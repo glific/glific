@@ -397,7 +397,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     }
 
   @spec is_simulator_contact?(String.t()) :: boolean
-  defp is_simulator_contact?(phone), do: String.starts_with(phone, @simulater_phone)
+  defp is_simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone)
 
   @spec make_job(list(), atom(), non_neg_integer, non_neg_integer) :: :ok
   defp make_job(data, _, _, _) when data in [%{}, nil, []], do: :ok

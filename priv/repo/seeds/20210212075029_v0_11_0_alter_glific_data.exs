@@ -9,7 +9,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
     Partners.Organization,
     Repo,
     Settings,
-    Users.User,
+    Users
   }
 
   @simulator_phone "9876543210"
@@ -21,6 +21,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
 
   defp adding_simulators() do
     Partners.list_organizations()
+    |> IO.inspect()
     |> seed_contacts()
     |> seed_users()
   end
@@ -55,9 +56,10 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
           language_id: en_us.id
         }
       end
-      |> List.flatten()
 
-    Repo.insert_all!(contact_entries)
+    Repo.insert_all(Contact, contact_entries)
+
+    organizations
   end
 
   @doc false
@@ -68,32 +70,33 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
     for org <- organizations do
-      attrs =
-        %Contact{
-          name: "Tides Admin"
-          phone: @tides_phone,
-          organization_id: org.id,
-          inserted_at: utc_now,
-          updated_at: utc_now,
-          last_message_at: utc_now,
-          last_communication_at: utc_now,
-          optin_time: utc_now,
-          bsp_status: :session_and_hsm,
-          language_id: en_us.id
-        }
+      attrs = %Contact{
+        name: "Tides Admin",
+        phone: @tides_phone,
+        organization_id: org.id,
+        inserted_at: utc_now,
+        updated_at: utc_now,
+        last_message_at: utc_now,
+        last_communication_at: utc_now,
+        optin_time: utc_now,
+        bsp_status: :session_and_hsm,
+        language_id: en_us.id
+      }
 
       contact = Repo.insert!(attrs)
 
       password = Ecto.UUID.generate()
-      attrs = %User{
-        name: "Tides Admin",
-        phone: @tides_phone,
-        password: password,
-        confirm_password: password,
-        roles: ["admin"],
-        contact_id: contact.id,
-        organization_id: org.id
-      }
-      _user = Repo.insert!(attrs)
+
+      {:ok, user} =
+        Users.create_user(%{
+          name: "Tides Admin",
+          phone: @tides_phone,
+          password: password,
+          confirm_password: password,
+          roles: ["admin"],
+          contact_id: contact.id,
+          organization_id: org.id
+        })
     end
+  end
 end
