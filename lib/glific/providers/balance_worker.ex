@@ -25,7 +25,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
         # status message packet sent to frontend with this and other details
         Communications.publish_data(
           %{"balance" => data["balance"]},
-          :periodic_info,
+          :bsp_balance,
           organization_id
         )
 

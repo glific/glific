@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Found and fixed infinite loop issue
 - Take advantage of prepared schema's for pg 12+
 - Continue with our DB optimization quest
+- Improve subscription performance, especially for saved search
 
 ## [0.10.4] - 2021-02-08
 
