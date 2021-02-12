@@ -335,6 +335,7 @@ defmodule Glific.Messages do
       receiver_id: args[:receiver_id],
       send_at: args[:send_at],
       flow_id: args[:flow_id],
+      uuid: args[:uuid],
       is_hsm: Map.get(args, :is_hsm, false),
       organization_id: session_template.organization_id
     }
@@ -606,46 +607,6 @@ defmodule Glific.Messages do
   def change_message_media(%MessageMedia{} = message_media, attrs \\ %{}) do
     MessageMedia.changeset(message_media, attrs)
   end
-
-  @doc """
-  Go back in history and see the past few messages sent. ensure we are not sending the same
-  message a few too many times
-  """
-  @spec is_message_loop?(map(), integer, integer, integer) :: integer
-  def is_message_loop?(message, past_messages \\ 7, past_count \\ 5, go_back \\ 1)
-
-  def is_message_loop?(
-        %{uuid: uuid, type: :text, receiver_id: receiver_id} = _message,
-        past_messages,
-        past_count,
-        go_back
-      )
-      when not is_nil(uuid) do
-    since = Glific.go_back_time(go_back)
-
-    sub_query =
-      Message
-      |> where(
-        [m],
-        m.contact_id == ^receiver_id and
-          m.inserted_at >= ^since and
-          m.flow == "outbound" and
-          m.type == "text" and
-          m.status in ["enqueued", "delivered"]
-      )
-      |> limit(^past_messages)
-      |> order_by([m], asc: m.message_number)
-      |> select([m], m.uuid)
-
-    query = from m in subquery(sub_query), where: m.uuid == ^uuid
-    count = Repo.aggregate(query, :count)
-
-    if count >= past_count,
-      do: count * 100 / past_messages,
-      else: 0
-  end
-
-  def is_message_loop?(_message, _past, _repeat, _go_back), do: 0
 
   defp do_list_conversations(query, args, false = _count) do
     query
