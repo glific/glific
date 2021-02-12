@@ -6,6 +6,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_8_0 do
   alias Glific.{
     Contacts.Contact,
     Settings,
+    Partners,
     Partners.Organization,
     Repo
   }
@@ -17,9 +18,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_8_0 do
   end
 
   defp adding_simulators() do
-    organizations = Repo.all(Organization, skip_organization_id: true)
-
-    organizations |> Enum.each(fn organization -> seed_contacts(organization) end)
+    Partners.list_organizations()
+    |> Enum.each(fn organization -> seed_contacts(organization) end)
   end
 
   @doc false
@@ -29,7 +29,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_8_0 do
 
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
-    contacts = [
+    [
       %{
         name: "Simulator Two",
         phone: @simulator_phone <> "_2",
@@ -51,9 +51,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_8_0 do
         language_id: en_us.id
       }
     ]
-
-    contact_entries =
-      for contact_entry <- contacts do
+    |> Enum.each(fn contact ->
+      simulator_contact =
         %{
           inserted_at: utc_now,
           updated_at: utc_now,
@@ -63,10 +62,15 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_8_0 do
           optin_time: utc_now,
           bsp_status: :session_and_hsm
         }
-        |> Map.merge(contact_entry)
-      end
+        |> Map.merge(contact)
 
-    # seed contacts
-    Repo.insert_all(Contact, contact_entries)
+      with nil <-
+             Repo.get_by(Contact, %{
+               phone: simulator_contact.phone,
+               organization_id: simulator_contact.organization_id
+             }) do
+        Glific.Contacts.create_contact(simulator_contact)
+      end
+    end)
   end
 end
