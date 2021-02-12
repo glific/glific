@@ -18,6 +18,7 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :label, :string
     field :shortcode, :string
     field :args, :json
+    field :is_reserved, :boolean
 
     # the number of contacts this saved search matches
     # this is an expensive operation
