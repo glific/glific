@@ -6,7 +6,8 @@ defmodule Glific.Repo.Migrations.AddIndexes do
     # hence using if not exists
     create_if_not_exists index(:contacts, :last_communication_at)
 
-    create_if_not_exists index(:flow_contexts, [:wakeup_at, :completed_at])
+    create_if_not_exists index(:flow_contexts, :wakeup_at)
+    create_if_not_exists index(:flow_contexts, :completed_at)
 
     create_if_not_exists index(:flow_results, :organization_id)
     create_if_not_exists index(:flow_results, :inserted_at)
