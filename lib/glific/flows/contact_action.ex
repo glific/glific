@@ -80,26 +80,11 @@ defmodule Glific.Flows.ContactAction do
 
     # get the text translation if needed
     text = Localization.get_translation(context, action, :text)
-    attachments = Localization.get_translation(context, action, :attachments)
 
     body =
       text
       |> MessageVarParser.parse(message_vars)
       |> MessageVarParser.parse_results(context.results)
-
-    organization_id = context.organization_id
-    {type, media_id} = get_media_from_attachment(attachments, text, organization_id)
-
-    attrs = %{
-      uuid: action.uuid,
-      body: body,
-      type: type,
-      media_id: media_id,
-      receiver_id: cid,
-      organization_id: organization_id,
-      flow_id: context.flow_id,
-      send_at: DateTime.add(DateTime.utc_now(), context.delay)
-    }
 
     # we'll mark that we came here and are planning to send it, even if
     # we dont end up sending it. This allows us to detect and abort infinite loops
@@ -110,30 +95,20 @@ defmodule Glific.Flows.ContactAction do
     count = FlowContext.match_outbound(context, body)
 
     cond do
-      count >= 7 ->
-        # this might happen when there is no Exit pathway out of the loop
-        Logger.info("Infinite loop detected, body: #{body}. Resetting context")
-        FlowContext.reset_context(context)
+      # this might happen when there is no Exit pathway out of the loop
+      count > 5 ->
+        infinite_loop(context, body)
 
-        # at some point soon, we should change action signatures to allow error
-        {:ok, context, []}
-
-      count >= 5 ->
-        # :loop_detected
-        {:ok, context, [Messages.create_temp_message(organization_id, "Exit Loop") | messages]}
+      # :loop_detected
+      count == 5 ->
+        exit_loop(context, messages)
 
       true ->
-        Messages.create_and_send_message(attrs)
-        |> case do
-          {:ok, _message} ->
-            {:ok, %{context | delay: context.delay + @min_delay}, messages}
-
-          {:error, error} ->
-            Logger.info("Error sending message: #{inspect(error)}, #{inspect(attrs)}")
-            # returning for now, but resetting the context
-            FlowContext.reset_context(context)
-            {:ok, context, []}
-        end
+        do_send_message(context, action, messages, %{
+          cid: cid,
+          body: body,
+          text: text,
+        })
     end
   end
 
@@ -180,6 +155,64 @@ defmodule Glific.Flows.ContactAction do
 
     # increment the delay
     {:ok, %{context | delay: context.delay + @min_delay}, messages}
+  end
+
+  @spec infinite_loop(FlowContext.t(), String.t()) ::
+          {:ok, map(), any()}
+  defp infinite_loop(context, body) do
+    Logger.info("Infinite loop detected, body: #{body}. Resetting context")
+    FlowContext.reset_context(context)
+
+    # at some point soon, we should change action signatures to allow error
+    {:ok, context, []}
+  end
+
+  @spec exit_loop(FlowContext.t(), [Message.t()]) ::
+          {:ok, map(), any()}
+  defp exit_loop(context, messages) do
+    {:ok, context,
+     [Messages.create_temp_message(context.organization_id, "Exit Loop") | messages]}
+  end
+
+  @spec do_send_message(FlowContext.t(), Action.t(), [Message.t()], map()) ::
+          {:ok, map(), any()}
+  defp do_send_message(
+         context,
+         action,
+         messages,
+         %{
+           body: body,
+           text: text,
+           cid: cid
+         }
+       ) do
+    organization_id = context.organization_id
+
+    attachments = Localization.get_translation(context, action, :attachments)
+    {type, media_id} = get_media_from_attachment(attachments, text, organization_id)
+
+    attrs = %{
+      uuid: action.uuid,
+      body: body,
+      type: type,
+      media_id: media_id,
+      receiver_id: cid,
+      organization_id: organization_id,
+      flow_id: context.flow_id,
+      send_at: DateTime.add(DateTime.utc_now(), context.delay)
+    }
+
+    Messages.create_and_send_message(attrs)
+    |> case do
+      {:ok, _message} ->
+        {:ok, %{context | delay: context.delay + @min_delay}, messages}
+
+      {:error, error} ->
+        Logger.info("Error sending message: #{inspect(error)}, #{inspect(attrs)}")
+        # returning for now, but resetting the context
+        FlowContext.reset_context(context)
+        {:ok, context, []}
+    end
   end
 
   @spec get_media_from_attachment(any(), any(), non_neg_integer()) :: any()
