@@ -4,6 +4,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
   envs([:dev, :test, :prod])
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Partners,
     Partners.Organization,
@@ -18,7 +19,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
 
   defp adding_simulators() do
     Partners.list_organizations()
-    |> IO.inspect()
     |> seed_contacts()
     |> seed_users()
   end
@@ -91,7 +91,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
       {:ok, user} =
         Users.create_user(%{
           name: "Tides Admin",
-          phone: @tides_phone,
+          phone: tides_phone,
           password: password,
           confirm_password: password,
           roles: ["admin"],
