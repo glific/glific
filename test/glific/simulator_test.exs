@@ -19,19 +19,21 @@ defmodule Glific.SimulatorTest do
     %{free: free, busy: busy} = Simulator.state(1)
 
     # we have 2 simulators in our dev seeder
-    assert length(free) == 2
+    assert length(free) == 5
     assert Enum.empty?(busy)
   end
 
   test "Ensure we can request and get 3 simulator contacts, but the 4th is denied" do
-    contact_1 = Simulator.get(1, 1)
-    assert contact_1 != nil
+    1..5
+    |> Enum.map(
+    fn x ->
+      contact = Simulator.get(1, x)
+      assert contact != nil
+    end
+    )
 
-    contact_2 = Simulator.get(1, 2)
-    assert contact_2 != nil
-
-    contact_3 = Simulator.get(1, 3)
-    assert contact_3 == nil
+    contact_x = Simulator.get(1, 6)
+    assert contact_x == nil
   end
 
   test "Ensure we can request and get same simulator contact, for same user id" do
