@@ -18,19 +18,15 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
   end
 
   defp adding_contacts() do
-    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
-
-    [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
-
     Partners.active_organizations([])
     |> Enum.each(fn {org_id, _name} ->
       Glific.Repo.put_organization_id(org_id)
-      seed_simulators(org_id, utc_now, en_us.id)
-      seed_user(org_id, utc_now, en_us.id)
+      seed_simulators(org_id)
+      seed_user(org_id)
     end)
   end
 
-  defp seed_simulators(org_id, utc_now, language_id) do
+  defp seed_simulators(org_id) do
     simulator_phone_prefix = Contacts.simulator_phone_prefix()
 
     simulators = [
@@ -42,51 +38,24 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
 
     simulators
     |> Enum.each(fn {name, phone} ->
-      simulator_contact = %{
+      attrs = %{
         name: "Simulator " <> name,
-        phone: simulator_phone_prefix <> phone,
-        language_id: language_id,
-        inserted_at: utc_now,
-        updated_at: utc_now,
-        organization_id: org_id,
-        last_message_at: utc_now,
-        last_communication_at: utc_now,
-        optin_time: utc_now,
-        bsp_status: :session_and_hsm
+        phone: simulator_phone_prefix <> phone
       }
 
-      with nil <-
-             Repo.get_by(Contact, %{
-               phone: simulator_contact.phone,
-               organization_id: simulator_contact.organization_id
-             }) do
-        Contacts.create_contact(simulator_contact)
-      end
+      create_contact(attrs, org_id)
     end)
   end
 
-  defp seed_user(org_id, utc_now, language_id) do
+  defp seed_user(org_id) do
     tides_phone = Contacts.tides_phone()
 
     attrs = %{
       name: "Tides Admin",
-      phone: tides_phone,
-      organization_id: org_id,
-      inserted_at: utc_now,
-      updated_at: utc_now,
-      last_message_at: utc_now,
-      last_communication_at: utc_now,
-      optin_time: utc_now,
-      bsp_status: :session_and_hsm,
-      language_id: language_id
+      phone: tides_phone
     }
 
-    with nil <-
-           Repo.get_by(Contact, %{
-             phone: tides_phone,
-             organization_id: org_id
-           }) do
-      {:ok, contact} = Contacts.create_contact(attrs)
+    with {:ok, contact} <- create_contact(attrs, org_id) do
       password = Ecto.UUID.generate()
 
       Users.create_user(%{
@@ -98,6 +67,33 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_11_0 do
         contact_id: contact.id,
         organization_id: org_id
       })
+    end
+  end
+
+  defp create_contact(attrs, org_id) do
+    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+
+    contact =
+      %{
+        organization_id: org_id,
+        inserted_at: utc_now,
+        updated_at: utc_now,
+        last_message_at: utc_now,
+        last_communication_at: utc_now,
+        optin_time: utc_now,
+        bsp_status: :session_and_hsm,
+        language_id: en_us.id
+      }
+      |> Map.merge(attrs)
+
+    with nil <-
+           Repo.get_by(Contact, %{
+             phone: contact.phone,
+             organization_id: org_id
+           }) do
+      Contacts.create_contact(contact)
     end
   end
 end
