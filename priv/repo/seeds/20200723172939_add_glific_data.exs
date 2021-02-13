@@ -16,6 +16,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsDev,
+    Seeds.SeedsSim,
     Settings.Language,
     Tags.Tag,
     Users
@@ -23,7 +24,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   @password "secret1234"
   @admin_phone "917834811114"
-  @simulator_phone "9876543210"
 
   defp admin_phone(1 = _organization_id), do: @admin_phone
 
@@ -51,6 +51,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     admin = contacts(organization, en_us)
 
     users(admin, organization)
+
+    SeedsSim.add_simulators(organization)
 
     saved_searches(organization)
 
@@ -373,18 +375,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         language_id: en_us.id,
         last_message_at: utc_now,
         last_communication_at: utc_now
-      })
-
-    _simulator =
-      Repo.insert!(%Contact{
-        phone: @simulator_phone,
-        name: "Simulator",
-        organization_id: organization.id,
-        language_id: en_us.id,
-        last_message_at: utc_now,
-        last_communication_at: utc_now,
-        optin_time: utc_now,
-        bsp_status: :session_and_hsm
       })
 
     Repo.update!(change(organization, contact_id: admin.id))

@@ -1,7 +1,8 @@
 defmodule Glific.Seeds.SeedsSim do
   @moduledoc """
-  One shot migration of data to add simulators and tides admin. We should delete this file after
-  the migration
+  One shot migration of data to add simulators and tides admin.
+  We use the functions in this file to add simulators for new organizations as
+  they are created
   """
 
   import Ecto.Query
@@ -13,7 +14,9 @@ defmodule Glific.Seeds.SeedsSim do
     Partners.Organization,
     Repo,
     Settings,
-    Users
+    Settings.Language,
+    Users,
+    Users.User,
   }
 
   @doc """
@@ -85,7 +88,7 @@ defmodule Glific.Seeds.SeedsSim do
   end
 
   defp create_simulators(organization, language) do
-    if !has_contact?(organization, "Simulator Five") do
+    if !has_contact?(organization, "Glific Simulator Five") do
       simulators = [
         {"One", "_1"},
         {"Two", "_2"},
@@ -107,7 +110,7 @@ defmodule Glific.Seeds.SeedsSim do
           Map.merge(
             attrs,
             %{
-              name: "Simulator " <> name,
+              name: "Glific Simulator " <> name,
               phone: simulator_phone_prefix <> phone
             }
           )
