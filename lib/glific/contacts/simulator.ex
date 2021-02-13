@@ -98,7 +98,7 @@ defmodule Glific.Contacts.Simulator do
     {contact, Map.put(state, organization_id, org_state)}
   end
 
-  @spec get_simulator(map(), User.t()) :: {map, Contact.t()} | nil
+  @spec get_org_simulator(map(), User.t()) :: {map, Contact.t()} | nil
   defp get_org_simulator(%{free: free, busy: busy} = state, user) do
     key = {user.id, user.fingerprint}
 

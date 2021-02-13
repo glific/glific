@@ -431,7 +431,10 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "simulator get returns a simulator contact",
-       %{staff: staff, manager: manager, user: user} do
+    %{staff: staff, manager: manager, user: user} do
+    Glific.Contacts.Simulator.reset()
+
+    # we should get 5 simulators
     result = auth_query_gql_by(:sim_get, staff, variables: %{})
     assert {:ok, query_data} = result
     assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
@@ -442,13 +445,30 @@ defmodule GlificWeb.Schema.ContactTest do
 
     result = auth_query_gql_by(:sim_get, user, variables: %{})
     assert {:ok, query_data} = result
+    assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
+
+    user = Map.put(user, :fingerprint, Ecto.UUID.generate())
+    result = auth_query_gql_by(:sim_get, user, variables: %{})
+    assert {:ok, query_data} = result
+    assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
+
+    user = Map.put(user, :fingerprint, Ecto.UUID.generate())
+    result = auth_query_gql_by(:sim_get, user, variables: %{})
+    assert {:ok, query_data} = result
+    assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
+
+    user = Map.put(user, :fingerprint, Ecto.UUID.generate())
+    result = auth_query_gql_by(:sim_get, user, variables: %{})
+    assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "simulatorGet"]) == nil
+
 
     # now release a simulator and try again
     result = auth_query_gql_by(:sim_rel, staff, variables: %{})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "simulatorRelease"]) == nil
 
+    user = Map.put(user, :fingerprint, Ecto.UUID.generate())
     result = auth_query_gql_by(:sim_get, user, variables: %{})
     assert {:ok, query_data} = result
     assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
