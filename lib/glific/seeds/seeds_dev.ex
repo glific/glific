@@ -409,45 +409,30 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    defp add_to_group(contacts, group, organization, size) do
+      contacts
+      |> Enum.take(size)
+      |> Enum.each(fn c ->
+        Repo.insert!(%Groups.ContactGroup{
+          contact_id: c.id,
+          group_id: group.id,
+          organization_id: organization.id
+        })
+      end)
+    end
+
     @doc false
     @spec seed_group_contacts(Organization.t() | nil) :: nil
     def seed_group_contacts(organization \\ nil) do
       organization = get_organization(organization)
 
-      [_glific_admin, c1, c2, c3 | _] =
+      [_glific_admin | remainder] =
         Contacts.list_contacts(%{filter: %{organization_id: organization.id}})
 
       [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c1.id,
-        group_id: g1.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c2.id,
-        group_id: g1.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c3.id,
-        group_id: g1.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c2.id,
-        group_id: g2.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c3.id,
-        group_id: g2.id,
-        organization_id: organization.id
-      })
+      add_to_group(remainder, g1, organization, 7)
+      add_to_group(remainder, g2, organization, -7)
     end
 
     @doc false
