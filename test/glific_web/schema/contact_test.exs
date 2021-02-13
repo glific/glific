@@ -432,7 +432,7 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "simulator get returns a simulator contact",
-    %{staff: staff, manager: manager, user: user} do
+       %{staff: staff, manager: manager, user: user} do
     Simulator.reset()
 
     # we should get 5 simulators
