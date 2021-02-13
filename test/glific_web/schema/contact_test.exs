@@ -5,6 +5,7 @@ defmodule GlificWeb.Schema.ContactTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.Simulator,
     Fixtures,
     Messages.Message,
     Repo,
@@ -432,7 +433,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
   test "simulator get returns a simulator contact",
     %{staff: staff, manager: manager, user: user} do
-    Glific.Contacts.Simulator.reset()
+    Simulator.reset()
 
     # we should get 5 simulators
     result = auth_query_gql_by(:sim_get, staff, variables: %{})
@@ -461,7 +462,6 @@ defmodule GlificWeb.Schema.ContactTest do
     result = auth_query_gql_by(:sim_get, user, variables: %{})
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "simulatorGet"]) == nil
-
 
     # now release a simulator and try again
     result = auth_query_gql_by(:sim_rel, staff, variables: %{})
