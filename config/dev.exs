@@ -9,8 +9,7 @@ config :glific, Glific.Repo,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10,
   prepare: :named,
-  parameters: [plan_cache_mode: "force_custom_plan"],
-  log: false
+  parameters: [plan_cache_mode: "force_custom_plan"]
 
 # setting the state of the environment for use within code base
 config :glific, :environment, :dev
