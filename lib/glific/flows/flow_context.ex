@@ -431,6 +431,7 @@ defmodule Glific.Flows.FlowContext do
   @spec log_error(String.t()) :: {:error, String.t()}
   defp log_error(error) do
     Logger.error(error)
+
     # disable sending exit loop errors, since these are beneficiary errors
     # and we dont need to be informed
     if ! exit_loop_error?(error) do
