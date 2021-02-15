@@ -4,6 +4,8 @@ name: Continuous Deployment
 on:
   push:
     branches: [ master]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   deploy:
