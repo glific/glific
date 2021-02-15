@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0 # Checkout the whole branch
               
       # configure the gigalixir-actions with our credentials and app name
-      - uses: mhanberg/gigalixir-action@v0.4.0
+      - uses: vlindhol/gigalixir-action@use-python3
         with:
           GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
           GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
