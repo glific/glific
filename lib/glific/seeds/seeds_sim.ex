@@ -138,6 +138,7 @@ defmodule Glific.Seeds.SeedsSim do
   @spec add_saas_user(Organization.t(), Language.t()) :: :ok
   def add_saas_user(organization, language) do
     name = "SaaS Admin"
+
     if !has_contact?(organization, name) do
       # lets precompute common values
       utc_now = DateTime.utc_now() |> DateTime.truncate(:second)

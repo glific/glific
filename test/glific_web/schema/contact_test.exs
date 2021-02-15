@@ -38,7 +38,8 @@ defmodule GlificWeb.Schema.ContactTest do
     contacts = get_in(query_data, [:data, "contacts"])
     assert length(contacts) > 0
 
-    res = contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Main Account" end)
+    res =
+      contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Main Account" end)
 
     assert res == "NGO Main Account"
 
