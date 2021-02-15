@@ -66,6 +66,7 @@ if Code.ensure_loaded?(Faker) do
       )
     end
 
+    @flow_ids [1, 2, 3]
     defp create_message_entry(contact_id, sender_id, "beneficiary", index, organization) do
       create_message_entry(
         %{
@@ -73,7 +74,8 @@ if Code.ensure_loaded?(Faker) do
           sender_id: contact_id,
           receiver_id: sender_id,
           contact_id: contact_id,
-          organization_id: organization.id
+          organization_id: organization.id,
+          flow_id: Enum.random(@flow_ids)
         },
         index
       )
@@ -209,7 +211,7 @@ if Code.ensure_loaded?(Faker) do
         flow_context_id: context_id,
         results: create_results_entry(flow_id),
         inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
-        updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        updated_at: DateTime.utc_now() |> DateTime.add(120, :second) |> DateTime.truncate(:second)
       }
     end
 
@@ -217,25 +219,25 @@ if Code.ensure_loaded?(Faker) do
     defp create_results_entry(1 = _flow_id),
       do:
         Enum.random([
-          %{1 => "Hindi"},
-          %{2 => "English"}
+          %{1 => "Hindi", 2=> "Visual Arts", 3=> "Boring"},
+          %{1 => "English", 2=> "Other", 3=> "Theater", 4=> "Interesting"}
         ])
 
     defp create_results_entry(2 = _flow_id),
       do:
         Enum.random([
-          %{1 => "Visual Arts"},
-          %{2 => "Poetry"},
-          %{3 => "Theater"},
-          %{4 => "Help"},
-          %{5 => "Other"}
+          %{1 => "Visual Arts", 3 => "Interesting"},
+          %{1 => "Hindi", 2 => "Poetry", 3 => "Interesting"},
+          %{1 => "English", 2 => "Theater", 3 => "Boring"},
+          %{1 => "Hindi", 4 => "Help"},
+          %{1 => "English", 5 => "Other"}
         ])
 
     defp create_results_entry(3 = _flow_id),
       do:
         Enum.random([
-          %{1 => "Interesting"},
-          %{2 => "Boring"}
+          %{1 => "English", 2 => "Other", 3=> "Boring"},
+          %{1=> "Hindi", 2 => "Poetry", 3 => "Boring"}
         ])
 
     @contact_num 5..15

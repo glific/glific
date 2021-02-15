@@ -255,48 +255,50 @@ defmodule Glific.Repo.Migrations.GlificCore do
   they do, we'll redirect those requests to a future version of the CRMPlatform
   """
   def contacts do
-    create table(:contacts) do
+    create table(:contacts, comment: "Table for storing high level contact information provided by the user") do
       # Contact Name
       add :name, :string
 
       # Contact Phone (this is the primary point of identification)
       # We will treat this as a whats app ID as well
-      add :phone, :string, null: false
+      add :phone, :string, null: false, comment: "Phone number of the user; primary point of identification"
 
       # whatsapp status
       # the current options are: processing, valid, invalid, failed
-      add :provider_status, :contact_provider_status_enum, null: false, default: "none"
+      add :provider_status, :contact_provider_status_enum, null: false, default: "none", comment: "Whatsapp connection status; current options are : processing, valid, invalid & failed"
 
       # this is our status, based on what the Provider tell us
       # the current options are: valid, invalid or blocked
-      add :status, :contact_status_enum, null: false, default: "valid"
+      add :status, :contact_status_enum, null: false, default: "valid", comment: "Provider status; current options are :valid, invalid or blocked"
 
       # contact language for templates and other communications
       add :language_id, references(:languages, on_delete: :restrict, prefix: @global_schema),
-        null: false
+        null: false, comment: "Contact language for templates and other communications"
 
       # the times when we recorded either an optin or an optout
       # at some point, we will need to create an events table for this and track all changes
-      add :optin_time, :utc_datetime
-      add :optout_time, :utc_datetime
+      add :optin_time, :utc_datetime, comment: "Time when we recorded an opt-in from the user"
+      add :optout_time, :utc_datetime, comment: "Time when we recorded an opt-out from the user"
 
       # this is primarily used as a a cache to avoid querying the message table. We need this
       # to ensure we can send a valid session message to the user (< 24 hour window)
-      add :last_message_at, :utc_datetime
+      add :last_message_at, :utc_datetime, comment: "Timestamp of most recent message sent by the user to ensure we can send a valid message to the user (< 24hr)"
 
-      # store the settings of the user as a map (which is a jsonb object in psql)
-      # preferences is one field in the settings (for now). The NGO can use this field to target
-      # the user with messages based on their preferences. The user can select one or
-      # more options from the preferenes list. All settings are checkboxes or multi-select.
-      # at some point, merge this with fields, when we have type information
-      add :settings, :map, default: %{}
+      settings_comment = """
+      Store the settings of the user as a map (which is a jsonb object in psql). 
+      Preferences is one field in the settings (for now). The NGO can use this field to target
+      the user with messages based on their preferences. The user can select one or 
+      more options from the preferenes list. All settings are checkboxes or multi-select.
+      Merge this with fields, when we have type information
+      """
+      add :settings, :map, default: %{}, comment: settings_comment
 
       # store the NGO generated fields for the user also as a map
       # Each user can have multiple fields, we store the name as key
-      add :fields, :map, default: %{}
+      add :fields, :map, default: %{}, comment: "Labels and values of the NGO generated fields for the user"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique organisation ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -334,64 +336,64 @@ defmodule Glific.Repo.Migrations.GlificCore do
   Message structure for all messages send and/or received by the system
   """
   def messages do
-    create table(:messages) do
+    create table(:messages, comment: "Record of all messages sent and/or received by the system") do
       # Message uuid, primarly needed for flow editor
-      add :uuid, :uuid, null: true
+      add :uuid, :uuid, null: true, comment: "Uniquely generated message UUID, primarily needed for the flow editor"
 
       # The body of the message
-      add :body, :text
+      add :body, :text, comment: "Body of the message"
 
       # Options are: text, audio, video, image, contact, location, file, sticker
-      add :type, :message_type_enum
+      add :type, :message_type_enum, comment: "Type of the message; options are - text, audio, video, image, location, contact, file, sticker"
 
       # Field to check hsm message type
-      add :is_hsm, :boolean, default: false
+      add :is_hsm, :boolean, default: false, comment: "Field to check hsm message type"
 
       # Options are: inbound, outbound
-      add :flow, :message_flow_enum
+      add :flow, :message_flow_enum, comment: "Whether an inbound or an outbound message"
 
       # this is our status, It will tell us that
       # message got created but could not send because contact has optout
-      add :status, :message_status_enum, null: false, default: "enqueued"
+      add :status, :message_status_enum, null: false, default: "enqueued", comment: "Delivery status of the message"
 
       # whats app message id
-      add :provider_message_id, :string, null: true
+      add :provider_message_id, :string, null: true, comment: "Whatsapp message ID"
 
       # options: sent, delivered, read
-      add :provider_status, :message_status_enum
+      add :provider_status, :message_status_enum, comment: "Options : Sent, Delivered or Read"
 
       # options: sent, delivered, read
-      add :errors, :map
+      add :errors, :map, comment: "Options : Sent, Delivered or Read"
 
       # message number for a contact
-      add :message_number, :bigint
+      add :message_number, :bigint, comment: "Messaging number for a contact"
 
       # sender id
-      add :sender_id, references(:contacts, on_delete: :delete_all), null: false
+      add :sender_id, references(:contacts, on_delete: :delete_all), null: false, comment: "Contact number of the sender of the message"
 
       # receiver id
-      add :receiver_id, references(:contacts, on_delete: :delete_all), null: false
+      add :receiver_id, references(:contacts, on_delete: :delete_all), null: false, comment: "Contact number of the receiver of the message"
 
       # contact id - this is either sender_id or receiver_id, but lets us know quickly
       # in queries who the beneficiary is. We otherwise need to check the :flow field to
       # use either the sender or receiver
       # this is a preliminary optimization to make the code cleaner
-      add :contact_id, references(:contacts, on_delete: :delete_all), null: false
+      add :contact_id, references(:contacts, on_delete: :delete_all), null: false, comment: "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is"
 
       # user id - this will be null for automated messages and messages received
-      add :user_id, references(:users, on_delete: :nilify_all), null: true
+      add :user_id, references(:users, on_delete: :nilify_all), null: true, comment: "User ID; this will be null for automated messages and messages received"
 
       # message media ids
-      add :media_id, references(:messages_media, on_delete: :delete_all), null: true
+      add :media_id, references(:messages_media, on_delete: :delete_all), null: true, comment: "Message media ID"
 
       # timestamp when message is scheduled to be sent
-      add :send_at, :utc_datetime, null: true
+      add :send_at, :utc_datetime, null: true, comment: "Timestamp when message is scheduled to be sent"
 
       # timestamp when message was sent from queue worker
-      add :sent_at, :utc_datetime
+      add :sent_at, :utc_datetime, comment: "Timestamp when message was sent from queue worker"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique Organisation ID"
 
       timestamps(type: :utc_datetime)
     end
