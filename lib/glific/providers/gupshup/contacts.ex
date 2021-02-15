@@ -12,6 +12,7 @@ defmodule Glific.Providers.GupshupContacts do
   }
 
   @behaviour Glific.Providers.ContactBehaviour
+  @days_shift -14
 
   @doc """
     Update a contact phone as opted in
@@ -75,7 +76,7 @@ defmodule Glific.Providers.GupshupContacts do
             DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
             |> elem(1)
             |> DateTime.truncate(:second),
-          else: nil
+          else: Timex.shift(DateTime.utc_now(), days: @days_shift)
 
       {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
 
