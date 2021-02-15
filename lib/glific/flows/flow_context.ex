@@ -164,9 +164,9 @@ defmodule Glific.Flows.FlowContext do
 
         parent
         |> load_context(
-          Flow.get_flow(context.flow.organization_id, parent.flow_uuid, context.status)
+          Flow.get_flow(context.organization_id, parent.flow_uuid, context.status)
         )
-        |> step_forward(Messages.create_temp_message(context.flow.organization_id, "completed"))
+        |> step_forward(Messages.create_temp_message(context.organization_id, "completed"))
       end
     end
 
@@ -424,12 +424,21 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
+  @spec exit_loop_error?(String.t()) :: boolean
+  defp exit_loop_error?(error),
+    do: String.contains?(error, "Exit Loop")
+
   # log the error and also send it over to our friends at appsignal
   @spec log_error(String.t()) :: {:error, String.t()}
   defp log_error(error) do
     Logger.error(error)
-    {_, stacktrace} = Process.info(self(), :current_stacktrace)
-    Appsignal.send_error(:error, error, stacktrace)
+
+    # disable sending exit loop errors, since these are beneficiary errors
+    # and we dont need to be informed
+    if ! exit_loop_error?(error) do
+      {_, stacktrace} = Process.info(self(), :current_stacktrace)
+      Appsignal.send_error(:error, error, stacktrace)
+    end
     {:error, error}
   end
 
