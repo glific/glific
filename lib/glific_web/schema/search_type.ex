@@ -23,7 +23,8 @@ defmodule GlificWeb.Schema.SearchTypes do
     # the number of contacts this saved search matches
     # this is an expensive operation
     field :count, :integer do
-      resolve(fn _saved_search, _resolution, _context -> {:ok, 0}
+      resolve(fn _saved_search, _resolution, _context ->
+        {:ok, 0}
         # Resolvers.Searches.saved_search_count(
         #   resolution,
         #   %{id: saved_search.id},
@@ -146,6 +147,13 @@ defmodule GlificWeb.Schema.SearchTypes do
       arg(:filter, :saved_search_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.count_saved_searches/3)
+    end
+
+    @desc "Get a collection count for organizaion"
+    field :collection_count, :json do
+      arg(:organization_id, non_null(:id))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Searches.collection_count/3)
     end
 
     field :saved_search_count, :integer do
