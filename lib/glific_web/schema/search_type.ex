@@ -23,12 +23,12 @@ defmodule GlificWeb.Schema.SearchTypes do
     # the number of contacts this saved search matches
     # this is an expensive operation
     field :count, :integer do
-      resolve(fn saved_search, resolution, context ->
-        Resolvers.Searches.saved_search_count(
-          resolution,
-          %{id: saved_search.id},
-          context
-        )
+      resolve(fn _saved_search, _resolution, _context -> {:ok, 0}
+        # Resolvers.Searches.saved_search_count(
+        #   resolution,
+        #   %{id: saved_search.id},
+        #   context
+        # )
       end)
     end
   end
