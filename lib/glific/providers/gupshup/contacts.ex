@@ -87,7 +87,8 @@ defmodule Glific.Providers.GupshupContacts do
         optin_time: optin_time |> DateTime.truncate(:second),
         bsp_status: check_bsp_status(last_message_at),
         organization_id: organization.id,
-        language_id: organization.default_language_id
+        language_id: organization.default_language_id,
+        last_communication_at: last_message_at
       })
     end)
   end
