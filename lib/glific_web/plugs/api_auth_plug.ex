@@ -17,8 +17,8 @@ defmodule GlificWeb.APIAuthPlug do
   @spec fetch(Conn.t(), Config.t()) :: {Conn.t(), map() | nil}
   def fetch(conn, config) do
     with {:ok, signed_token} <- fetch_access_token(conn),
-         {user, _metadata} <- get_credentials(conn, signed_token, config) do
-      {conn, user}
+         {user, metadata} <- get_credentials(conn, signed_token, config) do
+      {conn, Map.put(user, :fingerprint, metadata[:fingerprint])}
     else
       _any -> {conn, nil}
     end
@@ -32,7 +32,7 @@ defmodule GlificWeb.APIAuthPlug do
   def get_credentials(conn, signed_token, config) do
     with {:ok, token} <- verify_token(conn, signed_token, config),
          {user, metadata} <- CredentialsCache.get(store_config(config), token) do
-      {user, metadata}
+      {Map.put(user, :fingerprint, metadata[:fingerprint]), metadata}
     else
       _any -> nil
     end
@@ -81,7 +81,7 @@ defmodule GlificWeb.APIAuthPlug do
       {user, [id: user.id, fingerprint: fingerprint, access_token: access_token]}
     )
 
-    {conn, user}
+    {conn, Map.put(user, :fingerprint, fingerprint)}
   end
 
   @doc """

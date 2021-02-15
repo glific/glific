@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.UserTest do
 
     [user | _] = users
 
-    assert get_in(user, ["name"]) == "Glific Admin"
+    assert get_in(user, ["name"]) == "NGO Admin"
   end
 
   test "users obeys limit and offset", %{staff: user} do

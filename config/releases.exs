@@ -40,6 +40,9 @@ config :glific, GlificWeb.Endpoint,
   secret_key_base: secret_key_base,
   url: [host: System.get_env("BASE_URL")]
 
+# The SaaS Admin root account phone number
+config :glific, :saas_phone, System.get_env("SAAS_PHONE")
+
 # AppSignal configs
 config :appsignal, :config,
   otp_app: :glific,

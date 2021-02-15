@@ -14,6 +14,9 @@ config :glific, Glific.Repo,
 # setting the state of the environment for use within code base
 config :glific, :environment, :dev
 
+# The SaaS Admin root account phone number
+config :glific, :saas_phone, "+91111222333"
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
