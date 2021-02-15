@@ -70,13 +70,7 @@ defmodule Glific.Providers.GupshupContacts do
   defp update_contacts(users, organization) do
     Enum.each(users, fn user ->
       # handle scenario when contact has not sent a message yet
-      last_message_at =
-        if user["lastMessageTimeStamp"] != 0,
-          do:
-            DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
-            |> elem(1)
-            |> DateTime.truncate(:second),
-          else: Timex.shift(DateTime.utc_now(), days: @days_shift)
+      last_message_at = last_message_at(user["lastMessageTimeStamp"])
 
       {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
 
@@ -92,6 +86,17 @@ defmodule Glific.Providers.GupshupContacts do
         last_communication_at: last_message_at
       })
     end)
+  end
+
+  @spec last_message_at(non_neg_integer()) :: DateTime.t()
+  defp last_message_at(0) do
+    Timex.shift(DateTime.utc_now(), days: @days_shift)
+  end
+
+  defp last_message_at(time) do
+    DateTime.from_unix(time, :millisecond)
+    |> elem(1)
+    |> DateTime.truncate(:second)
   end
 
   @spec check_bsp_status(DateTime.t()) :: atom()
