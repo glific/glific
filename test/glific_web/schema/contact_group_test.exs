@@ -158,7 +158,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     {:ok, group} =
       Repo.fetch_by(Group, %{label: label, organization_id: user_auth.organization_id})
 
-    name = "Glific Admin"
+    name = "NGO Main Account"
 
     {:ok, contact} =
       Repo.fetch_by(Contact, %{name: name, organization_id: user_auth.organization_id})

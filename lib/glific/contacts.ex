@@ -563,4 +563,20 @@ defmodule Glific.Contacts do
       )
     )
   end
+
+  @simulator_phone_prefix "9876543210"
+
+  @doc false
+  @spec simulator_phone_prefix :: String.t()
+  def simulator_phone_prefix, do: @simulator_phone_prefix
+
+  @doc false
+  @spec saas_phone :: String.t()
+  def saas_phone, do: Application.fetch_env!(:glific, :saas_phone)
+
+  @doc """
+  Lets centralize the code to detect simulator messages and interaction
+  """
+  @spec is_simulator_contact?(String.t()) :: boolean
+  def is_simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
 end

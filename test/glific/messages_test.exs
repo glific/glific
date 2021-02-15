@@ -379,7 +379,7 @@ defmodule Glific.MessagesTest do
 
       {:ok, contact} =
         Repo.fetch_by(Glific.Contacts.Contact, %{
-          name: "Simulator",
+          name: "Glific Simulator One",
           organization_id: message.organization_id
         })
 
