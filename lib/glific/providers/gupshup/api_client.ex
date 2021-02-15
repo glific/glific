@@ -120,8 +120,8 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     get_credentials(org_id)
 
     with {:ok, credentials} <- get_credentials(org_id) do
-      template_url = @gupshup_url <> "/users/" <> credentials.app_name
-      gupshup_get(template_url, credentials.api_key)
+      url = @gupshup_url <> "/users/" <> credentials.app_name
+      gupshup_get(url, credentials.api_key)
     end
   end
 end
