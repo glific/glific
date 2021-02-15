@@ -424,8 +424,9 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
+  @spec exit_loop_error?(String.t()) :: boolean
   defp exit_loop_error?(error),
-    do: is_binary(error) && String.contains?(error, "Exit Loop")
+    do: String.contains?(error, "Exit Loop")
 
   # log the error and also send it over to our friends at appsignal
   @spec log_error(String.t()) :: {:error, String.t()}
