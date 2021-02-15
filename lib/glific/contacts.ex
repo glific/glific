@@ -571,8 +571,8 @@ defmodule Glific.Contacts do
   def simulator_phone_prefix, do: @simulator_phone_prefix
 
   @doc false
-  @spec tides_phone :: String.t()
-  def tides_phone, do: "1234567890"
+  @spec saas_phone :: String.t()
+  def saas_phone, do: Application.fetch_env!(:glific, :saas_phone)
 
   @doc """
   Lets centralize the code to detect simulator messages and interaction

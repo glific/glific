@@ -1,6 +1,6 @@
 defmodule Glific.Seeds.SeedsSim do
   @moduledoc """
-  One shot migration of data to add simulators and tides admin.
+  One shot migration of data to add simulators and saas admin.
   We use the functions in this file to add simulators for new organizations as
   they are created
   """
@@ -16,7 +16,7 @@ defmodule Glific.Seeds.SeedsSim do
     Settings,
     Settings.Language,
     Users,
-    Users.User,
+    Users.User
   }
 
   @doc """
@@ -126,38 +126,39 @@ defmodule Glific.Seeds.SeedsSim do
   @spec seed_users([Organization.t()], Language.t()) :: [Organization.t()]
   def seed_users(organizations, language) do
     for org <- organizations do
-      add_tides_user(org, language)
+      add_saas_user(org, language)
     end
   end
 
   @doc """
-  Add a tides user for the organization. We need to check if it already exists
+  Add a saas user for the organization. We need to check if it already exists
   since this code is used during data migration and can be repeated for the same
   organization
   """
-  @spec add_tides_user(Organization.t(), Language.t()) :: :ok
-  def add_tides_user(organization, language) do
-    if !has_contact?(organization, "Tides Admin") do
+  @spec add_saas_user(Organization.t(), Language.t()) :: :ok
+  def add_saas_user(organization, language) do
+    name = "SaaS Admin"
+    if !has_contact?(organization, name) do
       # lets precompute common values
       utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
       organization
       |> get_common_attrs(language, utc_now)
-      |> create_tides_contact()
-      |> create_tides_user()
+      |> create_saas_contact(name)
+      |> create_saas_user()
     end
 
     :ok
   end
 
-  @spec create_tides_contact(map()) :: Contact.t()
-  defp create_tides_contact(attrs) do
+  @spec create_saas_contact(map(), String.t()) :: Contact.t()
+  defp create_saas_contact(attrs, name) do
     attrs =
       Map.merge(
         attrs,
         %{
-          phone: Contacts.tides_phone(),
-          name: "Tides Admin"
+          phone: Contacts.saas_phone(),
+          name: name
         }
       )
 
@@ -166,13 +167,13 @@ defmodule Glific.Seeds.SeedsSim do
     |> Repo.insert!()
   end
 
-  @spec create_tides_user(Contact.t()) :: User.t()
-  defp create_tides_user(contact) do
+  @spec create_saas_user(Contact.t()) :: User.t()
+  defp create_saas_user(contact) do
     password = Ecto.UUID.generate()
 
     {:ok, user} =
       Users.create_user(%{
-        name: "Tides Admin",
+        name: contact.name,
         phone: contact.phone,
         password: password,
         confirm_password: password,

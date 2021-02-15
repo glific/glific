@@ -370,7 +370,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     admin =
       Repo.insert!(%Contact{
         phone: admin_phone(organization.id),
-        name: "Glific Admin",
+        name: "NGO Main Account",
         organization_id: organization.id,
         language_id: en_us.id,
         last_message_at: utc_now,
@@ -430,7 +430,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   def users(admin, organization) do
     Users.create_user(%{
-      name: "Glific Admin",
+      name: "NGO Main Account",
       phone: admin_phone(organization.id),
       password: @password,
       confirm_password: @password,

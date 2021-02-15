@@ -136,7 +136,7 @@ if Code.ensure_loaded?(Faker) do
       {:ok, sender} =
         Repo.fetch_by(
           Contact,
-          %{name: "Glific Admin", organization_id: organization.id}
+          %{name: "NGO Main Account", organization_id: organization.id}
         )
 
       {:ok, receiver} =
@@ -450,7 +450,7 @@ if Code.ensure_loaded?(Faker) do
       {:ok, sender} =
         Repo.fetch_by(
           Contact,
-          %{name: "Glific Admin", organization_id: organization.id}
+          %{name: "NGO Main Account", organization_id: organization.id}
         )
 
       group = group |> Repo.preload(:contacts)

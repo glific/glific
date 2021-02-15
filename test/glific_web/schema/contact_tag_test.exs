@@ -22,7 +22,7 @@ defmodule GlificWeb.Schema.ContactTagTest do
   test "create a contact tag and test possible scenarios and errors", %{staff: user} do
     label = "This is for testing"
     {:ok, tag} = Repo.fetch_by(Tag, %{label: label, organization_id: user.organization_id})
-    name = "Glific Admin"
+    name = "NGO Main Account"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     result =

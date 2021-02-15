@@ -15,6 +15,7 @@
         "lib/glific/seeds/seeder.ex",
         "lib/glific/seeds/seeds_dev.ex",
         "lib/glific/seeds/seeds_scale.ex",
+        "lib/glific/seeds/seeds_sim.ex",
         "lib/glific/seeds/seeds_optins.ex",
         "lib/glific/seeds/add_glific_organization_data.ex",
         "lib/glific_web/schema",

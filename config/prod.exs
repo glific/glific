@@ -28,6 +28,9 @@ config :logger, level: :info
 # setting the state of the environment for use within code base
 config :glific, :environment, :prod
 
+# The SaaS Admin root account phone number
+config :glific, :saas_phone, "+91111222333"
+
 # ## SSL Support
 #
 # To get SSL working, you will need to add the `https` key

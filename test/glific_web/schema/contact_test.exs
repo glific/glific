@@ -38,9 +38,9 @@ defmodule GlificWeb.Schema.ContactTest do
     contacts = get_in(query_data, [:data, "contacts"])
     assert length(contacts) > 0
 
-    res = contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "Glific Admin" end)
+    res = contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Main Account" end)
 
-    assert res == "Glific Admin"
+    assert res == "NGO Main Account"
 
     [contact | _] = contacts
     assert contact["groups"] == []
@@ -95,13 +95,13 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(query_data, [:data, "countContacts"]) == 0
 
     {:ok, query_data} =
-      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Glific Admin"}})
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "NGO Main Account"}})
 
     assert get_in(query_data, [:data, "countContacts"]) == 1
   end
 
   test "contact by id returns one contact or nil", %{staff: user} do
-    name = "Glific Admin"
+    name = "NGO Main Account"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
@@ -121,7 +121,7 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "contact by id returns one contact with phone for manager/admin role", %{manager: user} do
-    name = "Glific Admin"
+    name = "NGO Main Account"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
@@ -165,7 +165,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
   test "update a contact and test possible scenarios and errors", %{staff: user, manager: manager} do
     {:ok, contact} =
-      Repo.fetch_by(Contact, %{name: "Glific Admin", organization_id: user.organization_id})
+      Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: user.organization_id})
 
     name = "Contact Test Name New"
     phone = "1-415-555-1212 New"
