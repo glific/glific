@@ -89,7 +89,7 @@ defmodule Glific.Flows.Node do
   @doc """
   Validate a node and all its children
   """
-  @spec validate(Node.t(), map(), map()) :: map()
+  @spec validate(Node.t(), Keyword.t(), map()) :: Keyword.t()
   def validate(node, errors, flow) do
     errors =
       node.actions

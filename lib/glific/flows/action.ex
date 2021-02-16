@@ -8,8 +8,11 @@ defmodule Glific.Flows.Action do
   use Ecto.Schema
 
   alias Glific.{
+    Contacts.Contact,
     Flows,
+    Flows.Flow,
     Groups,
+    Groups.Group,
     Messages.Message,
     Repo
   }
@@ -226,13 +229,50 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, attrs)
   end
 
+  @spec check_entity_exists(non_neg_integer, Keyword.t(), atom()) :: Keyword.t()
+  defp check_entity_exists(entity_id, errors, object) do
+    case Repo.fetch_by(object, %{id: entity_id}) do
+      {:ok, _} -> errors
+      _ -> [{object, "Could not find #{object} object"}] ++ errors
+    end
+  end
+
+  @spec object(String.t()) :: atom()
+  defp object("send_broadcast"), do: Contact
+  defp object("add_contact_groups"), do: Group
+  defp object("remove_contact_groups"), do: Group
+
   @doc """
   Validate a action and all its children
   """
-  @spec validate(Action.t(), map(), map()) :: map()
-  def validate(_action, errors, _flow) do
-    errors
+  @spec validate(Action.t(), Keyword.t(), map()) :: Keyword.t()
+  def validate(%{type: type} = action, errors, _flow) when
+  type in ["add_contact_groups", "remove_contact_groups", "send_broadcast"] do
+    object = object(type)
+
+    Enum.reduce(
+      (if object == Contact, do: action.contacts, else: action.groups),
+      errors,
+      fn entity, errors ->
+        case Glific.parse_maybe_integer(entity["uuid"]) do
+          {:ok, entity_id} ->
+            # ensure entity_id exists
+            check_entity_exists(entity_id, errors, object)
+
+          _ -> [{object, "Could not parse #{object} object"}] ++ errors
+        end
+      end)
   end
+
+  def validate(%{type: "enter_flow"} = action, errors, _flow) do
+    case Repo.fetch_by(Flow, %{uuid: action.enter_flow_uuid}) do
+      {:ok, _} -> errors
+      _ -> [{Flow, "Could not find Flow object"}] ++ errors
+    end
+  end
+
+  # default validate, do nothing
+  def validate(_action, errors, _flow), do: errors
 
   @doc """
   Execute a action, given a message stream.
