@@ -163,9 +163,7 @@ defmodule Glific.Flows.FlowContext do
         )
 
         parent
-        |> load_context(
-          Flow.get_flow(context.organization_id, parent.flow_uuid, context.status)
-        )
+        |> load_context(Flow.get_flow(context.organization_id, parent.flow_uuid, context.status))
         |> step_forward(Messages.create_temp_message(context.organization_id, "completed"))
       end
     end
@@ -435,10 +433,11 @@ defmodule Glific.Flows.FlowContext do
 
     # disable sending exit loop errors, since these are beneficiary errors
     # and we dont need to be informed
-    if ! exit_loop_error?(error) do
+    if !exit_loop_error?(error) do
       {_, stacktrace} = Process.info(self(), :current_stacktrace)
       Appsignal.send_error(:error, error, stacktrace)
     end
+
     {:error, error}
   end
 

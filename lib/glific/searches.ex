@@ -152,40 +152,50 @@ defmodule Glific.Searches do
     |> Repo.add_permission(&Searches.add_permission_contact/2)
   end
 
-  @spec status_query :: Ecto.Query.t()
-  defp status_query do
+  @spec status_query(map()) :: Ecto.Query.t()
+  defp status_query(opts) do
     query = from c in Contact, as: :c
 
     query
-    |> distinct(true)
     |> where([c], c.status != :blocked)
     |> select([c], c.id)
+    |> distinct(true)
+    |> add_contact_opts(opts)
     |> Repo.add_permission(&Searches.add_permission_contact/2)
   end
+
+  @spec add_contact_opts(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp add_contact_opts(query, %{limit: limit, offset: offset}) do
+    query
+    |> limit(^limit)
+    |> offset(^offset)
+  end
+
+  defp add_contact_opts(query, _opts), do: query
 
   @spec direction(String.t()) :: atom()
   defp direction("Not replied"), do: :inbound
   defp direction("Not Responded"), do: :outbound
 
   # codebeat:disable[ABC]
-  @spec filter_status_contacts_of_organization(String.t()) :: Ecto.Query.t()
-  defp filter_status_contacts_of_organization("Unread") do
-    status_query()
+  @spec filter_status_contacts_of_organization(String.t(), map()) :: Ecto.Query.t()
+  defp filter_status_contacts_of_organization("Unread", opts) do
+    status_query(opts)
     |> join(:inner, [c: c], m in Message,
       as: :m,
       on: c.id == m.contact_id and m.is_read == false
     )
   end
 
-  defp filter_status_contacts_of_organization("Optout") do
-    status_query()
+  defp filter_status_contacts_of_organization("Optout", opts) do
+    status_query(opts)
     |> where([c], c.status != :blocked)
     |> where([c], not is_nil(c.optout_time))
   end
 
-  defp filter_status_contacts_of_organization(status)
+  defp filter_status_contacts_of_organization(status, opts)
        when status in ["Not replied", "Not Responded"] do
-    status_query()
+    status_query(opts)
     |> join(:inner, [c: c], m in Message,
       as: :m,
       on: c.id == m.contact_id and m.flow == ^direction(status) and m.is_replied == false
@@ -303,7 +313,7 @@ defmodule Glific.Searches do
           filter_active_contacts_of_organization(args.filter.ids)
 
         args.filter[:status] != nil ->
-          filter_status_contacts_of_organization(args.filter.status)
+          filter_status_contacts_of_organization(args.filter.status, args.contact_opts)
 
         true ->
           search_query(args.filter[:term], args)
