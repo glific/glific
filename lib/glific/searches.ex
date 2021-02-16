@@ -303,6 +303,10 @@ defmodule Glific.Searches do
       |> check_filter_for_save_search()
       |> update_args_for_count(count)
 
+    is_status? =
+      is_nil(args.filter[:id]) && is_nil(args.filter[:ids]) &&
+      !is_nil(args.filter[:status])
+
     contact_ids =
       cond do
         args.filter[:id] != nil ->
@@ -318,23 +322,23 @@ defmodule Glific.Searches do
           search_query(args.filter[:term], args)
       end
       |> Repo.all()
-      |> get_contact_ids(args.filter[:status])
+      |> get_contact_ids(is_status?)
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Conversations.list_conversations(count)
   end
+  # codebeat:enable[ABC]
 
-  @spec get_contact_ids(list(), String.t() | nil) :: list()
-  defp get_contact_ids(results, nil), do: results
+  @spec get_contact_ids(list(), boolean | nil) :: list()
+  defp get_contact_ids(results, false), do: results
 
-  defp get_contact_ids(results, _status) do
+  defp get_contact_ids(results, true) do
     # one set of queries (status queries) return a map for each row
     # where id is a key in the map
     results
     |> Enum.map(fn data -> data.id end)
   end
 
-  # codebeat:enable[ABC]
 
   @doc """
   Search across multiple tables, and return a multiple context
