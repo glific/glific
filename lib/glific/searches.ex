@@ -327,7 +327,8 @@ defmodule Glific.Searches do
   end
 
   defp get_contact_ids(contact_ids) do
-    Enum.map(fn contact_id ->
+    contact_ids
+    |> Enum.map(fn contact_id ->
       if is_list(contact_id), do: List.first(contact_id), else: contact_id
     end)
   end
