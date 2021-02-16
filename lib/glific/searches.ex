@@ -159,6 +159,7 @@ defmodule Glific.Searches do
     query
     |> where([c], c.status != :blocked)
     |> select([c], c.id)
+    |> distinct(true)
     |> add_contact_opts(opts)
     |> Repo.add_permission(&Searches.add_permission_contact/2)
   end
@@ -168,11 +169,9 @@ defmodule Glific.Searches do
     query
     |> limit(^limit)
     |> offset(^offset)
-    |> order_by([c], desc: c.last_communication_at)
   end
 
   def add_opts(query, _opts), do: query
-
 
   @spec direction(String.t()) :: atom()
   defp direction("Not replied"), do: :inbound
