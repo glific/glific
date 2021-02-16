@@ -158,9 +158,8 @@ defmodule Glific.Searches do
 
     query
     |> where([c], c.status != :blocked)
-    |> select([c], [c.id, c.last_communication_at])
+    |> select([c], %{id: c.id, last_communication_at: c.last_communication_at})
     |> distinct(true)
-    |> order_by([c], [c.last_communication_at])
     |> add_contact_opts(opts)
     |> Repo.add_permission(&Searches.add_permission_contact/2)
   end
@@ -170,6 +169,7 @@ defmodule Glific.Searches do
     query
     |> limit(^limit)
     |> offset(^offset)
+    |> order_by([c], desc: c.last_communication_at)
   end
 
   defp add_contact_opts(query, _opts), do: query
@@ -182,8 +182,7 @@ defmodule Glific.Searches do
   @spec filter_status_contacts_of_organization(String.t(), map()) :: Ecto.Query.t()
   defp filter_status_contacts_of_organization("Unread", opts) do
     status_query(opts)
-    |> join(:inner, [c: c], m in Message,
-      as: :m,
+    |> join(:inner, [c: c], m in Message, as: :m,
       on: c.id == m.contact_id and m.is_read == false
     )
   end
@@ -197,8 +196,7 @@ defmodule Glific.Searches do
   defp filter_status_contacts_of_organization(status, opts)
        when status in ["Not replied", "Not Responded"] do
     status_query(opts)
-    |> join(:inner, [c: c], m in Message,
-      as: :m,
+    |> join(:inner, [c: c], m in Message, as: :m,
       on: c.id == m.contact_id and m.flow == ^direction(status) and m.is_replied == false
     )
   end
@@ -320,17 +318,20 @@ defmodule Glific.Searches do
           search_query(args.filter[:term], args)
       end
       |> Repo.all()
-      |> get_contact_ids()
+      |> get_contact_ids(args.filter[:status])
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Conversations.list_conversations(count)
   end
 
-  defp get_contact_ids(contact_ids) do
-    contact_ids
-    |> Enum.map(fn contact_id ->
-      if is_list(contact_id), do: List.first(contact_id), else: contact_id
-    end)
+  @spec get_contact_ids(list(), String.t() | nil) :: list()
+  defp get_contact_ids(results, nil), do: results
+
+  defp get_contact_ids(results, _status) do
+    # one set of queries (status queries) return a map for each row
+    # where id is a key in the map
+    results
+    |> Enum.map(fn data -> data.id end)
   end
 
   # codebeat:enable[ABC]
@@ -364,7 +365,7 @@ defmodule Glific.Searches do
   # codebeat:disable[ABC]
   @spec get_filtered_contacts(String.t(), map()) :: list()
   defp get_filtered_contacts(term, args) do
-    {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
+    {limit, offset} = {args.contact_opts.limit, args.contact_opts.offset}
 
     # since this revolves around contacts
     args
