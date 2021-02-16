@@ -132,6 +132,25 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Resets all the context for ma user when we hit an error. This can potentially
+  prevent an infinite loop from happening if flows are connected in a cycle
+  """
+  @spec reset_all_contexts(FlowContext.t()) :: FlowContext.t() | nil
+  def reset_all_contexts(context) do
+    Logger.info("Ending Flow Tree: id: '#{context.flow_id}', contact_id: '#{context.contact_id}'")
+
+    # lets mark all the interactive flows complete
+    mark_flows_complete(context.contact_id)
+
+    # this includes our currrent flow, so lets modify it with the new
+    # values before returning it
+    context
+    |> Map.put(:completed_at, DateTime.utc_now())
+    |> Map.put(:node_uuid, nil)
+    |> Map.put(:node, nil)
+  end
+
+  @doc """
   Resets the context and sends control back to the parent context
   if one exists
   """
@@ -312,7 +331,7 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], is_nil(fc.completed_at))
     # lets not touch the contexts which are waiting to be woken up at a specific time
     |> where([fc], fc.wait_for_time == false)
-    |> Repo.update_all(set: [completed_at: now, updated_at: now])
+    |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
   end
 
   @doc """
@@ -418,7 +437,7 @@ defmodule Glific.Flows.FlowContext do
           "Seems like the flow: #{flow.id} changed underneath us for: #{context.organization_id}"
         )
 
-        reset_context(context)
+        reset_all_contexts(context)
     end
   end
 
