@@ -165,7 +165,7 @@ defmodule Glific.Searches do
   end
 
   @spec add_opts(Ecto.Query.t(), map()) :: Ecto.Query.t()
-  def add_contact_opts(query, %{limit: limit, offset: offset, order: _order_by}) do
+  def add_contact_opts(query, %{limit: limit, offset: offset}) do
     query
     |> limit(^limit)
     |> offset(^offset)

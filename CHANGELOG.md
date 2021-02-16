@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Ensure that the status search queries limit number of contacts
+
 ## [0.11.0] - 2021-02-14
 
 ### Fixed
