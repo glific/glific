@@ -160,6 +160,7 @@ defmodule Glific.Searches do
     |> where([c], c.status != :blocked)
     |> select([c], c.id)
     |> distinct(true)
+    |> order_by([c], [c.last_communication_at])
     |> add_contact_opts(opts)
     |> Repo.add_permission(&Searches.add_permission_contact/2)
   end
