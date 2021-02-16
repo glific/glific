@@ -20,6 +20,10 @@ jobs:
           fetch-depth: 0 # Checkout the whole branch
 
       # configure the gigalixir-actions with our credentials and app name
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8.1' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          - run: python my_script.py
       - uses: mhanberg/gigalixir-action@v0.4.3
         with:
           GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
