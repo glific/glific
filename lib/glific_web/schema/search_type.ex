@@ -149,6 +149,13 @@ defmodule GlificWeb.Schema.SearchTypes do
       resolve(&Resolvers.Searches.count_saved_searches/3)
     end
 
+    @desc "Get a collection count for organizaion"
+    field :collection_stats, :json do
+      arg(:organization_id, non_null(:id))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Searches.collection_stats/3)
+    end
+
     field :saved_search_count, :integer do
       # the id of the saved search
       arg(:id, non_null(:id))

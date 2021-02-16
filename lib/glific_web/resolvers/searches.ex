@@ -8,6 +8,7 @@ defmodule GlificWeb.Resolvers.Searches do
     Conversations.Conversation,
     Repo,
     Searches,
+    Searches.CollectionCount,
     Searches.SavedSearch,
     Searches.Search
   }
@@ -39,6 +40,14 @@ defmodule GlificWeb.Resolvers.Searches do
   @spec count_saved_searches(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
   def count_saved_searches(_, args, _) do
     {:ok, Searches.count_saved_searches(args)}
+  end
+
+  @doc """
+  Get the collection count
+  """
+  @spec collection_stats(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, map()}
+  def collection_stats(_, %{organization_id: org_id}, _) do
+    {:ok, CollectionCount.collection_stats([org_id], true)}
   end
 
   @doc false
