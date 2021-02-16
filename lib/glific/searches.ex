@@ -182,7 +182,8 @@ defmodule Glific.Searches do
   @spec filter_status_contacts_of_organization(String.t(), map()) :: Ecto.Query.t()
   defp filter_status_contacts_of_organization("Unread", opts) do
     status_query(opts)
-    |> join(:inner, [c: c], m in Message, as: :m,
+    |> join(:inner, [c: c], m in Message,
+      as: :m,
       on: c.id == m.contact_id and m.is_read == false
     )
   end
@@ -196,7 +197,8 @@ defmodule Glific.Searches do
   defp filter_status_contacts_of_organization(status, opts)
        when status in ["Not replied", "Not Responded"] do
     status_query(opts)
-    |> join(:inner, [c: c], m in Message, as: :m,
+    |> join(:inner, [c: c], m in Message,
+      as: :m,
       on: c.id == m.contact_id and m.flow == ^direction(status) and m.is_replied == false
     )
   end
@@ -305,7 +307,7 @@ defmodule Glific.Searches do
 
     is_status? =
       is_nil(args.filter[:id]) && is_nil(args.filter[:ids]) &&
-      !is_nil(args.filter[:status])
+        !is_nil(args.filter[:status])
 
     contact_ids =
       cond do
@@ -327,6 +329,7 @@ defmodule Glific.Searches do
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Conversations.list_conversations(count)
   end
+
   # codebeat:enable[ABC]
 
   @spec get_contact_ids(list(), boolean | nil) :: list()
@@ -338,7 +341,6 @@ defmodule Glific.Searches do
     results
     |> Enum.map(fn data -> data.id end)
   end
-
 
   @doc """
   Search across multiple tables, and return a multiple context
