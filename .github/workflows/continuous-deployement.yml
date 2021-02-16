@@ -1,16 +1,15 @@
 name: Continuous Deployment
 
-
 on:
   push:
-    branches: [ feature/cd-fixes]
+    branches: [feature/cd-fixes]
 
 jobs:
   deploy:
     # only run this job if the verify job succeeds
 
     # only run this job if the workflow is running on the feature/master branch
-    if: github.ref == 'refs/heads/master'
+    # if: github.ref == 'refs/heads/master'
 
     runs-on: ubuntu-latest
 
@@ -19,9 +18,9 @@ jobs:
         with:
           ref: master # Checkout out master instead of the latest commit
           fetch-depth: 0 # Checkout the whole branch
-              
+
       # configure the gigalixir-actions with our credentials and app name
-      - uses: vlindhol/gigalixir-action@use-python3
+      - uses: mhanberg/gigalixir-action@v0.4.2
         with:
           GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
           GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
