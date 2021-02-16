@@ -105,8 +105,11 @@ defmodule Glific.Processor.ConsumerFlow do
       {:flow_keyword, body, status}
     )
     |> case do
-      {:ok, flow} -> FlowContext.init_context(flow, message.contact, status)
-      {:error, _} -> nil
+      {:ok, flow} ->
+        FlowContext.init_context(flow, message.contact, status)
+
+      {:error, _} ->
+        nil
     end
 
     {message, state}
