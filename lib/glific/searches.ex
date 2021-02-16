@@ -164,14 +164,14 @@ defmodule Glific.Searches do
     |> Repo.add_permission(&Searches.add_permission_contact/2)
   end
 
-  @spec add_opts(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  @spec add_contact_opts(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp add_contact_opts(query, %{limit: limit, offset: offset}) do
     query
     |> limit(^limit)
     |> offset(^offset)
   end
 
-  def add_opts(query, _opts), do: query
+  defp add_contact_opts(query, _opts), do: query
 
   @spec direction(String.t()) :: atom()
   defp direction("Not replied"), do: :inbound
