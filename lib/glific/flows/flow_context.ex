@@ -139,14 +139,13 @@ defmodule Glific.Flows.FlowContext do
   def reset_all_contexts(context) do
     Logger.info("Ending Flow Tree: id: '#{context.flow_id}', contact_id: '#{context.contact_id}'")
 
-    # lets first reset the current context (most common case)
-    context = reset_one_context(context)
 
     # lets reset the entire flow tree complete if this context is a child
     if context.parent_id,
       do: mark_flows_complete(context.contact_id)
 
-    context
+    # lets reset the current context and return the resetted context
+    reset_one_context(context)
   end
 
   @spec reset_one_context(FlowContext.t()) :: FlowContext.t()
