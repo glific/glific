@@ -127,11 +127,11 @@ query savedSearch($id: ID!) {
 | --------- | -------------------- | ------- | ----------- |
 | ID        | <a href="#id">ID</a> |
 
-## Get a Collection Count for organization
+## Get a Collection Count Stats for organization
 
 ```graphql
 query search_queries {
-  collectionCount(organizationId: "1")
+  collectionStats(organizationId: "1")
 }
 ```
 
@@ -140,7 +140,7 @@ query search_queries {
 ```json
 {
   "data": {
-    "collectionCount": "{\"1\":{\"Unread\":4,\"Optout\":0,\"Not replied\":2,\"Not Responded\":2,\"All\":4}}"
+    "collectionStats": "{\"1\":{\"Unread\":4,\"Optout\":0,\"Not replied\":2,\"Not Responded\":2,\"All\":4}}"
   }
 }
 ```

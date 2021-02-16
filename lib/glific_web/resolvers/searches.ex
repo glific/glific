@@ -44,9 +44,9 @@ defmodule GlificWeb.Resolvers.Searches do
   @doc """
   Get the collection count
   """
-  @spec collection_count(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def collection_count(_, %{organization_id: org_id}, _) do
-    {:ok, Glific.Searches.CollectionCount.collection_stats()}
+  @spec collection_stats(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def collection_stats(_, %{organization_id: org_id}, _) do
+    {:ok, Glific.Searches.CollectionCount.collection_stats([org_id], true)}
   end
 
   @doc false

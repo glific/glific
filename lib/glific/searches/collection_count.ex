@@ -13,12 +13,14 @@ defmodule Glific.Searches.CollectionCount do
     Repo
   }
 
-  @spec org_id_list(boolean) :: list()
-  defp org_id_list(recent) do
+  @spec org_id_list(list(), boolean) :: list()
+  defp org_id_list([], recent) do
     Partners.active_organizations([])
     |> Partners.recent_organizations(recent)
     |> Enum.reduce([], fn {id, _map}, acc -> [id | acc] end)
   end
+
+  defp org_id_list(list, _recent), do: list
 
   @spec publish_data(map()) :: map()
   defp publish_data(results) do
@@ -38,10 +40,9 @@ defmodule Glific.Searches.CollectionCount do
   @doc """
   Do it in one query for all organizations for each of Unread, Not Responded, Not Replied and OptOut
   """
-  @spec collection_stats(boolean) :: map()
-  def collection_stats(recent \\ true) do
-    org_id_list = org_id_list(recent)
-
+  @spec collection_stats(list, boolean) :: map()
+  def collection_stats(list \\ [], recent \\ true) do
+    org_id_list = org_id_list(list, recent)
     query = query(org_id_list)
 
     %{}
