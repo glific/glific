@@ -105,7 +105,7 @@ defmodule Glific.Flows.Router do
   @doc """
   Validate a action and all its children
   """
-  @spec validate(Router.t(), map(), map()) :: map()
+  @spec validate(Router.t(), Keyword.t(), map()) :: Keyword.t()
   def validate(router, errors, flow) do
     errors =
       router.categories

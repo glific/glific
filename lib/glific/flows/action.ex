@@ -246,12 +246,12 @@ defmodule Glific.Flows.Action do
   Validate a action and all its children
   """
   @spec validate(Action.t(), Keyword.t(), map()) :: Keyword.t()
-  def validate(%{type: type} = action, errors, _flow) when
-  type in ["add_contact_groups", "remove_contact_groups", "send_broadcast"] do
+  def validate(%{type: type} = action, errors, _flow)
+      when type in ["add_contact_groups", "remove_contact_groups", "send_broadcast"] do
     object = object(type)
 
     Enum.reduce(
-      (if object == Contact, do: action.contacts, else: action.groups),
+      if(object == Contact, do: action.contacts, else: action.groups),
       errors,
       fn entity, errors ->
         case Glific.parse_maybe_integer(entity["uuid"]) do
@@ -259,9 +259,11 @@ defmodule Glific.Flows.Action do
             # ensure entity_id exists
             check_entity_exists(entity_id, errors, object)
 
-          _ -> [{object, "Could not parse #{object} object"}] ++ errors
+          _ ->
+            [{object, "Could not parse #{object} object"}] ++ errors
         end
-      end)
+      end
+    )
   end
 
   def validate(%{type: "enter_flow"} = action, errors, _flow) do

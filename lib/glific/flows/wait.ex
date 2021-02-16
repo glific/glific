@@ -46,7 +46,7 @@ defmodule Glific.Flows.Wait do
   @doc """
   Validate a wait
   """
-  @spec validate(Wait.t(), map(), map()) :: map()
+  @spec validate(Wait.t(), Keyword.t(), map()) :: Keyword.t()
   def validate(_wait, errors, _flow) do
     errors
   end

@@ -64,7 +64,7 @@ defmodule Glific.Flows.Case do
   @doc """
   Validate a case
   """
-  @spec validate(Case.t(), map(), map()) :: map()
+  @spec validate(Case.t(), Keyword.t(), map()) :: Keyword.t()
   def validate(_case, errors, _flow) do
     errors
   end

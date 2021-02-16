@@ -54,7 +54,7 @@ defmodule Glific.Flows.Exit do
   @doc """
   Validate a exit
   """
-  @spec validate(Exit.t(), map(), map()) :: map()
+  @spec validate(Exit.t(), Keyword.t(), map()) :: Keyword.t()
   def validate(_exit, errors, _flow) do
     errors
   end

@@ -283,7 +283,7 @@ defmodule Glific.Flows.Flow do
   @doc """
   Validate a flow and ensures the flow  is valid with our internal rule-set
   """
-  @spec validate_flow(non_neg_integer, String.t(), map()) :: map()
+  @spec validate_flow(non_neg_integer, String.t(), map()) :: Keyword.t()
   def validate_flow(organization_id, status, args) do
     organization_id
     |> get_loaded_flow(status, args)
@@ -304,7 +304,7 @@ defmodule Glific.Flows.Flow do
   end
 
   @spec flow_objects(map(), atom()) :: MapSet.t()
-  def flow_objects(flow, type) do
+  defp flow_objects(flow, type) do
     flow.uuid_map
     |> Enum.filter(fn {_k, v} -> elem(v, 0) == type end)
     |> Enum.map(fn {k, _v} -> k end)
@@ -312,7 +312,7 @@ defmodule Glific.Flows.Flow do
   end
 
   @spec dangling_nodes(Keyword.t(), map()) :: Keyword.t()
-  def dangling_nodes(errors, flow) do
+  defp dangling_nodes(errors, flow) do
     all_nodes = flow_objects(flow, :node)
     all_exits = flow_objects(flow, :exit)
 
@@ -320,7 +320,7 @@ defmodule Glific.Flows.Flow do
     reachable_nodes =
       all_exits
       |> Enum.reduce(
-      MapSet.new([hd(flow.nodes).uuid]),
+        MapSet.new([hd(flow.nodes).uuid]),
         fn e, acc ->
           {:exit, exit} = flow.uuid_map[e]
           MapSet.put(acc, exit.destination_node_uuid)
@@ -328,24 +328,24 @@ defmodule Glific.Flows.Flow do
       )
       |> MapSet.delete(nil)
 
-      dangling = MapSet.difference(all_nodes, reachable_nodes)
+    dangling = MapSet.difference(all_nodes, reachable_nodes)
 
-      if dangling == [],
-        do: errors,
-        else: [dangling: "Your flow has dangling nodes"] ++ errors
+    if MapSet.size(dangling) == 0,
+      do: errors,
+      else: [dangling: "Your flow has dangling nodes"] ++ errors
   end
 
   @spec missing_flow_context_nodes(Keyword.t(), map()) :: Keyword.t()
-  def missing_flow_context_nodes(errors, flow) do
+  defp missing_flow_context_nodes(errors, flow) do
     all_nodes = flow_objects(flow, :node)
 
     flow_context_nodes =
-    FlowContext
-    |> where([fc], fc.flow_id == ^flow.id and is_nil(fc.completed_at))
-    |> select([fc], fc.node_uuid)
-    |> distinct(true)
-    |> Repo.all()
-    |> MapSet.new()
+      FlowContext
+      |> where([fc], fc.flow_id == ^flow.id and is_nil(fc.completed_at))
+      |> select([fc], fc.node_uuid)
+      |> distinct(true)
+      |> Repo.all()
+      |> MapSet.new()
 
     if MapSet.subset?(flow_context_nodes, all_nodes),
       do: errors,

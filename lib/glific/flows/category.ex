@@ -53,7 +53,7 @@ defmodule Glific.Flows.Category do
   @doc """
   Validate a category
   """
-  @spec validate(Category.t(), map(), map()) :: map()
+  @spec validate(Category.t(), Keyword.t(), map()) :: Keyword.t()
   def validate(_category, errors, _flow) do
     errors
   end
