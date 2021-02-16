@@ -158,7 +158,7 @@ defmodule Glific.Searches do
 
     query
     |> where([c], c.status != :blocked)
-    |> select([c], c.id)
+    |> select([c], [c.id, c.last_communication_at])
     |> distinct(true)
     |> order_by([c], [c.last_communication_at])
     |> add_contact_opts(opts)
@@ -320,11 +320,17 @@ defmodule Glific.Searches do
           search_query(args.filter[:term], args)
       end
       |> Repo.all()
-
+      |> get_contact_ids()
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Conversations.list_conversations(count)
   end
 
+  defp get_contact_ids(contact_ids) do
+    Enum.map( fn [contact_id | _]-> contact_id end)
+  end
+  defp get_contact_ids() do
+
+  end
   # codebeat:enable[ABC]
 
   @doc """
