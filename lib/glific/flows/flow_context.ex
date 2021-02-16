@@ -422,9 +422,14 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  @spec exit_loop_error?(String.t()) :: boolean
-  defp exit_loop_error?(error),
-    do: String.contains?(error, "Exit Loop")
+  @spec ignore_error?(String.t()) :: boolean
+  defp ignore_error?(error) do
+    # These errors are ok, and need not be reported to appsignal
+    # to a large extent, its more a completion exit rather than an
+    # error exit
+    String.contains?(error, "Exit Loop") ||
+      String.contains?(error, "We have finished the flow")
+  end
 
   # log the error and also send it over to our friends at appsignal
   @spec log_error(String.t()) :: {:error, String.t()}
@@ -433,7 +438,7 @@ defmodule Glific.Flows.FlowContext do
 
     # disable sending exit loop errors, since these are beneficiary errors
     # and we dont need to be informed
-    if !exit_loop_error?(error) do
+    if !ignore_error?(error) do
       {_, stacktrace} = Process.info(self(), :current_stacktrace)
       Appsignal.send_error(:error, error, stacktrace)
     end
