@@ -152,7 +152,7 @@ defmodule GlificWeb.Schema.SearchTypes do
     @desc "Get a collection count for organizaion"
     field :collection_stats, :json do
       arg(:organization_id, non_null(:id))
-      middleware(Authorize, :admin)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.collection_stats/3)
     end
 
