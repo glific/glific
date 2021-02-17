@@ -720,7 +720,8 @@ if Code.ensure_loaded?(Faker) do
         activity: "b050c652-65b5-4ccf-b62b-1e8b3f328676",
         feedback: "6c21af89-d7de-49ac-9848-c9febbf737a5",
         optout: "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
-        survey: "8333fce2-63d3-4849-bfd9-3543eb8b0430"
+        survey: "8333fce2-63d3-4849-bfd9-3543eb8b0430",
+        help: "3fa22108-f464-41e5-81d9-d8a298854429"
       }
 
       flow_labels_id_map =
