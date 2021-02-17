@@ -925,11 +925,6 @@ if Code.ensure_loaded?(Faker) do
       seed_tag(organization)
 
       seed_session_templates(organization)
-
-      seed_messages(organization)
-
-      seed_messages_media(organization)
-
       seed_flow_labels(organization)
 
       seed_flows(organization)
@@ -941,6 +936,10 @@ if Code.ensure_loaded?(Faker) do
       seed_group_users(organization)
 
       seed_group_messages(organization)
+
+      seed_messages(organization)
+
+      seed_messages_media(organization)
 
       hsm_templates(organization)
     end
