@@ -243,7 +243,6 @@ defmodule Glific.Jobs.BigQueryWorker do
       FlowResult
       |> where([f], f.organization_id == ^organization_id)
       |> where([f], f.id > ^min_id and f.id <= ^max_id)
-      |> where([f], f.id > ^min_id and f.id <= ^max_id)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
 
