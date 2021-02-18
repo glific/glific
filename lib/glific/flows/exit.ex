@@ -60,6 +60,7 @@ defmodule Glific.Flows.Exit do
     context = Repo.preload(context, :flow)
     # update the flow count
     FlowCount.upsert_flow_count(%{
+      id: exit.id,
       uuid: exit.uuid,
       destination_uuid: exit.destination_node_uuid,
       flow_uuid: context.flow_uuid,

@@ -16,7 +16,7 @@ defmodule Glific.Flows.FlowCount do
   }
 
   @required_fields [:uuid, :flow_id, :type, :flow_uuid, :organization_id]
-  @optional_fields [:destination_uuid, :recent_messages]
+  @optional_fields [:destination_uuid, :recent_messages, :count]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -97,22 +97,16 @@ defmodule Glific.Flows.FlowCount do
   @spec upsert_flow_count(map()) :: :error | FlowCount.t()
   def upsert_flow_count(%{flow_uuid: nil} = _attrs), do: :error
 
-  def upsert_flow_count(%{flow_id: flow_id} = attrs) do
-    case Repo.fetch_by(Flow, %{id: flow_id}) do
-      {:ok, flow} ->
-        attrs = Map.merge(attrs, %{flow_id: flow.id})
-
-        Repo.insert!(
-          FlowCount.changeset(%FlowCount{}, attrs),
-          on_conflict: [inc: [count: 1]],
-          returning: true,
-          conflict_target: [:flow_id, :uuid, :type]
-        )
-        |> update_recent_messages(attrs)
-
-      {:error, _} ->
-        Logger.info("Flow with id #{flow_id} is not found")
-        :error
+  def upsert_flow_count(attrs) do
+    with {:ok, flowcount} <- Repo.fetch_by(FlowCount, %{uuid: attrs.uuid}),
+         {:ok, flowcount} <-
+           update_flow_count(flowcount, Map.merge(attrs, %{count: flowcount.count + 1})) do
+      update_recent_messages(flowcount, attrs)
+    else
+      _ ->
+        with {:ok, flowcount} <- create_flow_count(attrs) do
+          update_recent_messages(flowcount, attrs)
+        end
     end
   end
 
