@@ -25,6 +25,7 @@ defmodule Glific.Flows.Node do
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
           flow_uuid: Ecto.UUID.t() | nil,
+          flow_id: Ecto.UUID.t() | nil,
           flow: Flow.t() | nil,
           actions: [Action.t()] | [],
           exits: [Exit.t()] | [],
@@ -33,7 +34,7 @@ defmodule Glific.Flows.Node do
 
   embedded_schema do
     field :uuid, Ecto.UUID
-
+    field :flow_id, Ecto.UUID
     field :flow_uuid, Ecto.UUID
     embeds_one :flow, Flow
 
@@ -51,7 +52,8 @@ defmodule Glific.Flows.Node do
 
     node = %Node{
       uuid: json["uuid"],
-      flow_uuid: flow.uuid
+      flow_uuid: flow.uuid,
+      flow_id: flow.id
     }
 
     {actions, uuid_map} =
@@ -94,9 +96,10 @@ defmodule Glific.Flows.Node do
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(node, context, messages) do
     # update the flow count
+
     FlowCount.upsert_flow_count(%{
       uuid: node.uuid,
-      flow_id: context.flow.id,
+      flow_id: node.flow_id,
       flow_uuid: node.flow_uuid,
       organization_id: context.organization_id,
       type: "node"
