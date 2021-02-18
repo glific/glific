@@ -1,8 +1,5 @@
 defmodule Glific.Repo.Migrations.AddStatusToMessages do
   use Ecto.Migration
-  import Ecto.Query
-
-  alias Glific.{Repo, Searches.SavedSearch}
 
   def change do
     messages()
