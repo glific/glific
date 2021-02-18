@@ -84,7 +84,7 @@ defmodule Glific.Flows.FlowCount do
   @doc """
   Update flow count
   """
-  @spec update_flow_count(FlowCount.t(), map()) :: {:ok, flow_count.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_flow_count(FlowCount.t(), map()) :: {:ok, FlowCount.t()} | {:error, Ecto.Changeset.t()}
   def update_flow_count(%FlowCount{} = flow_count, attrs) do
 
     flow_count
@@ -98,8 +98,8 @@ defmodule Glific.Flows.FlowCount do
   @spec upsert_flow_count(map()) :: :error | FlowCount.t()
   def upsert_flow_count(%{flow_uuid: nil} = _attrs), do: :error
 
-  def upsert_flow_count(%{flow_uuid: flow_uuid} = attrs) do
-    case Repo.fetch_by(Flow, %{uuid: flow_uuid}) do
+  def upsert_flow_count(%{flow_id: flow_id} = attrs) do
+    case Repo.fetch_by(Flow, %{id: flow_id}) do
       {:ok, flow} ->
         attrs = Map.merge(attrs, %{flow_id: flow.id})
 

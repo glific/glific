@@ -96,6 +96,7 @@ defmodule Glific.Flows.Node do
     # update the flow count
     FlowCount.upsert_flow_count(%{
       uuid: node.uuid,
+      flow_id: context.flow.id,
       flow_uuid: node.flow_uuid,
       organization_id: context.organization_id,
       type: "node"
