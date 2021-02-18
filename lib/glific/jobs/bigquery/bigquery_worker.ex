@@ -435,7 +435,12 @@ defmodule Glific.Jobs.BigQueryWorker do
     }
 
   @spec make_job(list(), atom(), non_neg_integer, non_neg_integer) :: :ok
-  defp make_job(data, _, _, _) when data in [%{}, nil, []], do: :ok
+  defp make_job(data, table, organization_id, max_id) when data in [%{}, nil, []] do
+    table = Atom.to_string(table)
+    Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+    :ok
+  end
+
 
   defp make_job(data, table, organization_id, max_id) do
     Logger.info(
