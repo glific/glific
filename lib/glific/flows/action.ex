@@ -289,7 +289,7 @@ defmodule Glific.Flows.Action do
     # we start off a new context here and dont really modify the current context
     # hence ignoring the return value of start_sub_flow
     # for now, we'll just delay by at least min_delay second
-    context = %{context | delay: min(context.delay + @min_delay, @min_delay)}
+    context = %{context | delay: max(context.delay + @min_delay, @min_delay)}
     Flow.start_sub_flow(context, action.enter_flow_uuid)
 
     # We null the messages here, since we are going into a different flow

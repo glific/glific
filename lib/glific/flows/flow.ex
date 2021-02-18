@@ -144,7 +144,7 @@ defmodule Glific.Flows.Flow do
       |> Enum.map(&to_string/1)
       |> Enum.join(", ")
 
-    "keywords [#{existing_keywords_string}] are already taken"
+    "`#{existing_keywords_string}` has already been taken"
   end
 
   @doc """
