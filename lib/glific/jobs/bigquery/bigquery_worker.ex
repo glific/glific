@@ -38,8 +38,8 @@ defmodule Glific.Jobs.BigQueryWorker do
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
     credential = organization.services["bigquery"]
-
     if credential do
+      Logger.info("Found bigquery credentials for org_id: #{organization_id}")
       Jobs.get_bigquery_jobs(organization_id)
       |> Enum.each(&insert_for_table(&1, organization_id))
     end
