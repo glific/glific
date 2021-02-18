@@ -74,8 +74,7 @@ defmodule Glific.Flows.FlowCount do
   Create flow count
   """
   @spec create_flow_count(map()) :: {:ok, FlowCount.t()} | {:error, Ecto.Changeset.t()}
-  def create_flow_count(%{organization_id: organization_id} = attrs) do
-
+  def create_flow_count(attrs) do
     %FlowCount{}
     |> FlowCount.changeset(attrs)
     |> Repo.insert()
@@ -84,9 +83,9 @@ defmodule Glific.Flows.FlowCount do
   @doc """
   Update flow count
   """
-  @spec update_flow_count(FlowCount.t(), map()) :: {:ok, FlowCount.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_flow_count(FlowCount.t(), map()) ::
+          {:ok, FlowCount.t()} | {:error, Ecto.Changeset.t()}
   def update_flow_count(%FlowCount{} = flow_count, attrs) do
-
     flow_count
     |> FlowCount.changeset(attrs)
     |> Repo.update()
@@ -111,8 +110,7 @@ defmodule Glific.Flows.FlowCount do
         )
         |> update_recent_messages(attrs)
 
-      {status, flow} ->
-        {status, flow}
+      {:error, _} -> :error
     end
   end
 
