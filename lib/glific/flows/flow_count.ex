@@ -6,7 +6,7 @@ defmodule Glific.Flows.FlowCount do
   import Ecto.Changeset
 
   import Ecto.Query, warn: false
-
+  require Logger
   alias __MODULE__
 
   alias Glific.{
@@ -110,7 +110,9 @@ defmodule Glific.Flows.FlowCount do
         )
         |> update_recent_messages(attrs)
 
-      {:error, _} -> :error
+      {:error, _} ->
+        Logger.info("Flow with id #{flow_id} is not found")
+        :error
     end
   end
 
