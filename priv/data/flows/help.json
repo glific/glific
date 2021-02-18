@@ -72,9 +72,9 @@
   },
   "name": "Help Workflow",
   "type": "message",
-  "uuid": "894db82c-7bb4-4721-bc69-cb0d3b05cb78",
+  "uuid": "HELP_UUID",
   "vars": [
-    "894db82c-7bb4-4721-bc69-cb0d3b05cb78"
+    "HELP_UUID"
   ],
   "nodes": [
     {

@@ -38,8 +38,8 @@ defmodule Glific.Jobs.BigQueryWorker do
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
     credential = organization.services["bigquery"]
-
     if credential do
+      Logger.info("Found bigquery credentials for org_id: #{organization_id}")
       Jobs.get_bigquery_jobs(organization_id)
       |> Enum.each(&insert_for_table(&1, organization_id))
     end
@@ -73,7 +73,12 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp insert_for_table(bigquery_job, organization_id) do
     table_id = bigquery_job.table_id
-    Logger.info("Chcecking for bigquery table bigquery job: #{bigquery_job.table}, org_id: #{organization_id}")
+
+    Logger.info(
+      "Chcecking for bigquery table bigquery job: #{bigquery_job.table}, org_id: #{
+        organization_id
+      }"
+    )
 
     data =
       Bigquery.get_table_struct(bigquery_job.table)
@@ -102,7 +107,11 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec queue_table_data(String.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
           :ok
   defp queue_table_data("messages", organization_id, min_id, max_id) do
-    Logger.info("fetching data for messages to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{organization_id}")
+    Logger.info(
+      "fetching data for messages to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{
+        organization_id
+      }"
+    )
 
     Message
     |> where([m], m.organization_id == ^organization_id)
@@ -126,7 +135,12 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("contacts", organization_id, min_id, max_id) do
-    Logger.info("fetching data for contacts to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{organization_id}")
+    Logger.info(
+      "fetching data for contacts to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{
+        organization_id
+      }"
+    )
+
     query =
       Contact
       |> where([m], m.organization_id == ^organization_id)
@@ -180,7 +194,12 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("flows", organization_id, min_id, max_id) do
-    Logger.info("fetching data for flows to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{organization_id}")
+    Logger.info(
+      "fetching data for flows to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{
+        organization_id
+      }"
+    )
+
     query =
       FlowRevision
       |> where([f], f.organization_id == ^organization_id)
@@ -216,7 +235,12 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("flow_results", organization_id, min_id, max_id) do
-    Logger.info("fetching data for flow_results to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{organization_id}")
+    Logger.info(
+      "fetching data for flow_results to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{
+        organization_id
+      }"
+    )
+
     query =
       FlowResult
       |> where([f], f.organization_id == ^organization_id)
@@ -257,6 +281,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   ## Insert update query.
   defp queue_table_data("messages_delta", organization_id, _min_id, _max_id) do
     Logger.info("fetching data for messages_delta to send on bigquery org_id: #{organization_id}")
+
     Message
     |> where([m], m.organization_id == ^organization_id)
     |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
@@ -291,6 +316,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp queue_table_data("contacts_delta", organization_id, _min_id, _max_id) do
     Logger.info("fetching data for contacts_delta to send on bigquery org_id: #{organization_id}")
+
     query =
       Contact
       |> where([fr], fr.organization_id == ^organization_id)
@@ -344,7 +370,10 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("flow_results_delta", organization_id, _min_id, _max_id) do
-    Logger.info("fetching data for flow_results_delta to send on bigquery org_id: #{organization_id}")
+    Logger.info(
+      "fetching data for flow_results_delta to send on bigquery org_id: #{organization_id}"
+    )
+
     query =
       FlowResult
       |> where([fr], fr.organization_id == ^organization_id)
@@ -409,7 +438,11 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp make_job(data, _, _, _) when data in [%{}, nil, []], do: :ok
 
   defp make_job(data, table, organization_id, max_id) do
-    Logger.info("making a new job for #{table} to send on bigquery org_id: #{organization_id} with max id: #{max_id}")
+    Logger.info(
+      "making a new job for #{table} to send on bigquery org_id: #{organization_id} with max id: #{
+        max_id
+      }"
+    )
 
     __MODULE__.new(%{
       data: data,
@@ -424,7 +457,9 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   @spec make_merge_job(String.t(), non_neg_integer) :: :ok
   defp make_merge_job(table, organization_id) do
-    Logger.info("making a new merge job for #{table} to send on bigquery org_id: #{organization_id}")
+    Logger.info(
+      "making a new merge job for #{table} to send on bigquery org_id: #{organization_id}"
+    )
 
     __MODULE__.new(%{
       table: table,
