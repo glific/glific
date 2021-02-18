@@ -22,16 +22,16 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
   # codebeat:disable[ABC]
   defp providers do
     alter table("providers", prefix: @global_schema) do
-      add :shortcode, :string
+      add :shortcode, :string, comment: "Shortcode for the provider"
       add :group, :string
 
-      add :is_required, :boolean, default: false
+      add :is_required, :boolean, default: false, comment: "Whether manadatory for initial setup"
 
       # structure for keys
-      add :keys, :jsonb, default: "{}"
+      add :keys, :jsonb, default: "{}", comment: "JSON Object containing details of the URLs, labels, workers etc. of the provider"
 
       # structure for secrets
-      add :secrets, :jsonb, default: "{}"
+      add :secrets, :jsonb, default: "{}", comment: "JSON object containing details of the API keys for the provider"
 
       remove :url
       remove :api_end_point
@@ -88,19 +88,19 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
   defp messages do
     # using microsecond for correct ordering of messages
     alter table(:messages) do
-      modify :inserted_at, :utc_datetime_usec
-      modify :updated_at, :utc_datetime_usec
+      modify :inserted_at, :utc_datetime_usec, comment: "Time when the record entry was first made"
+      modify :updated_at, :utc_datetime_usec, comment: "Time when the record entry was last updated"
     end
   end
 
   defp bigquery_jobs do
     create table(:bigquery_jobs) do
       # references the last message we processed
-      add :table, :string
-      add :table_id, :integer
+      add :table, :string, comment: "Table name"
+      add :table_id, :integer, comment: "Table ID"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique organisation ID"
 
       timestamps(type: :utc_datetime)
     end
