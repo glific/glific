@@ -28,7 +28,8 @@ defmodule Glific.BigquerySchema do
         mode: "REQUIRED"
       },
       %{
-        description: "Whatsapp connection status; current options are : processing, valid, invalid & failed",
+        description:
+          "Whatsapp connection status; current options are : processing, valid, invalid & failed",
         name: "provider_status",
         type: "STRING",
         mode: "REQUIRED"
@@ -58,7 +59,8 @@ defmodule Glific.BigquerySchema do
         mode: "NULLABLE"
       },
       %{
-        description: "Timestamp of most recent message sent by the user to ensure we can send a valid message to the user (< 24hr)",
+        description:
+          "Timestamp of most recent message sent by the user to ensure we can send a valid message to the user (< 24hr)",
         name: "last_message_at",
         type: "DATETIME",
         mode: "NULLABLE"
@@ -195,7 +197,8 @@ defmodule Glific.BigquerySchema do
         mode: "REQUIRED"
       },
       %{
-        description: "Whatsapp connection status; current options are : processing, valid, invalid & failed",
+        description:
+          "Whatsapp connection status; current options are : processing, valid, invalid & failed",
         name: "provider_status",
         type: "STRING",
         mode: "REQUIRED"
@@ -225,7 +228,8 @@ defmodule Glific.BigquerySchema do
         mode: "NULLABLE"
       },
       %{
-        description: "Timestamp of most recent message sent by the user to ensure we can send a valid message to the user (< 24hr)",
+        description:
+          "Timestamp of most recent message sent by the user to ensure we can send a valid message to the user (< 24hr)",
         name: "last_message_at",
         type: "DATETIME",
         mode: "NULLABLE"
@@ -364,7 +368,8 @@ defmodule Glific.BigquerySchema do
         mode: "NULLABLE"
       },
       %{
-        description: "Type of the message; options are - text, audio, video, image, location, contact, file, sticker",
+        description:
+          "Type of the message; options are - text, audio, video, image, location, contact, file, sticker",
         name: "type",
         type: "STRING",
         mode: "REQUIRED"
@@ -400,13 +405,15 @@ defmodule Glific.BigquerySchema do
         mode: "REQUIRED"
       },
       %{
-        description: "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is",
+        description:
+          "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is",
         name: "contact_phone",
         type: "STRING",
         mode: "REQUIRED"
       },
       %{
-        description: "Either sender contact name or receiver contact name; created to quickly let us know who the beneficiary is",
+        description:
+          "Either sender contact name or receiver contact name; created to quickly let us know who the beneficiary is",
         name: "contact_name",
         type: "STRING",
         mode: "REQUIRED"
@@ -497,7 +504,8 @@ defmodule Glific.BigquerySchema do
         mode: "REQUIRED"
       },
       %{
-        description: "Type of the message; options are - text, audio, video, image, location, contact, file, sticker",
+        description:
+          "Type of the message; options are - text, audio, video, image, location, contact, file, sticker",
         name: "type",
         type: "STRING",
         mode: "REQUIRED"
@@ -509,7 +517,8 @@ defmodule Glific.BigquerySchema do
         mode: "REQUIRED"
       },
       %{
-        description: "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is",
+        description:
+          "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is",
         name: "contact_phone",
         type: "STRING",
         mode: "REQUIRED"
@@ -629,7 +638,8 @@ defmodule Glific.BigquerySchema do
         mode: "REQUIRED"
       },
       %{
-        description: "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid ",
+        description:
+          "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid ",
         name: "uuid",
         type: "STRING",
         mode: "REQUIRED"
@@ -690,7 +700,8 @@ defmodule Glific.BigquerySchema do
         mode: "REQUIRED"
       },
       %{
-        description: "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid ",
+        description:
+          "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid ",
         name: "uuid",
         type: "STRING",
         mode: "REQUIRED"

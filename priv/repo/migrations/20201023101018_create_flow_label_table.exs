@@ -15,7 +15,9 @@ defmodule Glific.Repo.Migrations.CreateFlowLabelTable do
       add :name, :string, comment: "Name/tag of the flow label"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique organisation ID"
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique organisation ID"
 
       timestamps(type: :utc_datetime)
     end

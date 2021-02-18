@@ -36,23 +36,36 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
     # Create a table to store the values for a specific flow at a specific point in time
     # This is typically useful in a quiz scenario where we are collecting answers for different
     # questions across time
-    create table(:flow_results, comment: "Create a table to store the values for a specific flow at a specific point in time") do
+    create table(:flow_results,
+             comment:
+               "Create a table to store the values for a specific flow at a specific point in time"
+           ) do
       # This is a key value map of the results saved during this flow run
       add :results, :map, default: %{}, comment: "JSON object for storing the user responses"
 
-      add :contact_id, references(:contacts, on_delete: :delete_all), null: false, comment: "Contact ID"
+      add :contact_id, references(:contacts, on_delete: :delete_all),
+        null: false,
+        comment: "Contact ID"
 
       add :flow_id, references(:flows, on_delete: :delete_all), null: false, comment: "Flow ID"
 
       # We store flows with both id and uuid, since floweditor always refers to a flow by its uuid
-      add :flow_uuid, :uuid, null: false, comment: "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid "
+      add :flow_uuid, :uuid,
+        null: false,
+        comment:
+          "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid "
 
       # which specific published version are we referring to. This allows us to narrow
       # down the questions
-      add :flow_version, :integer, default: 1, null: false, comment: "Which specific published version of the flow is being referred to"
+      add :flow_version, :integer,
+        default: 1,
+        null: false,
+        comment: "Which specific published version of the flow is being referred to"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique organisation ID"
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique organisation ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -64,7 +77,9 @@ defmodule Glific.Repo.Migrations.V0_6_0_AlterGlificTables do
   defp messages do
     alter table(:messages) do
       # it will be null for regular messages
-      add :flow_id, references(:flows, on_delete: :nilify_all), null: true, comment: "Flow with which the message is associated"
+      add :flow_id, references(:flows, on_delete: :nilify_all),
+        null: true,
+        comment: "Flow with which the message is associated"
     end
   end
 

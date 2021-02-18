@@ -61,21 +61,33 @@ defmodule Glific.Repo.Migrations.GlificCore do
   own table. This allows us to optimize and switch languages relatively quickly
   """
   def languages do
-    create table(:languages, prefix: @global_schema, comment: "Languages table to optimize and switch between languages relatively quickly") do
+    create table(:languages,
+             prefix: @global_schema,
+             comment:
+               "Languages table to optimize and switch between languages relatively quickly"
+           ) do
       # The language label, typically the full name, like English (US) or Hindi
-      add :label, :string, null: false, comment: "Language label, typically the full name - like English (US) or Hindi"
+      add :label, :string,
+        null: false,
+        comment: "Language label, typically the full name - like English (US) or Hindi"
 
       # The language label in its default locale, e.g: हिंदी
-      add :label_locale, :string, null: false, comment: "The language label in its default locale, e.g: हिंदी"
+      add :label_locale, :string,
+        null: false,
+        comment: "The language label in its default locale, e.g: हिंदी"
 
       # An optional description
       add :description, :string, null: true, comment: "Optional description for the language"
 
       # The locale name of the language dialect, e.g. en_US, or hi
-      add :locale, :string, null: false, comment: "The locale name of the language dialect, e.g. en_US, or hi"
+      add :locale, :string,
+        null: false,
+        comment: "The locale name of the language dialect, e.g. en_US, or hi"
 
       # Is this language being currently used in the sysem
-      add :is_active, :boolean, default: true, comment: "Whether language currently in use within the system or not"
+      add :is_active, :boolean,
+        default: true,
+        comment: "Whether language currently in use within the system or not"
 
       timestamps(type: :utc_datetime)
     end
@@ -91,7 +103,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :name, :string, null: false, comment: "Organisation name"
       add :shortcode, :string, null: false, comment: "Organisation shortcode"
 
-      add :email, :string, null: false, comment: "Email provided by the organisation for registration"
+      add :email, :string,
+        null: false,
+        comment: "Email provided by the organisation for registration"
 
       add :provider_id, references(:providers, on_delete: :nothing, prefix: @global_schema),
         null: false
@@ -100,30 +114,41 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       # WhatsApp Business API Phone (this is the primary point of identification)
       # We will not link this to a contact
-      add :provider_phone, :string, null: false, comment: "Whatsapp Business API Phone - primary point of identification for the organisation"
+      add :provider_phone, :string,
+        null: false,
+        comment:
+          "Whatsapp Business API Phone - primary point of identification for the organisation"
 
       # add a provider limit field to limit rate of messages / minute
-      add :provider_limit, :integer, default: 60, comment: "Provider limit to limit the rate of messages per minute"
+      add :provider_limit, :integer,
+        default: 60,
+        comment: "Provider limit to limit the rate of messages per minute"
 
       # choose active languages from the supported languages
       # organization default language
       add :default_language_id,
           references(:languages, on_delete: :restrict, prefix: @global_schema),
-          null: false, comment: "Default language for the organisation"
+          null: false,
+          comment: "Default language for the organisation"
 
       # choose active languages from the supported languages
-      add :active_language_ids, {:array, :integer}, default: [], comment: "List of active languages used by the organisation from the supported languages"
+      add :active_language_ids, {:array, :integer},
+        default: [],
+        comment: "List of active languages used by the organisation from the supported languages"
 
       # contact id of organization that can send messages out. We cannot make this a foreign
       # key due to cyclic nature. Hence definied as just an id
       # it will be null on creation and added when we add an organization
-      add :contact_id, :integer, comment: "Contact ID of the organisation that can send messages out"
+      add :contact_id, :integer,
+        comment: "Contact ID of the organisation that can send messages out"
 
       # jsonb object of out_of_office data which is a bit convoluted to represent as columns
       add :out_of_office, :jsonb, comment: "JSON object of the out of office information"
 
       # organization services can be changed to inactive
-      add :is_active, :boolean, default: true, comment: "Whether an organisation's service is active or not"
+      add :is_active, :boolean,
+        default: true,
+        comment: "Whether an organisation's service is active or not"
 
       add :timezone, :string, comment: "Organization's operational timezone"
 
@@ -154,7 +179,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :is_active, :boolean, default: true, comment: "Whether tags are currently in use or not"
 
       # Is this a predefined system object?
-      add :is_reserved, :boolean, default: false, comment: "Whether the particular tag is a predefined system object or not"
+      add :is_reserved, :boolean,
+        default: false,
+        comment: "Whether the particular tag is a predefined system object or not"
 
       add :ancestors, {:array, :bigint}
 
@@ -164,23 +191,33 @@ defmodule Glific.Repo.Migrations.GlificCore do
       for Numeric and Keyword message tags for now, but also include contact tags to
       keep them in sync
       """
+
       add :is_value, :boolean, default: false, comment: tags_value_comment
 
       # keywords assosiacted with tags.
       add :keywords, {:array, :string}, comment: "Keywords associated with the tags"
 
       # define a color code for tags
-      add :color_code, :string, default: "#0C976D", comment: "Define a color code to associate it with a tag"
+      add :color_code, :string,
+        default: "#0C976D",
+        comment: "Define a color code to associate it with a tag"
 
       # foreign key to language
       add :language_id, references(:languages, on_delete: :restrict, prefix: @global_schema),
-        null: false, comment: "Foreign key for the language"
+        null: false,
+        comment: "Foreign key for the language"
 
       # All child tags point to the parent tag, this allows us a to organize tags as needed
-      add :parent_id, references(:tags, on_delete: :nilify_all), null: true, comment: "All child tags point to the parent tag, this allows for organizing tags as needed"
+      add :parent_id, references(:tags, on_delete: :nilify_all),
+        null: true,
+        comment:
+          "All child tags point to the parent tag, this allows for organizing tags as needed"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Foreign key to organization restricting scope of this table to an organization only"
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment:
+          "Foreign key to organization restricting scope of this table to an organization only"
 
       timestamps(type: :utc_datetime)
     end
@@ -200,7 +237,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
   def session_templates do
     create table(:session_templates) do
       # The template uuid, primarly needed for flow editor
-      add :uuid, :uuid, null: false, comment: "The template UUID, primarily needed for flow editor"
+      add :uuid, :uuid,
+        null: false,
+        comment: "The template UUID, primarily needed for flow editor"
 
       # The message label
       add :label, :string, null: false, comment: "Message label"
@@ -209,10 +248,14 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :body, :text, null: false, comment: "Body of the message"
 
       # Options are: text, audio, video, image, contact, location, file, sticker
-      add :type, :message_type_enum, comment: "Type of the message; options are - text, audio, video, image, location, contact, file, sticker"
+      add :type, :message_type_enum,
+        comment:
+          "Type of the message; options are - text, audio, video, image, location, contact, file, sticker"
 
       # Is this a predefined system object?
-      add :is_reserved, :boolean, default: false, comment: "Whether the particular template is a predefined system object or not"
+      add :is_reserved, :boolean,
+        default: false,
+        comment: "Whether the particular template is a predefined system object or not"
 
       # Is this value being currently used
       add :is_active, :boolean, default: true, comment: "Whether this value is currently in use"
@@ -231,16 +274,23 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       # Messages are in a specific language
       add :language_id, references(:languages, on_delete: :restrict, prefix: @global_schema),
-        null: false, comment: "Language of the message"
+        null: false,
+        comment: "Language of the message"
 
       # All child messages point to the root message, so we can propagate changes downstream
-      add :parent_id, references(:session_templates, on_delete: :nilify_all), null: true, comment: "Parent Message ID; all child messages point to the root message"
+      add :parent_id, references(:session_templates, on_delete: :nilify_all),
+        null: true,
+        comment: "Parent Message ID; all child messages point to the root message"
 
       # message media ids
-      add :message_media_id, references(:messages_media, on_delete: :delete_all), null: true, comment: "Message media IDs"
+      add :message_media_id, references(:messages_media, on_delete: :delete_all),
+        null: true,
+        comment: "Message media IDs"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique Organisation ID"
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique Organisation ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -257,25 +307,37 @@ defmodule Glific.Repo.Migrations.GlificCore do
   they do, we'll redirect those requests to a future version of the CRMPlatform
   """
   def contacts do
-    create table(:contacts, comment: "Table for storing high level contact information provided by the user") do
+    create table(:contacts,
+             comment: "Table for storing high level contact information provided by the user"
+           ) do
       # Contact Name
       add :name, :string, comment: "User Name"
 
       # Contact Phone (this is the primary point of identification)
       # We will treat this as a whats app ID as well
-      add :phone, :string, null: false, comment: "Phone number of the user; primary point of identification"
+      add :phone, :string,
+        null: false,
+        comment: "Phone number of the user; primary point of identification"
 
       # whatsapp status
       # the current options are: processing, valid, invalid, failed
-      add :provider_status, :contact_provider_status_enum, null: false, default: "none", comment: "Whatsapp connection status; current options are : processing, valid, invalid & failed"
+      add :provider_status, :contact_provider_status_enum,
+        null: false,
+        default: "none",
+        comment:
+          "Whatsapp connection status; current options are : processing, valid, invalid & failed"
 
       # this is our status, based on what the Provider tell us
       # the current options are: valid, invalid or blocked
-      add :status, :contact_status_enum, null: false, default: "valid", comment: "Provider status; current options are :valid, invalid or blocked"
+      add :status, :contact_status_enum,
+        null: false,
+        default: "valid",
+        comment: "Provider status; current options are :valid, invalid or blocked"
 
       # contact language for templates and other communications
       add :language_id, references(:languages, on_delete: :restrict, prefix: @global_schema),
-        null: false, comment: "Contact language for templates and other communications"
+        null: false,
+        comment: "Contact language for templates and other communications"
 
       # the times when we recorded either an optin or an optout
       # at some point, we will need to create an events table for this and track all changes
@@ -284,7 +346,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       # this is primarily used as a a cache to avoid querying the message table. We need this
       # to ensure we can send a valid session message to the user (< 24 hour window)
-      add :last_message_at, :utc_datetime, comment: "Timestamp of most recent message sent by the user to ensure we can send a valid message to the user (< 24hr)"
+      add :last_message_at, :utc_datetime,
+        comment:
+          "Timestamp of most recent message sent by the user to ensure we can send a valid message to the user (< 24hr)"
 
       settings_comment = """
       Store the settings of the user as a map (which is a jsonb object in psql). 
@@ -293,14 +357,19 @@ defmodule Glific.Repo.Migrations.GlificCore do
       more options from the preferenes list. All settings are checkboxes or multi-select.
       Merge this with fields, when we have type information
       """
+
       add :settings, :map, default: %{}, comment: settings_comment
 
       # store the NGO generated fields for the user also as a map
       # Each user can have multiple fields, we store the name as key
-      add :fields, :map, default: %{}, comment: "Labels and values of the NGO generated fields for the user"
+      add :fields, :map,
+        default: %{},
+        comment: "Labels and values of the NGO generated fields for the user"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique organisation ID"
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique organisation ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -340,13 +409,17 @@ defmodule Glific.Repo.Migrations.GlificCore do
   def messages do
     create table(:messages, comment: "Record of all messages sent and/or received by the system") do
       # Message uuid, primarly needed for flow editor
-      add :uuid, :uuid, null: true, comment: "Uniquely generated message UUID, primarily needed for the flow editor"
+      add :uuid, :uuid,
+        null: true,
+        comment: "Uniquely generated message UUID, primarily needed for the flow editor"
 
       # The body of the message
       add :body, :text, comment: "Body of the message"
 
       # Options are: text, audio, video, image, contact, location, file, sticker
-      add :type, :message_type_enum, comment: "Type of the message; options are - text, audio, video, image, location, contact, file, sticker"
+      add :type, :message_type_enum,
+        comment:
+          "Type of the message; options are - text, audio, video, image, location, contact, file, sticker"
 
       # Field to check hsm message type
       add :is_hsm, :boolean, default: false, comment: "Field to check hsm message type"
@@ -356,7 +429,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       # this is our status, It will tell us that
       # message got created but could not send because contact has optout
-      add :status, :message_status_enum, null: false, default: "enqueued", comment: "Delivery status of the message"
+      add :status, :message_status_enum,
+        null: false,
+        default: "enqueued",
+        comment: "Delivery status of the message"
 
       # whats app message id
       add :provider_message_id, :string, null: true, comment: "Whatsapp message ID"
@@ -371,31 +447,46 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :message_number, :bigint, comment: "Messaging number for a contact"
 
       # sender id
-      add :sender_id, references(:contacts, on_delete: :delete_all), null: false, comment: "Contact number of the sender of the message"
+      add :sender_id, references(:contacts, on_delete: :delete_all),
+        null: false,
+        comment: "Contact number of the sender of the message"
 
       # receiver id
-      add :receiver_id, references(:contacts, on_delete: :delete_all), null: false, comment: "Contact number of the receiver of the message"
+      add :receiver_id, references(:contacts, on_delete: :delete_all),
+        null: false,
+        comment: "Contact number of the receiver of the message"
 
       # contact id - this is either sender_id or receiver_id, but lets us know quickly
       # in queries who the beneficiary is. We otherwise need to check the :flow field to
       # use either the sender or receiver
       # this is a preliminary optimization to make the code cleaner
-      add :contact_id, references(:contacts, on_delete: :delete_all), null: false, comment: "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is"
+      add :contact_id, references(:contacts, on_delete: :delete_all),
+        null: false,
+        comment:
+          "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is"
 
       # user id - this will be null for automated messages and messages received
-      add :user_id, references(:users, on_delete: :nilify_all), null: true, comment: "User ID; this will be null for automated messages and messages received"
+      add :user_id, references(:users, on_delete: :nilify_all),
+        null: true,
+        comment: "User ID; this will be null for automated messages and messages received"
 
       # message media ids
-      add :media_id, references(:messages_media, on_delete: :delete_all), null: true, comment: "Message media ID"
+      add :media_id, references(:messages_media, on_delete: :delete_all),
+        null: true,
+        comment: "Message media ID"
 
       # timestamp when message is scheduled to be sent
-      add :send_at, :utc_datetime, null: true, comment: "Timestamp when message is scheduled to be sent"
+      add :send_at, :utc_datetime,
+        null: true,
+        comment: "Timestamp when message is scheduled to be sent"
 
       # timestamp when message was sent from queue worker
       add :sent_at, :utc_datetime, comment: "Timestamp when message was sent from queue worker"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique Organisation ID"
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique Organisation ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -412,7 +503,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
   """
   def contacts_tags do
     create table(:contacts_tags) do
-      add :contact_id, references(:contacts, on_delete: :delete_all), null: false, comment: "Contact ID"
+      add :contact_id, references(:contacts, on_delete: :delete_all),
+        null: false,
+        comment: "Contact ID"
+
       add :tag_id, references(:tags, on_delete: :delete_all), null: false, comment: "Tag ID"
 
       # the value of the tag if applicable
@@ -427,7 +521,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
   """
   def messages_tags do
     create table(:messages_tags) do
-      add :message_id, references(:messages, on_delete: :delete_all), null: false, comment: "Message ID"
+      add :message_id, references(:messages, on_delete: :delete_all),
+        null: false,
+        comment: "Message ID"
+
       add :tag_id, references(:tags, on_delete: :delete_all), null: false, comment: "Tags ID"
 
       # the value of the tag if applicable
@@ -472,13 +569,17 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :args, :map, comment: "Search arguments used by the user, saved as a jsonb blob"
 
       # The shortcode to display in UI
-      add :shortcode, :string, null: true, comment: "Shortcode of the saved searches to display in UI"
+      add :shortcode, :string,
+        null: true,
+        comment: "Shortcode of the saved searches to display in UI"
 
       # Is this a predefined system object?
       add :is_reserved, :boolean, default: false, comment: "Is this a predefined system object?"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique organisation ID"
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique organisation ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -499,10 +600,14 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :description, :string, null: true, comment: "Description of the groups"
 
       # visibility of conversations to the other groups
-      add :is_restricted, :boolean, default: false, comment: "Visibility status of conversations to the other groups"
+      add :is_restricted, :boolean,
+        default: false,
+        comment: "Visibility status of conversations to the other groups"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique organisation ID"
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique organisation ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -531,10 +636,14 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :name, :string, comment: "User Name"
       add :roles, {:array, :user_roles_enum}, default: ["none"], comment: "User Role"
 
-      add :contact_id, references(:contacts, on_delete: :nilify_all), null: false, comment: "Contact ID of the User"
+      add :contact_id, references(:contacts, on_delete: :nilify_all),
+        null: false,
+        comment: "Contact ID of the User"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique organisation ID"
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique organisation ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -562,10 +671,14 @@ defmodule Glific.Repo.Migrations.GlificCore do
   def locations do
     create table(:locations) do
       # contact id of the sender
-      add :contact_id, references(:contacts, on_delete: :delete_all), null: false, comment: "Contact ID of the sender"
+      add :contact_id, references(:contacts, on_delete: :delete_all),
+        null: false,
+        comment: "Contact ID of the sender"
 
       # reference to the incoming message
-      add :message_id, references(:messages, on_delete: :delete_all), null: false, comment: "Reference to the incoming message"
+      add :message_id, references(:messages, on_delete: :delete_all),
+        null: false,
+        comment: "Reference to the incoming message"
 
       # location longitude
       add :longitude, :float, null: false, comment: "Location longitude"
@@ -586,16 +699,26 @@ defmodule Glific.Repo.Migrations.GlificCore do
       add :uuid, :uuid, null: false, comment: "Unique ID generated for each flow"
 
       add :version_number, :string, default: "13.1.0", comment: "Flow version"
-      add :flow_type, :flow_type_enum, null: false, default: "message", comment: "Type of flow; default - message"
+
+      add :flow_type, :flow_type_enum,
+        null: false,
+        default: "message",
+        comment: "Type of flow; default - message"
 
       # Enable ignore keywords while in the flow
-      add :ignore_keywords, :boolean, default: false, comment: "Enabling ignore keywords while in the flow"
+      add :ignore_keywords, :boolean,
+        default: false,
+        comment: "Enabling ignore keywords while in the flow"
 
       # List of keywords to trigger the flow
-      add :keywords, {:array, :string}, default: [], comment: "List of keywords to trigger the flow"
+      add :keywords, {:array, :string},
+        default: [],
+        comment: "List of keywords to trigger the flow"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique organisation ID"
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique organisation ID"
 
       timestamps(type: :utc_datetime)
     end
@@ -612,7 +735,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
     create table(:flow_revisions) do
       add :definition, :map
       add :flow_id, references(:flows, on_delete: :delete_all), null: false, comment: "Flow ID"
-      add :revision_number, :integer, default: 0, comment: "Record of the revision made on the flow"
+
+      add :revision_number, :integer,
+        default: 0,
+        comment: "Record of the revision made on the flow"
 
       # Status of flow revision draft or done
       add :status, :string, default: "draft", comment: "Status of flow revision draft or done"

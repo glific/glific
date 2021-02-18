@@ -20,19 +20,29 @@ defmodule Glific.Repo.Migrations.Trigger do
       # for now. Lets have a field for the type of trigger
       # for now, there is only one events: "scheduled"
       # we will add "message received" and the fields to it soon
-      add :trigger_type, :string, default: "scheduled", comment: "Type of trigger; default - 'scheduled'"
+      add :trigger_type, :string,
+        default: "scheduled",
+        comment: "Type of trigger; default - 'scheduled'"
 
       # a contact and/or a group that is being triggered
-      add :contact_id, references(:contacts, on_delete: :delete_all), null: false, comment: "Contact ID that is being triggered"
-      add :group_id, references(:groups, on_delete: :delete_all), comment: "Group ID that is being triggered"
+      add :contact_id, references(:contacts, on_delete: :delete_all),
+        null: false,
+        comment: "Contact ID that is being triggered"
+
+      add :group_id, references(:groups, on_delete: :delete_all),
+        comment: "Group ID that is being triggered"
 
       # the flow that is being triggered
-      add :flow_id, references(:flows, on_delete: :delete_all), comment: "Specific flow being triggered"
+      add :flow_id, references(:flows, on_delete: :delete_all),
+        comment: "Specific flow being triggered"
 
       # lets add the time elements
 
       # start time of the condition, if repeating condition, start time of the first occurence
-      add :start_at, :utc_datetime, null: false, comment: "Start time of the condition, if repeating condition, start time of the first occurence"
+      add :start_at, :utc_datetime,
+        null: false,
+        comment:
+          "Start time of the condition, if repeating condition, start time of the first occurence"
 
       # the optional end time of this trigger
       add :end_at, :utc_datetime, null: true
@@ -53,7 +63,9 @@ defmodule Glific.Repo.Migrations.Trigger do
       add :is_active, :boolean, default: true, comment: "Is this trigger still active"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique organisation ID"
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique organisation ID"
 
       timestamps(type: :utc_datetime)
     end

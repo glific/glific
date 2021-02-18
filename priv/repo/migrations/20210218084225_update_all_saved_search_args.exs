@@ -11,6 +11,7 @@ defmodule Glific.Repo.Migrations.UpdateAllSavedSearchArgs do
 
   def update_all_saved_search_args() do
     shortcode = "All"
+
     args = %{
       filter: %{},
       contactOpts: %{limit: 25},
@@ -21,5 +22,4 @@ defmodule Glific.Repo.Migrations.UpdateAllSavedSearchArgs do
     |> where([s], s.shortcode == ^shortcode)
     |> Repo.update_all([set: [args: args]], skip_organization_id: true)
   end
-
 end

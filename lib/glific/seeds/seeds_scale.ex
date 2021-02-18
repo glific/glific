@@ -219,8 +219,8 @@ if Code.ensure_loaded?(Faker) do
     defp create_results_entry(1 = _flow_id),
       do:
         Enum.random([
-          %{1 => "Hindi", 2=> "Visual Arts", 3=> "Boring"},
-          %{1 => "English", 2=> "Other", 3=> "Theater", 4=> "Interesting"}
+          %{1 => "Hindi", 2 => "Visual Arts", 3 => "Boring"},
+          %{1 => "English", 2 => "Other", 3 => "Theater", 4 => "Interesting"}
         ])
 
     defp create_results_entry(2 = _flow_id),
@@ -236,8 +236,8 @@ if Code.ensure_loaded?(Faker) do
     defp create_results_entry(3 = _flow_id),
       do:
         Enum.random([
-          %{1 => "English", 2 => "Other", 3=> "Boring"},
-          %{1=> "Hindi", 2 => "Poetry", 3 => "Boring"}
+          %{1 => "English", 2 => "Other", 3 => "Boring"},
+          %{1 => "Hindi", 2 => "Poetry", 3 => "Boring"}
         ])
 
     @contact_num 5..15

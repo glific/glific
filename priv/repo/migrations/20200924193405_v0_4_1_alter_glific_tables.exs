@@ -28,10 +28,15 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       add :is_required, :boolean, default: false, comment: "Whether manadatory for initial setup"
 
       # structure for keys
-      add :keys, :jsonb, default: "{}", comment: "JSON Object containing details of the URLs, labels, workers etc. of the provider"
+      add :keys, :jsonb,
+        default: "{}",
+        comment:
+          "JSON Object containing details of the URLs, labels, workers etc. of the provider"
 
       # structure for secrets
-      add :secrets, :jsonb, default: "{}", comment: "JSON object containing details of the API keys for the provider"
+      add :secrets, :jsonb,
+        default: "{}",
+        comment: "JSON object containing details of the API keys for the provider"
 
       remove :url
       remove :api_end_point
@@ -88,8 +93,11 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
   defp messages do
     # using microsecond for correct ordering of messages
     alter table(:messages) do
-      modify :inserted_at, :utc_datetime_usec, comment: "Time when the record entry was first made"
-      modify :updated_at, :utc_datetime_usec, comment: "Time when the record entry was last updated"
+      modify :inserted_at, :utc_datetime_usec,
+        comment: "Time when the record entry was first made"
+
+      modify :updated_at, :utc_datetime_usec,
+        comment: "Time when the record entry was last updated"
     end
   end
 
@@ -100,7 +108,9 @@ defmodule Glific.Repo.Migrations.V041AlterGlificTables do
       add :table_id, :integer, comment: "Table ID"
 
       # foreign key to organization restricting scope of this table to this organization only
-      add :organization_id, references(:organizations, on_delete: :delete_all), null: false, comment: "Unique organisation ID"
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique organisation ID"
 
       timestamps(type: :utc_datetime)
     end
