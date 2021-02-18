@@ -74,11 +74,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp insert_for_table(bigquery_job, organization_id) do
     table_id = bigquery_job.table_id
 
-    Logger.info(
-      "Chcecking for bigquery table bigquery job: #{bigquery_job.table}, org_id: #{
-        organization_id
-      }"
-    )
+    Logger.info( "Checking for bigquery job: #{bigquery_job.table}, org_id: #{ organization_id}")
 
     data =
       Bigquery.get_table_struct(bigquery_job.table)
