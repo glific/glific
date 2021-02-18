@@ -38,8 +38,10 @@ defmodule Glific.Jobs.BigQueryWorker do
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
     credential = organization.services["bigquery"]
+
     if credential do
       Logger.info("Found bigquery credentials for org_id: #{organization_id}")
+
       Jobs.get_bigquery_jobs(organization_id)
       |> Enum.each(&insert_for_table(&1, organization_id))
     end
@@ -74,11 +76,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp insert_for_table(bigquery_job, organization_id) do
     table_id = bigquery_job.table_id
 
-    Logger.info(
-      "Chcecking for bigquery table bigquery job: #{bigquery_job.table}, org_id: #{
-        organization_id
-      }"
-    )
+    Logger.info("Checking for bigquery job: #{bigquery_job.table}, org_id: #{organization_id}")
 
     data =
       Bigquery.get_table_struct(bigquery_job.table)
@@ -435,7 +433,11 @@ defmodule Glific.Jobs.BigQueryWorker do
     }
 
   @spec make_job(list(), atom(), non_neg_integer, non_neg_integer) :: :ok
-  defp make_job(data, _, _, _) when data in [%{}, nil, []], do: :ok
+  defp make_job(data, table, organization_id, max_id) when data in [%{}, nil, []] do
+    table = Atom.to_string(table)
+    Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+    :ok
+  end
 
   defp make_job(data, table, organization_id, max_id) do
     Logger.info(
