@@ -468,8 +468,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         shortcode: shortcode,
         args: %{
           filter: %{term: ""},
-          contactOpts: %{limit: 20, offset: 0},
-          messageOpts: %{limit: 10, offset: 0}
+          contact_opts: %{limit: 25, offset: 0},
+          message_opts: %{limit: 20, offset: 0}
         },
         is_reserved: true,
         organization_id: organization.id

@@ -8,8 +8,6 @@ defmodule Glific.Repo.Migrations.AddStatusToMessages do
     messages()
 
     delete_tags()
-
-    update_saved_search()
   end
 
   defp messages() do
@@ -34,22 +32,5 @@ defmodule Glific.Repo.Migrations.AddStatusToMessages do
     WHERE shortcode IN ('unread', 'notreplied', 'notresponded')
     """
     |> execute()
-  end
-
-  defp update_saved_search do
-    ["Unread", "Not replied", "Not Responded", "Optout"]
-    |> Enum.each(&update_shortcode/1)
-  end
-
-  def update_shortcode(shortcode) do
-    args = %{
-      filter: %{status: shortcode, term: ""},
-      contactOpts: %{limit: 20, offset: 0},
-      messageOpts: %{limit: 10, offset: 0}
-    }
-
-    SavedSearch
-    |> where([s], s.shortcode == ^shortcode)
-    |> Repo.update_all([set: [args: args]], skip_organization_id: true)
   end
 end
