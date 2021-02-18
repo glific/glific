@@ -57,7 +57,7 @@ Glific sends a standard json object with contact and results fields as default f
 By default, Glific adds an extra signature header to each webhook to indicate that this was sent from Glific. This
 signature key is generated using the signature phrase you set up for your organization and is also encrypted with
 the current time, which is part of the signature payload. More details on how we sign the payload and how to verify
-its accuracy can be found in [How we verifu webhooks](https://dashbit.co/blog/how-we-verify-webhooks)
+its accuracy can be found in [How we verify webhooks](https://dashbit.co/blog/how-we-verify-webhooks)
 
 ## Webhook Return Values
 

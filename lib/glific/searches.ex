@@ -158,7 +158,7 @@ defmodule Glific.Searches do
 
     query
     |> where([c], c.status != :blocked)
-    |> select([c], c.id)
+    |> select([c], %{id: c.id, last_communication_at: c.last_communication_at})
     |> distinct(true)
     |> add_contact_opts(opts)
     |> Repo.add_permission(&Searches.add_permission_contact/2)
@@ -169,6 +169,7 @@ defmodule Glific.Searches do
     query
     |> limit(^limit)
     |> offset(^offset)
+    |> order_by([c], desc: c.last_communication_at)
   end
 
   defp add_contact_opts(query, _opts), do: query
@@ -304,6 +305,10 @@ defmodule Glific.Searches do
       |> check_filter_for_save_search()
       |> update_args_for_count(count)
 
+    is_status? =
+      is_nil(args.filter[:id]) && is_nil(args.filter[:ids]) &&
+        !is_nil(args.filter[:status])
+
     contact_ids =
       cond do
         args.filter[:id] != nil ->
@@ -319,12 +324,23 @@ defmodule Glific.Searches do
           search_query(args.filter[:term], args)
       end
       |> Repo.all()
+      |> get_contact_ids(is_status?)
 
     put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
     |> Conversations.list_conversations(count)
   end
 
   # codebeat:enable[ABC]
+
+  @spec get_contact_ids(list(), boolean | nil) :: list()
+  defp get_contact_ids(results, false), do: results
+
+  defp get_contact_ids(results, true) do
+    # one set of queries (status queries) return a map for each row
+    # where id is a key in the map
+    results
+    |> Enum.map(fn data -> data.id end)
+  end
 
   @doc """
   Search across multiple tables, and return a multiple context
@@ -355,7 +371,7 @@ defmodule Glific.Searches do
   # codebeat:disable[ABC]
   @spec get_filtered_contacts(String.t(), map()) :: list()
   defp get_filtered_contacts(term, args) do
-    {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
+    {limit, offset} = {args.contact_opts.limit, args.contact_opts.offset}
 
     # since this revolves around contacts
     args

@@ -170,8 +170,8 @@ defmodule Glific.Flows.Router do
         ) ::
           {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   defp execute_category(_router, context, {msg, _rest}, nil = _category_uuid) do
-    # lets reset the context
-    FlowContext.reset_context(context)
+    # lets reset the context tree
+    FlowContext.reset_all_contexts(context)
 
     # This error is logged and sent upstream to the reporting engine
     {:error, "Could not find category for: #{msg.body}"}
