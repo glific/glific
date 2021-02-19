@@ -12,7 +12,7 @@ defmodule Glific.Communications do
   @spec provider_handler(non_neg_integer) :: atom()
   def provider_handler(organization_id) do
     bsp_credential = Partners.organization(organization_id).services["bsp"]
-    ("Elixir." <> bsp_credential.keys["handler"]) |> String.to_existing_atom()
+    ("Elixir." <> bsp_credential.keys["handler"]) |> Glific.safe_string_to_atom()
   end
 
   @doc """
@@ -21,7 +21,7 @@ defmodule Glific.Communications do
   @spec provider_worker(non_neg_integer) :: atom()
   def provider_worker(organization_id) do
     bsp_credential = Partners.organization(organization_id).services["bsp"]
-    ("Elixir." <> bsp_credential.keys["worker"]) |> String.to_existing_atom()
+    ("Elixir." <> bsp_credential.keys["worker"]) |> Glific.safe_string_to_atom()
   end
 
   @doc """
@@ -39,7 +39,7 @@ defmodule Glific.Communications do
     if is_struct(data) do
       Logger.info("Publishing: #{Ecto.get_meta(data, :source)}, #{topic}:#{organization_id}")
     else
-      Logger.info("Publishing: #{data.key}, #{topic}:#{organization_id}")
+      Logger.info("Publishing: #{inspect(data)}, #{topic}:#{organization_id}")
     end
 
     Absinthe.Subscription.publish(

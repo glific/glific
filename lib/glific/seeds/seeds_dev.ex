@@ -54,8 +54,6 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
-    @simulator_phone "9876543210"
-
     @doc false
     @spec seed_contacts(Organization.t() | nil) :: {integer(), nil}
     def seed_contacts(organization \\ nil) do
@@ -87,11 +85,6 @@ if Code.ensure_loaded?(Faker) do
         %{
           name: "Chrissy Cron",
           phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-          language_id: en_us.id
-        },
-        %{
-          name: "Simulator Two",
-          phone: @simulator_phone <> "_2",
           language_id: en_us.id
         }
       ]
@@ -143,7 +136,7 @@ if Code.ensure_loaded?(Faker) do
       {:ok, sender} =
         Repo.fetch_by(
           Contact,
-          %{name: "Glific Admin", organization_id: organization.id}
+          %{name: "NGO Main Account", organization_id: organization.id}
         )
 
       {:ok, receiver} =
@@ -385,7 +378,7 @@ if Code.ensure_loaded?(Faker) do
 
       create_contact_user(
         {organization, en_us, utc_now},
-        {"NGO Admin", "919876543210", ["admin"]}
+        {"NGO Admin", "919999988888", ["admin"]}
       )
 
       {_, user} =
@@ -416,45 +409,30 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    defp add_to_group(contacts, group, organization, size) do
+      contacts
+      |> Enum.take(size)
+      |> Enum.each(fn c ->
+        Repo.insert!(%Groups.ContactGroup{
+          contact_id: c.id,
+          group_id: group.id,
+          organization_id: organization.id
+        })
+      end)
+    end
+
     @doc false
-    @spec seed_group_contacts(Organization.t() | nil) :: nil
+    @spec seed_group_contacts(Organization.t() | nil) :: :ok
     def seed_group_contacts(organization \\ nil) do
       organization = get_organization(organization)
 
-      [_glific_admin, c1, c2, c3 | _] =
+      [_glific_admin | remainder] =
         Contacts.list_contacts(%{filter: %{organization_id: organization.id}})
 
       [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c1.id,
-        group_id: g1.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c2.id,
-        group_id: g1.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c3.id,
-        group_id: g1.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c2.id,
-        group_id: g2.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c3.id,
-        group_id: g2.id,
-        organization_id: organization.id
-      })
+      add_to_group(remainder, g1, organization, 7)
+      add_to_group(remainder, g2, organization, -7)
     end
 
     @doc false
@@ -472,7 +450,7 @@ if Code.ensure_loaded?(Faker) do
       {:ok, sender} =
         Repo.fetch_by(
           Contact,
-          %{name: "Glific Admin", organization_id: organization.id}
+          %{name: "NGO Main Account", organization_id: organization.id}
         )
 
       group = group |> Repo.preload(:contacts)
@@ -742,7 +720,8 @@ if Code.ensure_loaded?(Faker) do
         activity: "b050c652-65b5-4ccf-b62b-1e8b3f328676",
         feedback: "6c21af89-d7de-49ac-9848-c9febbf737a5",
         optout: "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
-        survey: "8333fce2-63d3-4849-bfd9-3543eb8b0430"
+        survey: "8333fce2-63d3-4849-bfd9-3543eb8b0430",
+        help: "3fa22108-f464-41e5-81d9-d8a298854429"
       }
 
       flow_labels_id_map =
@@ -947,11 +926,6 @@ if Code.ensure_loaded?(Faker) do
       seed_tag(organization)
 
       seed_session_templates(organization)
-
-      seed_messages(organization)
-
-      seed_messages_media(organization)
-
       seed_flow_labels(organization)
 
       seed_flows(organization)
@@ -963,6 +937,10 @@ if Code.ensure_loaded?(Faker) do
       seed_group_users(organization)
 
       seed_group_messages(organization)
+
+      seed_messages(organization)
+
+      seed_messages_media(organization)
 
       hsm_templates(organization)
     end

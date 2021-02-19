@@ -66,6 +66,20 @@ defmodule Glific.Application do
       []
     )
 
+    :telemetry.attach(
+      "oban-plugin-success",
+      [:oban, :plugin, :stop],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
+
+    :telemetry.attach(
+      "oban-plugin-failure",
+      [:oban, :plugin, :exception],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
+
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Glific.Supervisor]
@@ -87,8 +101,8 @@ defmodule Glific.Application do
     [
       name: {:local, message_poolname()},
       worker_module: worker,
-      size: 20,
-      max_overflow: 15,
+      size: 10,
+      max_overflow: 10,
       # we are using the fifo strategy, so the state of all the consumer workers
       # are filled when the load gets high
       strategy: :fifo

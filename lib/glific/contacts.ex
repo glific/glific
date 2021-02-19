@@ -417,7 +417,7 @@ defmodule Glific.Contacts do
   @doc """
   Check if we can send a session message to the contact
   """
-  def can_send_message_to?(contact, _is_hsm) do
+  def can_send_message_to?(contact, false = _is_hsm) do
     if contact.status == :valid &&
          contact.bsp_status in [:session_and_hsm, :session] &&
          Glific.in_past_time(contact.last_message_at, :hours, 24),
@@ -563,4 +563,20 @@ defmodule Glific.Contacts do
       )
     )
   end
+
+  @simulator_phone_prefix "9876543210"
+
+  @doc false
+  @spec simulator_phone_prefix :: String.t()
+  def simulator_phone_prefix, do: @simulator_phone_prefix
+
+  @doc false
+  @spec saas_phone :: String.t()
+  def saas_phone, do: Application.fetch_env!(:glific, :saas_phone)
+
+  @doc """
+  Lets centralize the code to detect simulator messages and interaction
+  """
+  @spec is_simulator_contact?(String.t()) :: boolean
+  def is_simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
 end

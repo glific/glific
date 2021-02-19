@@ -19,11 +19,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :errors, list_of(:input_error)
   end
 
-  object :periodic_info_result do
-    field :key, :string
-    field :value, :json
-  end
-
   object :enabled_day do
     field :id, :integer
     field :enabled, :boolean
@@ -195,7 +190,25 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   end
 
   object :organization_subscriptions do
-    field :periodic_info, :periodic_info_result do
+    field :simulator_release, :json do
+      arg(:organization_id, non_null(:id))
+      config(&Schema.config_fun/2)
+
+      resolve(fn data, _, _ ->
+        {:ok, data}
+      end)
+    end
+
+    field :bsp_balance, :json do
+      arg(:organization_id, non_null(:id))
+      config(&Schema.config_fun/2)
+
+      resolve(fn data, _, _ ->
+        {:ok, data}
+      end)
+    end
+
+    field :collection_count, :json do
       arg(:organization_id, non_null(:id))
       config(&Schema.config_fun/2)
 

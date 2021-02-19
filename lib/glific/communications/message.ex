@@ -11,9 +11,7 @@ defmodule Glific.Communications.Message do
     Messages,
     Messages.Message,
     Partners,
-    Repo,
-    Taggers,
-    Tags
+    Repo
   }
 
   @doc false
@@ -102,15 +100,6 @@ defmodule Glific.Communications.Message do
       })
 
     publish_message_status(message)
-
-    Tags.remove_tag_from_all_message(
-      message.contact_id,
-      ["notreplied", "unread"],
-      message.organization_id,
-      message.publish?
-    )
-
-    Taggers.TaggerHelper.tag_outbound_message(message)
     {:ok, message}
   end
 
@@ -231,7 +220,6 @@ defmodule Glific.Communications.Message do
   defp receive_text(message_params) do
     message_params
     |> Messages.create_message()
-    |> Taggers.TaggerHelper.tag_inbound_message()
     |> Communications.publish_data(:received_message, message_params.organization_id)
     |> process_message()
   end
@@ -268,7 +256,15 @@ defmodule Glific.Communications.Message do
   end
 
   # lets have a default timeout of 3 seconds for each call
-  @timeout 3000
+  @timeout 4000
+
+  @spec error(String.t(), any(), any(), list()) :: :ok
+  defp error(error, e, r, stacktrace) do
+    error = error <> ": #{inspect(e)}, #{inspect(r)}"
+    Logger.error(error)
+    Appsignal.send_error(:error, error, stacktrace)
+    :ok
+  end
 
   @spec process_message(Message.t()) :: :ok
   defp process_message(message) do
@@ -283,8 +279,7 @@ defmodule Glific.Communications.Message do
     # We dont want to block the input pipeline, and we are unsure how long the consumer worker
     # will take. So we run it as a separate task
     # We will also set a short timeout for both the genserver and the poolboy transaction
-    # this will be moot soon after we move webhooks to be handled asynchronously
-    Task.async(fn ->
+    Task.start(fn ->
       :poolboy.transaction(
         Glific.Application.message_poolname(),
         fn pid ->
@@ -292,10 +287,7 @@ defmodule Glific.Communications.Message do
             GenServer.call(pid, {message, process_state, self}, @timeout)
           catch
             e, r ->
-              error = "poolboy transaction caught error: #{inspect(e)}, #{inspect(r)}"
-              Logger.error(error)
-              Appsignal.send_error(:error, error, __STACKTRACE__)
-              :ok
+              error("poolboy genserver caught error", e, r, __STACKTRACE__)
           end
         end
       )

@@ -3,6 +3,34 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.11.1] - 2021-02-14
+
+### Fixed
+- Ensure that the status search queries limit number of contacts
+
+## [0.11.0] - 2021-02-14
+
+### Fixed
+- Eliminate search count in saved searches GraphQL
+- Skip reporting Exit Loop? as appsignal error
+
+## [0.10.8] - 2021-02-11
+
+### Fixed
+- Found and fixed infinite loop issue
+- Take advantage of prepared schema's for pg 12+
+- Continue with our DB optimization quest
+- Improve subscription performance, especially for saved search
+
+## [0.10.4] - 2021-02-08
+
+### Fixed
+- Use json maps rather than our own pseudo-maps
+- Improve GCS and BigQuery code
+- Improve garbage collection in consumer worker
+- More learning on GenServer
+
 ## [0.9.7] - 2021-01-25
 
 ### Added
@@ -210,4 +238,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI system via GitHub Actions
 - CD system to Gigalixir
 - Community documentation (README, LICENSE, CHANGELOG, CODE_OF_CONDUCT)
-

@@ -67,6 +67,10 @@ defmodule Glific.Processor.ConsumerTaggerTest do
       @checks,
       # ensure that a tag with that value exists in the DB
       fn
+        # ignore numeric tags for now
+        {_, {_, "numeric", _}} ->
+          :ok
+
         {_, {_, tag, nil}} ->
           {:ok, result} =
             Repo.query(

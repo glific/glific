@@ -24,7 +24,7 @@ defmodule Glific.Processor.ConsumerFlow do
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   def process_message({message, state}, body) do
-    if should_skip_flow?(message),
+    if should_skip_message?(message),
       do: {message, state},
       else: do_process_message({message, state}, body)
   end
@@ -55,13 +55,14 @@ defmodule Glific.Processor.ConsumerFlow do
         cond do
           Map.get(state, :newcontact, false) == true &&
               Map.has_key?(state.flow_keywords["published"], "newcontact") ->
-            check_flows(message, "newcontact", state, false)
+            # delay new contact flows by 2 minutes to allow user to deal with signon link
+            check_flows(message, "newcontact", state, is_beta: false, delay: 120)
 
           Map.has_key?(state.flow_keywords["published"], body) ->
-            check_flows(message, body, state, false)
+            check_flows(message, body, state, is_beta: false)
 
           is_beta ->
-            check_flows(message, message.body, state, true)
+            check_flows(message, message.body, state, is_beta: true)
 
           true ->
             check_contexts(context, message, body, state)
@@ -69,7 +70,7 @@ defmodule Glific.Processor.ConsumerFlow do
     end
   end
 
-  @beta_phrase "draft:"
+  @beta_phrase "draft"
   @final_phrase "published"
 
   @spec is_beta_keyword?(map(), String.t()) :: boolean()
@@ -89,13 +90,14 @@ defmodule Glific.Processor.ConsumerFlow do
   Start a flow or reactivate a flow if needed. This will be linked to the entire
   trigger mechanism once we have that under control.
   """
-  @spec check_flows(atom() | Message.t(), String.t(), map(), boolean()) :: {Message.t(), map()}
-  def check_flows(message, body, state, is_beta) do
+  @spec check_flows(atom() | Message.t(), String.t(), map(), Keyword.t()) :: {Message.t(), map()}
+  def check_flows(message, body, state, opts \\ []) do
+    is_beta = Keyword.get(opts, :is_beta, false)
+
     {status, body} =
       if is_beta do
         # lets complete all existing flows for this contact
-        {String.replace_trailing(@beta_phrase, ":", ""),
-         String.replace_leading(body, @beta_phrase, "")}
+        {@beta_phrase, String.replace_leading(body, @beta_phrase <> ":", "")}
       else
         {@final_phrase, body}
       end
@@ -105,8 +107,11 @@ defmodule Glific.Processor.ConsumerFlow do
       {:flow_keyword, body, status}
     )
     |> case do
-      {:ok, flow} -> FlowContext.init_context(flow, message.contact, status)
-      {:error, _} -> nil
+      {:ok, flow} ->
+        FlowContext.init_context(flow, message.contact, status, opts)
+
+      {:error, _} ->
+        nil
     end
 
     {message, state}
@@ -156,10 +161,10 @@ defmodule Glific.Processor.ConsumerFlow do
   end
 
   # if this is a new contact then we will allow to
-  # process the flow other wise system will check if
+  # process the message other wise system will check if
   # they opted in again and skip the flow
-  @spec should_skip_flow?(Message.t()) :: boolean()
-  defp should_skip_flow?(message) do
+  @spec should_skip_message?(Message.t()) :: boolean()
+  defp should_skip_message?(message) do
     message = Glific.Repo.preload(message, [:tags])
 
     is_new_contact =

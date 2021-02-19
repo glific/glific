@@ -102,6 +102,48 @@ defmodule Glific.Flows.Router do
     }
   end
 
+  @spec validate_eex(Keyword.t(), String.t()) :: Keyword.t()
+  defp validate_eex(errors, content) do
+    cond do
+      Glific.suspicious_code(content) ->
+        [{EEx, "Suspicious Code"}] ++ errors
+
+      !is_nil(EEx.compile_string(content)) ->
+        errors
+    end
+  rescue
+    # if there is a syntax error or anything else
+    # an exception is thrown and hence we rescue it here
+    _ ->
+      [{EEx, "Invalid Code"}] ++ errors
+  end
+
+  @doc """
+  Validate a action and all its children
+  """
+  @spec validate(Router.t(), Keyword.t(), map()) :: Keyword.t()
+  def validate(router, errors, flow) do
+    errors = validate_eex(errors, router.operand)
+
+    errors =
+      router.categories
+      |> Enum.reduce(
+        errors,
+        &Category.validate(&1, &2, flow)
+      )
+
+    errors =
+      router.cases
+      |> Enum.reduce(
+        errors,
+        &Case.validate(&1, &2, flow)
+      )
+
+    if router.wait,
+      do: Wait.validate(router.wait, errors, flow),
+      else: errors
+  end
+
   @doc """
   Execute a router, given a message stream.
   Consume the message stream as processing occurs
@@ -146,12 +188,11 @@ defmodule Glific.Flows.Router do
         ) ::
           {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   defp execute_category(_router, context, {msg, _rest}, nil = _category_uuid) do
-    error = "Could not find category for: #{msg.body}"
-    Logger.error("Could not find category for: #{msg.body}")
+    # lets reset the context tree
+    FlowContext.reset_all_contexts(context)
 
-    # lets also reset the context
-    FlowContext.reset_context(context)
-    {:error, error}
+    # This error is logged and sent upstream to the reporting engine
+    {:error, "Could not find category for: #{msg.body}"}
   end
 
   defp execute_category(router, context, {msg, rest}, category_uuid) do
@@ -206,7 +247,7 @@ defmodule Glific.Flows.Router do
     category = Enum.find(router.categories, fn c -> c.name == body end)
 
     if is_nil(category),
-      do: router.default_category_uuid,
+      do: nil,
       else: category.uuid
   end
 

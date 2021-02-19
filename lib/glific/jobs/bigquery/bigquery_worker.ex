@@ -9,6 +9,8 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   import Ecto.Query
 
+  require Logger
+
   use Oban.Worker,
     queue: :bigquery,
     max_attempts: 1,
@@ -16,6 +18,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   alias Glific.{
     Bigquery,
+    Contacts,
     Contacts.Contact,
     Flows.FlowResult,
     Flows.FlowRevision,
@@ -25,8 +28,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     Repo
   }
 
-  @simulater_phone "9876543210"
-  @update_minutes -90
+  @update_minutes -3
 
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
@@ -38,6 +40,8 @@ defmodule Glific.Jobs.BigQueryWorker do
     credential = organization.services["bigquery"]
 
     if credential do
+      Logger.info("Found bigquery credentials for org_id: #{organization_id}")
+
       Jobs.get_bigquery_jobs(organization_id)
       |> Enum.each(&insert_for_table(&1, organization_id))
     end
@@ -54,9 +58,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     credential = organization.services["bigquery"]
 
     if credential do
-      queue_table_data("update_flow_results", organization_id, 0, 0)
-      queue_table_data("update_contacts", organization_id, 0, 0)
-      queue_table_data("update_messages", organization_id, 0, 0)
+      make_merge_job("contacts", organization_id)
+      make_merge_job("messages", organization_id)
+      make_merge_job("flow_results", organization_id)
     end
 
     :ok
@@ -65,8 +69,14 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec insert_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
   defp insert_for_table(nil, _), do: nil
 
+  defp insert_for_table(%{table: table} = _bigquery_job, organization_id)
+       when table in ["messages_delta", "contacts_delta", "flow_results_delta"],
+       do: queue_table_data(table, organization_id, 0, 0)
+
   defp insert_for_table(bigquery_job, organization_id) do
     table_id = bigquery_job.table_id
+
+    Logger.info("Checking for bigquery job: #{bigquery_job.table}, org_id: #{organization_id}")
 
     data =
       Bigquery.get_table_struct(bigquery_job.table)
@@ -95,6 +105,12 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec queue_table_data(String.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
           :ok
   defp queue_table_data("messages", organization_id, min_id, max_id) do
+    Logger.info(
+      "fetching data for messages to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{
+        organization_id
+      }"
+    )
+
     Message
     |> where([m], m.organization_id == ^organization_id)
     |> where([m], m.id > ^min_id and m.id <= ^max_id)
@@ -102,7 +118,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
     |> Repo.all()
     |> Enum.reduce([], fn row, acc ->
-      if is_simulator_contact?(row.contact.phone),
+      if Contacts.is_simulator_contact?(row.contact.phone),
         do: acc,
         else: [
           row
@@ -117,10 +133,15 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("contacts", organization_id, min_id, max_id) do
+    Logger.info(
+      "fetching data for contacts to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{
+        organization_id
+      }"
+    )
+
     query =
       Contact
       |> where([m], m.organization_id == ^organization_id)
-      |> where([m], m.phone != @simulater_phone)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups])
@@ -129,7 +150,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        if is_simulator_contact?(row.phone),
+        if Contacts.is_simulator_contact?(row.phone),
           do: acc,
           else: [
             %{
@@ -171,6 +192,12 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("flows", organization_id, min_id, max_id) do
+    Logger.info(
+      "fetching data for flows to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{
+        organization_id
+      }"
+    )
+
     query =
       FlowRevision
       |> where([f], f.organization_id == ^organization_id)
@@ -206,10 +233,15 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("flow_results", organization_id, min_id, max_id) do
+    Logger.info(
+      "fetching data for flow_results to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{
+        organization_id
+      }"
+    )
+
     query =
       FlowResult
       |> where([f], f.organization_id == ^organization_id)
-      |> where([f], f.id > ^min_id and f.id <= ^max_id)
       |> where([f], f.id > ^min_id and f.id <= ^max_id)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
@@ -218,11 +250,11 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-        if is_simulator_contact?(row.contact.phone),
+        if Contacts.is_simulator_contact?(row.contact.phone),
           do: acc,
           else: [
             %{
-              id: row.flow.id,
+              id: row.id,
               name: row.flow.name,
               uuid: row.flow.uuid,
               inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
@@ -243,114 +275,131 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  defp queue_table_data("update_flow_results", organization_id, _, _) do
+  ## Insert update query.
+  defp queue_table_data("messages_delta", organization_id, _min_id, _max_id) do
+    Logger.info("fetching data for messages_delta to send on bigquery org_id: #{organization_id}")
+
+    Message
+    |> where([m], m.organization_id == ^organization_id)
+    |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+    |> where([fr], fr.updated_at != fr.inserted_at)
+    |> order_by([m], [m.inserted_at, m.id])
+    |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
+    |> Repo.all()
+    |> Enum.reduce([], fn row, acc ->
+      if Contacts.is_simulator_contact?(row.contact.phone),
+        do: acc,
+        else: [
+          %{
+            id: row.id,
+            type: row.type,
+            sent_at: Bigquery.format_date(row.sent_at, organization_id),
+            status: row.status,
+            contact_phone: row.contact.phone,
+            tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
+            flow_label: row.flow_label,
+            flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
+            flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name)
+          }
+          |> Bigquery.format_data_for_bigquery("messages_delta")
+          | acc
+        ]
+    end)
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :messages_delta, organization_id, 0))
+
+    :ok
+  end
+
+  defp queue_table_data("contacts_delta", organization_id, _min_id, _max_id) do
+    Logger.info("fetching data for contacts_delta to send on bigquery org_id: #{organization_id}")
+
+    query =
+      Contact
+      |> where([fr], fr.organization_id == ^organization_id)
+      |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+      |> where([fr], fr.updated_at != fr.inserted_at)
+      |> order_by([m], [m.inserted_at, m.id])
+      |> preload([:language, :tags, :groups])
+
+    Repo.all(query)
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        if Contacts.is_simulator_contact?(row.phone),
+          do: acc,
+          else: [
+            %{
+              id: row.id,
+              phone: row.phone,
+              provider_status: row.bsp_status,
+              status: row.status,
+              language: row.language.label,
+              optin_time: Bigquery.format_date(row.optin_time, organization_id),
+              optout_time: Bigquery.format_date(row.optout_time, organization_id),
+              last_message_at: Bigquery.format_date(row.last_message_at, organization_id),
+              updated_at: Bigquery.format_date(row.updated_at, organization_id),
+              fields:
+                Enum.map(row.fields, fn {_key, field} ->
+                  %{
+                    label: field["label"],
+                    inserted_at: Bigquery.format_date(field["inserted_at"], organization_id),
+                    type: field["type"],
+                    value: field["value"]
+                  }
+                end),
+              settings: row.settings,
+              groups:
+                Enum.map(row.groups, fn group ->
+                  %{label: group.label, description: group.description}
+                end),
+              tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
+            }
+            |> Bigquery.format_data_for_bigquery("contacts")
+            | acc
+          ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :contacts_delta, organization_id, 0))
+
+    :ok
+  end
+
+  defp queue_table_data("flow_results_delta", organization_id, _min_id, _max_id) do
+    Logger.info(
+      "fetching data for flow_results_delta to send on bigquery org_id: #{organization_id}"
+    )
+
     query =
       FlowResult
       |> where([fr], fr.organization_id == ^organization_id)
       |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+      |> where([fr], fr.updated_at != fr.inserted_at)
+      |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
 
     Repo.all(query)
     |> Enum.reduce(
       [],
       fn row, acc ->
-        if is_simulator_contact?(row.contact.phone),
+        if Contacts.is_simulator_contact?(row.contact.phone),
           do: acc,
           else: [
             %{
-              id: row.flow.id,
-              inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
-              updated_at: Bigquery.format_date(row.updated_at, organization_id),
+              id: row.id,
+              uuid: row.flow.uuid,
               results: Bigquery.format_json(row.results),
               contact_phone: row.contact.phone,
-              flow_version: row.flow_version,
               flow_context_id: row.flow_context_id
             }
+            |> Bigquery.format_data_for_bigquery("flow_results_delta")
             | acc
           ]
       end
     )
-    |> Enum.chunk_every(10)
-    |> Enum.each(&make_job(&1, :update_flow_results, organization_id, 0))
-
-    :ok
-  end
-
-  defp queue_table_data("update_contacts", organization_id, _, _) do
-    query =
-      Contact
-      |> where([fr], fr.organization_id == ^organization_id)
-      |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
-      |> preload([:language, :groups])
-
-    Repo.all(query)
-    |> Enum.reduce(
-      [],
-      fn row, acc ->
-        if is_simulator_contact?(row.phone),
-          do: acc,
-          else: [
-            %{
-              id: row.id,
-              name: row.name,
-              phone: row.phone,
-              status: row.status,
-              language: row.language.label,
-              optin_time: Bigquery.format_date(row.optin_time, organization_id),
-              optout_time: Bigquery.format_date(row.optout_time, organization_id),
-              updated_at: Bigquery.format_date(row.updated_at, organization_id),
-              groups:
-                Enum.map(row.groups, fn group ->
-                  %{label: group.label, description: group.description}
-                end),
-              fields:
-                Enum.map(row.fields, fn {_key, field} ->
-                  %{
-                    label: field["label"] || "unknown",
-                    type: field["type"] || "unknown",
-                    value: field["value"] || "unknown",
-                    inserted_at: field["inserted_at"]
-                  }
-                end)
-            }
-            | acc
-          ]
-      end
-    )
-    |> Enum.chunk_every(10)
-    |> Enum.each(&make_job(&1, :update_contacts, organization_id, 0))
-
-    :ok
-  end
-
-  defp queue_table_data("update_messages", organization_id, _, _) do
-    query =
-      Message
-      |> where([fr], fr.organization_id == ^organization_id)
-      |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
-      |> preload([:tags, :flow_object, :contact])
-
-    Repo.all(query)
-    |> Enum.reduce(
-      [],
-      fn row, acc ->
-        if is_simulator_contact?(row.contact.phone),
-          do: acc,
-          else: [
-            %{
-              id: row.id,
-              contact_phone: row.contact.phone,
-              tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
-              flow_label: row.flow_label,
-              flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
-              flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name)
-            }
-            | acc
-          ]
-      end
-    )
-    |> Enum.chunk_every(10)
-    |> Enum.each(&make_job(&1, :update_messages, organization_id, 0))
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :flow_results_delta, organization_id, 0))
 
     :ok
   end
@@ -382,18 +431,41 @@ defmodule Glific.Jobs.BigQueryWorker do
       latitude: if(!is_nil(row.location), do: row.location.latitude)
     }
 
-  @spec is_simulator_contact?(String.t()) :: boolean
-  defp is_simulator_contact?(phone), do: @simulater_phone == phone
-
-  @spec make_job(any(), any(), non_neg_integer, non_neg_integer) :: :ok
-  defp make_job(data, _, _, _) when data in [%{}, nil, []], do: :ok
+  @spec make_job(list(), atom(), non_neg_integer, non_neg_integer) :: :ok
+  defp make_job(data, table, organization_id, max_id) when data in [%{}, nil, []] do
+    table = Atom.to_string(table)
+    Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+    :ok
+  end
 
   defp make_job(data, table, organization_id, max_id) do
+    Logger.info(
+      "making a new job for #{table} to send on bigquery org_id: #{organization_id} with max id: #{
+        max_id
+      }"
+    )
+
     __MODULE__.new(%{
       data: data,
       table: table,
       organization_id: organization_id,
       max_id: max_id
+    })
+    |> Oban.insert()
+
+    :ok
+  end
+
+  @spec make_merge_job(String.t(), non_neg_integer) :: :ok
+  defp make_merge_job(table, organization_id) do
+    Logger.info(
+      "making a new merge job for #{table} to send on bigquery org_id: #{organization_id}"
+    )
+
+    __MODULE__.new(%{
+      table: table,
+      organization_id: organization_id,
+      merge_table: true
     })
     |> Oban.insert()
 
@@ -408,16 +480,10 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(
         %Oban.Job{
-          args: %{
-            "data" => data,
-            "table" => table,
-            "organization_id" => organization_id,
-            "max_id" => _max_id
-          }
-        } = job
-      )
-      when table in ["update_flow_results", "update_contacts", "update_messages"],
-      do: Bigquery.make_update_query(data, organization_id, table, job)
+          args: %{"table" => table, "organization_id" => organization_id, "merge_table" => true}
+        } = _job
+      ),
+      do: Bigquery.make_merge_job(table, organization_id)
 
   def perform(
         %Oban.Job{
@@ -430,6 +496,4 @@ defmodule Glific.Jobs.BigQueryWorker do
         } = job
       ),
       do: Bigquery.make_insert_query(data, table, organization_id, job, max_id)
-
-  def perform(_), do: :ok
 end

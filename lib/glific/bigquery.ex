@@ -27,9 +27,12 @@ defmodule Glific.Bigquery do
 
   @bigquery_tables %{
     "messages" => :message_schema,
+    "messages_delta" => :message_delta_schema,
     "contacts" => :contact_schema,
+    "contacts_delta" => :contact_delta_schema,
     "flows" => :flow_schema,
-    "flow_results" => :flow_result_schema
+    "flow_results" => :flow_result_schema,
+    "flow_results_delta" => :flow_result_delta_schema
   }
 
   @doc """
@@ -75,16 +78,18 @@ defmodule Glific.Bigquery do
     end
   end
 
+  # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()
   @doc false
   @spec get_table_struct(String.t()) :: any()
   def get_table_struct(table) do
     case table do
       "messages" -> Message
       "contacts" -> Contact
-      "flows" -> FlowRevision
       "flow_results" -> FlowResult
-      "update_flow_results" -> FlowResult
-      _ -> ""
+      "flows" -> FlowRevision
+      "messages_delta" -> Message
+      "contacts_delta" -> Contact
+      "flow_results_delta" -> FlowResult
     end
   end
 
@@ -201,16 +206,11 @@ defmodule Glific.Bigquery do
     :ok
   end
 
-  @spec format_value(map() | any()) :: any()
-  defp format_value(value) when is_map(value), do: Map.get(value, :input, "Unknown format")
-
-  defp format_value(value), do: value
-
   @doc """
   Format dates for the bigquery.
   """
 
-  @spec format_date(DateTime.t() | nil, non_neg_integer()) :: any()
+  @spec format_date(DateTime.t() | nil, non_neg_integer()) :: String.t()
   def format_date(nil, _),
     do: nil
 
@@ -220,7 +220,7 @@ defmodule Glific.Bigquery do
     Timex.parse(date, "{RFC3339z}")
     |> elem(1)
     |> Timex.Timezone.convert(timezone)
-    |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+    |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
   end
 
   def format_date(date, organization_id) do
@@ -228,7 +228,7 @@ defmodule Glific.Bigquery do
 
     date
     |> Timex.Timezone.convert(timezone)
-    |> Timex.format!("{YYYY}-{M}-{D} {h24}:{m}:{s}")
+    |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
   end
 
   @doc """
@@ -391,7 +391,11 @@ defmodule Glific.Bigquery do
       do: :ok
 
   def make_insert_query(data, table, organization_id, job, max_id) do
-    Logger.info("insert data to bigquery for org_id: #{organization_id}, table: #{table}")
+    Logger.info(
+      "insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{
+        Enum.count(data)
+      }"
+    )
 
     fetch_bigquery_credentials(organization_id)
     |> case do
@@ -405,7 +409,13 @@ defmodule Glific.Bigquery do
           []
         )
         |> case do
-          {:ok, _} ->
+          {:ok, res} ->
+            Logger.info(
+              "Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
+                table
+              }, res: #{inspect(res)}"
+            )
+
             Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
             :ok
 
@@ -420,7 +430,7 @@ defmodule Glific.Bigquery do
     :ok
   end
 
-  @spec handle_insert_error(String.t(), String.t(), non_neg_integer, any(), Oban.Job.t()) :: :ok
+  @spec handle_insert_error(String.t(), String.t(), non_neg_integer, map(), Oban.Job.t()) :: :ok
   defp handle_insert_error(table, _dataset_id, organization_id, response, _job) do
     Logger.info(
       "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{
@@ -428,142 +438,138 @@ defmodule Glific.Bigquery do
       }"
     )
 
-    if should_retry_job?(response) do
-      sync_schema_with_bigquery(organization_id)
-      :ok
-    else
-      raise("Bigquery Insert Error for table #{table}  #{response}")
-    end
-  end
-
-  @spec should_retry_job?(any()) :: boolean()
-  defp should_retry_job?(response) do
-    with true <- Map.has_key?(response, :body),
-         {:ok, error} <- Jason.decode(response.body),
-         true <- error["error"]["status"] == "NOT_FOUND" do
-      true
-    else
-      _ -> false
-    end
-  end
-
-  @doc """
-    Update data on the bigquery
-  """
-  @spec make_update_query(list(), non_neg_integer, String.t(), Oban.Job.t()) :: :ok
-  def make_update_query(data, organization_id, table, _job) do
-    Logger.info("update data on bigquery for org_id: #{organization_id}, table: #{table}")
-
-    fetch_bigquery_credentials(organization_id)
+    bigquery_error_status(response)
     |> case do
-      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
-        data
-        |> Enum.each(fn row ->
-          sql = generate_update_sql_query(row, table, dataset_id, organization_id)
+      "NOT_FOUND" ->
+        sync_schema_with_bigquery(organization_id)
 
-          GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-            body: %{query: sql, useLegacySql: false}
-          )
-          |> handle_update_response()
-        end)
+      "PERMISSION_DENIED" ->
+        Partners.disable_credential(organization_id, "bigquery")
 
       _ ->
-        %{url: nil, id: nil, email: nil}
+        raise("Bigquery Insert Error for table #{table}  #{response}")
     end
+
+    :ok
   end
 
-  @spec generate_update_sql_query(map(), String.t(), String.t(), non_neg_integer()) :: String.t()
-  defp generate_update_sql_query(flow_result, "update_flow_results", dataset_id, _organization_id) do
-    "UPDATE `#{dataset_id}.flow_results` SET results = '#{flow_result["results"]}' WHERE contact_phone= '#{
-      flow_result["contact_phone"]
-    }' AND id = #{flow_result["id"]} AND flow_context_id =  #{flow_result["flow_context_id"]}"
-  end
-
-  defp generate_update_sql_query(contact, "update_contacts", dataset_id, organization_id) do
-    contact_fields_to_update =
-      ["name", "optout_time", "optin_time", "updated_at", "language", "fields", "groups"]
-      |> get_contact_values_to_update(contact, %{}, organization_id)
-      |> Enum.map(fn {column, value} -> "#{column} = #{value}" end)
-      |> Enum.join(",")
-
-    "UPDATE `#{dataset_id}.contacts` SET #{contact_fields_to_update} WHERE phone= '#{
-      contact["phone"]
-    }'"
-  end
-
-  defp generate_update_sql_query(message, "update_messages", dataset_id, _organization_id) do
-    "UPDATE `#{dataset_id}.messages` SET `tags_label` = '#{message["tags_label"]}', `flow_label` =  '#{
-      message["flow_label"]
-    }', `flow_name` = '#{message["flow_name"]}', `flow_uuid` = '#{message["flow_uuid"]}'  WHERE contact_phone= '#{
-      message["contact_phone"]
-    }' AND id = #{message["id"]}"
-  end
-
-  defp generate_update_sql_query(_, _, _, _), do: nil
-
-  defp get_contact_values_to_update([column | tail], contact, acc, org_id)
-       when column in ["fields", "groups"] do
-    if is_nil(contact[column]) or contact[column] in [nil, %{}, []] do
-      get_contact_values_to_update(tail, contact, acc, org_id)
+  @spec bigquery_error_status(map()) :: String.t() | atom()
+  defp bigquery_error_status(response) do
+    with true <- Map.has_key?(response, :body),
+         {:ok, error} <- Jason.decode(response.body) do
+      error["error"]["status"]
     else
-      formatted_field_values = format_contact_field_values(column, contact[column], org_id)
-      acc = Map.put(acc, "`#{column}`", formatted_field_values)
-      get_contact_values_to_update(tail, contact, acc, org_id)
+      _ -> :unknown
     end
   end
-
-  defp get_contact_values_to_update([column | tail], contact, acc, org_id) do
-    if is_nil(contact[column]) do
-      get_contact_values_to_update(tail, contact, acc, org_id)
-    else
-      acc = Map.put(acc, column, format_value_for_bq(contact[column]))
-      get_contact_values_to_update(tail, contact, acc, org_id)
-    end
-  end
-
-  defp get_contact_values_to_update([], _, acc, _), do: acc
 
   @doc """
-  Format contact field values for the bigquery.
+    Merge delta and main tables.
   """
-  @spec format_contact_field_values(String.t(), list() | any(), integer()) :: any()
-  def format_contact_field_values("fields", contact_fields, org_id)
-      when is_list(contact_fields) do
-    values =
-      Enum.map(contact_fields, fn contact_field ->
-        contact_field = Glific.atomize_keys(contact_field)
-        value = format_value(contact_field.value)
+  @spec make_merge_job(String.t(), non_neg_integer) :: :ok
+  def make_merge_job(table, organization_id) do
+    fetch_bigquery_credentials(organization_id)
+    |> case do
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = credentials} ->
+        Logger.info("merge #{table} table on bigquery for org_id: #{organization_id}")
+        sql = generate_merge_query(table, credentials)
 
-        "('#{contact_field.label}', '#{value}', '#{contact_field.type}', '#{
-          format_date(contact_field.inserted_at, org_id)
-        }')"
-      end)
+        GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
+          body: %{query: sql, useLegacySql: false}
+        )
+        |> handle_update_response(table, credentials, organization_id)
 
-    "[STRUCT<label STRING, value STRING, type STRING, inserted_at DATETIME>#{
-      Enum.join(values, ",")
-    }]"
+      _ ->
+        :ok
+    end
   end
 
-  def format_contact_field_values("groups", groups, _org_id) when is_list(groups) do
-    values =
-      Enum.map(groups, fn group ->
-        group = Glific.atomize_keys(group)
-        "('#{group.label}', '#{group.description}')"
-      end)
+  @spec generate_merge_query(String.t(), map()) :: String.t()
+  defp generate_merge_query("contacts", credentials),
+    do:
+      [
+        "provider_status",
+        "status",
+        "language",
+        "optin_time",
+        "optout_time",
+        "last_message_at",
+        "updated_at",
+        "fields",
+        "settings",
+        "groups",
+        "tags"
+      ]
+      |> format_update_fileds
+      |> do_generate_merge_query("contacts_delta", "contacts", credentials)
 
-    "[STRUCT<label STRING, description STRING>#{Enum.join(values, ",")}]"
+  defp generate_merge_query("messages", credentials),
+    do:
+      ["type", "status", "sent_at", "tags_label", "flow_label", "flow_name", "flow_uuid"]
+      |> format_update_fileds
+      |> do_generate_merge_query("messages_delta", "messages", credentials)
+
+  defp generate_merge_query("flow_results", credentials),
+    do:
+      ["results"]
+      |> format_update_fileds
+      |> do_generate_merge_query("flow_results_delta", "flow_results", credentials)
+
+  defp generate_merge_query(_, _), do: :ok
+
+  @spec do_generate_merge_query(String.t(), String.t(), String.t(), map()) :: String.t()
+  defp do_generate_merge_query(fileds_to_update, source, target, credentials) do
+    "MERGE `#{credentials.dataset_id}.#{target}` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{
+      credentials.dataset_id
+    }.#{source}` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET #{
+      fileds_to_update
+    };"
   end
 
-  def format_contact_field_values(_, _field, _org_id), do: ""
+  @spec format_update_fileds(list()) :: String.t()
+  defp format_update_fileds(list) do
+    list
+    |> Enum.map(fn field -> "target.#{field} = source.#{field}" end)
+    |> Enum.join(",")
+  end
 
-  @spec format_value_for_bq(any() | String.t()) :: any()
-  defp format_value_for_bq(value) when is_binary(value), do: "'#{value}'"
-  defp format_value_for_bq(value), do: value
+  @spec clean_delta_tables(String.t(), map(), non_neg_integer) :: :ok
+  defp clean_delta_tables(table, credentials, organization_id) do
+    timezone = Partners.organization(organization_id).timezone
+    ## remove all the data for last 30 minutes
 
-  @spec handle_update_response(tuple() | nil) :: any()
-  defp handle_update_response({:ok, response}),
-    do: Logger.info("Updated data on bigquery. #{inspect(response)}")
+    sql = """
+    DELETE FROM `#{credentials.dataset_id}.#{table}_delta`
+    WHERE EXISTS(SELECT * FROM  (
+      SELECT updated_at, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num
+      FROM `#{credentials.dataset_id}.#{table}_delta` delta )
+      WHERE row_num > 0 AND
+        updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 60 MINUTE), '#{
+      timezone
+    }')
+      )
+    """
 
-  defp handle_update_response({:error, error}),
-    do: Logger.error("Error while updating data on bigquery. #{inspect(error)}")
+    GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(credentials.conn, credentials.project_id,
+      body: %{query: sql, useLegacySql: false}
+    )
+    |> case do
+      {:ok, response} ->
+        Logger.info("#{table}_delta has been cleaned on bigquery. #{inspect(response)}")
+
+      error ->
+        Logger.info("error while cleaning up #{table}_delta on bigquery. #{inspect(error)}")
+    end
+
+    :ok
+  end
+
+  @spec handle_update_response(tuple() | nil, String.t(), map(), non_neg_integer) :: :ok
+  defp handle_update_response({:ok, response}, table, credentials, organization_id) do
+    Logger.info("#{table} has been merged on bigquery. #{inspect(response)}")
+    clean_delta_tables(table, credentials, organization_id)
+  end
+
+  defp handle_update_response({:error, error}, table, _, _),
+    do: Logger.error("Error while merging table #{table} on bigquery. #{inspect(error)}")
 end

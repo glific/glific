@@ -4,9 +4,9 @@ defmodule GlificWeb.Schema.TagTest do
 
   alias Glific.{
     Fixtures,
+    Messages,
     Repo,
     Seeds.SeedsDev,
-    Tags,
     Tags.Tag
   }
 
@@ -275,29 +275,6 @@ defmodule GlificWeb.Schema.TagTest do
         receiver_id: message_1.receiver_id
       })
 
-    {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "unread", organization_id: user.organization_id})
-
-    message1_tag =
-      Fixtures.message_tag_fixture(%{
-        message_id: message_1.id,
-        tag_id: tag.id,
-        organization_id: user.organization_id
-      })
-
-    message2_tag =
-      Fixtures.message_tag_fixture(%{
-        message_id: message_2.id,
-        tag_id: tag.id,
-        organization_id: user.organization_id
-      })
-
-    message3_tag =
-      Fixtures.message_tag_fixture(%{
-        message_id: message_3.id,
-        tag_id: tag.id,
-        organization_id: user.organization_id
-      })
-
     result =
       auth_query_gql_by(:mark_contact_messages_as_read, user,
         variables: %{"contactId" => Integer.to_string(message_1.contact_id)}
@@ -305,16 +282,12 @@ defmodule GlificWeb.Schema.TagTest do
 
     assert {:ok, query_data} = result
 
-    untag_message_id = get_in(query_data, [:data, "markContactMessagesAsRead"])
+    contact_id = get_in(query_data, [:data, "markContactMessagesAsRead"])
 
-    assert untag_message_id != nil
+    assert contact_id != message_1.contact_id
 
-    assert Integer.to_string(message_1.id) in untag_message_id
-    assert Integer.to_string(message_2.id) in untag_message_id
-    assert Integer.to_string(message_3.id) in untag_message_id
-
-    assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message1_tag.id) end
-    assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message2_tag.id) end
-    assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message3_tag.id) end
+    assert Messages.get_message!(message_1.id).is_read == true
+    assert Messages.get_message!(message_2.id).is_read == true
+    assert Messages.get_message!(message_3.id).is_read == true
   end
 end

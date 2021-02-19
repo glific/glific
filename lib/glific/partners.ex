@@ -3,7 +3,6 @@ defmodule Glific.Partners do
   The Partners context. This is the gateway for the application to access/update all the organization
   and Provider information.
   """
-  @active_hours 1
   use Publicist
 
   import Ecto.Query, warn: false
@@ -561,14 +560,20 @@ defmodule Glific.Partners do
     :ok
   end
 
-  @spec recent_organizations(map(), boolean) :: map()
-  defp recent_organizations(map, false), do: map
+  @active_minutes 60
 
-  defp recent_organizations(map, true) do
+  @doc """
+  Get the organizations which had a message transaction in the last minutes
+  as defined by @active_minutes
+  """
+  @spec recent_organizations(map(), boolean) :: map()
+  def recent_organizations(map, false), do: map
+
+  def recent_organizations(map, true) do
     Enum.filter(
       map,
       fn {_id, %{last_communication_at: last_communication_at}} ->
-        Timex.diff(DateTime.utc_now(), last_communication_at, :hours) < @active_hours
+        Timex.diff(DateTime.utc_now(), last_communication_at, :minutes) < @active_minutes
       end
     )
   end
@@ -714,6 +719,31 @@ defmodule Glific.Partners do
 
         token
     end
+  end
+
+  @doc """
+  Disable a specific credential for the organization
+  """
+  @spec disable_credential(non_neg_integer, String.t()) :: :ok
+  def disable_credential(organization_id, shortcode) do
+    case Repo.fetch_by(Provider, %{shortcode: shortcode}) do
+      {:ok, provider} ->
+        # first delete the cached organization
+        organization = get_organization!(organization_id)
+        remove_organization_cache(organization.id, organization.shortcode)
+
+        Credential
+        |> where([c], c.provider_id == ^provider.id)
+        |> where([c], c.organization_id == ^organization_id)
+        |> Repo.update_all(set: [is_active: false])
+
+        Logger.info("Disable #{shortcode} credential for org_id: #{organization_id}")
+
+      _ ->
+        {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
+    end
+
+    :ok
   end
 
   @doc """

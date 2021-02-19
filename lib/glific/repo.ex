@@ -182,7 +182,7 @@ defmodule Glific.Repo do
             |> Map.put_new(:with, field)
 
           {:order_with, field}, acc ->
-            Map.put(acc, :with, String.to_existing_atom(field))
+            Map.put(acc, :with, Glific.safe_string_to_atom(field))
 
           _, acc ->
             acc
@@ -224,6 +224,13 @@ defmodule Glific.Repo do
   @spec opts_with_inserted_at(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   def opts_with_inserted_at(query, opts), do: opts_with_field(query, opts, :inserted_at)
 
+  @spec make_like(Ecto.Queryable.t(), atom(), String.t() | nil) :: Ecto.Queryable.t()
+  defp make_like(query, _name, str) when is_nil(str) or str == "",
+    do: query
+
+  defp make_like(query, name, str),
+    do: from(q in query, where: ilike(field(q, ^name), ^"%#{str}%"))
+
   # codebeat:disable[ABC, LOC]
   @doc """
   Add all the common filters here, rather than in each file
@@ -232,19 +239,19 @@ defmodule Glific.Repo do
   def filter_with(query, filter) do
     Enum.reduce(filter, query, fn
       {:name, name}, query ->
-        from q in query, where: ilike(q.name, ^"%#{name}%")
+        make_like(query, :name, name)
 
       {:phone, phone}, query ->
-        from q in query, where: ilike(q.phone, ^"%#{phone}%")
+        make_like(query, :phone, phone)
 
       {:label, label}, query ->
-        from q in query, where: ilike(q.label, ^"%#{label}%")
+        make_like(query, :label, label)
 
       {:body, body}, query ->
-        from q in query, where: ilike(q.body, ^"%#{body}%")
+        make_like(query, :body, body)
 
       {:shortcode, shortcode}, query ->
-        from q in query, where: ilike(q.shortcode, ^"%#{shortcode}%")
+        make_like(query, :shortcode, shortcode)
 
       {:language, language}, query ->
         from q in query,
@@ -324,7 +331,6 @@ defmodule Glific.Repo do
   @spec prepare_query(atom(), Ecto.Query.t(), Keyword.t()) :: {Ecto.Query.t(), Keyword.t()}
   def prepare_query(_operation, query, opts) do
     # Glific.stacktrace()
-
     cond do
       opts[:skip_organization_id] ||
         opts[:schema_migration] ||

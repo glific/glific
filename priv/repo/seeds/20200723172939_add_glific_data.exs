@@ -16,6 +16,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsDev,
+    Seeds.SeedsSim,
     Settings.Language,
     Tags.Tag,
     Users
@@ -23,7 +24,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   @password "secret1234"
   @admin_phone "917834811114"
-  @simulator_phone "9876543210"
 
   defp admin_phone(1 = _organization_id), do: @admin_phone
 
@@ -51,6 +51,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     admin = contacts(organization, en_us)
 
     users(admin, organization)
+
+    SeedsSim.add_simulators(organization)
 
     saved_searches(organization)
 
@@ -201,29 +203,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         parent_id: message_tags_mt.id
       },
       %{
-        label: "Not replied",
-        shortcode: "notreplied",
-        description: "Marking message as not replied",
-        parent_id: message_tags_mt.id
-      },
-      %{
         label: "Spam",
         shortcode: "spam",
         description: "Marking message as irrelevant or unsolicited message",
-        parent_id: message_tags_mt.id
-      },
-      %{
-        label: "Unread",
-        shortcode: "unread",
-        description: "Marking message as not read",
-        parent_id: message_tags_mt.id
-      },
-
-      # Status of outbound Message
-      %{
-        label: "Not Responded",
-        shortcode: "notresponded",
-        description: "Marking message as not responded",
         parent_id: message_tags_mt.id
       },
 
@@ -388,23 +370,11 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     admin =
       Repo.insert!(%Contact{
         phone: admin_phone(organization.id),
-        name: "Glific Admin",
+        name: "NGO Main Account",
         organization_id: organization.id,
         language_id: en_us.id,
         last_message_at: utc_now,
         last_communication_at: utc_now
-      })
-
-    _simulator =
-      Repo.insert!(%Contact{
-        phone: @simulator_phone,
-        name: "Simulator",
-        organization_id: organization.id,
-        language_id: en_us.id,
-        last_message_at: utc_now,
-        last_communication_at: utc_now,
-        optin_time: utc_now,
-        bsp_status: :session_and_hsm
       })
 
     Repo.update!(change(organization, contact_id: admin.id))
@@ -460,7 +430,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   def users(admin, organization) do
     Users.create_user(%{
-      name: "Glific Admin",
+      name: "NGO Main Account",
       phone: admin_phone(organization.id),
       password: @password,
       confirm_password: @password,
@@ -479,49 +449,41 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def saved_searches(organization) do
-    labels =
-      Repo.label_id_map(
-        Tag,
-        ["Not replied", "Not Responded", "Optout", "Unread"],
-        organization.id,
-        :label
-      )
-
     data = [
       {"All conversations", "All"},
       {"All unread conversations", "Unread"},
       {"Conversations read but not replied", "Not replied"},
-      {"Conversations where the contact has opted out", "Optout"},
-      {"Conversations read but not responded", "Not Responded"}
+      {"Conversations read but not responded", "Not Responded"},
+      {"Conversations where the contact has opted out", "Optout"}
     ]
 
-    Enum.each(data, &saved_search(&1, organization, labels))
+    Enum.each(data, &saved_search(&1, organization))
   end
 
   # Pre defined collections
-  defp saved_search({label, shortcode}, organization, _labels) when shortcode == "All",
+  defp saved_search({label, shortcode}, organization) when shortcode == "All",
     do:
       Repo.insert!(%SavedSearch{
         label: label,
         shortcode: shortcode,
         args: %{
-          filter: %{term: ""},
-          contactOpts: %{limit: 20, offset: 0},
-          messageOpts: %{limit: 10, offset: 0}
+          filter: %{},
+          contactOpts: %{limit: 25},
+          messageOpts: %{limit: 20}
         },
         is_reserved: true,
         organization_id: organization.id
       })
 
-  defp saved_search({label, shortcode}, organization, labels),
+  defp saved_search({label, shortcode}, organization),
     do:
       Repo.insert!(%SavedSearch{
         label: label,
         shortcode: shortcode,
         args: %{
-          filter: %{includeTags: [to_string(labels[shortcode])], term: ""},
-          contactOpts: %{limit: 20, offset: 0},
-          messageOpts: %{limit: 10, offset: 0}
+          filter: %{status: shortcode, term: ""},
+          contactOpts: %{limit: 25, offset: 0},
+          messageOpts: %{limit: 20, offset: 0}
         },
         is_reserved: true,
         organization_id: organization.id

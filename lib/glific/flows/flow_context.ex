@@ -132,6 +132,37 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
+  Resets all the context for ma user when we hit an error. This can potentially
+  prevent an infinite loop from happening if flows are connected in a cycle
+  """
+  @spec reset_all_contexts(FlowContext.t()) :: FlowContext.t() | nil
+  def reset_all_contexts(context) do
+    Logger.info("Ending Flow Tree: id: '#{context.flow_id}', contact_id: '#{context.contact_id}'")
+
+    # lets reset the entire flow tree complete if this context is a child
+    if context.parent_id,
+      do: mark_flows_complete(context.contact_id)
+
+    # lets reset the current context and return the resetted context
+    reset_one_context(context)
+  end
+
+  @spec reset_one_context(FlowContext.t()) :: FlowContext.t()
+  defp reset_one_context(context) do
+    {:ok, context} =
+      FlowContext.update_flow_context(
+        context,
+        %{
+          completed_at: DateTime.utc_now(),
+          node: nil,
+          node_uuid: nil
+        }
+      )
+
+    context
+  end
+
+  @doc """
   Resets the context and sends control back to the parent context
   if one exists
   """
@@ -140,14 +171,7 @@ defmodule Glific.Flows.FlowContext do
     Logger.info("Ending Flow: id: '#{context.flow_id}', contact_id: '#{context.contact_id}'")
 
     # we first update this entry with the completed at time
-    {:ok, context} =
-      FlowContext.update_flow_context(
-        context,
-        %{
-          completed_at: DateTime.utc_now(),
-          node: nil
-        }
-      )
+    context = reset_one_context(context)
 
     # check if context has a parent_id, if so, we need to
     # load that context and keep going
@@ -155,15 +179,17 @@ defmodule Glific.Flows.FlowContext do
       # we load the parent context, and resume it with a message of "Completed"
       parent = active_context(context.contact_id, context.parent_id)
 
-      Logger.info(
-        "Resuming Parent Flow: id: '#{parent.flow_id}', contact_id: '#{context.contact_id}'"
-      )
+      # ensure the parent is still active. If the parent completed (or was terminated)
+      # we dont get back a valid parent
+      if parent do
+        Logger.info(
+          "Resuming Parent Flow: id: '#{parent.flow_id}', contact_id: '#{context.contact_id}'"
+        )
 
-      parent
-      |> load_context(
-        Flow.get_flow(context.flow.organization_id, parent.flow_uuid, context.status)
-      )
-      |> step_forward(Messages.create_temp_message(context.flow.organization_id, "completed"))
+        parent
+        |> load_context(Flow.get_flow(context.organization_id, parent.flow_uuid, context.status))
+        |> step_forward(Messages.create_temp_message(context.organization_id, "completed"))
+      end
     end
 
     # return the orginal context, which is now completed
@@ -310,7 +336,7 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], is_nil(fc.completed_at))
     # lets not touch the contexts which are waiting to be woken up at a specific time
     |> where([fc], fc.wait_for_time == false)
-    |> Repo.update_all(set: [completed_at: now, updated_at: now])
+    |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
   end
 
   @doc """
@@ -416,16 +442,31 @@ defmodule Glific.Flows.FlowContext do
           "Seems like the flow: #{flow.id} changed underneath us for: #{context.organization_id}"
         )
 
-        reset_context(context)
+        reset_all_contexts(context)
     end
+  end
+
+  @spec ignore_error?(String.t()) :: boolean
+  defp ignore_error?(error) do
+    # These errors are ok, and need not be reported to appsignal
+    # to a large extent, its more a completion exit rather than an
+    # error exit
+    String.contains?(error, "Exit Loop") ||
+      String.contains?(error, "We have finished the flow")
   end
 
   # log the error and also send it over to our friends at appsignal
   @spec log_error(String.t()) :: {:error, String.t()}
   defp log_error(error) do
     Logger.error(error)
-    {_, stacktrace} = Process.info(self(), :current_stacktrace)
-    Appsignal.send_error(:error, error, stacktrace)
+
+    # disable sending exit loop errors, since these are beneficiary errors
+    # and we dont need to be informed
+    if !ignore_error?(error) do
+      {_, stacktrace} = Process.info(self(), :current_stacktrace)
+      Appsignal.send_error(:error, error, stacktrace)
+    end
+
     {:error, error}
   end
 
@@ -469,8 +510,7 @@ defmodule Glific.Flows.FlowContext do
   def wakeup_one(context, message \\ nil) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
-    {:ok, context} =
-      FlowContext.update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
+    {:ok, context} = update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
 
     {:ok, flow} =
       Flows.get_cached_flow(
@@ -505,16 +545,16 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Delete all the contexts which are completed before two days
   """
-  @spec delete_completed_flow_contexts() :: :ok
-  def delete_completed_flow_contexts do
-    back_date = DateTime.utc_now() |> DateTime.add(-2 * 24 * 60 * 60, :second)
+  @spec delete_completed_flow_contexts(non_neg_integer) :: :ok
+  def delete_completed_flow_contexts(back \\ 2) do
+    back_date = DateTime.utc_now() |> DateTime.add(-1 * back * 24 * 60 * 60, :second)
 
     {count, nil} =
       FlowContext
       |> where([fc], fc.completed_at < ^back_date)
       |> Repo.delete_all(skip_organization_id: true)
 
-    Logger.info("Deleting flow contexts completed two days back: count: '#{count}'")
+    Logger.info("Deleting flow contexts completed #{back} days back: count: '#{count}'")
 
     :ok
   end
@@ -522,16 +562,16 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Delete all the contexts which are older than 30 days
   """
-  @spec delete_old_flow_contexts() :: :ok
-  def delete_old_flow_contexts do
-    last_month_date = DateTime.utc_now() |> DateTime.add(-30 * 24 * 60 * 60, :second)
+  @spec delete_old_flow_contexts(non_neg_integer) :: :ok
+  def delete_old_flow_contexts(back \\ 30) do
+    deletion_date = DateTime.utc_now() |> DateTime.add(-1 * back * 24 * 60 * 60, :second)
 
     {count, nil} =
       FlowContext
-      |> where([fc], fc.inserted_at < ^last_month_date)
+      |> where([fc], fc.inserted_at < ^deletion_date)
       |> Repo.delete_all(skip_organization_id: true)
 
-    Logger.info("Deleting flow contexts older than 30 days: count: '#{count}'")
+    Logger.info("Deleting flow contexts older than #{back} days: count: '#{count}'")
 
     :ok
   end

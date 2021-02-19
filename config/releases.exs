@@ -15,7 +15,9 @@ http_port = System.get_env("HTTP_PORT") || 4000
 config :glific, Glific.Repo,
   url: db_url,
   pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-  show_sensitive_data_on_connection_error: true
+  show_sensitive_data_on_connection_error: true,
+  prepare: :named,
+  parameters: [plan_cache_mode: "force_custom_plan"]
 
 secret_key_base =
   System.get_env("SECRET_KEY_BASE") ||
@@ -37,6 +39,9 @@ config :glific, GlificWeb.Endpoint,
   check_origin: check_origin,
   secret_key_base: secret_key_base,
   url: [host: System.get_env("BASE_URL")]
+
+# The SaaS Admin root account phone number
+config :glific, :saas_phone, System.get_env("SAAS_PHONE")
 
 # AppSignal configs
 config :appsignal, :config,

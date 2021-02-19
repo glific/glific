@@ -6,7 +6,6 @@ defmodule Glific.Flows.FlowCount do
   import Ecto.Changeset
 
   import Ecto.Query, warn: false
-
   alias __MODULE__
 
   alias Glific.{
@@ -16,7 +15,7 @@ defmodule Glific.Flows.FlowCount do
   }
 
   @required_fields [:uuid, :flow_id, :type, :flow_uuid, :organization_id]
-  @optional_fields [:destination_uuid, :recent_messages]
+  @optional_fields [:destination_uuid, :recent_messages, :count]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -71,40 +70,58 @@ defmodule Glific.Flows.FlowCount do
   end
 
   @doc """
+  Create flow count
+  """
+  @spec create_flow_count(map()) :: {:ok, FlowCount.t()} | {:error, Ecto.Changeset.t()}
+  def create_flow_count(attrs) do
+    %FlowCount{}
+    |> FlowCount.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Update flow count
+  """
+  @spec update_flow_count(FlowCount.t(), map()) ::
+          {:ok, FlowCount.t()} | {:error, Ecto.Changeset.t()}
+  def update_flow_count(%FlowCount{} = flow_count, attrs) do
+    flow_count
+    |> FlowCount.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
   Upsert flow count
   """
   @spec upsert_flow_count(map()) :: :error | FlowCount.t()
   def upsert_flow_count(%{flow_uuid: nil} = _attrs), do: :error
 
-  def upsert_flow_count(%{flow_uuid: flow_uuid} = attrs) do
-    case Repo.fetch_by(Flow, %{uuid: flow_uuid}) do
-      {:ok, flow} ->
-        attrs = Map.merge(attrs, %{flow_id: flow.id})
+  def upsert_flow_count(attrs) do
+    case Repo.fetch_by(FlowCount, %{uuid: attrs.uuid}) do
+      {:ok, flowcount} ->
+        recent_message = update_recent_messages(flowcount, attrs)
 
-        Repo.insert!(
-          FlowCount.changeset(%FlowCount{}, attrs),
-          on_conflict: [inc: [count: 1]],
-          returning: true,
-          conflict_target: [:flow_id, :uuid, :type]
+        update_flow_count(
+          flowcount,
+          Map.merge(attrs, %{count: flowcount.count + 1, recent_messages: recent_message})
         )
-        |> update_recent_messages(attrs)
 
-      {status, flow} ->
-        {status, flow}
+      {:error, _} ->
+        attrs =
+          if Map.has_key?(attrs, :recent_message),
+            do: Map.merge(attrs, %{recent_messages: [attrs.recent_message]}),
+            else: attrs
+
+        create_flow_count(attrs)
     end
   end
 
-  @spec update_recent_messages(FlowCount.t(), map()) :: :error | FlowCount.t()
+  @spec update_recent_messages(FlowCount.t(), map()) :: [any()]
   defp update_recent_messages(flow_count, %{recent_message: recent_message})
        when recent_message != %{} do
-    recent_messages =
-      [recent_message | flow_count.recent_messages]
-      |> Enum.take(5)
-
-    flow_count
-    |> FlowCount.changeset(%{recent_messages: recent_messages})
-    |> Repo.update()
+    [recent_message | flow_count.recent_messages]
+    |> Enum.take(5)
   end
 
-  defp update_recent_messages(flow_count, _), do: flow_count
+  defp update_recent_messages(_, _), do: []
 end
