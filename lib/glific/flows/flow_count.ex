@@ -36,14 +36,14 @@ defmodule Glific.Flows.FlowCount do
         }
 
   schema "flow_counts" do
-    field :uuid, Ecto.UUID
-    field :flow_uuid, Ecto.UUID
-    belongs_to :flow, Flow
-    belongs_to :organization, Organization
-    field :type, :string
-    field :count, :integer
-    field :destination_uuid, Ecto.UUID
-    field :recent_messages, {:array, :map}, default: []
+    field(:uuid, Ecto.UUID)
+    field(:flow_uuid, Ecto.UUID)
+    belongs_to(:flow, Flow)
+    belongs_to(:organization, Organization)
+    field(:type, :string)
+    field(:count, :integer)
+    field(:destination_uuid, Ecto.UUID)
+    field(:recent_messages, {:array, :map}, default: [])
 
     timestamps(type: :utc_datetime)
   end
@@ -98,14 +98,18 @@ defmodule Glific.Flows.FlowCount do
   def upsert_flow_count(%{flow_uuid: nil} = _attrs), do: :error
 
   def upsert_flow_count(attrs) do
-    with {:ok, flowcount} <- Repo.fetch_by(FlowCount, %{uuid: attrs.uuid}) do
-      recent_message = update_recent_messages(flowcount, attrs)
+    case Repo.fetch_by(FlowCount, %{uuid: attrs.uuid}) do
+      {:ok, flowcount} ->
+        recent_message = update_recent_messages(flowcount, attrs)
 
-      update_flow_count(
-        flowcount,
-        Map.merge(attrs, %{count: flowcount.count + 1, recent_messages: recent_message})
-      )
-    else
+        update_flow_count(
+          flowcount,
+          Map.merge(attrs, %{count: flowcount.count + 1, recent_messages: recent_message})
+        )
+
+      {:error, _} ->
+        :error
+
       _ ->
         attrs =
           if Map.has_key?(attrs, :recent_message),
