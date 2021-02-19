@@ -75,9 +75,8 @@ defmodule Glific.Flows.FlowCount do
   """
   @spec create_flow_count(map()) :: {:ok, FlowCount.t()} | {:error, Ecto.Changeset.t()}
   def create_flow_count(attrs) do
-    %FlowCount{}
-    |> FlowCount.changeset(attrs)
-    |> Repo.insert()
+    IO.inspect(attrs)
+    %FlowCount{} |> FlowCount.changeset(attrs) |> IO.inspect() |> Repo.insert() |> IO.inspect()
   end
 
   @doc """
@@ -98,14 +97,21 @@ defmodule Glific.Flows.FlowCount do
   def upsert_flow_count(%{flow_uuid: nil} = _attrs), do: :error
 
   def upsert_flow_count(attrs) do
-    with {:ok, flowcount} <- Repo.fetch_by(FlowCount, %{uuid: attrs.uuid}),
-         {:ok, flowcount} <-
-           update_flow_count(flowcount, Map.merge(attrs, %{count: flowcount.count + 1})) do
-      update_recent_messages(flowcount, attrs)
+    with {:ok, flowcount} <- Repo.fetch_by(FlowCount, %{uuid: attrs.uuid}) do
+      recent_message = update_recent_messages(flowcount, attrs)
+
+      update_flow_count(
+        flowcount,
+        Map.merge(attrs, %{count: flowcount.count + 1, recent_messages: recent_message})
+      )
     else
       _ ->
         with {:ok, flowcount} <- create_flow_count(attrs) do
-          update_recent_messages(flowcount, attrs)
+          recent_message = update_recent_messages(flowcount, attrs)
+          update_flow_count(
+            flowcount,
+            Map.merge(attrs, %{recent_messages: recent_message})
+          )
         end
     end
   end
@@ -113,13 +119,8 @@ defmodule Glific.Flows.FlowCount do
   @spec update_recent_messages(FlowCount.t(), map()) :: :error | FlowCount.t()
   defp update_recent_messages(flow_count, %{recent_message: recent_message})
        when recent_message != %{} do
-    recent_messages =
-      [recent_message | flow_count.recent_messages]
-      |> Enum.take(5)
-
-    flow_count
-    |> FlowCount.changeset(%{recent_messages: recent_messages})
-    |> Repo.update()
+    [recent_message | flow_count.recent_messages]
+    |> Enum.take(5)
   end
 
   defp update_recent_messages(flow_count, _), do: flow_count
