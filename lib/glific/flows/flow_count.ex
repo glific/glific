@@ -75,8 +75,9 @@ defmodule Glific.Flows.FlowCount do
   """
   @spec create_flow_count(map()) :: {:ok, FlowCount.t()} | {:error, Ecto.Changeset.t()}
   def create_flow_count(attrs) do
-    IO.inspect(attrs)
-    %FlowCount{} |> FlowCount.changeset(attrs) |> IO.inspect() |> Repo.insert() |> IO.inspect()
+    %FlowCount{}
+    |> FlowCount.changeset(attrs)
+    |> Repo.insert()
   end
 
   @doc """
@@ -106,13 +107,12 @@ defmodule Glific.Flows.FlowCount do
       )
     else
       _ ->
-        with {:ok, flowcount} <- create_flow_count(attrs) do
-          recent_message = update_recent_messages(flowcount, attrs)
-          update_flow_count(
-            flowcount,
-            Map.merge(attrs, %{recent_messages: recent_message})
-          )
-        end
+        attrs =
+          if Map.has_key?(attrs, :recent_message),
+            do: Map.merge(attrs, %{recent_messages: [attrs.recent_message]}),
+            else: attrs
+
+        create_flow_count(attrs)
     end
   end
 
@@ -123,5 +123,5 @@ defmodule Glific.Flows.FlowCount do
     |> Enum.take(5)
   end
 
-  defp update_recent_messages(flow_count, _), do: flow_count
+  defp update_recent_messages(_, _), do: []
 end
