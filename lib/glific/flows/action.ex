@@ -25,6 +25,8 @@ defmodule Glific.Flows.Action do
     Webhook
   }
 
+  require Logger
+
   @min_delay 2
 
   @required_field_common [:uuid, :type]
@@ -328,6 +330,8 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "add_contact_groups"} = action, context, messages) do
     ## We will soon figure out how we will manage the UUID with tags
+    Logger.info("Adding contact to group with action: #{inspect action}, messages: #{inspect messages}")
+
     _list =
       Enum.reduce(
         action.groups,
