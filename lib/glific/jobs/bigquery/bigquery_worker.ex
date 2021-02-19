@@ -106,20 +106,15 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec queue_table_data(String.t(), non_neg_integer(), non_neg_integer(), non_neg_integer()) ::
           :ok
   defp queue_table_data("messages", organization_id, min_id, max_id) do
-    Logger.info(
-      "fetching data for messages to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{
-        organization_id
-      }"
-    )
-
+    Logger.info( "fetching data for messages to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{ organization_id}")
     phone = Contacts.simulator_phone_prefix() <> "%"
-
     Message
     |> where([m], m.organization_id == ^organization_id)
     |> where([m], m.id > ^min_id and m.id <= ^max_id)
     |> join(:inner, [m], c in assoc(m, :contact), as: :contact)
     |> where([p, c], not ilike(c.phone, ^phone))
-    |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
+    |> preload([:location, tags: [:label], receiver: [:phone], sender: [:phone], media: [:url], contact: [:phone, :name], user: [:phone, :name], flow_object: [:uuid, :name]])
+
     |> Repo.all()
     |> Enum.reduce([], fn row, acc ->
       [
