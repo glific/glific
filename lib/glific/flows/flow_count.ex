@@ -36,14 +36,14 @@ defmodule Glific.Flows.FlowCount do
         }
 
   schema "flow_counts" do
-    field(:uuid, Ecto.UUID)
-    field(:flow_uuid, Ecto.UUID)
-    belongs_to(:flow, Flow)
-    belongs_to(:organization, Organization)
-    field(:type, :string)
-    field(:count, :integer)
-    field(:destination_uuid, Ecto.UUID)
-    field(:recent_messages, {:array, :map}, default: [])
+    field :uuid, Ecto.UUID
+    field :flow_uuid, Ecto.UUID
+    belongs_to :flow, Flow
+    belongs_to :organization, Organization
+    field :type, :string
+    field :count, :integer
+    field :destination_uuid, Ecto.UUID
+    field :recent_messages, {:array, :map}, default: []
 
     timestamps(type: :utc_datetime)
   end
