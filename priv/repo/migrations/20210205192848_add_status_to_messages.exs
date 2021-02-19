@@ -10,12 +10,18 @@ defmodule Glific.Repo.Migrations.AddStatusToMessages do
   defp messages() do
     alter table(:messages) do
       # we only care about this for inbound messages
-      add :is_read, :boolean, default: false
+      add :is_read, :boolean,
+        default: false,
+        comment: "Whether the message was read (inbound messages)"
+
       # for inbound messages:
       #  - is_replied means that the org has replied to this message
       # for outbound messages:
       #  - is_replied means that the recipient has replied to this message
-      add :is_replied, :boolean, default: false
+      add :is_replied, :boolean,
+        default: false,
+        comment:
+          "For inbound messages - whether organisation has replied to the message; for outbound message - Whether recipient has replied to the message"
     end
 
     create index(:messages, [:is_read, :flow])
