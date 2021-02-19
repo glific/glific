@@ -102,11 +102,29 @@ defmodule Glific.Flows.Router do
     }
   end
 
+  @spec validate_eex(Keyword.t(), String.t()) :: Keyword.t()
+  defp validate_eex(errors, content) do
+    cond do
+      Glific.suspicious_code(content) ->
+        [{EEx, "Suspicious Code"}] ++ errors
+
+      !is_nil(EEx.compile_string(content)) ->
+        errors
+    end
+  rescue
+    # if there is a syntax error or anything else
+    # an exception is thrown and hence we rescue it here
+    _ ->
+      [{EEx, "Invalid Code"}] ++ errors
+  end
+
   @doc """
   Validate a action and all its children
   """
   @spec validate(Router.t(), Keyword.t(), map()) :: Keyword.t()
   def validate(router, errors, flow) do
+    errors = validate_eex(errors, router.operand)
+
     errors =
       router.categories
       |> Enum.reduce(
