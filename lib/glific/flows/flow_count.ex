@@ -6,7 +6,6 @@ defmodule Glific.Flows.FlowCount do
   import Ecto.Changeset
 
   import Ecto.Query, warn: false
-  require Logger
   alias __MODULE__
 
   alias Glific.{
@@ -97,7 +96,7 @@ defmodule Glific.Flows.FlowCount do
   @spec upsert_flow_count(map()) :: :error | FlowCount.t()
   def upsert_flow_count(%{flow_uuid: nil} = _attrs), do: :error
 
-  def upsert_flow_count(attrs) do
+  def upsert_flow_count(attrs)  do
     case Repo.fetch_by(FlowCount, %{uuid: attrs.uuid}) do
       {:ok, flowcount} ->
         recent_message = update_recent_messages(flowcount, attrs)
@@ -109,9 +108,10 @@ defmodule Glific.Flows.FlowCount do
 
       {:error, _} ->
         attrs =
-          if Map.has_key?(attrs, :recent_message),
-            do: Map.merge(attrs, %{recent_messages: [attrs.recent_message]}),
-            else: attrs
+          if is_nil(attrs[:recent_message],
+          do: attrs,
+          else: attrs
+          |> Map.merge(%{recent_messages: [attrs.recent_message]}),
 
         create_flow_count(attrs)
     end
