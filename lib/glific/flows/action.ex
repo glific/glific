@@ -280,7 +280,7 @@ defmodule Glific.Flows.Action do
     # ensure that any downstream messages from this action are of type HSM
     # if wait time > 24 hours!
     if action.wait_time >= 24 * 60 * 60 &&
-         type_of_next_message(flow, action) != :hsm,
+         type_of_next_message(flow, action) == :session,
        do:
          [{Message, "The next message after a long wait for time should be an HSM template"}] ++
            errors,
@@ -290,7 +290,7 @@ defmodule Glific.Flows.Action do
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
-  @spec type_of_next_message(Flow.t(), Action.t()) :: boolean()
+  @spec type_of_next_message(Flow.t(), Action.t()) :: atom()
   defp type_of_next_message(flow, action) do
     # lets keep this simple for now, we'll just go follow the exit of this
     # action to the next node
