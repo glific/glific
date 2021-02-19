@@ -44,6 +44,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
       Jobs.get_bigquery_jobs(organization_id)
       |> Enum.each(&insert_for_table(&1, organization_id))
+
     end
 
     :ok
@@ -122,7 +123,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Repo.all()
     |> Enum.reduce([], fn row, acc ->
       [
-        row |> get_message_row(organization_id) |> Bigquery.format_data_for_bigquery("messages")
+        row
+        |> get_message_row(organization_id)
+        |> Bigquery.format_data_for_bigquery("messages")
         | acc
       ]
     end)
