@@ -108,9 +108,6 @@ defmodule Glific.Flows.FlowCount do
         )
 
       {:error, _} ->
-        :error
-
-      _ ->
         attrs =
           if Map.has_key?(attrs, :recent_message),
             do: Map.merge(attrs, %{recent_messages: [attrs.recent_message]}),
