@@ -116,7 +116,7 @@ defmodule Glific.Flows.FlowCount do
     end
   end
 
-  @spec update_recent_messages(FlowCount.t(), map()) :: :error | FlowCount.t()
+  @spec update_recent_messages(FlowCount.t(), map()) :: [any()]
   defp update_recent_messages(flow_count, %{recent_message: recent_message})
        when recent_message != %{} do
     [recent_message | flow_count.recent_messages]
