@@ -460,6 +460,8 @@ defmodule Glific.Flows do
 
     {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow.id, status})
 
+    # Why are we doing this test? We can potentially have flows that
+    # do not send a message
     if Contacts.can_send_message_to?(contact),
       do: process_contact_flow([contact], flow, status),
       else: {:error, ["contact", "Cannot send the message to the contact."]}

@@ -12,6 +12,7 @@ config :glific, Glific.Repo,
   hostname: "localhost",
   pool_size: 20,
   pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: 20,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
 

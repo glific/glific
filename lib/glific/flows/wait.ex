@@ -44,7 +44,15 @@ defmodule Glific.Flows.Wait do
   end
 
   @doc """
-  Execute a exit, given a message stream.
+  Validate a wait
+  """
+  @spec validate(Wait.t(), Keyword.t(), map()) :: Keyword.t()
+  def validate(_wait, errors, _flow) do
+    errors
+  end
+
+  @doc """
+  Execute a wait, given a message stream.
   """
   @spec execute(Wait.t(), FlowContext.t(), [Message.t()]) ::
           {:ok, FlowContext.t() | nil, [Message.t()]} | {:error, String.t()}

@@ -8,8 +8,11 @@ defmodule Glific.Flows.Action do
   use Ecto.Schema
 
   alias Glific.{
+    Contacts.Contact,
     Flows,
+    Flows.Flow,
     Groups,
+    Groups.Group,
     Messages.Message,
     Repo
   }
@@ -226,6 +229,84 @@ defmodule Glific.Flows.Action do
     attrs = Map.put(attrs, :templating, templating)
 
     process(json, uuid_map, node, attrs)
+  end
+
+  @spec check_entity_exists(non_neg_integer, Keyword.t(), atom()) :: Keyword.t()
+  defp check_entity_exists(entity_id, errors, object) do
+    case Repo.fetch_by(object, %{id: entity_id}) do
+      {:ok, _} -> errors
+      _ -> [{object, "Could not find #{object} object"}] ++ errors
+    end
+  end
+
+  @spec object(String.t()) :: atom()
+  defp object("send_broadcast"), do: Contact
+  defp object("add_contact_groups"), do: Group
+  defp object("remove_contact_groups"), do: Group
+
+  @doc """
+  Validate a action and all its children
+  """
+  @spec validate(Action.t(), Keyword.t(), map()) :: Keyword.t()
+  def validate(%{type: type} = action, errors, _flow)
+      when type in ["add_contact_groups", "remove_contact_groups", "send_broadcast"] do
+    # ensure that the contacts and/or groups exist that are involved in the above
+    # action
+    object = object(type)
+
+    Enum.reduce(
+      if(object == Contact, do: action.contacts, else: action.groups),
+      errors,
+      fn entity, errors ->
+        case Glific.parse_maybe_integer(entity["uuid"]) do
+          {:ok, entity_id} ->
+            # ensure entity_id exists
+            check_entity_exists(entity_id, errors, object)
+
+          _ ->
+            [{object, "Could not parse #{object} object"}] ++ errors
+        end
+      end
+    )
+  end
+
+  def validate(%{type: "enter_flow"} = action, errors, _flow) do
+    # ensure that the flow exists
+    case Repo.fetch_by(Flow, %{uuid: action.enter_flow_uuid}) do
+      {:ok, _} -> errors
+      _ -> [{Flow, "Could not find Flow object"}] ++ errors
+    end
+  end
+
+  def validate(%{type: "wait_for_time"} = action, errors, flow) do
+    # ensure that any downstream messages from this action are of type HSM
+    # if wait time > 24 hours!
+    if action.wait_time >= 24 * 60 * 60 &&
+         type_of_next_message(flow, action) == :session,
+       do:
+         [{Message, "The next message after a long wait for time should be an HSM template"}] ++
+           errors,
+       else: errors
+  end
+
+  # default validate, do nothing
+  def validate(_action, errors, _flow), do: errors
+
+  @spec type_of_next_message(Flow.t(), Action.t()) :: atom()
+  defp type_of_next_message(flow, action) do
+    # lets keep this simple for now, we'll just go follow the exit of this
+    # action to the next node
+    {:node, node} = flow.uuid_map[action.node_uuid]
+    [exit | _] = node.exits
+    {:node, dest_node} = flow.uuid_map[exit.destination_node_uuid]
+    [action | _] = dest_node.actions
+
+    if is_nil(action.templates),
+      do: :session,
+      else: :hsm
+  rescue
+    # in case any of the uuids don't exist, we just trap the exception
+    _ -> :unknown
   end
 
   @doc """

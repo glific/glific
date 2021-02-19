@@ -759,7 +759,7 @@ defmodule GlificWeb.Schema.SearchTest do
       )
 
     assert {:ok, query_data} = result
-    query_data[:data]["searchMulti"]["contacts"]
+
     contacts = get_in(query_data, [:data, "searchMulti", "contacts"])
     messages = get_in(query_data, [:data, "searchMulti", "messages"])
     assert contacts != []

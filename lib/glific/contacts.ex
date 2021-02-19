@@ -417,7 +417,7 @@ defmodule Glific.Contacts do
   @doc """
   Check if we can send a session message to the contact
   """
-  def can_send_message_to?(contact, _is_hsm) do
+  def can_send_message_to?(contact, false = _is_hsm) do
     if contact.status == :valid &&
          contact.bsp_status in [:session_and_hsm, :session] &&
          Glific.in_past_time(contact.last_message_at, :hours, 24),
