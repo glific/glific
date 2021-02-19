@@ -108,7 +108,7 @@ defmodule Glific.Triggers.Trigger do
     start_at
   end
 
-  @spec start_at(map(), non_neg_integer) :: map()
+  @spec fix_attrs(map(), non_neg_integer) :: map()
   defp fix_attrs(attrs, org_id) do
     # compute start_at if not set
     start_at = start_at(attrs, org_id)
