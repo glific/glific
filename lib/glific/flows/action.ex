@@ -341,15 +341,10 @@ defmodule Glific.Flows.Action do
     value = FlowContext.get_result_value(context, action.value)
 
     context =
-      cond do
-        key == "settings" and value == "optout" ->
-          ContactAction.optout(context)
-
-        key == "settings" ->
-          ContactSetting.set_contact_preference(context, value)
-
-        true ->
-          ContactField.add_contact_field(context, key, name, value, "string")
+      if key == "settings" do
+        settings(context, value)
+      else
+        ContactField.add_contact_field(context, key, name, value, "string")
       end
 
     {:ok, context, messages}
@@ -411,7 +406,9 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "add_contact_groups"} = action, context, messages) do
     ## We will soon figure out how we will manage the UUID with tags
-    Logger.info("Adding contact to group with action: #{inspect action}, messages: #{inspect messages}")
+    Logger.info(
+      "Adding contact to group with action: #{inspect(action)}, messages: #{inspect(messages)}"
+    )
 
     _list =
       Enum.reduce(
@@ -479,6 +476,25 @@ defmodule Glific.Flows.Action do
 
   def execute(action, _context, _messages),
     do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
+
+  @spec settings(FlowContext.t(), String.t()) :: FlowContext.t()
+  defp settings(context, value) do
+    case String.downcase(value) do
+      "optout" ->
+        ContactAction.optout(context)
+
+      "optin" ->
+        message_id =
+          if context.last_message != nil,
+            do: context.last_message.bsp_message_id,
+            else: nil
+
+        ContactAction.optin(context, method: "WA", message_id: message_id)
+
+      _ ->
+        ContactSetting.set_contact_preference(context, value)
+    end
+  end
 
   # let's format attachment and add as a map
   @spec process_attachments(list()) :: map()

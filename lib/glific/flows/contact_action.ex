@@ -281,6 +281,22 @@ defmodule Glific.Flows.ContactAction do
   end
 
   @doc """
+  Contact opts in via a flow
+  """
+  @spec optin(FlowContext.t(), Keyword.t()) :: FlowContext.t()
+  def optin(context, opts \\ []) do
+    # We need to update the contact with optout_time and status
+    Contacts.contact_opted_in(
+      context.contact.phone,
+      context.contact.organization_id,
+      DateTime.utc_now(),
+      opts
+    )
+
+    context
+  end
+
+  @doc """
   Contact opts out
   """
   @spec optout(FlowContext.t()) :: FlowContext.t()

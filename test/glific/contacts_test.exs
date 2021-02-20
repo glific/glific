@@ -23,6 +23,7 @@ defmodule Glific.ContactsTest do
     @valid_attrs %{
       name: "some name",
       optin_time: ~U[2010-04-17 14:00:00Z],
+      optin_status: false,
       optout_time: nil,
       phone: "some phone",
       status: :valid,
@@ -33,6 +34,7 @@ defmodule Glific.ContactsTest do
     @valid_attrs_1 %{
       name: "some name 1",
       optin_time: nil,
+      optin_status: false,
       optout_time: nil,
       phone: "some phone 1",
       status: :invalid,
@@ -42,6 +44,7 @@ defmodule Glific.ContactsTest do
     @valid_attrs_2 %{
       name: "some name 2",
       optin_time: ~U[2010-04-17 14:00:00Z],
+      optin_status: true,
       optout_time: nil,
       phone: "some phone 2",
       status: :valid,
@@ -51,6 +54,7 @@ defmodule Glific.ContactsTest do
     @valid_attrs_3 %{
       name: "some name 3",
       optin_time: DateTime.utc_now(),
+      optin_status: true,
       optout_time: nil,
       phone: "some phone 3",
       status: :invalid,
@@ -60,6 +64,7 @@ defmodule Glific.ContactsTest do
     @valid_attrs_to_test_order_1 %{
       name: "aaaa name",
       optin_time: nil,
+      optin_status: false,
       optout_time: nil,
       phone: "some phone 4",
       status: :valid,
@@ -69,6 +74,7 @@ defmodule Glific.ContactsTest do
     @valid_attrs_to_test_order_2 %{
       name: "zzzz name",
       optin_time: nil,
+      optin_status: false,
       optout_time: nil,
       phone: "some phone 5",
       status: :valid,
@@ -78,6 +84,7 @@ defmodule Glific.ContactsTest do
     @update_attrs %{
       name: "some updated name",
       optin_time: ~U[2011-05-18 15:01:01Z],
+      optin_status: true,
       optout_time: nil,
       phone: "some updated phone",
       status: :invalid,
@@ -87,6 +94,7 @@ defmodule Glific.ContactsTest do
     @invalid_attrs %{
       name: nil,
       optin_time: nil,
+      optin_status: false,
       optout_time: nil,
       phone: nil,
       status: nil,
@@ -376,6 +384,7 @@ defmodule Glific.ContactsTest do
               phone: Phone.EnUs.phone(),
               bsp_status: :session_and_hsm,
               optin_time: DateTime.utc_now(),
+              optin_status: true,
               optout_time: nil
             }
           )
@@ -388,7 +397,8 @@ defmodule Glific.ContactsTest do
             %{
               phone: Phone.EnUs.phone(),
               bsp_status: :session_and_hsm,
-              optin_time: nil
+              optin_time: nil,
+              optin_status: false,
             }
           )
         )
@@ -401,6 +411,7 @@ defmodule Glific.ContactsTest do
               phone: Phone.EnUs.phone(),
               bsp_status: :session_and_hsm,
               optin_time: nil,
+              optin_status: false,
               optout_time: DateTime.utc_now()
             }
           )
@@ -467,7 +478,8 @@ defmodule Glific.ContactsTest do
         contact_fixture(%{
           organization_id: organization_id,
           bsp_status: :none,
-          optin_time: nil
+          optin_time: nil,
+          optin_status: false,
         })
 
       {:ok, contact} = Contacts.set_session_status(contact, :none)
@@ -483,7 +495,8 @@ defmodule Glific.ContactsTest do
         contact_fixture(%{
           organization_id: organization_id,
           bsp_status: :none,
-          optin_time: DateTime.utc_now()
+          optin_time: DateTime.utc_now(),
+          optin_status: true,
         })
 
       {:ok, contact} = Contacts.set_session_status(contact, :none)
@@ -500,6 +513,7 @@ defmodule Glific.ContactsTest do
           organization_id: organization_id,
           bsp_status: :session_and_hsm,
           optin_time: Timex.shift(DateTime.utc_now(), hours: -25),
+          optin_status: true,
           last_message_at: Timex.shift(DateTime.utc_now(), hours: -24)
         })
 

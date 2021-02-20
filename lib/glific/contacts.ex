@@ -347,12 +347,15 @@ defmodule Glific.Contacts do
   @doc """
   Update DB fields when contact opted in and ignore if it's blocked
   """
-  @spec contact_opted_in(String.t(), non_neg_integer, DateTime.t()) ::
+  @spec contact_opted_in(String.t(), non_neg_integer, DateTime.t(), Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def contact_opted_in(phone, organization_id, utc_time) do
+  def contact_opted_in(phone, organization_id, utc_time, opts \\ []) do
     attrs = %{
       phone: phone,
       optin_time: utc_time,
+      optin_status: true,
+      optin_method: Keyword.get(opts, :method, "URL"),
+      optin_message_id: Keyword.get(opts, :message_id),
       last_message_at: nil,
       optout_time: nil,
       status: :valid,
@@ -381,6 +384,9 @@ defmodule Glific.Contacts do
       phone: phone,
       optout_time: utc_time,
       optin_time: nil,
+      optin_status: false,
+      optin_method: nil,
+      optin_message_id: nil,
       status: :invalid,
       bsp_status: :none,
       organization_id: organization_id,
