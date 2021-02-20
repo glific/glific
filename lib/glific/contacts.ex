@@ -356,10 +356,10 @@ defmodule Glific.Contacts do
       optin_status: true,
       optin_method: Keyword.get(opts, :method, "URL"),
       optin_message_id: Keyword.get(opts, :message_id),
-      last_message_at: nil,
+      last_message_at: DateTime.utc_now(),
       optout_time: nil,
       status: :valid,
-      bsp_status: :hsm,
+      bsp_status: Keyword.get(opts, :bsp_status, :session_and_hsm),
       organization_id: organization_id,
       updated_at: DateTime.utc_now()
     }

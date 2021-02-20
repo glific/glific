@@ -29,6 +29,9 @@ defmodule Glific.Processor.ConsumerFlow do
       else: do_process_message({message, state}, body)
   end
 
+  # Setting this to 0 since we are pushing out our own optin flow
+  @delay_time 0
+
   @spec do_process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   defp do_process_message({message, state}, body) do
     # check if draft keyword, if so bypass ignore keywords
@@ -56,7 +59,7 @@ defmodule Glific.Processor.ConsumerFlow do
           Map.get(state, :newcontact, false) == true &&
               Map.has_key?(state.flow_keywords["published"], "newcontact") ->
             # delay new contact flows by 2 minutes to allow user to deal with signon link
-            check_flows(message, "newcontact", state, is_beta: false, delay: 120)
+            check_flows(message, "newcontact", state, is_beta: false, delay: @delay_time)
 
           Map.has_key?(state.flow_keywords["published"], body) ->
             check_flows(message, body, state, is_beta: false)
