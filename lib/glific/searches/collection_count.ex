@@ -50,6 +50,7 @@ defmodule Glific.Searches.CollectionCount do
     |> unread(query)
     |> not_replied(query)
     |> not_responded(query)
+    |> optin(org_id_list)
     |> optout(org_id_list)
     |> publish_data()
   end
@@ -61,7 +62,8 @@ defmodule Glific.Searches.CollectionCount do
       "Unread" => 0,
       "Not replied" => 0,
       "Not Responded" => 0,
-      "Optout" => 0
+      "Optin" => 0,
+      "Optout" => 0,
     }
 
   @spec add(map(), non_neg_integer, String.t(), non_neg_integer) :: map()
@@ -133,13 +135,26 @@ defmodule Glific.Searches.CollectionCount do
     |> make_result(result, "Not Responded")
   end
 
-  @spec optout(map(), list()) :: map()
-  defp optout(result, org_id_list) do
+  @spec contact_query(list()) :: Ecto.Query.t()
+  defp contact_query(org_id_list) do
     Contact
-    |> where([c], c.status != :blocked and not is_nil(c.optout_time))
     |> add_orgs(org_id_list)
     |> group_by([c], c.organization_id)
+    |> where([c], c.status != :blocked)
     |> select([c], [count(c.id), c.organization_id])
+  end
+
+  @spec optin(map(), list()) :: map()
+  defp optin(result, org_id_list) do
+    contact_query(org_id_list)
+    |> where([c], c.optin_status == true)
+    |> make_result(result, "Optin")
+  end
+
+  @spec optout(map(), list()) :: map()
+  defp optout(result, org_id_list) do
+    contact_query(org_id_list)
+    |> where([c], not is_nil(c.optout_time))
     |> make_result(result, "Optout")
   end
 end

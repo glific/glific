@@ -13,6 +13,8 @@ defmodule Glific.Repo.Migrations.OptinFields do
         null: true,
         comment: "possible options include: URL, WhatsApp Message, QR Code, SMS, NGO"
 
+      # Note that a contact could be neither opted_in nor opted_out, but choose to receive
+      # session messages only
       add :optin_status, :boolean,
         default: false,
         comment: "record if the contact has either opted or skipped the option"
