@@ -341,11 +341,9 @@ defmodule Glific.Flows.Action do
     value = FlowContext.get_result_value(context, action.value)
 
     context =
-      if key == "settings" do
-        settings(context, value)
-      else
-        ContactField.add_contact_field(context, key, name, value, "string")
-      end
+      if key == "settings",
+        do: settings(context, value),
+        else: ContactField.add_contact_field(context, key, name, value, "string")
 
     {:ok, context, messages}
   end
@@ -390,16 +388,7 @@ defmodule Glific.Flows.Action do
       |> Enum.map(fn label -> label["name"] end)
       |> Enum.join(", ")
 
-    # there is a chance that:
-    # when we send a fake temp message (like No Response)
-    # or when a flow is resumed, there is no last_message
-    # hence check for the existence of one
-    if context.last_message != nil do
-      {:ok, _} =
-        Repo.get(Message, context.last_message.id)
-        |> Message.changeset(%{flow_label: flow_label})
-        |> Repo.update()
-    end
+    add_flow_label(context, flow_label)
 
     {:ok, context, messages}
   end
@@ -477,6 +466,22 @@ defmodule Glific.Flows.Action do
   def execute(action, _context, _messages),
     do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
 
+  @spec add_flow_label(FlowContext.t(), String.t()) :: nil
+  defp add_flow_label(%{last_message: nil}, _flow_label), do: nil
+
+  defp add_flow_label(%{last_message: last_message}, flow_label) do
+    # there is a chance that:
+    # when we send a fake temp message (like No Response)
+    # or when a flow is resumed, there is no last_message
+    # hence we check for the existence of one in these functions
+    {:ok, _} =
+      Repo.get(Message, last_message.id)
+      |> Message.changeset(%{flow_label: flow_label})
+      |> Repo.update()
+
+    nil
+  end
+
   @spec settings(FlowContext.t(), String.t()) :: FlowContext.t()
   defp settings(context, value) do
     case String.downcase(value) do
@@ -484,15 +489,10 @@ defmodule Glific.Flows.Action do
         ContactAction.optout(context)
 
       "optin" ->
-        message_id =
-          if context.last_message != nil,
-            do: context.last_message.bsp_message_id,
-            else: nil
-
         ContactAction.optin(
           context,
           method: "WA",
-          message_id: message_id,
+          message_id: get_in(context, [:last_message, :bsp_message_id]),
           bsp_status: :session_and_hsm
         )
 
