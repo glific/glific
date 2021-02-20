@@ -52,7 +52,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     users(admin, organization)
 
-    SeedsSim.add_simulators(organization)
+    SeedsSim.migrate_data(:simulator, organization)
 
     saved_searches(organization)
 
