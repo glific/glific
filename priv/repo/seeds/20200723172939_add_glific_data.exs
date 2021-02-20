@@ -454,6 +454,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       {"All unread conversations", "Unread"},
       {"Conversations read but not replied", "Not replied"},
       {"Conversations read but not responded", "Not Responded"},
+      {"Conversations where the contact has opted in", "Optin"},
       {"Conversations where the contact has opted out", "Optout"}
     ]
 

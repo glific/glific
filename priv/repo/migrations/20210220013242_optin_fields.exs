@@ -21,5 +21,8 @@ defmodule Glific.Repo.Migrations.OptinFields do
         null: true,
         comment: "For whatsapp option, we'll record the wa-message-id sent"
     end
+
+    # we always query optin_status with the organization_id
+    create index(:contacts, [:optin_status, :organization_id])
   end
 end
