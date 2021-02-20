@@ -4,10 +4,10 @@ defmodule Glific.Repo.Migrations.SetOptinFields do
   import Ecto.Query
 
   alias Glific.{Contacts.Contact, Repo}
+
   def change do
     migrate_optin_data()
   end
-
 
   defp migrate_optin_data() do
     # Set false status for contacts not opted in

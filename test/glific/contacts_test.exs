@@ -398,7 +398,7 @@ defmodule Glific.ContactsTest do
               phone: Phone.EnUs.phone(),
               bsp_status: :session_and_hsm,
               optin_time: nil,
-              optin_status: false,
+              optin_status: false
             }
           )
         )
@@ -479,7 +479,7 @@ defmodule Glific.ContactsTest do
           organization_id: organization_id,
           bsp_status: :none,
           optin_time: nil,
-          optin_status: false,
+          optin_status: false
         })
 
       {:ok, contact} = Contacts.set_session_status(contact, :none)
@@ -496,7 +496,7 @@ defmodule Glific.ContactsTest do
           organization_id: organization_id,
           bsp_status: :none,
           optin_time: DateTime.utc_now(),
-          optin_status: true,
+          optin_status: true
         })
 
       {:ok, contact} = Contacts.set_session_status(contact, :none)

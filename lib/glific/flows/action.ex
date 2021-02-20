@@ -489,7 +489,12 @@ defmodule Glific.Flows.Action do
             do: context.last_message.bsp_message_id,
             else: nil
 
-        ContactAction.optin(context, method: "WA", message_id: message_id)
+        ContactAction.optin(
+          context,
+          method: "WA",
+          message_id: message_id,
+          bsp_status: :session_and_hsm
+        )
 
       _ ->
         ContactSetting.set_contact_preference(context, value)
