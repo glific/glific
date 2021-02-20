@@ -63,7 +63,7 @@ defmodule Glific.Searches.CollectionCount do
       "Not replied" => 0,
       "Not Responded" => 0,
       "Optin" => 0,
-      "Optout" => 0,
+      "Optout" => 0
     }
 
   @spec add(map(), non_neg_integer, String.t(), non_neg_integer) :: map()
@@ -81,7 +81,7 @@ defmodule Glific.Searches.CollectionCount do
 
   defp add_orgs(query, org_id_list) do
     query
-    |> where([m], m.organization_id in ^org_id_list)
+    |> where([o], o.organization_id in ^org_id_list)
   end
 
   @spec query(list()) :: Ecto.Query.t()
@@ -138,10 +138,10 @@ defmodule Glific.Searches.CollectionCount do
   @spec contact_query(list()) :: Ecto.Query.t()
   defp contact_query(org_id_list) do
     Contact
-    |> add_orgs(org_id_list)
-    |> group_by([c], c.organization_id)
     |> where([c], c.status != :blocked)
+    |> group_by([c], c.organization_id)
     |> select([c], [count(c.id), c.organization_id])
+    |> add_orgs(org_id_list)
   end
 
   @spec optin(map(), list()) :: map()
