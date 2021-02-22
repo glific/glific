@@ -71,10 +71,9 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec publish_flow(Absinthe.Resolution.t(), %{uuid: String.t()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def publish_flow(_, %{uuid: uuid}, _) do
-    Repo.fetch_by(Flow, %{uuid: uuid})
-    |> case do
-      {:ok, flow} -> Flows.publish_flow(flow)
-       _ -> {:error, "Flow with uuid #{uuid} not found"}
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{uuid: uuid}),
+         {:ok, _flow} <- Flows.publish_flow(flow) do
+        {:ok, %{success: true}}
     end
   end
 

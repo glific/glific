@@ -400,18 +400,20 @@ defmodule Glific.Flows do
   @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
   def publish_flow(%Flow{} = flow) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
-    errors = Glific.Flows.Flow.validate_flow(1, "draft", %{id: flow.id})
+    errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
+
     if errors == [],
-    do: do_publish_flow(flow),
-    else: {:error, format_flow_errors(errors)}
+      do: do_publish_flow(flow),
+      else: {:error, format_flow_errors(errors)}
   end
 
   @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()}
   defp do_publish_flow(%Flow{} = flow) do
     last_version = get_last_version_and_update_old_revisions(flow)
     ## if invalid flow then return the {:error, array} otherwise move forword
-    with {:ok, latest_revision} <- Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
-        {:ok, _} =
+    with {:ok, latest_revision} <-
+           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
+      {:ok, _} =
         latest_revision
         |> FlowRevision.changeset(%{status: "published", version: last_version + 1})
         |> Repo.update()
@@ -425,7 +427,7 @@ defmodule Glific.Flows do
 
   @spec format_flow_errors(list()) :: list()
   defp format_flow_errors(errors) when is_list(errors),
-  do: Enum.reduce(errors, [], fn error, acc -> [ elem(error, 1) | acc] end)
+    do: Enum.reduce(errors, [], fn error, acc -> [elem(error, 1) | acc] end)
 
   # Get version of last published flow revision
   # Archive the last published flow revision
