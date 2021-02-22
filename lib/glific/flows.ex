@@ -404,7 +404,7 @@ defmodule Glific.Flows do
 
     if errors == [],
       do: do_publish_flow(flow),
-      else: {:error, format_flow_errors(errors)}
+      else: {:errors, format_flow_errors(errors)}
   end
 
   @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()}

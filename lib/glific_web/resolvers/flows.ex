@@ -76,10 +76,9 @@ defmodule GlificWeb.Resolvers.Flows do
          {:ok, %{success: true}}
 
         else
-          {:error, errors}
+          {:errors, errors}
             -> {:ok, %{success: false, errors: errors}}
-
-          _ -> {:error, "Something went wrong"}
+          _ -> {:error, "Something went wrong."}
     end
   end
 
