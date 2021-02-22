@@ -13,6 +13,7 @@ defmodule GlificWeb.Context do
   def call(conn, _) do
     context = build_context(conn)
     Absinthe.Plug.put_options(conn, context: context)
+    Absinthe.Plug.put_options(conn, nonce: :erlang.unique_integer())
   end
 
   @doc """
@@ -25,10 +26,11 @@ defmodule GlificWeb.Context do
     # Add the current_user to the Process memory
     Glific.Repo.put_current_user(current_user)
 
+    context = %{nonce: :erlang.unique_integer()}
     if current_user != nil do
-      %{current_user: current_user}
+      Map.put(context, :current_user, current_user)
     else
-      %{}
+      context
     end
   end
 end
