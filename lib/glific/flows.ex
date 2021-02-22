@@ -401,10 +401,12 @@ defmodule Glific.Flows do
   def publish_flow(%Flow{} = flow) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
     errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
+    do_publish_flow(flow)
 
     if errors == [],
-      do: do_publish_flow(flow),
+      do: {:ok, flow},
       else: {:errors, format_flow_errors(errors)}
+
   end
 
   @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()}
