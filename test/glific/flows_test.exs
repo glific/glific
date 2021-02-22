@@ -245,7 +245,6 @@ defmodule Glific.FLowsTest do
       assert loaded_flow_new.keywords != loaded_flow.keywords
     end
 
-    @tag :pending
     test "publish_flow/1 updates the latest flow revision status",
          %{organization_id: organization_id} = _attrs do
       flow = flow_fixture() |> Repo.preload([:revisions])
