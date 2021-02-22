@@ -403,7 +403,7 @@ defmodule Glific.Flows do
     errors = Glific.Flows.Flow.validate_flow(1, "draft", %{id: flow.id})
     if errors == [],
     do: do_publish_flow(flow),
-    else: {:error, errors}
+    else: {:error, ["Error 1", "Error 2", "Error 3"]}
   end
 
   @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()}
