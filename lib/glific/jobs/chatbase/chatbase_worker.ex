@@ -8,6 +8,7 @@ defmodule Glific.Jobs.ChatbaseWorker do
   """
 
   import Ecto.Query
+  require Logger
 
   use Oban.Worker,
     queue: :default,
@@ -51,6 +52,12 @@ defmodule Glific.Jobs.ChatbaseWorker do
 
   @spec queue_messages(non_neg_integer, non_neg_integer, non_neg_integer) :: :ok
   defp queue_messages(organization_id, min_id, max_id) do
+    Logger.info(
+      "fetching data for messages to send on chatbase maxid: #{max_id}, min_id: #{min_id}, org_id: #{
+        organization_id
+      }"
+    )
+
     query =
       Message
       |> select([m], [m.id, m.body, m.flow, m.inserted_at, m.contact_id])

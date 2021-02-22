@@ -30,7 +30,8 @@ defmodule Glific.Jobs do
     do:
       Repo.get_by(
         ChatbaseJob,
-        %{organization_id: organization_id}
+        %{organization_id: organization_id},
+        skip_organization_id: true
       )
 
   @doc """
