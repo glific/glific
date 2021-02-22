@@ -15,7 +15,7 @@ defmodule GlificWeb.Schema.FlowTypes do
 
   object :publish_flow_result do
     field :success, :boolean
-    field :errors, list_of(:string)
+    field :errors, list_of(:input_error)
   end
 
   object :start_flow_result do

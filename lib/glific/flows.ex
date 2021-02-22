@@ -426,8 +426,12 @@ defmodule Glific.Flows do
   end
 
   @spec format_flow_errors(list()) :: list()
-  defp format_flow_errors(errors) when is_list(errors),
-    do: Enum.reduce(errors, [], fn error, acc -> [elem(error, 1) | acc] end)
+  defp format_flow_errors(errors) when is_list(errors) do
+    Enum.reduce(errors, [], fn error, acc ->
+      [%{key: "error", message: elem(error, 1)} | acc]
+    end)
+  end
+
 
   # Get version of last published flow revision
   # Archive the last published flow revision
