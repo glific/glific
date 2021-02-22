@@ -115,9 +115,15 @@ defmodule Glific.Jobs.ChatbaseWorker do
 
       case Tesla.post(@chatbase_url, Poison.encode!(data)) do
         {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
+          Logger.info(
+            "Successfully inserted data to Chatbase for org_id: #{organization_id}}"
+          )
           :ok
 
         _ ->
+          Logger.info(
+            "Error insert data to Chatbase for org_id: #{organization_id}}"
+          )
           {:error, "Chatbase returned an unexpected result"}
       end
     else
