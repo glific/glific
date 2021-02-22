@@ -433,7 +433,6 @@ defmodule Glific.Flows do
     end)
   end
 
-
   # Get version of last published flow revision
   # Archive the last published flow revision
   @spec get_last_version_and_update_old_revisions(Flow.t()) :: integer
