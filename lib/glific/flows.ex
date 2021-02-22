@@ -397,16 +397,21 @@ defmodule Glific.Flows do
   Update latest flow revision status as published and increment the version
   Update cached flow definition
   """
-  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()}
+  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
   def publish_flow(%Flow{} = flow) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
+    errors = Glific.Flows.Flow.validate_flow(1, "draft", %{id: flow.id})
+    if errors == [],
+    do: do_publish_flow(flow),
+    else: {:error, errors}
+  end
 
+  @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()}
+  defp do_publish_flow(%Flow{} = flow) do
     last_version = get_last_version_and_update_old_revisions(flow)
-
-    with {:ok, latest_revision} <-
-           FlowRevision
-           |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0}) do
-      {:ok, _} =
+    ## if invalid flow then return the {:error, array} otherwise move forword
+    with {:ok, latest_revision} <- Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
+        {:ok, _} =
         latest_revision
         |> FlowRevision.changeset(%{status: "published", version: last_version + 1})
         |> Repo.update()
