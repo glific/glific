@@ -535,6 +535,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     data = [
       {"Help Workflow", ["help", "मदद"], uuid_map.help, true, "help.json"},
+      {"Feedback", ["feedback"], uuid_map.feedback, true, "feedback.json"},
+      {"Activity", ["activity"], uuid_map.activity, true, "activity.json"},
       {"Language Workflow", ["language", "भाषा"], uuid_map.language, true, "language.json"},
       {"New Contact Workflow", ["newcontact"], uuid_map.newcontact, false, "new_contact.json"},
       {"Registration Workflow", ["registration"], uuid_map.registration, false,
