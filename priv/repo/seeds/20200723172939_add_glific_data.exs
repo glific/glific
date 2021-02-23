@@ -52,7 +52,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     users(admin, organization)
 
-    SeedsSim.add_simulators(organization)
+    SeedsSim.migrate_data(:simulator, organization)
 
     saved_searches(organization)
 
@@ -454,6 +454,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       {"All unread conversations", "Unread"},
       {"Conversations read but not replied", "Not replied"},
       {"Conversations read but not responded", "Not Responded"},
+      {"Conversations where the contact has opted in", "Optin"},
       {"Conversations where the contact has opted out", "Optout"}
     ]
 

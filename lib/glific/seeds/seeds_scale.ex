@@ -31,6 +31,8 @@ if Code.ensure_loaded?(Faker) do
         phone: phone,
         bsp_status: "session_and_hsm",
         optin_time: DateTime.truncate(DateTime.utc_now(), :second),
+        optin_status: true,
+        optin_method: "URL",
         optout_time: nil,
         status: "valid",
         language_id: organization.default_language_id,

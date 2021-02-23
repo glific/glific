@@ -25,6 +25,9 @@ defmodule Glific.Contacts.Contact do
     :bsp_status,
     :status,
     :optin_time,
+    :optin_status,
+    :optin_method,
+    :optin_message_id,
     :optout_time,
     :last_message_at,
     :last_communication_at,
@@ -45,6 +48,9 @@ defmodule Glific.Contacts.Contact do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           optin_time: :utc_datetime | nil,
+          optin_method: String.t() | nil,
+          optin_status: boolean() | nil,
+          optin_message_id: String.t() | nil,
           optout_time: :utc_datetime | nil,
           last_message_at: :utc_datetime | nil,
           last_communication_at: :utc_datetime | nil,
@@ -66,6 +72,10 @@ defmodule Glific.Contacts.Contact do
     belongs_to :organization, Organization
 
     field :optin_time, :utc_datetime
+    field :optin_status, :boolean, default: false
+    field :optin_method, :string
+    field :optin_message_id, :string
+
     field :optout_time, :utc_datetime
     field :last_message_at, :utc_datetime
     field :last_communication_at, :utc_datetime
