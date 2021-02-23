@@ -44,11 +44,13 @@ defmodule Glific.Searches.CollectionCount do
   def collection_stats(list \\ [], recent \\ true) do
     org_id_list = org_id_list(list, recent)
 
-    result = Enum.reduce(
-      org_id_list,
-      %{},
-      fn id, acc -> Map.put(acc, id, empty_result()) end
-    )
+    result =
+      Enum.reduce(
+        org_id_list,
+        %{},
+        fn id, acc -> Map.put(acc, id, empty_result()) end
+      )
+
     query = query(org_id_list)
 
     result
