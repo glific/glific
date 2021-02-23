@@ -50,10 +50,8 @@ defmodule GlificWeb.Resolvers.Searches do
     stats = CollectionCount.collection_stats([org_id])
 
     if stats == %{},
-    do: {:ok, %{org_id => CollectionCount.empty_result()}},
-    else: {:ok, stats}
-
-
+      do: {:ok, %{org_id => CollectionCount.empty_result()}},
+      else: {:ok, stats}
   end
 
   @doc false
