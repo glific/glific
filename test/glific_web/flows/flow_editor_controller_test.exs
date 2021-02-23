@@ -152,26 +152,6 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert Map.has_key?(response, "segments")
     end
 
-    test "templates2", %{conn: conn} = attrs do
-      language = language_fixture()
-
-      attrs =
-        attrs
-        |> Map.merge(@valid_attrs)
-        |> Map.merge(%{language_id: language.id})
-
-      Templates.create_session_template(attrs)
-
-      {:ok, results} = FlowEditorController.templates(conn, %{}).resp_body |> Jason.decode()
-
-      approved_templates =
-        Templates.list_session_templates(%{
-          filter: %{organization_id: conn.assigns[:organization_id], status: "APPROVED"}
-        })
-
-      assert length(results["results"]) == length(approved_templates)
-    end
-
     test "listing templates in Flow should return the list of approved templates",
          %{conn: conn} = attrs do
       language = language_fixture()
