@@ -124,9 +124,8 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert "keywords" = get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "key"])
 
-    assert "`testkeyword is used in #{flow_name}`" =
-      get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
-
+    assert "`testkeyword is used in Flow Test Name`" =
+             get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
   end
 
   test "update a flow and test possible scenarios and errors", %{manager: user} do
