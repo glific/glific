@@ -44,16 +44,19 @@ defmodule Glific.Searches.CollectionCount do
   def collection_stats(list \\ [], recent \\ true) do
     org_id_list = org_id_list(list, recent)
 
-    result =
-      Enum.reduce(
-        org_id_list,
-        %{},
-        fn id, acc -> Map.put(acc, id, empty_result()) end
-      )
+    # org_id_list can be empty here, if so we return an empty map
+    if org_id_list == [],
+      do: %{},
+      else: do_collection_stats(org_id_list)
+  end
 
+  @spec do_collection_stats(list()) :: map()
+  defp do_collection_stats(org_id_list) do
     query = query(org_id_list)
 
-    result
+    org_id_list
+    # create the empty results array for each org in list
+    |> empty_results()
     |> all(query)
     |> unread(query)
     |> not_replied(query)
@@ -63,15 +66,24 @@ defmodule Glific.Searches.CollectionCount do
     |> publish_data()
   end
 
+  @spec empty_results(list()) :: map()
+  defp empty_results(org_id_list),
+    do:
+      Enum.reduce(
+        org_id_list,
+        %{},
+        fn id, acc -> Map.put(acc, id, empty_result()) end
+      )
+
   @spec empty_result :: map()
   defp empty_result,
     do: %{
       "All" => 0,
-      "Unread" => 0,
       "Not replied" => 0,
       "Not Responded" => 0,
       "Optin" => 0,
-      "Optout" => 0
+      "Optout" => 0,
+      "Unread" => 0
     }
 
   @spec add(map(), non_neg_integer, String.t(), non_neg_integer) :: map()
