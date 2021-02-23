@@ -47,7 +47,13 @@ defmodule GlificWeb.Resolvers.Searches do
   """
   @spec collection_stats(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, map()}
   def collection_stats(_, %{organization_id: org_id}, _) do
-    {:ok, CollectionCount.collection_stats([org_id], true)}
+    stats = CollectionCount.collection_stats([org_id])
+
+    if stats == %{},
+    do: {:ok, %{org_id => CollectionCount.empty_result()}},
+    else: {:ok, stats}
+
+
   end
 
   @doc false

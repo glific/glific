@@ -54,8 +54,11 @@ defmodule Glific.Searches.CollectionCount do
     |> publish_data()
   end
 
+  @doc """
+  default collection stats
+  """
   @spec empty_result :: map()
-  defp empty_result,
+  def empty_result,
     do: %{
       "All" => 0,
       "Unread" => 0,
