@@ -378,30 +378,32 @@ defmodule Glific.Contacts do
   @doc """
   Update DB fields when contact opted out
   """
-  @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t()) :: {:ok}
+  @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t()) :: :ok
   def contact_opted_out(phone, organization_id, utc_time) do
-    attrs = %{
-      phone: phone,
-      optout_time: utc_time,
-      optin_time: nil,
-      optin_status: false,
-      optin_method: nil,
-      optin_message_id: nil,
-      status: :invalid,
-      bsp_status: :none,
-      organization_id: organization_id,
-      updated_at: DateTime.utc_now()
-    }
+    if !is_simulator_contact?(phone) do
+      attrs = %{
+        phone: phone,
+        optout_time: utc_time,
+        optin_time: nil,
+        optin_status: false,
+        optin_method: nil,
+        optin_message_id: nil,
+        status: :invalid,
+        bsp_status: :none,
+        organization_id: organization_id,
+        updated_at: DateTime.utc_now()
+      }
 
-    case Repo.get_by(Contact, %{phone: phone}) do
-      nil ->
-        raise "Contact does not exist with phone: #{phone}"
+      case Repo.get_by(Contact, %{phone: phone}) do
+        nil ->
+          raise "Contact does not exist with phone: #{phone}"
 
-      contact ->
-        update_contact(contact, attrs)
+        contact ->
+          update_contact(contact, attrs)
+      end
     end
 
-    {:ok}
+    :ok
   end
 
   @doc """
