@@ -119,7 +119,9 @@ defmodule Glific.Flows.Flow do
 
     existing_keywords =
       keywords
-      |> Enum.filter(fn keyword -> if keyword in keywords_list, do: Glific.string_clean(keyword) end)
+      |> Enum.filter(fn keyword ->
+        if keyword in keywords_list, do: Glific.string_clean(keyword)
+      end)
 
     if existing_keywords != [] do
       changeset
@@ -136,7 +138,7 @@ defmodule Glific.Flows.Flow do
   defp create_keywords_error_message(existing_keywords, flow_keyword_list) do
     existing_keywords_string =
       existing_keywords
-      |> Enum.map(fn keyword -> "#{keyword} is used in #{flow_keyword_list[keyword]}"  end)
+      |> Enum.map(fn keyword -> "#{keyword} is used in #{flow_keyword_list[keyword]}" end)
       |> Enum.join(", ")
 
     "`#{existing_keywords_string}`"
@@ -144,12 +146,15 @@ defmodule Glific.Flows.Flow do
 
   @spec get_other_flow_keyword_list(Ecto.Query.t()) :: map()
   defp get_other_flow_keyword_list(query),
-  do: query
+    do:
+      query
       |> select([f], %{keywords: f.keywords, name: f.name})
       |> Repo.all()
       |> Enum.reduce(%{}, fn flow, acc ->
         flow.keywords
-        |> Enum.reduce(%{}, fn keyword, acc_2 -> Map.put(acc_2, Glific.string_clean(keyword), flow.name) end)
+        |> Enum.reduce(%{}, fn keyword, acc_2 ->
+          Map.put(acc_2, Glific.string_clean(keyword), flow.name)
+        end)
         |> Map.merge(acc)
       end)
 
