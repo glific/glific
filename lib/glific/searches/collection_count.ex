@@ -43,9 +43,15 @@ defmodule Glific.Searches.CollectionCount do
   @spec collection_stats(list, boolean) :: map()
   def collection_stats(list \\ [], recent \\ true) do
     org_id_list = org_id_list(list, recent)
+
+    result = Enum.reduce(
+      org_id_list,
+      %{},
+      fn id, acc -> Map.put(acc, id, empty_result()) end
+    )
     query = query(org_id_list)
 
-    %{}
+    result
     |> all(query)
     |> unread(query)
     |> not_replied(query)
@@ -68,12 +74,8 @@ defmodule Glific.Searches.CollectionCount do
 
   @spec add(map(), non_neg_integer, String.t(), non_neg_integer) :: map()
   defp add(result, org_id, key, value) do
-    org_values =
-      if Map.has_key?(result, org_id),
-        do: result[org_id],
-        else: empty_result()
-
-    Map.put(result, org_id, Map.put(org_values, key, value))
+    result
+    |> Map.put(org_id, Map.put(result[org_id], key, value))
   end
 
   @spec add_orgs(Ecto.Query.t(), list()) :: Ecto.Query.t()
