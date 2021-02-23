@@ -114,38 +114,44 @@ defmodule Glific.Flows.Flow do
         do: Flows.Flow,
         else: Flows.Flow |> where([f], f.id != ^id and f.organization_id == ^organization_id)
 
-    keywords_list =
-      query
-      |> select([f], f.keywords)
-      |> Repo.all()
-      |> Enum.reduce([], fn keywords, acc -> keywords ++ acc end)
+    flow_keyword_list = get_other_flow_keyword_list(query)
+    keywords_list = Map.keys(flow_keyword_list)
 
-    # get list of existing keywords
     existing_keywords =
-      Enum.filter(keywords, fn keyword ->
-        if keyword in keywords_list, do: keyword
-      end)
+      keywords
+      |> Enum.filter(fn keyword -> if keyword in keywords_list, do: Glific.string_clean(keyword) end)
 
     if existing_keywords != [] do
       changeset
       |> add_error(
         :keywords,
-        create_keywords_error_message(existing_keywords)
+        create_keywords_error_message(existing_keywords, flow_keyword_list)
       )
     else
       changeset
     end
   end
 
-  @spec create_keywords_error_message([]) :: String.t()
-  defp create_keywords_error_message(existing_keywords) do
+  @spec create_keywords_error_message([], map()) :: String.t()
+  defp create_keywords_error_message(existing_keywords, flow_keyword_list) do
     existing_keywords_string =
       existing_keywords
-      |> Enum.map(&to_string/1)
+      |> Enum.map(fn keyword -> "#{keyword} is used in #{flow_keyword_list[keyword]}"  end)
       |> Enum.join(", ")
 
-    "`#{existing_keywords_string}` has already been taken"
+    "`#{existing_keywords_string}`"
   end
+
+  @spec get_other_flow_keyword_list(Ecto.Query.t()) :: map()
+  defp get_other_flow_keyword_list(query),
+  do: query
+      |> select([f], %{keywords: f.keywords, name: f.name})
+      |> Repo.all()
+      |> Enum.reduce(%{}, fn flow, acc ->
+        flow.keywords
+        |> Enum.reduce(%{}, fn keyword, acc_2 -> Map.put(acc_2, Glific.string_clean(keyword), flow.name) end)
+        |> Map.merge(acc)
+      end)
 
   @doc """
   Process a json structure from floweditor to the Glific data types
