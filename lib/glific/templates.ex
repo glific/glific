@@ -52,6 +52,9 @@ defmodule Glific.Templates do
       {:is_active, is_active}, query ->
         from q in query, where: q.is_active == ^is_active
 
+      {:status, status}, query ->
+        from q in query, where: q.status == ^status
+
       {:term, term}, query ->
         query
         |> join(:left, [template], template_tag in TemplateTag,

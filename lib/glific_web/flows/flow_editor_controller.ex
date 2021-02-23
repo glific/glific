@@ -181,7 +181,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   def templates(conn, _params) do
     results =
       Glific.Templates.list_session_templates(%{
-        filter: %{organization_id: conn.assigns[:organization_id]}
+        filter: %{organization_id: conn.assigns[:organization_id], status: "APPROVED"}
       })
       |> Enum.reduce([], fn template, acc ->
         template = Glific.Repo.preload(template, :language)
