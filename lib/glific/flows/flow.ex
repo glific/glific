@@ -138,10 +138,12 @@ defmodule Glific.Flows.Flow do
   defp create_keywords_error_message(existing_keywords, flow_keyword_list) do
     existing_keywords_string =
       existing_keywords
-      |> Enum.map(fn keyword -> "#{keyword} is used in #{flow_keyword_list[keyword]}" end)
+      |> Enum.map(fn keyword ->
+        "The keyword `#{keyword}` was already used in the `#{flow_keyword_list[keyword]}` Flow"
+      end)
       |> Enum.join(", ")
 
-    "`#{existing_keywords_string}`"
+    "#{existing_keywords_string}."
   end
 
   @spec get_other_flow_keyword_list(Ecto.Query.t()) :: map()
