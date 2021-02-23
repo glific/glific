@@ -108,9 +108,6 @@ defmodule Glific.FLowsTest do
 
       assert {:error, %Ecto.Changeset{}} =
         Flows.create_flow(invalid_attrs)
-        |> IO.inspect
-
-
     end
 
     test "create_flow/1 with keywords will covert all keywords to downcase", attrs do
