@@ -33,7 +33,7 @@ defmodule Glific.Processor.ConsumerFlow do
   defp do_process_message({message, state}, body) do
     # check if draft keyword, if so bypass ignore keywords
     # and start draft flow, issue #621
-    is_beta = is_beta_keyword?(state, message.body)
+    is_beta = is_beta_keyword?(state, body)
 
     if is_beta,
       do: FlowContext.mark_flows_complete(message.contact_id)
