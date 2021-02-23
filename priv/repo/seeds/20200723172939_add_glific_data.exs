@@ -522,7 +522,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       help: generate_uuid(organization, "3fa22108-f464-41e5-81d9-d8a298854429"),
       language: generate_uuid(organization, "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"),
       newcontact: generate_uuid(organization, "6fe8fda9-2df6-4694-9fd6-45b9e724f545"),
-      registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040")
+      registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
+      activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
+      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5")
     }
 
     flow_labels_id_map =
@@ -533,6 +535,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     data = [
       {"Help Workflow", ["help", "मदद"], uuid_map.help, true, "help.json"},
+      {"Feedback", ["feedback"], uuid_map.feedback, true, "feedback.json"},
+      {"Activity", ["activity"], uuid_map.activity, true, "activity.json"},
       {"Language Workflow", ["language", "भाषा"], uuid_map.language, true, "language.json"},
       {"New Contact Workflow", ["newcontact"], uuid_map.newcontact, false, "new_contact.json"},
       {"Registration Workflow", ["registration"], uuid_map.registration, false,

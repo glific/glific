@@ -397,15 +397,24 @@ defmodule Glific.Flows do
   Update latest flow revision status as published and increment the version
   Update cached flow definition
   """
-  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()}
+  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
   def publish_flow(%Flow{} = flow) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
+    errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
+    do_publish_flow(flow)
 
+    if errors == [],
+      do: {:ok, flow},
+      else: {:errors, format_flow_errors(errors)}
+
+  end
+
+  @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()}
+  defp do_publish_flow(%Flow{} = flow) do
     last_version = get_last_version_and_update_old_revisions(flow)
-
+    ## if invalid flow then return the {:error, array} otherwise move forword
     with {:ok, latest_revision} <-
-           FlowRevision
-           |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0}) do
+           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
       {:ok, _} =
         latest_revision
         |> FlowRevision.changeset(%{status: "published", version: last_version + 1})
@@ -416,6 +425,14 @@ defmodule Glific.Flows do
     end
 
     {:ok, flow}
+  end
+
+  @spec format_flow_errors(list()) :: list()
+  defp format_flow_errors(errors) when is_list(errors) do
+    ## we can think about the warning based on keys
+    Enum.reduce(errors, [], fn error, acc ->
+      [%{key: elem(error, 0), message: elem(error, 1)} | acc]
+    end)
   end
 
   # Get version of last published flow revision
