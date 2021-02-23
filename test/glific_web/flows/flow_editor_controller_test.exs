@@ -162,8 +162,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
 
       Templates.create_session_template(attrs)
 
-      {:ok, results} =
-        FlowEditorController.templates(conn, %{}).resp_body |> Jason.decode()
+      {:ok, results} = FlowEditorController.templates(conn, %{}).resp_body |> Jason.decode()
 
       approved_templates =
         Templates.list_session_templates(%{
@@ -173,7 +172,8 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert length(results["results"]) == length(approved_templates)
     end
 
-    test "listing templates in Flow should return the list of approved templates", %{conn: conn} = attrs do
+    test "listing templates in Flow should return the list of approved templates",
+         %{conn: conn} = attrs do
       language = language_fixture()
 
       attrs =
@@ -183,8 +183,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
 
       Templates.create_session_template(attrs)
 
-      {:ok, results} =
-        FlowEditorController.templates(conn, %{}).resp_body |> Jason.decode()
+      {:ok, results} = FlowEditorController.templates(conn, %{}).resp_body |> Jason.decode()
 
       approved_templates =
         Templates.list_session_templates(%{
