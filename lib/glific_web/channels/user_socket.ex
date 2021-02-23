@@ -1,11 +1,10 @@
 defmodule GlificWeb.UserSocket do
   @moduledoc false
   use Phoenix.Socket
-
-  require Logger
-
   use Absinthe.Phoenix.Socket,
     schema: GlificWeb.Schema
+
+  require Logger
 
   alias GlificWeb.APIAuthPlug
 
@@ -38,9 +37,10 @@ defmodule GlificWeb.UserSocket do
         socket =
           socket
           |> assign(:session_fingerprint, fingerprint)
-          |> assign(:user_id, user.id)
-          |> assign(:organization_id, user.organization_id)
-          |> Absinthe.Phoenix.Socket.put_options(context: %{current_user: user})
+          |> assign(:user, user)
+          |> Absinthe.Phoenix.Socket.put_options(
+            context: %{current_user: user, nonce: :erlang.unique_integer()}
+          )
 
         Glific.Repo.put_current_user(user)
         Glific.Repo.put_organization_id(user.organization_id)
