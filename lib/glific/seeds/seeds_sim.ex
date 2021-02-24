@@ -13,6 +13,7 @@ defmodule Glific.Seeds.SeedsSim do
     Partners,
     Partners.Organization,
     Repo,
+    Searches.SavedSearch,
     Settings,
     Settings.Language,
     Users,
@@ -20,16 +21,29 @@ defmodule Glific.Seeds.SeedsSim do
   }
 
   @doc """
+  Public interface to do a seed migration across all organizations.
+
   One function to rule them all. This function is invoked manually by a glific developer
-  to add data from the DB. This seems the cleanest way to do such things
+  to add data from the DB. This seems the cleanest way to do such things. We use phases to
+  seperate different migrations
   """
-  @spec add_simulators(Organization.t() | nil) :: :ok
-  def add_simulators(organization \\ nil) do
+  @spec migrate_data(atom(), Organization.t() | nil) :: :ok
+  def migrate_data(phase, organization \\ nil) do
     organizations =
       if is_nil(organization),
         do: Partners.list_organizations(),
         else: [organization]
 
+    case phase do
+      :simulator -> add_simulators(organizations)
+      :optin -> optin_data(organizations)
+    end
+  end
+
+  @doc """
+  """
+  @spec add_simulators(list()) :: :ok
+  def add_simulators(organizations) do
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
     organizations
@@ -184,5 +198,50 @@ defmodule Glific.Seeds.SeedsSim do
       })
 
     user
+  end
+
+  @spec optin_data(list()) :: :ok
+  defp optin_data(organizations) do
+    add_optin_search(organizations)
+
+    migrate_optin_data()
+  end
+
+  @spec add_optin_search(list()) :: :ok
+  defp add_optin_search(organizations) do
+    shortcode = "Optin"
+
+    organizations
+    |> Enum.each(fn org ->
+      Repo.insert!(%SavedSearch{
+        label: "Conversations where the contact has opted in",
+        shortcode: shortcode,
+        args: %{
+          filter: %{status: shortcode, term: ""},
+          contactOpts: %{limit: 25, offset: 0},
+          messageOpts: %{limit: 20, offset: 0}
+        },
+        is_reserved: true,
+        organization_id: org.id
+      })
+    end)
+  end
+
+  @spec migrate_optin_data :: :ok
+  defp migrate_optin_data do
+    # Set false status for contacts not opted in
+    Contact
+    |> where([c], is_nil(c.optin_time))
+    |> update([c], set: [optin_status: false])
+    |> Repo.update_all([], skip_organization_id: true)
+
+    # Set true status where we have an option_date,
+    # also set method as URL since they opted in via Gupshup
+    Contact
+    |> where([c], not is_nil(c.optin_time))
+    |> update([c], set: [optin_status: true, optin_method: "URL"])
+    |> Repo.update_all([], skip_organization_id: true)
+
+    :ok
   end
 end

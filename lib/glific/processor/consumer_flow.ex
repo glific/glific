@@ -24,16 +24,19 @@ defmodule Glific.Processor.ConsumerFlow do
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   def process_message({message, state}, body) do
-    if should_skip_message?(message),
+    if should_skip_message?(message, state),
       do: {message, state},
       else: do_process_message({message, state}, body)
   end
+
+  # Setting this to 0 since we are pushing out our own optin flow
+  @delay_time 0
 
   @spec do_process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   defp do_process_message({message, state}, body) do
     # check if draft keyword, if so bypass ignore keywords
     # and start draft flow, issue #621
-    is_beta = is_beta_keyword?(state, message.body)
+    is_beta = is_beta_keyword?(state, body)
 
     if is_beta,
       do: FlowContext.mark_flows_complete(message.contact_id)
@@ -53,10 +56,10 @@ defmodule Glific.Processor.ConsumerFlow do
     else
       _ ->
         cond do
-          Map.get(state, :newcontact, false) == true &&
+          Map.get(state, :newcontact, false) &&
               Map.has_key?(state.flow_keywords["published"], "newcontact") ->
             # delay new contact flows by 2 minutes to allow user to deal with signon link
-            check_flows(message, "newcontact", state, is_beta: false, delay: 120)
+            check_flows(message, "newcontact", state, is_beta: false, delay: @delay_time)
 
           Map.has_key?(state.flow_keywords["published"], body) ->
             check_flows(message, body, state, is_beta: false)
@@ -163,15 +166,9 @@ defmodule Glific.Processor.ConsumerFlow do
   # if this is a new contact then we will allow to
   # process the message other wise system will check if
   # they opted in again and skip the flow
-  @spec should_skip_message?(Message.t()) :: boolean()
-  defp should_skip_message?(message) do
-    message = Glific.Repo.preload(message, [:tags])
-
-    is_new_contact =
-      message.tags
-      |> Enum.any?(fn tag -> tag.shortcode == "newcontact" end)
-
-    if is_new_contact or message.body == nil,
+  @spec should_skip_message?(Message.t(), map()) :: boolean()
+  defp should_skip_message?(message, state) do
+    if Map.get(state, :newcontact, false) || is_nil(message.body),
       do: false,
       else: String.contains?(message.body, "Hi, I would like to receive notifications.")
   end

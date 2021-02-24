@@ -124,7 +124,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert "keywords" = get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "key"])
 
-    assert "`testkeyword` has already been taken" =
+    assert "The keyword `testkeyword` was already used in the `Flow Test Name` Flow." =
              get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
   end
 
@@ -164,6 +164,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert message == "Resource not found"
   end
 
+  @tag :pending
   test "Publish flow", %{manager: user} do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
