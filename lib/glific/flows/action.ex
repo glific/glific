@@ -492,7 +492,7 @@ defmodule Glific.Flows.Action do
         ContactAction.optin(
           context,
           method: "WA",
-          message_id: get_in(context, [:last_message, :bsp_message_id]),
+          message_id: context.last_message.bsp_message_id,
           bsp_status: :session_and_hsm
         )
 
