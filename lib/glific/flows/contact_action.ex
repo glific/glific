@@ -290,11 +290,13 @@ defmodule Glific.Flows.ContactAction do
       context.contact.phone,
       context.contact.organization_id,
       DateTime.utc_now(),
-      opts
+      Keyword.put(opts, :optin_on_bsp, true)
     )
 
     context
   end
+
+
 
   @doc """
   Contact opts out
