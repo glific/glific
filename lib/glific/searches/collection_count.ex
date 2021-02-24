@@ -20,7 +20,15 @@ defmodule Glific.Searches.CollectionCount do
     |> Enum.reduce([], fn {id, _map}, acc -> [id | acc] end)
   end
 
-  defp org_id_list(list, _recent), do: list
+  defp org_id_list(list, _recent) do
+    Enum.map(
+      list,
+      fn l ->
+        {:ok, int_l} = Glific.parse_maybe_integer(l)
+        int_l
+      end
+    )
+  end
 
   @spec publish_data(map()) :: map()
   defp publish_data(results) do
@@ -52,6 +60,7 @@ defmodule Glific.Searches.CollectionCount do
 
   @spec do_collection_stats(list()) :: map()
   defp do_collection_stats(org_id_list) do
+    IO.inspect(org_id_list, label: "LIST")
     query = query(org_id_list)
 
     org_id_list
