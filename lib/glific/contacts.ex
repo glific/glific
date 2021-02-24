@@ -364,6 +364,7 @@ defmodule Glific.Contacts do
       updated_at: DateTime.utc_now()
     }
 
+
     case Repo.get_by(Contact, %{phone: phone}) do
       nil ->
         create_contact(attrs)
@@ -373,7 +374,17 @@ defmodule Glific.Contacts do
           do: {:ok, contact},
           else: update_contact(contact, attrs)
     end
+    |> optin_on_bsp(Keyword.get(opts, :optin_on_bsp, false))
+
   end
+
+  @spec optin_on_bsp({:ok, Contact.t()} | {:error, Ecto.Changeset.t()}, Keyword.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp optin_on_bsp({:ok, contact}, true) do
+      optin_contact(contact)
+      {:ok, contact}
+  end
+
+  defp optin_on_bsp(res, _),  do: res
 
   @doc """
   Update DB fields when contact opted out
@@ -415,9 +426,11 @@ defmodule Glific.Contacts do
   @doc false
   @spec can_send_message_to?(Contact.t(), boolean()) :: boolean()
   def can_send_message_to?(contact, true = _is_hsm) do
-    if contact.status == :valid &&
+    skip_optout_check = Map.get(contact, :skip_optout_check, false)
+
+    if (contact.status == :valid || skip_optout_check) &&
          contact.bsp_status in [:session_and_hsm, :hsm] &&
-         contact.optin_time != nil,
+         (contact.optin_time != nil || skip_optout_check),
        do: true,
        else: false
   end
@@ -426,7 +439,9 @@ defmodule Glific.Contacts do
   Check if we can send a session message to the contact
   """
   def can_send_message_to?(contact, false = _is_hsm) do
-    if contact.status == :valid &&
+    skip_optout_check = Map.get(contact, :skip_optout_check, false)
+
+    if (contact.status == :valid || skip_optout_check) &&
          contact.bsp_status in [:session_and_hsm, :session] &&
          Glific.in_past_time(contact.last_message_at, :hours, 24),
        do: true,

@@ -660,4 +660,8 @@ defmodule Glific.Flows do
     do: Enum.map(keywords, &Glific.string_clean(&1))
 
   defp sanitize_flow_keywords(keywords), do: keywords
+
+  def is_optin_flow?(_flow_id) do
+    true
+  end
 end

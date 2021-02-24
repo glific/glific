@@ -9,6 +9,7 @@ defmodule Glific.Messages do
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
+    Flows,
     Flows.FlowContext,
     Flows.MessageVarParser,
     Groups.Group,
@@ -232,8 +233,11 @@ defmodule Glific.Messages do
       )
     else
       _ ->
-        Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false))
+        contact
+        |> Map.put(:skip_optout_check, Flows.is_optin_flow?(attrs[:flow_id]))
+        |> Contacts.can_send_message_to?(Map.get(attrs, :is_hsm, false))
         |> create_and_send_message(attrs)
+
     end
   end
 
@@ -369,8 +373,10 @@ defmodule Glific.Messages do
         media_id: media_id
       }
 
-      Contacts.can_send_message_to?(contact, true)
-      |> create_and_send_message(message_params)
+      contact
+        |> Map.put(:skip_optout_check, Flows.is_optin_flow?(updated_template[:flow_id]))
+        |> Contacts.can_send_message_to?(true)
+        |> create_and_send_message(message_params)
     else
       false ->
         {:error, "You need to provide correct number of parameters for hsm template"}

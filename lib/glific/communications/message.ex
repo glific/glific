@@ -42,7 +42,11 @@ defmodule Glific.Communications.Message do
       }'"
     )
 
-    if Contacts.can_send_message_to?(message.receiver, message.is_hsm) do
+    IO.inspect "debug 4"
+
+    if (message.receiver
+    |> Map.put(:skip_optout_check, true)
+    |> Contacts.can_send_message_to?( message.is_hsm)) do
       {:ok, _} =
         apply(
           Communications.provider_handler(message.organization_id),
