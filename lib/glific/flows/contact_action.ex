@@ -296,8 +296,6 @@ defmodule Glific.Flows.ContactAction do
     context
   end
 
-
-
   @doc """
   Contact opts out
   """
