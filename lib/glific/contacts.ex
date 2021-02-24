@@ -382,6 +382,7 @@ defmodule Glific.Contacts do
     contact
     |> Map.from_struct()
     |> optin_contact()
+
     {:ok, contact}
   end
 
