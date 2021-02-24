@@ -379,7 +379,9 @@ defmodule Glific.Contacts do
   @spec optin_on_bsp({:ok, Contact.t()} | {:error, Ecto.Changeset.t()}, Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   defp optin_on_bsp({:ok, contact}, true) do
-    optin_contact(contact)
+    contact
+    |> Map.from_struct()
+    |> optin_contact()
     {:ok, contact}
   end
 
