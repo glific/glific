@@ -350,7 +350,7 @@ defmodule Glific.Flows do
   A helper function to interact with the Caching API and get the cached flow.
   It will also set the loaded flow to cache in case it does not exists.
   """
-  @spec get_cached_flow(non_neg_integer, {atom(), any(), String.t()}) :: {atom, any} | atom()
+  @spec get_cached_flow(non_neg_integer, {atom(), any(), String.t()}) :: {atom, any} | {atom(), String.t()}
   def get_cached_flow(nil, _key), do: {:ok, nil}
 
   def get_cached_flow(organization_id, key) do
@@ -494,10 +494,10 @@ defmodule Glific.Flows do
 
     {:ok, _group_message} =
       Messages.create_group_message(%{
-        body: "Starting flow: #{flow.name} for group: #{group.label}",
-        type: :text,
-        group_id: group.id
-      })
+            body: "Starting flow: #{flow.name} for group: #{group.label}",
+            type: :text,
+            group_id: group.id
+                                    })
 
     group = group |> Repo.preload([:contacts])
     process_contact_flow(group.contacts, flow, status)
