@@ -189,6 +189,8 @@ defmodule Glific.Flows.Action do
       contacts: json["contacts"]
     }
 
+    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
+    attrs = Map.put(attrs, :templating, templating)
     process(json, uuid_map, node, attrs)
   end
 
