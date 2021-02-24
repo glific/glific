@@ -1,6 +1,7 @@
 defmodule GlificWeb.UserSocket do
   @moduledoc false
   use Phoenix.Socket
+
   use Absinthe.Phoenix.Socket,
     schema: GlificWeb.Schema
 
@@ -38,9 +39,7 @@ defmodule GlificWeb.UserSocket do
           socket
           |> assign(:session_fingerprint, fingerprint)
           |> assign(:user, user)
-          |> Absinthe.Phoenix.Socket.put_options(
-            context: %{current_user: user, nonce: :erlang.unique_integer()}
-          )
+          |> Absinthe.Phoenix.Socket.put_options(context: %{current_user: user})
 
         Glific.Repo.put_current_user(user)
         Glific.Repo.put_organization_id(user.organization_id)
