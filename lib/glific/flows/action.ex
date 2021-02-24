@@ -182,11 +182,11 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => "send_broadcast"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_contact)
-
     attrs = %{
       text: json["text"],
       attachments: process_attachments(json["attachments"]),
-      contacts: json["contacts"]
+      contacts: json["contacts"],
+      templating: json["templating"]
     }
 
     process(json, uuid_map, node, attrs)
@@ -320,6 +320,8 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "send_broadcast"} = action, context, messages) do
+    IO.inspect("debug001actionexecute")
+    IO.inspect(action)
     ContactAction.send_broadcast(context, action, messages)
   end
 
