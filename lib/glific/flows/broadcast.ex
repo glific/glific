@@ -12,6 +12,7 @@ defmodule Glific.Flows.Broadcast do
     Flows,
     Flows.Flow,
     Flows.FlowContext,
+    Groups.ContactGroup,
     Groups.Group,
     Messages,
     Partners,
@@ -53,8 +54,8 @@ defmodule Glific.Flows.Broadcast do
 
     [
       bsp_limit: bsp_limit,
-      limit: 0,
-      offset: 1000,
+      limit: 1000,
+      offset: 0,
       size: 1000,
       delay: 0
     ]
@@ -120,6 +121,7 @@ defmodule Glific.Flows.Broadcast do
       Task.async_stream(
         contacts,
         fn contact ->
+          Repo.put_process_state(contact.organization_id)
           if Contacts.can_send_message_to?(contact),
             do: FlowContext.init_context(flow, contact, @status, opts)
         end,
