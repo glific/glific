@@ -170,7 +170,7 @@ defmodule GlificWeb.Schema do
     organization_id = args.organization_id
 
     if organization_id == Integer.to_string(user.organization_id) do
-      {:ok, [topic: organization_id, context_id: organization_id]}
+      {:ok, [topic: organization_id]}
     else
       {:error, "Credentials did not match"}
     end
