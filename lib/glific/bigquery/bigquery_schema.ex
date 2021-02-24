@@ -78,6 +78,18 @@ defmodule Glific.BigquerySchema do
         mode: "NULLABLE"
       },
       %{
+        description: "If contact is a user and their respective user name",
+        name: "user_name",
+        type: "string",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "If contact is a user and their respective role",
+        name: "user_role",
+        type: "string",
+        mode: "NULLABLE"
+      },
+      %{
         description: "NGO generated fields for the user generated as a map",
         name: "fields",
         type: "RECORD",
@@ -238,6 +250,18 @@ defmodule Glific.BigquerySchema do
         description: "Time when the record entry was last updated",
         name: "updated_at",
         type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "If contact is a user and their respective user name",
+        name: "user_name",
+        type: "string",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "If contact is a user and their respective role",
+        name: "user_role",
+        type: "string",
         mode: "NULLABLE"
       },
       %{

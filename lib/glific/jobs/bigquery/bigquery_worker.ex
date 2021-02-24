@@ -144,7 +144,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([m], m.organization_id == ^organization_id)
       |> where([m], m.id > ^min_id and m.id <= ^max_id)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:language, :tags, :groups])
+      |> preload([:language, :tags, :groups, :user])
 
     Repo.all(query)
     |> Enum.reduce(
@@ -175,6 +175,8 @@ defmodule Glific.Jobs.BigQueryWorker do
                   }
                 end),
               settings: row.settings,
+              user_name: if(!is_nil(row.user), do: row.user.name),
+              user_role: if(!is_nil(row.user), do: row.user.roles),
               groups:
                 Enum.map(row.groups, fn group ->
                   %{label: group.label, description: group.description}
@@ -320,7 +322,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([fr], fr.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
       |> where([fr], fr.updated_at != fr.inserted_at)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:language, :tags, :groups])
+      |> preload([:language, :tags, :groups, :user])
 
     Repo.all(query)
     |> Enum.reduce(
@@ -349,6 +351,8 @@ defmodule Glific.Jobs.BigQueryWorker do
                   }
                 end),
               settings: row.settings,
+              user_name: if(!is_nil(row.user), do: row.user.name),
+              user_role: if(!is_nil(row.user), do: row.user.roles),
               groups:
                 Enum.map(row.groups, fn group ->
                   %{label: group.label, description: group.description}
