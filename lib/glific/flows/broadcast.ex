@@ -15,19 +15,19 @@ defmodule Glific.Flows.Broadcast do
     Groups.Group,
     Messages,
     Partners,
-    Partners.Organization,
     Repo
   }
 
-  @doc """
-  The one simple public interface
-  """
-  @spec broadcast(Group.t(), Flow.t()) :: nil
-  def broadcast(group, flow) do
-    # lets set up the state and then call our helper friend smallcast
-    status = "published"
+  @status "published"
 
-    {:ok, flow} = Flows.get_cached_flow(group.organization_id, {:flow_id, flow.id, status})
+  @doc """
+  The one simple public interface to broadcast a group
+  """
+  @spec broadcast_group(Flow.t(), Group.t()) :: nil
+  def broadcast_group(flow, group) do
+    # lets set up the state and then call our helper friend to split group into smaller chunks
+    # of contacts
+    {:ok, flow} = Flows.get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
 
     {:ok, _group_message} =
       Messages.create_group_message(%{
@@ -36,29 +36,31 @@ defmodule Glific.Flows.Broadcast do
         group_id: group.id
       })
 
-    organization = Partners.organization(flow.organization_id)
+    do_broadcast(flow, group, opts(group.organization_id))
+  end
 
-    opts = [
-      organization: organization,
-      bsp_limit: bsp_limit(organization),
+  # function to build the opts values to process a list of contacts
+  # or a group
+  @spec opts(non_neg_integer) :: Keyword.t()
+  defp opts(organization_id) do
+    organization = Partners.organization(organization_id)
+
+    bsp_limit = organization.services["bsp"].keys["bsp_limit"]
+    bsp_limit = if is_nil(bsp_limit), do: 30, else: bsp_limit
+
+    # lets do 80% of organization bsp limit to allow replies to come in and be processed
+    bsp_limit = div(bsp_limit * 80, 100)
+
+    [
+      bsp_limit: bsp_limit,
       limit: 0,
       offset: 1000,
       size: 1000,
       delay: 0
     ]
-
-    do_broadcast(group, flow, opts)
   end
 
-  @spec bsp_limit(Organization.t()) :: non_neg_integer
-  defp bsp_limit(organization) do
-    bsp_limit = organization.services["bsp"].keys["bsp_limit"]
-    bsp_limit = if is_nil(bsp_limit), do: 30, else: bsp_limit
-    # lets do 80% of organization bsp limit to allow replies to come in and be processed
-    div(bsp_limit * 80, 100)
-  end
-
-  @spec contacts(Group.t(), Keyword.t()) :: Ecto.Query.t()
+  @spec contacts(Group.t(), Keyword.t()) :: list(Contact.t())
   defp contacts(group, opts) do
     Contact
     |> where([c], c.status != :blocked and is_nil(c.optout_time))
@@ -72,36 +74,59 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.all()
   end
 
-  @spec do_broadcast(Group.t(), map(), Keyword.t()) :: nil
-  defp do_broadcast(group, flow, opts) do
+  @spec do_broadcast(map(), Group.t(), Keyword.t()) :: nil
+  defp do_broadcast(flow, group, opts) do
     contacts = contacts(group, opts)
 
     if contacts != [] do
-      contacts
-      |> Enum.chunk_every(opts[:bsp_limit])
-      |> Enum.with_index()
-      |> Enum.each(fn {contacts, delay} ->
-        broadcast_flow(contacts, flow, opts[:delay] + delay)
-      end)
+      broadcast_contacts(flow, contacts, opts)
 
-      do_broadcast(
-        group,
-        flow,
+      # slide the window of contacts to the next set
+      opts =
         opts
         |> Keyword.replace!(:offset, opts[:offset] + opts[:size])
         |> Keyword.replace!(:delay, opts[:delay] + ceil(opts[:size] / opts[:bsp_limit]))
+
+      do_broadcast(
+        flow,
+        group,
+        opts
       )
     end
   end
 
-  @status "published"
+  @doc """
+  Lets start a bunch of contacts on a flow in parallel
+  """
+  @spec broadcast_contacts(map(), list(Contact.t()), Keyword.t()) :: :ok
+  def broadcast_contacts(flow, contacts, opts \\ []) do
+    opts =
+      if opts == [],
+        do: opts(flow.organization_id),
+        else: opts
 
-  @spec broadcast_flow(list(), map(), non_neg_integer) :: nil
-  defp broadcast_flow(contacts, flow, delay) do
-    for contact <- contacts do
-      if Contacts.can_send_message_to?(contact) do
-        FlowContext.init_context(flow, contact, @status, delay: delay)
-      end
-    end
+    contacts
+    |> Enum.chunk_every(opts[:bsp_limit])
+    |> Enum.with_index()
+    |> Enum.each(fn {chunk_list, delay_offset} ->
+      flow_tasks(flow, chunk_list, opts[:delay] + delay_offset)
+    end)
+  end
+
+  defp flow_tasks(flow, contacts, delay) do
+    opts = [delay: delay]
+    stream =
+      Task.async_stream(
+        contacts,
+        fn contact ->
+          if Contacts.can_send_message_to?(contact),
+            do: FlowContext.init_context(flow, contact, @status, opts)
+        end,
+        ordered: false,
+        timeout: 1_000,
+        on_timeout: :kill_task
+      )
+
+    Stream.run(stream)
   end
 end
