@@ -189,6 +189,8 @@ defmodule Glific.Flows.Action do
       contacts: json["contacts"]
     }
 
+    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
+    attrs = Map.put(attrs, :templating, templating)
     process(json, uuid_map, node, attrs)
   end
 
@@ -492,7 +494,7 @@ defmodule Glific.Flows.Action do
         ContactAction.optin(
           context,
           method: "WA",
-          message_id: get_in(context, [:last_message, :bsp_message_id]),
+          message_id: context.last_message.bsp_message_id,
           bsp_status: :session_and_hsm
         )
 

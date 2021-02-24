@@ -373,7 +373,19 @@ defmodule Glific.Contacts do
           do: {:ok, contact},
           else: update_contact(contact, attrs)
     end
+    |> optin_on_bsp(Keyword.get(opts, :optin_on_bsp, false))
   end
+
+  @spec optin_on_bsp({:ok, Contact.t()} | {:error, Ecto.Changeset.t()}, Keyword.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp optin_on_bsp({:ok, contact}, true) do
+    contact
+    |> Map.from_struct()
+    |> optin_contact()
+    {:ok, contact}
+  end
+
+  defp optin_on_bsp(res, _), do: res
 
   @doc """
   Update DB fields when contact opted out
