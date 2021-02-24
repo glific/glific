@@ -27,6 +27,6 @@ defmodule GlificWeb.Context do
 
     if current_user != nil,
       do: %{current_user: current_user},
-    else: %{}
+      else: %{}
   end
 end
