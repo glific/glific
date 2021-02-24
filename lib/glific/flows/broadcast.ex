@@ -115,6 +115,7 @@ defmodule Glific.Flows.Broadcast do
 
   defp flow_tasks(flow, contacts, delay) do
     opts = [delay: delay]
+
     stream =
       Task.async_stream(
         contacts,
