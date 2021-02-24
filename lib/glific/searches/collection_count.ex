@@ -60,7 +60,6 @@ defmodule Glific.Searches.CollectionCount do
 
   @spec do_collection_stats(list()) :: map()
   defp do_collection_stats(org_id_list) do
-    IO.inspect(org_id_list, label: "LIST")
     query = query(org_id_list)
 
     org_id_list
