@@ -58,6 +58,7 @@ defmodule Glific.Flows.Action do
           field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
+          enter_flow_name: String.t() | nil,
           attachments: list() | nil,
           labels: list() | nil,
           groups: list() | nil,
@@ -104,6 +105,8 @@ defmodule Glific.Flows.Action do
     embeds_one :templating, Templating
 
     field :enter_flow_uuid, Ecto.UUID
+    field :enter_flow_name, :string
+
     embeds_one :enter_flow, Flow
   end
 
@@ -128,7 +131,10 @@ defmodule Glific.Flows.Action do
   @spec process(map(), map(), Node.t()) :: {Action.t(), map()}
   def process(%{"type" => "enter_flow"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_enter_flow)
-    process(json, uuid_map, node, %{enter_flow_uuid: json["flow"]["uuid"]})
+    process(json, uuid_map, node,
+      %{enter_flow_uuid: json["flow"]["uuid"],
+        enter_flow_name: json["flow"]["name"],
+      })
   end
 
   def process(%{"type" => "set_contact_language"} = json, uuid_map, node) do
@@ -284,7 +290,7 @@ defmodule Glific.Flows.Action do
     # ensure that the flow exists
     case Repo.fetch_by(Flow, %{uuid: action.enter_flow_uuid}) do
       {:ok, _} -> errors
-      _ -> [{Flow, "Could not find Flow object"}] ++ errors
+      _ -> [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}"}] ++ errors
     end
   end
 
