@@ -89,11 +89,7 @@ defmodule Glific.Flows.Broadcast do
         |> Keyword.replace!(:offset, opts[:offset] + opts[:limit])
         |> Keyword.replace!(:delay, opts[:delay] + ceil(opts[:limit] / opts[:bsp_limit]))
 
-      do_broadcast(
-        flow,
-        group,
-        opts
-      )
+      do_broadcast(flow, group, opts)
     end
   end
 

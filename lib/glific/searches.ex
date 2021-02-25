@@ -387,7 +387,7 @@ defmodule Glific.Searches do
     args
     |> basic_query()
     |> where([c: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
-    |> where([c: c], c.status != ^:blocked)
+    |> where([c: c], c.status != :blocked)
     |> limit(^limit)
     |> offset(^offset)
     |> Repo.all()
