@@ -19,6 +19,10 @@ defmodule Glific.Repo.Seeds.OptinOptoutFlows do
       with {:error, _} <- Repo.fetch_by(Flow, %{name: "Optin", organization_id: organization.id}) do
         add_optin_flow(organization)
       end
+
+      with {:error, _} <- Repo.fetch_by(Flow, %{name: "Optout", organization_id: organization.id}) do
+        add_optout_flow(organization)
+      end
     end)
   end
 
@@ -35,6 +39,24 @@ defmodule Glific.Repo.Seeds.OptinOptoutFlows do
 
     data = [
       {"Optin", ["optin"], uuid_map.optin, true, "optin.json"}
+    ]
+
+    Enum.map(data, &flow(&1, organization, uuid_map, flow_labels_id_map))
+  end
+
+  defp add_optout_flow(organization) do
+    uuid_map = %{
+      optout: Ecto.UUID.generate()
+    }
+
+    flow_labels_id_map =
+      FlowLabel.get_all_flowlabel(organization.id)
+      |> Enum.reduce(%{}, fn flow_label, acc ->
+        acc |> Map.merge(%{flow_label.name => flow_label.uuid})
+      end)
+
+    data = [
+      {"Optout", ["optout"], uuid_map.optout, true, "optout.json"}
     ]
 
     Enum.map(data, &flow(&1, organization, uuid_map, flow_labels_id_map))

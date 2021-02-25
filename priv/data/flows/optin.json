@@ -50,9 +50,9 @@
     },
     "name": "Optin",
     "type": "messaging",
-    "uuid": "1a859ab1-6d6a-44bd-852f-78a8cebc7a5e",
+    "uuid": "OPTIN_UUID",
     "vars": [
-        "1a859ab1-6d6a-44bd-852f-78a8cebc7a5e"
+        "OPTIN_UUID"
     ],
     "nodes": [
         {

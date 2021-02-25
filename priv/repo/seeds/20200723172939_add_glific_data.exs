@@ -526,7 +526,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
       activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
       feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
-      optin: generate_uuid(organization, "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f")
+      optin: generate_uuid(organization, "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"),
+      optout: generate_uuid(organization, "9e607fd5-232e-43c8-8fac-d8a99d72561e")
     }
 
     flow_labels_id_map =
