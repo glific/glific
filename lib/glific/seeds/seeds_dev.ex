@@ -6,7 +6,6 @@ if Code.ensure_loaded?(Faker) do
     alias Glific.{
       Contacts,
       Contacts.Contact,
-      Flows,
       Flows.Flow,
       Flows.FlowLabel,
       Flows.FlowRevision,
@@ -17,6 +16,7 @@ if Code.ensure_loaded?(Faker) do
       Partners.Organization,
       Partners.Provider,
       Repo,
+      Seeds.SeedsFlows,
       Settings,
       Settings.Language,
       Tags.Tag,
@@ -715,7 +715,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_flows(Organization.t() | nil) :: [any()]
+    @spec seed_flows(Organization.t() | nil) :: :ok
     def seed_flows(organization \\ nil) do
       organization = get_organization(organization)
 
@@ -729,12 +729,6 @@ if Code.ensure_loaded?(Faker) do
         help: "3fa22108-f464-41e5-81d9-d8a298854429"
       }
 
-      flow_labels_id_map =
-        FlowLabel.get_all_flowlabel(organization.id)
-        |> Enum.reduce(%{}, fn flow_label, acc ->
-          acc |> Map.merge(%{flow_label.name => flow_label.uuid})
-        end)
-
       data = [
         {"Preference Workflow", ["preference"], uuid_map.preference, false, "preference.json"},
         {"Out of Office Workflow", ["outofoffice"], uuid_map.outofoffice, false,
@@ -742,74 +736,7 @@ if Code.ensure_loaded?(Faker) do
         {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"}
       ]
 
-      Enum.map(data, &flow(&1, organization, uuid_map, flow_labels_id_map))
-    end
-
-    defp replace_uuids(json, uuid_map),
-      do:
-        Enum.reduce(
-          uuid_map,
-          json,
-          fn {key, uuid}, acc ->
-            String.replace(
-              acc,
-              key |> Atom.to_string() |> String.upcase() |> Kernel.<>("_UUID"),
-              uuid
-            )
-          end
-        )
-
-    defp replace_label_uuids(json, flow_labels_id_map),
-      do:
-        Enum.reduce(
-          flow_labels_id_map,
-          json,
-          fn {key, id}, acc ->
-            String.replace(
-              acc,
-              key |> Kernel.<>(":ID"),
-              "#{id}"
-            )
-          end
-        )
-
-    defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
-      # Using create_flow so that it will clear the cache
-      # while creating outofoffice flow in periodic tests
-      {:ok, f} =
-        %{
-          name: name,
-          keywords: keywords,
-          ignore_keywords: ignore_keywords,
-          version_number: "13.1.0",
-          uuid: uuid,
-          organization_id: organization.id
-        }
-        |> Flows.create_flow()
-
-      flow_revision(f, organization, file, uuid_map, id_map)
-    end
-
-    @doc false
-    @spec flow_revision(Flow.t(), Organization.t(), String.t(), map(), map()) :: nil
-    def flow_revision(f, organization, file, uuid_map, id_map) do
-      definition =
-        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
-        |> replace_uuids(uuid_map)
-        |> replace_label_uuids(id_map)
-        |> Jason.decode!()
-        |> Map.merge(%{
-          "name" => f.name,
-          "uuid" => f.uuid
-        })
-
-      Repo.insert(%FlowRevision{
-        definition: definition,
-        flow_id: f.id,
-        status: "published",
-        version: 1,
-        organization_id: organization.id
-      })
+      SeedsFlows.add_flow(organization, data, uuid_map)
     end
 
     @spec get_organization(Organization.t() | nil) :: Organization.t()

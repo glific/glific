@@ -14,6 +14,7 @@ defmodule Glific.Seeds.SeedsSim do
     Partners.Organization,
     Repo,
     Searches.SavedSearch,
+    Seeds.SeedsFlows,
     Settings,
     Settings.Language,
     Users,
@@ -37,11 +38,11 @@ defmodule Glific.Seeds.SeedsSim do
     case phase do
       :simulator -> add_simulators(organizations)
       :optin -> optin_data(organizations)
+      :opt_in_out -> SeedsFlows.opt_in_out_flows(organizations)
     end
   end
 
-  @doc """
-  """
+  @doc false
   @spec add_simulators(list()) :: :ok
   def add_simulators(organizations) do
     [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
