@@ -150,28 +150,29 @@ defmodule Glific.GroupsTest do
       assert contact_group.group_id == group.id
     end
 
-    test "ensure that creating contact_group with same contact and group returns the existing one", attrs do
+    test "ensure that creating contact_group with same contact and group returns the existing one",
+         attrs do
       [contact | _] = Contacts.list_contacts(%{filter: attrs})
       group = group_fixture(attrs)
 
       {:ok, cg1} =
         Groups.create_contact_group(%{
-              contact_id: contact.id,
-              group_id: group.id,
-              organization_id: attrs.organization_id
-                                    })
+          contact_id: contact.id,
+          group_id: group.id,
+          organization_id: attrs.organization_id
+        })
 
       # here we just want to ensure an error happened
       # since we are forgiving in this api call and allow a contact to be added to the
       # same group
-       {:ok, cg2} =
+      {:ok, cg2} =
         Groups.create_contact_group(%{
-              contact_id: contact.id,
-              group_id: group.id,
-              organization_id: attrs.organization_id
-                                    })
+          contact_id: contact.id,
+          group_id: group.id,
+          organization_id: attrs.organization_id
+        })
 
-       assert cg1 == cg2
+      assert cg1 == cg2
     end
   end
 
