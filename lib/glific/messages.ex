@@ -224,13 +224,14 @@ defmodule Glific.Messages do
   defp check_for_hsm_message(attrs, contact) do
     with true <- Map.has_key?(attrs, :template_id),
          true <- Map.get(attrs, :is_hsm) do
-      create_and_send_hsm_message(%{
+      attrs
+      |> Map.merge(%{
         template_id: attrs.template_id,
         receiver_id: attrs.receiver_id,
         parameters: attrs.params,
         media_id: attrs.media_id
-        }
-      )
+      })
+      |> create_and_send_hsm_message()
     else
       _ ->
         Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false))
@@ -306,7 +307,8 @@ defmodule Glific.Messages do
       "#{ttl_in_minutes} minutes"
     ]
 
-    create_and_send_hsm_message(%{template_id: session_template.id, receiver_id: contact.id, parameters: parameters})
+    %{template_id: session_template.id, receiver_id: contact.id, parameters: parameters}
+    |> create_and_send_hsm_message()
   end
 
   @doc """
@@ -349,10 +351,10 @@ defmodule Glific.Messages do
   """
   @spec create_and_send_hsm_message(map()) ::
           {:ok, Message.t()} | {:error, String.t()}
-  def create_and_send_hsm_message(%{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs) do
-
-    media_id  = Map.get(attrs, :media_id, nil)
-
+  def create_and_send_hsm_message(
+        %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
+      ) do
+    media_id = Map.get(attrs, :media_id, nil)
     contact = Glific.Contacts.get_contact!(receiver_id)
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 
@@ -370,10 +372,11 @@ defmodule Glific.Messages do
         template_uuid: session_template.uuid,
         template_id: template_id,
         params: parameters,
-        media_id: media_id
+        media_id: media_id,
+        is_optin_flow: Map.get(attrs, :is_optin_flow, false)
       }
 
-      Contacts.can_send_message_to?(contact, true)
+      Contacts.can_send_message_to?(contact, true, attrs)
       |> create_and_send_message(message_params)
     else
       false ->

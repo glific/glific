@@ -43,44 +43,42 @@ defmodule Glific.Processor.ConsumerFlow do
 
     context = FlowContext.active_context(message.contact_id)
 
-      # if contact is not optout if we are in a flow and the flow is set to ignore keywords
-      # then send control to the flow directly
-      # context is not nil
+    # if contact is not optout if we are in a flow and the flow is set to ignore keywords
+    # then send control to the flow directly
+    # context is not nil
     cond do
-      should_start_optin_flow?(message.contact, context, body)
-        -> start_optin_flow(message, state)
+      should_start_optin_flow?(message.contact, context, body) ->
+        start_optin_flow(message, state)
 
-      true
-      ->
-          with false <- is_nil(context),
-              {:ok, flow} <-
-                Flows.get_cached_flow(
-                  message.organization_id,
-                  {:flow_uuid, context.flow_uuid, context.status}
-                ),
-              true <- flow.ignore_keywords do
-            check_contexts(context, message, body, state)
-          else
-            _ ->
-              cond do
-                Map.get(state, :newcontact, false) &&
-                    Map.has_key?(state.flow_keywords["published"], "newcontact") ->
-                  # delay new contact flows by 2 minutes to allow user to deal with signon link
-                  check_flows(message, "newcontact", state, is_beta: false, delay: @delay_time)
+      true ->
+        with false <- is_nil(context),
+             {:ok, flow} <-
+               Flows.get_cached_flow(
+                 message.organization_id,
+                 {:flow_uuid, context.flow_uuid, context.status}
+               ),
+             true <- flow.ignore_keywords do
+          check_contexts(context, message, body, state)
+        else
+          _ ->
+            cond do
+              Map.get(state, :newcontact, false) &&
+                  Map.has_key?(state.flow_keywords["published"], "newcontact") ->
+                # delay new contact flows by 2 minutes to allow user to deal with signon link
+                check_flows(message, "newcontact", state, is_beta: false, delay: @delay_time)
 
-                Map.has_key?(state.flow_keywords["published"], body) ->
-                  check_flows(message, body, state, is_beta: false)
+              Map.has_key?(state.flow_keywords["published"], body) ->
+                check_flows(message, body, state, is_beta: false)
 
-                is_beta ->
-                  check_flows(message, message.body, state, is_beta: true)
+              is_beta ->
+                check_flows(message, message.body, state, is_beta: true)
 
-                true ->
-                  check_contexts(context, message, body, state)
-              end
-          end
-      end
+              true ->
+                check_contexts(context, message, body, state)
+            end
+        end
+    end
   end
-
 
   @beta_phrase "draft"
   @final_phrase "published"
@@ -190,12 +188,13 @@ defmodule Glific.Processor.ConsumerFlow do
       |> Enum.member?(@optin_flow_keyword)
 
     if is_optin_flow,
-    do: false,
-    else: !is_nil(contact.optout_time)
+      do: false,
+      else: !is_nil(contact.optout_time)
   end
 
   defp start_optin_flow(message, state) do
     FlowContext.mark_flows_complete(message.contact_id)
+
     Flows.get_cached_flow(
       message.organization_id,
       {:flow_keyword, @optin_flow_keyword, @final_phrase}
@@ -210,5 +209,4 @@ defmodule Glific.Processor.ConsumerFlow do
 
     {message, state}
   end
-
 end

@@ -447,6 +447,22 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Check if we can send a session message to the contact with some extra perameters
+  """
+
+  @spec can_send_message_to?(Contact.t(), boolean(), map()) :: boolean()
+  def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = _attrs) do
+    if is_hsm do
+      contact.bsp_status in [:session_and_hsm, :hsm]
+    else
+      contact.bsp_status in [:session_and_hsm, :session] &&
+        Glific.in_past_time(contact.last_message_at, :hours, 24)
+    end
+  end
+
+  def can_send_message_to?(contact, is_hsm, _), do: can_send_message_to?(contact, is_hsm)
+
+  @doc """
   Get contact's current location
   """
   @spec contact_location(Contact.t()) :: {:ok, Location.t()}
