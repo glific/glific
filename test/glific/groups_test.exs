@@ -135,21 +135,6 @@ defmodule Glific.GroupsTest do
       :ok
     end
 
-    def contact_group_fixture(attrs) do
-      [contact | _] = Contacts.list_contacts(%{filter: attrs})
-
-      valid_attrs = %{
-        contact_id: contact.id,
-        group_id: group_fixture(attrs).id
-      }
-
-      {:ok, contact_group} =
-        valid_attrs
-        |> Groups.create_contact_group()
-
-      contact_group
-    end
-
     test "create_contacts_group/1 with valid data creates a group", attrs do
       [contact | _] = Contacts.list_contacts(%{filter: attrs})
       group = group_fixture(attrs)
@@ -165,13 +150,28 @@ defmodule Glific.GroupsTest do
       assert contact_group.group_id == group.id
     end
 
-    test "ensure that creating contact_group with same contact and group give an error", attrs do
+    test "ensure that creating contact_group with same contact and group returns the existing one", attrs do
       [contact | _] = Contacts.list_contacts(%{filter: attrs})
       group = group_fixture(attrs)
-      Groups.create_contact_group(%{contact_id: contact.id, group_id: group.id})
 
-      assert {:error, %Ecto.Changeset{}} =
-               Groups.create_contact_group(%{contact_id: contact.id, group_id: group.id})
+      {:ok, cg1} =
+        Groups.create_contact_group(%{
+              contact_id: contact.id,
+              group_id: group.id,
+              organization_id: attrs.organization_id
+                                    })
+
+      # here we just want to ensure an error happened
+      # since we are forgiving in this api call and allow a contact to be added to the
+      # same group
+       {:ok, cg2} =
+        Groups.create_contact_group(%{
+              contact_id: contact.id,
+              group_id: group.id,
+              organization_id: attrs.organization_id
+                                    })
+
+       assert cg1 == cg2
     end
   end
 
