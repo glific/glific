@@ -215,7 +215,7 @@ defmodule Glific.Groups do
       |> Repo.insert()
 
     case result do
-      {:ok, cg} -> result
+      {:ok, _cg} -> result
       {:error, cs} -> fetch_contact_group(attrs, cs)
     end
   end
@@ -230,7 +230,7 @@ defmodule Glific.Groups do
       )
 
     case result do
-      {:ok, cg} -> result
+      {:ok, _cg} -> result
       {:error, _} -> {:error, changeset}
     end
   end
