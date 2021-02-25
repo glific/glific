@@ -1,5 +1,5 @@
 defmodule Glific.Repo.Seeds.OptinOptoutFlows do
-  use Glific.Seed
+  use Glific.Seeds.Seed
 
   envs([:dev])
 
@@ -24,8 +24,11 @@ defmodule Glific.Repo.Seeds.OptinOptoutFlows do
   def up(_repo) do
     Partners.list_organizations()
     |> Enum.each(fn organization ->
-      Glific.Repo.put_organization_id(organization.id)
-      add_optin_flow(organization)
+      Repo.put_organization_id(organization.id)
+
+      with {:error, _} <- Repo.fetch_by(Flow, %{name: "Optin", organization_id: organization.id}) do
+        add_optin_flow(organization)
+      end
     end)
   end
 
